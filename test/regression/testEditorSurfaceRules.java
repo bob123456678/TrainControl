@@ -9,6 +9,7 @@ import java.util.List;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.LayoutEditor;
+import support.SourceOf;
 
 /**
  * Three rules about the editor's surface, each of which was a defect Adam reported and each of which
@@ -53,8 +54,10 @@ public class testEditorSurfaceRules
      */
     private static final String QUOTE = String.valueOf((char) 34);
 
-    private static final File PANEL =
-        new File("src/org/traincontrol/gui/AutonomyEditorPanel.java");
+    /** The form of `openLayoutEditor` that holds the refusals; the overloads above it begin with the same words. */
+    private static final String OPEN_LAYOUT_EDITOR = "private void openLayoutEditor(String page, Boolean autonomy,"
+        + "\n        final org.traincontrol.automationui.TileGraph.TileKey reveal, boolean remember,"
+        + "\n        final java.util.List<org.traincontrol.automationui.TileGraph.TileKey> outline)";
 
     /**
      * The facing menu appears even when the square holds one facing (Adam, 2026-09-06).
@@ -75,17 +78,19 @@ public class testEditorSurfaceRules
     @Test
     public void testTheFacingMenuAppearsWithASingleChoice() throws Exception
     {
-        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/AutonomyEditorPanel.java")),
-            java.nio.charset.StandardCharsets.UTF_8).replaceAll("\\s+", " ");
+        // The vanishing is asked of the whole program, so a copy of the menu in another file cannot bring it back
+        String code = SourceOf.allCode().replaceAll("\\s+", " ");
 
-        assertFalse(source.contains("if (facings.size() <= 1) return null;"),
+        String source = SourceOf.declaration("public javax.swing.JMenu buildFacingMenu(final TileKey target)")
+            .replaceAll("\\s+", " ");
+
+        assertFalse(code.contains("if (facings.size() <= 1) return null;"),
             "the facing menu still vanishes when a square holds one facing, so the operator is given "
             + "no answer at all rather than the answer that there is nothing to choose");
 
         // GREYED, NOT REFUSED, where there is no facing (OB-347; Adam, 2026-10-13: "rather than hiding it, grey it out."),
         // which is what this used to hold the other way round
-        assertFalse(source.contains("if (facings.isEmpty()) return null;"),
+        assertFalse(code.contains("if (facings.isEmpty()) return null;"),
             "the menu is hidden on a square with NO facing, where Adam asked for it greyed (OB-347)");
 
         assertTrue(source.contains("if (facings.isEmpty()) { facingMenu.setEnabled(false);")
@@ -116,8 +121,7 @@ public class testEditorSurfaceRules
      * Checked as a door census rather than by driving the dialog, because the defect is a door that
      * does not ask - and a test that drives the four that do would have passed throughout.
      *
-     * MUTATION: remove the call from any listed door and this fails, naming the file and how many of
-     * its doors still ask.
+     * MUTATION: remove the call from any listed door and this fails, naming the door.
      */
     @Test
     public void testEveryDoorThatNamesALocomotiveChecksTheName() throws Exception
@@ -130,34 +134,22 @@ public class testEditorSurfaceRules
         // occurrence satisfying the check, so the javadoc`s "remove the call from any listed door and
         // this fails" was untrue of exactly the file with more than one.
         //
-        // A count is cruder than locating each door and cannot say WHICH one went - but it cannot
-        // report clean when one of a pair is removed, which is the failure that mattered.
-        final Object[][] doors =
+        // LOCATED PER DOOR since FR-136, which a count per file could not do: each door is its own declaration,
+        // found in whichever file holds it, so one of a pair going silent is named, and so is a door that moved.
+        final String[][] doors =
         {
-            {"src/org/traincontrol/gui/AddLocomotive.java", "the Add Locomotive dialog", 1},
-            {"src/org/traincontrol/gui/TrainControlUI.java",
-                "the rename dialog and the Central Station name", 2},
-            {"src/org/traincontrol/gui/RouteEditorFrame.java", "the route editor", 1},
+            {"private void AddLocButtonActionPerformed(java.awt.event.ActionEvent evt)", "the Add Locomotive dialog"},
+            {"public void changeLocAddress(Locomotive l, MouseEvent evt)", "the rename dialog"},
+            {"private void checkForRenameMenuItemActionPerformed(java.awt.event.ActionEvent evt)",
+                "the Central Station name"},
+            {"private List<String> problemsWith(CommandRow row)", "the route editor"},
         };
 
         final java.util.List<String> silent = new java.util.ArrayList<>();
 
-        for (Object[] door : doors)
+        for (String[] door : doors)
         {
-            java.io.File file = new java.io.File((String) door[0]);
-
-            assertTrue(file.exists(), "precondition: " + door[0] + " has to be readable, or this "
-                + "test reports every door as silent and means nothing");
-
-            String source = new String(java.nio.file.Files.readAllBytes(file.toPath()),
-                java.nio.charset.StandardCharsets.UTF_8);
-
-            int asked = source.split("isNameUsable\\(", -1).length - 1;
-
-            if (asked < (Integer) door[2])
-            {
-                silent.add(door[1] + " (" + door[0] + ": " + asked + " of " + door[2] + ")");
-            }
+            if (!codeOf(door[0]).contains("isNameUsable(")) silent.add(door[1] + " (" + door[0] + ")");
         }
 
         assertTrue(silent.isEmpty(),
@@ -177,93 +169,51 @@ public class testEditorSurfaceRules
     /**
      * One writer, and it repaints.
      *
-     * The window is generous - a dozen lines - because the call sits inside a lambda with a comment
-     * explaining itself. It is not generous enough to reach the next menu item.
+     * The redraw is asked of the helpers' whole declarations, wherever they are, rather than of a window
+     * of lines after them.
      */
     @Test
     public void testTheFacingIsWrittenFromOnePlaceAndThatPlaceRedraws() throws Exception
     {
-        assertTrue(PANEL.isFile(),
-            "cannot find " + PANEL.getAbsolutePath() + " - a test that reads the source cannot pass by not finding it. This returned quietly, so renaming or moving that file would have taken this rule with it and said nothing");
+        // A PREFIX, so a writer cannot escape this count by spelling (SPEC-B4).
+        //
+        // The facing menu now calls setFacingAndMove, which writes a facing and stands the train
+        // on the copy that faces that way - and an exact match for "setFacing(" stopped seeing it
+        // the moment it was renamed. A guard that a rename walks out of is not guarding.
+        //
+        // COUNTED OVER THE PROGRAM (FR-136).  Counted over AutonomyEditorPanel's file, a write moved out of it
+        // left the count; over every file, each write is one of the doors the message below names.
+        int writes = SourceOf.occurrences("session.setFacing");
 
-        List<String> lines = Files.readAllLines(PANEL.toPath(), StandardCharsets.UTF_8);
+        // The redraw lives in radio(), the helper every one of these answers is built with -
+        // not beside this particular write. It was beside this one once, which is exactly how
+        // TD-1 happened: the station and turning radios sat in the same helper and got nothing.
+        //
+        // `placementChanged(null)`, not `placementChanged()`: the door now says WHICH
+        // placements it edited, and a radio edits none (D2-A1).  Matching the bare name
+        // would be satisfied by the declaration itself, which is not a call.
+        boolean redrawn = codeOf("private javax.swing.JMenuItem radio(").contains("placementChanged(null)");
 
-        int writes = 0;
-        boolean redrawn = false;
-        int toggleSignatureFound = 0;
-
-        for (int i = 0; i < lines.size(); i++)
-        {
-            // A PREFIX, so a writer cannot escape this count by spelling (SPEC-B4).
-            //
-            // The facing menu now calls setFacingAndMove, which writes a facing and stands the train
-            // on the copy that faces that way - and an exact match for "setFacing(" stopped seeing it
-            // the moment it was renamed. A guard that a rename walks out of is not guarding.
-            if (!lines.get(i).contains("session.setFacing")) continue;
-
-            writes++;
-
-            // The redraw lives in radio(), the helper every one of these answers is built with -
-            // not beside this particular write. It was beside this one once, which is exactly how
-            // TD-1 happened: the station and turning radios sat in the same helper and got nothing.
-            for (int j = 0; j < lines.size(); j++)
-            {
-                if (!lines.get(j).contains("private javax.swing.JMenuItem radio(")) continue;
-
-                for (int k = j; k < Math.min(lines.size(), j + 30); k++)
-                {
-                    // `placementChanged(null)`, not `placementChanged()`: the door now says WHICH
-                    // placements it edited, and a radio edits none (D2-A1).  Matching the bare name
-                    // would be satisfied by the declaration itself, which is not a call.
-                    if (lines.get(k).contains("placementChanged(null)")) redrawn = true;
-                }
-            }
-
-            // The TOGGLE helper as well, which this used to leave out (TD-1).
-            //
-            // Pinning radio() alone said "the facing redraws" and let its sibling keep the bug: toggle()
-            // carries four setup writes reachable from the track diagram's own menu, and one of them -
-            // whether trains may arrive by a side - decides how a square SPLITS, which is the case the
-            // rebuild exists for. A rule with two implementations needs both named, which is the shape
-            // this whole file is about.
-            for (int j = 0; j < lines.size(); j++)
-            {
-                if (!lines.get(j).contains("private javax.swing.JCheckBoxMenuItem toggle(String text, String tooltipKey")) continue;
-
-                toggleSignatureFound++;
-
-                boolean rebuilt = false;
-
-                // Sixty, not forty.  The method grew an error guard - C11, it called its action
-                // bare where its sibling wraps one - and the rebuild moved from line 20 to line 53,
-                // past a window that had been generous when it was written. Sixty still stops inside
-                // this method, which ends at 59 lines, so it cannot borrow a placementChanged() from
-                // whatever comes next; that is the property worth keeping, not the number.
-                for (int k = j; k < Math.min(lines.size(), j + 60); k++)
-                {
-                    // See the radio window above for why this is the null form (D2-A1).
-                    if (lines.get(k).contains("placementChanged(null)")) rebuilt = true;
-                }
-
-                assertTrue(rebuilt,
-                    "the menu's toggle helper writes the setup and only refreshes. Four settings go "
-                    + "through it, and one of them changes how a square splits - so the running layout "
-                    + "keeps Points the setup no longer has, and everything that goes through their "
-                    + "names quietly stops working (TD-1)");
-            }
-        }
-
-        // Without this, reformatting the toggle() signature makes the inner loop above match nothing
-        // and skip its assertTrue(rebuilt, ...) entirely (TST-C10) - silence, not a pass, since the
-        // check that names TD-1's actual bug never runs at all.
-        assertTrue(toggleSignatureFound > 0,
-            "the toggle(String text, String tooltipKey...) signature was not found in "
-            + PANEL.getName() + " under any session.setFacing( write - it may have been reformatted "
-            + "or renamed, and without this the assertion about its rebuild silently never runs");
+        // The TOGGLE helper as well, which this used to leave out (TD-1).
+        //
+        // Pinning radio() alone said "the facing redraws" and let its sibling keep the bug: toggle()
+        // carries four setup writes reachable from the track diagram's own menu, and one of them -
+        // whether trains may arrive by a side - decides how a square SPLITS, which is the case the
+        // rebuild exists for. A rule with two implementations needs both named, which is the shape
+        // this whole file is about.
+        //
+        // Its whole declaration, not sixty lines after its signature: the window had to grow once already when
+        // the method did (C11), and a declaration cannot borrow a placementChanged() from whatever comes next.
+        assertTrue(codeOf("private javax.swing.JCheckBoxMenuItem toggle(String text, String tooltipKey")
+                .contains("placementChanged(null)"),
+            "the menu's toggle helper writes the setup and only refreshes. Four settings go "
+            + "through it, and one of them changes how a square splits - so the running layout "
+            + "keeps Points the setup no longer has, and everything that goes through their "
+            + "names quietly stops working (TD-1)");
 
         // TWO, AND THE SECOND IS NOT A MENU (REG6-B5).
         //
-        // This counts `session.setFacing(` in the whole file, so it cannot tell a second copy of the
+        // This counted `session.setFacing(` in the whole file, so it could not tell a second copy of the
         // facing menu - the thing it exists to catch - from a placement door that records a heading.
         // The second write is the latter: the "edit or assign locomotive" item, which was writing WHO
         // was placed and not WHICH WAY, and so left `placementCopy` to fall through to copy 0.  It was
@@ -281,13 +231,18 @@ public class testEditorSurfaceRules
         //
         // That is a reduction in writers, which is the direction this check wants.  A THIRD here still
         // fails, and the message says what to ask about it.
-        assertEquals(writes, 2,
-            "the facing is written from " + writes + " places in AutonomyEditorPanel. Two are known: "
-            + "the facing menu (which moves the railway too, SPEC-B4) and placeLocomotive - the "
+        //
+        // FIVE OVER THE PROGRAM (FR-136): the editor's two, and the three in the files the list below names -
+        // GraphLocAssign.commitAndRecord, the diagram's placeFacing and the window's rememberPlacement.
+        assertEquals(writes, 5,
+            "the facing is written from " + writes + " places in the program. Five are known.  Two are in "
+            + "AutonomyEditorPanel: the facing menu (which moves the railway too, SPEC-B4) and placeLocomotive - the "
             + "add-to-autonomy door, which was the LAST one recording who without which way "
             + "(CONF-B2), and the worst of them, because placeLocomotive does not clear the facing on "
             + "the non-null path and so left the previous occupant's direction attached to the "
-            + "arriving train. A third is either a second copy of the menu - which is how OB-039 "
+            + "arriving train.  Three are the doors the list below names by file: GraphLocAssign.commitAndRecord, "
+            + "the track diagram's placeFacing and the window's rememberPlacement.  A sixth is either a second "
+            + "copy of the menu - which is how OB-039 "
             + "survived being fixed, the redraw going on the copy somebody is looking at while the "
             + "other keeps the bug - or the edit-or-assign door writing its own facing again instead "
             + "of going through GraphLocAssign.commitAndRecord, which is how it and the diagram's "
@@ -298,19 +253,19 @@ public class testEditorSurfaceRules
         // `commitChanges` moves the running layout and nothing else.  A door that calls it directly
         // has made an assignment the setup will not remember - which is exactly what the track
         // diagram's item did, silently, for as long as it existed.
+        //
+        // Asked of the whole program (FR-136): the one `edit.commitChanges()` allowed is the one inside
+        // commitAndRecord, which records as well.
+        assertEquals(outside("edit.commitChanges()", "public static void commitAndRecord(GraphLocAssign edit)"), 0,
+            "an assignment is committed without being recorded. commitChanges moves the running"
+            + " layout only, so the placement is gone at the next configuration load - use"
+            + " GraphLocAssign.commitAndRecord, which does both (REG8-B2)");
+
         for (String door : new String[] {
-            "src/org/traincontrol/gui/AutonomyEditorPanel.java",
-            "src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java" })
+            "private void addLocomotiveSettings(javax.swing.JPopupMenu menu, TileKey target)",
+            "private LayoutRightclickAutonomyMenu(TrainControlUI ui," })
         {
-            String assignDoor = codeOnly(new String(java.nio.file.Files.readAllBytes(
-                java.nio.file.Paths.get(door)), StandardCharsets.UTF_8));
-
-            assertFalse(assignDoor.contains("edit.commitChanges()"),
-                door + " commits an assignment without recording it. commitChanges moves the running"
-                + " layout only, so the placement is gone at the next configuration load - use"
-                + " GraphLocAssign.commitAndRecord, which does both (REG8-B2)");
-
-            assertTrue(assignDoor.contains("GraphLocAssign.commitAndRecord("),
+            assertTrue(codeOf(door).contains("GraphLocAssign.commitAndRecord("),
                 door + " no longer commits an assignment at all, so the check above passes because"
                 + " the door has gone rather than because it was fixed");
         }
@@ -370,25 +325,8 @@ public class testEditorSurfaceRules
     @Test
     public void testTheFacingSubmenuIsBuiltOnce() throws Exception
     {
-        assertTrue(PANEL.isFile(),
-            "cannot find " + PANEL.getAbsolutePath() + " - a test that reads the source cannot pass by not finding it. This returned quietly, so renaming or moving that file would have taken this rule with it and said nothing");
-
-        // Carriage returns stripped, for consistency with the rule below rather than because this
-        // one needs it (FBR-C8, corrected by RA-A1): this test COUNTS occurrences of a marker and
-        // never bounds a window on a brace, so line endings cannot change its answer. A source read
-        // that behaves differently depending on how git wrote the file is not a guard, and having
-        // one of these normalise and not the other would be an invitation to remove the wrong one.
-        String source = new String(Files.readAllBytes(PANEL.toPath()), StandardCharsets.UTF_8)
-            .replace("\r", "");
-
-        int built = 0;
-        int at = source.indexOf("menuFacingGroup");
-
-        while (at >= 0)
-        {
-            built++;
-            at = source.indexOf("menuFacingGroup", at + 1);
-        }
+        // Counted over the whole program's code (FR-136), so a second copy built in another file is counted too
+        int built = SourceOf.occurrences("menuFacingGroup");
 
         assertEquals(built, 1,
             "the \"{loc} Is Facing...\" submenu is assembled " + built + " times. One of them is "
@@ -411,9 +349,6 @@ public class testEditorSurfaceRules
     @Test
     public void testTheSignalFocusIsAlwaysTurnedOffAgain() throws Exception
     {
-        assertTrue(PANEL.isFile(),
-            "cannot find " + PANEL.getAbsolutePath() + " - a test that reads the source cannot pass by not finding it. This returned quietly, so renaming or moving that file would have taken this rule with it and said nothing");
-
         // The CODE, with the comments taken out.
         //
         // This read the raw source, and the only "finally" within its window was the word inside the
@@ -424,19 +359,29 @@ public class testEditorSurfaceRules
         //
         // Two sibling tests already had this fix when this one was written, and a third gained it since:
         // a test that reads source has to read the code.
-        String source = withoutComments(
-            new String(Files.readAllBytes(PANEL.toPath()), StandardCharsets.UTF_8));
+        //
+        // EVERY CLEAR IN THE PROGRAM, each INSIDE a finally block (FR-136): the 400 characters before it were a
+        // proxy for that, and a block that had closed before the clear satisfied it as well.
+        String source = SourceOf.allCode();
 
-        int at = source.indexOf("signalWindowOpen = false");
+        int clears = 0;
 
-        assertTrue(at > 0, "nothing ever turns the signal focus off (OB-040)");
+        for (int at = source.indexOf("signalWindowOpen = false"); at >= 0;
+            at = source.indexOf("signalWindowOpen = false", at + 1))
+        {
+            clears++;
 
-        String before = source.substring(Math.max(0, at - 400), at);
+            int block = source.lastIndexOf("finally", at);
 
-        assertTrue(before.contains("finally"),
-            "the signal focus is turned off somewhere other than the finally block. The window has four "
-            + "ways out and only the finally sees all of them; anywhere else leaves the editor grey and "
-            + "arrowless with nothing on screen saying why");
+            String inside = block < 0 ? "" : source.substring(block, at);
+
+            assertTrue(block >= 0 && count(inside, "{") > count(inside, "}"),
+                "the signal focus is turned off somewhere other than the finally block. The window has four "
+                + "ways out and only the finally sees all of them; anywhere else leaves the editor grey and "
+                + "arrowless with nothing on screen saying why");
+        }
+
+        assertTrue(clears > 0, "nothing ever turns the signal focus off (OB-040)");
     }
 
     /**
@@ -449,23 +394,20 @@ public class testEditorSurfaceRules
     @Test
     public void testTheDeclutterIsOneDecision() throws Exception
     {
-        assertTrue(PANEL.isFile(),
-            "cannot find " + PANEL.getAbsolutePath() + " - a test that reads the source cannot pass by not finding it. This returned quietly, so renaming or moving that file would have taken this rule with it and said nothing");
-
-        List<String> lines = Files.readAllLines(PANEL.toPath(), StandardCharsets.UTF_8);
+        // The method that makes the three decisions, wherever it is (FR-136); `focused` is its local.
+        String decisions = codeOf("public org.traincontrol.automationui.TileAnnotation annotationFor(TileKey tile)");
 
         int uses = 0;
 
-        for (String line : lines)
+        for (String line : decisions.split("\n"))
         {
-            if (line.contains("focused") && !line.trim().startsWith("//")
-                && !line.contains("isFocusedOnSignals()")) uses++;
+            if (line.contains("focused") && !line.contains("isFocusedOnSignals()")) uses++;
         }
 
         // Three: the greying, the arrows, the lengths.  The declaration is excluded above, so this
         // counts the places that USE the answer rather than the place that works it out.
         assertEquals(uses, 3,
-            "the signal focus is used at " + uses + " places in AutonomyEditorPanel, not the three it "
+            "the signal focus is used at " + uses + " places in annotationFor, not the three it "
             + "has to reach - the greying, the arrows and the lengths. A de-clutter that is on for one "
             + "of them and off for the others looks half-dressed rather than focused");
     }
@@ -547,22 +489,14 @@ public class testEditorSurfaceRules
     @Test
     public void testTheViewerIsNotToldItIsAnEditor() throws Exception
     {
-        File grid = new File("src/org/traincontrol/gui/LayoutGrid.java");
-
-        assertTrue(grid.isFile(),
-            "cannot find " + grid.getAbsolutePath() + " - a test that reads the source cannot pass by not finding it. This returned quietly, so renaming or moving that file would have taken this rule with it and said nothing");
-
-        List<String> lines = Files.readAllLines(grid.toPath(), StandardCharsets.UTF_8);
-
+        // Every line of the program's code (FR-136): a grid's code moved to another file is still read.
         List<String> bare = new java.util.ArrayList<>();
 
-        for (String line : lines)
+        for (String line : SourceOf.allCode().split("\n"))
         {
             if (!line.contains("layout.getEdit()")) continue;
 
             String trimmed = line.trim();
-
-            if (trimmed.startsWith("//") || trimmed.startsWith("*")) continue;
 
             // The one place it is legitimately asked: working out the answer everything else uses
             if (line.contains("inEditor =")) continue;
@@ -571,7 +505,7 @@ public class testEditorSurfaceRules
         }
 
         assertEquals(bare, new java.util.ArrayList<String>(),
-            "LayoutGrid asks layout.getEdit() directly. That flag says an editor is OPEN, not that this "
+            "a grid asks layout.getEdit() directly. That flag says an editor is OPEN, not that this "
             + "grid is in one, and the difference is everything the viewer looked like while the "
             + "autonomy editor was up. Use the inEditor answer computed once at the top");
     }
@@ -594,32 +528,30 @@ public class testEditorSurfaceRules
     @Test
     public void testARenameOnlyLabelsAStationThatHasNoLabel() throws Exception
     {
-        assertTrue(PANEL.isFile(),
-            "cannot find " + PANEL.getAbsolutePath() + " - a test that reads the source cannot pass by not finding it. This returned quietly, so renaming or moving that file would have taken this rule with it and said nothing");
-
-        List<String> lines = Files.readAllLines(PANEL.toPath(), StandardCharsets.UTF_8);
+        // Every line of the program's code (FR-136), so a rename door in another file is asked as well
+        String[] lines = SourceOf.allCode().split("\n");
 
         // Every place that names a square and then labels it - there are two, and the reason this
         // test exists is that the fix went on one of them first.
         int renames = 0;
 
-        for (int i = 0; i < lines.size(); i++)
+        for (int i = 0; i < lines.length; i++)
         {
-            if (!lines.get(i).contains("session.setPointName(")) continue;
+            if (!lines[i].contains("session.setPointName(")) continue;
 
             renames++;
 
             String after = "";
 
-            for (int j = i; j < Math.min(lines.size(), i + 30); j++)
+            for (int j = i; j < Math.min(lines.length, i + 30); j++)
             {
-                after += lines.get(j) + " ";
+                after += lines[j] + " ";
             }
 
             if (!after.contains("placeLabelFor(")) continue;
 
             assertTrue(after.contains("getLabelledStationTiles"),
-                "the rename at line " + (i + 1) + " places a label without first asking whether the "
+                "the rename at \"" + lines[i].trim() + "\" places a label without first asking whether the "
                 + "station already has one. placeCaption MOVES an existing caption, so that turns "
                 + "every rename into a move and the label wanders between neighbouring squares "
                 + "(MT-116)");
@@ -650,21 +582,8 @@ public class testEditorSurfaceRules
     @Test
     public void testTheRunningLayoutIsRebuiltFromOnePlace() throws Exception
     {
-        File source = new File("src/org/traincontrol/gui/TrainControlUI.java");
-
-        assertTrue(source.isFile(),
-            "cannot find " + source.getAbsolutePath() + " - a test that reads the source cannot pass by not finding it. This returned quietly, so renaming or moving that file would have taken this rule with it and said nothing");
-
-        String text = new String(Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8);
-
-        int found = 0;
-
-        for (String line : text.split("\n"))
-        {
-            String code = line.contains("//") ? line.substring(0, line.indexOf("//")) : line;
-
-            if (code.contains("load(activeDiagramConfiguration, false, false)")) found++;
-        }
+        // Over the whole program's code (FR-136), so a copy in another file is counted too
+        int found = SourceOf.occurrences("load(activeDiagramConfiguration, false, false)");
 
         assertEquals(found, 1,
             "the rebuild-from-setup load appears " + found + " times. It was extracted into "
@@ -688,15 +607,11 @@ public class testEditorSurfaceRules
         assertTrue(src.isDirectory(), "cannot find " + src.getAbsolutePath()
             + " - a test that reads the source cannot pass by not finding it");
 
-        List<File> sources = new ArrayList<>();
-
-        collect(src, sources);
-
         java.util.Set<String> found = new java.util.TreeSet<>();
 
-        for (File file : sources)
+        for (File file : javaFilesUnder(src))
         {
-            String body = withoutComments(
+            String body = SourceOf.withoutComments(
                 new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8));
 
             // The declaration is not a write, and neither is a reference to it in a javadoc - which
@@ -709,50 +624,61 @@ public class testEditorSurfaceRules
         return new ArrayList<>(found);
     }
 
-    private void collect(File from, List<File> into)
+    /**
+     * The code of one declaration, comments blanked, from whichever file under src/ holds it (FR-136).
+     *
+     * @param signature enough of the declaration to name it once in the program
+     * @return its code
+     */
+    private static String codeOf(String signature)
     {
-        File[] children = from.listFiles();
-
-        if (children == null) return;
-
-        for (File child : children)
-        {
-            if (child.isDirectory()) collect(child, into);
-            else if (child.getName().endsWith(".java")) into.add(child);
-        }
+        return SourceOf.withoutComments(SourceOf.declaration(signature));
     }
 
     /**
-     * A source file with its comments taken out.
+     * A member of one class, for a signature more than one class declares: the class is found wherever it is, and
+     * the member in it (FR-136).
      *
-     * Copied rather than shared with the three other tests that do this: a test helper reaching into
-     * another test class is a dependency between things that are supposed to fail independently.
+     * @param type enough of the class's declaration to name it once in the program
+     * @param signature enough of the member's declaration to name it once in that class
+     * @return the member's text, comments included
      */
-    private String withoutComments(String body)
+    private static String memberOf(String type, String signature)
     {
-        StringBuilder out = new StringBuilder();
+        return SourceOf.declarationIn(SourceOf.declaration(type), signature);
+    }
 
-        boolean inLine = false, inBlock = false;
+    /**
+     * How many times a text is in the program's code outside the given declarations - a negative asked of the
+     * whole program where the needle has a place it is allowed (FR-136).
+     *
+     * @param needle the text
+     * @param allowed the declarations it may be in
+     * @return the number of places elsewhere
+     */
+    private static int outside(String needle, String... allowed)
+    {
+        int inside = 0;
 
-        for (int i = 0; i < body.length(); i++)
-        {
-            char c = body.charAt(i);
-            char next = i + 1 < body.length() ? body.charAt(i + 1) : ' ';
+        for (String signature : allowed) inside += count(codeOf(signature), needle);
 
-            if (inLine)
-            {
-                if (c == '\n') { inLine = false; out.append(c); }
-            }
-            else if (inBlock)
-            {
-                if (c == '*' && next == '/') { inBlock = false; i++; }
-            }
-            else if (c == '/' && next == '/') inLine = true;
-            else if (c == '/' && next == '*') inBlock = true;
-            else out.append(c);
-        }
+        return SourceOf.occurrences(needle) - inside;
+    }
 
-        return out.toString();
+    /**
+     * How many times a text is in another, without overlaps.
+     *
+     * @param text the text to look in
+     * @param needle the text to count
+     * @return the count
+     */
+    private static int count(String text, String needle)
+    {
+        int found = 0;
+
+        for (int at = text.indexOf(needle); at >= 0; at = text.indexOf(needle, at + needle.length())) found++;
+
+        return found;
     }
 
     /**
@@ -775,10 +701,7 @@ public class testEditorSurfaceRules
     @Test
     public void testEveryDoorThatRunsARouteAsksIfItIsAlreadyRunning() throws Exception
     {
-        String ui = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/TrainControlUI.java")), java.nio.charset.StandardCharsets.UTF_8);
-
-        String funnel = withoutComments(bodyOf(ui, "public void executeRoute(String route)"));
+        String funnel = codeOf("public void executeRoute(String route)");
 
         assertTrue(funnel.contains("routesExecuting.contains(route)"),
             "executeRoute does not ask whether the route is already running, and it is the method "
@@ -795,16 +718,15 @@ public class testEditorSurfaceRules
         // set to decide what to DRAW, and drawing is the affordance rather than the guard.  What must
         // not come back is a door deciding for itself whether to call executeRoute, because that is
         // the arrangement under which two of the three doors were missing the question entirely.
-        String door = withoutComments(bodyOf(ui,
-            "private void RouteListMouseClicked(java.awt.event.MouseEvent evt)"));
+        String door = codeOf("private void RouteListMouseClicked(java.awt.event.MouseEvent evt)");
 
         // NOT VACUOUS WHEN THE HANDLER MOVES (V33-C7).
         //
-        // `bodyOf` answers "" when it cannot find the declaration, and an empty string contains
-        // nothing - so a renamed or REGENERATED handler turns the assertion below into a no-op that
-        // still reads as protection.  This one is a NetBeans `//GEN-FIRST` method, which is exactly
-        // the kind that gets regenerated.  Its positive siblings are self-guarding; a negative is not.
-        assertFalse(door.isEmpty(), "RouteListMouseClicked has moved or been renamed");
+        // `bodyOf` answered "" when it could not find the declaration, and an empty string contains
+        // nothing - so a renamed or REGENERATED handler turned the assertion below into a no-op that
+        // still read as protection.  This one is a NetBeans `//GEN-FIRST` method, which is exactly
+        // the kind that gets regenerated.  `SourceOf.declaration` fails loudly instead, wherever the
+        // handler has gone (FR-136).
 
         assertFalse(door.contains("routesExecuting"),
             "the route row's own click handler asks whether the route is already running instead of "
@@ -837,8 +759,13 @@ public class testEditorSurfaceRules
     @Test
     public void testSwitchingAnAccessoryByHandAsksAboutProtectingSignals() throws Exception
     {
-        String label = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/LayoutLabel.java")), java.nio.charset.StandardCharsets.UTF_8);
+        // The tile's constructor, which wires its click, and the helper the click asks (FR-136: found wherever
+        // they are)
+        String label = codeOf("public LayoutLabel(LayoutDiagramComponent c, Container parent, int size, "
+            + "TrainControlUI tcUI, boolean edit,");
+
+        String helper = codeOf(
+            "private static boolean aboutToClearProtection(TrainControlUI tcUI, Accessory accessory)");
 
         // BOTH LIMBS, and the aspect (TS3-B3, WK3-B1).
         //
@@ -852,7 +779,7 @@ public class testEditorSurfaceRules
             "the diagram's accessory tile does not ask about BOTH accessories of the tile, so a "
             + "three-way's second drive can be switched with no warning");
 
-        assertTrue(label.contains("clearsProtection(accessory, !accessory.isStraight())"),
+        assertTrue(helper.contains("clearsProtection(accessory, !accessory.isStraight())"),
             "the tile's protecting-signal question does not ask which way the click will throw the "
             + "signal.  Setting a protecting signal to RED is the protective act, and the route door "
             + "explicitly permits it - a warning here is the over-strictness that door had removed");
@@ -863,35 +790,27 @@ public class testEditorSurfaceRules
         // line to `return false;` - passes every one of them, and SVN-B16 is undone at the tile door
         // with the test still green.  That is the same shape as TCX-A3, which is what these
         // assertions replaced.
-        String helper = withoutComments(bodyOf(label,
-            "private static boolean aboutToClearProtection(TrainControlUI tcUI, Accessory accessory)"));
-
-        assertFalse(helper.isEmpty(), "aboutToClearProtection has moved or been renamed");
-
         assertTrue(helper.contains("clearsProtection(accessory"),
             "the tile's protecting-signal helper no longer asks the shared rule at all, so the doors "
             + "are back to different definitions of one question.  Body: " + helper);
-
-        String route = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/marklin/MarklinRoute.java")), java.nio.charset.StandardCharsets.UTF_8);
 
         // THE BODY, not the file (V33-C6).
         //
         // Read whole, this passes on the method name appearing in a comment - and `MarklinRoute`'s
         // comments discuss this rule at length, which is how the assertion would have survived the
         // call being deleted.
-        String held = withoutComments(bodyOf(route, "private String[] heldReason(RouteCommand rc)"));
-
-        assertFalse(held.isEmpty(), "MarklinRoute.heldReason has moved or been renamed");
+        String held = codeOf("private String[] heldReason(RouteCommand rc)");
 
         assertTrue(held.contains("protectsAnOccupiedSquare"),
             "the route no longer asks the shared rule, so the two doors are working from different "
             + "definitions of the same question again.  Body: " + held);
 
-        String layout = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/automation/Layout.java")), java.nio.charset.StandardCharsets.UTF_8);
+        // The rule the doors delegate to, declared once in the program - SourceOf fails on none or on a copy -
+        // and on Layout, where the doors reach it
+        SourceOf.declaration("public boolean protectsAnOccupiedSquare(Accessory accessory)");
 
-        assertTrue(layout.contains("public boolean protectsAnOccupiedSquare(Accessory accessory)"),
+        assertNotNull(org.traincontrol.automation.Layout.class.getMethod("protectsAnOccupiedSquare",
+                org.traincontrol.base.Accessory.class),
             "the rule the doors delegate to is not on Layout, so one of them is carrying a copy");
 
         // AND THE ASPECT IS PART OF THE RULE, not of one caller (V31-C2).
@@ -899,10 +818,7 @@ public class testEditorSurfaceRules
         // It used to be a line in the tile's own helper, which is why the keyboard could not ask it
         // without copying it.  Dropping the direction from the signature would let every door warn
         // about a click that sets a signal to danger - the over-strictness the route door had removed.
-        String rule = withoutComments(bodyOf(layout,
-            "public boolean clearsProtection(Accessory accessory, boolean commandingGreen)"));
-
-        assertFalse(rule.isEmpty(), "Layout.clearsProtection has moved or been renamed");
+        String rule = codeOf("public boolean clearsProtection(Accessory accessory, boolean commandingGreen)");
 
         assertTrue(rule.contains("commandingGreen") && rule.contains("protectsAnOccupiedSquare"),
             "the shared rule no longer asks both halves - which way the accessory is being commanded, "
@@ -913,15 +829,10 @@ public class testEditorSurfaceRules
         // The switch keyboard went straight to setAccessoryState with no check of any kind, while the
         // two doors above asked two questions each.  It is the door most likely to be forgotten again,
         // because it is the one that never had a guard to begin with.
-        String window = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/TrainControlUI.java")), java.nio.charset.StandardCharsets.UTF_8);
-
-        String keyboard = withoutComments(bodyOf(window,
-            "private boolean keyboardAutonomyAllows(int address, javax.swing.JToggleButton button)"));
-
-        assertFalse(keyboard.isEmpty(),
-            "the switch keyboard has no guard at all - a turnout on a locked path can be thrown from "
-            + "it under a running train, which is AU-A2 through the one door that never asked");
+        // Missing, `SourceOf.declaration` fails: the switch keyboard has no guard at all - a turnout on a locked
+        // path can be thrown from it under a running train, which is AU-A2 through the one door that never asked
+        String keyboard = codeOf(
+            "private boolean keyboardAutonomyAllows(int address, javax.swing.JToggleButton button)");
 
         assertTrue(keyboard.contains("clearsProtection") && keyboard.contains("getActiveAccs"),
             "the switch keyboard asks fewer than both halves of the question the other two doors ask.  "
@@ -932,10 +843,8 @@ public class testEditorSurfaceRules
         // Adam: "yes, route through the same guards."  A command sent with the power off does nothing,
         // and the keyboard used to send it into the dark leaving the button looking as though it had
         // worked - the one question of the three that is about whether anything can happen at all.
-        String asks = withoutComments(bodyOf(window,
-            "private KeyboardSwitch keyboardSwitchAllowed(int address, javax.swing.JToggleButton button)"));
-
-        assertFalse(asks.isEmpty(), "keyboardSwitchAllowed has moved or been renamed");
+        String asks = codeOf(
+            "private KeyboardSwitch keyboardSwitchAllowed(int address, javax.swing.JToggleButton button)");
 
         assertTrue(asks.contains("getPowerState") && asks.contains("confirmAccessorySwitchPowerOff"),
             "the switch keyboard no longer asks about the track power, so a click with the power off "
@@ -945,7 +854,7 @@ public class testEditorSurfaceRules
             "the power question is asked and the two autonomy ones are not, which is one guard where "
             + "there should be three.  Body: " + asks);
 
-        assertTrue(withoutComments(window).contains("keyboardSwitchAllowed(switchId, b)"),
+        assertTrue(SourceOf.allCode().contains("keyboardSwitchAllowed(switchId, b)"),
             "the switch keyboard's guard exists and nothing calls it, which is the shape of a fix that "
             + "was written and not wired");
     }
@@ -1078,15 +987,8 @@ public class testEditorSurfaceRules
     @Test
     public void testEmptyingThePageCacheHandsItsLabelsBack() throws Exception
     {
-        File source = new File("src/org/traincontrol/gui/TrainControlUI.java");
-
-        assertTrue(source.isFile(),
-            "cannot find " + source.getAbsolutePath() + " - a test that reads the source cannot pass "
-            + "by not finding it. This returned quietly, so renaming or moving that file would have "
-            + "taken this rule with it and said nothing");
-
-        String[] lines = withoutComments(new String(
-            Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8)).split("\n");
+        // Every line of the program's code (FR-136), so a reset written in another file is asked as well
+        String[] lines = SourceOf.allCode().split("\n");
 
         List<String> unguarded = new ArrayList<>();
 
@@ -1106,7 +1008,7 @@ public class testEditorSurfaceRules
                 if (lines[back].contains("forgetCachedPageLabels()")) handedBack = true;
             }
 
-            if (!handedBack) unguarded.add((at + 1) + ":  " + line.trim());
+            if (!handedBack) unguarded.add(line.trim());
         }
 
         assertEquals(unguarded, new ArrayList<String>(),
@@ -1145,23 +1047,12 @@ public class testEditorSurfaceRules
     @Test
     public void testTheCaptionItemsNameTheStationTheyAreAbout() throws Exception
     {
-        assertTrue(PANEL.isFile(),
-            "cannot find " + PANEL.getAbsolutePath() + " - a test that reads the source cannot pass by not finding it");
-
-        // Carriage returns stripped, because the rule below bounds its window on a newline followed
-        // by the closing brace - the indexOf a few lines down - and this repository checks out
-        // CRLF on Windows (FBR-C8). It passed in the tree it was written in and was red on a fresh
-        // clone: a guard that depends on how git happened to write the file is not a guard.
-        //
-        // FSR-C7 raised that the comment here described rules this site does not have, and the fix
-        // for it swapped the two comments instead of correcting them, so each was then true of the
-        // other site (RA-A1). Which is FSR-C7 again, in mirror image, produced by fixing FSR-C7.
-        String source = new String(Files.readAllBytes(PANEL.toPath()), StandardCharsets.UTF_8)
-            .replace("\r", "");
-
         // The clear item is ALWAYS about a station - it is only offered when one is captioned - so
-        // there is no reading of the code in which an un-named clear is correct.
-        assertFalse(source.contains("\"autosetup.ui.menuClearStationHere\""),
+        // there is no reading of the code in which an un-named clear is correct.  Asked of the whole
+        // program's code (FR-136), so a menu built in another file cannot offer it either.
+        String code = SourceOf.allCode();
+
+        assertFalse(code.contains("\"autosetup.ui.menuClearStationHere\""),
             "a caption is cleared through a menu item that does not say what it is clearing. That "
             + "item only appears when a station IS captioned, and the square it sits on reads [---] "
             + "whenever no train is standing there - so this asks the user to confirm removing "
@@ -1196,7 +1087,7 @@ public class testEditorSurfaceRules
 
             boolean placeholder = value.contains("{0}");
 
-            assertEquals(source.contains("I18n.f(\"autosetup.ui." + key + "\""), placeholder,
+            assertEquals(code.contains("I18n.f(\"autosetup.ui." + key + "\""), placeholder,
                 "autosetup.ui." + key + " reads \"" + value + "\", which " + (placeholder
                     ? "carries a placeholder - so it has to be fetched with I18n.f, or the {0} itself "
                       + "appears on the menu"
@@ -1206,17 +1097,10 @@ public class testEditorSurfaceRules
 
         // And both live in the shared method, so a menu built somewhere else cannot quietly offer an
         // un-named pair of its own.
-        int at = source.indexOf("private void addCaptionItems(");
-
-        assertTrue(at > 0, "addCaptionItems is gone. It is the one place both menus build their "
-            + "caption items, and this rule is about it being one place - so if it was split, this "
-            + "test should be rewritten rather than deleted");
-
-        int ends = source.indexOf("\n    }\n", at);
-
-        assertTrue(ends > at, "could not find the end of addCaptionItems");
-
-        String body = source.substring(at, ends);
+        // Gone, `SourceOf.declaration` fails: it is the one place both menus build their caption items, and
+        // this rule is about it being one place - so if it was split, this test should be rewritten rather
+        // than deleted
+        String body = SourceOf.declaration("private void addCaptionItems(");
 
         assertTrue(body.contains("menuShowStationHereNamed") && body.contains("menuClearStationHereNamed"),
             "the caption items are named somewhere other than addCaptionItems, which is the shared "
@@ -1254,24 +1138,14 @@ public class testEditorSurfaceRules
     @Test
     public void testTheFullEditorShortcutAsksTheEditorsOwnRefusals() throws Exception
     {
-        String ui = codeOnly(new String(java.nio.file.Files.readAllBytes(
-            new java.io.File("src/org/traincontrol/gui/TrainControlUI.java").toPath()),
-            java.nio.charset.StandardCharsets.UTF_8));
+        // Gone, `SourceOf.declaration` fails: it is the one answer to 'would the editor open', and the menu item
+        // and openLayoutEditor are both supposed to be reading it
+        String predicate = codeOf("public String whyAutonomyEditorCannotOpen()");
 
-        String predicate = bodyOf(ui, "public String whyAutonomyEditorCannotOpen()");
-
-        assertFalse(predicate.isEmpty(),
-            "whyAutonomyEditorCannotOpen is gone. It is the one answer to 'would the editor open', "
-            + "and the menu item and openLayoutEditor are both supposed to be reading it");
-
-        // The last parameters rather than the first line: the overloads above it begin with the same
-        // words, and indexOf would stop on those.  The five-argument form, which the others hand on to
-        // with the squares a finding names beside the one revealed (RLV9-C5).
-        String opener = bodyOf(ui, "boolean remember,"
-            + "\n        final java.util.List<org.traincontrol.automationui.TileGraph.TileKey> outline)");
-
-        assertFalse(opener.isEmpty(), "the openLayoutEditor that holds the refusals could not be found, so "
-            + "this test is reading nothing and would pass however far the two had drifted");
+        // The five-argument form, which the others hand on to with the squares a finding names beside the
+        // one revealed (RLV9-C5).  Not found, SourceOf fails rather than this test reading nothing and passing
+        // however far the two had drifted.
+        String opener = codeOf(OPEN_LAYOUT_EDITOR);
 
         java.util.List<String> refusals = new java.util.ArrayList<>();
 
@@ -1323,11 +1197,7 @@ public class testEditorSurfaceRules
                 + "live item - which is the state FR-026 asked for the item NOT to be in");
         }
 
-        String menu = codeOnly(new String(java.nio.file.Files.readAllBytes(
-            new java.io.File("src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java").toPath()),
-            java.nio.charset.StandardCharsets.UTF_8));
-
-        String setup = bodyOf(menu, "private void addSetupMenu()");
+        String setup = codeOf("private void addSetupMenu()");
 
         assertTrue(setup.contains("whyAutonomyEditorCannotOpen()"),
             "the setup menu no longer asks the window whether the editor would open, so whatever "
@@ -1353,54 +1223,6 @@ public class testEditorSurfaceRules
 
         assertTrue(setup.contains("menuOpenFullEditor"),
             "the shortcut FR-026 asked for is not on the setup menu any more");
-    }
-
-    /**
-     * The text of one method, from its declaration to the brace that closes it.
-     *
-     * Brace counting rather than a regex, because both methods here contain nested blocks and a lambda,
-     * and a match that stopped at the first } would hand back a fragment that happens to contain
-     * whatever the assertions were looking for.
-     *
-     * @param source the file
-     * @param declaration the exact declaration line, or the first line of it
-     * @return the body, or "" when the declaration is not there
-     */
-    private static String bodyOf(String source, String declaration)
-    {
-        // LINE ENDINGS ARE NOT PART OF THE RULE.
-        //
-        // `TrainControlUI.java` has mixed endings - most of it LF, some regions CRLF - and a
-        // declaration written across two lines is searched for with a bare newline. When an edit
-        // converted one such region to CRLF the search stopped matching, this answered with the empty
-        // string, and `testTheGreyEditButtonSaysWhyItIsGrey` reported that a door had stopped asking
-        // which refusal applies. The door had not changed at all.
-        //
-        // A guard that fails on a carriage return is worse than no guard: it costs a real
-        // investigation and it teaches whoever meets it that this file cries wolf. Normalised here
-        // rather than at each caller, because the next caller would have to remember.
-        source = source.replace("\r\n", "\n");
-        declaration = declaration.replace("\r\n", "\n");
-
-        int at = source.indexOf(declaration);
-
-        if (at < 0) return "";
-
-        int open = source.indexOf('{', at + declaration.length());
-
-        if (open < 0) return "";
-
-        int depth = 0;
-
-        for (int i = open; i < source.length(); i++)
-        {
-            char c = source.charAt(i);
-
-            if (c == '{') depth++;
-            else if (c == '}' && --depth == 0) return source.substring(at, i + 1);
-        }
-
-        return "";
     }
 
     /**
@@ -1454,9 +1276,8 @@ public class testEditorSurfaceRules
     @Test
     public void testTheCoveredWashIsDrawnWhereItShouldBe() throws Exception
     {
-        String label = codeOnly(new String(java.nio.file.Files.readAllBytes(
-            java.nio.file.Paths.get("src/org/traincontrol/gui/LayoutLabel.java")),
-            StandardCharsets.UTF_8));
+        // The program's code, so each mark is found wherever the tile's drawing goes (FR-136)
+        String label = SourceOf.allCode();
 
         // THE HIGHLIGHT CANNOT TAKE THE MARK WITH IT (MT-309 restates this rule).
         //
@@ -1472,7 +1293,7 @@ public class testEditorSurfaceRules
         // a local called `restore`, and this rule knew only that spelling.
         int timer = label.indexOf("new javax.swing.Timer(HIGHLIGHT_DURATION");
 
-        assertTrue(timer > 0,
+        assertTrue(timer >= 0,
             "the highlight timer has gone, so this checked the absence of something that is not there");
 
         assertTrue(label.contains("paintCoveredMark(mark)"),
@@ -1494,7 +1315,8 @@ public class testEditorSurfaceRules
         // edges are locked in autonomy mode."*  A fade is applied to the icon AS IT IS PAINTED, which
         // is a thing only the method that paints it can do - a fill drawn afterwards cannot make what
         // is underneath more transparent.  It was a `fillRect` in `paintCoveredMark` until then.
-        String painting = bodyOf(label, "protected void paintComponent(java.awt.Graphics g)");
+        String painting = SourceOf.withoutComments(memberOf("public final class LayoutLabel extends JLabel",
+            "protected void paintComponent(java.awt.Graphics g)"));
 
         assertTrue(painting.contains("tcUI.isTrackBlocked(square)"),
             "the refusal mark is drawn without asking whether the square is blocked, so it either"
@@ -1519,11 +1341,10 @@ public class testEditorSurfaceRules
         // AND THERE IS ONLY ONE OF IT.  The icon-tinting helper was deleted when the wash was removed,
         // and bringing the wash back as a fill is what keeps that deletion honest: a tinted icon is
         // the version an accessory highlight can take away with it, which is the first report above.
-        String images = codeOnly(new String(java.nio.file.Files.readAllBytes(
-            java.nio.file.Paths.get("src/org/traincontrol/util/ImageUtil.java")),
-            StandardCharsets.UTF_8));
-
-        assertFalse(images.contains("addCoveredOverlay("),
+        //
+        // Asked of the whole program (FR-136): the helper was ImageUtil's, and a tinting helper anywhere is the
+        // second way.
+        assertFalse(SourceOf.allCode().contains("addCoveredOverlay("),
             "there are two ways of drawing the covered wash again - one painted over the icon and one"
             + " tinted into it. The tinted one is the version a transient highlight overwrites, which"
             + " is Adam's report of 2026-09-07");
@@ -1535,11 +1356,7 @@ public class testEditorSurfaceRules
             + " (Adam: \"only the track diagram viewer\")");
 
         // AND WHAT IS DRAWN IS WHAT IS REFUSED.
-        String layout = codeOnly(new String(java.nio.file.Files.readAllBytes(
-            java.nio.file.Paths.get("src/org/traincontrol/automation/Layout.java")),
-            StandardCharsets.UTF_8));
-
-        assertTrue(layout.contains("for (Edge sharing : e.getLockEdges())"),
+        assertTrue(codeOf("private boolean isPathClear(").contains("for (Edge sharing : e.getLockEdges())"),
             "a path over track that SHARES metal with a covered edge is still allowed. Coverage is"
             + " recorded per edge and drawn per square, and at a switch those differ - so the picture"
             + " protected more than the railway did, and a train could run onto a shaded switch");
@@ -1580,9 +1397,8 @@ public class testEditorSurfaceRules
     @Test
     public void testTheArrivalSideIsWrittenAndReadInOneVocabulary() throws Exception
     {
-        String layout = codeOnly(new String(java.nio.file.Files.readAllBytes(
-            java.nio.file.Paths.get("src/org/traincontrol/automation/Layout.java")),
-            StandardCharsets.UTF_8));
+        // The program's code (FR-136), so a reader or a writer is found in whichever file holds it
+        String layout = SourceOf.allCode();
 
         // ONE DEFINITION, and both readers call it.
         assertTrue(layout.contains("public String entrySideOf(Edge edge, Point at)"),
@@ -1600,11 +1416,7 @@ public class testEditorSurfaceRules
 
         // AND THE BUILD ACTUALLY SUPPLIES IT, or entrySideOf falls back to the geometry everywhere and
         // the three assertions above are satisfied by a program that has changed nothing.
-        String builder = codeOnly(new String(java.nio.file.Files.readAllBytes(
-            java.nio.file.Paths.get("src/org/traincontrol/automationui/AutonomyBuilder.java")),
-            StandardCharsets.UTF_8));
-
-        assertTrue(builder.contains("json.put(\"entrySide\", edge.getEntrySide().name())"),
+        assertTrue(layout.contains("json.put(\"entrySide\", edge.getEntrySide().name())"),
             "the builder no longer writes the entry side into the configuration, so every edge falls"
             + " back to the geometry and the fix is inert while looking present");
 
@@ -1614,20 +1426,12 @@ public class testEditorSurfaceRules
 
         // AND THE DOORS OFFER IT.  A door handing null gets the geometric list, which is the answer
         // Adam reported as wrong.
-        String ui = codeOnly(new String(java.nio.file.Files.readAllBytes(
-            java.nio.file.Paths.get("src/org/traincontrol/gui/TrainControlUI.java")),
-            StandardCharsets.UTF_8));
-
-        assertTrue(ui.contains("getAutonomySession().unbarredArrivalSides(aimed)"),
+        assertTrue(layout.contains("getAutonomySession().unbarredArrivalSides(aimed)"),
             "the paste door offers the geometric sides again - the side a NEIGHBOUR lies on rather than"
             + " the side the track comes in by, which is OB-182 as reported; and since OB-204 the sides"
             + " a train may actually have ARRIVED by, which leaves out the ones the operator has barred");
 
-        String panel = codeOnly(new String(java.nio.file.Files.readAllBytes(
-            java.nio.file.Paths.get("src/org/traincontrol/gui/AutonomyEditorPanel.java")),
-            StandardCharsets.UTF_8));
-
-        assertTrue(panel.contains("sidesOf(session.unbarredArrivalSides(target))"),
+        assertTrue(layout.contains("sidesOf(session.unbarredArrivalSides(target))"),
             "the arrived-from menu offers the geometric sides again, so it and the paste prompt can"
             + " name different sides for the same square - and a side the operator barred is not one a"
             + " train arrived by at all (OB-204)");
@@ -1656,14 +1460,7 @@ public class testEditorSurfaceRules
     @Test
     public void testTheFacingMenuHoldsBothEndsOfTheTrain() throws Exception
     {
-        String panel = codeOnly(new String(java.nio.file.Files.readAllBytes(
-            java.nio.file.Paths.get("src/org/traincontrol/gui/AutonomyEditorPanel.java")),
-            StandardCharsets.UTF_8));
-
-        String facing = bodyOf(panel, "public javax.swing.JMenu buildFacingMenu(final TileKey target)");
-
-        assertNotEquals(facing, "",
-            "buildFacingMenu is not declared that way any more, so this checked nothing");
+        String facing = codeOf("public javax.swing.JMenu buildFacingMenu(final TileKey target)");
 
         assertTrue(facing.contains("buildArrivedFromMenu(target)"),
             "the facing menu does not carry the arrival side, so the track diagram viewer - which asks"
@@ -1674,16 +1471,16 @@ public class testEditorSurfaceRules
             + " eight ways of saying one thing, and they are opposite ends of the train");
 
         // AND IT IS NOT ALSO ADDED SEPARATELY, which is what put it in one surface and not the other.
-        String menu = bodyOf(panel, "private void addLocomotiveItems(");
+        //
+        // Asked of the whole program (FR-136).  This read `addLocomotiveItems` only when that method existed,
+        // and it has gone - so the claim had stopped running at all.
+        String code = SourceOf.allCode();
 
-        if (!menu.isEmpty())
-        {
-            assertFalse(menu.contains("menu.add(tailMenu)"),
-                "the arrival side is still added as its own submenu as well, so there are two doors"
-                + " again and only one of them is on the diagram");
-        }
+        assertFalse(code.contains("menu.add(tailMenu)"),
+            "the arrival side is still added as its own submenu as well, so there are two doors"
+            + " again and only one of them is on the diagram");
 
-        assertFalse(panel.contains("javax.swing.JMenu tailMenu = buildArrivedFromMenu(target);"),
+        assertFalse(code.contains("javax.swing.JMenu tailMenu = buildArrivedFromMenu(target);"),
             "the editor still builds a separate tail submenu, which is the arrangement that gave the"
             + " editor a setting the viewer did not have");
     }
@@ -1716,14 +1513,7 @@ public class testEditorSurfaceRules
     @Test
     public void testTheHomePickerOffersBothTrains() throws Exception
     {
-        String panel = codeOnly(new String(java.nio.file.Files.readAllBytes(
-            java.nio.file.Paths.get("src/org/traincontrol/gui/AutonomyEditorPanel.java")),
-            StandardCharsets.UTF_8));
-
-        String picker = bodyOf(panel, "    static String pickLocomotive(java.awt.Component owner,");
-
-        assertNotEquals(picker, "",
-            "pickLocomotive is not declared that way any more, so this checked nothing");
+        String picker = codeOf("static String pickLocomotive(java.awt.Component owner,");
 
         assertTrue(picker.contains("btnUseParkedLocomotive"),
             "the picker offers no way to choose the train parked at the station, which is the button"
@@ -1751,9 +1541,7 @@ public class testEditorSurfaceRules
             + " which is the ordinary case rather than an edge one");
 
         // THE HOME DOOR SUPPLIES BOTH.
-        String home = bodyOf(panel, "    private void promptHome(TileKey tile)");
-
-        assertNotEquals(home, "", "promptHome is not declared that way any more");
+        String home = codeOf("private void promptHome(TileKey tile)");
 
         assertTrue(home.contains("locomotiveAt(tile)"),
             "the home dialog does not ask what is parked at this square, so its new button can never"
@@ -1787,27 +1575,18 @@ public class testEditorSurfaceRules
     @Test
     public void testTheLabelAndTheMenuAgreeAboutFacing() throws Exception
     {
-        String session = codeOnly(new String(java.nio.file.Files.readAllBytes(
-            java.nio.file.Paths.get("src/org/traincontrol/automationui/AutonomySession.java")),
-            StandardCharsets.UTF_8));
+        // Gone, `SourceOf.declaration` fails: the shared reading of which way a standing train faces has gone, so
+        // the label and the menu are each working it out again - which is how they came to disagree (OB-181)
+        SourceOf.declaration("public Side facingOnTheRailway(TileKey square,");
 
-        assertTrue(session.contains("public Side facingOnTheRailway(TileKey square,"),
-            "the shared reading of which way a standing train faces has gone, so the label and the menu"
-            + " are each working it out again - which is how they came to disagree (OB-181)");
-
-        String panel = codeOnly(new String(java.nio.file.Files.readAllBytes(
-            java.nio.file.Paths.get("src/org/traincontrol/gui/AutonomyEditorPanel.java")),
-            StandardCharsets.UTF_8));
+        // The facing menu, and the program's code for the label, wherever each is (FR-136)
+        String panel = codeOf("public javax.swing.JMenu buildFacingMenu(final TileKey target)");
 
         assertTrue(panel.contains("session.facingOnTheRailway(target, showing)"),
             "the facing menu reads the stored value again rather than the railway, so it disagrees with"
             + " the station label for every train that has moved since it was placed (OB-181)");
 
-        String ui = codeOnly(new String(java.nio.file.Files.readAllBytes(
-            java.nio.file.Paths.get("src/org/traincontrol/gui/TrainControlUI.java")),
-            StandardCharsets.UTF_8));
-
-        assertTrue(ui.contains("session.facingOnTheRailway(square,"),
+        assertTrue(SourceOf.allCode().contains("session.facingOnTheRailway(square,"),
             "the station label works out the facing itself again, so the two surfaces can drift apart"
             + " the way they did before");
 
@@ -1843,14 +1622,7 @@ public class testEditorSurfaceRules
     @Test
     public void testARebuildLeavesTheTrainsWhereTheyAre() throws Exception
     {
-        String ui = codeOnly(new String(java.nio.file.Files.readAllBytes(
-            java.nio.file.Paths.get("src/org/traincontrol/gui/TrainControlUI.java")),
-            StandardCharsets.UTF_8));
-
-        String rebuild = bodyOf(ui, "public void rebuildRunningLayoutFromSetup(boolean sayIfDeclined,");
-
-        assertNotEquals(rebuild, "",
-            "rebuildRunningLayoutFromSetup is not declared that way any more, so this checked nothing");
+        String rebuild = codeOf("public void rebuildRunningLayoutFromSetup(boolean sayIfDeclined,");
 
         int read = rebuild.indexOf("whereTheTrainsAre()");
         int loaded = rebuild.indexOf("getAutonomyViewerPanel().load(");
@@ -1868,9 +1640,7 @@ public class testEditorSurfaceRules
 
         // AND THE THIRD SAVE MOMENT.  Exit and editor-open already called captureRunningLayout; close
         // did not, so between a close and the next open the file said where the trains had started.
-        String closed = bodyOf(ui, "public void autonomyEditorClosed()");
-
-        assertNotEquals(closed, "", "autonomyEditorClosed is not declared that way any more");
+        String closed = codeOf("public void autonomyEditorClosed()");
 
         assertTrue(closed.contains("captureRunningLayout()"),
             "closing the editor no longer writes the setup file, so where the trains are is lost until"
@@ -1901,15 +1671,9 @@ public class testEditorSurfaceRules
     @Test
     public void testAnArrowChangeDoesNotRebuildTheDiagram() throws Exception
     {
-        String panel = codeOnly(new String(java.nio.file.Files.readAllBytes(
-            java.nio.file.Paths.get("src/org/traincontrol/gui/AutonomyEditorPanel.java")),
-            StandardCharsets.UTF_8));
-
-        String light = bodyOf(panel, "private void annotationsChanged()");
-
-        assertNotEquals(light, "",
-            "the light redraw door has gone, so every arrow change rebuilds the whole diagram again"
-            + " (OB-185)");
+        // Gone, `SourceOf.declaration` fails: the light redraw door has gone, so every arrow change rebuilds the
+        // whole diagram again (OB-185)
+        String light = codeOf("private void annotationsChanged()");
 
         assertTrue(light.contains("onAnnotationsChanged.run()"),
             "the light door does not refresh the annotations, so moving an arrow draws nothing");
@@ -1921,7 +1685,7 @@ public class testEditorSurfaceRules
 
         // AND THE ONE-WAY TOOL USES IT.  The door existing and nothing calling it is the shape a
         // refactor leaves behind.
-        assertTrue(panel.contains("if (changed >= 0) annotationsChanged();"),
+        assertTrue(SourceOf.allCode().contains("if (changed >= 0) annotationsChanged();"),
             "the one-way tool does not use the light door, so the flicker Adam reported is still there"
             + " on the one tool that is used many times in a row (OB-185)");
     }
@@ -1943,12 +1707,7 @@ public class testEditorSurfaceRules
     @Test
     public void testAHoverAsksTheGridSettingOncePerPass() throws Exception
     {
-        String editor = codeOnly(new String(java.nio.file.Files.readAllBytes(
-            java.nio.file.Paths.get("src/org/traincontrol/gui/LayoutEditor.java")), StandardCharsets.UTF_8));
-
-        String pass = bodyOf(editor, "private void clearBordersFromChildren(JPanel panel)");
-
-        assertNotEquals(pass, "", "clearBordersFromChildren has gone, so this checked nothing");
+        String pass = codeOf("private void clearBordersFromChildren(JPanel panel)");
 
         int loop = pass.indexOf("for (java.awt.Component component : panel.getComponents())");
 
@@ -1978,8 +1737,9 @@ public class testEditorSurfaceRules
     @Test
     public void testARedrawAsksTheGridSettingOnce() throws Exception
     {
-        String grid = codeOnly(new String(java.nio.file.Files.readAllBytes(
-            java.nio.file.Paths.get("src/org/traincontrol/gui/LayoutGrid.java")), StandardCharsets.UTF_8));
+        // The grid's build, wherever it is (FR-136)
+        String grid = codeOf("public LayoutGrid(LayoutDiagram layout, int size, JPanel parent, Container master, "
+            + "boolean popup, TrainControlUI ui)");
 
         // ONCE A BUILD, before the squares are made (the ruler's `coordinatesVisible` asks it too, once, for itself)
         int asked = grid.indexOf("final Boolean gridLines = inEditor ? LayoutEditor.showGrid() : null;");
@@ -1991,7 +1751,7 @@ public class testEditorSurfaceRules
         assertTrue(grid.contains("new LayoutLabel(c, master, size, ui, inEditor, gridLines)"), "the grid makes its squares"
             + " without handing them the setting, so each asks it for itself");
 
-        assertFalse(grid.contains("new LayoutLabel(c, master, size, ui, inEditor)"), "the grid still makes a square that"
+        assertFalse(SourceOf.allCode().contains("new LayoutLabel(c, master, size, ui, inEditor)"), "the grid still makes a square that"
             + " asks the setting for itself");
     }
 
@@ -2014,12 +1774,7 @@ public class testEditorSurfaceRules
     @Test
     public void testTheMarksAskTheArrowsOptionOncePerPass() throws Exception
     {
-        String window = codeOnly(new String(java.nio.file.Files.readAllBytes(
-            java.nio.file.Paths.get("src/org/traincontrol/gui/TrainControlUI.java")), StandardCharsets.UTF_8));
-
-        String pass = bodyOf(window, "public void showStaticAutonomyLayer(boolean show)");
-
-        assertNotEquals(pass, "", "showStaticAutonomyLayer has gone, so this checked nothing");
+        String pass = codeOf("public void showStaticAutonomyLayer(boolean show)");
 
         int loop = pass.indexOf("session.staticAnnotations(marked, ");
 
@@ -2038,20 +1793,13 @@ public class testEditorSurfaceRules
         assertTrue(pass.substring(loop).startsWith("session.staticAnnotations(marked, arrows, allowedToo)"), "the marks"
             + " are asked for without the options, so they are read again for each square");
 
-        String session = codeOnly(new String(java.nio.file.Files.readAllBytes(
-            java.nio.file.Paths.get("src/org/traincontrol/automationui/AutonomySession.java")), StandardCharsets.UTF_8));
-
-        String all = bodyOf(session, "public Map<TileKey, TileAnnotation> staticAnnotations(");
-
-        assertNotEquals(all, "", "the session no longer decides the marks in one pass, so this checked nothing");
+        String all = codeOf("public Map<TileKey, TileAnnotation> staticAnnotations(");
 
         assertFalse(all.contains("diagramShowsRestrictionArrows()") || all.contains("diagramShowsAllowedDirections()")
             || all.contains("staticAnnotationFor(tile)"), "the session's pass asks an option for itself though it was"
             + " handed both");
 
-        String square = bodyOf(session, "public TileAnnotation staticAnnotationFor(TileKey tile, boolean arrows)");
-
-        assertNotEquals(square, "", "the square's annotation no longer takes the option, so this checked nothing");
+        String square = codeOf("public TileAnnotation staticAnnotationFor(TileKey tile, boolean arrows)");
 
         assertFalse(square.contains("diagramShowsRestrictionArrows()"), "a square's annotation asks the arrows option for"
             + " itself though it was handed it");
@@ -2083,9 +1831,8 @@ public class testEditorSurfaceRules
     @Test
     public void testWhatACaptionSaysIsOneChoice() throws Exception
     {
-        String panel = codeOnly(new String(java.nio.file.Files.readAllBytes(
-            java.nio.file.Paths.get("src/org/traincontrol/gui/AutonomyEditorPanel.java")),
-            StandardCharsets.UTF_8));
+        // The program's code (FR-136), so each part of the choice is found in whichever file holds it
+        String panel = SourceOf.allCode();
 
         for (String key : new String[] { "captionsStations", "captionsParked", "captionsHomes",
             "captionsNone" })
@@ -2103,11 +1850,8 @@ public class testEditorSurfaceRules
             + " named, and Adam asked for that default by name");
 
         // THE TWO INTERNAL FLAGS ARE EXCLUSIVE BY CONSTRUCTION, which is what retires OB-174.
-        String applier = bodyOf(panel, "private void applyCaptionMode()");
-
-        assertNotEquals(applier, "",
-            "applyCaptionMode has gone, so nothing turns the one choice into what the drawing code"
-            + " reads and this test checked nothing");
+        // Gone, `SourceOf.declaration` fails: nothing turns the one choice into what the drawing code reads
+        String applier = codeOf("private void applyCaptionMode()");
 
         assertTrue(applier.contains("showParkedTrains.setSelected(mode == CAPTIONS_PARKED)")
             && applier.contains("showHomeLocomotives.setSelected(mode == CAPTIONS_HOMES)"),
@@ -2120,7 +1864,7 @@ public class testEditorSurfaceRules
             "the caption choice drives the diagram's text switch again. The Text Labels box under Show Trains"
             + " is the text's own setting (FR-133) and the dropdown only decides the captions");
 
-        String textApplier = bodyOf(panel, "private void applyTextLabels()");
+        String textApplier = codeOf("private void applyTextLabels()");
 
         assertTrue(textApplier.contains("turnTextLabelsOff()") && textApplier.contains("turnTextLabelsOn()"),
             "the Text Labels box does not drive the diagram's text switch both ways");
@@ -2128,7 +1872,7 @@ public class testEditorSurfaceRules
         // AND AT OPEN AS WELL (RGD-C3).  The box is remembered between opens and the text switch is
         // not, so a version that skipped it when the window opened restored an unticked box over text
         // still drawn.
-        assertTrue(bodyOf(panel, "public void applyRememberedCaptionMode()").contains("applyTextLabels()"),
+        assertTrue(codeOf("public void applyRememberedCaptionMode()").contains("applyTextLabels()"),
             "the remembered Text Labels box is not applied to the diagram when the window opens, so it comes"
             + " back as a box saying one thing over a diagram drawing the other (RGD-C3)");
 
@@ -2137,11 +1881,7 @@ public class testEditorSurfaceRules
             "nothing tells the Text Labels box the text switch moved, so the box goes on saying the"
             + " opposite of the diagram (RGD-C3, FR-133)");
 
-        String editorSource = new String(java.nio.file.Files.readAllBytes(
-            java.nio.file.Paths.get("src/org/traincontrol/gui/LayoutEditor.java")),
-            StandardCharsets.UTF_8);
-
-        assertTrue(codeOnly(editorSource).contains("autonomyPanel.textLabelsChanged("),
+        assertTrue(panel.contains("autonomyPanel.textLabelsChanged("),
             "the text toggle does not tell the autonomy panel, so the method above is never called and"
             + " the Text Labels box goes on saying the opposite of the diagram (RGD-C3)");
 
@@ -2153,9 +1893,7 @@ public class testEditorSurfaceRules
             + " choice replaces, and two mechanisms for it is worse than the one it had");
 
         // WHERE IT SITS: right above Track Directions, in the window that mounts it.
-        String editor = codeOnly(new String(java.nio.file.Files.readAllBytes(
-            java.nio.file.Paths.get("src/org/traincontrol/gui/LayoutEditor.java")),
-            StandardCharsets.UTF_8));
+        String editor = codeOf("public void setAutonomyMode(org.traincontrol.automationui.AutonomySession session)");
 
         int captionsAt = editor.indexOf("visibility.add(captionChoice)");
         int directionsAt = editor.indexOf("visibility.add(directionsLabel)");
@@ -2195,15 +1933,7 @@ public class testEditorSurfaceRules
     @Test
     public void testTheTailCanBeSetAndNotUnset() throws Exception
     {
-        String panel = codeOnly(new String(java.nio.file.Files.readAllBytes(
-            java.nio.file.Paths.get("src/org/traincontrol/gui/AutonomyEditorPanel.java")),
-            StandardCharsets.UTF_8));
-
-        String menu = bodyOf(panel,
-            "public javax.swing.JMenu buildArrivedFromMenu(final TileKey target)");
-
-        assertNotEquals(menu, "",
-            "buildArrivedFromMenu is not declared that way any more, so this checked nothing");
+        String menu = codeOf("public javax.swing.JMenu buildArrivedFromMenu(final TileKey target)");
 
         assertTrue(menu.contains("session.setArrivedFrom(target, side)"),
             "the menu no longer sets the arrival side at all, so the absence checked below is the"
@@ -2265,14 +1995,7 @@ public class testEditorSurfaceRules
     @Test
     public void testOneReaderOfAPlacement() throws Exception
     {
-        String session = codeOnly(new String(java.nio.file.Files.readAllBytes(
-            java.nio.file.Paths.get("src/org/traincontrol/automationui/AutonomySession.java")),
-            StandardCharsets.UTF_8));
-
-        String namer = bodyOf(session, "private static String nameOfPlacedLocomotive(Object placement)");
-
-        assertNotEquals(namer, "",
-            "nameOfPlacedLocomotive is not declared that way any more, so this checked nothing");
+        String namer = codeOf("private static String nameOfPlacedLocomotive(Object placement)");
 
         assertFalse(namer.contains("if (!(placement instanceof org.json.JSONObject)) return null"),
             "the occupant guard answers null for a placement stored as a bare string, so a train"
@@ -2284,7 +2007,7 @@ public class testEditorSurfaceRules
             + " getLocomotiveNameAt was written to handle, so the two readers of one shape disagree"
             + " again (RGD-C5)");
 
-        String byTile = bodyOf(session, "public String getLocomotiveNameAt(TileKey tile)");
+        String byTile = codeOf("public String getLocomotiveNameAt(TileKey tile)");
 
         assertTrue(byTile.contains("nameOfPlacedLocomotive(getPointProperty(tile, \"loc\"))"),
             "the by-square reader has its own copy of the shape knowledge again. There were three"
@@ -2315,14 +2038,7 @@ public class testEditorSurfaceRules
     @Test
     public void testTheDragPutsTheNameOnTheClipboardSafely() throws Exception
     {
-        String ui = codeOnly(new String(java.nio.file.Files.readAllBytes(
-            java.nio.file.Paths.get("src/org/traincontrol/gui/TrainControlUI.java")),
-            StandardCharsets.UTF_8));
-
-        String drag = bodyOf(ui, "public void setCopyTarget(JButton button, boolean cut)");
-
-        assertNotEquals(drag, "",
-            "setCopyTarget is not declared that way any more, so this checked nothing");
+        String drag = codeOf("public void setCopyTarget(JButton button, boolean cut)");
 
         int wrote = drag.indexOf("getSystemClipboard()");
 
@@ -2365,14 +2081,7 @@ public class testEditorSurfaceRules
     @Test
     public void testAFailedSyncGivesTheMenusBack() throws Exception
     {
-        String ui = codeOnly(new String(java.nio.file.Files.readAllBytes(
-            java.nio.file.Paths.get("src/org/traincontrol/gui/TrainControlUI.java")),
-            StandardCharsets.UTF_8));
-
-        String sync = bodyOf(ui, "public void doSync(Component c)");
-
-        assertNotEquals(sync, "",
-            "doSync is not declared that way any more, so this checked nothing");
+        String sync = codeOf("public void doSync(Component c)");
 
         int call = sync.indexOf("syncWithCS2()");
         int back = sync.indexOf("syncMenuItem.setEnabled(true)");
@@ -2416,24 +2125,27 @@ public class testEditorSurfaceRules
     @Test
     public void testDrawingAnAccessoryDoesNotCreateOne() throws Exception
     {
-        String ui = codeOnly(new String(java.nio.file.Files.readAllBytes(
-            java.nio.file.Paths.get("src/org/traincontrol/gui/TrainControlUI.java")),
-            StandardCharsets.UTF_8));
+        // ASKED OF THE WHOLE PROGRAM (FR-136), by what each call is made on, since the registering form has
+        // callers that are not paints: the window's paints called it on `model`, a route condition on `control`.
+        // What may remain are the declarations, a locomotive waiting for an accessory it has commanded, the
+        // locomotive's delegation to its station, and the API example.
+        int registering = SourceOf.occurrences("getAccessoryState(")
+            - SourceOf.occurrences("boolean getAccessoryState(")
+            - SourceOf.occurrences("this.getAccessoryState(id, type)")
+            - SourceOf.occurrences("this.network.getAccessoryState(id, type)")
+            - SourceOf.occurrences("data.getAccessoryState(");
 
-        assertFalse(ui.contains("getAccessoryState("),
-            "the window calls getAccessoryState, which REGISTERS a switch when the address is unknown."
-            + " Every use here is a paint - use getAccessoryStateIfPresent, which gives the same"
+        assertEquals(registering, 0,
+            "something calls getAccessoryState, which REGISTERS a switch when the address is unknown."
+            + " Every use in the window is a paint - use getAccessoryStateIfPresent, which gives the same"
             + " answer and invents nothing (C13)");
 
-        assertTrue(ui.contains("getAccessoryStateIfPresent("),
+        assertTrue(SourceOf.allCode().contains("model.getAccessoryStateIfPresent("),
             "the window no longer reads accessory state at all, so the check above passes for the"
             + " wrong reason - it is now asserting that a call that is not there is not there");
 
-        String route = codeOnly(new String(java.nio.file.Files.readAllBytes(
-            java.nio.file.Paths.get("src/org/traincontrol/base/Route.java")),
-            StandardCharsets.UTF_8));
-
-        assertFalse(route.contains("getAccessoryState("),
+        assertFalse(codeOf("public static boolean evaluate(RouteCommand rc, ViewListener control)")
+                .contains("getAccessoryState("),
             "evaluating a route condition registers the accessory it asks about. Conditions are"
             + " evaluated on a timer while a route waits, so one condition on a mistyped address makes"
             + " a permanent switch nobody created (C13)");
@@ -2468,16 +2180,8 @@ public class testEditorSurfaceRules
     @Test
     public void testADismissedArrivalQuestionPlacesNothing() throws Exception
     {
-        String ui = codeOnly(new String(java.nio.file.Files.readAllBytes(
-            java.nio.file.Paths.get("src/org/traincontrol/gui/TrainControlUI.java")),
-            StandardCharsets.UTF_8));
-
-        String drop = bodyOf(ui,
-            "private boolean locomotiveGestureOnDiagram(int keyCode, boolean controlPressed)");
-
-        assertNotEquals(drop, "",
-            "the drop handler is not called locomotiveGestureOnDiagram any more, so this checked"
-            + " nothing at all. Point it at whatever handles a paste onto the diagram");
+        // Renamed, `SourceOf.declaration` fails: point it at whatever handles a paste onto the diagram
+        String drop = codeOf("private boolean locomotiveGestureOnDiagram(int keyCode, boolean controlPressed)");
 
         int asked = drop.indexOf("ArrivalSidePrompt.forPlacement(");
         int moved = drop.indexOf("moveLocomotive(placing.getName()");
@@ -2514,7 +2218,7 @@ public class testEditorSurfaceRules
 
         // AND THE OLD SITE IS GONE.  Two doors asking the same question is how the facing menu drifted
         // (OB-039), and here the second one would be the un-undoable copy.
-        assertFalse(bodyOf(ui, "private void rememberPlacement(").contains("forPlacement("),
+        assertFalse(codeOf("private void rememberPlacement(").contains("forPlacement("),
             "rememberPlacement asks the arrival-side question again. It runs after the move, so that"
             + " copy is the one a dismissal cannot undo - which is the whole defect, kept");
     }
@@ -2540,14 +2244,8 @@ public class testEditorSurfaceRules
     @Test
     public void testBothAutonomyMenusNameTheSquareTheSameWay() throws Exception
     {
-        String panel = codeOnly(new String(java.nio.file.Files.readAllBytes(
-            new java.io.File("src/org/traincontrol/gui/AutonomyEditorPanel.java").toPath()),
-            java.nio.charset.StandardCharsets.UTF_8));
-
-        String describe = bodyOf(panel, "private String describeTile(TileKey tile)");
-
-        assertFalse(describe.isEmpty(), "the editor no longer has describeTile, which every heading "
-            + "and caption item in that window is named by");
+        // Gone, `SourceOf.declaration` fails: every heading and caption item in the editor is named by it
+        String describe = codeOf("private String describeTile(TileKey tile)");
 
         assertTrue(describe.contains("session.describeTile(tile)"),
             "AutonomyEditorPanel names squares itself again instead of asking the session. The "
@@ -2558,15 +2256,11 @@ public class testEditorSurfaceRules
             "the sensor-address fallback is written out in the panel as well as in the session, so "
             + "there are two copies of the rule again and only one of them will get the next fix");
 
-        String menu = codeOnly(new String(java.nio.file.Files.readAllBytes(
-            new java.io.File("src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java").toPath()),
-            java.nio.charset.StandardCharsets.UTF_8));
-
-        assertTrue(bodyOf(menu, "private void headline()").contains("session.describeTile("),
+        assertTrue(codeOf("private void headline()").contains("session.describeTile("),
             "the diagram\u2019s menu names the clicked square some other way, so the heading OB-112 "
             + "asked for can disagree with the one in the editor");
 
-        String show = bodyOf(menu, "static void showFor(");
+        String show = codeOf("static void showFor(");
 
         int counted = show.indexOf("getComponentCount()");
         int headed = show.indexOf("headline()");
@@ -2595,9 +2289,8 @@ public class testEditorSurfaceRules
     @Test
     public void testTheCaptionHideRuleIsAskedWithTheRightTwoQuestions() throws Exception
     {
-        String grid = codeOnly(new String(java.nio.file.Files.readAllBytes(
-            new java.io.File("src/org/traincontrol/gui/LayoutGrid.java").toPath()),
-            java.nio.charset.StandardCharsets.UTF_8));
+        // The program's code (FR-136), so the call is read wherever the grid's build goes
+        String grid = SourceOf.allCode();
 
         int at = grid.indexOf("hidesStationCaptions(inEditor,");
 
@@ -2642,9 +2335,8 @@ public class testEditorSurfaceRules
     @Test
     public void testTheS88DoorIsNeverAskedAnything() throws Exception
     {
-        String route = codeOnly(new String(java.nio.file.Files.readAllBytes(
-            new java.io.File("src/org/traincontrol/marklin/MarklinRoute.java").toPath()),
-            java.nio.charset.StandardCharsets.UTF_8));
+        // The route's run, wherever it is (FR-136); renamed, `SourceOf.declaration` fails
+        String route = codeOf("private void execRoute(boolean auto, int recursionLimit, boolean overrideConflicts)");
 
         int asks = route.indexOf("confirmRouteConflictMidway(");
 
@@ -2680,7 +2372,7 @@ public class testEditorSurfaceRules
             + "was harmless while auto meant only \"do not pop the emergency-stop notice\"; it stopped "
             + "being harmless when auto came to mean \"a person is standing here to be asked\"");
 
-        assertTrue(route.contains("this.execRoute(true)"),
+        assertTrue(codeOf("public final synchronized boolean executeAutoRoute()").contains("this.execRoute(true)"),
             "the s88 trigger door no longer calls execRoute(true), so whatever it is now, it is not "
             + "the door the rule above is about");
     }
@@ -2803,19 +2495,15 @@ public class testEditorSurfaceRules
     @Test
     public void testLeavingCompletesBothHalvesOfADiscard() throws Exception
     {
-        String editor = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/LayoutEditor.java")), java.nio.charset.StandardCharsets.UTF_8);
-
-        String ui = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/TrainControlUI.java")), java.nio.charset.StandardCharsets.UTF_8);
-
-        String asks = withoutComments(bodyOf(editor, "public boolean maySettleBeforeExit()"));
+        // The track diagram editor's, since the route editor has one by the same name (FR-136)
+        String asks = SourceOf.withoutComments(memberOf("public class LayoutEditor extends PositionAwareJFrame",
+            "public boolean maySettleBeforeExit()"));
 
         assertTrue(asks.contains("settleUnsavedWork()"),
             "the exit path stopped asking about unsaved work at all, which is worse than what this "
             + "test was written for");
 
-        String completes = withoutComments(bodyOf(editor, "public void completeExitDiscard()"));
+        String completes = codeOf("public void completeExitDiscard()");
 
         assertTrue(completes.contains("undoAutonomyEdits()"),
             "the exit path settles the diagram and not the setup it shares with it. Answer Discard "
@@ -2848,10 +2536,10 @@ public class testEditorSurfaceRules
         // `everyOpenWindowMaySettle`.  The ORDER is still asked of `WindowClosed` - the settle question has
         // to come before the discard is completed - and the question itself is asked of that method, so
         // neither can go missing by moving into the other.
-        String exit = withoutComments(bodyOf(ui, "private void WindowClosed("))
+        String exit = codeOf("private void WindowClosed(")
             .replace("everyOpenWindowMaySettle()", "maySettleBeforeExit()");
 
-        String asksBoth = withoutComments(bodyOf(ui, "public boolean everyOpenWindowMaySettle()"));
+        String asksBoth = codeOf("public boolean everyOpenWindowMaySettle()");
 
         // BOTH WINDOWS, NAMED (VC2-B2).  "contains maySettleBeforeExit" was satisfied by the route editor's call
         // alone, so deleting the layout editor's left every test green and File > Exit discarded a page without
@@ -2938,11 +2626,7 @@ public class testEditorSurfaceRules
     @Test
     public void testEscapePutsTheAutonomyToolsDown() throws Exception
     {
-        String panel = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/AutonomyEditorPanel.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
-
-        String down = withoutComments(bodyOf(panel, "public boolean putToolsDown()"));
+        String down = codeOf("public boolean putToolsDown()");
 
         assertTrue(down.contains("setSelected(false)"),
             "the tool buttons are left looking pressed after Escape. The panel then thinks no tool is "
@@ -2962,11 +2646,11 @@ public class testEditorSurfaceRules
 
         // ONE DEFINITION OF ARMED, asked by both the methods that let go.  Written out twice they come
         // apart at the next tool, and a gesture missing from one list survives being cancelled.
-        assertTrue(withoutComments(bodyOf(panel, "private void cancelPendingGesture()")).contains(
+        assertTrue(codeOf("private void cancelPendingGesture()").contains(
             "anythingIsArmed()"),
             "cancelPendingGesture has its own copy of what 'armed' means again");
 
-        String armed = withoutComments(bodyOf(panel, "private boolean anythingIsArmed()"));
+        String armed = codeOf("private boolean anythingIsArmed()");
 
         for (String held : new String[] { "tool != Tool.NONE", "testFrom", "oneWayFrom",
             "pendingPortal", "signalFor", "blockingFor" })
@@ -3000,9 +2684,8 @@ public class testEditorSurfaceRules
     @Test
     public void testTheGridAsksTheCaptionRulesItsQuestions() throws Exception
     {
-        String grid = withoutComments(new String(java.nio.file.Files.readAllBytes(
-            new java.io.File("src/org/traincontrol/gui/LayoutGrid.java").toPath()),
-            java.nio.charset.StandardCharsets.UTF_8));
+        // The grid's class, wherever it is (FR-136)
+        String grid = SourceOf.withoutComments(SourceOf.declaration("public class LayoutGrid\n"));
 
         assertTrue(grid.contains("StationCaption.captionOffset("),
             "nothing asks captionOffset where a caption goes, so the rule is computed by something "
@@ -3093,7 +2776,9 @@ public class testEditorSurfaceRules
             + "resting pill and the one under a standing train. A caption coloured any other way gets "
             + "its placeholder and its name in the same colour");
 
-        assertFalse(grid.contains("readableOn("),
+        // Asked of the whole program (FR-136): the one call allowed is onPill's own, which asks it about the fill
+        assertEquals(outside("readableOn(", "public static Color readableOn(Color fill)",
+                "public static Color onPill(Color fill, Color wanted)"), 0,
             "the grid asks readableOn directly. It answers by the FILL alone, so a placeholder and a "
             + "name come back identical - which is exactly the defect a reviewer found by disbelieving "
             + "the comment above this call and running it");
@@ -3116,11 +2801,7 @@ public class testEditorSurfaceRules
     @Test
     public void testExcludingALocomotiveStillWarnsAboutItsHome() throws Exception
     {
-        String panel = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/AutonomyEditorPanel.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
-
-        String prompt = withoutComments(bodyOf(panel, "private void promptLocomotives("));
+        String prompt = codeOf("private void promptLocomotives(");
 
         assertTrue(prompt.contains("homeBrokenBy("),
             "the excluded-locomotives prompt no longer asks whether the exclusion breaks a home, so "
@@ -3131,7 +2812,7 @@ public class testEditorSurfaceRules
             + "as not asking");
 
         // And the other side of the same pair, which is where the rule is shared from.
-        String home = withoutComments(bodyOf(panel, "private void promptHome("));
+        String home = codeOf("private void promptHome(");
 
         assertTrue(home.contains("homeChoices("),
             "the home prompt builds its list some other way than homeChoices, so the two sides of "
@@ -3159,11 +2840,10 @@ public class testEditorSurfaceRules
     @Test
     public void testHoveringANameOutlinesItsSquare() throws Exception
     {
-        String grid = withoutComments(new String(java.nio.file.Files.readAllBytes(
-            new java.io.File("src/org/traincontrol/gui/LayoutGrid.java").toPath()),
-            java.nio.charset.StandardCharsets.UTF_8));
+        // The caption's drag, which carries its pointer handlers, wherever it is (FR-136)
+        String drag = SourceOf.declaration("private static void dragCaption(");
 
-        assertTrue(grid.contains("editor.receiveMoveEvent(e, square)"),
+        assertTrue(SourceOf.withoutComments(drag).contains("editor.receiveMoveEvent(e, square)"),
             "hovering a station label no longer tells the editor where the pointer is, so the blue "
             + "outline goes out as soon as the pointer moves onto the name - which is the bigger of "
             + "the two things to point at");
@@ -3176,9 +2856,9 @@ public class testEditorSurfaceRules
         // week satisfied by one of two sites, so each one is now asked about itself.
         for (String handler : new String[] { "mouseEntered", "mouseMoved" })
         {
-            String body = withoutComments(bodyOf(grid, "public void " + handler + "(MouseEvent e)"));
-
-            assertFalse(body.isEmpty(), "the drag no longer handles " + handler);
+            // Missing, `SourceOf.declarationIn` fails: the drag no longer handles it
+            String body = SourceOf.withoutComments(
+                SourceOf.declarationIn(drag, "public void " + handler + "(MouseEvent e)"));
 
             assertTrue(body.contains("editor.receiveMoveEvent(e, square)"),
                 handler + " no longer tells the editor where the pointer is, so the blue outline "
@@ -3211,13 +2891,9 @@ public class testEditorSurfaceRules
     @Test
     public void testARightClickOnANameReachesItsSquare() throws Exception
     {
-        String grid = withoutComments(new String(java.nio.file.Files.readAllBytes(
-            new java.io.File("src/org/traincontrol/gui/LayoutGrid.java").toPath()),
-            java.nio.charset.StandardCharsets.UTF_8));
-
-        String body = withoutComments(bodyOf(grid, "public void mouseClicked(MouseEvent e)"));
-
-        assertFalse(body.isEmpty(), "the drag no longer handles a click at all");
+        // The caption's drag, wherever it is (FR-136); without a click handler, `SourceOf.declarationIn` fails
+        String body = SourceOf.withoutComments(SourceOf.declarationIn(
+            SourceOf.declaration("private static void dragCaption("), "public void mouseClicked(MouseEvent e)"));
 
         assertTrue(body.contains("editor.receiveClickEvent("),
             "a right-click on a station label is swallowed by the label, so the autonomy menu does "
@@ -3254,32 +2930,25 @@ public class testEditorSurfaceRules
     @Test
     public void testTheAutonomyEditorNamesTheSquareUnderThePointer() throws Exception
     {
-        String editor = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/LayoutEditor.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
-
-        String hover = withoutComments(bodyOf(editor, "public void receiveMoveEvent("));
-
-        assertFalse(hover.isEmpty(), "cannot find receiveMoveEvent - has it been renamed?");
+        String hover = codeOf("public void receiveMoveEvent(");
 
         // Through what the square says, which since FR-112 is the name and the click's line together
-        String says = withoutComments(bodyOf(editor, "private void showWhatAClickDoes("));
+        String says = codeOf("private void showWhatAClickDoes(");
 
         assertTrue(hover.contains("showWhatAClickDoes(label)") && says.contains("stationNameOn(label)")
             && says.contains("setToolTipText("),
             "the autonomy editor no longer names the square under the pointer, so a station with no "
             + "label on the diagram is anonymous in the one window whose job is arranging stations");
 
-        String lookup = withoutComments(bodyOf(editor, "private String stationNameOn("));
+        String lookup = codeOf("private String stationNameOn(");
 
         assertTrue(lookup.contains("autonomyStationNameAt("),
             "the name comes from somewhere other than the autonomy session - a caption drawn nearby "
             + "is a label somebody placed, and the squares this is for have none");
 
         // And the LABEL's tooltip, which is a different question with a different answer.
-        String grid = withoutComments(new String(java.nio.file.Files.readAllBytes(
-            new java.io.File("src/org/traincontrol/gui/LayoutGrid.java").toPath()),
-            java.nio.charset.StandardCharsets.UTF_8));
+        String grid = codeOf("public LayoutGrid(LayoutDiagram layout, int size, JPanel parent, Container master, "
+            + "boolean popup, TrainControlUI ui)");
 
         // Scoped to the EDITOR's branch by position.
         //
@@ -3330,9 +2999,10 @@ public class testEditorSurfaceRules
     @Test
     public void testThePageKeysUseTheSwitchThatAlreadyExists() throws Exception
     {
-        String editor = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/LayoutEditor.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
+        // The editor's key handler, comments and all, since the guard is found by its own sentence; LayoutEditor's,
+        // since other windows have a formKeyPressed too (FR-136)
+        String editor = memberOf("public class LayoutEditor extends PositionAwareJFrame",
+            "private void formKeyPressed(java.awt.event.KeyEvent evt)");
 
         assertTrue(editor.contains("stepPage(1)") && editor.contains("stepPage(-1)"),
             "the page keys are gone, so + and - no longer move between pages");
@@ -3352,9 +3022,7 @@ public class testEditorSurfaceRules
             + "MT-109's keys were found doing nothing");
 
         // And the switch is the one that already exists, with its guards.
-        String step = withoutComments(bodyOf(editor, "private void stepPage(int by)"));
-
-        assertFalse(step.isEmpty(), "cannot find stepPage - has it been renamed?");
+        String step = codeOf("private void stepPage(int by)");
 
         assertTrue(step.contains("leaveFor("),
             "the page keys move between pages by some other means than leaveFor, so they skip the "
@@ -3376,8 +3044,7 @@ public class testEditorSurfaceRules
             + "and returns, so the page has not changed yet - and holding the key queues one full "
             + "teardown per auto-repeat, every one of them to the same destination");
 
-        String leave = withoutComments(bodyOf(editor,
-            "private void leaveFor(String page, boolean autonomy)"));
+        String leave = codeOf("private void leaveFor(String page, boolean autonomy)");
 
         assertTrue(leave.contains("changingPage = true"),
             "nothing raises the latch when a switch is committed, so it can never be true and every "
@@ -3402,7 +3069,7 @@ public class testEditorSurfaceRules
             "the latch is raised before the user has been asked about unsaved work, so answering "
             + "\"stay here\" would leave the window refusing every further switch");
 
-        String arrive = withoutComments(bodyOf(editor, "private void arriveAt(String page, boolean wanted)"));
+        String arrive = codeOf("private void arriveAt(String page, boolean wanted)");
 
         assertTrue(arrive.contains("changingPage = false"),
             "nothing lowers the latch when the switch arrives, so the first page change would be the "
@@ -3428,12 +3095,10 @@ public class testEditorSurfaceRules
     @Test
     public void testTheWaysIntoTheEditorBringAnOpenOneForward() throws Exception
     {
-        String ui = codeOnly(new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/TrainControlUI.java")), java.nio.charset.StandardCharsets.UTF_8));
+        String label = codeOf("public void openAutonomyEditorIfItCan()");
 
-        String label = bodyOf(ui, "public void openAutonomyEditorIfItCan()");
-
-        assertFalse(label.isEmpty(), "cannot find openAutonomyEditorIfItCan - has it been renamed?");
+        // The banner, wherever it is (FR-136)
+        String ui = codeOf("public void refreshAutonomyPrompt()");
 
         assertTrue(label.contains("openAutonomyEditor(null)"), "the label no longer opens the editor");
 
@@ -3473,10 +3138,8 @@ public class testEditorSurfaceRules
     @Test
     public void testTheFacingMenuTicksOnlyWhatIsKnown() throws Exception
     {
-        String panel = codeOnly(new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/AutonomyEditorPanel.java")), java.nio.charset.StandardCharsets.UTF_8));
-
-        assertFalse(panel.contains("facing == facings.get(0)"), "the Facing menu ticks the first facing when nothing"
+        // Asked of the whole program (FR-136)
+        assertFalse(SourceOf.allCode().contains("facing == facings.get(0)"), "the Facing menu ticks the first facing when nothing"
             + " says which way the train faces - the build no longer stands it that way (GUI3-C4)");
     }
 
@@ -3494,8 +3157,8 @@ public class testEditorSurfaceRules
     @Test
     public void testWhyNotMovingAsksTheTierItShows() throws Exception
     {
-        String panel = codeOnly(new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/AutonomyEditorPanel.java")), java.nio.charset.StandardCharsets.UTF_8));
+        // Asked of the whole program (FR-136)
+        String panel = SourceOf.allCode();
 
         assertTrue(panel.contains("explainCannotStart(standing, byHand)"), "Why not Moving? no longer asks the start"
             + " question of the tier it shows, so on Manual it gives autonomy's reasons (OB-225, GUI3-C1)");
@@ -3521,20 +3184,12 @@ public class testEditorSurfaceRules
     @Test
     public void testWhetherAnEditorIsOpenIsAskedOfTheEditor() throws Exception
     {
-        String ui = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/TrainControlUI.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
-
-        String open = withoutComments(bodyOf(ui, "public boolean isLayoutEditorOpen()"));
-
-        assertFalse(open.isEmpty(), "cannot find isLayoutEditorOpen - has it been renamed?");
+        String open = codeOf("public boolean isLayoutEditorOpen()");
 
         // AND INTO anEditorWindow, which asks the editor windows (RSA28-B1)
         if (open.contains("anEditorWindow()"))
         {
-            open = withoutComments(bodyOf(ui, "private LayoutEditor anEditorWindow()"));
-
-            assertFalse(open.isEmpty(), "cannot find anEditorWindow - has it been renamed?");
+            open = codeOf("private LayoutEditor anEditorWindow()");
         }
 
         assertTrue(open.contains("openEditor"),
@@ -3546,23 +3201,6 @@ public class testEditorSurfaceRules
             "the answer is read off the Edit button again. The button's greyness has more than one "
             + "cause now, so it cannot stand for this one: on a Central Station layout the Layout and "
             + "Autonomy menus both go dead, with the way back inside them");
-    }
-
-    /**
-     * Java source with its // comments stripped, so a check reads code and not the prose about it.
-     */
-    private static String codeOnly(String source)
-    {
-        StringBuilder out = new StringBuilder();
-
-        for (String line : source.split("\n", -1))
-        {
-            int slashes = line.indexOf("//");
-
-            out.append(slashes >= 0 ? line.substring(0, slashes) : line).append("\n");
-        }
-
-        return out.toString();
     }
 
     /**
@@ -3581,9 +3219,8 @@ public class testEditorSurfaceRules
     @Test
     public void testEveryCaptionVisibilityDecisionAsksTheRule() throws Exception
     {
-        String source = codeOnly(new String(java.nio.file.Files.readAllBytes(
-            new java.io.File("src/org/traincontrol/gui/TrainControlUI.java").toPath()),
-            java.nio.charset.StandardCharsets.UTF_8));
+        // The program's code (FR-136), so a caption decided in another file is counted and asked too
+        String source = SourceOf.allCode();
 
         assertTrue(source.contains("private boolean captionIsActive("),
             "captionIsActive is gone.  It is the one answer to 'should this station's name be drawn', "
@@ -3653,11 +3290,8 @@ public class testEditorSurfaceRules
         }
 
         // And the blanket setter in particular, by name, because it is the one that got it wrong.
-        int at = source.indexOf("public void showStaticAutonomyLayer(");
-
-        assertTrue(at > 0, "showStaticAutonomyLayer is gone - if renamed, rename it here");
-
-        String body = source.substring(at, Math.min(source.length(), at + 2600));
+        // Gone, `SourceOf.declaration` fails - if renamed, rename it here
+        String body = codeOf("public void showStaticAutonomyLayer(boolean show)");
 
         assertTrue(body.contains("captionIsActive("),
             "showStaticAutonomyLayer no longer asks captionIsActive, so it is back to setting every "
@@ -3701,31 +3335,12 @@ public class testEditorSurfaceRules
     @Test
     public void testTheBlockedPointsPickerCarriesAndNamesWhatIsStored() throws Exception
     {
-        assertTrue(PANEL.isFile(), "cannot find " + PANEL.getAbsolutePath()
-            + " - a test that reads the source cannot pass by not finding it");
-
-        // Carriage returns stripped, because the window below ends on a newline and four spaces and a
-        // closing brace, and this repository checks out CRLF on Windows (FBR-C8)
-        String source = new String(Files.readAllBytes(PANEL.toPath()), StandardCharsets.UTF_8)
-            .replace("\r", "");
-
-        int at = source.indexOf("private void promptBlockingPoints(");
-
-        assertTrue(at > 0, "promptBlockingPoints is gone.  It is the only door onto blockedPoints, so "
-            + "if it was renamed, rename it here; if it was removed, the restriction can no longer be "
-            + "edited at all and this test should say so rather than be deleted");
-
-        int ends = source.indexOf("\n    }\n", at);
-
-        assertTrue(ends > at, "could not find the end of promptBlockingPoints");
-
-        // Comments stripped, so a rule is proved by the code and not by the prose about it - this
-        // method's comments name every one of the identifiers below, several times each
-        String body = codeOnly(source.substring(at, ends));
-
-        assertTrue(body.length() > 800, "promptBlockingPoints reads as only " + body.length()
-            + " characters of code, so the window closed early and every assertion below is being made "
-            + "about a fragment");
+        // The whole method, wherever it is, with its comments blanked so a rule is proved by the code and not
+        // by the prose about it - this method's comments name every one of the identifiers below, several
+        // times each.  Gone, `SourceOf.declaration` fails: it is the only door onto blockedPoints, so if it
+        // was renamed, rename it here; if it was removed, the restriction can no longer be edited at all and
+        // this test should say so rather than be deleted
+        String body = codeOf("private void promptBlockingPoints(");
 
         // What is stored has to be read before the offer is built, because it is what decides the
         // offer.  Read after, it can only be used to tick boxes that are already on the list.
@@ -3788,11 +3403,7 @@ public class testEditorSurfaceRules
     @Test
     public void testEveryLatchRaiseHasAWayDown() throws Exception
     {
-        String editor = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/LayoutEditor.java")), java.nio.charset.StandardCharsets.UTF_8);
-
-        String leave = withoutComments(bodyOf(editor,
-            "private void leaveFor(String page, boolean autonomy)"));
+        String leave = codeOf("private void leaveFor(String page, boolean autonomy)");
 
         java.util.List<Integer> raises = new java.util.ArrayList<>();
 
@@ -3841,10 +3452,7 @@ public class testEditorSurfaceRules
         // Three links now, and the chain is only as good as the weakest: the worker posts the EDT half
         // whatever the refresh does, the EDT half runs the continuation from a finally, and the helper
         // still covers a throw that happens before there is a worker at all.
-        String ui = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/TrainControlUI.java")), java.nio.charset.StandardCharsets.UTF_8);
-
-        String helper = withoutComments(bodyOf(ui, "public void layoutEditingCompleteThen(Runnable after)"));
+        String helper = codeOf("public void layoutEditingCompleteThen(Runnable after)");
 
         assertTrue(helper.contains("catch") && helper.contains("once.run()"),
             "layoutEditingCompleteThen no longer runs its continuation when the refresh cannot even "
@@ -3852,14 +3460,14 @@ public class testEditorSurfaceRules
             + "delegates - and the check above accepts that branch on the strength of calling this "
             + "method.  Body: " + helper);
 
-        String async = withoutComments(bodyOf(ui, "public void layoutEditingComplete(Runnable after)"));
+        String async = codeOf("public void layoutEditingComplete(Runnable after)");
 
         assertTrue(async.contains("finally") && async.indexOf("finally") < async.indexOf("invokeLater"),
             "the refresh worker no longer posts its EDT half from a finally, so a layout that will "
             + "not parse leaves the editor's switch latch raised for the life of the window - which "
             + "is the fault this whole rule exists for.  Body: " + async);
 
-        String edt = withoutComments(bodyOf(ui, "private void layoutRefreshComplete(Runnable after)"));
+        String edt = codeOf("private void layoutRefreshComplete(Runnable after)");
 
         assertTrue(edt.contains("finally") && edt.contains("after.run()"),
             "layoutRefreshComplete no longer runs the continuation from a finally.  That is where the "
@@ -3886,18 +3494,11 @@ public class testEditorSurfaceRules
     @Test
     public void testTheGreyEditButtonSaysWhyItIsGrey() throws Exception
     {
-        String ui = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/TrainControlUI.java")), java.nio.charset.StandardCharsets.UTF_8);
-
         // THE TWO DOORS both ask, rather than assuming.
         for (String door : new String[] {
-            "private void editLayoutButtonActionPerformed(java.awt.event.ActionEvent evt)",
-            "private void openLayoutEditor(String page, Boolean autonomy,"
-                + "\n        final org.traincontrol.automationui.TileGraph.TileKey reveal, "
-                + "boolean remember,"
-                + "\n        final java.util.List<org.traincontrol.automationui.TileGraph.TileKey> outline)" })
+            "private void editLayoutButtonActionPerformed(java.awt.event.ActionEvent evt)", OPEN_LAYOUT_EDITOR })
         {
-            String body = withoutComments(bodyOf(ui, door));
+            String body = codeOf(door);
 
             assertTrue(body.contains("reasonLayoutIsNotEditable()"),
                 "a door that refuses because the Edit button is grey no longer asks which of the "
@@ -3910,8 +3511,8 @@ public class testEditorSurfaceRules
         }
 
         // THE EXPLANATION covers every branch of the RULE.
-        String rule = withoutComments(bodyOf(ui, "private boolean layoutCanBeEdited()"));
-        String why = withoutComments(bodyOf(ui, "public String whyLayoutCannotBeEdited()"));
+        String rule = codeOf("private boolean layoutCanBeEdited()");
+        String why = codeOf("public String whyLayoutCannotBeEdited()");
 
         // THE FLAG, not the inference it replaced (Adam, 2026-08-28: "we just need a layout loaded
         // flag in the TrainControlUI class, rather than something that infers").
@@ -3977,12 +3578,8 @@ public class testEditorSurfaceRules
     @Test
     public void testTheLayoutMenuNamesItsGroups() throws Exception
     {
-        String ui = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/TrainControlUI.java")), java.nio.charset.StandardCharsets.UTF_8);
-
-        String mount = withoutComments(bodyOf(ui, "private void mountLayoutHeadings()"));
-
-        assertFalse(mount.isEmpty(), "nothing mounts the Layout menu headings any more");
+        // Gone, `SourceOf.declaration` fails: nothing mounts the Layout menu headings any more
+        String mount = codeOf("private void mountLayoutHeadings()");
 
         assertTrue(mount.contains("headingLocalLayout") && mount.contains("headingCentralStationLayout"),
             "one of the two Layout menu headings is gone, so a menu whose halves do different things "
@@ -3995,21 +3592,21 @@ public class testEditorSurfaceRules
             + "next item added to this menu puts them in the wrong place");
 
         // THE TRAP.
-        String guard = withoutComments(bodyOf(ui, "private void guardLayoutMenu()"));
+        String guard = codeOf("private void guardLayoutMenu()");
 
         assertTrue(guard.contains("child == localHeading || child == centralStationHeading"),
             "the headings are no longer exempt from the enable/disable sweep, so they come back "
             + "ENABLED whenever no editor is open - a bold, live menu item that does nothing");
 
         // And a heading really is created disabled, or the exemption protects nothing.
-        String heading = withoutComments(bodyOf(ui, "private javax.swing.JMenuItem menuHeading(String text)"));
+        String heading = codeOf("private javax.swing.JMenuItem menuHeading(String text)");
 
         assertTrue(heading.contains("setEnabled(false)"),
             "a heading is no longer created disabled, so it is an ordinary menu item in bold that "
             + "does nothing when clicked");
 
         // The export sits with the pop-out.
-        String export = withoutComments(bodyOf(ui, "private void buildDiagramExportMenu()"));
+        String export = codeOf("private void buildDiagramExportMenu()");
 
         assertTrue(export.contains("indexOnLayoutMenu(popUpAllMenuItem)"),
             "the picture export is no longer placed beside the pop-out - it goes back to the foot of "
@@ -4027,9 +3624,8 @@ public class testEditorSurfaceRules
     @Test
     public void testManageSitsUnderTheConfiguration() throws Exception
     {
-        String menu = withoutComments(new String(java.nio.file.Files.readAllBytes(
-            java.nio.file.Paths.get("src/org/traincontrol/gui/AutonomyMenu.java")),
-            java.nio.charset.StandardCharsets.UTF_8));
+        // The method that builds the autonomy menu, wherever it is (FR-136)
+        String menu = codeOf("private void buildItems()");
 
         int choose = menu.indexOf("add(choose);");
         int manage = menu.indexOf("add(manageMenu(");
@@ -4063,12 +3659,7 @@ public class testEditorSurfaceRules
     @Test
     public void testThePopOutAndExportSitBelowTheStationSection() throws Exception
     {
-        String ui = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/TrainControlUI.java")), java.nio.charset.StandardCharsets.UTF_8);
-
-        String mount = withoutComments(bodyOf(ui, "private void mountLayoutHeadings()"));
-
-        assertFalse(mount.isEmpty(), "mountLayoutHeadings is gone");
+        String mount = codeOf("private void mountLayoutHeadings()");
 
         int heading = mount.indexOf("layoutMenu.add(centralStationHeading");
         int removed = mount.indexOf("layoutMenu.remove(popUpAllMenuItem)");
@@ -4091,11 +3682,9 @@ public class testEditorSurfaceRules
             + "being ways of getting the diagram into a window or a file");
 
         // And the separators are tidied by walking, not by naming generated fields.
-        String tidy = withoutComments(bodyOf(ui, "private void tidyLayoutMenuSeparators()"));
-
-        assertFalse(tidy.isEmpty(),
-            "nothing collapses runs of separators, so taking the pop-out out from between two of them "
-            + "leaves two rules in a row where it used to be");
+        // Gone, `SourceOf.declaration` fails: nothing collapses runs of separators, so taking the pop-out out
+        // from between two of them leaves two rules in a row where it used to be
+        String tidy = codeOf("private void tidyLayoutMenuSeparators()");
 
         assertFalse(tidy.contains("jSeparator"),
             "the separator tidy names a generated field. The NetBeans designer renumbers those "
@@ -4156,7 +3745,7 @@ public class testEditorSurfaceRules
 
             if (path.contains("/examples/")) continue;
 
-            String code = withoutComments(new String(java.nio.file.Files.readAllBytes(f.toPath()),
+            String code = SourceOf.withoutComments(new String(java.nio.file.Files.readAllBytes(f.toPath()),
                 java.nio.charset.StandardCharsets.UTF_8));
 
             for (String needle : needles)
@@ -4270,13 +3859,9 @@ public class testEditorSurfaceRules
     @Test
     public void testEveryDoorThatWritesTheSetupAnnouncesItWiderSweep() throws Exception
     {
-        java.io.File file = new java.io.File(
-            "src/org/traincontrol/gui/AutonomyEditorPanel.java");
-
-        assertTrue(file.isFile(), "cannot find " + file.getAbsolutePath());
-
-        String source = new String(java.nio.file.Files.readAllBytes(file.toPath()),
-            java.nio.charset.StandardCharsets.UTF_8);
+        // THE PANEL'S CLASS, wherever it is (FR-136): this is the rule for the doors of the panel that supplies
+        // the tile menus to both surfaces, and other classes announce their writes in their own ways.
+        String source = SourceOf.declaration("public class AutonomyEditorPanel extends JPanel");
 
         java.util.List<String> examined = new java.util.ArrayList<>();
 
@@ -4290,20 +3875,15 @@ public class testEditorSurfaceRules
             "AutonomyEditorPanel no longer calls placementChanged anywhere, so the `radio(` "
             + "exemption below is exempting doors that announce nothing (VD11-A1)");
 
-        int radioAt = source.indexOf("private javax.swing.JMenuItem radio(");
-
-        assertTrue(radioAt > 0, "the radio helper has gone, and the exemption with it should too");
-
-        assertTrue(source.indexOf("placementChanged(null)", radioAt) > 0
-            && source.indexOf("placementChanged(null)", radioAt) < radioAt + 2000,
+        // Gone, `SourceOf.declaration` fails: the radio helper has gone, and the exemption with it should too
+        assertTrue(codeOf("private javax.swing.JMenuItem radio(").contains("placementChanged(null)"),
             "radio() no longer announces, so every radio door on this menu is silent and the "
             + "exemption is hiding them (VD11-A1)");
 
         // AND `toggle`, WHICH THE SCAN EXEMPTS THE SAME WAY (GSE-C1).  Each write is asked about its own lambda now,
         // and a checkbox's lambda says nothing: `toggle` announces after the action, for every checkbox on these
         // menus - so the exemption is only sound while the helper's own body still does.
-        assertTrue(bodyOf(codeOnly(source),
-            "private javax.swing.JCheckBoxMenuItem toggle(String text, String tooltipKey,")
+        assertTrue(codeOf("private javax.swing.JCheckBoxMenuItem toggle(String text, String tooltipKey,")
             .contains("placementChanged(null)"),
             "toggle() no longer announces, so every checkbox door on these menus is silent and the exemption is "
             + "hiding them (GSE-C1)");
@@ -4312,7 +3892,7 @@ public class testEditorSurfaceRules
         //
         // Same shape as the radio check above and for the same reason: a door accepted here because
         // of what a helper does has to be re-examined whenever that helper changes.
-        assertTrue(bodyOf(codeOnly(source), "private void annotationsChanged()")
+        assertTrue(codeOf("private void annotationsChanged()")
             .contains("rebuildRunningLayoutSoon()"),
             "annotationsChanged no longer rebuilds the running layout, so the four direction doors "
             + "exempted through it announce nothing to the railway (MT-334)");
@@ -4716,13 +4296,8 @@ public class testEditorSurfaceRules
      */
     private static java.util.List<String> writers() throws Exception
     {
-        java.io.File file = new java.io.File(
-            "src/org/traincontrol/automationui/AutonomySession.java");
-
-        assertTrue(file.isFile(), "cannot find " + file.getAbsolutePath());
-
-        String source = new String(java.nio.file.Files.readAllBytes(file.toPath()),
-            java.nio.charset.StandardCharsets.UTF_8);
+        // The session's class, wherever it is (FR-136)
+        String source = SourceOf.declaration("public class AutonomySession\n");
 
         java.util.regex.Matcher m = java.util.regex.Pattern.compile(
             "public\\s+(?:synchronized\\s+)?(?:void|int|boolean)\\s+"
@@ -4777,7 +4352,7 @@ public class testEditorSurfaceRules
         // the rule itself.
         java.util.List<java.io.File> sources = new java.util.ArrayList<>();
 
-        collectJava(new java.io.File("src"), sources);
+        sources.addAll(javaFilesUnder(new java.io.File("src")));
 
         assertTrue(sources.size() > 50,
             "only " + sources.size() + " source files were found, so this rule is scanning almost "
@@ -4799,11 +4374,12 @@ public class testEditorSurfaceRules
 
         for (java.io.File source : sources)
         {
-            String body = withoutComments(new String(
+            String body = SourceOf.withoutComments(new String(
                 java.nio.file.Files.readAllBytes(source.toPath()),
                 java.nio.charset.StandardCharsets.UTF_8));
 
-            // The declaration itself, not a call.
+            // The declaration itself, not a call - and the session's own `return saveQuietly();`, which hands the
+            // answer to its caller and which the pattern below cannot tell from a discarded one.
             if (source.getName().equals("AutonomySession.java")) continue;
 
             for (int at = body.indexOf("saveQuietly()"); at >= 0;
@@ -4827,24 +4403,6 @@ public class testEditorSurfaceRules
             + "instead of throwing, and disk is authoritative after the session rebuild - so a failed "
             + "write there is silent, and what comes back next load is the state the write was meant "
             + "to replace (ACC-C6, OV2-C3): " + silent);
-    }
-    /**
-     * Every `.java` under a directory, so a rule can say "every" and mean it (FR3-C3).
-     *
-     * @param where the directory to walk
-     * @param into the list to fill
-     */
-    private void collectJava(java.io.File where, java.util.List<java.io.File> into)
-    {
-        java.io.File[] here = where.listFiles();
-
-        if (here == null) return;
-
-        for (java.io.File each : here)
-        {
-            if (each.isDirectory()) collectJava(each, into);
-            else if (each.getName().endsWith(".java")) into.add(each);
-        }
     }
 
     /**
@@ -4913,7 +4471,7 @@ public class testEditorSurfaceRules
 
         for (java.io.File file : sources)
         {
-            String body = codeOnly(new String(java.nio.file.Files.readAllBytes(file.toPath()),
+            String body = SourceOf.withoutComments(new String(java.nio.file.Files.readAllBytes(file.toPath()),
                 StandardCharsets.UTF_8));
 
             if (!body.contains("isAutoDestination()")) continue;
@@ -4938,20 +4496,17 @@ public class testEditorSurfaceRules
             + " is asking: " + unexcused);
 
         // AND STILL ONCE INSIDE THE RULE'S OWN FILE, which is the check this replaced - kept, because
-        // the file-level sweep above cannot see a second copy written NEXT TO the original.
-        String layout = codeOnly(new String(java.nio.file.Files.readAllBytes(
-            java.nio.file.Paths.get("src/org/traincontrol/automation/Layout.java")),
-            StandardCharsets.UTF_8));
-
+        // the file-level sweep above cannot see a second copy written NEXT TO the original.  Over the
+        // whole program's code now (FR-136), so a second copy is counted whichever file it is in.
         int conjunctions = 0;
 
-        for (String line : layout.split("\r?\n"))
+        for (String line : SourceOf.allCode().split("\n"))
         {
             if (line.contains("isAutoDestination()") && line.contains("isReversing()")) conjunctions++;
         }
 
         assertEquals(conjunctions, 1,
-            "the sendable-destination conjunction is written out " + conjunctions + " times in Layout."
+            "the sendable-destination conjunction is written out " + conjunctions + " times in the program."
             + " There must be exactly one, inside isSendableDestination");
     }
     /**
@@ -4980,32 +4535,16 @@ public class testEditorSurfaceRules
     @Test
     public void testEveryDoorThatChangesWhatIsBlockedTellsTheDiagram() throws Exception
     {
-        java.io.File file = new java.io.File("src/org/traincontrol/gui/TrainControlUI.java");
-
-        assertTrue(file.isFile(),
-            "cannot find " + file.getAbsolutePath() + " - a test that reads the source cannot pass by"
-            + " not finding it");
-
-        String source = new String(java.nio.file.Files.readAllBytes(file.toPath()),
-            StandardCharsets.UTF_8);
-
-        // THE FENCE IS GONE, and this is the one place that decided it.
-        String worker = bodyOf(source, "private void workOutCoveredTrack()");
-
-        assertFalse(worker.isEmpty(),
-            "workOutCoveredTrack is not declared that way any more, so this checked nothing");
-
-        assertFalse(worker.contains("greyed = isAutonomyBusy()"),
+        // THE FENCE IS GONE, and this is the one place that decided it.  Asked of the whole program (FR-136), so
+        // the fence cannot come back in whichever method the decision moves to.
+        assertFalse(SourceOf.allCode().contains("greyed = isAutonomyBusy()"),
             "the grey wash is fenced on a running railway again.  The refusal it draws is not:"
             + " Layout.isPathClear sweeps the covered edges in every tier at every time, so at idle a"
             + " manual send is refused over track the diagram paints as free (W7B-B1).  Adam: \"yes,"
             + " this greyout should appear at idle\"");
 
         // THE LENGTH DOOR ASKS FOR THE MARKS AGAIN.
-        String apply = bodyOf(source, "public void applyTrainLength(Locomotive l, int units)");
-
-        assertFalse(apply.isEmpty(),
-            "applyTrainLength is not declared that way any more, so this checked nothing");
+        String apply = codeOf("public void applyTrainLength(Locomotive l, int units)");
 
         assertTrue(apply.contains("blockedTrackChanged()"),
             "setting a train's length no longer asks the diagram to work the marks out again.  How far"
@@ -5015,10 +4554,7 @@ public class testEditorSurfaceRules
             + " placement or train/track length is changed\"");
 
         // AND THE DIALOG STILL GOES THROUGH IT, which is the half the behavioural test cannot see.
-        String prompt = bodyOf(source, "public void promptTrainLength(Locomotive l, MouseEvent evt)");
-
-        assertFalse(prompt.isEmpty(),
-            "promptTrainLength is not declared that way any more, so this checked nothing");
+        String prompt = codeOf("public void promptTrainLength(Locomotive l, MouseEvent evt)");
 
         assertTrue(prompt.contains("applyTrainLength("),
             "the train-length dialog no longer ends in applyTrainLength.  Everything that has to"
@@ -5031,11 +4567,7 @@ public class testEditorSurfaceRules
             + " two doors onto one field again - the shape MT-246 and OB-039 were both filed for");
 
         // AND THE PLACEMENT DOORS, which reach the marks through updateVisiblePoints.
-        String gesture = bodyOf(source,
-            "private boolean locomotiveGestureOnDiagram(int keyCode, boolean controlPressed)");
-
-        assertFalse(gesture.isEmpty(),
-            "locomotiveGestureOnDiagram is not declared that way any more, so this checked nothing");
+        String gesture = codeOf("private boolean locomotiveGestureOnDiagram(int keyCode, boolean controlPressed)");
 
         assertTrue(gesture.contains("this.updateVisiblePoints();"),
             "the diagram's Control+X / Control+V / Delete door no longer refreshes the marks, so a"
@@ -5059,10 +4591,7 @@ public class testEditorSurfaceRules
     @Test
     public void testTheDiagramMenuRefreshesBeforeItBinds() throws Exception
     {
-        String ui = new String(java.nio.file.Files.readAllBytes(
-            java.nio.file.Paths.get("src/org/traincontrol/gui/TrainControlUI.java")), StandardCharsets.UTF_8);
-
-        String door = withoutComments(bodyOf(ui, "public javax.swing.JPopupMenu buildAutonomyTileMenu("));
+        String door = codeOf("public javax.swing.JPopupMenu buildAutonomyTileMenu(");
 
         int refreshes = door.indexOf("autonomyTileMenus.refreshRunLeaders()");
         int builds = door.indexOf("autonomyTileMenus.buildTileMenu(");
@@ -5092,18 +4621,8 @@ public class testEditorSurfaceRules
     @Test
     public void testACutAsksForNoSetupItWillNotTell() throws Exception
     {
-        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/LayoutEditor.java")), java.nio.charset.StandardCharsets.UTF_8);
-
-        int at = source.indexOf("synchronized public boolean deleteSelection(boolean tellAutonomy)");
-
-        assertTrue(at > 0, "deleteSelection has been renamed; this test is looking for nothing");
-
-        int next = source.indexOf("synchronized public void delete(", at);
-
-        assertTrue(next > at, "precondition: the member after deleteSelection has moved");
-
-        String body = source.substring(at, next);
+        // The method, wherever it is (FR-136); renamed, `SourceOf.declaration` fails rather than look for nothing
+        String body = codeOf("synchronized public boolean deleteSelection(boolean tellAutonomy)");
 
         int ask = body.indexOf("getAutonomySession()");
 
@@ -5125,7 +4644,7 @@ public class testEditorSurfaceRules
      * MUTATION: fill the front sheet again, and this fails.
      */
     @Test
-    public void testTheCopyMarkIsOutlinesInAnyInk()
+    public void testTheCopyMarkIsOutlinesInAnyInk() throws Exception
     {
         final int size = 24;
 
@@ -5143,21 +4662,26 @@ public class testEditorSurfaceRules
 
         g.dispose();
 
-        // The front sheet, as the mark measures it
-        int w = Math.round(size * 0.52f);
-        int h = Math.round(size * 0.62f);
-        int gap = Math.max(2, Math.round(size * 0.20f));
+        // The front sheet, as the mark measures it: asked of RowIcons rather than worked out again here, where a
+        // copy of its proportions would go on sampling the old place after the mark moved (FR-136)
+        java.lang.reflect.Method sheet =
+            org.traincontrol.gui.RowIcons.class.getDeclaredMethod("frontSheet", int.class, int.class);
+
+        sheet.setAccessible(true);
+
+        java.awt.Rectangle front = (java.awt.Rectangle) sheet.invoke(null, size, size);
 
         boolean inked = false;
 
-        for (int y = 1 + gap + 2; y < 1 + gap + h - 2; y++)
+        for (int y = front.y + 2; y < front.y + front.height - 2; y++)
         {
-            for (int x = gap; x <= gap + 2; x++) inked |= ((picture.getRGB(x, y) >> 16) & 0xFF) > 120;
+            for (int x = front.x - 1; x <= front.x + 1; x++) inked |= ((picture.getRGB(x, y) >> 16) & 0xFF) > 120;
         }
 
         assertTrue(inked, "precondition: the copy mark's front sheet has no left edge in white ink, so nothing was drawn");
 
-        assertEquals(picture.getRGB(1 + gap + w / 2, 1 + gap + h / 2) & 0xFFFFFF, ground.getRGB() & 0xFFFFFF, "the copy"
+        assertEquals(picture.getRGB(front.x + front.width / 2, front.y + front.height / 2) & 0xFFFFFF,
+            ground.getRGB() & 0xFFFFFF, "the copy"
             + " mark's front sheet is filled rather than outlined, so on a selected row it is a solid sheet among outlines"
             + " (OB-258)");
     }
@@ -5179,11 +4703,7 @@ public class testEditorSurfaceRules
     @Test
     public void testTheWhyWorkerReadsNoSetupCollection() throws Exception
     {
-        String panel = new String(Files.readAllBytes(PANEL.toPath()), StandardCharsets.UTF_8);
-
-        String worker = withoutComments(bodyOf(panel, "private WhyAnswer composeWhy("));
-
-        assertFalse(worker.isEmpty(), "composeWhy has moved or been renamed, so this rule asks nothing of it");
+        String worker = codeOf("private WhyAnswer composeWhy(");
 
         for (String asked : new String[] {
             ".mandatoryTurnTiles(", ".mayTurnTiles(", ".barredArrivals(", ".shutTiles(", ".getReducer(" })
@@ -5213,14 +4733,9 @@ public class testEditorSurfaceRules
     @Test
     public void testTheDirectionButtonsCommandTheLocomotiveTheyWerePressedFor() throws Exception
     {
-        String ui = new String(Files.readAllBytes(new File("src/org/traincontrol/gui/TrainControlUI.java").toPath()),
-            StandardCharsets.UTF_8);
-
         for (String declaration : new String[] { "private void backwardLoc()", "private void forwardLoc()" })
         {
-            String body = withoutComments(bodyOf(ui, declaration));
-
-            assertFalse(body.isEmpty(), declaration + " has moved or been renamed, so this rule asks nothing of it");
+            String body = codeOf(declaration);
 
             int started = body.indexOf("new Thread(");
 

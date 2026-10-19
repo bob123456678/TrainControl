@@ -5,6 +5,7 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import javax.swing.Icon;
 
@@ -105,9 +106,11 @@ public final class RowIcons
             {
                 g.setStroke(new BasicStroke(1.3f));
 
-                int w = Math.round(width * 0.52f);
-                int h = Math.round(height * 0.62f);
-                int gap = Math.max(2, Math.round(width * 0.20f));
+                Rectangle front = frontSheet(width, height);
+
+                int w = front.width;
+                int h = front.height;
+                int gap = front.x - 1;
 
                 // The sheet behind, only where it shows - the one in front hides its lower right corner, so
                 // the two read as two sheets rather than as a little grid.  Not by filling the front one white
@@ -122,6 +125,21 @@ public final class RowIcons
                 g.drawRect(1 + gap, 1 + gap, w, h);
             }
         };
+    }
+
+    /**
+     * Where the copy mark's front sheet is drawn in an icon of this size; the sheet behind is drawn from the same
+     * figures, a gap up and to the left.
+     *
+     * @param width the icon's width
+     * @param height the icon's height
+     * @return the front sheet's outline
+     */
+    static Rectangle frontSheet(int width, int height)
+    {
+        int gap = Math.max(2, Math.round(width * 0.20f));
+
+        return new Rectangle(1 + gap, 1 + gap, Math.round(width * 0.52f), Math.round(height * 0.62f));
     }
 
     /**
