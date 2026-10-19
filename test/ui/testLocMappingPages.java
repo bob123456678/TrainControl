@@ -870,6 +870,56 @@ public class testLocMappingPages
         return true;
     }
 
+    /** The row painted in a box over magenta, so what it draws can be told from the ground it is drawn on. */
+    private static java.awt.image.BufferedImage paintedOnMagenta(javax.swing.JComponent row, java.awt.Dimension box)
+        throws Exception
+    {
+        java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(box.width, box.height,
+            java.awt.image.BufferedImage.TYPE_INT_RGB);
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            java.awt.Graphics2D g = image.createGraphics();
+
+            g.setColor(java.awt.Color.MAGENTA);
+            g.fillRect(0, 0, box.width, box.height);
+
+            row.paint(g);
+            g.dispose();
+        });
+
+        return image;
+    }
+
+    /**
+     * That nothing but the page's words is painted where the page is: no pill, fill or line of any colour round or
+     * between the number and the name.  Asked of the painted row, because the layout names no such shape to look for.
+     * The words themselves are looked for first, so a row that paints nothing cannot pass for one that paints no line.
+     */
+    private static void assertThePageIsOnlyWords(javax.swing.JComponent row, java.awt.Dimension box, Object geometry,
+                                                 String said) throws Exception
+    {
+        java.awt.image.BufferedImage image = paintedOnMagenta(row, box);
+
+        java.awt.Rectangle page = rect(geometry, "page");
+
+        int to = page.x + page.width;
+
+        assertTrue(navyIn(image, page.x, to, page.y, page.y + page.height - 1), "the page's words are not painted in the"
+            + " label's navy, so there is nothing to tell a line from: " + said);
+
+        assertTrue(onlyWordsOnTheBackground(image, page.x, to, 0, box.height - 1), said);
+
+        final int none = java.awt.Color.MAGENTA.getRGB() & 0xFFFFFF;
+
+        for (int x = Math.max(0, page.x); x <= Math.min(box.width - 1, to); x++)
+        {
+            assertEquals(rgb(image, x, 0), none, said + " (something is painted along the top at column " + x + ")");
+            assertEquals(rgb(image, x, box.height - 1), none, said + " (something is painted along the bottom at column "
+                + x + ")");
+        }
+    }
+
     /** Whether any pixel in this box is the page's words' navy: nothing red, a blue of about 115. */
     private static boolean navyIn(java.awt.image.BufferedImage image, int x0, int x1, int y0, int y1)
     {
@@ -1060,7 +1110,7 @@ public class testLocMappingPages
                     + " pill, so it follows the page pill and does not float " + said + ": " + page + " and " + decoder);
 
                 // THE PAGE IS PLAIN WORDS - the number and a full stop, then the name - with no pill, no fill and no line
-                assertNull(pub(at, "separator"), "the page still has a line between its name and its number " + said
+                assertThePageIsOnlyWords(row, box, at, "the page still has a line between its name and its number " + said
                     + ".  Adam, round 4: \"no pill around that\"");
 
                 assertEquals(pub(at, "pageText"), p.page + ". Example", "the page's words are not the number, a full stop"
@@ -1221,7 +1271,7 @@ public class testLocMappingPages
                 assertEquals(pub(at, "pageText"), p.page + ". " + name, "the page's number was cut, or is not the prefix of the"
                     + " cut name, with its full stop " + said + ": [" + pub(at, "pageText") + "]");
 
-                assertNull(pub(at, "separator"), "the page still has a line before its number " + said);
+                assertThePageIsOnlyWords(row, box, at, "the page still has a line before its number " + said);
 
                 String decoderType = loc.getDecoderTypeLabel(), address = p.model.getLocAddress(loc.getName());
                 String decoderText = decoderType + " " + address;
