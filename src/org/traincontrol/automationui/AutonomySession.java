@@ -3638,18 +3638,14 @@ public class AutonomySession
      * `Layout.isPathClear` refuses that, but it can only refuse what it can measure, and unmeasured track is unknown
      * rather than short.
      *
-     * **What this set is** (`SVN-B1`, `VD9-B6`):
-     *
-     * - `Layout.measuredRoomAtTheEndOf` walks the path's **edges** backwards and **stops at the first one that crosses a
-     *   switch**; it never looks past the last switch, so an unmeasured stretch beyond it blinds nothing.
-     * - `GraphReducer.roomAfterTheLastSwitch` is that number: one edge's **tiles**, walked backwards from the end,
-     *   stopping at the first switch, summing what is measured and treating an unmeasured tile as nothing.  `-1` only
-     *   when NOT ONE of them has a length (MON-C6).
-     * - `unmeasuredAfterTheLastSwitch` is the same walk returning the tiles, which is what this asks for.  **So for the
-     *   last edge the notice and the guard agree by construction.**
-     *
-     * **The square's own length is the first thing that stretch contains.**  An unmeasured berth square contributes
-     * nothing to the total, so the guard under-counts by exactly that square, which is worth a notice.
+     * **What this set is** (`SVN-B1`, `VD9-B6`): `Layout.measuredRoomAtTheEndOf` walks the path's **edges** backwards and
+     * **stops at the first one that crosses a switch**, so an unmeasured stretch beyond the last switch blinds nothing.
+     * `GraphReducer.roomAfterTheLastSwitch` is that number for one edge: its **tiles**, walked backwards from the end to
+     * the first switch, summing what is measured and treating an unmeasured tile as nothing (`-1` only when NOT ONE of them
+     * has a length, MON-C6).  `unmeasuredAfterTheLastSwitch` is the same walk returning the tiles, which is what this
+     * asks for, so for the last edge the notice and the guard agree by construction.  The square's own length is the
+     * first thing that stretch contains: an unmeasured berth square adds nothing, so the guard under-counts by exactly
+     * that square, which is worth a notice.
      *
      * **Two ways they still disagree.**  Under-reports: when the arriving edge crosses no switch the guard carries on to the
      * edge before it, and this only looks at edges arriving at the reversal square, so a notice can be cleared with the
@@ -5969,9 +5965,9 @@ public class AutonomySession
                 // would never reach the merge's `else remove`, and a locomotive that had driven away from a plain sensor would
                 // stay placed there in the configuration.
 
-                // Merged, not replaced.  A split square is visited once per copy and only ONE of them
-                // carries the locomotive, so putting each copy's extras in turn meant the last copy read
-                // won - and if that was not the copy the train was on, the placement was lost.
+                // Merged, not replaced.  A split square is visited once per copy and only ONE of them carries the
+                // locomotive, so putting each copy's extras in turn would let the last copy read win, and the placement would
+                // be lost when that is not the copy the train is on.
                 String id = tile.toString();
 
                 org.json.JSONObject into = points.has(id)
@@ -6019,10 +6015,10 @@ public class AutonomySession
             }
 
             // AND THE TAIL GOES WITH THE TRAIN THAT LEFT (RGD-B1).  The loop below replaces `loc` from the running layout, so
-            // a capture can hand a square to a different locomotive; leaving the OLD train's `arrivedFrom` and `arrivedAlong`
-            // on a square whose occupant just changed is the defect the placement doors were fixed for.  Read before the
-            // replacement, because the replacement is what makes them differ.  (REG8-A1 fixed the other half: the build
-            // applies the side after placing trains, so the file gets the last word.)
+            // a capture can hand a square to a different locomotive, and the OLD train's `arrivedFrom` and `arrivedAlong` must
+            // not stay on a square whose occupant just changed.  Read before the replacement, because the replacement is
+            // what makes them differ.  (The build applies the side after placing trains, REG8-A1, so the file gets the last
+            // word.)
             String occupantWas = nameOfPlacedLocomotive(before.opt("loc"));
             String occupantNow = nameOfPlacedLocomotive(captured.opt("loc"));
 
@@ -6952,9 +6948,8 @@ public class AutonomySession
     /**
      * Whether a stored point records a home locomotive.
      *
-     * One spelling of "carries a home" - a blank is none.  It has one caller; the other reads of the
-     * key either ask WHICH locomotive, which is a different question, or spell this answer out where
-     * they stand (DCN-C12).
+     * One spelling of "carries a home" - a blank is none.  The other reads of the key either ask WHICH locomotive, or
+     * spell this answer out where they stand (DCN-C12).
      *
      * @param point the stored point
      * @return true when it names one
@@ -8747,9 +8742,9 @@ public class AutonomySession
      * to avoid.  Nothing here changes what the railway blocks.
      *
      * That is the indicator saying WHERE THE TRAIN IS (Adam: *"we need to draw a line ... to show that the train is
-     * That is the indicator saying WHERE THE TRAIN IS (Adam: *"we need to draw a line ... to show that the train is
      * there."*), not what is unavailable, which has its own answer, `tilesBlockedByStandingTrains` below, greyed while
      * autonomy is running.
+     *
      * @param running the layout, which is what knows where the trains are
      * @return the squares to draw as covered, empty when nothing is
      */
@@ -9337,10 +9332,8 @@ public class AutonomySession
      * Which road of a square uses this side, or null when that cannot be said.
      *
      * The side is where an edge leaves or reaches the square - so the line through a sensor and the line along the
-     * track beside it describe one road, that edge's own, rather than two answers that could part.  It was asked of
-     * the first reduced edge joining two squares either way round, which where two roads join them could be the other
-     * road (OB-239).  A double curve's two arcs share no side, so the answer is one road even there - which is the
-     * case MT-309 was about.
+     * track beside it describe one road, that edge's own, rather than two answers that could part (OB-239).  A double
+     * curve's two arcs share no side, so the answer is one road even there - which is the case MT-309 was about.
      *
      * @param sensor the square
      * @param side the side an edge leaves or reaches it by, or null
@@ -9361,11 +9354,10 @@ public class AutonomySession
     /**
      * Whether a train standing anywhere on this square could move at all (SPEC-B5).
      *
-     * **The question is about the SQUARE, and the guard that asked it looked at one copy.**  A square
-     * is several Points; `getNeighbors` on whichever one came to hand answers about that copy only, so
-     * a platform with a dead copy and a live one was refused or accepted depending on which the menu
-     * happened to be holding.  `LayoutRightclickAutonomyMenu.placeableCopies` says the same thing about
-     * itself in a comment, and this is the second place that had to learn it.
+     * **The question is about the SQUARE, not one copy.**  A square is several Points and `getNeighbors` on whichever
+     * one comes to hand answers about that copy only, so a platform with a dead copy and a live one would be refused or
+     * accepted depending on which the menu happened to hold; `LayoutRightclickAutonomyMenu.placeableCopies` asks the
+     * same of itself.
      *
      * @param running the layout
      * @param tile the square
