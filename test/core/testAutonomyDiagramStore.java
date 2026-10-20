@@ -64,15 +64,10 @@ public class testAutonomyDiagramStore
     /**
      * A direction belongs to one route across a square, and which route survives being written down.
      *
-     * FR-013 stage two. `tileDirections` is keyed by a square AND a route across it - a crossing or a
-     * switch carries several, and each has its own direction - and until this conversion that key was
-     * the string "page:x,y#state,index", written and read back verbatim. Verbatim is why nothing
-     * needed to test it: whatever went out came back, correct or not.
-     *
-     * A typed key has to be PARSED on the way in, which is a new thing that can be wrong. It was found
-     * by breaking it: swapping the two route numbers in `readDirectionMap` passed all 64 tests in this
-     * class and all 9 in the settings matrix, because every fixture in the repository used
-     * `RouteId(0, 0)` - a pair that reads the same either way round.
+     * FR-013 stage two: `tileDirections` is keyed by a square AND a route across it (a crossing or a
+     * switch carries several, and each has its own direction), and that typed key has to be PARSED on
+     * the way in, which can be wrong. Swapping the two route numbers in `readDirectionMap` passed every
+     * other test, because every fixture used `RouteId(0, 0)`, a pair that reads the same either way round.
      *
      * So this uses routes whose two numbers differ AND differ from each other's, on ONE square, which
      * is the case the compound key exists for. A store that lost the route half would answer the same
@@ -142,13 +137,14 @@ public class testAutonomyDiagramStore
     }
 
     /**
-     * A deliberate 0 is kept, survives a save and a load, and reads as no length (Adam, 2026-09-23, OB-274).
+     * A deliberate 0 is kept, survives a save and a load, and reads as no length (OB-274).
      *
-     * *"allow a length of 0 as a length that is set deliberately ... same meaning to the model, but this will allow
-     * everything to get assigned without what appears to be a skip."*  So `getTileLength` answers 0 for it exactly as
-     * for a square nobody measured, and only `isTileLengthAnswered` tells them apart - including after a restart,
-     * or the walk would offer the square again the next evening.  And the single door keeps its meaning: writing 0
-     * through `setTileLength` still clears a square, answer included.
+     * A length of 0 set deliberately has the same meaning to the model as a square nobody measured, but
+     * lets everything get assigned without what appears to be a skip.  So `getTileLength` answers 0 for
+     * it exactly as for a square nobody measured, and only `isTileLengthAnswered` tells them apart,
+     * including after a restart, or the walk would offer the square again the next evening.  And the
+     * single door keeps its meaning: writing 0 through `setTileLength` still clears a square, answer
+     * included.
      */
     @Test
     public void testADeliberateZeroIsKeptAndReadsAsNoLength() throws IOException
@@ -272,10 +268,8 @@ public class testAutonomyDiagramStore
     /**
      * Deleting the configuration that is running leaves another one running.
      *
-     * This used to also assert that the LAST one could not be deleted, which is no longer true: refusing
-     * it made setting autonomy up a one-way door, so a layout somebody had experimented on kept a
-     * configuration for ever.  What survives is the half that still holds - the store must never be
-     * left pointing at something it has just deleted.  The empty case is testTheLastConfigurationMayBeDeleted.
+     * The store must never be left pointing at something it has just deleted.  The last configuration
+     * may itself be deleted, so the empty case is not asserted here: see testTheLastConfigurationMayBeDeleted.
      */
     @Test
     public void testDeletingTheRunningConfigurationLeavesAnotherRunning() throws IOException
@@ -291,10 +285,6 @@ public class testAutonomyDiagramStore
             "deleting the active configuration should leave another one active");
     }
 
-    /**
-     * Renaming a configuration does not leave the old file behind, which would come back as a duplicate
-     * on the next load.
-     */
     /**
      * A configuration file that cannot be parsed leaves the loaded setup exactly as it was.
      *
@@ -348,6 +338,10 @@ public class testAutonomyDiagramStore
             "the shared settings went with it");
     }
 
+    /**
+     * Renaming a configuration does not leave the old file behind, which would come back as a duplicate
+     * on the next load.
+     */
     @Test
     public void testRenamingAConfigurationDoesNotLeaveTheOldFile() throws IOException
     {
@@ -369,11 +363,11 @@ public class testAutonomyDiagramStore
     /**
      * Discarding an edit takes a signal pairing with it.
      *
-     * load() empties the store and reads the file over it, and the emptying missed the station
-     * signals - while readShared only PUTS what the file holds, so an entry the file says nothing
-     * about was never overwritten.  A pairing made and then thrown away therefore survived the
-     * discard, and the next save wrote it to disk.  From then on a real signal was thrown to red on
-     * real hardware for a pairing the user had cancelled.
+     * load() empties the store and reads the file over it, and readShared only PUTS what the file holds,
+     * so the emptying must include the station signals: an entry the file says nothing about is never
+     * overwritten.  A pairing made and then thrown away must not survive the discard, or the next save
+     * writes it to disk and a real signal is thrown to red on real hardware for a pairing the user had
+     * cancelled.
      *
      * The file has to hold NO signal for that station, which is what makes this different from an
      * edit that changes one: a changed entry was overwritten by the read and looked fine.
@@ -403,10 +397,10 @@ public class testAutonomyDiagramStore
     /**
      * A rename whose save then fails leaves the configuration somewhere.
      *
-     * The old file used to be deleted the moment the name changed, and the new one is only written by
-     * the save that follows - so anything that stopped that save (a sync client on the folder, a full
-     * disk, the process dying) destroyed the configuration outright.  load() rebuilds the list by
-     * scanning the folder, so there was nothing left to find.
+     * The old file is deleted only by the save that follows the rename, because the new one is only
+     * written by that save: anything that stopped it (a sync client on the folder, a full disk, the
+     * process dying) would otherwise destroy the configuration outright, since load() rebuilds the
+     * list by scanning the folder.
      *
      * Simulated here by simply not saving, which is the same state a failed save leaves behind.
      */
@@ -435,10 +429,10 @@ public class testAutonomyDiagramStore
     /**
      * Two names that would be written to one file are refused.
      *
-     * A configuration's file is named after it, and the sanitising is many to one - every character a
-     * filename may not hold becomes an underscore.  So two differently-named configurations could share
-     * one file: saving wrote both to it, one over the other, and the next load - which rebuilds the
-     * list from the folder - came back with one of them simply gone.
+     * A configuration's file is named after it, and the sanitising is many to one (every character a
+     * filename may not hold becomes an underscore), so two differently-named configurations would share
+     * one file: saving would write both to it, and the next load, which rebuilds the list from the
+     * folder, would lose one of them.
      */
     @Test
     public void testTwoNamesCannotShareOneFile() throws IOException
@@ -479,9 +473,9 @@ public class testAutonomyDiagramStore
      * A name that would share another configuration's file is refused as that, naming the other - not as a name already
      * in use (VD17-C6).
      *
-     * All three doors refused the pair with `ERROR_NAME_IN_USE`, which the window says as "a configuration called Night_
-     * Yard already exists" - the one configuration that does not.  What exists is Night: Yard, and the two names are one
-     * file because a file name cannot hold a colon.  The exact name already taken is still a name in use.
+     * The window says ERROR_NAME_IN_USE as "a configuration called Night_ Yard already exists", which is
+     * false of a shared file: what exists is Night: Yard, and the two names are one file because a file
+     * name cannot hold a colon.  The exact name already taken is still a name in use.
      *
      * MUTATION: have the doors throw `ERROR_NAME_IN_USE` for a shared file again, and this fails.
      *
@@ -538,10 +532,10 @@ public class testAutonomyDiagramStore
     /**
      * An import that cannot be read leaves the setup exactly as it was.
      *
-     * The shared half used to be emptied BEFORE the merged object was parsed, and the parse uses the
-     * type-strict accessors - so a bundle with the wrong type in it wiped every name, station, length
-     * and pairing on the way to reporting that the import had failed.  The user was told nothing had
-     * happened while the store stood blank, ready for the next save to write that over setup.json.
+     * The shared half must not be emptied BEFORE the merged object is parsed, because the parse uses the
+     * type-strict accessors: a bundle with the wrong type in it would wipe every name, station, length
+     * and pairing on the way to reporting that the import had failed, leaving the store blank for the
+     * next save to write over setup.json.
      */
     @Test
     public void testAnUnreadableImportChangesNothing() throws Exception
@@ -581,10 +575,9 @@ public class testAutonomyDiagramStore
         // Remove it locally so the merge below has a gap to fill.  Exporting a store and importing the
         // same bundle straight back FILLS NOTHING: every incoming key is already present locally, and
         // `importBundle`'s merge rule (`if (mine.has(inner)) continue;`) skips every one of them before
-        // `readShared` is ever reached - a bundle can be as malformed as it likes and nothing will read
-        // far enough to notice. That was this test's fixture until now, which is why it had never once
-        // exercised the rollback it is named for. With a real gap the merge has something to fill, which
-        // is what makes the corrupted value below actually reach the strict accessor.
+        // `readShared` is ever reached, so a malformed bundle would never be read far enough to notice.
+        // With a real gap the merge has something to fill, which is what makes the corrupted value below
+        // reach the strict accessor.
         store.setPointName(other, null);
 
         // A number where the reader demands a string, under the key the gap will be filled from.
@@ -669,11 +662,12 @@ public class testAutonomyDiagramStore
     /**
      * A page renamed outside TrainControl is still a page that is loaded (GSE-C2).
      *
-     * `pagesNotLoaded` is the question every save asks before it tidies the setup, and it compared the NAMES the setup
-     * recorded with the names of the pages loaded.  A page renamed on the Central Station, or in its file, keeps its id
-     * and changes its name - the case page ids exist for, and the test above pins that the settings follow it.  The
-     * question did not follow it: the renamed page read as missing for as long as the layout was open, so no save
-     * tidied anything and every save warned about a page that was on the screen.
+     * `pagesNotLoaded` is the question every save asks before it tidies the setup.  A page renamed on the
+     * Central Station, or in its file, keeps its id and changes its name (the case page ids exist for, and
+     * the test above pins that the settings follow it), so the question must follow it too: comparing only
+     * the NAMES the setup recorded with the names of the pages loaded would read the renamed page as
+     * missing for as long as the layout was open, so no save would tidy anything and every save would warn
+     * about a page that is on the screen.
      *
      * MUTATION: delete `if (nowCalled != null && loaded.contains(nowCalled)) continue;` from `pagesNotLoaded`, and this
      * fails.
@@ -785,16 +779,12 @@ public class testAutonomyDiagramStore
     /**
      * A renumbered page's settings follow the PAGE, not the number.
      *
-     * The test above pins that a renumber is REPORTED.  Nothing pinned where the settings went, and
-     * they went to the wrong page: fromStored resolved every stored id through the current index, so a
-     * page of names, stations, lengths and directions was handed to whatever track holds that number
-     * now.  Their coordinates do not exist there, so the next save reconciled them away as deleted
-     * squares - and because ids that shift by one round-trip unchanged, the file looked consistent
-     * throughout.
-     *
-     * Adam, MT-135: "Immediately after rename, all stations are gone."  A rename moved one page to the
-     * end of the index, which renumbered every page after it; he lost 19 point names, 14 stations, 22
-     * directions and 15 captions on 2026-08-23.
+     * The test above pins that a renumber is REPORTED; this pins where the settings go.  `fromStored` must
+     * not resolve every stored id through the current index, or a page of names, stations, lengths and
+     * directions is handed to whatever track holds that number now.  Their coordinates do not exist there,
+     * so the next save would reconcile them away as deleted squares, while ids that shift by one round-trip
+     * unchanged and the file looks consistent throughout (MT-135: a rename moved one page to the end of the
+     * index, which renumbered every page after it).
      *
      * The pair of them is the whole rule: the test above says the id is not trusted blindly, this one
      * says the name is followed instead, and testRenamingAPageCostsNothingBecauseIdsAreStored says a
@@ -962,11 +952,10 @@ public class testAutonomyDiagramStore
 
         // AND THE OPERATOR IS TOLD (IPR-A2).
         //
-        // `isClean()` counts this list, and the dialog was built from the other two - so a save whose
-        // only casualty was lengths and directions passed `isClean()` false, produced an empty text,
-        // and showed nothing at all.  The numbers somebody typed went and the application said not a
-        // word.  What is asserted is the WORDS, because the dialog itself cannot be driven from a
-        // battery.
+        // `isClean()` counts this list, so the dialog has to be built from it too: a save whose only
+        // casualty was lengths and directions would otherwise pass `isClean()` false, produce an empty text
+        // and show nothing at all, and the numbers somebody typed would go without a word.  What is
+        // asserted is the WORDS, because the dialog itself cannot be driven from a battery.
         assertTrue(report.getForgottenNames().isEmpty() && report.getNamesStillReferenced().isEmpty(),
             "precondition: this reconciliation must have dropped ONLY tile properties, or the text "
             + "below could be produced by one of the other two lists");
@@ -984,7 +973,7 @@ public class testAutonomyDiagramStore
     /**
      * Switching a paired link off switches its partner off too.
      *
-     * OB-041, Adam: "if a linked link is turned off, its target isn't."
+     * OB-041: switching a link off switches its linked partner off too.
      *
      * A pair of links is one doorway with an end in two places. Autonomy walks through it in both
      * directions, so a doorway that is closed at one end and open at the other is not a half-closed
@@ -1030,9 +1019,7 @@ public class testAutonomyDiagramStore
     /**
      * A deleted tile takes its link name and its switched-off flag too.
      *
-     * DD-A1 found these two missing from `reconcile` - the only two of the eleven kept collections it
-     * says nothing about, with no comment claiming that is deliberate while there is one for every
-     * other decision in the method.
+     * DD-A1: `reconcile` has to cover every kept collection, and these two were missing from it.
      *
      * The consequence is not merely untidy. Both are remembered BY SQUARE, so a name and a "this link
      * is switched off" flag for track that no longer exists sit in the file indefinitely, and **a link
