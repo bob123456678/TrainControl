@@ -692,7 +692,9 @@ public class testAPendingTurnSurvivesTheRebuild
         assertNotSame(org.traincontrol.gui.LayoutGrid.of(shownDiagram()), old.get(), "precondition: the rename did not"
             + " replace the grid");
 
-        for (int i = 0; i < 10 && old.get() != null; i++)
+        // Up to 10 s: under a laned battery's load one second was not always enough for the collector (battery 114).
+        // A grid that is still held never clears, so the wait cannot pass a leak.
+        for (int i = 0; i < 100 && old.get() != null; i++)
         {
             System.gc();
 
