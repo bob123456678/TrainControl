@@ -1698,8 +1698,8 @@ public class LayoutGrid
                         }
                     });
 
-                    // RED LETTERS ON A WHITE HALO, NOT IN A BOX (Adam, 2026-10-09: "Can we prettify address labels to have a
-                    // white halo outline around the red text rather than a rectangle around them?") - see AddressLabel
+                    // RED LETTERS ON A WHITE HALO, NOT IN A BOX (Adam: "Can we prettify address labels to have a white
+                    // halo outline around the red text rather than a rectangle around them?"); see AddressLabel
                     text.setForeground(Color.RED);
                     text.setFont(new Font("Segoe UI", Font.PLAIN, size / 3)); 
                     
@@ -1743,24 +1743,19 @@ public class LayoutGrid
                     container.setComponentZOrder(text, 0);
                 }
                                                                               
-                // Register the tile with autonomy, if it is watching.
-                //
-                // Here because this is the only place that knows both the page and the square: a
-                // LayoutLabel is told neither, and LayoutGrid keeps no reference to the LayoutDiagram
-                // after the constructor returns.
-                // Which SQUARE this label is, told to the label itself - every label, including the
-                // ones with nothing drawn on them.
-                //
-                // Its right-click menu used to ask the main window which page was showing, which is the
-                // wrong page in every popup window; and the keyboard shortcuts ask which square the
-                // pointer is over, which a blank label could not answer at all.  A station's name is
-                // usually drawn on blank space beside the platform, so those blanks are exactly the
-                // squares somebody aims at.
+                // Which SQUARE this label is, told to the label itself: every label, including the ones with nothing
+                // drawn on them.  Its right-click menu asks it rather than the main window (which names the wrong
+                // page in every popup window), and the keyboard shortcuts ask which square the pointer is over, which
+                // a blank label could not answer.  A station's name is usually drawn on blank space beside the
+                // platform, so those blanks are exactly the squares somebody aims at.
                 if (ui != null)
                 {
                     grid[x][y].setAutonomySquare(layout.getName(), x + offsetX, y + offsetY);
                 }
 
+                // Register the tile with autonomy, if it is watching.  Here because this is the only place that
+                // knows both the page and the square: a LayoutLabel is told neither, and LayoutGrid keeps no
+                // reference to the LayoutDiagram after the constructor returns.
                 if (c != null && ui != null)
                 {
 
@@ -1819,15 +1814,14 @@ public class LayoutGrid
     /**
      * Holds the diagram back until its track has been decoded, showing a spinner in the meantime.
      *
-     * A diagram used to arrive in two stages: text labels immediately, because text needs no image,
-     * then the track a second or so later as the decodes came back off the pool.  The staging is an
-     * accident of how the work is split, not something the user asked to watch, and while it lasts the
-     * labels appear to float on nothing.
+     * Otherwise a diagram arrives in two stages: text labels immediately, because text needs no image, then the
+     * track a second or so later as the decodes come back off the pool, and the labels appear to float on nothing
+     * meanwhile.
      *
      * Only when there is actually a wait.  The second time a page is opened every tile is a cache hit,
-     * whenTilesSettled runs on the next EDT pass, and swapping a spinner in and straight out again
-     * would be a flicker where there had been none - so the spinner is only mounted if the tiles are
-     * still not ready a moment later.
+     * whenTilesSettled runs on the next EDT pass, and swapping a spinner in and straight out again would be a
+     * flicker where there had been none, so the spinner is only mounted if the tiles are still not ready a moment
+     * later.
      *
      * @param parent the panel the grid was just added to
      * @param ui the window whose tile loader is doing the decoding
@@ -1836,69 +1830,42 @@ public class LayoutGrid
     {
         if (ui == null) return;
 
-        // Nothing to wait for, so nothing to hide (OB-109).
+        // Nothing to wait for, so nothing to hide (OB-109).  Every placement in the track diagram editor rebuilds the
+        // whole grid, and on every build after the first each tile is a cache hit, so hiding the diagram and letting
+        // whenTilesSettled give it back on the next EDT pass would blink whenever a paint landed between the two.
         //
-        // Adam: "when placing new tiles in the track diagram editor, the diagram sometimes flickers."
-        // Every placement rebuilds the whole grid, and on the second and every later build each tile
-        // is a cache hit - so this hid the diagram and whenTilesSettled gave it back on the next EDT
-        // pass. A paint landing between those two is the blink, and whether one does depends on where
-        // the event thread happens to be, which is the "sometimes".
-        //
-        // It has to be asked HERE and not earlier: LayoutLabel counts a decode before submitting it,
-        // deliberately, so that a grid asking this question after building its labels cannot see zero
-        // while work it caused is still on its way to the pool. Every label above is built by now.
-        //
-        // A cold build is untouched - the count is not zero, and the diagram is held back and the
-        // spinner armed exactly as before. Making the HIDE wait alongside the spinner instead would
-        // have cost that: 120ms of labels floating on nothing, which is the fault the hold-back was
-        // written to remove.
+        // It has to be asked HERE and not earlier: LayoutLabel counts a decode before submitting it, deliberately, so
+        // a grid asking after building its labels cannot see zero while work it caused is still on its way to the
+        // pool.  A cold build is untouched: the count is not zero, so the diagram is held back and the spinner armed.
+        // (Making the HIDE wait alongside the spinner would cost 120ms of labels floating on nothing, the fault the
+        // hold-back exists to remove.)
         if (ui.tilesAreSettled()) return;
 
-        // And a diagram already on screen is not taken away to be rebuilt (OB-109).
+        // And a diagram already on screen is not taken away to be rebuilt (OB-109).  The hold-back is for a page
+        // ARRIVING, and hiding one that is already drawn is the opposite of what it is for: the editor rebuilds the
+        // whole grid after every placement, so the first tile of a type nobody has drawn at this size is one decode,
+        // and one decode would take the entire page off the screen.
         //
-        // The hold-back was written for a page ARRIVING - "a diagram used to arrive in two stages" -
-        // and hiding one that is already drawn is the opposite of what it is for. The editor rebuilds
-        // the whole grid after every placement, so the first tile of a type nobody has drawn at this
-        // size is one decode, and one decode was taking the entire page off the screen.
+        // Not "never hide" on a replacement either: changing the tile SIZE re-keys every image, and a page arriving
+        // square by square is the thing the spinner exists for.  So a replacement waits with the spinner instead.
+        // If the rebuild is quick, which every placement is, the reveal gets there first and nothing is ever hidden;
+        // if it is slow, the diagram goes behind the spinner 120ms in, as a cold page does.
         //
-        // Not "never hide" on a replacement either: changing the tile SIZE re-keys every image, and a
-        // page arriving square by square is the thing the spinner exists for. So a replacement waits
-        // with the spinner instead. If the rebuild is quick - which every placement is - the reveal
-        // gets there first and nothing is ever hidden; if it is slow, the diagram goes behind the
-        // spinner 120ms in, exactly as a cold page does.
-        // A REBUILD AT THE SAME SIZE IS LEFT ALONE ENTIRELY (MT-273).
-        //
-        // Adam, 2026-09-04, testing MT-273: "Track diagram viewer works.  The editor and autonomy
-        // still has the flicker."
-        //
-        // `replacing` already stopped the page being hidden HERE - that was OB-109 - and the grace
-        // timer below was never told.  So a rebuild with one decode outstanding stayed up for 120ms
-        // and was then taken away and put behind a spinner anyway.  The editor rebuilds the whole
-        // grid after every placement, and the tile just placed is exactly the decode that keeps the
-        // count above zero, so this fired on the commonest action in the editor.
-        //
-        // Measured rather than reasoned: a probe built a grid, let the tiles settle, held one decode
-        // open and rebuilt over the same panel at the same size.  Visible immediately, one child;
-        // 400ms later invisible, two children.  The page had been taken off the screen and a spinner
-        // put over it.
-        //
-        // Half a fix is what made it hard to see.  OB-109 fixed the hide and left the timer, so the
-        // symptom moved from "instant blink" to "blink 120ms later" - still there, and no longer
-        // matching the description of the bug that had been closed.
+        // A REBUILD AT THE SAME SIZE IS LEFT ALONE ENTIRELY (MT-273).  `replacing` stops the page being hidden HERE,
+        // but the grace timer below would still fire: a rebuild with one decode outstanding would stay up for 120ms
+        // and then be taken away and put behind a spinner anyway.  The editor rebuilds after every placement, and the
+        // tile just placed is exactly the decode that keeps the count above zero.
         if (sameSizeRebuild) return;
 
         if (!replacing) container.setVisible(false);
 
         final LoadingSpinner spinner = new LoadingSpinner();
 
-        // Sized to the space the diagram will take, so nothing jumps when the two are swapped - and
-        // so the glass lands in the MIDDLE of it (OB-129).
-        //
-        // The 400 cap that used to be here defeated both. The parent is laid out with FlowLayout,
-        // which aligns to the top, so a 400-square box over a larger diagram sat at the top of the
-        // page rather than over the middle of it. The glass is centred within this component already;
-        // what was wrong is how much of the page the component covered. Its drawn size no longer
-        // follows the component - see MAX_GLASS_H.
+        // Sized to the space the diagram will take, so nothing jumps when the two are swapped, and so the glass
+        // lands in the MIDDLE of it (OB-129).  The parent is laid out with FlowLayout, which aligns to the top, so a
+        // smaller capped box over a larger diagram would sit at the top of the page rather than over the middle of
+        // it.  The glass is centred within this component already; its drawn size does not follow the component (see
+        // MAX_GLASS_H).
         spinner.setPreferredSize(new Dimension(maxWidth, maxHeight));
 
         final boolean[] revealed = {false};
