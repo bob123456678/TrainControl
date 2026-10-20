@@ -462,8 +462,6 @@ public class testATailPastASwitchIsAskedAbout
         return new java.util.HashMap<>(layout.edgesCoveredByStandingTrains());
     }
 
-    // ---------------------------------------------------------------------------------------------
-
     private static Point tunnel()
     {
         Point found = layout.getPoint(TUNNEL);

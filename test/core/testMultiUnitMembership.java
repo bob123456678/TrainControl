@@ -101,9 +101,7 @@ public class testMultiUnitMembership
         assertEquals(members.size(), 2, "the other member went missing: " + members);
     }
 
-    // ---------------------------------------------------------------------------------------------
     // What a reader of the consist can see while it is being rebuilt (S14-B4, raised to A by NSV).
-    // ---------------------------------------------------------------------------------------------
 
     /**
      * Rebuilding a consist does not change the map somebody is already reading.
@@ -543,9 +541,7 @@ public class testMultiUnitMembership
         }
     }
 
-    // ---------------------------------------------------------------------------------------------
     // Deleting a member.  These pin behaviour that currently works.
-    // ---------------------------------------------------------------------------------------------
 
     /**
      * The core of the delete fix, which had no coverage at all.
@@ -683,12 +679,10 @@ public class testMultiUnitMembership
             + "locomotive's own lock");
     }
 
-    // ---------------------------------------------------------------------------------------------
     // Re-keying a member.  A locomotive's hashCode is built from its name, address and decoder type,
     // and all three are mutable in place - so a member that is renamed or re-addressed while linked
     // sits in the map under a hash that no longer matches it.  Iteration still finds it; every
     // lookup - containsKey, remove - does not.
-    // ---------------------------------------------------------------------------------------------
 
     /**
      * changeLocAddress must not route through deleteLoc.  It is a re-key of a locomotive that

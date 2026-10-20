@@ -250,8 +250,6 @@ public class testStuckTrainAdvisory
         waiting.interrupt();
     }
 
-    // ---------------------------------------------------------------------------------------------
-
     /**
      * Three stations in a line, so a train sent from one end crosses two sensors to reach the other.
      */

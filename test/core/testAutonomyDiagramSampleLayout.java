@@ -804,7 +804,7 @@ public class testAutonomyDiagramSampleLayout
     {
         GraphReducer wideOpen = reduceWithEveryBranchOpen();
 
-        // --- the derived graph: every pair of edges sharing a tile must be locked -----------------
+        // the derived graph: every pair of edges sharing a tile must be locked
         List<String> derivedGaps = new ArrayList<>();
 
         List<ReducedEdge> edges = new ArrayList<>(wideOpen.getEdges());
@@ -846,7 +846,7 @@ public class testAutonomyDiagramSampleLayout
             + "certainly has junctions - sharesATile could not have caught an overlap even if one "
             + "existed, which is exactly what an emptied ReducedEdge.getPath() looks like");
 
-        // --- the hand-built graph, judged by the same tiles ---------------------------------------
+        // the hand-built graph, judged by the same tiles
         Map<String, Set<TileKey>> legacyExtent = new LinkedHashMap<>();
         Map<String, JSONObject> legacyEdges = new LinkedHashMap<>();
         int ambiguous = 0;
@@ -1650,7 +1650,7 @@ public class testAutonomyDiagramSampleLayout
         return false;
     }
 
-    // --- the report -------------------------------------------------------------------------------
+    // the report
 
     /**
      * Everything worth reading, printed once.  Categories follow the plan: what is only in the legacy

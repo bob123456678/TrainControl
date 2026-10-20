@@ -299,8 +299,6 @@ public class testDownloadUpdateFetchesTheNewVersion
         assertFalse(target().exists(), "a cancelled question downloaded the new version");
     }
 
-    // ---------------------------------------------------------------------------------------------
-
     /** The question's first sentence, which the answer is chosen by. */
     private static String firstLineOfTheQuestion()
     {

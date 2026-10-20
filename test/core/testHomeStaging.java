@@ -78,9 +78,7 @@ public class testHomeStaging
         }
     }
 
-    // ---------------------------------------------------------------------------------------------
     // Fixtures
-    // ---------------------------------------------------------------------------------------------
 
     private static String json(String s)
     {
@@ -900,9 +898,7 @@ public class testHomeStaging
         }
     }
 
-    // ---------------------------------------------------------------------------------------------
     // Where home comes from
-    // ---------------------------------------------------------------------------------------------
 
     /**
      * Loading the graph claims a home for every locomotive it places.
@@ -978,9 +974,7 @@ public class testHomeStaging
             "the released station is claimable again");
     }
 
-    // ---------------------------------------------------------------------------------------------
     // Planning
-    // ---------------------------------------------------------------------------------------------
 
     /**
      * Three stations in a line, one way only - there is no route from any station back to itself.
@@ -1459,9 +1453,7 @@ public class testHomeStaging
         assertEveryoneHome(layout);
     }
 
-    // ---------------------------------------------------------------------------------------------
     // Loading the timetable
-    // ---------------------------------------------------------------------------------------------
 
     /**
      * The plan is handed to the existing timetable machinery rather than to a second execution engine.
@@ -1561,9 +1553,7 @@ public class testHomeStaging
             + "stays on for whatever ordinary timetable is loaded next");
     }
 
-    // ---------------------------------------------------------------------------------------------
     // Assigning a home, rather than deriving one
-    // ---------------------------------------------------------------------------------------------
 
     /**
      * An assignment says where a locomotive belongs; standing somewhere only ever said where it was.
@@ -2704,13 +2694,11 @@ public class testHomeStaging
         assertEquals(layout.getHomeStations().size(), before + 1);
     }
 
-    // =============================================================================================
     // Point types in the path, rather than only at its end
     //
     // The suite pinned canBeHome - the rule for where a locomotive may COME TO REST - and nothing at
     // all about what it may drive through.  These cover the traversal half: terminus, reversing,
     // non-station, exclusions and shared sensors, in the middle of a route rather than at the end.
-    // =============================================================================================
 
     /**
      * The four-station ring, with extra JSON spliced onto any of its stations.
@@ -3434,9 +3422,7 @@ public class testHomeStaging
         for (int i = 0; i < names.length; i++) loc(names[i]).setReversible(was[i]);
     }
 
-    // ---------------------------------------------------------------------------------------------
     // Terminus
-    // ---------------------------------------------------------------------------------------------
 
     /**
      * A terminus is a legitimate place to put a train mid-plan.
@@ -4572,9 +4558,7 @@ public class testHomeStaging
         assertEquals(plan.getMoves().get(0).getEnd().getName(), "HS B");
     }
 
-    // ---------------------------------------------------------------------------------------------
     // Reversing
-    // ---------------------------------------------------------------------------------------------
 
     /**
      * Two roads to the same square that differ only in whether they passed a reversing point are two
@@ -4700,9 +4684,7 @@ public class testHomeStaging
         assertTrue(HomeStaging.snapshot(resting).plan().isPossible());
     }
 
-    // ---------------------------------------------------------------------------------------------
     // Exclusions on the way past - collision prevention, not just parking
-    // ---------------------------------------------------------------------------------------------
 
     /**
      * A station's exclusion list says where a locomotive may not STOP - not where it may not go.
@@ -4955,9 +4937,7 @@ public class testHomeStaging
             + "that against an at-rest oracle reports the rule as a defect");
     }
 
-    // ---------------------------------------------------------------------------------------------
     // Shared sensors
-    // ---------------------------------------------------------------------------------------------
 
     /**
      * Two active points that report one sensor are never both occupied.
@@ -5372,9 +5352,7 @@ public class testHomeStaging
         assertEveryoneHome(layout);
     }
 
-    // ---------------------------------------------------------------------------------------------
     // FR-001 written once (DR-B2), and the audit that grades it (DR-B1)
-    // ---------------------------------------------------------------------------------------------
 
     /**
      * A square with everything about it optional.

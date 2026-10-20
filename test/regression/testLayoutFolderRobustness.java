@@ -541,8 +541,6 @@ public class testLayoutFolderRobustness
         }
     }
 
-    // ---------------------------------------------------------------------------------------------
-
     private static LayoutDiagram page(String name) throws IOException
     {
         LayoutDiagram page = new LayoutDiagram(name, 8, 6, null, null);

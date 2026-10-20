@@ -190,8 +190,6 @@ public class testTheRouteListShowsWhatRuns
             "the routes ended and a mark is still there");
     }
 
-    // ---------------------------------------------------------------------------------------------
-
     /**
      * With the power off, a click on a route's row - not its play button - opens the route's editor and asks nothing
      * (FR-140).  Adam: "when the power is off, clicking on routes in the route tab should open the editor rather than ask
@@ -300,7 +298,6 @@ public class testTheRouteListShowsWhatRuns
         }
     }
 
-    // ---------------------------------------------------------------------------------------------
     // THE ROUTE LIST AS THE USER DRIVES IT (FR-136 Phase 6): real clicks on the table, its right-click menu, Find Route
     // and Bulk Enable, each answered through the real dialogs.  What each asserts is what came of it: the accessories
     // switched and their commands on the wire, a route made, the tab and the cell shown.

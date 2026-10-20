@@ -161,9 +161,7 @@ public class testWhatHasAWayThrough
             + " claim in this class arriving by a different road");
     }
 
-    // ---------------------------------------------------------------------------------------------
     // Fixtures
-    // ---------------------------------------------------------------------------------------------
 
     /**
      * The three shapes side by side: a plain square, a compulsory turn, and one trains may turn at.

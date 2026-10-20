@@ -582,7 +582,7 @@ public class AutonomyViewerPanel extends JPanel
         }
     }
 
-    // --- configurations ---------------------------------------------------------------------------
+    // configurations
 
     /**
      * Loads a configuration and makes it the one that runs.
@@ -2125,7 +2125,7 @@ public class AutonomyViewerPanel extends JPanel
         }
     }
 
-    // --- state ------------------------------------------------------------------------------------
+    // state
 
     /**
      * Re-reads everything and shows it.

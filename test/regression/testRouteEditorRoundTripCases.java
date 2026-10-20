@@ -22,7 +22,7 @@ import org.traincontrol.base.ThreeWaySwitch;
  */
 public class testRouteEditorRoundTripCases
 {
-    // ---- MT-003 ---------------------------------------------------------------------------------
+    // MT-003
 
     /**
      * A condition that BEGINS with a bracket comes back whole.
@@ -104,7 +104,7 @@ public class testRouteEditorRoundTripCases
             RouteCommand.RouteCommandFeedback(address, occupied));
     }
 
-    // ---- MT-004 ---------------------------------------------------------------------------------
+    // MT-004
 
     /**
      * All three positions of a three-way produce a pair, and the three pairs differ.

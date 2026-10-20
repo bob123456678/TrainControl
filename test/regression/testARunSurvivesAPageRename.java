@@ -210,7 +210,7 @@ public class testARunSurvivesAPageRename
         return "lost";
     }
 
-    // --- the running layout ------------------------------------------------------------------
+    // the running layout
 
     private static org.traincontrol.automation.Point occupiedPoint(
         org.traincontrol.automation.Layout layout)
@@ -234,7 +234,7 @@ public class testARunSurvivesAPageRename
         return null;
     }
 
-    // --- the setup ---------------------------------------------------------------------------
+    // the setup
 
     private static Map<String, String> placements(AutonomySession session)
     {

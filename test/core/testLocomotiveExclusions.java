@@ -178,7 +178,7 @@ public class testLocomotiveExclusions
         Locomotive first = placed(layout);
         Locomotive second = other(first);
 
-        // --- passage -------------------------------------------------------------------------
+        // passage
         layout.getPoint("EX_Middle").setExcludedLocs(new HashSet<>(Arrays.asList(first)));
 
         assertFalse(usesPoint(layout.getPossiblePaths(first, false), "EX_Middle"),
@@ -191,7 +191,7 @@ public class testLocomotiveExclusions
             "a locomotive that is NOT excluded was refused passage through the point, so one "
             + "operator's exclusion has shut it to the whole fleet");
 
-        // --- stopping ------------------------------------------------------------------------
+        // stopping
         Layout station = twoWaysRound();
 
         Locomotive firstAgain = placed(station);
@@ -368,7 +368,7 @@ public class testLocomotiveExclusions
         assertFalse(back.getPoint("EX_Middle").isAllowOnlyListed(), "a list of exclusions came back as an allow-only list");
     }
 
-    // --- helpers ----------------------------------------------------------------------------------
+    // helpers
 
     /**
      * Start, a plain intermediate point, a station in the middle, and a station beyond it - plus a

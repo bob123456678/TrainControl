@@ -189,7 +189,7 @@ public class testRenameRoundTripThroughTheUIPath
         assertFalse(names.contains(page), "the old page is still there too.  Got: " + names);
     }
 
-    // --- what the setup holds -------------------------------------------------------------------
+    // what the setup holds
 
     /**
      * The whole gesture, including what the window does AFTER the rename.
@@ -576,7 +576,7 @@ public class testRenameRoundTripThroughTheUIPath
         return best;
     }
 
-    // --- the index ----------------------------------------------------------------------------
+    // the index
 
     /**
      * The id the layout index currently gives a page, or 0.
@@ -615,7 +615,7 @@ public class testRenameRoundTripThroughTheUIPath
         return null;
     }
 
-    // --- fixtures -----------------------------------------------------------------------------
+    // fixtures
 
     private static List<LayoutDiagram> pagesIn(File folder) throws Exception
     {

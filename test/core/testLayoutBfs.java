@@ -337,7 +337,6 @@ public class testLayoutBfs
         assertEquals(render(path), "A>B>A");
     }
 
-    // ------------------------------------------------------------------------------------------
     // Property-based tests over randomly generated graphs.
     //
     // The hand-written cases above are only as good as the topologies I thought to write, and I chose
@@ -347,7 +346,6 @@ public class testLayoutBfs
     //
     // Seeds are a fixed sequence rather than a fresh Random, so a failure is reproducible and names the
     // seed that produced it.
-    // ------------------------------------------------------------------------------------------
 
     private static final int RANDOM_SEEDS = 150;
 

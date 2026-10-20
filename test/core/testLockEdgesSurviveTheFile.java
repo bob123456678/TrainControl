@@ -342,9 +342,7 @@ public class testLockEdgesSurviveTheFile
             "reserving a square for the train already standing on it threw away its real tail");
     }
 
-    // ---------------------------------------------------------------------------------------------
     // Fixtures
-    // ---------------------------------------------------------------------------------------------
 
     /**
      * Two approaches to one throat, each locking the other, as the builder emits a shared tile.

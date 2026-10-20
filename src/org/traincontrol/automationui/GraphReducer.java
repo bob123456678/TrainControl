@@ -897,7 +897,7 @@ public class GraphReducer
         return Collections.unmodifiableList(problems);
     }
 
-    // --- points -----------------------------------------------------------------------------------
+    // points
 
     private void buildPoints()
     {
@@ -983,7 +983,7 @@ public class GraphReducer
         return false;
     }
 
-    // --- edges ------------------------------------------------------------------------------------
+    // edges
 
     /**
      * Records a problem unless the same one is already recorded.
@@ -1412,7 +1412,7 @@ public class GraphReducer
         return total;
     }
 
-    // --- locks ------------------------------------------------------------------------------------
+    // locks
 
     /**
      * Two edges that share a tile are the same piece of railway and cannot run at once.

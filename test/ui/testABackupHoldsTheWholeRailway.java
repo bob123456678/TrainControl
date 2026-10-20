@@ -235,8 +235,6 @@ public class testABackupHoldsTheWholeRailway
             + " open the folder the backup is in (OB-311)");
     }
 
-    // ---------------------------------------------------------------------------------------------
-
     /**
      * Clicks Backup TrainControl Data, answers its last question so, and gives back the archive that question named.
      */

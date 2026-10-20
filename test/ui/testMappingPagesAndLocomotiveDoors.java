@@ -195,7 +195,6 @@ public class testMappingPagesAndLocomotiveDoors
         assertTrue(waitFor(() -> ui.getActiveLoc() == one), "precondition: A does not show the first train");
     }
 
-    // ---------------------------------------------------------------------------------------------
     // Turning the page
 
     /**
@@ -279,7 +278,6 @@ public class testMappingPagesAndLocomotiveDoors
         assertTrue(waitFor(() -> ui.getLocMappingNumber() == pageQ), "Alt+Right did not turn to the next page");
     }
 
-    // ---------------------------------------------------------------------------------------------
     // Copy, paste and reset
 
     /**
@@ -386,7 +384,6 @@ public class testMappingPagesAndLocomotiveDoors
         assertSame(onKey(KeyEvent.VK_A), three, "Reset Mappings emptied another page as well");
     }
 
-    // ---------------------------------------------------------------------------------------------
     // The locomotive's doors
 
     /**
@@ -643,8 +640,6 @@ public class testMappingPagesAndLocomotiveDoors
         assertTrue(waitFor(() -> lastSpeed(mark, one) == saved), "Alt+V did not tell the railway");
     }
 
-    // ---------------------------------------------------------------------------------------------
-
     /** Whether a function is on in the train's saved preset. */
     private static boolean saved(Locomotive loc, int fn)
     {
@@ -875,8 +870,6 @@ public class testMappingPagesAndLocomotiveDoors
         return t;
     }
 
-    // ---------------------------------------------------------------------------------------------
-
     private static Component keyboard() throws Exception
     {
         return (Component) field("KeyboardTab");
@@ -919,7 +912,6 @@ public class testMappingPagesAndLocomotiveDoors
         return Components.waitFor(condition, WAIT);
     }
 
-    // ---------------------------------------------------------------------------------------------
     // A stand-in for the Mouse helper another worker owns
 
     /**

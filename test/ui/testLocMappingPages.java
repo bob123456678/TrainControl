@@ -295,9 +295,7 @@ public class testLocMappingPages
     {
         return message.replace("<html>", "").replace("</html>", "");
     }
-    // ------------------------------------------------------------------------------------------------------------------
     // FR-128: the line over the locomotive's name is a keycap and two pills
-    // ------------------------------------------------------------------------------------------------------------------
 
     /**
      * Adam's page name that is wider than any pill can hold: 22 capital Ms, as in his own test data (FR-128: "make sure
@@ -1854,9 +1852,7 @@ public class testLocMappingPages
         }
     }
 
-    // ------------------------------------------------------------------------------------------------------------------
     // FR-128, round 7: the page tabs and the page label follow the one rule the line over the name does
-    // ------------------------------------------------------------------------------------------------------------------
 
     /**
      * Forty-four Ms: wider than the page label's forty-letter cut, which the 22-M page is not.

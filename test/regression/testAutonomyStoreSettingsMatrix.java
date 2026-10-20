@@ -193,9 +193,7 @@ public class testAutonomyStoreSettingsMatrix
         "heldForAbsentPages"
     ));
 
-    // =============================================================================================
     // The matrix
-    // =============================================================================================
 
     /**
      * Every setting follows its square when the tile moves.
@@ -451,9 +449,7 @@ public class testAutonomyStoreSettingsMatrix
         }
     }
 
-    // =============================================================================================
     // The guard that keeps the matrix complete
-    // =============================================================================================
 
     /**
      * Every collection the store holds is either in this matrix or declared not to belong in it.
@@ -518,8 +514,6 @@ public class testAutonomyStoreSettingsMatrix
                 + ", and the store has no such field - so the guard is not guarding it");
         }
     }
-
-    // =============================================================================================
 
     /**
      * What this setting reads as on a square that has never had one, so that "gone" can be asserted

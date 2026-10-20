@@ -1448,7 +1448,7 @@ public class TileGraph
         return out;
     }
 
-    // --- internals --------------------------------------------------------------------------------
+    // internals
 
     /**
      * Whether any position this tile can take requires an accessory it does not have.
@@ -1843,7 +1843,7 @@ public class TileGraph
         return route.other(entrySide) == allowedToward;
     }
 
-    // --- arms (OB-351) ------------------------------------------------------------------------------
+    // arms (OB-351)
 
     /**
      * The answer in force on a road: what is stored, narrowed by the hardware (VD18-B1, VD18-C2).
@@ -2100,7 +2100,7 @@ public class TileGraph
         return out;
     }
 
-    // --- runs (OB-321, OB-361) --------------------------------------------------------------------
+    // runs (OB-321, OB-361)
 
     /**
      * One run of plain track: the tiles between two points, in order, and the points at either end.

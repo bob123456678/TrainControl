@@ -300,8 +300,6 @@ public class testTheLengthPromptHasTheKeyboard
         answer(first, I18n.t("ui.cancel"));
     }
 
-    // ---------------------------------------------------------------------------------------------
-
     private static void awaitTheEditorFocused() throws Exception
     {
         long giveUp = System.currentTimeMillis() + 5000;

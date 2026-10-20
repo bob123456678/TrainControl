@@ -575,9 +575,7 @@ public class testReturnHomeSaysWhy
             + java.util.Arrays.toString(parts) + ": " + why);
     }
 
-    // ---------------------------------------------------------------------------------------------
     // Fixtures
-    // ---------------------------------------------------------------------------------------------
 
     private static boolean anyMentions(List<String> sentences, String... all)
     {

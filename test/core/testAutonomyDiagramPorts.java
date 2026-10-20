@@ -483,7 +483,7 @@ public class testAutonomyDiagramPorts
             sidesAt(componentType.DOUBLE_CURVE, 0, 0));
     }
 
-    // --- helpers ----------------------------------------------------------------------------------
+    // helpers
 
     /**
      * The routes of a tile as a set of side-pair strings in NESW order, e.g. {"NS", "EW"}.

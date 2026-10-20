@@ -173,7 +173,6 @@ public class testDrivingFromTheKeyboard
         show(oneKey, one);
     }
 
-    // ---------------------------------------------------------------------------------------------
     // Direction
 
     /**
@@ -245,7 +244,6 @@ public class testDrivingFromTheKeyboard
             "a plain Right on a train facing forward did not turn it");
     }
 
-    // ---------------------------------------------------------------------------------------------
     // Functions
 
     /**
@@ -338,7 +336,6 @@ public class testDrivingFromTheKeyboard
         }
     }
 
-    // ---------------------------------------------------------------------------------------------
     // Speed
 
     /**
@@ -544,7 +541,6 @@ public class testDrivingFromTheKeyboard
         assertTrue(waitFor(() -> lastSpeed(mark, two) == 0), what + " told the railway nothing about the train not shown");
     }
 
-    // ---------------------------------------------------------------------------------------------
     // Power
 
     /**
@@ -620,7 +616,6 @@ public class testDrivingFromTheKeyboard
         assertTrue(wire.systemCommandsSince(back, CS2Message.CMD_SYSSUB_STOP).isEmpty(), "Alt+G sent a power-off command");
     }
 
-    // ---------------------------------------------------------------------------------------------
     // Sliders
 
     /**
@@ -726,7 +721,6 @@ public class testDrivingFromTheKeyboard
         assertTrue(one.goingForward(), "the train shown, on A, was turned");
     }
 
-    // ---------------------------------------------------------------------------------------------
     // Choosing a train, the keyboard pages and the tabs
 
     /**
@@ -888,7 +882,6 @@ public class testDrivingFromTheKeyboard
             "Turn Off All Functions did not tell the railway: " + wire.since(mark));
     }
 
-    // ---------------------------------------------------------------------------------------------
     // The accessory keyboard
 
     /**
@@ -1042,8 +1035,6 @@ public class testDrivingFromTheKeyboard
         assertTrue(go < switched, "the accessory was sent before the power came on: " + sent);
     }
 
-    // ---------------------------------------------------------------------------------------------
-
     /** The power off, as the railway reports it, and the first accessory button. */
     private static JToggleButton powerOffAndTheFirstButton() throws Exception
     {
@@ -1129,8 +1120,6 @@ public class testDrivingFromTheKeyboard
         return count;
     }
 
-    // ---------------------------------------------------------------------------------------------
-
     /** The tabbed pane that holds the keyboard, where the window's key map listens. */
     private static Component keyboard()
     {
@@ -1204,7 +1193,6 @@ public class testDrivingFromTheKeyboard
         return Components.waitFor(condition, WAIT);
     }
 
-    // ---------------------------------------------------------------------------------------------
     // A stand-in for the Mouse helper another worker owns
 
     /** Brings the tabs holding a component forward and waits until it is on screen with a size. */

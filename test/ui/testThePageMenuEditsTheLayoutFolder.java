@@ -354,8 +354,6 @@ public class testThePageMenuEditsTheLayoutFolder
         assertEquals(fingerprint(), before, "the refusal changed the layout's folder");
     }
 
-    // ---------------------------------------------------------------------------------------------
-
     /** The page list: the combo box holding the layout's pages. */
     private JComboBox<?> pageList()
     {

@@ -7740,7 +7740,7 @@ public class AutonomySession
         return blocking;
     }
 
-    // --- editing ----------------------------------------------------------------------------------
+    // editing
 
     public void setDirection(TileKey tile, RouteId routeId, Direction direction)
     {

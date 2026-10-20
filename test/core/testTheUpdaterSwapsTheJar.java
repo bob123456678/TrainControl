@@ -775,8 +775,6 @@ public class testTheUpdaterSwapsTheJar
             "a running jar already named for the new version would be downloaded over");
     }
 
-    // ---------------------------------------------------------------------------------------------
-
     private JarUpdater.Request request()
     {
         return new JarUpdater.Request(jar, download, new File(folder, JarUpdater.LOCK_NAME),

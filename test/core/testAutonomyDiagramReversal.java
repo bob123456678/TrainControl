@@ -464,7 +464,7 @@ public class testAutonomyDiagramReversal
             "the default belongs in the model, not in every point of every file");
     }
 
-    // --- the track ---------------------------------------------------------------------------------
+    // the track
 
     /**
      * The running line with a siding trailing off behind the junction sensor.
@@ -497,7 +497,7 @@ public class testAutonomyDiagramReversal
         return page;
     }
 
-    // --- helpers -----------------------------------------------------------------------------------
+    // helpers
 
     private JSONObject build(LayoutDiagram page, Set<TileKey> stations, Set<TileKey> reversible,
         JSONObject extras)

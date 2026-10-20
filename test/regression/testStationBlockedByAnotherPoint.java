@@ -377,8 +377,6 @@ public class testStationBlockedByAnotherPoint
         }
     }
 
-    // ------------------------------------------------------------------------------------------
-
     private void open() throws IOException
     {
         session.open(Arrays.asList(page()));
@@ -599,8 +597,6 @@ public class testStationBlockedByAnotherPoint
             "a station was recorded as held back by itself. Standing there already decides whether it "
             + "is free, so this makes it a station nothing can ever be sent to");
     }
-
-    // ------------------------------------------------------------------------------------------
 
     /**
      * The train leaving the watched point may still be sent to the station that point holds back.

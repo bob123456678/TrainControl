@@ -73,7 +73,7 @@ public class testLocomotiveIdentityPropagates
         if (model != null) model.stop();
     }
 
-    // --- autonomy state ---------------------------------------------------------------------------
+    // autonomy state
 
     /**
      * Every collection in the running layout lets go of a deleted locomotive.
@@ -168,7 +168,7 @@ public class testLocomotiveIdentityPropagates
             "the exclusion did not follow");
     }
 
-    // --- home locomotives -------------------------------------------------------------------------
+    // home locomotives
 
     /**
      * A home assignment is held by NAME, so it is the one that breaks on a rename rather than a delete.
@@ -213,7 +213,7 @@ public class testLocomotiveIdentityPropagates
             "the home claim outlived the locomotive, so nothing placed there can ever have a home");
     }
 
-    // --- routes ------------------------------------------------------------------------------------
+    // routes
 
     /**
      * A route names locomotives in its COMMANDS and in its CONDITIONS, and only one was being repaired.
@@ -329,7 +329,7 @@ public class testLocomotiveIdentityPropagates
         assertEquals(route.getRoute().size(), 1, "and nothing of its own was taken away");
     }
 
-    // --- the guard that outlasts all of the above --------------------------------------------------
+    // the guard that outlasts all of the above
 
     /**
      * Every collection of locomotives in the running layout is named in the deletion sweep.
@@ -601,8 +601,6 @@ public class testLocomotiveIdentityPropagates
     {
         return SourceOf.withoutComments(body);
     }
-
-    // ------------------------------------------------------------------------------------------
 
     /**
      * Which of the layout's locomotive collections still mention this one, by reflection.

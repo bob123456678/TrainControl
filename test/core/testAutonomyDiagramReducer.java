@@ -1502,7 +1502,7 @@ public class testAutonomyDiagramReducer
         assertEquals(describe(first), describe(second));
     }
 
-    // --- helpers ----------------------------------------------------------------------------------
+    // helpers
 
     /**
      * A lock names EVERY copy of the track it locks, not just the first (A100).

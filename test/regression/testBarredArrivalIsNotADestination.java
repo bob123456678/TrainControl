@@ -123,8 +123,6 @@ public class testBarredArrivalIsNotADestination
             + "that set it");
     }
 
-    // ------------------------------------------------------------------------------------------
-
     /**
      * A platform in the middle of a run, so trains can reach it from either end.
      */

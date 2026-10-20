@@ -1144,7 +1144,7 @@ public class AutonomyEditorPanel extends JPanel
     }
 
 
-    // --- what a click does ------------------------------------------------------------------------
+    // what a click does
 
     /**
      * Everything that can be set on a tile, on one menu.
@@ -6551,7 +6551,7 @@ public class AutonomyEditorPanel extends JPanel
         return session.describeTile(tile);
     }
 
-    // --- state ------------------------------------------------------------------------------------
+    // state
 
     public Tool getTool()
     {

@@ -278,7 +278,7 @@ public class LoadingSpinner extends JPanel
 
         float line = (float) Math.max(1.5, glassW * 0.05);
 
-        // --- the silhouette --------------------------------------------------------------------------
+        // the silhouette
         //
         // Curved sides rather than two triangles.  A triangle pair meeting at a point is equally a bow
         // tie, and on a diagram that is how the first attempt at this read; the pinch just below each
@@ -298,7 +298,7 @@ public class LoadingSpinner extends JPanel
         glass.quadTo(halfW * 0.78, -bulbH * 0.12, halfW, -bulbH);
         glass.closePath();
 
-        // --- the sand, drawn first so the outline stays crisp over it -------------------------------
+        // the sand, drawn first so the outline stays crisp over it
         //
         // Cut out of the silhouette rather than drawn as its own shape: a level is a horizontal line
         // across the glass, whatever the glass happens to be shaped like, and intersecting says that
@@ -345,7 +345,7 @@ public class LoadingSpinner extends JPanel
             g2.draw(new Line2D.Double(0, 0, 0, bulbH * remaining));
         }
 
-        // --- the glass ------------------------------------------------------------------------------
+        // the glass
         g2.setColor(FRAME_GREY);
         g2.setStroke(new BasicStroke(line, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
 

@@ -405,8 +405,6 @@ public class testATrainIsPutOnlyWhereItCanStart
             + standing.getName() + " - no station, so autonomy will not start it from there");
     }
 
-    // ---------------------------------------------------------------------------------------------
-
     private static AutonomySession session() throws Exception
     {
         AutonomySession session = new AutonomySession(sandbox.getFolder());

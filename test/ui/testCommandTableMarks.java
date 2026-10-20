@@ -58,7 +58,7 @@ public class testCommandTableMarks
             assertNotEquals(first, second, "the rows are indistinguishable, so nothing below can tell "
                 + "which one moved");
 
-            // --- the arrows -------------------------------------------------------------------
+            // the arrows
             act(frame, 0, RouteEditorFrame.markMoveDown());
 
             assertEquals(frame.commandRowCountForTest(), 3, "moving a row changed how many there are");
@@ -73,7 +73,7 @@ public class testCommandTableMarks
                 + "arrows must leave a row where they put it, not spring back");
             assertEquals(target(frame, 1), second);
 
-            // --- duplicate --------------------------------------------------------------------
+            // duplicate
             act(frame, 0, RouteEditorFrame.markCopy());
 
             assertEquals(frame.commandRowCountForTest(), 4,
@@ -85,7 +85,7 @@ public class testCommandTableMarks
                 "the copy is not directly under the row it was made from, which is where it belongs - "
                 + "the reason to copy a row is that the next command is nearly the same one");
 
-            // --- delete -----------------------------------------------------------------------
+            // delete
             act(frame, 1, RouteEditorFrame.markDelete());
 
             assertEquals(frame.commandRowCountForTest(), 3,

@@ -3935,8 +3935,6 @@ public class testTheEditorNamesItsShortcuts
             "the Track Lengths toggle does not say Control+G: " + tip[0]);
     }
 
-    // ---------------------------------------------------------------------------------------------
-
     private static TileKey aStationOnThePage()
     {
         for (TileKey tile : session.getStore().getNamedTiles())

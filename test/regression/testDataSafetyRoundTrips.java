@@ -51,7 +51,7 @@ public class testDataSafetyRoundTrips
         delete(folder);
     }
 
-    // ---- MT-074 ---------------------------------------------------------------------------------
+    // MT-074
 
     /**
      * Export the setup, re-import it, and get the same setup - with the files untouched.
@@ -124,7 +124,7 @@ public class testDataSafetyRoundTrips
         }
     }
 
-    // ---- MT-075 ---------------------------------------------------------------------------------
+    // MT-075
 
     /**
      * Saving a page leaves a backup beside it, once, and never a corrupt page.
@@ -205,8 +205,6 @@ public class testDataSafetyRoundTrips
                 "a staging file was left behind beside the page: " + name);
         }
     }
-
-    // ------------------------------------------------------------------------------------------
 
     private AutonomySession furnished() throws IOException
     {

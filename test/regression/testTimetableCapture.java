@@ -145,8 +145,6 @@ public class testTimetableCapture
             + "drives a whole session that records nothing");
     }
 
-    // ---------------------------------------------------------------------------------------------
-
     /**
      * How long the run from A to B is measured, and it is LONGER THAN THE TRAIN on purpose.
      *

@@ -254,8 +254,6 @@ public class testEditorSwitchClearsPageState
             + "MUST_BE_UNMOUNTED and make sure the teardown clears it.");
     }
 
-    // ------------------------------------------------------------------------------------------
-
     private String arriveAtSource() throws Exception
     {
         return methodSource("private void arriveAt(");

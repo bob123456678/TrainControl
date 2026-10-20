@@ -338,9 +338,7 @@ public final class HomeStaging
         return Collections.unmodifiableList(pausedAway);
     }
 
-    // ---------------------------------------------------------------------------------------------
     // The answer
-    // ---------------------------------------------------------------------------------------------
 
     /**
      * Why a staging run is or is not available.
@@ -494,9 +492,7 @@ public final class HomeStaging
         }
     }
 
-    // ---------------------------------------------------------------------------------------------
     // Planning
-    // ---------------------------------------------------------------------------------------------
 
     /**
      * Works out how to get every homed locomotive back to its home.
@@ -1204,9 +1200,7 @@ public final class HomeStaging
         return out;
     }
 
-    // ---------------------------------------------------------------------------------------------
     // The shadow rules
-    // ---------------------------------------------------------------------------------------------
 
     /**
      * A route from one station to another that is clear in this hypothetical state, or null.
@@ -2763,9 +2757,7 @@ public final class HomeStaging
         return false;
     }
 
-    // ---------------------------------------------------------------------------------------------
     // State helpers
-    // ---------------------------------------------------------------------------------------------
 
     /**
      * Whether two points are one detection section - both active, and reporting the same sensor.

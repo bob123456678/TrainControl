@@ -170,8 +170,6 @@ public class testYourOwnRoutesToggleWithoutASync
         }
     }
 
-    // ---------------------------------------------------------------------------------------------
-
     /**
      * A route with an id below 1000 that nothing else uses, locked when the station is to have carried it.
      */

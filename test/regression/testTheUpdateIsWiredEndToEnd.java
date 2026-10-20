@@ -326,8 +326,6 @@ public class testTheUpdateIsWiredEndToEnd
             "File > Backup does not go through backupData");
     }
 
-    // ---------------------------------------------------------------------------------------------
-
     /**
      * A command that runs `support.ReportsStarted` in a plain JVM of this test's own Java.
      */

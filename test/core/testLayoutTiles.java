@@ -89,9 +89,7 @@ public class testLayoutTiles
         if (sandbox != null) sandbox.close();
     }
 
-    // ------------------------------------------------------------------------------------------------
     // B9 - MarklinFeedback.updateTiles races with addTile
-    // ------------------------------------------------------------------------------------------------
 
     /**
      * Structural half, deterministic: the tile collection must be thread-safe, because addTile is
@@ -205,9 +203,7 @@ public class testLayoutTiles
             "concurrent updateTiles()/addTile() must not fail - " + captured.get());
     }
 
-    // ------------------------------------------------------------------------------------------------
     // UIX-B1 and UIX-B2, the 2026-09-19 review round
-    // ------------------------------------------------------------------------------------------------
 
     /**
      * The two highlights do not put each other's stale picture back (UIX-B2).
@@ -908,9 +904,7 @@ public class testLayoutTiles
         }
     }
 
-    // ------------------------------------------------------------------------------------------------
     // B10 - LayoutLabel mutates Swing state off the EDT
-    // ------------------------------------------------------------------------------------------------
 
     /**
      * Every icon change must happen on the EDT, including the temporary change-highlight.

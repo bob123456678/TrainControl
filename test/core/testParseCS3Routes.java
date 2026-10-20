@@ -162,13 +162,11 @@ public class testParseCS3Routes
     {
     }
 
-    // ---------------------------------------------------------------------------------------------
     // Three-way turnouts in CS3 routes
     //
     // The shipped fixtures do not reach this code: CS3_mags.json holds exactly one dreiwegweiche
     // (id 8, address 5, mm) and not one of the 50 routes in CS3_automatics.json references it.  So the
     // routes below are built here and parsed against the real accessory list.
-    // ---------------------------------------------------------------------------------------------
 
     /** The mag id of the fixture's only three-way, whose address is 5. */
     private static final int THREE_WAY_MAG_ID = 8;

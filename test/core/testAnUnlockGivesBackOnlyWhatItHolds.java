@@ -171,8 +171,6 @@ public class testAnUnlockGivesBackOnlyWhatItHolds
         assertEquals(occupancy(second), 0, "an atomic run's unlock kept an edge it held");
     }
 
-    // ---------------------------------------------------------------------------------------------
-
     private static Point point(Layout layout, String name) throws Exception
     {
         org.traincontrol.marklin.MarklinFeedback sensor = model.newFeedback(addresses++, null);

@@ -98,9 +98,7 @@ public class testInvalidInput
         if (model != null) model.deleteRoute(ROUTE_NAME);
     }
 
-    // ---------------------------------------------------------------------------------------------
     // Helpers
-    // ---------------------------------------------------------------------------------------------
 
     /**
      * Empties one logical accessory address, in memory only - nothing here calls saveState.
@@ -164,9 +162,7 @@ public class testInvalidInput
         assertFalse(layout.isValid(), description + ": was accepted, but should have been rejected");
     }
 
-    // ---------------------------------------------------------------------------------------------
     // The autonomy configuration file
-    // ---------------------------------------------------------------------------------------------
 
     /**
      * Reading a version out of a release name survives the name (C5).
@@ -412,9 +408,7 @@ public class testInvalidInput
                 ""));
     }
 
-    // ---------------------------------------------------------------------------------------------
     // The accessory command box in the graph edge editor
-    // ---------------------------------------------------------------------------------------------
 
     /**
      * What the user types into an edge's command box, one line at a time.  Each of these must produce a
@@ -486,9 +480,7 @@ public class testInvalidInput
         assertNotNull(Edge.validateConfigCommand(ACC_ACCEPTED, " Green ", model));
     }
 
-    // ---------------------------------------------------------------------------------------------
     // Route file import
-    // ---------------------------------------------------------------------------------------------
 
     /**
      * Choosing the wrong file must not cost the user their routes.

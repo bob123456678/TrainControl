@@ -320,7 +320,7 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
             model.clearAutoLayout();
         }
 
-        // --- the control ---------------------------------------------------------------------------
+        // the control
         assertFalse(model.isAutonomyRunning(),
             "the control needs autonomy stopped, or it is not a control");
 

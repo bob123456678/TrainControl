@@ -468,8 +468,6 @@ public class testCancelRestoresPlacements
             "the deleted station came back after a restart");
     }
 
-    // ------------------------------------------------------------------------------------------
-
     /**
      * A sensor square with everything on it a square can carry: a name, a station, a locomotive.
      */

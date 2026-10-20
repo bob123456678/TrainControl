@@ -875,8 +875,6 @@ public class testPageIdsAreDurable
             "another page's placement was dropped too");
     }
 
-    // ---------------------------------------------------------------------------------------------
-
     /**
      * The index can say which pages a write would drop, and does not count the ones somebody meant.
      *
@@ -1370,7 +1368,7 @@ public class testPageIdsAreDurable
         int alphaId = issued.get("Alpha");
         int charlieId = issued.get("Charlie");
 
-        // --- 1. rename a page to something that sorts to the FRONT -------------------------------
+        // 1. rename a page to something that sorts to the FRONT
         Map<String, String> renamed = new LinkedHashMap<>();
         renamed.put("Bravo", "Aardvark");
 
@@ -1381,12 +1379,12 @@ public class testPageIdsAreDurable
 
         assertUntouched(afterRename, onAlpha, onCharlie, alphaId, charlieId, "after renaming Bravo");
 
-        // --- 2. add a page -----------------------------------------------------------------------
+        // 2. add a page
         write("Aardvark", "Alpha", "Charlie", "Delta");
 
         assertUntouched(reload(), onAlpha, onCharlie, alphaId, charlieId, "after adding Delta");
 
-        // --- 3. delete the page that was renamed --------------------------------------------------
+        // 3. delete the page that was renamed
         AutonomyCompanionStore before = reload();
 
         before.deletePage("Aardvark");
@@ -1396,7 +1394,7 @@ public class testPageIdsAreDurable
 
         assertUntouched(reload(), onAlpha, onCharlie, alphaId, charlieId, "after deleting Aardvark");
 
-        // --- 4. and add another, which may take the retired id -------------------------------------
+        // 4. and add another, which may take the retired id
         write("Alpha", "Charlie", "Delta", "Echo");
 
         assertUntouched(reload(), onAlpha, onCharlie, alphaId, charlieId, "after adding Echo");

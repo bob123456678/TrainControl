@@ -1086,7 +1086,7 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
             "a save with nothing missing reported itself as refused, which would put a dialog in "
             + "front of somebody on an ordinary save");
 
-        // --- and now with the second page missing ------------------------------------------------
+        // and now with the second page missing
         AutonomySession partial = new AutonomySession(layout);
 
         partial.open(Arrays.asList(runOfTrack()));
@@ -1145,7 +1145,7 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
 
         session.save();
 
-        // --- the second page fails to load this time -------------------------------------------
+        // the second page fails to load this time
         AutonomySession partial = new AutonomySession(layout);
 
         partial.open(Arrays.asList(runOfTrack()));
@@ -1161,7 +1161,7 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
 
         partial.save();
 
-        // --- and the page that never loaded still has everything --------------------------------
+        // and the page that never loaded still has everything
         AutonomySession reopened = new AutonomySession(layout);
 
         reopened.open(Arrays.asList(runOfTrack(), secondPage()));

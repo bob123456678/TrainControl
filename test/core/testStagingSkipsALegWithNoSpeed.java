@@ -184,9 +184,7 @@ public class testStagingSkipsALegWithNoSpeed
             + "dialog for a run that went on to the end without one leg");
     }
 
-    // ---------------------------------------------------------------------------------------------
     // Fixtures
-    // ---------------------------------------------------------------------------------------------
 
     /**
      * Four stations in a ring, every edge in both directions, so the graph never refuses anything.

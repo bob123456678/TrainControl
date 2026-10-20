@@ -316,7 +316,7 @@ public class testARunSurvivesADiagramEdit
                 + "the train back where it started - which is OB-144, through the method every door "
                 + "that fixes it calls");
 
-            // --- and NOT while the railway is moving ------------------------------------------
+            // and NOT while the railway is moving
             //
             // ON THE CURRENT LAYOUT, not the one above.  whereItIsAfterARebuild calls parseAuto, which
             // REPLACES the Layout object - so a second move made on the old one, and a running flag
@@ -429,7 +429,7 @@ public class testARunSurvivesADiagramEdit
         f.setBoolean(layout, running);
     }
 
-    // --- the running layout ------------------------------------------------------------------
+    // the running layout
 
     private static org.traincontrol.automation.Point occupiedPoint(
         org.traincontrol.automation.Layout layout)
@@ -453,7 +453,7 @@ public class testARunSurvivesADiagramEdit
         return null;
     }
 
-    // --- the fixture -------------------------------------------------------------------------
+    // the fixture
 
     private static List<LayoutDiagram> pagesIn(File folder) throws Exception
     {

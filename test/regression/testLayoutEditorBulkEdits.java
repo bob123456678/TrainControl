@@ -741,9 +741,7 @@ public class testLayoutEditorBulkEdits
         }
     }
 
-    // ----------------------------------------------------------------------------------------
     // What a line moved at once asks of the store: one call, both halves.
-    // ----------------------------------------------------------------------------------------
 
     private static void apply(AutonomyCompanionStore store, support.TileLine plan)
     {

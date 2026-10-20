@@ -1275,7 +1275,7 @@ public class testAutonomyDiagramStore
             "a load that failed must leave the setup exactly as it was");
     }
 
-    // --- captions ----------------------------------------------------------------------------------
+    // captions
 
     /**
      * A caption survives being written out and read back.
@@ -1412,7 +1412,7 @@ public class testAutonomyDiagramStore
             "a caption whose page has gone is about nothing at all");
     }
 
-    // --- getting back out ---------------------------------------------------------------------------
+    // getting back out
 
     /**
      * The last configuration may be deleted.
@@ -2702,18 +2702,18 @@ public class testAutonomyDiagramStore
 
         store.save();
 
-        // --- the mutation ---------------------------------------------------------------------
+        // the mutation
         store.renamePage("Main", "Mainline");
 
         TileKey renamed = new TileKey("Mainline", 4, 4);
         TileKey renamedPlaque = new TileKey("Mainline", 4, 5);
         TileKey renamedDoor = new TileKey("Mainline", 6, 6);
 
-        // --- the check, in memory -------------------------------------------------------------
+        // the check, in memory
         assertEverythingIsWhereItShouldBe(store, renamed, renamedPlaque, renamedDoor, elsewhere,
             "in memory, immediately after the rename");
 
-        // --- the save, and the load ------------------------------------------------------------
+        // the save, and the load
         java.util.Map<String, String> after = new java.util.LinkedHashMap<>();
         after.put("Mainline", "1");
         after.put("Yard", "2");
@@ -2725,7 +2725,7 @@ public class testAutonomyDiagramStore
         reloaded.setPageIds(after);
         reloaded.load();
 
-        // --- and the check again ----------------------------------------------------------------
+        // and the check again
         assertEverythingIsWhereItShouldBe(reloaded, renamed, renamedPlaque, renamedDoor, elsewhere,
             "after a save and a load - so the rename was right in memory and wrong on disk, which is "
             + "every page-rename defect this week");
@@ -2913,13 +2913,13 @@ public class testAutonomyDiagramStore
 
         store.save();
 
-        // --- the mutation ---------------------------------------------------------------------
+        // the mutation
         store.locomotiveRenamed("Old Name", "New Name");
 
         assertEquals(legOf(store, 0), "New Name", "in memory, the renamed leg");
         assertEquals(legOf(store, 1), "Other Loco", "in memory, the leg that was not renamed");
 
-        // --- save, load, and check again --------------------------------------------------------
+        // save, load, and check again
         store.save();
 
         AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);

@@ -343,7 +343,7 @@ public class DiagramMonitorDriver
     // whatever its square was last told to show, so a page switched mid-run catches up tile by tile as it
     // is built.  A whole-layout republish would be the same picture arriving later.
 
-    // --- the loop ---------------------------------------------------------------------------------
+    // the loop
 
     private void tick()
     {

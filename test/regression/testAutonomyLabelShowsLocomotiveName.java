@@ -192,8 +192,6 @@ public class testAutonomyLabelShowsLocomotiveName
             "nothing standing there is the placeholder, arrow or no arrow");
     }
 
-    // ------------------------------------------------------------------------------------------
-
     private TileKey placedAt(String name) throws IOException
     {
         session.open(Arrays.asList(runOfTrack()));

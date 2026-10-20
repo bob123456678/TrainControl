@@ -484,9 +484,7 @@ public class testAnImportKeepsOnlyThisLayoutsPages
             + " (TDR-C7)");
     }
 
-    // ---------------------------------------------------------------------------------------------
     // Fixtures
-    // ---------------------------------------------------------------------------------------------
 
     /**
      * An export from a railway with two pages, carrying a setting on each.

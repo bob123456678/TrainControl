@@ -130,8 +130,6 @@ public class testReturnHomeShowsItIsWorking
             + " the calculation it was put up for");
     }
 
-    // ---------------------------------------------------------------------------------------------
-
     private static void powerOn() throws Exception
     {
         try

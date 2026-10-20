@@ -172,9 +172,7 @@ public class testAdvancedRoutes
             conditions == null ? null : NodeExpression.fromList(conditions));
     }
 
-    // ---------------------------------------------------------------------------------------------
     // The autoloc condition driving a function command
-    // ---------------------------------------------------------------------------------------------
 
     /**
      * A route command parses whatever case it is typed in (WP-C19d).
@@ -400,9 +398,7 @@ public class testAdvancedRoutes
         }
     }
 
-    // ---------------------------------------------------------------------------------------------
     // Multi-units reached through a route
-    // ---------------------------------------------------------------------------------------------
 
     /**
      * A route function command naming a consist head reaches every member.
@@ -1532,10 +1528,8 @@ public class testAdvancedRoutes
         }
     }
 
-    // ---------------------------------------------------------------------------------------------
     // Every command and trigger, run (Adam, 2026-10-08: "Add the tests.  Advise if any fail") - the gaps
     // a read of the suite found: features that were only parsed or round-tripped, never run as a route
-    // ---------------------------------------------------------------------------------------------
 
     /** Polls a condition every 50 ms until it holds or the time is up. */
     private static boolean until(java.util.function.BooleanSupplier holds, long ms) throws InterruptedException

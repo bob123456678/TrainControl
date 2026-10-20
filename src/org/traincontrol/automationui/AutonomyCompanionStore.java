@@ -113,7 +113,7 @@ public class AutonomyCompanionStore
 
     private final File layoutFolder;
 
-    // --- shared: one copy per layout, describing the physical diagram ---------------------------
+    // shared: one copy per layout, describing the physical diagram
     private final Map<TileKey, String> pointNames = new LinkedHashMap<>();
     private final Set<TileKey> stations = new LinkedHashSet<>();
     private final Map<TileKey, Integer> tileLengths = new LinkedHashMap<>();
@@ -909,7 +909,7 @@ public class AutonomyCompanionStore
         return isUsable() && setupFile().isFile();
     }
 
-    // --- loading and saving -----------------------------------------------------------------------
+    // loading and saving
 
     /**
      * Reads the setup and every configuration beside it.  A layout with no setup loads as empty rather
@@ -1069,7 +1069,7 @@ public class AutonomyCompanionStore
         }
     }
 
-    // --- shared data ------------------------------------------------------------------------------
+    // shared data
 
     public String getPointName(TileKey tile)
     {
@@ -2057,7 +2057,7 @@ public class AutonomyCompanionStore
         }
     }
 
-    // --- configurations ---------------------------------------------------------------------------
+    // configurations
 
     public List<String> getConfigurationNames()
     {
@@ -3007,7 +3007,7 @@ public class AutonomyCompanionStore
         }
     }
 
-    // --- keeping up with the diagram --------------------------------------------------------------
+    // keeping up with the diagram
 
     /**
      * Follows a page being renamed.
@@ -4473,7 +4473,7 @@ public class AutonomyCompanionStore
         graph.normalizeRuns();
     }
 
-    // --- internals --------------------------------------------------------------------------------
+    // internals
 
     /**
      * Every shared field this version writes.
@@ -4842,9 +4842,7 @@ public class AutonomyCompanionStore
     }
 
 
-    // =============================================================================================
     // The kept collections (OB-025 / DD-A1)
-    // =============================================================================================
 
     /**
      * One collection of settings the store keeps, and everything the bookkeeping sites need of it.
@@ -6080,7 +6078,7 @@ public class AutonomyCompanionStore
         return out;
     }
 
-    // --- captions ---------------------------------------------------------------------------------
+    // captions
 
     /**
      * The square a caption is about.

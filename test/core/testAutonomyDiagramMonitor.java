@@ -517,9 +517,7 @@ public class testAutonomyDiagramMonitor
             + "railway changed - to a freshly rebuilt view the same picture is news");
     }
 
-    // =============================================================================================
     // The monitor actually running: a train on real track, and a picture published about it
-    // =============================================================================================
 
     /**
      * A train on a claimed path is published as a lit line of squares, and it moves as the train does.
@@ -1083,7 +1081,7 @@ public class testAutonomyDiagramMonitor
             org.traincontrol.marklin.MarklinLocomotive.decoderType.MFX, "BR 89");
     }
 
-    // --- track, built the way testAutonomyDiagramReducer builds it ---------------------------------
+    // track, built the way testAutonomyDiagramReducer builds it
 
     private LayoutDiagram page(String name, int sx, int sy)
     {
@@ -1872,7 +1870,7 @@ public class testAutonomyDiagramMonitor
             + "not, so it thins out as the diagram gets bigger.  Ink " + small + " then " + large);
     }
 
-    // ---- FR-118: the station icons Adam chose on the station icon page (2026-10-09) ---------------------------------
+    // FR-118: the station icons Adam chose on the station icon page (2026-10-09)
 
     /**
      * A station is a rounded block, longer along its track than across it and no taller than the sensor's contact under

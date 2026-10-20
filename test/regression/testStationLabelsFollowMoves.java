@@ -45,9 +45,7 @@ public class testStationLabelsFollowMoves
 {
     private static final String PAGE = "main";
 
-    // ---------------------------------------------------------------------------------------------
     // The matrix: a platform and its label, and every square the platform might be nudged to
-    // ---------------------------------------------------------------------------------------------
 
     /**
      * The label survives a move to any of the eight neighbouring squares, including its own.
@@ -123,9 +121,7 @@ public class testStationLabelsFollowMoves
         assertEquals(store.getPointName(at(4, 5)), "Platform3", "and the name itself did not travel");
     }
 
-    // ---------------------------------------------------------------------------------------------
     // The other direction: a label that IS stale still goes
-    // ---------------------------------------------------------------------------------------------
 
     /**
      * A label naming a square that was genuinely built over is dropped.
@@ -167,9 +163,7 @@ public class testStationLabelsFollowMoves
             "and the platform itself, which nothing touched, has lost its name");
     }
 
-    // ---------------------------------------------------------------------------------------------
     // Group moves and bulk edits: the same rule, arrived at from the other paths
-    // ---------------------------------------------------------------------------------------------
 
     /**
      * A group drag where a station lands on its OWN label keeps it.
@@ -319,9 +313,7 @@ public class testStationLabelsFollowMoves
             "and the station itself should still have arrived");
     }
 
-    // ---------------------------------------------------------------------------------------------
     // What the user actually sees: the name the diagram reads off the label
-    // ---------------------------------------------------------------------------------------------
 
     /**
      * End to end, on real track: after the nudge the label still resolves to the station's name.
@@ -382,8 +374,6 @@ public class testStationLabelsFollowMoves
             }
         }
     }
-
-    // ---------------------------------------------------------------------------------------------
 
     /**
      * One platform, one label, one move: the station and its name both come out the other side.

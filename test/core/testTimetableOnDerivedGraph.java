@@ -220,7 +220,7 @@ public class testTimetableOnDerivedGraph
             + "was put - which is what this assertion exists to catch.  Placed: " + locomotives
             + ", restorable: " + startedAt.keySet() + andTheSeed());
 
-        // ---- capture -------------------------------------------------------------------------
+        // capture
         //
         // Emptied first.  A configuration carries its own saved timetable - it rides along in the
         // globals - so parseAuto loads one, and capture APPENDS.  Without this the snapshot is four
@@ -285,7 +285,7 @@ public class testTimetableOnDerivedGraph
             capturedRoutes.add(entry.getLoc().getName() + ": " + via(entry.getPath()));
         }
 
-        // ---- put everyone back --------------------------------------------------------------
+        // put everyone back
         //
         // Twice through.  A single pass can sweep a train that has already been restored, because
         // placing onto one copy of a square clears the others - so the first pass settles the
@@ -323,7 +323,7 @@ public class testTimetableOnDerivedGraph
 
         layout.resetTimetable();
 
-        // ---- replay ---------------------------------------------------------------------------
+        // replay
         assertTrue(layout.executeTimetable(),
             "the captured timetable did not run to the end.  Entry "
                 + layout.getUnfinishedTimetablePathIndex() + " of " + captured.size()
@@ -331,7 +331,7 @@ public class testTimetableOnDerivedGraph
 
         awaitStopped(layout);
 
-        // ---- and it drove what it was captured driving ---------------------------------------
+        // and it drove what it was captured driving
         //
         // Compared against where the trains ACTUALLY are, rather than against the timetable itself.
         //

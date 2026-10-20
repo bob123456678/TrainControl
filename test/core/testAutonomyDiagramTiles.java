@@ -745,7 +745,7 @@ public class testAutonomyDiagramTiles
             + "never-paired link");
     }
 
-    // --- helpers ----------------------------------------------------------------------------------
+    // helpers
 
     private LayoutDiagram page(String name, int sx, int sy)
     {

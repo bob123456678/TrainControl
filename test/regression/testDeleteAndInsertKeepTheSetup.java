@@ -105,8 +105,6 @@ public class testDeleteAndInsertKeepTheSetup
             "the square the track left is still a station, so the setup now says there are two");
     }
 
-    // ------------------------------------------------------------------------------------------
-
     /**
      * A square with a name, a station designation and a locomotive on it.
      */

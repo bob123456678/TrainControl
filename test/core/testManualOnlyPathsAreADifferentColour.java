@@ -132,9 +132,7 @@ public class testManualOnlyPathsAreADifferentColour
         if (sandbox != null) sandbox.close();
     }
 
-    // ---------------------------------------------------------------------------------------------
     // What is painted
-    // ---------------------------------------------------------------------------------------------
 
     /**
      * The three cases, painted, with the line's own colour read back off the image.
@@ -208,9 +206,7 @@ public class testManualOnlyPathsAreADifferentColour
         assertEquals(lineColour(false, false), RETURN, "nor an ordinary return leg");
     }
 
-    // ---------------------------------------------------------------------------------------------
     // Where the flag comes from
-    // ---------------------------------------------------------------------------------------------
 
     /**
      * The editor's own path test marks the leg that ends at a manual-only station, and only that leg.
@@ -268,9 +264,7 @@ public class testManualOnlyPathsAreADifferentColour
             + "on a layout with one parking berth would be drawn as though it went there");
     }
 
-    // ---------------------------------------------------------------------------------------------
     // Fixtures
-    // ---------------------------------------------------------------------------------------------
 
     /**
      * Paints one square with a single traced segment through it and returns the line's colour.
