@@ -501,11 +501,10 @@ public class AutonomyBuilder
         {
             if (!edge.getEnd().equals(tile)) continue;
 
-            // An edge that arrives by no side of the grid has no copy to land on, so the tile is left whole,
-            // which costs this one tile the rule and keeps the route.  A walk produces one only where a
-            // portal's far end has been redrawn as a sensor, a setup `validatePortals` already refuses: a
-            // walk through a paired portal lands on its partner, which is never a Point, and goes on by a
-            // real side (AMG-C2 - this said a train arriving through a link has no side).
+            // An edge that arrives by no side of the grid has no copy to land on, so the tile is left whole, which costs
+            // this one tile the rule and keeps the route.  A walk produces one only where a portal's far end has been
+            // redrawn as a sensor, a setup `validatePortals` already refuses: a walk through a paired portal lands on its
+            // partner, which is never a Point, and goes on by a real side (AMG-C2).
             if (edge.getEntrySide() == null) return Collections.emptyList();
 
             sides.add(edge.getEntrySide());
@@ -521,13 +520,12 @@ public class AutonomyBuilder
      * by, so without this a sibling copy reads free while a train stands on its twin.  The TILE says
      * which copies those are, not the s88: genuinely different places share a sensor on a real layout.
      *
-     * **EXCEPT WHERE THE SQUARE IS TWO PIECES OF METAL** (Adam, 2026-09-22, on OB-238 / IND9X-C9):
+     * **EXCEPT WHERE THE SQUARE IS TWO PIECES OF METAL** (Adam, on OB-238 / IND9X-C9):
      * *"it is two pieces of metal.  imagine two parallel tracks simple appearing on one tile for visual
      * convenience.  two distinct, not connected paths."*  A double curve is two arcs in opposite corners
      * that never touch, and an overpass is two tracks at different heights - so a train on one road does
-     * not stand on the other, and grouping all the copies of such a square refused a second train track
-     * that is physically free.  The reduction has keyed these three types per ROAD since AUR-B1; this is
-     * the same rule at the occupancy door, which had been left on the tile alone.
+     * not stand on the other, and grouping all the copies of such a square would refuse a second train track
+     * that is physically free.  This is the reduction's rule (keyed per ROAD, AUR-B1) at the occupancy door.
      *
      * The road is named by its lowest side, so both copies of one arc - a train arriving by either end -
      * land on the same name while the other arc gets its own.
@@ -655,14 +653,14 @@ public class AutonomyBuilder
 
         if (sides.isEmpty())
         {
-            // NOTHING ARRIVES, BUT A TRAIN STANDING HERE STILL FACES A WAY (RSA2-C7; Adam, 2026-09-29: "Go with a.").
-            // Emitted whole, the square recorded no facing, so a train placed on it by hand was offered every way out -
-            // and sent the way it does not face, it drove off the other way over track nothing locked: the runtime never
-            // commands a direction, and the copy IS the facing.  Where track leaves by more than one side, one copy per
-            // way out, each standing for a train facing it: given the side such a train would have come in by, so
-            // `leavesBy` lets it out ahead only, `facingOf` names that way, and the facing it is placed with chooses its
-            // copy as everywhere else.  Nothing arrives, so nothing is sent into either copy.  One way out, or none, is
-            // still one Point: there is no facing to choose.
+            // NOTHING ARRIVES, BUT A TRAIN STANDING HERE STILL FACES A WAY (RSA2-C7).  Emitted whole, the square would
+            // record no facing, so a train placed on it by hand would be offered every way out - and sent the way it does
+            // not face, it would drive off the other way over track nothing locked: the runtime never commands a
+            // direction, and the copy IS the facing.  Where track leaves by more than one side, one copy per way out, each
+            // standing for a train facing it: given the side such a train would have come in by, so `leavesBy` lets it out
+            // ahead only, `facingOf` names that way, and the facing it is placed with chooses its copy as everywhere else.
+            // Nothing arrives, so nothing is sent into either copy.  One way out, or none, is still one Point: there is no
+            // facing to choose.
             List<TilePorts.Side> behind = sidesBehindTheWaysOut(tile);
 
             if (behind.size() > 1)
@@ -726,12 +724,10 @@ public class AutonomyBuilder
      * Which copy of a split square a HOME belongs on.
      *
      * A home is a property of the square - "this locomotive lives here" - but the running model hangs
-     * it on a Point, and rebuildHomeStations refuses to let two Points claim one locomotive.  Emitted
-     * on every copy, as it was, the second and later copies were stripped at every load with a warning
-     * that blames a hand-edited file, and the home ended up on whichever copy parsed first: a specific
-     * arrival side, chosen by enum order, meaning nothing to the person who authored it.  Where the
-     * railway does not allow that approach, Return Home then refuses a home that looks perfectly good
-     * on the diagram.
+     * it on a Point, and rebuildHomeStations refuses to let two Points claim one locomotive.  So the
+     * home goes on ONE copy, chosen by what a train can do there rather than by enum order: where the
+     * railway does not allow that approach, Return Home would refuse a home that looks perfectly good on
+     * the diagram.
      *
      * Preferred in the order that keeps the most trains able to use it:
      *
@@ -739,16 +735,13 @@ public class AutonomyBuilder
      *   2. any copy trains may arrive at, which on a must-turn square is a turning copy;
      *   3. copy zero, so a home is never silently dropped.
      *
-     * A turning station copy is emitted as a TERMINUS.  Staging used to refuse a terminus to a
-     * locomotive that cannot reverse unless the route turned on the way - `mustBackIn` - and Adam
-     * removed that rule on 2026-09-04, ruling that Return Home is manual operation.  **So such a
-     * locomotive is now driven in nose first** (ACC-C1).  That only decides the home when EVERY copy
-     * turns: since
-     * 2026-08-31 the home is the square, and HomeStaging asks whether the locomotive can stand on ANY
-     * copy of it - so a platform with a turning berth and a through road is a home for anything.
-     * Where every copy turns it is a real property of a berth every train must back out of rather
-     * than a defect, and AutonomyChecks.checkHomesThatNeedReversing says so on the findings list
-     * instead of leaving it to be discovered as an IMPOSSIBLE from Return Home.
+     * A turning station copy is emitted as a TERMINUS, and Return Home is manual operation, so a locomotive
+     * that cannot reverse is driven in nose first (ACC-C1).  **That only decides the home when EVERY copy
+     * turns**: the home is the square, and HomeStaging asks whether the locomotive can stand on ANY copy of
+     * it, so a platform with a turning berth and a through road is a home for anything.  Where every copy
+     * turns it is a real property of a berth every train must back out of rather than a defect, and
+     * AutonomyChecks.checkHomesThatNeedReversing says so on the findings list instead of leaving it to be
+     * discovered as an IMPOSSIBLE from Return Home.
      *
      * @param nodes the copies this square was emitted as
      * @return the index of the copy to carry the home
@@ -810,8 +803,7 @@ public class AutonomyBuilder
      * any square where there is one to make.
      *
      * @return the index into nodes, or -1 where the setup records a facing no copy faces - the train then stands on no
-     *         Point (Adam, 2026-10-01: the setup check reports it as an error until it is turned, moved, or the track is
-     *         put back)
+     *         Point (the setup check reports it as an error until it is turned, moved, or the track is put back)
      */
     private int placementCopy(List<Node> nodes, JSONObject extras)
     {
@@ -822,12 +814,12 @@ public class AutonomyBuilder
 
         if (facing == null) return startableCopy(nodes);
 
-        // Matched on the FACING each copy stands for, not on its arrival side.  Those differ on a
-        // turning copy - it is pointing back at the side it came in by - so comparing arrival sides
-        // meant a facing learned from a train that had just turned round matched no copy at all, fell
-        // through to the first, and put the locomotive on the copy pointing the opposite way.  On a dead
-        // end that copy is the one with no way out; elsewhere its first move is the backwards edge this
-        // whole split exists to forbid.  Either way the next capture then wrote the wrong facing back.
+        // Matched on the FACING each copy stands for, not on its arrival side.  Those differ on a turning copy - it is
+        // pointing back at the side it came in by - so a facing learned from a train that had just turned round would
+        // match no copy at all, fall through to the first, and put the locomotive on the copy pointing the opposite way
+        // (on a dead end, the one with no way out; elsewhere its first move is the backwards edge this whole split
+        // exists to forbid).
+        //
         // AMONG THE COPIES FACING THAT WAY, ONE TRAINS MAY ARRIVE AT FIRST (GUI-B1), as `homeCopy` asks.  A copy that is
         // not is built as no station, and a train stood there is one autonomy will not start.
         for (int copy = 0; copy < nodes.size(); copy++)
@@ -850,8 +842,7 @@ public class AutonomyBuilder
         // facing the other way is dispatched along a route locked one way while its decoder drives it the other, and the
         // next capture writes the wrong facing over the operator's.  A barred arrival bars STOPPING there, not standing
         // there: a train reversed on the throttle, or already standing when the side was barred, faces that way.  Stood
-        // on a copy autonomy cannot start from, it is refused with a sentence that says why; GUI-B1's first repair stood
-        // it on a copy trains may arrive at whatever way that copy faced, which turned it round in silence.
+        // on a copy autonomy cannot start from, it is refused with a sentence that says why.
         for (int copy = 0; copy < nodes.size(); copy++)
         {
             if (facingOf(nodes.get(copy)) == facing && !nodes.get(copy).reverse) return copy;
@@ -866,10 +857,10 @@ public class AutonomyBuilder
         // `AutonomySession.pointNamedNow` carries one there.
         if (nodes.size() == 1 && facingOf(nodes.get(0)) == null) return 0;
 
-        // AND WHERE NO COPY FACES IT, NONE (round 34).  This stood the train on a copy autonomy could start from, facing
-        // the other way, and the next capture wrote that copy's facing over the train's: turned in the setup in silence,
-        // and the error that says it cannot stand there gone with it.  Kept on no Point, it stays where the setup records
-        // it (the capture keeps it), and the error stops anything being sent until it is put right.
+        // AND WHERE NO COPY FACES IT, NONE.  Standing the train on a copy autonomy could start from, facing the other
+        // way, would let the next capture write that copy's facing over the train's: turned in the setup in silence, and
+        // the error that says it cannot stand there gone with it.  Kept on no Point, it stays where the setup records it
+        // (the capture keeps it), and the error stops anything being sent until it is put right.
         return -1;
     }
 
@@ -877,9 +868,8 @@ public class AutonomyBuilder
      * Where a train goes when nothing says which way it faces, or no copy faces the way something says (GUI2-B1).
      *
      * A copy trains may arrive at, the plain one first - the one guess autonomy can start, which is what `homeCopy` falls
-     * back to as well.  Copies are emitted N, E, S, W, so "copy zero", which this used to be, was the copy arriving by
-     * the north or east side whether or not trains may arrive there: at BottomMainA and BottomMainPost, a copy that is no
-     * station.
+     * back to as well.  Copies are emitted N, E, S, W, so "copy zero" would be the copy arriving by the north or east
+     * side whether or not trains may arrive there: at BottomMainA and BottomMainPost, a copy that is no station.
      *
      * @param nodes the copies this square was emitted as
      * @return the index of the copy to stand the train on
@@ -906,14 +896,9 @@ public class AutonomyBuilder
      * the same thing on straight track and different on everything else: a train entering an N-E curve
      * by N leaves by E, and saying it faces S describes a train sitting across the rails.
      *
-     * That error was invisible in the model - the split only cares WHICH copy a train is on, and the
-     * copies are told apart by arrival - and became visible the moment a facing was shown to a user
-     * and used to choose a copy to place on.
-     *
-     * A switch whose arrival side belongs to more than one route is genuinely ambiguous: which way it
-     * faces depends on which branch it is standing on, and the copy does not record that.  The first
-     * matching route is taken, which is right for the common case of one route through a sensor and
-     * no worse than the old answer anywhere else.
+     * A switch whose arrival side belongs to more than one route is genuinely ambiguous: which way it faces depends on
+     * which branch it is standing on, and the copy does not record that.  The first matching route is taken, which is
+     * right for the common case of one route through a sensor.
      */
     private TilePorts.Side facingOf(Node node)
     {
