@@ -997,24 +997,21 @@ Two separate rules, both about length, both easy to mistake for each other.
 
 | | what it measures | which squares it judges |
 |---|---|---|
-| **Track room** | the rail behind the square, from the last switch to it | **where the train comes to rest**: the destination, and a square it turns round at - **not a square it only passes** (Adam, 2026-09-14) |
+| **Track room** | the rail behind the square, from the last switch to it | **where the train comes to rest**: the destination, and a square it turns round at - **not a square it only passes** |
 | **Station capacity** | the length the station says it accepts | **the destination**, when it states one |
 
-Adam, annotating this section: *"the train should be refused any destination it does not fit in, i.e.
-where the train length exceeds the accepted length."* It is - by the second rule, and in all three
+Adam: *"the train should be refused any destination it does not fit in, i.e.
+where the train length exceeds the accepted length."* The second rule does that, in all three
 tiers: `Point.validateTrainLength` is asked from `Layout.isPathClear`, which every autonomy and manual
 path goes through, and again from `HomeStaging`. A destination with no stated capacity is not judged
 on capacity; that is what leaving the field at zero means.
 
 The rest of this section is about the **first** rule.
 
-- **It judges every destination, and used to judge only reversals** (MT-262). Adam, 2026-09-05:
-  *"'75 407 DB' (length 4) is allowed to manually be sent from bottommainpost to bottomlongpark,
-  even though track segments between the current position and there are 1+1 = 2."* The rule was
-  fenced behind terminus-or-reversing, so a plain through platform was never judged on the track
-  leading into it. A train comes to rest with its head at the destination sensor wherever it
-  stops, so its tail lies back over the run in either way - which is what §5c's covered-track rule
-  has always assumed, on Adam's own through-platform example.
+- **It judges every destination** (MT-262), not only reversals. Adam: *"'75 407 DB' (length 4) is allowed to
+  manually be sent from bottommainpost to bottomlongpark, even though track segments between the current
+  position and there are 1+1 = 2."* A train comes to rest with its head at the destination sensor wherever it
+  stops, so its tail lies back over the run in either way - which is what §5c's covered-track rule assumes.
 
   **In every tier**, autonomy included. A berth that cannot physically hold a train is not a
   preference manual may overrule, and §1 makes autonomy the stricter tier - a length rule that
@@ -1027,90 +1024,47 @@ The rest of this section is about the **first** rule.
   capacity rule above, and it is asked separately. A train can fit the platform and still be refused
   because it would be left standing on the switch behind it.
 
-- **It is asked where the train comes to rest, and not at a square it only passes** (Adam, MT-333,
-  2026-09-14). Two different mechanisms are about a train overhanging the points, and only the second is
-  this rule:
+- **It is asked where the train comes to rest, and not at a square it only passes** (MT-333). Two different
+  mechanisms are about a train overhanging the points, and only the second is this rule:
 
   1. **A train already standing still blocks other roads** - stopped at a station or parked - wherever the
      segments under it are measured. Its tail claims the places it lies on and no route is cleared over them
      (§5c; `OB-207`; a driven train's tail follows the road it came in on, a placed one stops at the fork), and
-     a parking berth refuses a train that would foul a road that is not its own (below). **Unchanged.**
+     a parking berth refuses a train that would foul a road that is not its own (below).
   2. **Whether a train being SENT fits** is asked where it will halt: the destination, and a square it turns
      round at, because it stops and reverses at every such square on its way. A square it only drives past is
      not asked - it stands nowhere there, and a moving train holds the track it runs on, so nothing is routed
      across it meanwhile.
 
-  This is the ruling of 2026-09-09 below read as it was meant, not reversed: *"edges are already locked as
-  trains pass through ... it's really about implementing the same mechanic"* - the mechanic of point 1, which
-  exists only where a train stands. From 2026-09-10 (`5948a88a`) to 2026-09-14 the rule applied it at squares a
-  train only passes too, wherever a switch lay behind them, and the platform relaxation of 2026-09-12 was built
-  at the destination only; so 75 407 DB, two units, was refused Tunnel to BottomMainA at BottomMainAPre once
-  one unit was measured on the run before it - *"this SHOULD be allowed per the standing rule that this switch
-  blocking should only affect berthes."* Adam, confirming both points: *"This is all correct as stated ... No
-  separate rule."* So a route is no longer refused for passing a short measured stretch after a switch, his
-  RampDown example below included. `regression.testAPassingTrainMayStandAcrossThePoints` is the test, each
-  scenario on its own diagram with his measurements, point 1 included; `core.testATrainIsJudgedOnlyWhereItStops`
-  is the same on a fixture.
+  Adam: *"edges are already locked as trains pass through ... it's really about implementing the same
+  mechanic"* - the mechanic of point 1, which exists only where a train stands. And: *"this SHOULD be allowed
+  per the standing rule that this switch blocking should only affect berthes."* So a route is never refused
+  for passing a short measured stretch after a switch. `regression.testAPassingTrainMayStandAcrossThePoints`
+  is the test, each scenario on its own diagram; `core.testATrainIsJudgedOnlyWhereItStops` is the same on a
+  fixture.
 
-- **(The reading from 2026-09-09 to 2026-09-14, kept for the record; the figures in it are from then.)** The
-  question was asked at EVERY square on the route, not only at the destination. Adam, 2026-09-09, having been
-  asked which of the two it should be and told what the second costs:
+- **The snapshot's one-unit tiles are a test configuration, not a survey of the real track.** Adam: *"A/B/C are
+  distinct pieces of track. We put the lengths of 1 in there for testing. Actual tracks are much longer."*
+  `5:22,7`, `5:19,12` and `5:14,13` are the only lengths anywhere on `test/layouts/live-snapshot`, and both
+  censuses set them deliberately and say so. `core.testTheRoomRuleCensusOnTheRealLayout` re-measures the rule
+  on every run against that frozen snapshot, not the railway Adam is operating, and reports a band rather than
+  a figure because which route a search finds first is not reproducible between JVMs;
+  `core.testWhichSquaresTheRoomRuleClosesOff` pins which squares offer a train of a given length nowhere at
+  all. Journeys are counted over every ordered pair of stations, so refusals that fall unevenly close whole
+  squares rather than thinning the timetable: **a journey in three is not a train in three**. Whenever this
+  rule is changed, those censuses are the figures to read (§5c's table gives today's).
 
-  > *"For 1, it's b. This should only apply if lengths are specified - and edges are already locked as
-  > trains pass through in non-dynamic mode. So it's really about implementing the same mechanic."*
+- **The refusal names the square that is short**, and says a different sentence for a square the train turns
+  at than for the berth. Naming the destination when the destination has room sends the operator to measure the
+  one stretch that was already long enough.
 
-  What he reported it against was a nine-unit train being offered `RampDown`: *"technically incorrect
-  to say there is a path since we pass the track of length 1 at 22,7 to get there, then nothing."* The
-  route crosses that tile seven edges before the berth, and the berth-only walk could not see it.
+- **The walk has two stopping conditions and only one of them is a measurement.** It stops at the last switch,
+  which is the rule, and at the start of the route, which is the walk running out of track to look at. At the
+  destination the second is harmless: the train comes to rest there and lies back over the route it came along.
+  On Adam's railway every refusal the rule adds is bounded by a switch, which the census asserts on every run
+  (*"refusals the unbounded walk would have added"*).
 
-  **The same mechanic, not a second one.** The walk answers about the square a path ENDS at, so it is
-  asked of every prefix of the route; the destination is the last of those rather than a rule of its
-  own. Nothing new is measured.
-
-  **What it costs, on a railway measured to make it cost something.** Over 1848 routable station
-  pairs and six train lengths - 11088 journeys - the berth rule refuses 1760 and this ruling refuses
-  about 1655 more, so roughly one journey in three is refused for want of room, and **every square
-  that does the refusing measures ONE unit**. (Those are the figures of 2026-09-09; since OB-229 the census walks
-  no route through a terminus, and section 5c's table gives today's.)
-
-  **Those three one-unit tiles are a test configuration, not a survey of his track.** Adam,
-  2026-09-10: *"A/B/C are distinct pieces of track. We put the lengths of 1 in there for testing.
-  Actual tracks are much longer."* `5:22,7`, `5:19,12` and `5:14,13` were the only lengths anywhere on
-  the snapshot, and both censuses now set them deliberately and say so, rather than reading them out
-  of a fixture and reporting the answer as a fact about his railway. The figures are what a rule about
-  room does on a railway with no room; the real one has more.
-
-  `core.testTheRoomRuleCensusOnTheRealLayout` re-measures it on every run, against the frozen
-  `test/layouts/live-snapshot` rather than the railway Adam is operating, and reports a band rather
-  than a figure because which route a search finds first is not reproducible between JVMs.
-
-  **A journey in three is not a train in three**, and that is the number to read first. Journeys are
-  counted over every ordered pair of stations, so refusals that fall unevenly close whole squares
-  rather than thinning the timetable — and here they do: with those three tiles at one unit, **seven
-  squares offer a train of two units or more nowhere at all**, where the berth-only rule offered each
-  of them thirty-odd destinations. `core.testWhichSquaresTheRoomRuleClosesOff` measures and pins it.
-  Whenever this rule is changed, that census is the one to read, not this one.
-
-  **The refusal names the square that is short**, and says a different sentence for one on the way
-  than for the berth. Naming the destination when the destination has room sends the operator to
-  measure the one stretch that was already long enough.
-
-- **(Same period, same record.) A square the train passed THROUGH was judged only where a switch was behind it.** Since 2026-09-14 such a square is not judged at all, and the censuses report none refused on the way. The walk has two
-  stopping conditions and only one of them is a measurement: it stops at the last switch, which is the
-  rule, and at the start of the route, which is the walk running out of track to look at.
-
-  At the destination the second is harmless and long-standing - the train comes to rest there and lies
-  back over the route it came along. At a pass-through square it means a two-edge prefix answers "two
-  edges of room" when the honest answer is that the track behind where the train started has not been
-  looked at **and the train is standing on it**.
-
-  The first cut of this ruling had no such condition, and the battery came back with a four-unit train
-  refused four units of room, an eight-unit train refused a nine-unit run in, and the staging planner
-  giving up on berths it could reach. On Adam's railway the condition costs nothing - every one of the
-  1645 refusals the ruling adds is bounded by a switch - which is what the census reports on every run
-  under *"refusals the unbounded walk would have added"*.
-
-- **Exactly-fits is admitted.** Four units of room takes a four-unit train — otherwise every berth
+- **Exactly-fits is admitted.** Four units of room takes a four-unit train - otherwise every berth
   measured to the train that lives in it becomes unusable.
 - **The total across the stretch is what counts**, not any single tile: 2 + 2 admits a four-unit
   train, 1 + 2 does not.
@@ -1118,25 +1072,25 @@ The rest of this section is about the **first** rule.
 #### A train may overhang the points at a station, and may not at a parking berth
 
 > *"we need a clear rule to govern that this is OK, or simply make a rule that parking berths cant
-> block any other edges, but not make that check for active stations."* — Adam, 2026-09-12
+> block any other edges, but not make that check for active stations."* - Adam
 
 The rule above measures the room **past the last switch**, so a train longer than that stretch is
 refused because it would come to rest across the points. Adam's worked example: an approach measuring
 6 with a switch in the middle and 3 either side. A six-unit train there necessarily stands on the
-points — no distribution of the measurements changes that — and he rules it acceptable.
+points - no distribution of the measurements changes that - and he rules it acceptable.
 
 **What decides is how long the train stays.**
 
 - At a **station autonomy may choose**, a train is PASSING. It fits if it fits past the last switch,
-  as above, **or** within the measured track of the route it drives in on (FR-087, Adam on MT-431,
-  2026-09-15: *"BottomMainA should be allowed at length 3, since it is not a parking spot, the station
-  allows the length, and the length would be tracked"*). The route is counted back from the destination,
-  leg by leg, for as long as each leg is measured and never back past a square the train turns at (the
-  berth's own bound, 2026-09-11); a train that ends inside that stretch is accepted, and
-  its tail lies on the route and blocks it (5c). A leg with no length stops the count, so a train longer
-  than the measured track in is still refused. `Layout.theApproachItselfHoldsIt`;
+  as above, **or** within the measured track of the route it drives in on (FR-087; Adam: *"BottomMainA
+  should be allowed at length 3, since it is not a parking spot, the station allows the length, and the
+  length would be tracked"*). The route is counted back from the destination, leg by leg, for as long as
+  each leg is measured and never back past a square the train turns at (the berth's own bound); a train
+  that ends inside that stretch is accepted, and its tail lies on the route and blocks it (5c). A leg with
+  no length stops the count, so a train longer than the measured track in is still refused.
+  `Layout.theApproachItselfHoldsIt`;
   `regression.testAPassingTrainMayStandAcrossThePoints.testTheRouteInHoldsAThreeUnitTrainAndNotAFourUnitOne`.
-- At a **parking berth** — a square with *Can Be Chosen In Full Autonomy* off — a train is STAYING,
+- At a **parking berth** - a square with *Can Be Chosen In Full Autonomy* off - a train is STAYING,
   and a berth is not worth a road. On top of the room rule it must foul no track that is not a way in
   or out of its own square. Its own roads are excluded because the train being there blocks them
   anyway, and *"its own"* means the SQUARE: a split platform is several Points and one piece of track.
@@ -1144,8 +1098,8 @@ points — no distribution of the measurements changes that — and he rules it 
 **What this spends, said plainly.** A train standing at a platform across the points closes the roads
 through them while it is there. Measured on Adam's railway, a train at BottomMainA long enough to
 reach the switch closes both ways to the lower level and 33 ordered pairs of stations stop being
-reachable from one another. That is a STRANDING cost, not a collision one: since `OB-207` a standing
-train's tail claims the places it lies on and no route is cleared over them, so nothing can be sent
+reachable from one another. That is a STRANDING cost, not a collision one: a standing
+train's tail claims the places it lies on and no route is cleared over them (`OB-207`), so nothing can be sent
 into the overhang. The berth half is where the cost is refused, because a parked train pays it all
 evening.
 
@@ -1161,72 +1115,71 @@ places, or no length, both halves fall back to the answer 5a already gives.
 ### 5b. What "unmeasured" means
 
 > *"You need to measure total distance between points, not validate that every edge has a length > 0.
-> It is only indeterminate if the entire logical segment has length 0."* — Adam, 2026-09-06
+> It is only indeterminate if the entire logical segment has length 0."* - Adam
 >
 > *"Generally, allow it. But: the example ... has measured segments before (that prevent it) ... Make
-> sure you are actually enforcing this."* — Adam, 2026-09-06
+> sure you are actually enforcing this."* - Adam
 
 - Unmeasured track contributes **no room**. It does not follow that it contributes **no answer**.
-- A stretch where **nothing at all** is measured is not judged — the train is allowed. Refusing on no
+- A stretch where **nothing at all** is measured is not judged - the train is allowed. Refusing on no
   information would make an unmeasured layout unusable.
 - Where part is measured, **the measured part still binds**: an unmeasured segment must not cancel a
   refusal the measured ones already earned.
 - **A stretch is bounded by the segment it lies in.** If the room after the last switch is unmeasured
-  but the segment measures one unit, a four-unit train does not fit — a part cannot be longer than
+  but the segment measures one unit, a four-unit train does not fit - a part cannot be longer than
   the whole. This over-states the real room, so it only ever refuses more; nothing new is admitted.
 
-**Mass Assign Lengths and Unmeasured Track: every leg, cut at switches** (FR-089; Adam, 2026-09-16, on review
-MAL-B1). The length rules between them read every leg on the railway: the room rule the track past the last switch,
-but the FR-087 allowance (5a) whole legs back until a reversal, and the tail and berth walks (5c) the standing square,
-the switch square and the track before it. Measured on Adam's railway, that reach is every one of its 75 legs. So the tools cut every leg into
+**Mass Assign Lengths and Unmeasured Track: every leg, cut at switches** (FR-089). The length rules between them
+read every leg on the railway: the room rule the track past the last switch, the FR-087 allowance (5a) whole legs
+back until a reversal, and the tail and berth walks (5c) the standing square, the switch square and the track before
+it. Measured on Adam's railway, that reach is every one of its 75 legs. So the tools cut every leg into
 **pieces** between two fixed points - a sensor or a switch - and ask for each piece's whole length once; each square is
 in exactly one piece. **A switch square is in no piece**: a share of a piece's length landing on it would sit where the
 room rule does not count it, so switches are asked for together, one turnout length for all of a page's switches with
 none (*"One length for all switches"*). Two switches back to back have no piece between them - there is no square of
-track there to measure. **A piece needs a length only while its whole total is 0**, by the ruling above - a square
-inside a measured piece may rightly hold 0 - so the least a piece could be given was 1, until the ruling below. The share is even; any unit left
-over goes first to a square a train stands on, whose length its own tail never spends, which is the refusing direction
-(MAL-B2).
+track there to measure. **A piece needs a length only while its whole total is 0** - a square inside a measured piece
+may rightly hold 0. The share is even; any unit left over goes first to a square a train stands on, whose length its
+own tail never spends, which is the refusing direction (MAL-B2).
 
-**A route tile is in no piece, and is never asked for a length** (Adam, 2026-09-23, OB-273: *"a route
+**A route tile is in no piece, and is never asked for a length** (OB-273). Adam: *"a route
 tile should not need or accept a length.  it just implicitly connects things as if it were a
-crossing."*). It carries no rails of its own - section 8 - so no length rule reads it, the tools do not
-ask for it, and a piece's length is shared over the track squares either side of it. His example: three
-plain squares and a route tile with 4 typed is 2, 1, 1 by the even share, where today the fourth unit
-lands on the route tile and nothing draws it. **The share stays even** (OB-275, Adam: *"let's stick to a
-then, since that is more visually pleasing"*) - the other option he offered, the whole length on one
-square, would also have made the tail depend on which square a train happened to stop on (5c spends
-length square by square). Built 2026-09-23 (MT-476): `assignStretchLength` shares over the track squares only.
+crossing."* It carries no rails of its own - section 8 - so no length rule reads it, the tools do not
+ask for it, and a piece's length is shared over the track squares either side of it
+(`assignStretchLength`; MT-476). His example: three plain squares and a route tile with 4 typed is 2, 1, 1 by
+the even share. **The share stays even** (OB-275; Adam: *"let's stick to a then, since that is more visually
+pleasing"*) - the other option, the whole length on one square, would also have made the tail depend on which
+square a train happened to stop on (5c spends length square by square).
 
-**A length a route tile already holds is folded into the track beside it** (Adam, 2026-09-23, OB-281: *"Fold them,
-they were likely auto set during the mass assignment run."*). Five of his route tiles held 1 each from before the
-ruling, so each piece they sat in measured a unit less than he gave it. Opening a setup moves each onto the square
+**A length a route tile already holds is folded into the track beside it** (OB-281; Adam: *"Fold them,
+they were likely auto set during the mass assignment run."*). Opening a setup moves each onto the square
 beside it along the road it carries - plain track before a switch - so every total is what it was.
 `AutonomySession.foldRouteTileLengths`, `core.testMassAssignLengths.testHisFiveRouteTilesAreFoldedWhenHisRailwayIsOpened`.
 
-**A deliberate 0 is an answer** (Adam, 2026-09-23, OB-274: *"we need to allow a length of 0 as a length
+**A deliberate 0 is an answer** (OB-274). Adam: *"we need to allow a length of 0 as a length
 that is set deliberately, i.e. for adjacent tracks.  same meaning to the model, but this will allow
-everything to get assigned without what appears to be a skip."*). So the walks accept 0, and the piece is
+everything to get assigned without what appears to be a skip."* So the walks accept 0, and the piece is
 recorded as answered and is not asked about again.  **And it is measured track of no length, to every length rule**
-(Adam, 2026-09-25, ADU-C7: *"we can't possibly have positive lengths everywhere because the tracks just aren't that long.  We need to find a way to allow trains in atomic mode in as well if the total track lengths allow"*, and *"Build it"*).  The route in, the room walk, the
-walk that claims a standing train's tail, the berth rule and the tail question count it, adding nothing, and walk on
-over it - so a train is let in wherever the measured track holds it in total, and a train standing there is claimed over
-the 0 and the track behind it.  They all ask one question, `Edge.isMeasured` - a length, or every place answered - so
-what the route in admits the tail walk claims.  **The own-tail rule asks it too, of the way round** (OB-300, RLA-C6;
-Adam, 2026-10-10, asked: into 3.0.0) - place by place, since a way round begins and ends inside a leg - so a loop
-answered 0 all the way round is judged as track of no length, and no train lying on it is let round into its own body
-(§5c).  Until then it judged a way round only where the route had run some length, and was the one length rule that
-erred towards letting through.  **A leg with any square nobody answered still ends every walk** - a switch
-or crossing on it included, which Mass Assign Lengths still asks for.  On the frozen railway's Tunnel: with BottomSecondary
--> TunnelPre answered 0 throughout, a train of 5 from RampDown is admitted over the 8 measured end to end, where it was
-refused quoting 4.  Until then an answered 0 read as a stretch nobody measured (confirmed by Adam on 2026-09-23), but for
-the Atomic Routes gate and its escape from 2026-09-24 (TDU-C6, §5d); for a day in between the route in counted past it
-while the tail walk did not (ADA-A1).  `core.testAnAnsweredZeroIsNotMissing.testAStretchAnsweredZeroIsMeasuredTrackOfNoLength`,
-`core.testAutoLayout.testTrackAnsweredZeroIsMeasuredTrack`.  Built 2026-09-23 (MT-476); measured everywhere since
-2026-09-25 (MT-586).  **Route choice by track length counts it 0 too** (Adam, 2026-09-25: *"Yes, count answered 0 as 0"*): *Over the shortest track*, *Over the longest track* and balanced priority count a section nobody measured as 1, so an unmeasured railway does not tie every route at 0, and one answered 0 as 0 - except that balanced priority divides by at least 1, so there a route answered 0 throughout ties with a route of one unmeasured section (RLA-C7).
+(ADU-C7; Adam: *"we can't possibly have positive lengths everywhere because the tracks just aren't that long.  We
+need to find a way to allow trains in atomic mode in as well if the total track lengths allow"*; MT-586).  The route
+in, the room walk, the walk that claims a standing train's tail, the berth rule and the tail question count it,
+adding nothing, and walk on over it - so a train is let in wherever the measured track holds it in total, and a
+train standing there is claimed over the 0 and the track behind it.  They all ask one question, `Edge.isMeasured` -
+a length, or every place answered - so what the route in admits the tail walk claims.  **The own-tail rule asks it
+too, of the way round** (OB-300) - place by place, since a way round begins and ends inside a leg - so a loop
+answered 0 all the way round is judged as track of no length, and no train lying on it is let round into its own
+body (§5c).  **A leg with any square nobody answered still ends every walk** - a switch or crossing on it
+included, which Mass Assign Lengths still asks for.  On the frozen railway's Tunnel: with BottomSecondary
+-> TunnelPre answered 0 throughout, a train of 5 from RampDown is admitted over the 8 measured end to end.  The
+Atomic Routes gate keeps its own escape (§5d).
+`core.testAnAnsweredZeroIsNotMissing.testAStretchAnsweredZeroIsMeasuredTrackOfNoLength`,
+`core.testAutoLayout.testTrackAnsweredZeroIsMeasuredTrack`.  **Route choice by track length counts it 0 too**
+(Adam: *"Yes, count answered 0 as 0"*): *Over the shortest track*, *Over the longest track* and balanced priority
+count a section nobody measured as 1, so an unmeasured railway does not tie every route at 0, and one answered 0 as
+0 - except that balanced priority divides by at least 1, so there a route answered 0 throughout ties with a route
+of one unmeasured section (RLA-C7).
 `core.testRoutePicking.testAnAnsweredZeroCountsNothingInTheLength`.
 
-**Segment Length's 0 is the same answer, and Clear is its own button** (Adam, 2026-09-23, FR-097: *"no, add a clear
+**Segment Length's 0 is the same answer, and Clear is its own button** (FR-097; Adam: *"no, add a clear
 button"*). A 0 typed there records the run - or each selected square - as answered 0; **Clear**, or an emptied field,
 removes the length and the answer. And **an answered 0 is not listed as missing** (*"stop listing answered zeros as
 missing"*): the half-measured berth notice, the reversal notice and the berth refusal's "N squares still have no
@@ -1234,7 +1187,7 @@ length" leave answered squares out, while the rules read them as measured track 
 running layout, so the build marks an answered place and the runtime keeps the mark.
 `core.testMassAssignLengths.testSegmentLengthZeroIsAnAnswerAndClearTakesItAway`, `core.testAnAnsweredZeroIsNotMissing`.
 
-**A square two roads cross is in no piece either** (Adam, 2026-09-19, on review SET-B2): *"For crossings: if its
+**A square two roads cross is in no piece either** (SET-B2). Adam: *"For crossings: if its
 length is set, count that length once in each direction."*  A crossing - or a double curve with track on both of its
 roads - is an ordinary square to the room walk, which counts through it, and it lies on two legs at once.  Inside one
 leg's piece its share would be shared out by that leg's answer and then counted again on the other road, so both roads
@@ -1242,29 +1195,26 @@ are cut at it and it is asked for on its own, one length for all such squares on
 length to each road, which is the ruling.  A square whose geometry carries two roads but which only one leg runs over
 is ordinary track and stays in its piece.
 
-**The bulk doors on Bulk Tools.**  **Mass Assign Train Lengths (N missing)** (FR-094; Adam, 2026-09-23: *"add a
-bulk tool to the autonomy editor to set missing train lengths, similar to how the station lengths are set"*) walks every
+**The bulk doors on Bulk Tools.**  **Mass Assign Train Lengths (N missing)** (FR-094) walks every
 train autonomy would run that has no length, in the same prompt, writing each answer to the locomotive itself - so
 Cancel in the editor does not take it back, and the prompt says so; a length is 1 to 40, the one limit both train-length
-lists read (`TrainControlUI.ROUTE_TRAIN_LENGTH_MAX`; Adam, 2026-09-24, OB-294: *"increase choosable train lengths up to
-40 in the dropdown"*).  **It is never greyed, and its label counts the trains missing a length** (Adam, 2026-09-24, on
-MT-533: *"This option should never be greyed out completely (show the number of missing trains in parens)"*); with none
-missing it goes through every train with the length it has, which Skip keeps.  Train lengths and station maxima are named
-apart - *Locomotive* and *Station* in the labels (*"better disambiguate labels for 'train lengths' from 'max train
-lengths'"*).  **Mass Assign Lengths** (FR-089) walks the pieces of the page, then its
-switches, then its crossings.  **Mass Assign Station Max Train Lengths** (FR-091; Adam, 2026-09-17: *"add a similar feature to
-walk stations that don't have a max length set up, so I can enter it"*) walks the stations on the page that will take
-a train of any length, row by row, and asks each one's maximum - the walk refuses 0, because 0 IS "any length" and the station already has it.  A
+lists read (`TrainControlUI.ROUTE_TRAIN_LENGTH_MAX`; OB-294).  **It is never greyed, and its label counts the trains
+missing a length** (MT-533; Adam: *"This option should never be greyed out completely (show the number of missing
+trains in parens)"*); with none missing it goes through every train with the length it has, which Skip keeps.  Train
+lengths and station maxima are named apart - *Locomotive* and *Station* in the labels.  **Mass Assign Lengths**
+(FR-089) walks the pieces of the page, then its switches, then its crossings.  **Mass Assign Station Max Train
+Lengths** (FR-091) walks the stations on the page that will take a train of any length, row by row, and asks each
+one's maximum - the walk refuses 0, because 0 IS "any length" and the station already has it.  A
 NEGATIVE is refused at the single door as well (SET-B1): `Layout.fromJSON` will not load a configuration
 carrying one, and the bulk clear counts any non-zero maximum so that one already stored can be taken off.  **Clear All Track Lengths** (FR-069)
 and **Clear All Station Max Train Lengths** (FR-092) each take their setting off every page after a confirmation that says how
-many.  The three WALKS - track lengths, station maxima and train lengths - share one prompt: the number box has the keyboard focus, Enter submits,
+many.  The three WALKS - track lengths, station maxima and train lengths - share one prompt: the number box has the keyboard focus
+(asked for by name whenever the prompt gains the keyboard; MT-474), Enter submits,
 Skip leaves the square as it was, Cancel or Escape stops, and the prompt opens where the last one was left
-until a new round is started.  The number box is asked for by name whenever the prompt gains the keyboard (Adam,
-2026-09-23, MT-474: *"make sure the text field is focused by default"*).  The two clears ask once, in a confirmation.
+until a new round is started.  The two clears ask once, in a confirmation.
 
-**Bulk Tools is on every square's menu** - an empty square's and a text square's as well as track's (Adam, 2026-09-23,
-MT-474: *"when right clicking an empty square, show the bulk tools menu option"*).  Its items are about the whole setup
+**Bulk Tools is on every square's menu** - an empty square's and a text square's as well as track's (MT-474; Adam:
+*"when right clicking an empty square, show the bulk tools menu option"*).  Its items are about the whole setup
 rather than the square under the pointer, so they sit at the bottom, behind a divider.
 `ui.testBulkToolsHoldsTheWholeLayoutTools.testAnEmptySquaresMenuHasBulkTools`.
 
@@ -1280,116 +1230,113 @@ The editor notice about turn-round squares with no length is a different questio
 
 > *"Those edges it reaches need to be considered blocked ... bottommainc should currently be blocked
 > since a train of length 4 is standing at bottommainb, which has a length of 1 leading up to its
-> switch."* — Adam, 2026-09-06
+> switch."* - Adam
 
-- **Edges, not points** — *"because the points are technically unoccupied. But the blocked edges
+- **Edges, not points** - *"because the points are technically unoccupied. But the blocked edges
   should prevent routing to the covered points."* A station reachable only across covered track
   becomes unreachable as a consequence, rather than by a second rule that could disagree.
 - The walk starts at the side recorded in `arrivedFrom` and follows track **regardless of direction**
-  — a tail fouls the rail whichever way traffic runs.
+  - a tail fouls the rail whichever way traffic runs.
 - **It stops at a fork.** *"If entering a switch from the fork direction where it splits, just end
   locking at the switch and call it a day."* One way back means the tail certainly lies there;
   several means the graph cannot say which.
-  - **Unless the train was driven there** (Adam, MT-333/MT-335, 2026-09-13: *"Follow its last route"*).
+  - **Unless the train was driven there** (MT-333/MT-335; Adam: *"Follow its last route"*).
     A train that arrived by a run remembers the route (`Point.arrivedAlong`), and past a junction the
     walk takes the road that route came in on. `core.testATailFollowsTheRouteItCameIn` drives a real run
     through a junction and has a placed train with no road as its control.
-  - **The road is kept** (WK7-B1, Adam 2026-09-14: *"Then state will always be fully consistent."*). It is
+  - **The road is kept** (WK7-B1; Adam: *"Then state will always be fully consistent."*). It is
     saved with the point (`arrivedAlong`, as start/end name pairs), read back on load, carried across every
     rebuild with the train, and captured into the setup with the placement and the side - so a restart,
-    closing the autonomy editor or any setup gesture no longer drops it. A road naming a rail the layout no
+    closing the autonomy editor or any setup gesture does not drop it. A road naming a rail the layout no
     longer has is dropped whole, and the fork rule applies again. `core.testATailRouteIsKept`,
     `regression.testAPassingTrainMayStandAcrossThePoints`.
-  - **A train placed by hand is asked** (Adam, 2026-09-14: *"pick from a list and select the farthest sensor
+  - **A train placed by hand is asked** (Adam: *"pick from a list and select the farthest sensor
     the tail of the train recently crossed.  Also, ideally in the autonomy editor, it should allow the user to
     click to select as well."*). The whole train lies between the farthest sensor its tail has crossed and the
-    square it stands on, so that sensor names the road. The question is put - when a train is pasted, placed
-    from the right-click menu, or set in the locomotive dialog - only where the tail lies past a junction with two
-    roads back and the roads put it on different track - two roads being two pieces of METAL, compared by the
-    places the rail runs over (OB-276: RampDown's southbound lane and its northbound turning copy both leave south
-    by one rail, and were offered as two "RampDown"s; a balloon's two ends are still two); elsewhere every answer
-    describes the same track. **A tail that has passed the switch the roads part at is asked about whether or not
-    it has reached a sensor** (Adam, 2026-09-23, MT-477: *"when set to lenth 3, the tail always follows switch 51
-    turned, rather than facing straight toward rampdown ... technically that length should qualify for the
-    prompt"*): the last square two rails share holds the points, and a tail reaching into it lies on one leg or the
-    other. Each road it can lie on is offered - by its sensor where the tail reached it, and as **towards X (not
-    reached)** where it did not - so at BottomSecondary three units are offered towards RampDown and towards
-    BottomCrossover, and four units RampDown and towards BottomCrossover, where the list once offered RampDown
-    alone. A tail that ends before the points covers the same squares on every road, and is not asked.
-    `core.testATailPastASwitchIsAskedAbout`. Not asked, or closed without an answer, the road the train
-    had on the railway is kept where it stays on the same square with the same side - the question's **Cancel** - and
-    there is no answer that forgets it (Adam, 2026-10-09: *"drop not known, keep cancel"*; for a train just put down the
-    two did the same). The
-    list starts on the road it has; with none, on the one sensor nearest the back of the train where exactly one
-    qualifies - no other offered sensor lies further back on the same road - and on nothing otherwise (FR-088,
-    Adam on MT-435, 2026-09-15: *"so the user can just click OK if appropriate"*); a way towards a sensor the tail
-    has not reached is no sensor crossed, and is never where the list starts (MT-477). The list
-    offers each such sensor, nearest first, with **OK** and **Cancel**; Cancel, or OK with none chosen, keeps the fork
-    rule. A sensor exactly the
-    train's length back is offered: the tail has reached it (OB-226). Only roads a train can drive in on are
-    offered - the walk back takes rails that run towards the train - so a road it could only have reversed along is
-    not one (OB-227, Adam: *"that isn't a realistic path"*). The same list is in
-    the right-click menu under **Farthest sensor the tail crossed**, and in the autonomy editor **Pick on the
-    diagram...** outlines the sensors to click instead. **On the main window the question itself is put on the diagram**
-    (FR-100; Adam, 2026-09-24: *"highlight possible squares on the diagram and ask the user to click one.  only show the
-    list if there are options on another page"*): the sensors are lit and a click on one answers it, with **Cancel** in a
-    small window.  The list is asked where a choice is on another page or not drawn, and where an
-    editor window is open, whose squares do not take the click (TDU-C1) - and then the list opens from the editor,
-    in front of it, not from the main window it covers (MT-575, 2026-09-25), while the editor is showing; a minimised
-    one hides what it owns, so then the list opens from the main window (RLA-C4).  The rest of a double-click on the sensor that
-    answered is the question's, not the sensor's (TDU-B3), and the paste reads everything about its landing before the
-    question waits, because the window stays live while it does (TDU-B2).  **An answer is written only where the placement
-    still stands when it comes back** (TDU2-A1, TDU3-B1): the square's copy on the railway running then still holds the
-    train, with the side it was put down with and the road it had - a railway rebuilt in the wait counts, its new copy
-    being the one asked - and the setup is still the window's: the same session.  **So the answer follows the train**
-    (Adam, 2026-09-24, TDD5-C1: *"Follow the train."*): another configuration loaded in the wait, whose copy holds the
-    train as it was put, gets it, on the railway running and in the configuration now active; closing the track-diagram
-    editor, which replaces the session, drops it, and a door whose setup was let go in the wait saves nothing (TDU4-C2).  An editor opened in the wait drops it too, and nothing is written into the setup: the editor holds the setup as it was when it opened, and its Cancel would take the answer back out - as every main-window door that writes the setup refuses while an editor is open (RLU-C9).  A dropped answer - Not known
-    included, a Cancel not - is logged, naming the train and the square; the facing was written before the question was
-    asked, so only the road waits for it.
-    `regression.testTheTailIsPickedOnTheDiagram`.
-    Which sensors are offered is worked out from the
-    measured lengths of the roads back and is a suggestion: what blocks track is still this walk, reading the
-    road chosen. A road given this way runs along rails laid towards the train, as a run's road does. `core.testTheTailCrossedQuestion`,
-    `regression.testTheTailCanBeGivenInTheEditor`.
+    square it stands on, so that sensor names the road.
+    - **When it is asked.** When a train is pasted, placed from the right-click menu, or set in the locomotive
+      dialog, only where the tail lies past a junction with two roads back and the roads put it on different
+      track. Two roads are two pieces of METAL, compared by the places the rail runs over (OB-276: RampDown's
+      southbound lane and its northbound turning copy both leave south by one rail, so they are one road; a
+      balloon's two ends are two). Elsewhere every answer describes the same track.
+    - **A tail that has passed the switch the roads part at is asked about whether or not it has reached a
+      sensor** (MT-477; Adam: *"when set to lenth 3, the tail always follows switch 51 turned, rather than facing
+      straight toward rampdown ... technically that length should qualify for the prompt"*): the last square two
+      rails share holds the points, and a tail reaching into it lies on one leg or the other. Each road it can lie
+      on is offered - by its sensor where the tail reached it, and as **towards X (not reached)** where it did not.
+      At BottomSecondary three units are offered towards RampDown and towards BottomCrossover, and four units
+      RampDown and towards BottomCrossover. A tail that ends before the points covers the same squares on every
+      road, and is not asked. `core.testATailPastASwitchIsAskedAbout`.
+    - **Not asked, or closed without an answer: the road the train had is kept** where it stays on the same
+      square with the same side - the question's **Cancel** - and there is no answer that forgets it (Adam: *"drop
+      not known, keep cancel"*).
+    - **The list** starts on the road the train has; with none, on the one sensor nearest the back of the train
+      where exactly one qualifies - no other offered sensor lies further back on the same road - and on nothing
+      otherwise (FR-088; Adam: *"so the user can just click OK if appropriate"*). A way towards a sensor the tail
+      has not reached is no sensor crossed, and is never where the list starts. It offers each such sensor, nearest
+      first, with **OK** and **Cancel**; Cancel, or OK with none chosen, keeps the fork rule. A sensor exactly the
+      train's length back is offered: the tail has reached it (OB-226). Only roads a train can drive in on are
+      offered - the walk back takes rails that run towards the train - so a road it could only have reversed along
+      is not one (OB-227; Adam: *"that isn't a realistic path"*).
+    - **Where it is put.** The same list is in the right-click menu under **Farthest sensor the tail crossed**,
+      and in the autonomy editor **Pick on the diagram...** outlines the sensors to click instead. **On the main
+      window the question itself is put on the diagram** (FR-100; Adam: *"highlight possible squares on the diagram
+      and ask the user to click one.  only show the list if there are options on another page"*): the sensors are
+      lit and a click on one answers it, with **Cancel** in a small window. The list is asked where a choice is on
+      another page or not drawn, and where an editor window is open, whose squares do not take the click (TDU-C1) -
+      and then the list opens from the editor, in front of it (MT-575), while the editor is showing; a minimised
+      one hides what it owns, so then the list opens from the main window (RLA-C4). The rest of a double-click on
+      the sensor that answered is the question's, not the sensor's (TDU-B3), and the paste reads everything about
+      its landing before the question waits, because the window stays live while it does (TDU-B2).
+    - **An answer is written only where the placement still stands when it comes back** (TDU2-A1, TDU3-B1): the
+      square's copy on the railway running then still holds the train, with the side it was put down with and the
+      road it had - a railway rebuilt in the wait counts, its new copy being the one asked - and the setup is
+      still the window's: the same session. **So the answer follows the train** (TDD5-C1; Adam: *"Follow the
+      train."*): another configuration loaded in the wait, whose copy holds the train as it was put, gets it, on
+      the railway running and in the configuration now active; closing the track-diagram editor, which replaces
+      the session, drops it, and a door whose setup was let go in the wait saves nothing (TDU4-C2). An editor
+      opened in the wait drops it too, and nothing is written into the setup: the editor holds the setup as it was
+      when it opened, and its Cancel would take the answer back out - as every main-window door that writes the
+      setup refuses while an editor is open (RLU-C9). A dropped answer - Not known included, a Cancel not - is
+      logged, naming the train and the square; the facing was written before the question was asked, so only the
+      road waits for it. `regression.testTheTailIsPickedOnTheDiagram`.
+    - **The offered sensors are a suggestion.** They are worked out from the measured lengths of the roads back;
+      what blocks track is still this walk, reading the road chosen. A road given this way runs along rails laid
+      towards the train, as a run's road does. `core.testTheTailCrossedQuestion`,
+      `regression.testTheTailCanBeGivenInTheEditor`.
 - **It stops at unmeasured track.** Only positive lengths are determinate.
-- **The square the train is standing on is track, and it is spent first** (Adam, 2026-09-23, OB-278:
-  *"the 2 length tile with the s88 consumes 2 units of the train"*, and asked where, *"Everywhere"*).
+- **The square the train is standing on is track, and it is spent first** (OB-278; Adam: *"the 2 length tile with
+  the s88 consumes 2 units of the train"*, and asked where, *"Everywhere"*).
   A train no longer than the square it stands on lies on that square and blocks nothing behind it;
   a longer one spends the square and lies back over the rest. Every walk that works out where a body
   lies does this alike - the tail walk here (places budget and hop budget), the berth rule, and the
-  orange line (§5c below) - and so does the room rule, which always counted the square.
+  orange line (below) - and so does the room rule, which always counted the square.
   **The allowance is the station's SIZE** - the maximum train length typed on it, which says how much
-  train it may hold and is what `whyTooLongForThisRoute` asks first. Adam's ruling of 2026-09-13,
-  *"if the segment length is shorter, more should be blocked. The station size is an allowance, not a
-  length"*, says exactly that; from 2026-09-13 to 2026-09-23 it was read as meaning the length measured
-  on the station's square, and all three walks left that square unspent. On his measured railway,
-  where each berth's length is written on its sensor square, that put every standing train's tail over
-  the switch behind: TunnelLongPark (2 on its square, 1 behind, holds 3) took a one-unit train and no
-  longer, and TunnelCenterPark and TopR1ParkShort took none. `core.testAStationsSizeIsAnAllowance`.
+  train it may hold and is what `whyTooLongForThisRoute` asks first. Adam: *"if the segment length is shorter,
+  more should be blocked. The station size is an allowance, not a length"*. On his measured railway each berth's
+  length is written on its sensor square, so reading the allowance as the square's own length would leave that
+  square unspent and put every standing train's tail over the switch behind. `core.testAStationsSizeIsAnAllowance`.
 - **A train part-way along a run is walked the same way from its last MILESTONE** (OB-244, MT-438):
-  a milestone is ordinary block and the body lies over it. That used to be the exception to the
-  misreading above; with the square spent everywhere there is no exception left to make.
+  a milestone is ordinary block and the body lies over it.
   `core.testARunningTrainHasOneTail.testAMidRunMilestoneIsNotAnAllowance`.
 - **The first hop takes the copy of the rail the train ARRIVED along** (SVZ-B1). A piece of rail is two
   edges, one per direction, and at a berth both can report the same way in. An edge's places are the
-  path plus the square it arrives at, so only the arriving copy carries the square the train is on -
-  and taking the other one left that square claimed by nobody, at some stations and not at others.
-  Where there is no arriving copy - a square a train has been turned on - the other is still used.
-- **With no road to follow, a fork right behind the platform stops the tail at the switch** (Adam, 2026-09-24, on
-  MT-477: *"stop at the switch"*), as every other fork does under his rule of 2026-09-07. Where the rails arriving by
-  the recorded side part before the train's length is spent - at BottomSecondary, the straight rail from RampDown and
-  the turned one from BottomCrossover, at switch 51 - and the train was placed with no answer, the
-  squares they share are claimed up to and including the switch, and nothing past it. It used to take the first rail
-  by that side and lay the tail up it. `core.testATailPastASwitchIsAskedAbout.testWithNoAnswerTheTailStopsAtTheSwitch`.
-- A train never blocks itself — pulling forward off its own tail is how it leaves. **But its own tail is not an
-  answer for anybody else's** (OB-285; Adam, 2026-09-24: *"Add the refusal"*). The check asked whose tail lay on each
-  piece of track and stopped at the first it found, so a train turned where it stands - reversed on the throttle,
-  turned with the Facing menu or at a square trains may turn at - found its own tail on its way out and looked no
-  further. On his railway a train turned at Tunnel was cleared south through the points at column 7 with a train in
-  TunnelRightPark lying across them; 10 such cases on 4 squares. Now the other trains are asked about there too, by
-  the railway and by Return Home alike. `core.testATurnedTrainIsNotSentIntoAnotherTail`.
-- **Except round a loop into its own tail** (OB-294; Adam, 2026-09-24: *"make sure the model factors in whether the
+  path plus the square it arrives at, so only the arriving copy carries the square the train is on - taking
+  the other would leave that square claimed by nobody. Where there is no arriving copy - a square a train has
+  been turned on - the other is used.
+- **With no road to follow, a fork right behind the platform stops the tail at the switch** (MT-477; Adam: *"stop
+  at the switch"*), as every other fork does. Where the rails arriving by the recorded side part before the
+  train's length is spent - at BottomSecondary, the straight rail from RampDown and the turned one from
+  BottomCrossover, at switch 51 - and the train was placed with no answer, the squares they share are claimed up
+  to and including the switch, and nothing past it.
+  `core.testATailPastASwitchIsAskedAbout.testWithNoAnswerTheTailStopsAtTheSwitch`.
+- A train never blocks itself - pulling forward off its own tail is how it leaves. **But its own tail is not an
+  answer for anybody else's** (OB-285; Adam: *"Add the refusal"*). A train turned where it stands - reversed on
+  the throttle, turned with the Facing menu or at a square trains may turn at - finds its own tail on its way out;
+  the other trains are asked about there too, by the railway and by Return Home alike. On his railway a train
+  turned at Tunnel must not be cleared south through the points at column 7 with a train in TunnelRightPark lying
+  across them. `core.testATurnedTrainIsNotSentIntoAnotherTail`.
+- **Except round a loop into its own tail** (OB-294; Adam: *"make sure the model factors in whether the
   train will clear the area before it crosses over"*, and *"the check should pass if the train would be gone (i.e. if
   that one was only length 4, for example)"*). **The head may come back to a place only once the tail has left it.**
   The body as it stands is the one the walk above claims; the route's own places are timed as the head runs them. The
@@ -1399,14 +1346,14 @@ The editor notice about turn-round squares with no length is a different questio
   such figure on the route - the longest train that goes (TDA-C1). **Only measured track binds**: a return is judged
   only where the way round - the route itself, not the body in front of the place - is measured since the head left
   it: some length run on it, or every place on it answered 0 (OB-300 - a loop answered 0 throughout is track of no
-  length, and refused to any train lying on it); a way round nobody measured is not judged.  Where some of it has no
-  length the refusal says how many things Mass Assign Lengths would ask a length for on
-  the way round, which is the other way past (TDA-B1).  The build marks, place by place, the piece, switch or shared
-  square the editor still asks for, keyed by the answer it is asked in - its piece, or all of its page's switches, or
-  all of its page's crossings, one length each (Adam, 2026-09-24, OB-297: *"Locations of switches are known."*;
-  ADA2-C7) - and the note counts those answers, each once - so it asks for exactly what the editor offers: a route tile's piece is asked for
-  until its other squares are measured, and a piece whose units sit on a station's square is not (ADA-C1).  A
-  configuration built before the marks counts whole legs, as TDA2-C1 did.
+  length, and refused to any train lying on it); a way round nobody measured is not judged. Where some of it has no
+  length the refusal says how many things Mass Assign Lengths would ask a length for on the way round, which is the
+  other way past (TDA-B1). The build marks, place by place, the piece, switch or shared square the editor still asks
+  for, keyed by the answer it is asked in - its piece, or all of its page's switches, or all of its page's
+  crossings, one length each (OB-297; Adam: *"Locations of switches are known."*) - and the note counts those
+  answers, each once, so it asks for exactly what the editor offers: a route tile's piece is asked for until its
+  other squares are measured, and a piece whose units sit on a station's square is not (ADA-C1). A configuration
+  built before the marks counts whole legs.
   **After a turn the body is ahead of the train** and moves with it - a turn on the way, or a train leaving over its
   own tail - so the question starts again. Asked by every tier, Why not Moving? and Return Home's planner. A hand door
   does not offer a destination the rule refuses on every route; the sentence shows where a menu built before the
@@ -1415,114 +1362,93 @@ The editor notice about turn-round squares with no length is a different questio
   `core.testATrainDoesNotRunIntoItsOwnTail`, `core.testTheOwnTailArithmetic`.
 - **Every other train's tail is asked about, not only the one the record kept** (TDD-A1). The claims record one train
   per place - the last walked, in an order nobody chose - and two tails fouling one switch from its two legs both claim
-  its square. Walked with the others, the moving train's own claim could stand where another's was, and its way out
-  through the switch was cleared into that train. So a train's route is judged against every OTHER train walked without
-  it, and Return Home keeps each train's claims apart. `core.testATailIsNotHiddenByAnother`.
-- **One tail per train, and a running train's starts at its head** (Adam, 2026-09-21, OB-243: *"the
+  its square. A train's route is judged against every OTHER train, walked without it, and Return Home keeps each
+  train's claims apart. `core.testATailIsNotHiddenByAnother`.
+- **One tail per train, and a running train's starts at its head** (OB-243; Adam: *"the
   tail is certain at departure and shouldn't change.  You also know which way the train went ... Just
   unlock the rest of the diagram once the tail by length is far enough away"*). A locked path reserves
-  every Point on it, so during a run a locomotive is the occupant of several Points at once - and the walk
-  used to start from each of them, drawing a tail at a destination the train had not reached and another
-  at a square it had long left (OB-242). It now walks once per locomotive. A running train is anchored at
-  its last reported milestone and spends its length back along the road it has already driven; a standing
-  train is anchored where it stands. `core.testARunningTrainHasOneTail`.
+  every Point on it, so during a run a locomotive is the occupant of several Points at once; the walk is made
+  once per locomotive, so no tail is drawn at a destination the train has not reached or at a square it has long
+  left (OB-242). A running train is anchored at its last reported milestone and spends its length back along the
+  road it has already driven; a standing train is anchored where it stands. `core.testARunningTrainHasOneTail`.
 - **And the track it shares metal with is closed too, which is the anti-collision rule at a switch.**
-  Adam, 2026-09-07: EN57-203 *"is allowed to traverse a blocked/shaded switch (60) to get from
+  Adam: EN57-203 *"is allowed to traverse a blocked/shaded switch (60) to get from
   TunnelLeftPark to BottomMainC, even though it should not be possible."* Coverage is recorded per
   EDGE; a train lying across one pair of a switch's arms fouls the other pair, and the other pair is a
-  different Edge that was never in the covered set. So a path is refused over any edge that shares
-  metal with a covered one — the lock-edge relation `GraphReducer` derives from shared tiles. Told
+  different Edge that is not in the covered set. So a path is refused over any edge that shares
+  metal with a covered one - the lock-edge relation `GraphReducer` derives from shared tiles. Told
   apart from an FR-001 occupancy restriction, which uses the same list, by **symmetry**: sharing a
   tile is mutual and the reducer records both directions, while a restriction is one-directional.
-  Known limit, written down rather than left to be rediscovered: two stations each holding the other
-  back are symmetric by coincidence, and this over-refuses there.
-  `core.testACoveredSwitchClosesTheOtherRoad` is the test that goes red when the rule is removed —
-  it needs a turnout to express, so it runs on `test/layouts/single-switch`; the two older
-  covered-track classes stayed fully green with the rule disabled (AUT9-B2).
+  Known limit: two stations each holding the other back are symmetric by coincidence, and this
+  over-refuses there. `core.testACoveredSwitchClosesTheOtherRoad` goes red when the rule is removed - it needs a
+  turnout to express, so it runs on `test/layouts/single-switch` (AUT9-B2).
 - **The copies of one square are one piece of metal, except where the square is two.** Occupancy is
   recorded per Point and a square is emitted as one Point per side a train can arrive by, so the build
   groups those copies under a `block`: a train on the northbound copy makes the southbound copy read
   occupied, which is right, because they are the same rail. The TILE says which copies those are, not
-  the s88 - genuinely different places share a sensor on a real layout. Adam, 2026-09-22 (OB-238), on
-  the three types where that is wrong: *"it is two pieces of metal. imagine two parallel tracks simple
+  the s88 - genuinely different places share a sensor on a real layout. On the three types where that is wrong
+  (OB-238) Adam: *"it is two pieces of metal. imagine two parallel tracks simple
   appearing on one tile for visual convenience. two distinct, not connected paths."* A double curve is
   two arcs in opposite corners that never touch and an overpass is two tracks at different heights, so
-  DOUBLE_CURVE, FEEDBACK_DOUBLE_CURVE and OVERPASS are grouped per ROAD instead - the grain the
-  reduction has used for them since AUR-B1 - and a train on one road leaves the other free. Grouping
-  them by the tile refused a second train track that is physically free, which is the refusing
-  direction. `core.testTheDiagramDrawsWhatTrainsMayDo.testEachArcOfADoubleCurveIsItsOwnPieceOfMetal`.
-- **But only over the part of it the train is actually lying on** (Adam, OB-207, 2026-09-12: *"75 407
+  DOUBLE_CURVE, FEEDBACK_DOUBLE_CURVE and OVERPASS are grouped per ROAD instead (AUR-B1), and a train on one road
+  leaves the other free. `core.testTheDiagramDrawsWhatTrainsMayDo.testEachArcOfADoubleCurveIsItsOwnPieceOfMetal`.
+- **But only over the part of it the train is actually lying on** (OB-207; Adam: *"75 407
   DB cannot go from Tunnel to BottomMainA even though it should be able to"*, at a train length of
-  one). An edge was covered whole or not at all, so a one-unit train parked at the end of a
-  twelve-tile run fouled every road sharing any tile of it, and a station beyond it became
-  unreachable from anywhere. The build now writes each edge's **places** — the location identifiers
-  the lock relation is itself derived from, in order, each with what it measures — the tail walk
-  spends the train's length across them, and the shared-metal rule asks whether the tail lies on
-  metal *this* edge runs over. Adam proposed it as extra nodes at the switches; the places are the
-  same information without inventing a Point that has no sensor.
+  one). A one-unit train parked at the end of a twelve-tile run must not foul every road sharing any tile of it.
+  The build writes each edge's **places** - the location identifiers the lock relation is itself derived from, in
+  order, each with what it measures - the tail walk spends the train's length across them, and the shared-metal
+  rule asks whether the tail lies on metal *this* edge runs over. Adam proposed it as extra nodes at the switches;
+  the places are the same information without inventing a Point that has no sensor.
   - The **direct** case stays whole-edge on purpose: a path uses all of its own edges, so a tail
     anywhere on one is in the way. Only a **shared** edge can be touched at one end and no further.
-  - An edge with no places — a hand-written configuration, or one written before 3.0.0 — keeps the
+  - An edge with no places - a hand-written configuration, or one written before 3.0.0 - keeps the
     whole-edge answer.
   - `core.testAShortTrainDoesNotBlockTheWholeRun` is the test, with a control that a train long
     enough to reach the shared metal still blocks it.
-- **Two marks, and they say different things** (Adam, 2026-09-09: *"'train is here' should also mean
+- **Two marks, and they say different things** (Adam: *"'train is here' should also mean
   'track is blocked' - that is the whole point. it's the same as greying out edges, just in a
   different way."*). A square with **orange** on it is where a train IS. A square that is **grey and
   not orange** is track that train's presence has made unusable. A square with neither is free.
 - **A run is drawn in the stations' blue ahead of the train and dark grey for the track it has driven and still
-  holds, with white arrowheads edged in dark grey** (Adam, FR-106: his palette, kept in one place, `DiagramColours`).
+  holds, with white arrowheads edged in dark grey** (FR-106: Adam's palette, kept in one place, `DiagramColours`).
   Track a non-atomic run gives back behind the train, as its tail clears it, is drawn as nothing - its line and the
   pale wash of what it held clear both go (RSA25-C2); under atomic routes they stay until the run ends.
 - **The strip above the track diagram says "Setup changes not applied yet"** while the setup has changes the railway
   has not taken - an edit made as a run started, or one that leaves the setup unable to build while the last railway
-  that built stays loaded; its tooltip says they apply at the next load, once the setup has no errors (Adam,
-  2026-10-02: "Add the setup notice, but make it brief").
+  that built stays loaded; its tooltip says they apply at the next load, once the setup has no errors (Adam: "Add
+  the setup notice, but make it brief").
 - A train is drawn as an **orange line along the track it is standing on**, **on the track diagram
   viewer only** - and while it runs, along the track its length still covers, drawn over its route so the tail shows
   the whole way (FR-106). An editor is where the railway is arranged, and what happens to be
   standing on it while you arrange it is a fact about right now rather than about the drawing - the
   same reasoning that makes station names the default caption there.
 - Blocked track is drawn by **fading the square itself to 40%**, **whether or not anything is
-  running** — the tile's own art, drawn faintly, so a blocked curve is still legibly a curve. Adam,
-  2026-09-10: *"I want the shading to instead be the same tile with more transparency exactly like
-  what happens when edges are locked in autonomy mode."* It was a grey wash painted over the square
-  until then.
+  running** - the tile's own art, drawn faintly, so a blocked curve is still legibly a curve. Adam:
+  *"I want the shading to instead be the same tile with more transparency exactly like
+  what happens when edges are locked in autonomy mode."*
 
-  The fade is applied **to the icon as it is painted** — a composite set before `super.paintComponent`
-  — because nothing drawn afterwards can make what is underneath transparent. Everything autonomy
+  The fade is applied **to the icon as it is painted** - a composite set before `super.paintComponent`
+  - because nothing drawn afterwards can make what is underneath transparent. Everything autonomy
   draws on top, the train line included, is painted at full strength, so a square that is both still
   reads as both. `LayoutLabel.BLOCKED_ALPHA` is the number.
 
   **And it is applied once.** A square blocked by a standing train and also locked by a route a running
-  train holds is drawn at the same 40%, not faded twice (Adam, 2026-09-12, OB-212: *"keep one level of
-  opacity, dont stack."*). Two reasons to refuse a square are still one refused square. Built and
-  validated (MT-375, `ui.testTheWashDoesNotStack`): the route's and the annotation's washes are told the
-  region the tile has already faded and do not lay a second one over it.
+  train holds is drawn at the same 40%, not faded twice (OB-212; Adam: *"keep one level of
+  opacity, dont stack."*). Two reasons to refuse a square are still one refused square. The route's and the
+  annotation's washes are told the region the tile has already faded and do not lay a second one over it
+  (MT-375, `ui.testTheWashDoesNotStack`).
 
-  **This said "only while autonomy is running" between 2026-09-09 and 2026-09-09, and the reversal is
-  the point of the change** (W7B-B1). The bound was Adam's own sentence - *"can we just grey out the
-  tiles just like blocked edges while autonomy is running?"* - and the reason written down for it was
-  that blocked track is a fact about routing, and nothing is routing when nothing is running.
-
-  That reason is wrong about this railway, and the way to see it is that **the REFUSAL was never
-  fenced**. `Layout.isPathClear` sweeps the covered edges in every tier at every time, correctly,
-  because a tail lying across the rail is physical rather than a preference. So at idle a right-click
-  manual send across a parked train's tail was refused - `errorTrackCoveredByStandingTrain` - over
-  track the diagram painted as free. That is the same complaint that brought the grey back for the
-  running case (*"a square the railway would not let a train onto looked exactly like free track"*),
-  arriving through the other door, and the guard-and-affordance doctrine says the two must ask one
-  question (OB-057/OB-090).
-
-  Adam, asked about the idle case directly, 2026-09-09: *"yes, this greyout should appear at idle and
+  **It is drawn at idle too** (W7B-B1). The refusal is not fenced to a running railway: `Layout.isPathClear` sweeps
+  the covered edges in every tier at every time, because a tail lying across the rail is physical rather than a
+  preference. So at idle a right-click manual send across a parked train's tail is refused -
+  `errorTrackCoveredByStandingTrain` - and the diagram must not paint that track as free: the guard and the
+  affordance must ask one question (OB-057/OB-090). Adam: *"yes, this greyout should appear at idle and
   be regenerated if a placement or train/track length is changed."*
-
-  `ui.testTheGreyAppearsAtIdleToo` is the class; `ui.testBlockedTrackIsGreyWhileAutonomyRuns` keeps
-  its name and its subject, having lost the word ONLY.
+  `ui.testTheGreyAppearsAtIdleToo` is the class; `ui.testBlockedTrackIsGreyWhileAutonomyRuns` is the running case.
 
 - **And it is regenerated by every operator gesture that changes it with no train moving.** Adam
   asked first for three - a locomotive placed or removed, a train's length changed, a tile's length
-  changed - and then, on 2026-09-10, for all of them: *"make sure the shading and orange repaints on
+  changed - and then for all of them: *"make sure the shading and orange repaints on
   any autonomy or train/track length edit."* A station flag, an arrival side, a one-way direction and
   a reversal marking all change which edges exist, and therefore what a standing train covers.
 
@@ -1530,7 +1456,7 @@ The editor notice about turn-round squares with no length is a different questio
   `blockedTrackChanged()`, and every setup change goes through it. The refresh diffs the two sets and
   repaints only the squares whose mark changed, so a rebuild that alters nothing costs a comparison.
 
-  The three original gestures still reach it by their own routes, and which route is not arbitrary:
+  The three original gestures still reach it by their own routes:
 
   - a **placement** through `updateVisiblePoints`, at each of the diagram's placement doors - the
     keyboard's Control+X / Control+V / Delete, the right-click Place and Remove items, and
@@ -1538,34 +1464,30 @@ The editor notice about turn-round squares with no length is a different questio
   - a **tile length** through the setup rebuild it needs anyway, because an edge's length is baked
     into the built `Layout` by `GraphReducer` and cannot change without one - which is the general
     door above, reached first by this one;
-  - a **train length** through `TrainControlUI.blockedTrackChanged`, and this is the one that had
-    nothing at all. `Layout.edgesCoveredByStandingTrains` reads `getTrainLength()` off the locomotive
+  - a **train length** through `TrainControlUI.blockedTrackChanged`.
+    `Layout.edgesCoveredByStandingTrains` reads `getTrainLength()` off the locomotive
     every time it is asked, so a length typed into the dialog changes what the railway refuses
-    immediately, with no rebuild in between and therefore nothing telling the drawing.
+    immediately, with no rebuild in between and therefore nothing else to tell the drawing.
 - **The line follows the road, not the square.** It runs along the route the train occupies through
-  each tile, which is why a wash was the wrong way to say *"a train is here"*. Adam, 2026-09-08:
+  each tile, which is why a wash was the wrong way to say *"a train is here"*. Adam:
   *"instead of shading the entire tiles, we need to draw a line (let's say in orange) to show that
   the train is there. graying makes it look confusing on double curve tiles."* A double-curve tile
-  carries two roads, and a train on one of them was indistinguishable from a train on the other. The
-  grey that came back on 2026-09-09 does not reopen this: a square that is grey and not orange is not
-  claiming a train is on either road, only that the track is unavailable.
+  carries two roads, and a train on one of them would be indistinguishable from a train on the other. A square
+  that is grey and not orange claims no train on either road, only that the track is unavailable.
 - **The line is drawn on every square the train lies over, the sensor squares included.** The square a
   train stands on is always a sensor, so a line missing there is missing from the one square that matters
-  most. Adam, 2026-09-23: *"when we draw orange lines, they don't overlap with sensors"* - on every sensor,
-  occupied or not. They had been left out on purpose - *"a train standing there would be shown standing
-  there"* - and his ruling is that the orange shows where the train is. Built 2026-09-23 (OB-277): the
+  most. Adam: *"when we draw orange lines, they don't overlap with sensors"* - on every sensor,
+  occupied or not; the orange shows where the train is (OB-277). The
   standing square is drawn and, since OB-278, spent first like every square behind it, and each sensor the body
   reaches is drawn along the road facing the track just walked, which names one arc even on a double
   curve. `regression.testTheWashIsNoLongerThanTheTrain.testTheSquareTheTrainStandsOnIsOrange` and
   `testASensorTheTailLiesAcrossIsOrange`, the second with the train one unit too short as its control.
   **A route tile is drawn too** (OB-279): it carries whatever the track beside it carries, and its road is
-  named by the sides it joins rather than by the port map, so the orange and the grey were skipped there
-  until 2026-09-23. `core.testRouteTilePlacement.testARouteTilesRoadCanBeDrawn`.
-- **The line is as long as the train; the grey is as long as the edge.** That difference is what
-  separates the two marks. The line walks square by square from where the train stands, each square
+  named by the sides it joins rather than by the port map.
+  `core.testRouteTilePlacement.testARouteTilesRoadCanBeDrawn`.
+- **The line is as long as the train.** It walks square by square from where the train stands, each square
   paying its own length, and stops when the train is used up - drawing the whole edge instead washed
-  seventeen squares for a train of length one (MT-309). The grey is the whole edge on purpose,
-  because the whole edge is what routing refuses.
+  seventeen squares for a train of length one (MT-309). The grey is what routing refuses (below).
 - **The marks survive a highlight.** An accessory change flashes the square it commands; when the
   flash ends the square is asked again rather than remembered, because the train may have moved while
   the highlight was showing. The train line is painted over the tile's icon; the refusal is the icon itself, drawn faintly. Neither is baked into the image - both are applied on every paint, which is what keeps an accessory highlight from taking either away with it.
@@ -1575,40 +1497,26 @@ The editor notice about turn-round squares with no length is a different questio
 - **And never on the event thread** (OB-192). Both answers come from
   `Layout.edgesCoveredByStandingTrains`, which is `synchronized` on the `Layout` - the same monitor a
   dispatch holds for the whole of `configureAndLockPath`, a sleep per accessory of the path. Asked
-  from the event thread that freezes the window for the whole dispatch - and it was a deadlock while
-  `repaintSwitch`, which a driving thread inside that monitor calls for every accessory it commands,
-  was `synchronized` on the window (until RSA67-C1). Adam, 2026-09-09: *"starting autonomous operation ... makes the UI
+  from the event thread that freezes the window for the whole dispatch (and `repaintSwitch`, which a driving
+  thread inside that monitor calls for every accessory it commands, must not be `synchronized` on the window -
+  RSA67-C1). Adam: *"starting autonomous operation ... makes the UI
   unresponsive. Trains still run, but nothing is repainted, and controls are stuck."* So the pass runs
   on a worker and the marks land a beat after they are asked for. Nothing about **what** is drawn
   changes; only where the work happens.
 - **WHAT IS DRAWN IS WHAT IS REFUSED, once both marks are counted.** The grey is the squares
   standing trains CLAIM - `Layout.placesCoveredByStandingTrains`, which is what `isPathClear`'s
   shared-metal sweep refuses a path over - so blocked track is visible as blocked track, and track a
-  train does not lie on is not grey (OB-280, below).
-
-  This bullet said the opposite between 2026-09-08 and 2026-09-09, in bold, and the reversal is the
-  point of the change. Replacing the wash with the line answered the double-curve complaint and made
-  the picture a strict subset of the refusal: a square the railway would not let a train onto looked
-  exactly like free track. Adam: *"that is the whole point."* Two marks answer both questions at
-  once, where narrowing one mark to answer the second question could only ever lose the first.
-
-  **Settled again on 2026-09-23 (OB-208), and it is this bullet that stands.** Adam, asked whether the
-  grey should cover only where the train is or the whole stretch it blocks: *the whole stretch* - *"orange
-  shows where the train is, gray shows what's blocked."* The narrowing of OB-207 was made when the grey
-  was the only mark; with the orange line saying where the train is, the grey says what routing refuses.
-  Built 2026-09-23: the grey is every tile of every covered edge again, per road so a double curve fades only
-  the arc the edge runs over (`AutonomySession.routesBlockedByStandingTrains`), and the fade follows the grey's
-  roads rather than the orange's. This reverses what MT-373 validated on 2026-09-12, on his ruling.
-
-  **And settled a third time the same day (OB-280), and it is this that stands.** Adam: *"grey what routing
-  actually refuses.  if the train doesn't protrude past the switch, there should be nothing else to gray."*
-  A path driving along a covered edge ends at or runs through the square the train stands on, which is
-  claimed; a path crossing only the far end of that edge is NOT refused (OB-207) - and the whole-edge grey said
-  it was. So the grey is the squares the railway claims under standing trains: the whole square where the
-  place is the square (a train on one leg of a turnout blocks the other), one road where the place names a road
-  (a double curve or an overpass). With OB-278, a train that fits on its berth greys that square and nothing
-  behind it. `AutonomySession.routesBlockedByStandingTrains`,
-  `ui.testTheGreyAppearsAtIdleToo.testTheGreyIsWhatTheRailwayClaims`.
+  train does not lie on is not grey. A square the railway would not let a train onto must not look like free track;
+  two marks answer both questions (where the train is, what is blocked), where narrowing one mark to answer the
+  second could only lose the first. Adam (OB-208): *"orange shows where the train is, gray shows what's blocked."*
+  And (OB-280): *"grey what routing actually refuses.  if the train doesn't protrude past the switch, there should be
+  nothing else to gray."* A path driving along a covered edge ends at or runs through the square the train
+  stands on, which is claimed; a path crossing only the far end of that edge is NOT refused (OB-207) - so the grey
+  is the squares the railway claims under standing trains, not every tile of every covered edge: the whole square
+  where the place is the square (a train on one leg of a turnout blocks the other), one road where the place
+  names a road (a double curve or an overpass), and the fade follows the grey's roads rather than the orange's.
+  With OB-278, a train that fits on its berth greys that square and nothing behind it.
+  `AutonomySession.routesBlockedByStandingTrains`, `ui.testTheGreyAppearsAtIdleToo.testTheGreyIsWhatTheRailwayClaims`.
 
   **What is still not drawn**, and is explained in the "why not moving" view rather than on the
   diagram:
@@ -1624,49 +1532,45 @@ The editor notice about turn-round squares with no length is a different questio
   do not move the diagram, and a height CAP so that a long answer does not eat the page - and an
   answer longer than the cap must be given the whole strip, because a viewport smaller than its
   contents is the only thing that makes the strip's scrollbar appear. Laid out at its preferred height
-  instead, it was shrunk toward its minimum - measured at five pixels of a two-hundred-and-sixty pixel
-  answer - and the strip stood open at full height with nothing in it. Adam: *"the banner expands, but
-  I see no text."* A short message is still centred in the strip (OB-151); the two rules are one
+  instead, it is shrunk toward its minimum and the strip stands open at full height with nothing in it. A short
+  message is still centred in the strip (OB-151); the two rules are one
   statement in `AutonomyBanner.CentredButNeverTaller`, because settings that have to be read together
   are settings that come apart.
 
   **And it is worked out on a worker, not on the click** (D3-C1). The answer comes from
   `Layout.explainDestinations`, which takes the railway's monitor and walks the graph, and then a
-  reduced-path search for every station the railway offers - so asking for it on the event thread is
-  the rule below being broken by the one tool a stuck railway sends people to. The click captures the
+  reduced-path search for every station the railway offers - so asking for it on the event thread would break
+  the rule above in the one tool a stuck railway sends people to. The click captures the
   layout and the station index, says *"Working out the reasons..."*, and the report and its lines are
   painted when they land. Two clicks in a row are two searches and the later one wins: an answer to a
   question the user has moved on from is discarded rather than painted over the one they are waiting
-  for. It was never a live freeze - the editor cannot be open while autonomy is running (OB-047) - and
-  it is moved anyway. Adam: *"I would rather take it off EDT. It's not critical now, but we want to
+  for. The editor cannot be open while autonomy is running (OB-047), so this is not a live freeze; it is on a
+  worker anyway. Adam: *"I would rather take it off EDT. It's not critical now, but we want to
   avoid these pitfalls."*
 
 **Known limits, deliberately.** A tail that really does reach past a fork, or across unmeasured
 track, is not blocked. Nor is the tail of a train whose recorded arrival side names a side no track now
 leaves its square by - a value left stale by an edit to the diagram: the walk stops before its first
-hop and claims nothing, even where the geometry leaves only one way back (`Layout.walkOneTail`; this was
-stated only in the code until OB-264). All three under-claim. Blocking on a guess is still a refusal, and it stops trains
+hop and claims nothing, even where the geometry leaves only one way back (`Layout.walkOneTail`, OB-264). All
+three under-claim. Blocking on a guess is still a refusal, and it stops trains
 that could have run.
 
-**Two things about the room sum were open, and Adam settled both on 2026-09-11** (MON-C13). They had
-lived only in a comment at `Layout.isPathClear` until 2026-09-08, against this document's own promise at
-the top that a known limit is stated here. The second took two rulings and one reverted commit.
+**Two rulings about the room sum** (MON-C13).
 
 1. **A positive length counts, and that is deliberate.** On a diagram-built graph an edge's length is
    the sum of `max(0, tileLength)` over the tiles it spans, so one measured tile out of five gives a
    positive number and the sum reads it as a measured segment - which under-counts and can refuse a
-   train that fits. Asked whether an edge should count as measured only when every tile in it is:
-   *"no, any nonzero length on a logical edge between 2 stations will count."*
+   train that fits. Asked whether an edge should count as measured only when every tile in it is,
+   Adam: *"no, any nonzero length on a logical edge between 2 stations will count."*
 
    So this is the rule rather than a limitation. It errs towards refusing, which is the safe direction,
    and the remedy in the operator's hands is to measure the rest of the tiles.
 
-2. **A REVERSAL SPLITS THE RUN IN, AND THE TRAIN HAS TO FIT IN BOTH HALVES** (Adam, 2026-09-11).
+2. **A REVERSAL SPLITS THE RUN IN, AND THE TRAIN HAS TO FIT IN BOTH HALVES.**
 
-   Asked whether *"the track segments leading up to it"* means up to the reversal or up to the berth:
+   Asked whether *"the track segments leading up to it"* means up to the reversal or up to the berth, Adam:
    *"it can be either the reversal or the berth, depending on where switches are.  both need to be long
-   enough."*  That was read as one bound - stop the walk at whichever is met first - and two tests
-   refused it, so it was put to him again with the figures, and he gave them:
+   enough."*  With the figures:
 
    > four-unit train in a three-unit berth with a two-unit approach: refused both because of the berth
    > (3<4) and the track length that potentially couldn't fit the train while reversing.  if the train
@@ -1693,23 +1597,13 @@ the top that a known limit is stated here. The second took two rulings and one r
 
    **His 3 is neither of the numbers the rule produces on that fixture** - the berth beyond the turn is
    4 and the approach behind it 5 - and both refuse an eight-unit train, so the verdict is his and the
-   arithmetic is the rule's. Recorded rather than rounded off, because the next person to read the
-   ruling will do the same sum.
+   arithmetic is the rule's.
 
-   **The first attempt was reverted on the strength of a test that was a guess.** Those two tests
-   asserted that a four-unit train fits a three-unit berth with a two-unit approach, and that an
-   eight-unit train fits a nine-unit run in split by a reversal - both because the figures add up end to
-   end. Nobody had ruled on either. A test that encodes a reading of an unstated rule is indistinguishable
-   from a test that encodes the rule, and reverting working code to keep one green cost half a day.
+   A shorter stretch with nothing measured in it is no information rather than no room (bullet 1's doctrine). A
+   long measured approach with an unmeasured berth beyond the turn is therefore not refused for room;
+   `autosetup.ui.checkRunInShorterThanTheBerth` is the notice that asks for the berth to be measured.
 
-   **What it does to his railway: thirty-five journeys BACK, and none taken away.** The census measured
-   1670 journeys refused on the way before the two bounds and 1635 after, with the berth count unmoved -
-   because a shorter stretch with nothing measured in it is no information rather than no room, which is
-   bullet 1's doctrine again. Those thirty-five have a long measured approach and an unmeasured berth
-   beyond the turn; the way to a real answer about them is to measure that berth, and
-   `autosetup.ui.checkRunInShorterThanTheBerth` is the notice that asks.
-
-**A STATION TOLD IT HOLDS MORE TRAIN THAN ITS TRACK MEASURES GETS A NOTICE** (Adam, 2026-09-11):
+**A STATION TOLD IT HOLDS MORE TRAIN THAN ITS TRACK MEASURES GETS A NOTICE.** Adam:
 *"let's add an autonomy editor notice that alerts the user if a run-in is shorter than the berth length,
 that way they can decide if it makes sense or not.  for example, a station of length 4 may have two
 segments of tracks on either side of a switch, of length 2.  that is acceptable and its limitations are
@@ -1729,16 +1623,16 @@ never binds, and a train inside it is refused by a rule quoting a number nobody 
   judges at all, and another road runs over the square it stops at, which a switch's other leg into the same berth
   does not (TDA5-C1).  There, with nothing measured before that switch or crossing, the notice says nothing: where
   those squares were answered 0 the berth takes no train that way, and that is a **warning of its own** - *"the
-  length given for that track adds up to 0"* (Adam, 2026-09-24, TDA4-C2: *"Give it its own sentence as a warning,
+  length given for that track adds up to 0"* (TDA4-C2; Adam: *"Give it its own sentence as a warning,
   make it sound intuitive"*) - and where they were not, the half-measured warning names them (TDA3-C1).
-- **At a platform, the figure a train is refused above, where there is one** (Adam, 2026-09-24, TDA-C10: *"Add the
+- **At a platform, the figure a train is refused above, where there is one** (TDA-C10; Adam: *"Add the
   refusing figure where there is one."*).  A train longer than the room stands across the switch only as far as the
   measured route in holds it (FR-087), so one setting off from the station or turn right behind, and longer than the
   track from there, is refused.  That figure is the sentence's third number, given where it is under the stated
   maximum, and read off the railway the setup builds: back from the platform over every leg, through sensors nobody is
   started at, to a copy a train is started at or turns at - a station square can have a copy heading the platform's way
   that trains may not arrive at - and stopped at a leg nobody measured, as the route in is, and on past one answered
-  0 throughout (2026-09-25); never through or into a
+  0 throughout; never through or into a
   point that is switched off, though out of a station switched off round a train standing there, and never from or
   through another copy of the platform's own square; worked out for every leg together, so a loop is walked whole
   (ADD-C6, ADA2-C3).  Each way in gives the larger of its room and its route in, as the refusal quotes, and the figure
@@ -1762,77 +1656,40 @@ never binds, and a train inside it is refused by a rule quoting a number nobody 
 `core.testThePlatformNoticeKnowsWhatATrainIsRefusedAt.testTheEditorSaysWhenAPlatformHoldsLessTrackThanItClaims` holds it, on
 his own 2 + 2 example and on the reversal branch.
 
-**Both were written while the sum ran only at termini and reversing berths, and that fence is gone**
-(MT-262, 2026-09-08; D2-C2). The rule now runs at every destination and in every tier, so whatever
-either bullet gets wrong, it gets wrong everywhere rather than at a handful of reversal squares.
-
-**Measured on the operator's own railway**, because "everywhere" is not a number. The census is
-`core.testTheRoomRuleCensusOnTheRealLayout`, which runs in the battery: for every ordered pair of
+**Measured on the operator's own railway**, because "everywhere" is not a number. The room rule runs at every
+destination and in every tier (MT-262, D2-C2), so whatever either ruling above gets wrong, it gets wrong everywhere.
+The census is `core.testTheRoomRuleCensusOnTheRealLayout`, which runs in the battery: for every ordered pair of
 station Points it searches a path, then asks each of six trains of its own, one to six units long, in
 turn whether the widened rule refuses it and the fence it replaced - `isTerminus() || isReversing()` -
-would not have.
-
-**Those six lengths were read out of his locomotive database until 2026-09-09**, and are the class's
-own now (Adam: *"generate trains programmatically in the tests, and give them semantic names"*). The
-set is the same, so every number below is unchanged - and it is now a set this file chose. Measuring
-one of his trains, or buying one, used to move the population the census is over and could change
-the count below with nothing saying why.
+would not have. The six lengths are the class's own (Adam: *"generate trains programmatically in the tests, and
+give them semantic names"*), so measuring or buying one of his trains does not move the population the census is
+over.
 
 | | |
 |---|---|
-| ordered station pairs | 1332 (37 destination Points, each against the other 36; 1980 before the refreeze of 2026-09-23) |
-| of those, routable | 956 (1301 before the refreeze, 1354 after OB-229, 1848 before it) |
+| ordered station pairs | 1332 (37 destination Points, each against the other 36) |
+| of those, routable | 956 |
 | train lengths asked, the census's own | 1, 2, 3, 4, 5, 6 |
-| journeys the widening NEWLY refuses | **505** (610 before the refreeze, 880 before OB-229) |
+| journeys the widening NEWLY refuses | **505** |
 | every one of them arriving at | BottomMainA (eastbound), BottomMainB (eastbound), BottomMainPost (northbound) - each measured at **ONE** unit of room |
 
-**Re-measured 2026-09-23, on the railway refrozen from Adam's measured layout.** His own lengths and station sizes are
-taken off in the census's copy first, so this is still the three-tile experiment; what moved is the railway under it.
-His one-way marks, barred sides and the compulsory turn at BottomMainC leave 37 destination Points rather than 45.
-BottomMainC is off the list of berths because it is a terminus now - one copy, every train turned - and a refusal at a
-terminus is not new. No route turns at a measured square under these three tiles any more, so the census no longer
-reaches the turn bound; `core.testNonReversibleTrains` and `core.testATrainIsJudgedOnlyWhereItStops` hold it.
-`core.testWhichSquaresTheRoomRuleClosesOff`, on the same three tiles, still finds no square that offers a longer train
-nothing at all.
+The census runs on the railway frozen from Adam's measured layout (`test/layouts/live-snapshot`). His own lengths and
+station sizes are taken off in the census's copy first, so it is the three-tile experiment. His one-way marks, barred
+sides and the compulsory turn at BottomMainC leave 37 destination Points; BottomMainC is off the list of berths because
+it is a terminus - one copy, every train turned - and a refusal at a terminus is not new. The census walks the
+railway's own route search, which does not extend a route through a terminus that is not its end (section 7), and
+does not walk a route that doubles back through another copy of its own start or end (AMR-B1, section 7; Adam: *"We
+need to refuse both. A copy makes a cycle."*). No route turns at a measured square under these three tiles, so the
+census does not reach the turn bound; the band in the census, `core.testNonReversibleTrains` and
+`core.testATrainIsJudgedOnlyWhereItStops` hold it. `core.testWhichSquaresTheRoomRuleClosesOff`, on the same three
+tiles, finds no square that offers a longer train nothing at all.
 
-The room rule declines to judge almost everything else: the railway carries only a few measurements.
-
-**Re-measured 2026-09-15, after OB-229.** The census walks the railway's own route search, and that search no longer
-extends a route through a terminus that is not its end - the route check refuses every such route (section 7). So
-the pairs whose only routes ran through a terminus are no longer counted as routable, and the journeys over those
-routes - every one of them refused before length ever arose - no longer count as refused for room: 1354 routable pairs
-rather than 1848, 610 newly refused rather than 880, 1030 refused at the berth rather than 1760. A probe put every route
-both searches could yield to the route check: none of the dropped pairs was drivable, and 153 pairs the old search
-never found became drivable. The four berths and their one unit of room are unchanged, and they are what this section
-reasons from. **One number rose, and its old zero was hiding it:** about 60 journeys counted as refused on the way -
-the berth has room, and every route to it turns at a square too short for the train. Each of them used to have a route
-through a terminus as well, which the room rules alone admit and the route check always refused, so none was counted and
-none was ever drivable. The square refusing them was `BottomMainB (westbound, reverse)`, a turn copy of one of the four
-berths below - the turn bound of 2026-09-11 at one of Adam's own one-unit squares, not a refusal somewhere new.
-
-**Re-measured again the same day, after the copy ruling** (AMR-B1, below in section 7). Every one of those 60 journeys
-was over a route that doubled back through another copy of its own start or end, and Adam ruled those out - *"We need
-to refuse both. A copy makes a cycle."* They are not walked at all now, so **routable pairs are 1301** and the
-journeys refused on the way are back to **0**: the pass-through rule of 2026-09-09 costs nothing on this railway
-today, and `BottomMainB (westbound, reverse)` no longer refuses anything. The turn bound still bites, at 15
-route-journeys rather than the 155 it reached after OB-229 - the same reason, the long routes being the laps. What
-holds those rules now that two of the census's numbers are zero or near it: the turn band of 5 to 40 in
-`core.testTheRoomRuleCensusOnTheRealLayout`, and `core.testATrainIsJudgedOnlyWhereItStops` on fixtures of its own.
-14 of the railway's 572 reachable station pairs lose their last route, every one of them from `BottomMainPost`.
-
-Those four are the berths Adam named himself, with the number he gave: *"bottommainb, which has a
-length of 1 leading up to its switch"*, and MT-262's own report of `BottomMainA (eastbound)` offered
-*"with ONE measured unit of room behind it"*. So the widening is refusing the journeys he asked to have
-refused, at the squares he was looking at, and not - on this railway, today - a wider set that bullet 1
-has under-counted. A layout with lengths scattered over more of its track would be a different answer,
-and the way to find out is to run that census again rather than to reason about it. **Now it can be
-run.**
-
-**This paragraph said 332 of 3488 until 2026-09-08**, from a probe that was never committed. When the
-census was written as something that could be re-run it found 1980 pairs and 880 refusals, and the
-earlier probe's population cannot be recovered to say where the difference came from - which is the
-whole argument for committing it. The four berths and the one unit of room reproduced exactly, and
-they are what this section reasons from.
+The room rule declines to judge almost everything else: the railway carries only a few measurements. The berths are
+the ones Adam named himself, with the number he gave: *"bottommainb, which has a length of 1 leading up to its
+switch"*, and MT-262's own report of `BottomMainA (eastbound)` offered *"with ONE measured unit of room behind it"*.
+So the widening refuses the journeys he asked to have refused, at the squares he was looking at, and not - on this
+railway, today - a wider set that bullet 1 has under-counted. A layout with lengths scattered over more of its track
+would be a different answer, and the way to find out is to run that census again rather than to reason about it.
 
 ---
 
