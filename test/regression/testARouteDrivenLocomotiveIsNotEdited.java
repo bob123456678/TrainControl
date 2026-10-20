@@ -18,7 +18,7 @@ import org.traincontrol.util.I18n;
 import support.SourceOf;
 
 /**
- * A locomotive a running route drives is neither deleted nor renamed, and the refusal names the route (OB-287, CS3-B1).
+ * A locomotive a running route drives is neither deleted nor renamed, and the refusal names the route (OB-287).
  *
  * Adam, on MT-464, 2026-09-22: *"make an automated test for this"*.  `core.testAdvancedRoutes` holds the half about the
  * route finishing its commands, and `runningRouteDriving` - the question - is claimed there too; nothing asked whether
@@ -41,7 +41,7 @@ public class testARouteDrivenLocomotiveIsNotEdited
     /** A second locomotive, for a multi-unit the route's locomotive is ticked into */
     private static final String UNIT = "OB-287 unit";
 
-    /** A Central Station multi-unit with the route's locomotive among its members (RSA30-C8) */
+    /** A Central Station multi-unit with the route's locomotive among its members */
     private static final String CS_UNIT = "OB-287 CS unit";
 
     /**
@@ -60,7 +60,7 @@ public class testARouteDrivenLocomotiveIsNotEdited
 
         try
         {
-            // OPENED INSIDE THE TRY (TSX-B8, OB-111): anything thrown between the open and the close would leave the
+            // OPENED INSIDE THE TRY (OB-111): anything thrown between the open and the close would leave the
             // layout preference pointing at a folder under %TEMP%.
             sandbox = support.LayoutSandbox.open();
 
@@ -211,8 +211,8 @@ public class testARouteDrivenLocomotiveIsNotEdited
             assertFalse(unit.getLinkedLocomotiveNames().containsKey(LOC), "a locomotive a running route drives was made a"
                 + " member of a multi-unit");
 
-            // BUT A CENTRAL STATION MULTI-UNIT'S LIST, which changes nothing, is shown while the route drives a member
-            // (RSA30-C8): only the dialog that can change a multi-unit asks
+            // BUT A CENTRAL STATION MULTI-UNIT'S LIST, which changes nothing, is shown while the route drives a member:
+            // only the dialog that can change a multi-unit asks
             model.newMM2Locomotive(CS_UNIT, 65);
 
             model.changeLocAddress(CS_UNIT, 65, org.traincontrol.marklin.MarklinLocomotive.decoderType.MULTI_UNIT);
@@ -305,12 +305,12 @@ public class testARouteDrivenLocomotiveIsNotEdited
         assertTrue(renames > proposed, "the name proposal renames before it asks (OB-287)");
     }
 
-    /** The locomotive and route of GSR-B2's claim. */
+    /** The locomotive and route of this claim. */
     private static final String SYNCED = "GSR-B2 loc";
     private static final String SYNCED_ROUTE = "GSR-B2 route";
 
     /**
-     * A Central Station sync does not re-address a locomotive a running route drives (GSR-B2).
+     * A Central Station sync does not re-address a locomotive a running route drives.
      *
      * The sync's address change waited for autonomy and nothing else.  A route sends its commands to a locomotive by
      * NAME, one after another with delays between them, and each goes to whatever address the name has when its turn
@@ -335,7 +335,7 @@ public class testARouteDrivenLocomotiveIsNotEdited
 
         try
         {
-            // OPENED INSIDE THE TRY, as the claims above open theirs (TSX-B8, OB-111).
+            // OPENED INSIDE THE TRY, as the claims above open theirs (OB-111).
             sandbox = support.LayoutSandbox.open();
 
             model = support.TestStationAddress.withNoStation(

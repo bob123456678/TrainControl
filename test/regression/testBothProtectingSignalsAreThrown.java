@@ -125,7 +125,7 @@ public class testBothProtectingSignalsAreThrown
     /**
      * Deleting a locomotive takes it off the railway, not just out of the lists.
      *
-     * UR-3, from the uninformed review. `locDeleted` sweeps six things - the run list, the active
+     * `locDeleted` sweeps six things - the run list, the active
      * locomotives, the milestones, each Point's exclusions, each Point's home, and the home claims -
      * and does not clear the locomotive STANDING on a Point.
      *
@@ -168,7 +168,7 @@ public class testBothProtectingSignalsAreThrown
     /**
      * Protection re-asserts after something else has moved the signal.
      *
-     * UR-4, from the uninformed review. `TilePorts` gives a SIGNAL tile a GREEN configuration command,
+     * `TilePorts` gives a SIGNAL tile a GREEN configuration command,
      * so a path configured across one commands it green through `getConfigCommands` - and
      * `configureAndLockPath` does that AFTER reserving the point, in the same loop: `e.getEnd().reserve`
      * then `configureEdge(e)`. The same `Accessory`, driven behind protection's back.
@@ -455,12 +455,12 @@ public class testBothProtectingSignalsAreThrown
     }
 
     /**
-     * A station a train only passes reads as passed while the train hands over from its claim to its journey (RSA30-C1).
+     * A station a train only passes reads as passed while the train hands over from its claim to its journey.
      *
      * The hand-over writes the journey and then takes the claim away.  The guard's rule read the journey first and the
      * claim second, so a refresh whose two reads straddled the hand-over found the train in neither, read it as standing
      * at the station it was passing, and turned that station's exit guard red for the whole passage - OB-315's symptom,
-     * through a race.  `pathHeldBy` reads the claims first for exactly this (RSA3-C1, RSA4-C3).
+     * through a race.  `pathHeldBy` reads the claims first for exactly this.
      *
      * The straddle made certain: the claim taken, and a journeys' map whose read by this thread performs the hand-over
      * itself, after the value is read.
@@ -546,7 +546,7 @@ public class testBothProtectingSignalsAreThrown
     }
 
     /**
-     * A hand dispatch does NOT touch the signal of a train standing elsewhere (AU-B7, reversed).
+     * A hand dispatch does NOT touch the signal of a train standing elsewhere (reversed).
      *
      * The test next door covers the DESTINATION of the dispatched train. This one is about a train
      * nobody dispatched, and it is the case the sweep exists for.
@@ -556,7 +556,7 @@ public class testBothProtectingSignalsAreThrown
      * exists to prevent. So a train placed at a protected platform while idle produces NO occupancy
      * change, and nothing will ever command that platform's signal on its own.
      *
-     * **THE ASSERTION WAS REVERSED AND THIS PARAGRAPH WAS NOT** (D24-C6, corrected 2026-09-03).
+     * **THE ASSERTION WAS REVERSED AND THIS PARAGRAPH WAS NOT** (corrected 2026-09-03).
      *
      * What follows described the fault as it stood before `OB-166`: `runLocomotives` and
      * `executeTimetableInternal` swept every protecting signal the moment they set `running`;
@@ -637,7 +637,7 @@ public class testBothProtectingSignalsAreThrown
         // NOT PROTECTED, as of Adam's ruling of 2026-08-31: "Signals should only be touched when a
         // route activates."
         //
-        // This required the opposite, and AU-B7 is the finding it came from. The sweep that made it
+        // This required the opposite. The sweep that made it
         // true also RELEASED - it commanded every empty protected platform green - so a hand dispatch
         // drove signals a route had set, which is OB-166. He ruled the sweep out, and this is what
         // that costs: a train placed by hand at a protected platform keeps whatever aspect its signal
@@ -657,7 +657,7 @@ public class testBothProtectingSignalsAreThrown
     /**
      * A train dispatched BY HAND protects the platform it is heading for.
      *
-     * UR-2, from the uninformed review, and Adam's ruling on it: "The same thing should happen in
+     * Adam's ruling: "The same thing should happen in
      * manual operation vs auto - the same switches and signals set, and guards applied."
      *
      * Today it does not. `refreshProtectingSignal` returns unless `isRunning()`, and a hand dispatch
@@ -822,7 +822,7 @@ public class testBothProtectingSignalsAreThrown
     /**
      * A failure while LOCKING a path releases what it has taken.
      *
-     * UR-11, from the uninformed review. The two returned-false failures of `configureAndLockPath` are
+     * The two returned-false failures of `configureAndLockPath` are
      * handled - `handleMisconfiguredPath` plus `takingPath.remove` - and a THROWN one was not. It
      * escaped the lock loop into `executePath`'s catch, whose comment says why it deliberately does not
      * unlock:
@@ -1640,7 +1640,7 @@ public class testBothProtectingSignalsAreThrown
     /**
      * A protection refresh on another train's thread that has read the holds BEFORE a departure claims its route does not
      * turn the leaving train's exit guard RED after the departure has set it GREEN, with Atomic Routes off - nor does the
-     * same refresh made after the claim (RSA67-C1, OB-340).  The refresh reads the holds and commands the signal as one
+     * same refresh made after the claim (OB-340).  The refresh reads the holds and commands the signal as one
      * step against the departure's GREEN, so it either commands first and the GREEN lands last, or reads the hold.
      *
      * MUTATION: take the signal's lock out of `Layout.refreshOneSignal`, or out of the departure's GREEN in
@@ -1660,7 +1660,7 @@ public class testBothProtectingSignalsAreThrown
     }
 
     /**
-     * The same with Atomic Routes on (RSA67-C1, OB-340).
+     * The same with Atomic Routes on (OB-340).
      *
      * MUTATION: as `testARefreshStraddlingADeparturesClaimLeavesItsGuardGreenWithAtomicRoutesOff`.
      *
@@ -1679,7 +1679,7 @@ public class testBothProtectingSignalsAreThrown
     /**
      * The same where the first edge out commands the shared guard GREEN itself, as a route out does its exit signal, with
      * Atomic Routes off: the edge's own command is held as the exit guards are, so it too is sent under the signal's lock
-     * once the edge is taken (RSA67-C1, OB-340).
+     * once the edge is taken (OB-340).
      *
      * MUTATION: take the signal's lock out of `Layout.configureEdge`'s command, and the forced reading goes RED after the
      * refresh.
@@ -1698,7 +1698,7 @@ public class testBothProtectingSignalsAreThrown
     }
 
     /**
-     * The same with Atomic Routes on (RSA67-C1, OB-340).
+     * The same with Atomic Routes on (OB-340).
      *
      * MUTATION: as `testARefreshStraddlingADeparturesClaimLeavesTheGreenItsFirstEdgeCommandsWithAtomicRoutesOff`.
      *
@@ -1717,7 +1717,7 @@ public class testBothProtectingSignalsAreThrown
 
     /**
      * A train leaves RR S for RR N by RR M while another thread refreshes `near`, the guard RR S shares with RR P; this
-     * class's own feedbacks 47491-47496 (RSA67-C1).
+     * class's own feedbacks 47491-47496.
      *
      * Another train is under way on one held edge, RR X to RR Y, put among the journeys directly, so that a refresh walks
      * that edge's commands as it reads the holds.  Forced, the refresh runs on a thread of its own before the departure,
@@ -1956,7 +1956,7 @@ public class testBothProtectingSignalsAreThrown
     }
 
     /**
-     * A protection refresh of one Point, as an occupancy change there makes it (RSA67-C1).
+     * A protection refresh of one Point, as an occupancy change there makes it.
      *
      * @param layout the railway
      * @param point the Point
@@ -1981,7 +1981,7 @@ public class testBothProtectingSignalsAreThrown
     }
 
     /**
-     * The railway's journeys under way, so that a test can put a train among them without running it (RSA67-C1).
+     * The railway's journeys under way, so that a test can put a train among them without running it.
      *
      * @param layout the railway
      * @return its live map of each train under way to its path
@@ -1998,7 +1998,7 @@ public class testBothProtectingSignalsAreThrown
 
     /**
      * Whether one thread is BLOCKED entering a monitor another thread holds - the departure waiting for the refresh, which
-     * is the fix's shape and which the forcing must let through rather than deadlock on (RSA67-C1).
+     * is the fix's shape and which the forcing must let through rather than deadlock on.
      *
      * @param waiting the thread that may be waiting
      * @param holding the thread that may hold what it waits for

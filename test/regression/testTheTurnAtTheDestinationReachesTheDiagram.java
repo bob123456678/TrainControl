@@ -32,7 +32,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * The turn a train makes at its destination reaches the setup, and reaches it the right way round.
  *
- * OB-190 / OB-189, by way of REV9-A1.  Adam: he sends a train to a square trains may turn at, answers
+ * OB-190 / OB-189.  Adam: he sends a train to a square trains may turn at, answers
  * **"no, do not keep the direction"**, the locomotive physically turns, and the diagram goes on drawing
  * it facing the way it set off.
  *
@@ -40,7 +40,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * that carries a destination turn from the railway into the setup - was reached by no executed test at
  * all.  Its rules were pinned by `testADirectionChangeIsNotSwallowed`, which reads `TrainControlUI.java`
  * as a STRING and compares offsets, so the statement it proves is present is the exact statement the
- * defect lives in (REV9-C3).  `testTheGraphIsToldWhenARunEnds` proves the idle announcement happens and
+ * defect lives in.  `testTheGraphIsToldWhenARunEnds` proves the idle announcement happens and
  * `testAReversalCommandIsEmitted` proves the command reaches the track; the seam between them - what
  * the drain writes, and to which copy - had nothing running over it.
  *
@@ -70,7 +70,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * arrived by - which the arrival wrote down itself, on the square it stopped at, before turning it.
  * That is an absolute answer, it needs no record to be in sync first, and re-applying it cannot drift.
  *
- * The third test is the other half of REV9-A1: a turn the drain could NOT write must still be owed.
+ * The third test is the other half: a turn the drain could NOT write must still be owed.
  *
  * @author Adam
  */
@@ -246,7 +246,7 @@ public class testTheTurnAtTheDestinationReachesTheDiagram
     /**
      * The turn is written to the setup even when the arrival square has never recorded a facing.
      *
-     * REV9-A1 case 1.  A square only ever gets a `FACING` from `captureFromLayout`, which runs when the
+     * Case 1.  A square only ever gets a `FACING` from `captureFromLayout`, which runs when the
      * editor is opened or the program exits - so an arrival square that no train has been captured on
      * has none, `flipFacing` has nothing to flip, and it says so by returning null.  The drain removed
      * the pending record regardless.
@@ -281,7 +281,7 @@ public class testTheTurnAtTheDestinationReachesTheDiagram
     /**
      * A stale facing does not send the turn the wrong way.
      *
-     * REV9-A1 case 2.  `FACING` is never cleared - *"a square with no train on it still remembers which
+     * Case 2.  `FACING` is never cleared - *"a square with no train on it still remembers which
      * way the last one was pointing"* - so the arrival square commonly carries the previous occupant's
      * answer, and the squares this feature exists for are exactly the ones whose occupants legitimately
      * alternate facing.  Where that stale value happens to be the POST-turn side, flipping it writes
@@ -324,7 +324,7 @@ public class testTheTurnAtTheDestinationReachesTheDiagram
     /**
      * A turn the drain could not write is still owed afterwards.
      *
-     * The other half of REV9-A1: the drain removed the pending record whether or not anything was
+     * The other half: the drain removed the pending record whether or not anything was
      * written, so every way of failing to write - a locomotive the running layout no longer carries, a
      * square the setup cannot answer for - destroyed the record of a turn the railway really made. The
      * comment above the removal said "Written, and only now forgotten", and it was false whenever the
@@ -543,7 +543,7 @@ public class testTheTurnAtTheDestinationReachesTheDiagram
             fail("the journey never arrived, so this test never reached the turn it is about");
         }
 
-        // ON A COPY OF THE SQUARE - since round 83 already the one for its new facing (RSA50-A3): the arrival stands a turned
+        // ON A COPY OF THE SQUARE - since round 83 already the one for its new facing: the arrival stands a turned
         // train there itself, rather than leave it on the copy for its old heading until the drain
         Point standing = standingOn(turn);
 
@@ -592,7 +592,7 @@ public class testTheTurnAtTheDestinationReachesTheDiagram
      * on IS its direction, so a setup written correctly and a running layout left on the old copy still
      * offers paths for the wrong heading.
      *
-     * And the arrival side goes with it (REV9-B1).  `Point.setLocomotive` clears `arrivedFrom` on every
+     * And the arrival side goes with it.  `Point.setLocomotive` clears `arrivedFrom` on every
      * change of occupant - right for a different train, wrong for the same train being re-stood on a
      * sibling copy of one square, which is what this move is.  Turning a train does not move its
      * carriages (behaviour.md 4), so the tail is still lying the way it came in.
@@ -626,7 +626,7 @@ public class testTheTurnAtTheDestinationReachesTheDiagram
             + " so the track its carriages are lying across stopped being blocked for exactly the"
             + " train that turned. Turning a train does not move its tail (REV9-B1)");
 
-        // AND THE ROUTE IT DROVE (TDR-B2).  A train that was driven here follows that route back past a
+        // AND THE ROUTE IT DROVE.  A train that was driven here follows that route back past a
         // junction (Adam, MT-335: "Follow its last route"), and this re-stand carried the side and not the
         // route - so a train that turned lost it the moment the railway went idle.
         assertNotNull(standing.getArrivedAlong(),

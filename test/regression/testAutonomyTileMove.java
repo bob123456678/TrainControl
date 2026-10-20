@@ -511,7 +511,7 @@ public class testAutonomyTileMove
     /**
      * A snapshot is a COPY, so an edit that changes something in place cannot change the snapshot too.
      *
-     * UR-5, from the uninformed review. `snapshotPage` copies each map, entry by entry, and shares the
+     * `snapshotPage` copies each map, entry by entry, and shares the
      * VALUES. For eight of the ten collections that is exactly right - the values are strings and
      * numbers, which cannot change underneath anybody. Two of them hold something mutable:
      *

@@ -37,7 +37,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * Two assertions, because one of them turned out not to be able to fail. The RULE - every facing
  * offered for a square is a side that square's own track actually uses - is layout-independent and
  * sweeps every square, but it reads the same map the facings are built from, so every answer the real
- * branch gives satisfies it by construction (TA-B8). The TABLE - five named squares and where a train
+ * branch gives satisfies it by construction. The TABLE - five named squares and where a train
  * standing on each of them can be pointing, worked out from the track rather than from the code - is
  * what actually pins the rule the bug was about, and the curve MT-125 was reported on is the first
  * line of it.
@@ -66,7 +66,7 @@ public class testFacingFollowsTheTrack
 
         List<LayoutDiagram> pages = support.LayoutSandbox.wired(model, parser);
 
-        // A throwaway copy, not the tracked fixture itself (TST-C17). `session.open` runs
+        // A throwaway copy, not the tracked fixture itself. `session.open` runs
         // `migrateStationLabels`, which calls `store.save()` and `page.saveChanges(...)` the moment a
         // `Point:` label turns up in a page - not the case today, but `test/test_layout` is checked in and
         // shared with every other class in the suite, and this one is the only sibling that opened a
@@ -97,7 +97,7 @@ public class testFacingFollowsTheTrack
     /**
      * The facings offered on five named squares, written out by hand from the track under them.
      *
-     * TA-B8 of the 2026-08-24 test suite audit, and the reason this table exists: the RULE test below
+     * The reason this table exists: the RULE test below
      * checks that every facing offered is a side `session.getRoutes(tile)` uses, and at the time
      * `onwardFrom` - which produced the facings - read that same map. Every answer the real branch
      * gave satisfied that oracle by construction, so the test could only fail on the compass fallback.
@@ -105,7 +105,7 @@ public class testFacingFollowsTheTrack
      * arrived by, which is MT-125's own defect class turned round - passed it, because the arrival
      * side is track too.
      *
-     * **That circularity is gone as of DR-B6 (2026-09-07)**, and by a route nobody planned: the facing
+     * **That circularity is gone**, and by a route nobody planned: the facing
      * menu no longer works its own answer out, it reads `facingsFor`, which is the BUILDER's
      * `facingByName`. So the premise below (`getRoutes` - what track is on the square) and the answer
      * below it (what the build says a train there can face) now come from different places, and the
@@ -132,7 +132,7 @@ public class testFacingFollowsTheTrack
      * reachable from both ends and so offers both facings, in the order the arrival sides are visited
      * (N, E, S, W) - which is load-bearing, because on a square with no side barred the FIRST answer is
      * the facing a placement with nothing recorded on it gets (`startableCopy` takes the first copy
-     * trains may arrive at, DCN4-C2).
+     * trains may arrive at).
      *
      * Mutation this must fail: in `AutonomySession.onwardFrom`, offer every end of every route
      * regardless of which side the train arrived by - `if (route.getA() != null) out.add(route.getA());

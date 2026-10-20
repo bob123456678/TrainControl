@@ -21,8 +21,8 @@ import support.SourceOf;
 /**
  * A setup edit that could not be applied says so, and is still there after the exit (MT-267, MT-326).
  *
- * **Two manual tests, one mechanism, and neither could be run by hand.**  VD10-C2 coalesced the setup
- * rebuild into one per gesture, which posts it an event LATER than the write that asked for it.  A run
+ * **Two manual tests, one mechanism, and neither could be run by hand.**  The setup
+ * rebuild is coalesced into one per gesture, which posts it an event LATER than the write that asked for it.  A run
  * starting inside that window finds the gate shut and the rebuild is refused - correctly, because
  * rebuilding underneath a moving railway is what `prepareAutonomyReload` exists to refuse.
  *
@@ -33,8 +33,8 @@ import support.SourceOf;
  * MT-326 is the second half of the same promise.  The message says the edit *"will be picked up the next
  * time the setup is loaded"*, and that was not true on its own: the save on the way out folds the RUNNING
  * layout back over the configuration and removes what the layout does not carry, and the layout was built
- * before the edit.  Exiting deleted the edit, silently, on the exact path the message called safe
- * (ACC-B3).  Adam, on MT-326: *"I don't understand this test - autonomy shouldn't be editable/startable
+ * before the edit.  Exiting deleted the edit, silently, on the exact path the message called safe.
+ * Adam, on MT-326: *"I don't understand this test - autonomy shouldn't be editable/startable
  * while running."*  He is right, and the entry was badly written: this is a race, not a mode.
  *
  * **The race is not raced here.**  `isAutonomyBusy()` answers true for a staging flow as well as a
@@ -147,7 +147,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
     /**
      * The courtesy door - a close that carries no edit - records nothing.
      *
-     * OPV-C5's correction: this was recorded for ANY decline, and `autonomyEditorClosed()` reaches the
+     * This was recorded for ANY decline, and `autonomyEditorClosed()` reaches the
      * same rebuild on every close.  A session in which nothing was edited would lose its exit capture
      * and be told an edit could not be applied.
      *
@@ -360,7 +360,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
 
     /**
      * A setup edit whose load is declined - a link unpaired, a problem that stops the build - puts nothing back and
-     * records nothing over the railway it did not replace (RSA18-A1): put back in the edited setup's names, every train
+     * records nothing over the railway it did not replace: put back in the edited setup's names, every train
      * whose copy the edit renamed was taken off that railway and recorded where nothing then kept it, and once the link was
      * paired again the train was on neither and the square it stands on read free.
      *
@@ -461,8 +461,8 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
     }
 
     /**
-     * A train the rebuild records where it stands - its turning taken away, no copy facing its way - is drawn there
-     * (RSA18-C1): the diagram learned which trains stand on no Point inside the load, before the record, and drew it
+     * A train the rebuild records where it stands - its turning taken away, no copy facing its way - is drawn there:
+     * the diagram learned which trains stand on no Point inside the load, before the record, and drew it
      * nowhere.
      *
      * MUTATION: leave the diagram untold after the record, and this fails.
@@ -548,7 +548,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
 
     /**
      * An edit made while the setup cannot be built - a link unpaired, its load declined - survives the next fold of the
-     * railway built before it (RSA19-B1): the railway was not replaced and nothing marked the setup newer, so opening or
+     * railway built before it: the railway was not replaced and nothing marked the setup newer, so opening or
      * closing the editor, Export, New Configuration and the exit wrote that railway's settings back over the edit.
      *
      * MUTATION: leave the setup unmarked when the load is declined, and this fails.
@@ -628,7 +628,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
 
             assertTrue(moved[0], "precondition: " + train + " was not moved to " + toName);
 
-            // AND AN ENTRY THE RUN CAPTURED, on the railway alone (RSA21-C3)
+            // AND AN ENTRY THE RUN CAPTURED, on the railway alone
             final int entries = captureAnEntry(railway);
 
             // AN EDIT WHILE IT WAITS, and the fold every door makes (the editor's opening and closing, Export, the exit)
@@ -657,7 +657,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
             assertEquals(String.valueOf(session.getPointProperty(station, "maxTrainLength")), "9", "the fold of the"
                 + " railway built before the edit took the edit away (RSA19-B1)");
 
-            // AND KEPT WHAT THE RAILWAY OWNS (RSA20-A1): where the run left the train, and the settings it holds
+            // AND KEPT WHAT THE RAILWAY OWNS: where the run left the train, and the settings it holds
             assertEquals(session.getLocomotiveNameAt(org.traincontrol.automationui.AutonomyCompanionStore.parseTileKey(
                 toSquare)), train, "the fold while the setup is newer wrote nothing of where the run left " + train
                 + " (RSA20-A1)");
@@ -715,7 +715,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
 
     /**
      * A rebuild from the setup - the one every gesture on the track diagram's menu makes - keeps the railway's settings
-     * and timetable (RSA20-B1): the Auto tab and a run write them to the railway, and the rebuild from the setup threw
+     * and timetable: the Auto tab and a run write them to the railway, and the rebuild from the setup threw
      * away whatever had not been folded.
      *
      * MUTATION: rebuild without folding the railway's settings first, or fold them without the timetable, and this
@@ -732,7 +732,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
 
         final String tableWas = session.getGlobal("timetable");
 
-        // AN ENTRY A RUN CAPTURED, on the railway alone (RSA21-C3)
+        // AN ENTRY A RUN CAPTURED, on the railway alone
         final int entries = captureAnEntry(railway);
 
         SwingUtilities.invokeAndWait(() ->
@@ -790,7 +790,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
     }
 
     /**
-     * A setting the railway turned off is off after a rebuild from the setup (RSA21-C1): Simulate and the sequential
+     * A setting the railway turned off is off after a rebuild from the setup: Simulate and the sequential
      * flag are written only while on, so the compare with the railway as it was built found no key, and the setup kept
      * the setting on.
      *
@@ -861,7 +861,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
 
     /**
      * Atomic routes the load turned on itself - a train with no length - are not folded into the setup as though the
-     * operator had chosen them (RSA21-C1): the next gesture on the diagram's menu wrote them, and the operator's "off" no
+     * operator had chosen them: the next gesture on the diagram's menu wrote them, and the operator's "off" no
      * longer came back the day the lengths were given (MT-470).
      *
      * MUTATION: leave the railway's settings as built without the value the load forced, and this fails.
@@ -933,7 +933,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
     }
 
     /**
-     * A timetable entry on the railway alone, as a run's capture adds one (RSA21-C3).
+     * A timetable entry on the railway alone, as a run's capture adds one.
      *
      * @param railway the railway
      * @return how many entries it then has
@@ -1104,7 +1104,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
 
     /**
      * The timetable's four doors ask whether anything runs again after their question, which can stay open as long as the
-     * operator likes (OB-260, RSA48-C1, RSA48-C2, RSA49-C2): a run begun behind the question and then a Yes - or a delay
+     * operator likes (OB-260): a run begun behind the question and then a Yes - or a delay
      * typed - changes nothing, and the refusal is said.
      *
      * Delete Entry asked again from round 80; Clear Timetable and Restart Timetable asked only before, and Clear then

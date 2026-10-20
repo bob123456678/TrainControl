@@ -20,7 +20,7 @@ import org.traincontrol.gui.LayoutEditor;
  * Moving or copying a whole line of squares at once, and what happens to the setup underneath it.
  *
  * The editor's own whole-column and whole-row gesture was replaced by multi-select on 2026-08-19 and its code
- * removed with DCN-C3.  Dragging or pasting a selected column asks the store the same thing, through
+ * removed.  Dragging or pasting a selected column asks the store the same thing, through
  * `moveTiles`, so the lines here are built by `support.TileLine`.
  *
  * Adam moved a column in the layout editor and his links came unpaired.  The cause was that a bulk
@@ -280,15 +280,15 @@ public class testLayoutEditorBulkEdits
     }
 
     /**
-     * A paste that overlaps the squares it was cut from still carries all of them (RC-A6).
+     * A paste that overlaps the squares it was cut from still carries all of them.
      *
-     * RC-A1 made cutMoves ask, per origin, whether that square is still empty.  Right question, wrong
+     * cutMoves asks, per origin, whether that square is still empty.  Right question, wrong
      * moment: pasteSelection places its tiles first, so an origin that is also a LANDING has been
      * refilled by this very paste before cutMoves looks at it.
      *
      * That is not merely a skipped move.  A landing square is in `builtOver`, and the per-index sparing
      * only spares a landing that equals its OWN origin - so the setup on such a square was forgotten as
-     * built-over while nothing had carried it anywhere.  Destroyed, where before RC-A1 it moved.
+     * built-over while nothing had carried it anywhere.  Destroyed, where it should have moved.
      *
      * Cut a column and paste it one square down and that is every square on the column except the top.
      * Two stations, one square apart, so both the moved-onto-a-landing case and the ordinary case are
@@ -305,7 +305,7 @@ public class testLayoutEditorBulkEdits
 
             // A THREE-SQUARE STRIP, not the whole column.  A full-height selection shifted down can
             // never fit - pasteSelection refuses it with a modal dialog, and a modal dialog inside
-            // invokeAndWait is a deadlock, which is how this test hung a suite for six hours (RC-B10).
+            // invokeAndWait is a deadlock, which is how this test hung a suite for six hours.
             editor.getSelection().addRectangle(5, 2, 5, 4);
             editor.cutSelection();
 
@@ -332,18 +332,18 @@ public class testLayoutEditorBulkEdits
     }
 
     /**
-     * Undo after a shrink does not put a station’s name back outside the page (RC-B1).
+     * Undo after a shrink does not put a station’s name back outside the page.
      *
      * shrinkEdges snapshots for undo BEFORE it drops the captions on the row and column it is about to
-     * remove - that is LE-B1’s fix, and correct on its own path.  Undo then restores the components
+     * remove - that is the fix, and correct on its own path.  Undo then restores the components
      * and the captions, but the page SIZE is not part of an undo entry, and a shrink is only offered
      * when the trimmed edge holds no track, so no restored component pins the size back either.
      *
      * So Ctrl+Z after "-" gives the caption back and not the row it stood on: a name that is present in
-     * the setup, never drawn, and with no square left to click to remove it.  Exactly the state LE-B1
-     * was raised for, reached through undo instead of through the shrink.
+     * the setup, never drawn, and with no square left to click to remove it.  Exactly the state the shrink's cleanup
+     * exists to prevent, reached through undo instead of through the shrink.
      *
-     * RC-B1 was fixed with no test of its own and its disposition said otherwise, which is the failure
+     * A fix was made with no test of its own and its disposition said otherwise, which is the failure
      * this file exists to catch in the editor and did not catch in itself.
      */
     @Test
@@ -372,11 +372,11 @@ public class testLayoutEditorBulkEdits
     }
 
     /**
-     * A cut still carries its setup when the paste is not the very next thing the user does (RC-A1).
+     * A cut still carries its setup when the paste is not the very next thing the user does.
      *
      * `clipboardWasCut` is the ONLY thing that carries a group cut's setup - cutSelection calls
      * deleteSelection(false), which deliberately tells autonomy nothing, because the paste is the other
-     * half of the gesture. LE-A6 stood that flag down inside snapshotLayout, on the reasoning that any
+     * half of the gesture. Standing that flag down inside snapshotLayout was tried, on the reasoning that any
      * edit falsifies it. Every edit snapshots, so any edit at all between the two halves - growing the
      * diagram to make room, rotating a tile, dropping one from the palette - turned the move back into
      * a delete-and-lose, with nothing on screen to say so.
@@ -418,11 +418,11 @@ public class testLayoutEditorBulkEdits
     }
 
     /**
-     * An undo between the cut and the paste leaves the setup where the track came back (RC-A1).
+     * An undo between the cut and the paste leaves the setup where the track came back.
      *
-     * The other direction, and the reason LE-A6 stood the flag down in the first place. Undo puts the
+     * The other direction, and the reason the flag was once stood down. Undo puts the
      * cut track back on the squares it emptied, so those squares are occupied again and their setup
-     * belongs to what is standing on them - carrying it to the paste target would be the loss LE-A6
+     * belongs to what is standing on them - carrying it to the paste target would be the loss the stand-down
      * was written to prevent, arriving from the opposite side.
      *
      * The fix is not the flag but the question it was standing in for, asked per square: is the square
@@ -453,7 +453,7 @@ public class testLayoutEditorBulkEdits
     }
 
     /**
-     * A paste that carried nothing does not use up the cut (SVN-B11).
+     * A paste that carried nothing does not use up the cut.
      *
      * `clipboardWasCut` says "the squares these tiles came from are empty now, so the setup should
      * move with them". It was cleared by **any** paste that reached `cutMoves`, and `cutMoves` returns
@@ -464,7 +464,7 @@ public class testLayoutEditorBulkEdits
      * So a paste that moved nothing spent the cut, and the next paste - the one that would have
      * carried it - fell into the `else` and called `forgetBuiltOver` on the origins. Pasting the block
      * back where it came from then **destroyed** its setup instead of leaving it alone, which is
-     * `LE-A4` arriving through a door the `LE-A3`/`RC-A1` rewrite opened.
+     * the same loss arriving through a door a rewrite opened.
      *
      * **One square, not a column**, and that is the whole difficulty of writing this. A column cut
      * from this fixture has fifteen squares that were never occupied; `emptyCutOrigins` counts them as
@@ -519,7 +519,7 @@ public class testLayoutEditorBulkEdits
     }
 
     /**
-     * An undone cut is outstanding nowhere, not mostly (SVN-B11, second half).
+     * An undone cut is outstanding nowhere, not mostly (second half).
      *
      * `clipboardCutSquares` is every picked square, occupied or not - deliberately, because an empty
      * square can still hold a caption worth moving. `emptyCutOrigins` then asked each of them "are you
@@ -539,12 +539,12 @@ public class testLayoutEditorBulkEdits
      * was aimed at - the two are one gesture apart and need separate fixes.
      *
      * **One assertion, not two.** This carried a second - that the station had not travelled to
-     * `9,3` - and no implementation can make it false (`VD9-C6`): with the fix nothing moves at all,
+     * `9,3` - and no implementation can make it false: with the fix nothing moves at all,
      * and without it `5,3` is full again, so it is excluded from `vacated` and skipped by `cutMoves`.
      * A check that both branches satisfy is not a check.
      *
      * **One assertion, not two.** This carried a second - that the station had not travelled to
-     * `9,3` - and no implementation can make it false (`VD9-C6`): with the fix nothing moves at all,
+     * `9,3` - and no implementation can make it false: with the fix nothing moves at all,
      * and without it `5,3` is full again, so it is excluded from `vacated` and skipped by `cutMoves`.
      * A check that both branches satisfy is not a check.
      *
@@ -679,7 +679,7 @@ public class testLayoutEditorBulkEdits
                 }
             });
 
-            // ON A DEADLINE, not invokeAndWait (RC-B10).
+            // ON A DEADLINE, not invokeAndWait.
             //
             // A gesture that makes the editor raise a modal dialog - an out-of-bounds paste is one -
             // deadlocks invokeAndWait outright: the gesture waits for the dialog and the dialog waits
@@ -723,7 +723,7 @@ public class testLayoutEditorBulkEdits
         }
         finally
         {
-            // POSTED, NOT WAITED ON (RC-B10).  If the deadline above expired the event thread is
+            // POSTED, NOT WAITED ON.  If the deadline above expired the event thread is
             // still blocked, and waiting for it here would turn a reported failure back into a hang.
             if (editor[0] != null)
             {

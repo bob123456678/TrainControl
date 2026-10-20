@@ -37,7 +37,7 @@ import support.SourceOf;
  * On the frozen railway (OB-111): a five-unit train at Tunnel from the north has reached TunnelPre on the one rail and
  * 12,7 on the other, both on 1 - Main.  The question is asked owned by the main window, as a placement door asks it,
  * but off the event thread, so the test can click - a placement door asks on the event thread, which
- * `testAQuestionAskedOnTheEventThreadIsAnsweredByAClick` covers (TDU-C2); and the click is TunnelPre's own tile on the
+ * `testAQuestionAskedOnTheEventThreadIsAnsweredByAClick` covers; and the click is TunnelPre's own tile on the
  * main diagram, through the listener every s88 tile has.
  *
  * MUTATION: ask with the list again, and the click answers nothing.
@@ -257,7 +257,7 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * A double-click on a lit sensor answers the question and does not then flip the sensor (TDU-B3).
+     * A double-click on a lit sensor answers the question and does not then flip the sensor.
      *
      * The first click answers and takes the question down; the second arrived with nothing waiting, and the sensor's own
      * click flipped it - announced as a real sensor change, which is what the question's taking the click exists to
@@ -311,7 +311,7 @@ public class testTheTailIsPickedOnTheDiagram
             assertEquals(model.getFeedbackState(sensor), before, "the second click of a double-click on TunnelPre, the"
                 + " sensor that answered the tail question, flipped the sensor - a faked occupancy change (TDU-B3)");
 
-            // AND ONLY THAT DOUBLE-CLICK (TDU2-C1): a later one on the same sensor, with nothing asked, flips it and flips
+            // AND ONLY THAT DOUBLE-CLICK: a later one on the same sensor, with nothing asked, flips it and flips
             // it back, as a double-click on a sensor always has - the guard is put down once its double-click is over.
             click(q.label, 1);
             click(q.label, 2);
@@ -333,7 +333,7 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * The paste door reads every part of its landing before the question is asked (TDU-B2).
+     * The paste door reads every part of its landing before the question is asked.
      *
      * Since FR-100 the question waits on the diagram with the window live, and a second Control+V in that wait runs the
      * paste door again and writes the same fields for its own train - so the first train's road, side and facing were
@@ -375,7 +375,7 @@ public class testTheTailIsPickedOnTheDiagram
 
     /**
      * Asked on the event thread, as every placement door asks it, the question waits in a secondary loop and a click
-     * answers it (TDU-C2).
+     * answers it.
      *
      * The other claims here ask off the event thread, which is the latch branch; every real door is on the event thread.
      *
@@ -420,7 +420,7 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * With an editor open the question is the list, not the main window's diagram (TDU-C1).
+     * With an editor open the question is the list, not the main window's diagram.
      *
      * From the autonomy editor's Place door the question was put on the main window's diagram - lit on the editor's
      * squares too, which do not take the click - with its small window at the top of a main window the editor covers.
@@ -497,7 +497,7 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * A tail question answered after the square has changed writes nothing onto whatever stands there by then (TDU2-A1).
+     * A tail question answered after the square has changed writes nothing onto whatever stands there by then.
      *
      * Since FR-100 the question waits on the diagram with the window live - Start, the hand doors, another placement all
      * still work - and the door that asked writes its answer when it comes back.  Answered after a run has brought another
@@ -619,7 +619,7 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * Every placement door asks whether its placement still stands between the question and its writes (TDU2-A1) - the
+     * Every placement door asks whether its placement still stands between the question and its writes - the
      * paste door is asked by the claim above; the right-click Place and the locomotive dialog are asked here, of their
      * source, because each needs a menu or a dialog to reach.
      *
@@ -897,9 +897,9 @@ public class testTheTailIsPickedOnTheDiagram
 
     /**
      * Another configuration loaded in the wait, holding the same train on the same copy: the answer follows the train -
-     * into the configuration loaded now and onto the railway running (Adam, 2026-09-24, TDD5-C1: *"Follow the train."*).
+     * into the configuration loaded now and onto the railway running (Adam, 2026-09-24: *"Follow the train."*).
      *
-     * TDU4-C1 took the other way, dropping it, and the tail the operator had just given was then missing from the
+     * The other way dropped it, and the tail the operator had just given was then missing from the
      * railway in front of him: the running copy held the train with no road, and the track beyond the switch, where he
      * had said the tail lies, was free to route another train over.
      *
@@ -969,7 +969,7 @@ public class testTheTailIsPickedOnTheDiagram
 
     /**
      * The setup replaced in the wait - what closing the track-diagram editor does: the answer is not written, the new
-     * railway's copy keeps no road, and the old setup is not saved over the new one's file (TDU4-C4, TDU4-C2).
+     * railway's copy keeps no road, and the old setup is not saved over the new one's file.
      *
      * MUTATION: write where the session is not the window's any more, or save it, and this fails.
      *
@@ -1025,8 +1025,7 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * The facing is written before the question, so an answer dropped in the wait does not take it with it (TDU3-C1,
-     * TDU4-C4).
+     * The facing is written before the question, so an answer dropped in the wait does not take it with it.
      *
      * MUTATION: write the facing with the road, after the question, and this fails.
      *
@@ -1075,7 +1074,7 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * A dropped ANSWER is logged, naming the train and the square; a Cancel of a question made stale is not (TDU4-C3).
+     * A dropped ANSWER is logged, naming the train and the square; a Cancel of a question made stale is not.
      *
      * MUTATION: log every dropped reply, or none, and this fails.
      *
@@ -1171,7 +1170,7 @@ public class testTheTailIsPickedOnTheDiagram
 
     /**
      * The right-click and locomotive-dialog doors ask the railway running when the answer comes back, not the one they
-     * held before the question (TDU4-C4) - read, as the pin above is, because each needs a menu or a dialog to reach.
+     * held before the question - read, as the pin above is, because each needs a menu or a dialog to reach.
      *
      * MUTATION: pass either door the railway it held before the question, and this fails naming it.
      *
@@ -1196,12 +1195,12 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * The configuration renamed in the wait - the railway not rebuilt - keeps the answer (TDU5-C1): the same setup,
+     * The configuration renamed in the wait - the railway not rebuilt - keeps the answer: the same setup,
      * under a new name.  Asked only by the configuration's name, the check dropped the answer from the railway and from
      * the setup, and the log gave another configuration as the reason.
      *
      * MUTATION: ask for anything beyond the session - the configuration's name, the railway running - and this fails
-     * (TDD5-C1: the answer follows the train).
+     * (the answer follows the train).
      *
      * @throws Exception from the event thread
      */
@@ -1248,11 +1247,11 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * The right-click and locomotive-dialog doors keep every late-answer rule the paste door is claimed for above (TDU5-C4):
+     * The right-click and locomotive-dialog doors keep every late-answer rule the paste door is claimed for above:
      * the facing written before the question, the save skipped for a setup let go, only an answer logged, and the square
      * named as the diagram names it - read, as the pins above are, because each door needs a menu or a dialog.
      *
-     * And that each writes only where the answer goes somewhere (TDU2-A1).
+     * And that each writes only where the answer goes somewhere.
      *
      * MUTATION: undo any of the five at either door, and this fails naming it.
      *
@@ -1279,7 +1278,7 @@ public class testTheTailIsPickedOnTheDiagram
             assertTrue(facing > 0 && facing < asked, door[0] + " writes the facing after the tail question, where a"
                 + " dropped answer takes it with it (TDU3-C1)");
 
-            // THE WRITE WAITS ON WHERE THE ANSWER GOES (TDU2-A1): nothing is written where it goes nowhere.
+            // THE WRITE WAITS ON WHERE THE ANSWER GOES: nothing is written where it goes nowhere.
             int where = source.indexOf("whereTheAnswerGoes(", asked);
             int write = source.indexOf("setArrivedAlong(", where);
 
@@ -1303,7 +1302,7 @@ public class testTheTailIsPickedOnTheDiagram
 
             assertTrue(save > 0 && guard > asked, door[0] + " saves a setup the window let go in the wait (TDU4-C2)");
 
-            // AND AN EDITOR OPENED IN THE WAIT LETS THE SETUP GO TOO (RLU-C9, RLU2-C4): the paste door is claimed above.
+            // AND AN EDITOR OPENED IN THE WAIT LETS THE SETUP GO TOO: the paste door is claimed above.
             int stands = source.indexOf("setupStands =", asked);
 
             String rule = stands > 0 ? source.substring(stands, source.indexOf(";", stands)) : "";
@@ -1483,7 +1482,7 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * An answer given after an editor was opened in the wait is not written into the setup, and the log says why (RLU-C9).
+     * An answer given after an editor was opened in the wait is not written into the setup, and the log says why.
      *
      * The editor holds the setup as it was when it opened, and its Cancel puts that back - so a road written into the
      * setup while it was open was taken back out by the Cancel, silently, and the rail the train lies on stopped being
@@ -1884,7 +1883,7 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * An answer given after the running railway was rebuilt reaches the railway (TDU3-B1).
+     * An answer given after the running railway was rebuilt reaches the railway.
      *
      * A rebuild in the wait - any setup change from the diagram, a page left out - builds new copies of every square and
      * puts each train back on its new one.  The door asked the copy it had placed the train on, which the rebuild leaves
@@ -1925,7 +1924,7 @@ public class testTheTailIsPickedOnTheDiagram
                 + " the railway was rebuilt, and the railway's Tunnel copy did not get the road - the train's tail stops at"
                 + " the switch and another train can be routed into it (TDU3-B1)");
 
-            // AND IN THE NEW RAILWAY'S OWN EDGES (TDU4-C4): the answer's road is the old railway's, whose edges end at
+            // AND IN THE NEW RAILWAY'S OWN EDGES: the answer's road is the old railway's, whose edges end at
             // copies nothing runs on any more.
             for (org.traincontrol.automation.Edge edge : late.tunnelNow.getArrivedAlong())
             {
@@ -1941,7 +1940,7 @@ public class testTheTailIsPickedOnTheDiagram
 
     /**
      * The same train on the copy, from the same side, with a road it did not have when the question was asked - the
-     * road a run brings it back by: a late Cancel leaves that road (TDD3-C7, the road condition alone).
+     * road a run brings it back by: a late Cancel leaves that road (the road condition alone).
      *
      * MUTATION: drop the road from `placementStillStands`, and this fails.
      *
@@ -1979,7 +1978,7 @@ public class testTheTailIsPickedOnTheDiagram
 
     /**
      * Another train put on the copy by hand, with no road, the same side: a late click on TunnelPre does not give it
-     * the first train's road (TDD3-C7, the train condition alone).
+     * the first train's road (the train condition alone).
      *
      * MUTATION: drop the train from `placementStillStands`, and this fails.
      *
@@ -2020,7 +2019,7 @@ public class testTheTailIsPickedOnTheDiagram
 
     /**
      * The same train, turned in the wait: a late click on TunnelPre - a road for a train that came in from the north -
-     * is not written for a train now recorded from the south (TDD3-C7, the side condition alone).
+     * is not written for a train now recorded from the south (the side condition alone).
      *
      * MUTATION: drop the side from `placementStillStands`, and this fails.
      *

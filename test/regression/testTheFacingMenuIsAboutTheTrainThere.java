@@ -22,13 +22,13 @@ import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * After a run, the Facing menu is about the train the railway has on the square, and turns that one (TDY4-C5).
+ * After a run, the Facing menu is about the train the railway has on the square, and turns that one.
  *
  * After a run the setup still names each square's pre-run occupant (behaviour.md 6a), and nothing captures before the
  * diagram's right-click.  The menu took its train from the setup: with P placed on a square in the setup and T standing
  * there on the railway, it was titled "P is facing", ticked T's facing, and a click wrote P's record and moved P - found
  * on no copy of the square, so nothing moved.  T was not turned and the operator's correction was dropped without a
- * word.  With nothing placed there in the setup there was no menu at all.  TDY3-A2's shape one door along: `flipFacing`
+ * word.  With nothing placed there in the setup there was no menu at all.  The same shape one door along: `flipFacing`
  * was keyed on the railway's train by `4be3798a`, and this menu was not.
  *
  * Asked through the real door, as `testTheTailCanBeGivenInTheEditor` asks it: `AutonomyEditorPanel.buildFacingMenu`,
@@ -560,7 +560,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
     }
 
     /**
-     * While its route is set, before it sets off, a train's label already faces the way it will stand (RSA30-C3).
+     * While its route is set, before it sets off, a train's label already faces the way it will stand.
      *
      * OB-314's answer was kept beside the journey, which is written only at the hand-over, after the route's switches are
      * set - and the claim reserves the turning copy long before.  So for the length of the route setting the label read

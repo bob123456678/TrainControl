@@ -886,7 +886,7 @@ public class testNoSelfRecursiveWrappers
      * The signature itself is never included, even when its opening brace shares its line (K&R style,
      * against the Allman style this file mostly uses) - only what follows that brace is. Otherwise
      * `public void syncWithCS2() {` would be handed to `callsItself` as a line "calling" syncWithCS2,
-     * since the bare-name check added for TST-B6 cannot otherwise tell a declaration's own name from a
+     * since the bare-name check cannot otherwise tell a declaration's own name from a
      * call to it - both are just the name followed by `(`, preceded by a space.
      */
     private static List<String> bodyOf(List<String> lines, int declaredAt)

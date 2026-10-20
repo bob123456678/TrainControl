@@ -303,7 +303,7 @@ public class testPageIdsAreDurable
     /**
      * A retired id stays retired for longer than one write.
      *
-     * IAR-A1, found by an independent review. The closing comment on
+     * The closing comment on
      * `testAPageReusingARetiredIdInheritsNothing` says a reused id is "the case the index cannot
      * prevent". The index can prevent it, and until now it did so for exactly one write.
      *
@@ -376,7 +376,7 @@ public class testPageIdsAreDurable
     /**
      * Every held field is declared, and a save with a page absent loses none of them.
      *
-     * DR-A1. The held-entries mechanism (OB-067) carried the store's twelve shared collections' field
+     * The held-entries mechanism (OB-067) carried the store's twelve shared collections' field
      * names in three hand-written lists - four shape-classified arrays in `withoutAbsentPages` and a
      * merge array inside `sharedFields` - and no test governed any of them. A reviewer removed one
      * string, `"blockedPoints"` from the merge array, and nothing else: all three ratchets stayed
@@ -400,7 +400,7 @@ public class testPageIdsAreDurable
      *   assertion. That is the half no name-matching can check, and it only fails because the fixture
      *   puts a caption on a LOADED page pointing at a station on the absent one. With every square on
      *   the absent page the key-side check decides everything, the shape is never exercised, and all
-     *   four square-valued fields could be downgraded with this test still green (SV-C1).
+     *   four square-valued fields could be downgraded with this test still green.
      * - A field removed from `HELD_FIELDS` altogether fails it too, on the same assertion.
      *
      * The version of this comment written a few hours earlier said the third of those did NOT fail,
@@ -422,7 +422,7 @@ public class testPageIdsAreDurable
         TileKey ghostFar = new TileKey("Ghost", 5, 5);
         TileKey ghostCaption = new TileKey("Ghost", 6, 6);
 
-        // A square on the LIVE page whose VALUE points at the absent one (SV-C1).
+        // A square on the LIVE page whose VALUE points at the absent one.
         //
         // Without this every square in the fixture sat on the absent page, so the key-side check alone
         // decided every entry and the SHAPE half of HELD_FIELDS was never exercised - downgrading all
@@ -466,7 +466,7 @@ public class testPageIdsAreDurable
         reopened.setPageIds(idsAsNameToId());
         reopened.load();
 
-        // The entries really ARE held, which nothing here asserted before (SV-C1). A test that only
+        // The entries really ARE held, which nothing here asserted before. A test that only
         // checks the file still has them passes just as well when they were never taken out - and
         // "taken out" is the whole mechanism.
         assertNull(reopened.getPointName(ghost),
@@ -561,13 +561,13 @@ public class testPageIdsAreDurable
     /**
      * An index written in the platform's encoding is read, not refused.
      *
-     * SV-B1. `writeLayoutIndex` used a `FileWriter` until 2026-07-27, so it wrote this file in
+     * `writeLayoutIndex` used a `FileWriter` until 2026-07-27, so it wrote this file in
      * whatever encoding the machine defaulted to. Reading it strictly as UTF-8 throws
      * `MalformedInputException` on any byte that is not valid UTF-8 - and a page called
      * "Bahnhof S\u00fcd" written by an older TrainControl on a Windows box is exactly that.
      *
      * That was survivable while an unreadable index simply meant "no index": the pages were renumbered
-     * and the file rewritten as UTF-8, which healed it. DR-B4 added a refusal to renumber on a failed
+     * and the file rewritten as UTF-8, which healed it. A refusal to renumber on a failed
      * read - right for a locked file, and catastrophic here, because it made the condition permanent.
      * The index could never be written again, and the message said to try again in a moment.
      *
@@ -611,7 +611,7 @@ public class testPageIdsAreDurable
         assertEquals(ids.size(), 2, "both pages should have come back.  Got: " + ids);
 
         // The ACCENTED page by name, which is the whole point and which this test did not ask for
-        // until TA-A1 (2026-08-24) demonstrated the hole: a decoder that mangles the name still
+        // until the hole was demonstrated (2026-08-24): a decoder that mangles the name still
         // returns two entries with Alpha at 1, so a lenient decode that renumbers every page and
         // reattaches every setting passed this test 11 of 11.
         //
@@ -678,7 +678,7 @@ public class testPageIdsAreDurable
      * **Why the existing rename tests did not catch it.** There are several, and they are thorough
      * about what a rename must carry. Not one of them renamed a page to a string that is also a live
      * id, because no fixture anywhere had a page named like a number - so the collision that makes
-     * this fail could not arise. That is the same shape as TA-A1 and CR-C3: the fixture decided the
+     * this fail could not arise. That is a fixture trap: the fixture decided the
      * answer before the assertions did.
      *
      * So this checks every collection rather than the one that broke, and it checks the OTHER page as
@@ -1108,7 +1108,7 @@ public class testPageIdsAreDurable
     }
 
     /**
-     * Two pages cannot come out of one write holding the same id (DR-B4).
+     * Two pages cannot come out of one write holding the same id.
      *
      * Nothing in the chain ever compared them. `writeLayoutIndex` wrote a duplicate straight back out;
      * `setPageIds` inverts name-to-id into id-to-name, so the second page silently wins the number and
@@ -1166,7 +1166,7 @@ public class testPageIdsAreDurable
      * What that costs is not a lost setting but a store that stops working. `pagesNotLoaded` walks
      * that record, so a page the operator deliberately deleted is named for ever as one that failed to
      * load; `AutonomySession.pagesSafeToJudge` is therefore false for the rest of the layout's life;
-     * and a session that cannot judge never reconciles anything again. Since DR-B10 it also raises a
+     * and a session that cannot judge never reconciles anything again. It also raises a
      * warning dialog on every editor save, naming the page that was deleted on purpose.
      *
      * FR-018 cannot clear it either - it offers the "it was deleted" answer for pages the INDEX still

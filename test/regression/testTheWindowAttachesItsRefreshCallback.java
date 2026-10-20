@@ -32,7 +32,7 @@ public class testTheWindowAttachesItsRefreshCallback
         // The program's code, comments blanked, wherever the window keeps these calls.
         String source = SourceOf.allCode();
 
-        // IN THE CODE, NOT THE RAW SOURCE (W21-C7).
+        // IN THE CODE, NOT THE RAW SOURCE.
         //
         // This was `source.contains(...)`, and the sibling assertion twenty lines below was hardened
         // against exactly that and explains why at length - it searched for a method name that also
@@ -54,7 +54,7 @@ public class testTheWindowAttachesItsRefreshCallback
         // callbacks live on the object, so a single attachment at start-up would be lost by the first
         // configuration load - which is the state this would be in if somebody "tidied" the second
         // call away as a duplicate.
-        // Counted in the CODE, not the raw source (DW-C4).
+        // Counted in the CODE, not the raw source.
         //
         // The other assertion in this test was hardened against exactly this - it searched for a
         // method name that also appeared in the comment explaining why the call was there, so

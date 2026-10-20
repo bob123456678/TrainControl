@@ -65,7 +65,7 @@ public class testAReversalCommandIsEmitted
 
         // A TRAIN THAT CAN REVERSE, which is the one the operator is asked about: a new locomotive is not, and one that
         // cannot is not turned where its destination has a copy it can stand on facing on (MT-368) - which, since the
-        // fixtures give the destination one (RSA50-A1), is every claim here
+        // fixtures give the destination one, is every claim here
         model.getLocByName(DRIVER).setReversible(true);
     }
 
@@ -145,7 +145,7 @@ public class testAReversalCommandIsEmitted
     /**
      * Makes the destination a square trains MAY turn at, as the build makes one a train can stand on facing on: its
      * turning copy and a plain copy beside it, one piece of track on one sensor, the plain one reached from the same
-     * approach (RSA50-A1).  A lone turning Point is the end of a line, where a train is turned whatever is answered -
+     * approach.  A lone turning Point is the end of a line, where a train is turned whatever is answered -
      * kept facing on there, it stood facing back out - so on that alone "keep" could not be asked about.
      *
      * @param layout the railway

@@ -26,12 +26,12 @@ import org.testng.annotations.Test;
  * So the numbers are no longer trusted to a reader's care.  Each one below is read out of the document
  * and compared with the thing it describes, and the failure message says what to write instead.
  *
- * **ROWS ARE NOT FINDINGS (VD15-T5).**  A finding written up in two documents has a row for each, so
+ * **ROWS ARE NOT FINDINGS.**  A finding written up in two documents has a row for each, so
  * the `finding` table holds more rows than findings - 3,726 against 3,369 when this was written - and
  * three documents had quoted the row count as a finding count.  Both are checked here, against the
  * mirror's rows and its distinct refs, so the distinction cannot quietly collapse again.
  *
- * **AND THE REVIEW TOTAL IS NO LONGER A CONSTANT OF THIS TEST (VD15-T2).**  It used to be `208`, which
+ * **AND THE REVIEW TOTAL IS NO LONGER A CONSTANT OF THIS TEST.**  It used to be `208`, which
  * is the number the document says: a guard whose expectation is its subject's own claim checks nothing
  * but its own arithmetic.  What the README now states is four countable things - files deleted per
  * round, reviews per round, the two for-Adam notes that are the difference, and the spelled-out total -
@@ -39,13 +39,12 @@ import org.testng.annotations.Test;
  * judgement no test can make; how the stated numbers relate is arithmetic, and that is where it went
  * wrong, twice.
  *
- * MUTATION: change by one any number a claim below reads, and the matching claim names it (VD17-T6: this said any number
- * in the three documents, and the README's split of the second round was read by none until then).
+ * MUTATION: change by one any number a claim below reads, and the matching claim names it.
  * For the spelled-out total, the edit is the WORDS - "Two hundred and eight" to "Two hundred and
  * nine" - because every edit to the digits is caught by an earlier claim first: change `143` and `65`
  * together and the file total fails at 211 against 210; change `143` alone and the for-Adam
  * difference fails at 1 against the two notes it names.  The first version of this sentence named
- * exactly that unreachable mutation, which is VD15-T8 two files from where it was closed (VD16-T8).
+ * exactly that unreachable mutation.
  *
  * **THE STORE ALSO HANDS OUT THE NEXT ROUND (FR-136).**  With the review documents deleted the folder cannot say which
  * round is next, so `catalog-findings.py --next PREFIX` reads it from the store, `--check-unused REF` refuses one
@@ -59,7 +58,7 @@ public class testTheRecordsCountTheStore
     /**
      * The mirror is the store's Java-readable projection - the same file the citation guard reads.
      *
-     * **THIS CLASS NEVER OPENS `triage.db`, and cannot (VD16-T9):** there is no SQLite driver on this
+     * **THIS CLASS NEVER OPENS `triage.db`, and cannot:** there is no SQLite driver on this
      * project's classpath, which is the reason the mirror exists at all.  What makes reading it the
      * same as reading the store is `triagedb.verify_findings_mirror`, which every `sync` now runs -
      * before that, a store written without a render left this counting rows that were no longer
@@ -193,7 +192,7 @@ public class testTheRecordsCountTheStore
             + " and " + halves.group(2) + " files - and for that round they must be equal: no for-Adam note was"
             + " deleted that day (VD18-T9)");
 
-        // AND THE SECOND ROUND'S TWO PLACES (VD17-T6): "(44 in `docs/reviews/` itself and 21 in three dated folders
+        // AND THE SECOND ROUND'S TWO PLACES: "(44 in `docs/reviews/` itself and 21 in three dated folders
         // beside it)" was read by nothing, so 44 could become 43 with every claim here green
         Matcher places = Pattern.compile("([0-9]+) in .docs/reviews/. itself and ([0-9]+) in").matcher(said);
 
@@ -242,7 +241,7 @@ public class testTheRecordsCountTheStore
             + " how this arithmetic"
             + " came to be re-derived twice");
 
-        // THE SPELLED-OUT TOTAL, DERIVED (VD15-T2).  It used to be compared with a constant `208` in
+        // THE SPELLED-OUT TOTAL, DERIVED.  It used to be compared with a constant `208` in
         // this file, which is the document's own claim written down twice.
         String words = spelled(reviews + second);
 
@@ -933,7 +932,7 @@ public class testTheRecordsCountTheStore
             + " this guard exists to keep true - is no longer checked.  Restore the phrase or move the"
             + " check");
 
-        // BACKWARDS OVER THE DIGITS, BUT NOT FAR (VD15-T6).  Unbounded, this walked past the phrase's
+        // BACKWARDS OVER THE DIGITS, BUT NOT FAR.  Unbounded, this walked past the phrase's
         // own words to whatever number came earlier in the document and then compared THAT, so a
         // sentence that lost its count would be checked against a number somewhere else entirely.
         int end = at;

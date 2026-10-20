@@ -89,7 +89,7 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
      * `HomeStaging.snapshot`, which calls `Layout.getHomeStations` - `synchronized`.  Naming it here is
      * what lets that tripwire be deleted rather than kept.
      *
-     * **SIX MORE SINCE 2026-09-10 (E8-C4), and they are the ones the UI touches.**  A review traced
+     * **SIX MORE SINCE 2026-09-10, and they are the ones the UI touches.**  A review traced
      * this class's blind spots: it reads `synchronized` METHOD DECLARATIONS, so it cannot see a member
      * that takes the same monitor with a `synchronized (this)` BLOCK, and it cannot see one that
      * reaches the monitor through a call.  Twelve `Layout` members do the second, five of them already
@@ -115,7 +115,7 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
         // Reached through isPathClear and configureAndLockPath, and held for a whole dispatch.
         "executePath", "executeTimetable", "runLocomotives",
 
-        // Reached through executePath: a hand send, marked as one for the cap on trains out (BCR-C1)
+        // Reached through executePath: a hand send, marked as one for the cap on trains out
         "executePathByHand",
 
         // `synchronized (this)` blocks, which the declaration scanner above cannot see.
@@ -134,7 +134,7 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
     {
         // ------------------------------------------------------------ off the event thread
 
-        // ------------------------------------------------------- the five dispatch doors (E8-C4)
+        // ------------------------------------------------------- the five dispatch doors
         //
         // These reach the monitor through `isPathClear` and `configureAndLockPath` rather than by
         // being `synchronized` themselves, so the scanner above could not see them and this guard was

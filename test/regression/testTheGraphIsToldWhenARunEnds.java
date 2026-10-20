@@ -20,7 +20,7 @@ import support.SourceOf;
 /**
  * When a run ends, whoever draws the railway is told - from every door, not from two of the four.
  *
- * W7-A2, and the sibling `OB-189` missed. A destination reversal is recorded by toggling the
+ * The sibling `OB-189` missed it. A destination reversal is recorded by toggling the
  * locomotive's name into `Layout.reversedOnArrival`, and the window writes it to the setup in
  * `TrainControlUI.reconcileFacingWhenIdle` - which refuses while anything is moving and is reached
  * only from `updateVisiblePoints()`. So a turn a run made is PENDING until a refresh happens with the
@@ -171,7 +171,7 @@ public class testTheGraphIsToldWhenARunEnds
         // inside it asks whenever the queue gets round to it - which on a fixture that announces
         // hundreds of times in four seconds is often after the run has ended.  The test then reported
         // a property nothing in the program has: the announcements were all made mid-run and merely
-        // ARRIVED late.  That is exactly W7-A2's "self-heals on the next unrelated refresh", which is
+        // ARRIVED late.  That is exactly the "self-heals on the next unrelated refresh", which is
         // what makes the defect intermittent, and a test that accepts it cannot see the defect.
         //
         // A raw callback under its own name - `Layout` keys them, so this coexists with the window's
@@ -404,7 +404,7 @@ public class testTheGraphIsToldWhenARunEnds
      * `updateVisiblePoints()` - the only route to `reconcileFacingWhenIdle`. `attachAutonomyRefresh`
      * is the single registration the window makes on every layout it builds, so putting the call there
      * covers the timetable, Return Home and both hand-driven doors at once, rather than adding a
-     * fourth copy of the same line at a fourth caller (W7-C2: the per-caller shape is what left the
+     * fourth copy of the same line at a fourth caller (the per-caller shape is what left the
      * timetable out).
      *
      * The comments are stripped before the check, because the paragraph explaining why the call is

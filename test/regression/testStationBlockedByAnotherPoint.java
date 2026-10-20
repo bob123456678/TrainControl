@@ -237,7 +237,7 @@ public class testStationBlockedByAnotherPoint
      *
      * *"do allow restrictions on non-stations, and let's not clear them when the type changes (essentially reverting
      * the behavior).  I am not sure why that clearing went in - a simple info notice on restrictions (in the list for any
-     * type of station or non station) would be better."*  AMS-B2 took the restriction away on the reasoning that nothing
+     * type of station or non station) would be better."*  The restriction was taken away on the reasoning that nothing
      * could take it off a square that is not a station.  The item is under Advanced Parameters on every sensor square,
      * and every restriction is now listed as a notice; so it stays, and so do the lock edges the build makes of it - a
      * route into the square still waits on the watched one.
@@ -333,8 +333,7 @@ public class testStationBlockedByAnotherPoint
     }
 
     /**
-     * A restriction watching a square that is not on the graph is left out of the build, not written as null
-     * (AMG-B1).
+     * A restriction watching a square that is not on the graph is left out of the build, not written as null.
      *
      * The lock-edge half walks emitted edges, so a watched square off the graph is simply not found - the build's own
      * comment says the restriction "quietly stops applying rather than taking the station out of service".  The
@@ -722,7 +721,7 @@ public class testStationBlockedByAnotherPoint
     /**
      * The reason names the watched square, rather than saying the station is busy.
      *
-     * DR-B3. FR-017 built a window to tell the operator why a locomotive has nowhere to go, and this
+     * FR-017 built a window to tell the operator why a locomotive has nowhere to go, and this
      * reason could never appear in it.
      *
      * `firstClearOrWhyNot` reads the reason out of `Layout.lastError`, which is static and written by
@@ -1010,7 +1009,7 @@ public class testStationBlockedByAnotherPoint
     }
 
     /**
-     * The dialog that sets Unavailable While Occupied says what the rule now shuts (ADU2-C6): routes to the square and
+     * The dialog that sets Unavailable While Occupied says what the rule now shuts: routes to the square and
      * through it, for every door that sends a train - not "Autonomy will not send a train to" it.  Since OB-295 a train
      * standing on a watched square closes routes through a square trains only pass, and a hand send is refused by the
      * same rule.

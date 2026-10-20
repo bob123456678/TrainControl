@@ -195,7 +195,7 @@ public class testLayoutFolderRobustness
     }
 
     /**
-     * A page that will not read does not cost the sensors that only appear on it (RC-A3).
+     * A page that will not read does not cost the sensors that only appear on it.
      *
      * syncLayouts deletes every s88 in the database that no LOADED page mentions.  That was safe while
      * one bad page took the whole parse down with it; the per-page guard the tests above are about made
@@ -247,7 +247,7 @@ public class testLayoutFolderRobustness
     }
 
     /**
-     * A folder that reads completely still prunes - the control (RC-A3).
+     * A folder that reads completely still prunes - the control.
      *
      * Without this, "do not prune when a page failed" is satisfied by never pruning at all, and the
      * stale-sensor cleanup the loop exists for is silently gone.
@@ -289,7 +289,7 @@ public class testLayoutFolderRobustness
     }
 
     /**
-     * A folder where every page fails still throws, so the fallback runs (RC-A4).
+     * A folder where every page fails still throws, so the fallback runs.
      *
      * The revert to the Central Station lives in a catch around syncLayouts, so it needs a throw.  One
      * bad page used to provide it; with the per-page guard an all-bad folder returns an empty list
@@ -346,9 +346,9 @@ public class testLayoutFolderRobustness
     }
 
     /**
-     * An EMPTY folder is not a failed one, and must not revert anything (RC-A4).
+     * An EMPTY folder is not a failed one, and must not revert anything.
      *
-     * The throw RC-A4 added is gated on pages having FAILED, not on the list coming back empty - and
+     * The throw is gated on pages having FAILED, not on the list coming back empty - and
      * the difference matters: syncLayoutsFromConfiguredSource answers a throw by clearing the user’s
      * layout-path preference and reverting to the Central Station.  A folder that simply holds no
      * pages must not trigger that.

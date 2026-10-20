@@ -42,7 +42,7 @@ public class testApplyIsGreyedWithNothingToApply
 
         try
         {
-            // OPENED INSIDE THE TRY (TSX-B8, OB-111): anything thrown between the open and the close would leave the
+            // OPENED INSIDE THE TRY (OB-111): anything thrown between the open and the close would leave the
             // layout preference pointing at a folder under %TEMP%.
             sandbox = support.LayoutSandbox.open();
 

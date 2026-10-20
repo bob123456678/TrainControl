@@ -167,7 +167,7 @@ public class testTheRouteHighlightAsksWhatATileIs
     }
 
     /**
-     * A three-way answers to its second decoder too, which is how a route sets its other diverging road (GUI-C5).
+     * A three-way answers to its second decoder too, which is how a route sets its other diverging road.
      *
      * `layout.switchThreeWayAddr` prints both addresses; only the first is the tile's logical address, so a route
      * commanding only the second lit nothing and said there was nothing to show.
@@ -198,7 +198,7 @@ public class testTheRouteHighlightAsksWhatATileIs
     }
 
     /**
-     * An address is one per protocol: an MM2 turnout 5 and a DCC turnout 5 are two decoders (GUI-C5).
+     * An address is one per protocol: an MM2 turnout 5 and a DCC turnout 5 are two decoders.
      *
      * MUTATION: stop comparing the protocol in `answersToAccessoryAddress` and this fails.
      *
@@ -227,7 +227,7 @@ public class testTheRouteHighlightAsksWhatATileIs
     }
 
     /**
-     * And the window asks the decoder: the scenario's MM2 turnout is not lit for a DCC command (GUI-C5).
+     * And the window asks the decoder: the scenario's MM2 turnout is not lit for a DCC command.
      *
      * The claims above are about the tile; this is the door Highlight on Diagram uses.
      *

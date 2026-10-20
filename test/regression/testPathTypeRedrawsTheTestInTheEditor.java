@@ -252,7 +252,7 @@ public class testPathTypeRedrawsTheTestInTheEditor
                 "Path Type is Manual and Why Not Moving? still answers for autonomy.  Adam, MT-434: 'in manual mode, I"
                 + " still get reasons like tunnellongpark will never be chosen in autonomy'.  It says: " + onManual);
 
-            // AND AN ANSWER, not only the absence of autonomy's (MFR-C5): the stations autonomy will never choose are
+            // AND AN ANSWER, not only the absence of autonomy's: the stations autonomy will never choose are
             // somewhere a person may send it, so more of them are places it can go - an empty or failed answer has none.
             int canGoOnAuto = placesItCanGo(onAuto);
             int canGoOnManual = placesItCanGo(onManual);

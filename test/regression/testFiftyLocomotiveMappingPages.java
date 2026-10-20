@@ -45,7 +45,7 @@ public class testFiftyLocomotiveMappingPages
 
     private static int pagesWere;
 
-    /** What the user-wide store said before this class ran; -1 when it said nothing (SVX-C7). */
+    /** What the user-wide store said before this class ran; -1 when it said nothing. */
     private static int storedWas;
 
     /**
@@ -73,7 +73,7 @@ public class testFiftyLocomotiveMappingPages
 
         pagesWere = pages();
 
-        // AND WHAT THE STORE SAYS, because the passing path is not the only path (SVX-C7).
+        // AND WHAT THE STORE SAYS, because the passing path is not the only path.
         //
         // Nothing here writes the preference and the comment below says so - but under the mutation
         // this class documents, `addLocMappingPage` succeeds and writes 51 to the store itself before
@@ -106,7 +106,7 @@ public class testFiftyLocomotiveMappingPages
 
                 javax.swing.SwingUtilities.invokeAndWait(() -> setPages(back));
 
-                // AND THE STORE GOES BACK TO WHAT IT SAID (SVX-C7), whether or not this class was
+                // AND THE STORE GOES BACK TO WHAT IT SAID, whether or not this class was
                 // what changed it.  `alwaysRun`, so a failed or mutated run undoes it too - which is
                 // the run that can have written it.
                 java.util.prefs.Preferences store =
@@ -157,7 +157,7 @@ public class testFiftyLocomotiveMappingPages
         // no preference - so nothing on the passing path can leave one wrong, which matters more than
         // exercising an add loop that `addLocMappingPage`'s own callers exercise anyway.
         //
-        // NOT "however it dies", which the first wording claimed and SVX-C7 disproved: the mutation
+        // NOT "however it dies", which the first wording claimed and a later check disproved: the mutation
         // this class documents - deleting the guard from `addLocMappingPage` - makes the call below
         // succeed, and a successful add writes the count to the preference before anything here can
         // object.  A test that is deliberately broken can still leave 51 behind. What it cannot do is
@@ -213,7 +213,7 @@ public class testFiftyLocomotiveMappingPages
     /**
      * The refusal dialog, identified by what it says, or null if it does not appear in time.
      *
-     * **NOT "the first showing dialog" (SVX-C6).**  That is what this asked, and the window it waits
+     * **NOT "the first showing dialog".**  That is what this asked, and the window it waits
      * on is a whole `TrainControlUI`: a layout warning, a reconciliation report or anything else it
      * chooses to show would satisfy it, be asserted as the refusal, and then be DISPOSED by the caller
      * - which is a test that passes while proving nothing and closes something it did not open.
@@ -287,7 +287,7 @@ public class testFiftyLocomotiveMappingPages
     /**
      * How many mapping pages the window has now, through the door the rest of the program uses.
      *
-     * NOT BY REFLECTION (SVX-C6).  This was `getDeclaredField("numLocMappings")` throwing
+     * NOT BY REFLECTION.  This was `getDeclaredField("numLocMappings")` throwing
      * `SkipException` on a miss, and it is called from `@BeforeClass` - so renaming the field would
      * have skipped the whole class from its own setup and the suite would have read green, with
      * nothing about the ceiling asked at all.  `test-green-is-not-no-failures`.
@@ -321,7 +321,7 @@ public class testFiftyLocomotiveMappingPages
         }
         catch (ReflectiveOperationException e)
         {
-            // FAIL, NOT SKIP (SVX-C6).
+            // FAIL, NOT SKIP.
             //
             // This is not a fixture that has moved - it is the only way this class reaches the
             // ceiling, so a miss means the claim below it is not being asked.  Skipping would report

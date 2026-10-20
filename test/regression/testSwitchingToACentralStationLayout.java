@@ -115,7 +115,7 @@ public class testSwitchingToACentralStationLayout
 
         try
         {
-            // Inside the try, so nothing can leave the preference behind (TSX-B8).
+            // Inside the try, so nothing can leave the preference behind.
             sandbox = support.LayoutSandbox.open();
 
             final org.traincontrol.gui.TrainControlUI[] built =
@@ -178,7 +178,7 @@ public class testSwitchingToACentralStationLayout
     {
         String body = SourceOf.declaration("private void guardLayoutMenu()");
 
-        // MANAGE PAGES IS NOT NAMED HERE ANY MORE (UXR-B2).
+        // MANAGE PAGES IS NOT NAMED HERE ANY MORE.
         //
         // This used to require guardLayoutMenu to write `modifyLocalLayoutMenu.setEnabled` itself,
         // which made it a second writer of a property `applyLayoutEditingAvailability` already owns -
@@ -237,7 +237,7 @@ public class testSwitchingToACentralStationLayout
     private static final int MODELS_WITHOUT_A_SANDBOX = 54;
 
     /**
-     * WHICH classes, not just how many (VAL-C8).
+     * WHICH classes, not just how many.
      *
      * A bare count can absorb a repair and a new violation in the same round: fix one class, break a
      * different one, and 56 stays 56 while the test stays green. Pinning the names means a swap shows
@@ -315,7 +315,7 @@ public class testSwitchingToACentralStationLayout
     }
 
     /**
-     * Start is not offered over a layout that lives on the Central Station, which Start refuses (REG-C3).
+     * Start is not offered over a layout that lives on the Central Station, which Start refuses.
      *
      * `whyAutonomyStartIsRefused`'s first test is `isRemoteLayout`, and the diagram's right-click menu decides
      * whether to offer Start by `canStartAutonomy` - which asked the button and the setup's errors and not that.  Its
@@ -360,14 +360,14 @@ public class testSwitchingToACentralStationLayout
                     + " Station, and pressing it is refused with 'autonomy needs a layout on this computer' - the"
                     + " menu offering what the handler refuses (REG-C3)");
 
-                // AND THE GREYED ITEM SAYS THE REFUSAL'S OWN REASON (REG2-C2).  Its tooltip is this sentence; over
+                // AND THE GREYED ITEM SAYS THE REFUSAL'S OWN REASON.  Its tooltip is this sentence; over
                 // a Central Station layout it told the operator to wait for trains, which is no reason at all.
                 assertEquals(ui.whyAutonomyWillNotStart(),
                     org.traincontrol.util.I18n.t("autosetup.ui.menuNoSetupPossible"), "the greyed Start explains"
                     + " itself with a reason that is not the refusal's: over a Central Station layout it is that"
                     + " autonomy needs a layout on this computer, which is what pressing Start says (REG2-C2)");
 
-                // AND PRESSING IT IS REFUSED SO, by the one gate every door that sends a train asks (RLV13-C9)
+                // AND PRESSING IT IS REFUSED SO, by the one gate every door that sends a train asks
                 final java.lang.reflect.Method gate = org.traincontrol.gui.TrainControlUI.class.getDeclaredMethod(
                     "whyNoTrainMayBeSent", boolean.class);
 
@@ -456,7 +456,7 @@ public class testSwitchingToACentralStationLayout
 
         try
         {
-            // Inside the try, so nothing can leave the preference behind (TSX-B8).
+            // Inside the try, so nothing can leave the preference behind.
             sandbox = support.LayoutSandbox.open();
 
             org.traincontrol.marklin.MarklinControlStation model =
@@ -787,15 +787,15 @@ public class testSwitchingToACentralStationLayout
         //
         // THIRTY-ONE since 2026-09-10, and the two that arrived are the X8 round's:
         //
-        //   - `testCutWithNothingHovered` (X8-B1), which asks what Cut arms when the pointer is
+        //   - `testCutWithNothingHovered`, which asks what Cut arms when the pointer is
         //     not over a square - a property of the editor's own clipboard state, so there has to
         //     be an editor;
-        //   - `testDeleteForgetsTheWholeSquare` (X8-B4), which deletes a square through the real
+        //   - `testDeleteForgetsTheWholeSquare`, which deletes a square through the real
         //     `delete(LayoutLabel)` door, and a label only exists once a grid has been built.
         //
         // Both sandbox `live-snapshot` through `Scenario.folderFor`, opened before the model.
         //
-        // THIRTY-TWO since the validation of that round: `testTheDiagramCeiling` (X8-C5, X8V-C2)
+        // THIRTY-TWO since the validation of that round: `testTheDiagramCeiling`
         // builds editors over pages past MAX_SIZE, because the ceiling is a property of the
         // editor and the pages it asks about have to exist.  It sandboxes `single-switch`, opened
         // before the model, and the pages it measures are built in memory.
@@ -803,14 +803,14 @@ public class testSwitchingToACentralStationLayout
         // THIRTY-FOUR since 2026-09-11, and both arrivals need a real window for the same reason -
         // what they ask about belongs to the window rather than to a panel:
         //
-        //   - `testAPlacedTrainRecordsWhereItCameFrom` (REV9-B2) builds the assign dialog, which
+        //   - `testAPlacedTrainRecordsWhereItCameFrom` builds the assign dialog, which
         //     takes a `TrainControlUI` and reads the locomotive list off it;
         //   - `testTheKeyMapReachesTheWholeWindow` (Adam, 2026-09-11) presses keys at components in
         //     the window and asks what the map did, which is a question about a window or nothing.
         //
         // Both sandbox through `Scenario.folderFor` / `LayoutSandbox.open()`, opened before the
         // model, as the rule above requires.  Neither was pinned here when it was written, which is
-        // what REG9-B1 caught - see the note at the ratchet itself.
+        // what was caught later - see the note at the ratchet itself.
 
         // AND THE MODEL HALF, ratcheted (2026-08-28).
         //
@@ -870,7 +870,7 @@ public class testSwitchingToACentralStationLayout
             + "real railway");
 
 
-        // The count alone can absorb a repair and a new violation in the same round (VAL-C8): fix one
+        // The count alone can absorb a repair and a new violation in the same round: fix one
         // class, break a different one, and the number never moves. Pin WHICH classes too, so a swap
         // fails and names both files.
         java.util.Collections.sort(looseNames);
@@ -888,7 +888,7 @@ public class testSwitchingToACentralStationLayout
             + "lower MODELS_WITHOUT_A_SANDBOX; if a new one appeared, give it a sandbox instead of "
             + "adding it to the list.");
 
-        // AND THE TWO STALENESS RATCHETS, LAST OF ALL (REG9-B1, REG9V-B1, 2026-09-11).
+        // AND THE TWO STALENESS RATCHETS, LAST OF ALL (2026-09-11).
         //
         // **A staleness detector that runs before a safety check is worse than no ratchet**, and this
         // method is where that was learnt.  `checked` was pinned at 32 and had been 34 since three
@@ -908,13 +908,13 @@ public class testSwitchingToACentralStationLayout
         // 44 the same day: regression.testTheTailCanBeGivenInTheEditor, which opens a sandbox first too.
         // 45 on 2026-09-15: regression.testPathTypeRedrawsTheTestInTheEditor (OB-225), which opens a sandbox first.
         // 46 on 2026-09-16: regression.testAWalkMovesTheFlashOn (OB-231), which opens a sandbox first.
-        // 49 on 2026-09-19, three at once, each opening a sandbox first: the toolbar buttons
-        // (UIX-C5/GUX-C1), the cancelled function copy (GUX-C3) and the export's grid (GUX-C4).
+        // 49 on 2026-09-19, three at once, each opening a sandbox first: the toolbar buttons,
+        // the cancelled function copy and the export's grid.
         // 50 on 2026-09-20: the declined setup edit (MT-267, MT-326), which opens a sandbox first too.
         // 51 on 2026-09-23: ui.testTheLengthPromptHasTheKeyboard (MT-474), which opens a sandbox first.
-        // 52 the same day: ui.testAStartLoadsOnlyAGraphSomebodyAskedFor (REG-B2), which opens a sandbox first.
-        // 53 on 2026-09-24: regression.testTheFacingMenuIsAboutTheTrainThere (TDY4-C5), which opens a sandbox first.
-        // 54 the same day: regression.testALegacyImportUnticksLoadAutonomy (REG2-C3), which opens a sandbox first.
+        // 52 the same day: ui.testAStartLoadsOnlyAGraphSomebodyAskedFor, which opens a sandbox first.
+        // 53 on 2026-09-24: regression.testTheFacingMenuIsAboutTheTrainThere, which opens a sandbox first.
+        // 54 the same day: regression.testALegacyImportUnticksLoadAutonomy, which opens a sandbox first.
         // 55 the same day: regression.testALocalLayoutNeverWritesAutonomyJson (OB-254), which opens a sandbox first.
         // 56 the same day: regression.testTheOldAutonomyTabIsGone and regression.testTheAutonomyMenuLinksItsDocumentation
         // (OB-254), each opening a sandbox first, and ui.testAStartLoadsOnlyAGraphSomebodyAskedFor retired with the JSON
@@ -922,12 +922,12 @@ public class testSwitchingToACentralStationLayout
         // 57 the same day: regression.testTheVisibleElementsHeadingIsSpacedLikeTheOthers (OB-289), which opens a sandbox first.
         // 59 the same day: regression.testANewStraightJoinsTheTrackBesideIt (OB-292) and regression.testTheTailIsPickedOnTheDiagram
         // (FR-100), each opening a sandbox first.
-        // 60 on 2026-09-24's validation round: regression.testAHandSendIsRefusedWhileTheSetupIsBroken asks a real window
-        // (TDU-C3), opening a sandbox first.
+        // 60 on 2026-09-24's validation round: regression.testAHandSendIsRefusedWhileTheSetupIsBroken asks a real window,
+        // opening a sandbox first.
         // 62 on the third round: regression.testARouteDrivenLocomotiveIsNotEdited (OB-287) and
         // regression.testApplyIsGreyedWithNothingToApply (FR-098) each build a window, opening a sandbox first.
-        // 61 on 2026-09-25: regression.testALegacyImportUnticksLoadAutonomy became testALegacyImportLeavesLoadAutonomyAlone
-        // (TDD-C11), which reads the import doors and builds no window.
+        // 61 on 2026-09-25: regression.testALegacyImportUnticksLoadAutonomy became testALegacyImportLeavesLoadAutonomyAlone,
+        // which reads the import doors and builds no window.
         // 62 later that day: regression.testTheImportDoorReadsAnOldFile drives the Autonomy menu's Import on a real
         // window (Adam: automated tests supersede the MTs they answer), opening a sandbox first.
         // 63 the same day: regression.testTheRoutesImportDoorAsksByName drives Routes > Import on a real window, on
@@ -1319,10 +1319,10 @@ public class testSwitchingToACentralStationLayout
     }
 
     /**
-     * A sandbox is opened inside a `try` (TSX-B8).
+     * A sandbox is opened inside a `try`.
      *
      * **That is what this checks, and it is weaker than "closed on every path", which is what it used
-     * to be called** (`VD9-C15`). An open inside a `try` whose handler closes nothing would pass. What
+     * to be called**. An open inside a `try` whose handler closes nothing would pass. What
      * the shape buys is that there IS a handler to put the close in, and that the close cannot be
      * skipped by an early return between the two - which is how all eight offenders failed.
      *
@@ -1332,7 +1332,7 @@ public class testSwitchingToACentralStationLayout
      * - says a sandbox must be opened BEFORE the window.  This is the other half, and it is weaker
      * than it sounds: having opened one there is a handler to close it in, and no early return
      * between the open and that handler can skip it - which is how all eight offenders failed.  It
-     * does not check that a `close()` is present (VD10-C8).
+     * does not check that a `close()` is present.
      *
      * **Four ways out that are easy to miss**, and all four were in the suite when this was written:
      * a window constructor that throws, `MarklinControlStation.init` failing to bind its port, an
@@ -1341,7 +1341,7 @@ public class testSwitchingToACentralStationLayout
      *
      * The shape asked for is one sentence long, so it can be obeyed without reading this: **the open
      * goes inside a `try`.**  Setup methods are exempt because their `@AfterClass(alwaysRun = true)`
-     * teardown runs even when the set-up threw - which is only true since TSX-C18, and is the reason
+     * teardown runs even when the set-up threw - which is the reason
      * that exemption is safe to grant.
      *
      * MUTATION: moving any of these opens back above its `try` fails this.

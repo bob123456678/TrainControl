@@ -134,7 +134,7 @@ public class testTheWindowTakesTheKeyboard
         }
         catch (Exception | Error failed)
         {
-            // WHATEVER FAILED, THE PREFERENCE GOES BACK (TSX-B8).
+            // WHATEVER FAILED, THE PREFERENCE GOES BACK.
             //
             // Every caller wraps the RETURNED holder in a try/finally, and the holder is
             // what does not exist when this throws.  `init` binds a UDP port and a window
@@ -450,7 +450,7 @@ public class testTheWindowTakesTheKeyboard
 
             settle();
 
-            // SKIPPED RATHER THAN FAILED when this desktop will not move the keyboard (VC2-C6): the claim
+            // SKIPPED RATHER THAN FAILED when this desktop will not move the keyboard: the claim
             // below is about the window, and a focus that never moved says nothing about it either way.
             if (up.ui.getMostRecentFocusOwner() != elsewhere)
             {
@@ -560,7 +560,7 @@ public class testTheWindowTakesTheKeyboard
 
         Started up = start();
 
-        // WHETHER IT WAS STORED (TSX-B3) - the note at `testDiagramExport` says why.
+        // WHETHER IT WAS STORED - the note at `testDiagramExport` says why.
         boolean onTopStored = org.traincontrol.gui.TrainControlUI.getPrefs()
             .get(org.traincontrol.gui.TrainControlUI.ONTOP_SETTING_PREF, null) != null;
 
@@ -889,7 +889,7 @@ public class testTheWindowTakesTheKeyboard
 
         try
         {
-            // Inside the try, so nothing can leave the preference behind (TSX-B8).
+            // Inside the try, so nothing can leave the preference behind.
             sandbox = support.LayoutSandbox.open();
 
             javax.swing.SwingUtilities.invokeAndWait(() -> made[0] = new org.traincontrol.gui.TrainControlUI());
@@ -981,7 +981,7 @@ public class testTheWindowTakesTheKeyboard
     }
 
     /**
-     * The floor: at least one of this class's claims was actually asked (OP2-C8, corrected by FXV-B3).
+     * The floor: at least one of this class's claims was actually asked.
      *
      * **A class where every claim skips reports green while asking nothing**, which is the SOP's "green
      * is not no failures" in its quietest form: each skip message is honest about its own case, and the

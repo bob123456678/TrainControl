@@ -68,7 +68,7 @@ public class testTheEditorSaysWhatItsToolsDo
      * Adam, 2026-09-24: *"add brief tooltips on what entry guards and exit guards are to their items in the autonomy
      * right click menu"*.
      *
-     * Each its OWN guard's text (TDD2-C15): the two items sit next to each other and read alike, and a tooltip on the
+     * Each its OWN guard's text: the two items sit next to each other and read alike, and a tooltip on the
      * wrong one tells Adam the exit guard does what the entry guard does.
      *
      * MUTATION: leave either tooltip out, or give the two items each other's, and this fails.
@@ -106,7 +106,7 @@ public class testTheEditorSaysWhatItsToolsDo
             assertTrue(tip != null && !tip.replaceAll("<[^>]*>", "").trim().isEmpty(), I18n.t(key) + " has no tooltip -"
                 + " Adam, OB-293: \"add brief tooltips on what entry guards and exit guards are\"");
 
-            // ITS OWN GUARD'S TEXT (TDD2-C15), read past the wrapping.
+            // ITS OWN GUARD'S TEXT, read past the wrapping.
             String said = tip.replaceAll("<[^>]*>", " ").replace("&nbsp;", " ").replaceAll("\\s+", " ").trim();
             String own = I18n.t(pair[1]).replaceAll("\\s+", " ").trim();
 
@@ -153,7 +153,7 @@ public class testTheEditorSaysWhatItsToolsDo
 
     /**
      * Where a railway is running, the outline follows the trains on it, not the setup's placements - and once a square
-     * is clicked the outlines go (FR-102; TDU-C11, TDD-C9).
+     * is clicked the outlines go (FR-102).
      *
      * The javadoc of `whyWaitsOn`: *"The train as the running railway has it where there is one - a run moves trains the
      * setup has not been told about - and as the setup places it otherwise."*  The claim above builds the panel with no
@@ -378,7 +378,7 @@ public class testTheEditorSaysWhatItsToolsDo
      * click is answered and sits in front of the line that said why nothing was added; his Signal 86 "doesn't get added to
      * the list in the popup after clicking on it on the diagram", and nothing he could see said why.
      *
-     * Both refusals a click can meet: a signal already on the list, and the station's other guard (AUT-C2).
+     * Both refusals a click can meet: a signal already on the list, and the station's other guard.
      *
      * MUTATION: say either refusal on the grey line alone, and this fails.
      *
@@ -411,7 +411,7 @@ public class testTheEditorSaysWhatItsToolsDo
 
             assertEquals(his.getProtectingSignals(SIGNALLED), Arrays.asList(SIGNAL_86), "the refusal changed the list");
 
-            // THE STATION'S OTHER GUARD (AUT-C2)
+            // THE STATION'S OTHER GUARD
             popups.clear();
 
             pickTheGuard(panel, his, SIGNALLED, SIGNAL_86, true, popups);
@@ -1350,15 +1350,15 @@ public class testTheEditorSaysWhatItsToolsDo
     }
 
     /**
-     * The guard notices follow the routes the built railway sets each guard by (RSA42-C2).
+     * The guard notices follow the routes the built railway sets each guard by.
      *
      * They walked the reduction, which knows a square and not which way a train faces on it, so a train could turn back at
      * any plain sensor and stop at any station square.  On the frozen railway: Adam's own nine exit guards get exactly two
      * notices - Signals 86 and 87, which routes between the tunnel sidings and the station throats cross, for BottomMainB and
-     * BottomMainA (RSA41-C2) - and his six exit signals none; Signal 39 as BottomMainA's exit guard, crossed only by routes
+     * BottomMainA - and his six exit signals none; Signal 39 as BottomMainA's exit guard, crossed only by routes
      * elsewhere, is noticed, where the walk turned back at BottomMainAPre and called it on the way out; and a guard no route
      * commands is told so, not that routes turn it green.  (Signal 107 as TopR1ParkLong's entry guard was asserted here as
-     * needing no notice; RSA43-C3 found no arriving train meets it, and how far the notices should follow the routes the
+     * needing no notice; no arriving train meets it, and how far the notices should follow the routes the
      * runtime runs is Adam's to decide - so it is not asserted either way.)
      *
      * MUTATION: walk the built edges as the reduction was walked - every edge from a square whatever its copy - and this

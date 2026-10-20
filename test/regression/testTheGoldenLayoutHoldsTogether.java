@@ -50,7 +50,7 @@ import org.traincontrol.marklin.file.CS2File;
  * because nothing was watching. Something is now - and it runs LAST, after every `@Test` below, rather
  * than as the first of them: a fingerprint taken as the first `@Test` compares against itself before any
  * of its four siblings have run, so a write made by the third or fourth was never in scope. Review
- * caught this as TST-B2.
+ * caught this.
  *
  * Failed, not skipped, when the folder is not there: `cs2_sample_layout` is tracked, so the battery always has it
  * (FR-136).
@@ -72,7 +72,7 @@ public class testTheGoldenLayoutHoldsTogether
     private static Map<String, String> before;
 
     /**
-     * A COPY of the golden layout, which is what everything below actually reads (TCX-B11).
+     * A COPY of the golden layout, which is what everything below actually reads.
      *
      * This class read `cs2_sample_layout` in place - Adam's real railway, the one folder in this
      * repository that is not recoverable - and built a model with no sandbox at all.  The fingerprint
@@ -104,7 +104,7 @@ public class testTheGoldenLayoutHoldsTogether
 
         assertFalse(before.isEmpty(), "the golden layout folder is empty, so nothing below is a check");
 
-        // COPIED FIRST, AND BEFORE THE MODEL (TCX-B11, OB-111).  See the sandbox field.
+        // COPIED FIRST, AND BEFORE THE MODEL (OB-111).  See the sandbox field.
         sandbox = support.LayoutSandbox.open(GOLDEN);
 
         working = sandbox.getFolder();
@@ -146,7 +146,7 @@ public class testTheGoldenLayoutHoldsTogether
      * test classes start the real window, which opens whatever the saved UI state names, and a save on
      * that path rewrote his configuration file on every battery.
      *
-     * **`@AfterClass`, not `@Test` - and that is itself the fix for TST-B2.** This used to be the
+     * **`@AfterClass`, not `@Test` - and that is itself the fix.** This used to be the
      * FIRST `@Test` in the class, comparing `after` against `before` while the four tests below it had
      * not run yet - so a write made by any of THEM, in this same JVM, was never in scope; the class
      * could tell you it had not written to the golden layout before it was done reading it. Declared
@@ -178,7 +178,7 @@ public class testTheGoldenLayoutHoldsTogether
     @AfterClass(alwaysRun = true)
     public void testNothingWroteToTheGoldenLayout() throws Exception
     {
-        // NOTHING TO COMPARE AGAINST IS NOT A FAILURE (TSX-C18).
+        // NOTHING TO COMPARE AGAINST IS NOT A FAILURE.
         //
         // `alwaysRun` arrived on 2026-09-03 so that a teardown holding a sandbox cannot be skipped by
         // a set-up that threw - which is right, and means this now runs after the `SkipException` the
@@ -209,7 +209,7 @@ public class testTheGoldenLayoutHoldsTogether
     }
 
     /**
-     * What the reversal-length guard can actually judge on the real railway (TCX-B3).
+     * What the reversal-length guard can actually judge on the real railway.
      *
      * **"Could happen" against "does happen", asked of the operator's own data** - which is the check
      * this folder asks for whenever a feature is added, and this feature never got it.
@@ -274,7 +274,7 @@ public class testTheGoldenLayoutHoldsTogether
 
         // THE ARMING ANSWER AGAINST THE DATA, not against itself: the squares that carry a length are listed by
         // `tilesWithALength`, which reads the lengths and not the arming question.  Armed with none listed is the state
-        // TCX-B3 names, and so is a listed length with the notice off.
+        // worth checking, and so is a listed length with the notice off.
         assertEquals(armed, !store.tilesWithALength().isEmpty(),
             "the reversal-length notice is armed by one measured square anywhere and then covers "
             + "every square trains turn round at.  Armed with nothing measured is the state TCX-B3 "
@@ -320,7 +320,7 @@ public class testTheGoldenLayoutHoldsTogether
             }
         }
 
-        // A FLOOR, so an empty walk is not a pass (TCX-B12).  See the sibling tests: each collects
+        // A FLOOR, so an empty walk is not a pass.  See the sibling tests: each collects
         // what is wrong and asserts the collection is empty, which an empty loop satisfies perfectly.
         assertFalse(store.getNamedTiles().isEmpty(),
             "the setup names no squares at all, so this walked nothing");
@@ -365,7 +365,7 @@ public class testTheGoldenLayoutHoldsTogether
     /**
      * No two pages claim one id.
      *
-     * Silent everywhere until DR-B4: the index would write a duplicate straight back out, the setup's
+     * Silent everywhere: the index would write a duplicate straight back out, the setup's
      * inversion would let the second page win, and half of one page's settings would resolve to the
      * other. Asked of the real file because that is where a duplicate would have come from.
      */
@@ -385,7 +385,7 @@ public class testTheGoldenLayoutHoldsTogether
                 + page.getKey());
         }
 
-        // A FLOOR, so an empty walk is not a pass (TCX-B12).
+        // A FLOOR, so an empty walk is not a pass.
         //
         // Each of these tests collects what is wrong and asserts the collection is empty.  A loop that
         // iterates NOTHING satisfies that perfectly - and every one of the things they walk comes out of
@@ -460,7 +460,7 @@ public class testTheGoldenLayoutHoldsTogether
             }
         }
 
-        // A FLOOR, so an empty walk is not a pass (TCX-B12).
+        // A FLOOR, so an empty walk is not a pass.
         //
         // Each of these tests collects what is wrong and asserts the collection is empty.  A loop that
         // iterates NOTHING satisfies that perfectly - and every one of the things they walk comes out of
@@ -498,7 +498,7 @@ public class testTheGoldenLayoutHoldsTogether
             if (!loaded.contains(named)) absent.add(named);
         }
 
-        // A FLOOR, so an empty walk is not a pass (TCX-B12).  See the sibling tests: each collects
+        // A FLOOR, so an empty walk is not a pass.  See the sibling tests: each collects
         // what is wrong and asserts the collection is empty, which an empty loop satisfies perfectly.
         assertFalse(pages.isEmpty(), "no page loaded at all, so this walked nothing");
 

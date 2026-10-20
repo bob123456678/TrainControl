@@ -11,7 +11,7 @@ import support.SourceOf;
 /**
  * The three rules about a station's home locomotive.
  *
- * MT-112, from OB-022 / DD-A6. All three were code that existed, was commented, was believed to work -
+ * MT-112, from OB-022. All three were code that existed, was commented, was believed to work -
  * and had lost every caller that ran it. The review put it plainly: `HomeLocomotiveMenu` lost four of
  * its five callers, "two safety warnings are now unreachable and their tests still pass".
  *
@@ -142,7 +142,7 @@ public class testHomeAssignmentRules
             "nothing asks homeBrokenBy about a station's actual home, so the exclusion warning is "
             + "unreachable - which is the exact fault DD-A6 found");
 
-        // whyNotAHome, not canBeHome (LD-9).
+        // whyNotAHome, not canBeHome.
         //
         // canBeHome answers false for two unrelated reasons and this panel is about one of them.
         // Rolling them together made it warn "no train can come to rest here" about a square whose
@@ -160,11 +160,11 @@ public class testHomeAssignmentRules
             + "warning about whichever reason came back - including the one the model refuses "
             + "outright, which is what LD-9 was");
 
-        // The CALL SITES, not only the bodies (TA-B4).
+        // The CALL SITES, not only the bodies.
         //
         // The three checks above search for tokens that live inside private helpers, so they prove
         // the helper still exists - not that anything reaches it. Deleting `mayRestHere`'s single
-        // caller leaves every one of them satisfied and rule 2 unreachable, which is DD-A6's exact
+        // caller leaves every one of them satisfied and rule 2 unreachable, which is exactly the
         // shape: "a rule with no caller passes every test written about the rule". Demonstrated by
         // mutation, 5 of 5 green with the caller gone.
         //

@@ -89,7 +89,7 @@ public class testEditorSwitchClearsPageState
         String source = arriveAtSource();
 
         // Through takeTheUndoPoint, which takes BOTH halves - the in-memory snapshot Cancel restores
-        // and the on-disk note a restart restores (LD-1).
+        // and the on-disk note a restart restores.
         //
         // This used to look for the assignment itself.  The two halves were separate statements and
         // drifted immediately: the disk half was taken in the constructor only, so a switch moved
@@ -171,7 +171,7 @@ public class testEditorSwitchClearsPageState
      * arriveAt so it would land behind the repaint the teardown queues, wrote a comment saying so, and
      * wrote a test here pinning the two invokeLater calls.
      *
-     * GC-A1 pointed out that this cannot work: repaintLayout submits to a single-thread
+     * This cannot work: repaintLayout submits to a single-thread
      * ExecutorService and only calls invokeLater from inside THAT, so its EDT task is not queued when
      * ours is. An extra invokeLater cannot order against a task that does not exist yet. The test
      * passed, the comment read well, and neither was true.
@@ -197,7 +197,7 @@ public class testEditorSwitchClearsPageState
      * a stack with the findings list under it. Each of those is a GroupLayout.replace or a container
      * swap, and each has to be undone.
      *
-     * They were found one at a time - the palette as OB-017, the findings list as GC-A2 - and the
+     * They were found one at a time - the palette as OB-017, the findings list - and the
      * pattern is the point: this list is what makes the fourth one fail here rather than on the
      * railway. Every field the mount block assigns must be cleared in the teardown, or coming BACK
      * skips the mount (the field is still set) and the previous session's controls stay on screen

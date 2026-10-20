@@ -20,7 +20,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * OB-194: Bulk Tools says what it is about to clear, and what Cancel will do about it.
  *
- * **Renamed on 2026-09-14 from `testTheBulkClearWarnsThatCancelWillNotUndoIt` (WK7-C2).**  Since OB-223 Cancel in
+ * **Renamed on 2026-09-14 from `testTheBulkClearWarnsThatCancelWillNotUndoIt`.**  Since OB-223 Cancel in
  * the autonomy editor restores the setup as it opened, and the locomotives a clear took off come back -
  * `regression.testCancelUndoesAutonomyEdits.testCancelPutsBackTheLocomotivesABulkClearTook` runs it - so the
  * warning says Cancel puts them back and Save keeps the change.  What follows is the class as it was written,
@@ -47,7 +47,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * lift - a count is not something anybody can check - and it must name Cancel, which since OB-223 is the
  * button that undoes it, asked as `I18n.t("ui.cancel")`, the same key the editor's own Cancel button
  * carries.  Both hold in whichever of the eight languages the run happens to be in.  And on the track
- * diagram's own menu, where there is no Cancel, it must not name one (WKV-B1).
+ * diagram's own menu, where there is no Cancel, it must not name one.
  *
  * ON THE FROZEN RAILWAY, never `cs2_sample_layout` (OB-111).
  *
@@ -196,7 +196,7 @@ public class testTheBulkClearSaysWhatCancelDoes
     }
 
     /**
-     * And it names Cancel, which since OB-223 is the button that DOES undo it (WK7-C2).
+     * And it names Cancel, which since OB-223 is the button that DOES undo it.
      *
      * Adam's sentence exactly - *"cannot be undone by a cancel.  Make this clear in the popup"* - and
      * asked in a way that is true in all eight languages: `ui.cancel` is the key the editor's own
@@ -251,9 +251,9 @@ public class testTheBulkClearSaysWhatCancelDoes
     }
 
     /**
-     * The two LENGTH clears carry their sentence on the menu too, and it is the editor's one (OP2-C2).
+     * The two LENGTH clears carry their sentence on the menu too, and it is the editor's one.
      *
-     * **Nothing ran either sentence.**  AUS-C2 built the track-length and maximum pairs by copying the
+     * **Nothing ran either sentence.**  The track-length and maximum pairs were built by copying the
      * `page == null` choice into four places, and the commit said
      * `testCancelUndoesAutonomyEdits.testCancelPutsTheLengthsBack` ran it - which it does not: that test
      * calls `session.clearEveryTileLength()` and never goes near a sentence.  So a swapped pair of keys in
@@ -288,7 +288,7 @@ public class testTheBulkClearSaysWhatCancelDoes
         assertFalse(session.tilesWithAMaxTrainLength().isEmpty(),
             "precondition: no station took a maximum, so that clear has nothing to warn about");
 
-        // THE SET THE MENU ITEM READS (FXV-C7).  `tilesWithALocomotive` walks every page; the clear is
+        // THE SET THE MENU ITEM READS.  `tilesWithALocomotive` walks every page; the clear is
         // gated on `placementsAutonomyWillWrite`, and the comment beside the item says the two disagree -
         // so asserting the wrong one could have left the item disabled with its notice showing while this
         // test believed it was reading a warning.
@@ -320,7 +320,7 @@ public class testTheBulkClearSaysWhatCancelDoes
     }
 
     /**
-     * The track diagram's own right-click menu does not promise a Cancel it does not have (WKV-B1).
+     * The track diagram's own right-click menu does not promise a Cancel it does not have.
      *
      * The same Bulk Tools item is on the diagram's tile menu - this panel's menus served with no page - and
      * there the clear is saved the moment it is made: the diagram's panel saves the setup on every change, and
@@ -343,7 +343,7 @@ public class testTheBulkClearSaysWhatCancelDoes
         final java.lang.reflect.Field panel = TrainControlUI.class.getDeclaredField("autonomyTileMenus");
         panel.setAccessible(true);
         // WITH NO EDITOR OPEN, as a person meets the diagram's menu: it is not offered while one is, and the main window
-        // counts the editor this class built (RSA28-B1).  Built again straight after, for the claims that use it.
+        // counts the editor this class built.  Built again straight after, for the claims that use it.
         final LayoutEditor closing = editor;
         SwingUtilities.invokeAndWait(() -> closing.dispose());
         SwingUtilities.invokeAndWait(() ->

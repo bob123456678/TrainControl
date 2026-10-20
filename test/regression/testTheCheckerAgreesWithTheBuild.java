@@ -37,12 +37,12 @@ import org.traincontrol.marklin.file.CS2File;
 /**
  * What the checker tells the user, against the railway the build actually emits.
  *
- * DD-A7's opening sentence is that the interface can end up telling the user one thing while the
+ * The point is that the interface can end up telling the user one thing while the
  * railway does another, and the whole family it named is the same shape: the checker walks the REDUCED
  * graph and works out arrivals, departures and reachability for itself, while the builder walks the
  * same reduction and emits a Point per arrival side.  Two answers to one question, agreeing by having
  * been written to.  Every guard this repository had over that family read one side only - the facings
- * test checks the map the facings are built from (TA-B8), the reducer tests check the reducer - so a
+ * test checks the map the facings are built from, the reducer tests check the reducer - so a
  * drift between the two sides could not be seen by anything but another reading.
  *
  * This is the missing half.  It builds the frozen sample diagram, runs the checker over it, parses the
@@ -58,7 +58,7 @@ import org.traincontrol.marklin.file.CS2File;
  * itself: `Layout.getNeighbors` knows nothing about arrival sides, entry sides or turn sets, only about
  * the edges the builder chose to write down.
  *
- * **What this still guards, after the DD-A7 tier split (2026-09-07).** The trapped-arrival clause no
+ * **What this still guards, after the tier split (2026-09-07).** The trapped-arrival clause no
  * longer has two authors: `AutonomySession.check` reads the built graph rather than walking the
  * reduction, so that half is now true by construction and this asserts it only against the oracle's
  * own filters. The reachability and facing clauses still compare two derivations and are where the
@@ -86,7 +86,7 @@ public class testTheCheckerAgreesWithTheBuild
     private static List<AutonomyChecks.Finding> findings;
 
     /**
-     * The one square where the checker and the build genuinely disagree, and the reason is not DR-B6's.
+     * The one square where the checker and the build genuinely disagree, and the reason is not the consolidation's.
      *
      * See testTheStationsThatReachNothingAreTheOnesTheBuildCannotRouteOutOf, which is where the
      * divergence is written out.  Named by its printed key rather than rebuilt as a TileKey so that a
@@ -216,7 +216,7 @@ public class testTheCheckerAgreesWithTheBuild
             if (session.isTurnAround(square)) continue;
 
             // a station's copy that is no station is a side trains may not arrive by: no train is sent to it, and with no
-            // way out none passes through (RSA37-B1)
+            // way out none passes through
             if (session.getStore().isStation(square) && !point.isDestination()) continue;
 
             emitted.add(square);
@@ -251,7 +251,7 @@ public class testTheCheckerAgreesWithTheBuild
         // Its two siblings each prove their population is not trivially empty before comparing -
         // `testDeadEndArrivalsAgree` at :195 asserts ten trapped arrivals, and
         // `testTheStationsThatReachNothingAreTheOnesTheBuildCannotRouteOutOf` above asserts a KNOWN
-        // stranded station is found. This one had neither: MUTATION that survived, per TST-B18 - make
+        // stranded station is found. This one had neither: MUTATION that survived - make
         // `AutonomyChecks.checkStations` never report STATION_UNREACHABLE, on the assumption the
         // frozen fixture has none reachable-checked to begin with. Whether it does was unverified by
         // the review that found this; this floor is the part worth adding regardless of the answer,
@@ -605,7 +605,7 @@ public class testTheCheckerAgreesWithTheBuild
     /**
      * The arrival sides of a square are the entry sides of the edges that end on it.
      *
-     * The invariant the DR-B6 consolidation rests on.  Three inline copies of this walk lived in
+     * The invariant the consolidation rests on.  Three inline copies of this walk lived in
      * `AutonomySession` - the pointless-turn check, the trapped-arrival check and `facingChoices` -
      * each skipping edges with a null entry side, while the door they should have used
      * (`arrivalSides` to `StationIndex` to `AutonomyBuilder.arrivalSidesOf` to `splitSides`) BAILS on

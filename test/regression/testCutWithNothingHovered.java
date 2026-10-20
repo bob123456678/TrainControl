@@ -14,7 +14,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * X8-B1: Cut or Copy while the pointer is not over a square must not arm a paste with nothing in it.
+ * Cut or Copy while the pointer is not over a square must not arm a paste with nothing in it.
  *
  * **What went wrong.** The Control+V branch null-checks the hovered label; Control+X and Control+C did
  * not. `getLastHoveredLabel()` is null whenever the pointer is over the palette - the hover

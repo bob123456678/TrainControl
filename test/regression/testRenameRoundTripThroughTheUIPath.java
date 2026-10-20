@@ -79,7 +79,7 @@ public class testRenameRoundTripThroughTheUIPath
         // WHAT THE SETUP HOLDS FOR THAT PAGE, before anything happens to it.
         Map<String, String> before = settingsOn(session, page, pages, page);
 
-        // The SQUARE settings, not the whole map (LD-5).
+        // The SQUARE settings, not the whole map.
         //
         // This asked `before.isEmpty()`, which can never be true: `settingsOn` ends with an
         // unconditional `#excluded` entry plus one `#config/<name>` per configuration, and has a
@@ -361,7 +361,7 @@ public class testRenameRoundTripThroughTheUIPath
      *
      * Flattened rather than compared collection by collection on purpose. A comparison written by hand
      * covers the collections its author thought of, and the store has eleven - the same counting
-     * problem DD-A1 is about, and the one that let the eleventh collection be forgotten in four
+     * problem, and the one that let the eleventh collection be forgotten in four
      * separate places.
      *
      * The squares come from the PAGE rather than from the store, which is what makes this whole rather

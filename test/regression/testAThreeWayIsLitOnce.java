@@ -23,10 +23,10 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
  * Highlight on Diagram lights a three-way once, as commanded, where a route commands one of its decoders and checks the
- * other (OB-286, GUI2-C4).
+ * other (OB-286).
  *
  * A square both commanded and checked is drawn as commanded - the stronger statement.  The rule was asked per address,
- * and since GUI-C5 a three-way answers to two: commanded under its first and checked under its second, it was washed
+ * and a three-way answers to two: commanded under its first and checked under its second, it was washed
  * yellow and then orange, and the orange stayed.  On the frozen railway's 1 - Main, which has three-ways; a route whose
  * command sets one of them and whose condition asks its other decoder.
  *
@@ -59,7 +59,7 @@ public class testAThreeWayIsLitOnce
 
         try
         {
-            // OPENED INSIDE THE TRY (TSX-B8, OB-111): anything thrown between the open and the close would leave the
+            // OPENED INSIDE THE TRY (OB-111): anything thrown between the open and the close would leave the
             // layout preference pointing at a folder under %TEMP%.
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 

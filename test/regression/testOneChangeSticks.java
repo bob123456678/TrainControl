@@ -24,9 +24,9 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * confirm that sticks. this is how I caught all the recent bugs..."**
  *
  * He is describing his own method, and it has a much better record than the suite's. The defects he
- * has found this way - the arrival side wiped when the train was placed on top of it (`REG8-A1`), the
+ * has found this way - the arrival side wiped when the train was placed on top of it, the
  * facing that came back as a different copy's, the caption mode remembered as a word and not as an
- * effect (`RGD-C3`), the tail left on a square whose occupant had changed (`RGD-B1`) - are all the same
+ * effect, the tail left on a square whose occupant had changed - are all the same
  * shape. Nothing REFUSED the change. It was accepted, it looked right, and it was gone by the time
  * anybody looked again, because something downstream rebuilt over it.
  *
@@ -120,7 +120,7 @@ public class testOneChangeSticks
      * The arrival side, which is the one that has been lost twice.
      *
      * Kept apart from the table above because it is not a plain point property: it is written by the
-     * arrival, by three operator doors and by nothing else, and `REG8-A1` was the build applying it
+     * arrival, by three operator doors and by nothing else, and the old defect was the build applying it
      * BEFORE placing the locomotive, so placing the train wiped the side that had just been set.
      *
      * @throws Exception on a failure to build
@@ -150,12 +150,12 @@ public class testOneChangeSticks
 
         if (recorded == null) recorded = sides.get(0);
 
-        // A TRAIN STANDING THERE, which is the only state a side is ever written in (TLR-A2, 2026-09-15).
+        // A TRAIN STANDING THERE, which is the only state a side is ever written in (2026-09-15).
         //
         // The arrival writes it for the train that arrived, and the three operator doors for the train they just
-        // placed; the menu offers it only where a train stands.  Since TLR-A2 the capture reads a side from the copy
+        // placed; the menu offers it only where a train stands.  The capture reads a side from the copy
         // carrying the train, so a side left on an empty square - which this set before it placed nothing - is dropped
-        // like the departed train's tail it is (RGD-B1).  What this claim is about is unchanged: a side written for a
+        // like the departed train's tail it is.  What this claim is about is unchanged: a side written for a
         // standing train survives the save, the build, the capture and the reload.
         String standing = model.getLocList().get(0);
 

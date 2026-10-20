@@ -24,7 +24,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * REV9-B2: a train put down by the assign dialog records which way it came in.
+ * A train put down by the assign dialog records which way it came in.
  *
  * Adam, 2026-09-11, settling the question `behaviour.md` section 4 had left open: **"the missing
  * arrival side should be set - either from the data, by the user, or randomly"**, then **"proceed with
@@ -310,7 +310,7 @@ public class testAPlacedTrainRecordsWhereItCameFrom
      * live `Point`; the setup is the half that survives a restart and reaches the railway only at the
      * next rebuild. Written to one alone, the operator answers the question, watches nothing become
      * blocked, and cannot tell "it does not work" from "it has not been rebuilt yet" - which is the
-     * shape `VAL8-A2` was filed for at the paste door.
+     * shape of the paste door's defect.
      *
      * The square is CLEARED first, so this cannot pass on a value that was already there - which is
      * exactly how a test of a default passes while measuring nothing.
@@ -600,7 +600,7 @@ public class testAPlacedTrainRecordsWhereItCameFrom
     }
 
     /**
-     * OK on a placement the railway refuses leaves the locomotive as it was (GST-B2).
+     * OK on a placement the railway refuses leaves the locomotive as it was.
      *
      * `Layout.moveLocomotive` refuses while autonomy runs, for a point the railway does not have, and for one that is
      * no station, and answers false with a line in the log.  `commitChanges` threw the answer away and wrote the form's

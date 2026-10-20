@@ -181,10 +181,10 @@ public class testErrorsStopTheSetupRunning
      * **Written when `AutonomySession.hasErrors()` had no callers at all** - the guard and every
      * affordance asked `autonomyErrorCount()` / `errorCount()`, so a test that proved only that
      * `hasErrors()` still computes correctly was a rule tested with its call site left uncovered:
-     * `DD-A6`, named in this class's own javadoc and then done anyway, which is `TST-B21`.
+     * a rule named in this class's own javadoc and then done anyway.
      *
      * That is no longer the state of the code and the paragraph saying it was stood here for a week
-     * after the same commit corrected the identical claim two hundred lines up (`V32-C2`).  The guard
+     * after the same commit corrected the identical claim two hundred lines up.  The guard
      * asks `hasErrors()` through `TrainControlUI.autonomyHasErrors()`, and so do all three
      * affordances.  The rule below is what keeps them together.
      *
@@ -195,7 +195,7 @@ public class testErrorsStopTheSetupRunning
      * `autonomyErrorCount() == 0` - the shape it had before OB-090's third occurrence.  **The sentence
      * here used to name a mutation that does not compile** (`session` is not a name in that class, and
      * `hasBlockingProblems` is not one of its methods), and a mutation nobody can run is no evidence at
-     * all (VD15-T8).  This one is one edit in one line, and the assertion below goes red on it, because
+     * all.  This one is one edit in one line, and the assertion below goes red on it, because
      * the count is the narrower question: a graph that will not build at all is not an error it sees,
      * so the Start button stays live over a setup that refuses every press.
      */
@@ -204,7 +204,7 @@ public class testErrorsStopTheSetupRunning
     {
         String canStart = code("public boolean canStartAutonomy()");
 
-        // THE GUARD'S QUESTION AND THE AFFORDANCE'S, PINNED AS A PAIR (TS3-B6, corrected by V33-C12).
+        // THE GUARD'S QUESTION AND THE AFFORDANCE'S, PINNED AS A PAIR.
         //
         // This used to require the literal `autonomyErrorCount()`, and that is how it came to ENFORCE
         // the divergence it exists to catch: the guard was widened to `hasErrors()` and this assertion
@@ -234,7 +234,7 @@ public class testErrorsStopTheSetupRunning
             "canStartAutonomy() is asking hasBlockingProblems() - the narrower, graph-only question "
             + "OB-090 was about, blind to an unnamed station or any other check-only error");
 
-        // AND THE WRAPPER HAS TO REACH THE SESSION'S QUESTION (V32-C2).
+        // AND THE WRAPPER HAS TO REACH THE SESSION'S QUESTION.
         //
         // Every rule above names a literal, and the correspondence between the guard's `hasErrors()`
         // and the affordance's `autonomyHasErrors()` was knowledge held by a person rather than by the
@@ -246,7 +246,7 @@ public class testErrorsStopTheSetupRunning
             "autonomyHasErrors() no longer asks the session's own question, so the affordances and the "
             + "guard can agree word for word and mean different things.  Body: " + wrapper);
 
-        // THE SAME FOR THE OTHER TWO AFFORDANCES, and asked the same way (V31-B1, V32-B1).
+        // THE SAME FOR THE OTHER TWO AFFORDANCES, and asked the same way.
         //
         // These used to require the literal `autonomyErrorCount()`, and that is how this rule came to
         // pin the divergence in place a second time: the strip's `fixing` flag is a DECISION - it
@@ -255,9 +255,9 @@ public class testErrorsStopTheSetupRunning
         //
         // The MENU still reads the count, and rightly - it puts the number in its tooltip.  The strip
         // does not: the number it displays comes from setFindings' own arguments, and reading it here
-        // as well was a second whole walk of the graph on the event thread (V34-B1).  What must match
+        // as well was a second whole walk of the graph on the event thread.  What must match
         // the guard is what DECIDES.
-        // THE BODY, not the file (V36-C3, corrected by V37-C1).
+        // THE BODY, not the file.
         //
         // A whole-file `contains` is satisfied by the method name appearing in a COMMENT.  It is not
         // satisfied today - `autonomyHasErrors()` occurs once in that file, in code - so this is a
@@ -274,7 +274,7 @@ public class testErrorsStopTheSetupRunning
             + "it can offer a Start that every press refuses - which is OB-090, at the site OB-090 is "
             + "named for.  Body: " + sync);
 
-        // AND THE ANSWER HAS TO REACH THE DECISION (V34-C6, V36-C3).
+        // AND THE ANSWER HAS TO REACH THE DECISION.
         //
         // Asking the question and then deciding on something else is the whole of OB-090, and every
         // rule above this one is satisfied by a body that asks it and drops the answer:
@@ -318,7 +318,7 @@ public class testErrorsStopTheSetupRunning
             + "its three sites");
 
         // Through Start's rule, or through the one reading that works out Start's sentence and the
-        // hand doors' together (ADU2-C5) - which has to reach the rule and the numbers itself.
+        // hand doors' together - which has to reach the rule and the numbers itself.
         assertTrue(menuCode.contains("whyAutonomyWillNotStart()")
             || menuCode.contains("whyStartAndAHandSendAreRefused()"),
             "the right-click Start item is greyed with nothing saying why.  The number used to be read "
@@ -335,7 +335,7 @@ public class testErrorsStopTheSetupRunning
 
         // AND THE ONE RULE HAS TO REACH THE NUMBER, which is the correspondence the assertion above
         // cannot see: a `whyAutonomyWillNotStart` that stopped counting would leave every affordance
-        // asking it and saying nothing about how many problems there are (V32-C2's lesson, one rule on).
+        // asking it and saying nothing about how many problems there are.
         String why = code("public String whyAutonomyWillNotStart()");
 
         assertTrue(why.contains("autonomyErrorCount()"),
@@ -571,7 +571,7 @@ public class testErrorsStopTheSetupRunning
     }
 
     /**
-     * All three "why can't I start" messages name the third reason (V31-C1, V32-C1).
+     * All three "why can't I start" messages name the third reason.
      *
      * The guard refuses on `hasErrors()`, which covers a graph that will not build at all with nothing
      * having turned that into a finding - and in that case `autonomyErrorCount()` is **zero**.  Every
@@ -599,7 +599,7 @@ public class testErrorsStopTheSetupRunning
             {"the greyed Start item's tooltip", code("private LayoutRightclickAutonomyMenu(")},
         };
 
-        // ASKED, AND COUNTED (VD12-T1).
+        // ASKED, AND COUNTED.
         //
         // The gate below used to be `body.contains("errorCannotStartWithErrors")`, and MT-263 moved
         // that wording into `whyAutonomyWillNotStart` - so every site fell through the `continue`, the
@@ -623,8 +623,7 @@ public class testErrorsStopTheSetupRunning
 
             asked++;
 
-            // WHAT IS LEFT FOR THE LOOP TO SAY, once no door words the refusal itself (VD13-T1,
-            // VD14-T4).
+            // WHAT IS LEFT FOR THE LOOP TO SAY, once no door words the refusal itself.
             //
             // The first repair wrote both arm-checks as `X || throughTheRule` and every site delegates,
             // so they were satisfied by the disjunct alone.  The second put them behind
@@ -643,7 +642,7 @@ public class testErrorsStopTheSetupRunning
             + " loop came to assert nothing: the wording moved and every site fell through the gate");
 
         // AND THE ONE RULE ASKS ALL THREE THINGS, which is where the arms went when the sites stopped
-        // wording the refusal themselves (VD13-T1).
+        // wording the refusal themselves.
         //
         // The no-arg wrapper is the door every site actually calls, and it is what chooses between the
         // three answers: the error count, the blocking count, and whether the setup is broken at all.

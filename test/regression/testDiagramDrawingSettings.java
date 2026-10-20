@@ -245,7 +245,7 @@ public class testDiagramDrawingSettings
                 "public TileAnnotation staticAnnotationFor(TileKey tile)"),
             java.util.Arrays.asList(1, 1, 1), readers);
 
-        // The METHOD NAME is not the coupling; the STORED PREFERENCE is (TST-C16). Reading
+        // The METHOD NAME is not the coupling; the STORED PREFERENCE is. Reading
         // DIAGRAM_RESTRICTION_ARROWS out of Preferences directly - skipping the accessor entirely -
         // would couple the two windows exactly as before while leaving the check above satisfied.
         String keyNamed = "the stored preference key is now named somewhere beyond its declaration, the accessor, and"

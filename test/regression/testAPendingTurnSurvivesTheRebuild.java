@@ -20,14 +20,14 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * A destination turn nobody has managed to write down yet survives a setup rebuild.
  *
- * **D3-C5, and it is the `new-field-needs-the-copy-constructor` shape.**  `Layout.reversedOnArrival`
+ * **It is the `new-field-needs-the-copy-constructor` shape.**  `Layout.reversedOnArrival`
  * holds the reversals the railway performed at a destination and has not yet drained into the setup.
  * It lives on the `Layout` object, and `rebuildRunningLayoutFromSetup` replaces that object wholesale.
  * Placements were taught to survive that (OB-183), and `arrivedFrom` was added to the carry with them
  * - `reversedOnArrival` was not, so every pending turn died on any setup gesture at all: a home set
  * from the diagram's right-click menu, a direction, a caption.
  *
- * **Why that matters is the RETRY, not the happy path.**  RGD-C7 went to some trouble to make a turn
+ * **Why that matters is the RETRY, not the happy path.**  Some trouble went into making a turn
  * that could not be written survive - *"NOT WRITTEN, SO NOT FORGOTTEN"* - because a turn destroyed
  * mid-drain never self-heals: there is nothing left to try again with.  A rebuild between the turn and
  * a successful write destroyed exactly those retries, and the next dispatch is then offered paths for
@@ -63,8 +63,8 @@ public class testAPendingTurnSurvivesTheRebuild
      * A record the drain can never write, which is the state this defect is about.
      *
      * `AutonomySession.faceTheWayItCameIn` answers null for a Point that is not there, so this is put
-     * back at every idle refresh and never consumed - which is precisely the retry RGD-C7 preserved
-     * the map for, and precisely what a rebuild used to destroy.  A record that COULD be written would
+     * back at every idle refresh and never consumed - which is precisely the retry
+     * the map is kept for, and precisely what a rebuild used to destroy.  A record that COULD be written would
      * make the test a race between the rebuild and the next refresh.
      */
     private static final String PENDING_LOC = "D3C5 nobody";
@@ -553,7 +553,7 @@ public class testAPendingTurnSurvivesTheRebuild
 
     /**
      * A setup edit that keeps the track diagram on screen forgets the other pages the page cache keeps, as the rebuild it
-     * skips did (RSA38-B1): a page drawn before the edit came back from the page list as it was drawn - a page put back
+     * skips did: a page drawn before the edit came back from the page list as it was drawn - a page put back
      * into autonomy with none of its captions, a station added with none, a renamed one with its old name.
      *
      * MUTATION: keep the other cached pages through an edit that keeps the diagram, and this fails.
@@ -621,7 +621,7 @@ public class testAPendingTurnSurvivesTheRebuild
                         + " cache, which comes back as it was drawn before the edit (RSA38-B1): " + after.keySet());
                 }
 
-                // AND THE PAGE SHOWN KEEPS ITS CAPTIONS: forgotten with the rest, no update would reach them (RSA39-C2)
+                // AND THE PAGE SHOWN KEEPS ITS CAPTIONS: forgotten with the rest, no update would reach them
                 assertEquals(captionsOf(before), captionsBefore, "an edit that kept the diagram on screen let go of its"
                     + " captions, which nothing then writes (RSA39-C2)");
             });
@@ -635,7 +635,7 @@ public class testAPendingTurnSurvivesTheRebuild
     }
 
     /**
-     * A grid the window has replaced is let go (RSA38-C3): the map that found a panel's grid held every grid the window
+     * A grid the window has replaced is let go: the map that found a panel's grid held every grid the window
      * ever built - each grid holds its panel - about half a megabyte for every rebuild of 1 - Main.
      *
      * MUTATION: keep the window's grids in a map again, and this fails.
@@ -778,7 +778,7 @@ public class testAPendingTurnSurvivesTheRebuild
     }
 
     /**
-     * A setup edit the build refuses still tells the track diagram, as the Autonomy menu's door does (RSA39-C3): through
+     * A setup edit the build refuses still tells the track diagram, as the Autonomy menu's door does: through
      * the editor's door the railway was left as it was and nothing else followed, so a page left out came back from the
      * page list with the captions it had before.
      *
@@ -865,7 +865,7 @@ public class testAPendingTurnSurvivesTheRebuild
 
     /**
      * A build keeps both of its captions of a station captioned on two squares - a long platform labelled at both ends -
-     * and a later build's caption still takes an earlier build's place (RSA40-C1).  The station map keeps captions by
+     * and a later build's caption still takes an earlier build's place.  The station map keeps captions by
      * station, and registering one let go of every other of the same window not on screen, its own build's included: the
      * first of the two was never written, and its page was never served from the page cache again.
      *
@@ -1093,7 +1093,7 @@ public class testAPendingTurnSurvivesTheRebuild
      * A pop-up the operator has sized and placed keeps its size and place when a caption on its page changes, and the
      * bounds remembered for it are not overwritten (OB-341).
      *
-     * RSA68-C8 made a caption change redraw the pop-ups it affects, and the redraw packed the window to its natural size and
+     * A caption change redraws the pop-ups it affects, and the redraw once packed the window to its natural size and
      * saved that over the operator's - on every caption gesture in the autonomy editor on that page.  A caption-only redraw
      * leaves the window's size and place alone and saves nothing; an explicit page change still sizes the window as it did.
      *
@@ -1361,7 +1361,7 @@ public class testAPendingTurnSurvivesTheRebuild
     }
 
     /**
-     * A station renamed while the setup cannot build keeps the train standing at it on its caption (RSA40-C2; Adam,
+     * A station renamed while the setup cannot build keeps the train standing at it on its caption (Adam,
      * 2026-10-05: *"Yes, do it."*): the railway, left as it was, still carries the names it was built with, and the
      * caption, asked by the new name, found no Point there and went blank until the setup built.
      *
@@ -1648,7 +1648,7 @@ public class testAPendingTurnSurvivesTheRebuild
     }
 
     /**
-     * A turn the railway owes at a station renamed since is carried to the station's new name (RSA5-C2): the turns owed
+     * A turn the railway owes at a station renamed since is carried to the station's new name: the turns owed
      * are carried across a rebuild by the name of the Point the train turned at, and after a rename no Point had it -
      * the turn was never written and never forgotten, and the train stayed on the copy facing the way it came in.
      *
@@ -1756,7 +1756,7 @@ public class testAPendingTurnSurvivesTheRebuild
     }
 
     /**
-     * The session sees the running railway from the moment the window makes it (RSA6-A1): the direction refusal asks
+     * The session sees the running railway from the moment the window makes it: the direction refusal asks
      * where the railway's trains stand, and the session was told only when a station's Facing menu was built or the
      * setup editor entered autonomy - so after start-up, or any reset, a direction set from a plain track square's menu
      * was judged against the setup alone, which is where the run began.

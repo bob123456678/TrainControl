@@ -19,7 +19,7 @@ import org.traincontrol.marklin.MarklinRoute;
 import support.SourceOf;
 
 /**
- * A route will not switch an accessory that autonomy has locked (AU-A2).
+ * A route will not switch an accessory that autonomy has locked.
  *
  * `configureAndLockPath` reserves every accessory on a path, and a route must not set one of them back
  * while a train is under way on it.  Three doors reach a route: an s88 trigger route fired when an
@@ -91,7 +91,7 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
     }
 
     /**
-     * A route that cuts the power is never asked about, at EITHER door (DIR-A3).
+     * A route that cuts the power is never asked about, at EITHER door.
      *
      * Adam, 2026-09-01: **"emergency stop should never conflict or prompt."**
      *
@@ -237,7 +237,7 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
         // Fired from INSIDE the dispatch, which is the only moment the hazard exists.
         //
         // Locking a path is not enough on its own: `activeLocomotives`, which makes isRunning() true and
-        // is what getActiveAccs reads, is written by executePathInternal AFTER the lock succeeds (UR-2).
+        // is what getActiveAccs reads, is written by executePathInternal AFTER the lock succeeds.
         // So the route is run from the started callback, exactly where a real s88 trigger route fires:
         // path locked, train registered, accessories reserved.
         //
@@ -386,7 +386,7 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
     }
 
     /**
-     * A route may set a guard a locked path holds green to that green (RSA66-C1): the exit guard of the platform the
+     * A route may set a guard a locked path holds green to that green: the exit guard of the platform the
      * path's train leaves, and the home signal of the one it is bound for, are held accessories too, and Adam's rule
      * reaches them (2026-10-11: *"make sure the code allows switching to the correct (same) setting that autonomy is
      * using"*).  The control: a guard no path holds, over the platform the train is bound for, is still refused green.
@@ -575,7 +575,7 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
     }
 
     /**
-     * A route already under way when a dispatch begins does not set the accessory either (AU-A2).
+     * A route already under way when a dispatch begins does not set the accessory either.
      *
      * The guard used to be asked ONCE, before the command loop, and that loop takes seconds: `execRoute`
      * sleeps `SLEEP_INTERVAL` plus each command's own delay between every pair of commands.  A dispatch that
@@ -586,7 +586,7 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
      * smaller harm than throwing a switch under a train that is crossing it.
      *
      * A conflict appearing mid-route ASKS at the two doors with a person at them, and sets none of its
-     * accessories at the s88 trigger door (VD9-C18).  This test runs with no interface attached (`init` is
+     * accessories at the s88 trigger door.  This test runs with no interface attached (`init` is
      * called with `showUI` false, so `getGUI()` is null), so it exercises the branch with nobody to ask,
      * which is the one that must never move the switch.  The branch where somebody says yes is not reachable
      * from here (the model's View is final and set at construction); its model half is
@@ -889,7 +889,7 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
     }
 
     /**
-     * A platform a locked path has only reserved is refused as reserved, not as having a train standing at it (GSR-C2).
+     * A platform a locked path has only reserved is refused as reserved, not as having a train standing at it.
      *
      * A locked path holds every point along it for its train (`Point.reserve`), its destination included, from the moment
      * it is locked - so the signal protecting that destination is held, rightly, before the train is anywhere near it.
@@ -1833,7 +1833,7 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
      * and it has two halves. Adam's ruling of 2026-09-06 on `MT-247` ended *"make test cases for this"*.
      *
      * The first half, that a route with a stop is not screened at the human door, is also held by
-     * `testARouteThatCutsThePowerIsNeverHeldUpByTheQuestion` (GAP-C1) and, by shape, by
+     * `testARouteThatCutsThePowerIsNeverHeldUpByTheQuestion` and, by shape, by
      * `testBothDoorsCarveOutTheEmergencyStop`.  This test adds the second half: that the stop actually
      * goes out.  Being excused the question is worth nothing if the command is then dropped.
      *
@@ -2074,7 +2074,7 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
     }
 
     /**
-     * A turnout under a MEASURED train stays refused, on a path that is only partly measured (WK-B1).
+     * A turnout under a MEASURED train stays refused, on a path that is only partly measured.
      *
      * The sibling of `testAnAccessoryBehindTheTrainIsStillSettable`, with the one thing that test does
      * not have: a train with a length. Without one every edge is handed back the moment the head

@@ -167,8 +167,7 @@ public class testTheFunctionButtonsFollowTheConsist
      * @return a description, ready to append
      */
     /**
-     * The last locomotive asked for is the one the window draws, however quickly the two requests came
-     * (TDR-B5, FTN-B1).
+     * The last locomotive asked for is the one the window draws, however quickly the two requests came.
      *
      * The guard this pins against returned without doing anything while an earlier render was unfinished, so a
      * request made in that window was dropped and the window went on showing the first locomotive's function
@@ -178,7 +177,7 @@ public class testTheFunctionButtonsFollowTheConsist
      * locomotive that is not the one shown - so when that painting runs it leaves the panel alone - and the
      * mixed consist is asked for while the render is certainly in flight.  Nothing but the deferred re-run in
      * `renderFinished` then draws the mixed consist.  The first version of this held the renderer after posting,
-     * by which time the painting could already have cleared the flag, and the deferral went untested (FTN-B1).
+     * by which time the painting could already have cleared the flag, and the deferral went untested.
      *
      * MUTATION, run: delete the `renderActiveLoc(force, locs)` at the end of `renderFinished` and this goes red.
      *
@@ -251,12 +250,12 @@ public class testTheFunctionButtonsFollowTheConsist
     }
 
     /**
-     * A locomotive's direction echo does not build the autonomy session on the thread it arrives on (FTN-B2).
+     * A locomotive's direction echo does not build the autonomy session on the thread it arrives on.
      *
      * `followDirectionChanges` runs inside the window's monitor, from `repaintLoc`, on whatever thread the
      * Central Station's message came in on - and it asked `getAutonomySession()`, the lazy builder that parses
      * every page and can rewrite files.  The rule written for exactly this, at `repaintTimetable`, is to read
-     * the field.  Since TDR-B5 the event thread takes that monitor at the end of every locomotive render, so a
+     * the field.  The event thread takes that monitor at the end of every locomotive render, so a
      * session built there held the whole window up for the length of a parse.
      *
      * @throws Exception from the window or reflection

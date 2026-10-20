@@ -117,7 +117,7 @@ public class testSwingSpeaksOurLanguage
     }
 
     /**
-     * The words a file chooser shows only when it makes or renames a folder are TrainControl's too (RSA37-C3): the name a
+     * The words a file chooser shows only when it makes or renames a folder are TrainControl's too: the name a
      * new folder is given, "New Folder" and "New Folder (2)", and the new-folder and rename errors - which Swing has in
      * English only, in a Danish, Dutch or Polish window.  The patterns Swing fills in keep their place for the number and
      * the name.
@@ -254,7 +254,7 @@ public class testSwingSpeaksOurLanguage
     }
 
     /**
-     * A shortcut to a folder opens the folder, in a TrainControl file chooser as in Swing's own (RSA38-B2): its view of the
+     * A shortcut to a folder opens the folder, in a TrainControl file chooser as in Swing's own: its view of the
      * files is not the shell's, so Swing does not follow shortcuts for it, and the chooser was left "in" the shortcut,
      * still listing the folder before, with an InternalError on the event thread.
      *
@@ -311,7 +311,7 @@ public class testSwingSpeaksOurLanguage
     }
 
     /**
-     * The details view shows the shell's columns for the shell's values, as Swing's own chooser does (RSA38-C1): the
+     * The details view shows the shell's columns for the shell's values, as Swing's own chooser does: the
      * chooser's folder was a plain one, so its details view had Swing's three headings - name, size, modified - over the
      * shell's values, the item type under "Modified" and no dates.
      *
@@ -344,7 +344,7 @@ public class testSwingSpeaksOurLanguage
     }
 
     /**
-     * The shell is asked for the Look In list once at a time and not again while the drives are the same (RSA38-C2): a
+     * The shell is asked for the Look In list once at a time and not again while the drives are the same: a
      * chooser opened while the window's own ask was under way asked again beside it, and every chooser that closed asked
      * again - a second each, which the next chooser waited behind.
      *
@@ -393,7 +393,7 @@ public class testSwingSpeaksOurLanguage
     }
 
     /**
-     * The Look In list is asked of the shell again when a Desktop folder has changed, as well as when a drive has (RSA39-C1):
+     * The Look In list is asked of the shell again when a Desktop folder has changed, as well as when a drive has:
      * most of it is the Desktop's own folders, and a folder made on it was not followed while the drives stayed the same.
      * A folder of the test's own stands in for the Desktop, so the real one is never touched.
      *
@@ -420,7 +420,7 @@ public class testSwingSpeaksOurLanguage
 
         Object were = desktops.get(null);
 
-        // AND THE REAL DESKTOP IS FOUND, which the stand-in below takes the place of (RSA40-C4)
+        // AND THE REAL DESKTOP IS FOUND, which the stand-in below takes the place of
         java.lang.reflect.Method found = quick.getDeclaredMethod("theDesktops");
 
         found.setAccessible(true);
@@ -456,7 +456,7 @@ public class testSwingSpeaksOurLanguage
             assertEquals(((java.util.concurrent.atomic.AtomicInteger) counted.get(null)).get() - before, 0, "precondition:"
                 + " the shell was asked again with nothing changed");
 
-            // A FILE SAVED ON IT, which the list holds none of (RSA40-C3)
+            // A FILE SAVED ON IT, which the list holds none of
             java.nio.file.Files.write(standIn.resolve("saved.txt"), new byte[] {1});
 
             standIn.toFile().setLastModified(standIn.toFile().lastModified() + 10000);

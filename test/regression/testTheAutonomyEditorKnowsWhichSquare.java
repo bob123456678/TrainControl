@@ -165,7 +165,7 @@ public class testTheAutonomyEditorKnowsWhichSquare
         }
         catch (Exception | Error failed)
         {
-            // WHATEVER FAILED, THE PREFERENCE GOES BACK (TSX-B8).
+            // WHATEVER FAILED, THE PREFERENCE GOES BACK.
             //
             // Every caller wraps the RETURNED holder in a try/finally, and the holder is
             // what does not exist when this throws.  `init` binds a UDP port and a window

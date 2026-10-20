@@ -55,7 +55,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * `ui.testBlockedTrackIsGreyWhileAutonomyRuns` does and for the same reason: asking the window under
  * test what the right answer is agrees with it whatever it says.
  *
- * **THE GESTURE IS A TRAIN LENGTH NOW, AND IT USED TO BE STARTING AUTONOMY** (W7B-B1).  The grey was
+ * **THE GESTURE IS A TRAIN LENGTH NOW, AND IT USED TO BE STARTING AUTONOMY**.  The grey was
  * fenced on a running railway, so starting and stopping a run was what put the wash on and took it
  * off.  Adam, 2026-09-09: *"yes, this greyout should appear at idle and be regenerated if a placement
  * or train/track length is changed."*  With the fence gone, starting a run changes not one square -
@@ -230,7 +230,7 @@ public class testTheGreyDoesNotRebuildTheDiagram
             // THE TRAIN IS UNMEASURED TO BEGIN WITH, so the gesture below is what puts the wash on.
             //
             // This used to start and stop AUTONOMY, because the grey was fenced on a running railway.
-            // That fence is gone (W7B-B1, Adam 2026-09-09: *"yes, this greyout should appear at idle
+            // That fence is gone (Adam 2026-09-09: *"yes, this greyout should appear at idle
             // and be regenerated if a placement or train/track length is changed"*), so starting a run
             // no longer changes a single square and the measurement would have been of nothing at all.
             // The gesture that adds and removes the wash at idle is one of the three he named, and

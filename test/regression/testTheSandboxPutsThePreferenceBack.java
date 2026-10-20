@@ -15,7 +15,7 @@ import org.traincontrol.gui.TrainControlUI;
 /**
  * The repair that runs after a killed test JVM does what its javadoc says.
  *
- * REG9-B2. On 2026-09-11 two killed JVMs left the machine-global layout preference naming a folder
+ * On 2026-09-11 two killed JVMs left the machine-global layout preference naming a folder
  * under `%TEMP%` - and that is the key the APPLICATION reads, so Adam's own window would have opened a
  * test fixture as though it were his railway. `6fe9ec38` added a marker file, a repair that runs at the
  * next sandbox open, and a shutdown hook. Ninety-seven test classes depend on that machinery, and

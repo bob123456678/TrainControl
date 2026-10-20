@@ -15,21 +15,21 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * X8-C5 and X8V-C2: one ceiling, asked by everything that grows the page, about the right dimension.
+ * One ceiling, asked by everything that grows the page, about the right dimension.
  *
  * **Three copies became one, and the one was wrong in a new way.** The limit on a page's size lived in
  * `growEdges`, again in `addRowsAndColumns`, and a third time in the right-click menu that greys
  * Increase Size - while Shift Down and Shift Right, two items away on the same submenu, grow the page by
  * a row or a column and asked nothing. At the ceiling the menu greyed one item with a tooltip explaining
- * why and offered another that did the same thing and worked (`X8-C5`).
+ * why and offered another that did the same thing and worked.
  *
  * The predicate that replaced them took both dimensions and was written as one conjunction, so
  * `roomToGrow(0, 1)` still asked whether the page was too TALL - and refused a column shift, which adds
- * nothing to a page's height (`X8V-C2`). That shape is real here: a page's size comes from its largest
+ * nothing to a page's height. That shape is real here: a page's size comes from its largest
  * element coordinate with nothing clamping it, and three fixture pages in this repository parse at
  * 17 x 129.
  *
- * **Nothing pinned any of it**, which is why this class exists: `X8-C5` changed behaviour and
+ * **Nothing pinned any of it**, which is why this class exists: a ceiling change altered behaviour and
  * `grep -rn "roomToGrow" test/` found nothing. It is a pure function of two ints and the page's size,
  * which is about the cheapest thing in this window to pin.
  *
@@ -129,7 +129,7 @@ public class testTheDiagramCeiling
     }
 
     /**
-     * A page at the ceiling refuses both, which is the claim `X8-C5` was about.
+     * A page at the ceiling refuses both, which is the claim.
      */
     @Test
     public void testAPageAtTheCeilingRefusesToGrow() throws Exception
@@ -200,10 +200,10 @@ public class testTheDiagramCeiling
     }
 
     /**
-     * A page at the ceiling in ONE dimension can still grow in the other (NSV-C3, at the call site).
+     * A page at the ceiling in ONE dimension can still grow in the other (at the call site).
      *
-     * **The test below this one pins the predicate, and the predicate was not what changed.** `X8V-C2`
-     * had already made `roomToGrow` per-dimension; what `NSV-C3` fixed is that `addRowsAndColumns`
+     * **The test below this one pins the predicate, and the predicate was not what changed.** An earlier change
+     * had already made `roomToGrow` per-dimension; what was fixed is that `addRowsAndColumns`
      * asked it about `(1, 1)` and then added `rows` and `cols`. So that test passes with the defect put
      * back - measured: 4 tests, 0 failures - and this one is the one that does not (FV3).
      *
@@ -284,11 +284,11 @@ public class testTheDiagramCeiling
     }
 
     /**
-     * The ceiling is asked about the amount being added, not about one (NSV-C3).
+     * The ceiling is asked about the amount being added, not about one.
      *
      * `LayoutEditor.addRowsAndColumns(rows, cols)` asked `roomToGrow(1, 1)` - "is there room for one
-     * more of each" - and then added `rows` and `cols`. It is `X8-C5`'s own one-predicate rule asked
-     * about the wrong amount, in one of the methods `X8-C5` touched. It cannot overflow today because
+     * more of each" - and then added `rows` and `cols`. It is the one-predicate rule asked
+     * about the wrong amount. It cannot overflow today because
      * its only caller pads a blank page to 16 x 21, which is why this is a trap rather than a defect.
      *
      * **Asserted at the predicate, because the refusal cannot be driven from a test.** The guard's

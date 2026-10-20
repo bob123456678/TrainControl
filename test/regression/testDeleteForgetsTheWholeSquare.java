@@ -19,7 +19,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * X8-B4: deleting a square from the diagram forgets everything the setup wrote about it.
+ * Deleting a square from the diagram forgets everything the setup wrote about it.
  *
  * **It forgot the caption and left the rest.** `delete` called `forgetCaptionsAt`, which touches the
  * captions map alone, so a deleted platform kept its station membership, point name, length, facing,
@@ -228,12 +228,12 @@ public class testDeleteForgetsTheWholeSquare
     }
 
     /**
-     * Forgetting squares nothing was ever written about reports that nothing changed (X8V-B2).
+     * Forgetting squares nothing was ever written about reports that nothing changed.
      *
      * **The answer used to be manufactured from the size of the list.** `moveTiles` computed it as
      * `builtOver != null && !builtOver.isEmpty()`, which is true before it has looked at anything, and
      * four call sites read it as "something was forgotten, so write the setup to disk" - `delete` says
-     * so in as many words, in a comment `X8-B4` kept while moving the call onto a method that no longer
+     * so in as many words, in a comment kept while moving the call onto a method that no longer
      * honoured it.
      *
      * So deleting a piece of plain track that no station, name, length or facing had ever been written

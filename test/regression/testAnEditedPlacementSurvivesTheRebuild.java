@@ -198,12 +198,12 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * A train the rebuilt railway refuses to put back leaves no tail on the square (AMS-C2), and is said (RSA17-A1).
+     * A train the rebuilt railway refuses to put back leaves no tail on the square, and is said.
      *
      * `putTheTrainsBack` asked `moveLocomotive` and did not read its answer, then wrote the arrival side and the
      * road onto the square whether or not the train was standing on it, so a square was left with a tail and no train.
-     * The case AMS-C2 found it by - a station demoted after a run, with the train still on it - is now put back on its
-     * square, tail and all (RSA17-A1): the train stands there, and refused it was left where the setup last had it and
+     * The case it was found by - a station demoted after a run, with the train still on it - is now put back on its
+     * square, tail and all: the train stands there, and refused it was left where the setup last had it and
      * the square read free.  What still refuses is the railway running.
      *
      * MUTATION: refuse a square that is no station in the put-back, and this fails.
@@ -234,14 +234,14 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
         Point passing = built.getPoint("PASSING");
 
-        // A SQUARE THAT IS NO STATION: the train stands there, so it is put back there, with its tail (RSA17-A1)
+        // A SQUARE THAT IS NO STATION: the train stands there, so it is put back there, with its tail
         assertTrue(passing.getCurrentLocomotive() != null && STAYER.equals(passing.getCurrentLocomotive().getName()),
             STAYER + " was not put back on PASSING, which is no station but where it stands - left off the railway, the"
             + " square read free (RSA17-A1): " + notBack);
 
         assertEquals(passing.getArrivedFrom(), "north", "the arrival side did not go back with the train");
 
-        // AND A PUT-BACK STILL REFUSED - the railway running - leaves no tail, and says which train (AMS-C2, RSA17-A1)
+        // AND A PUT-BACK STILL REFUSED - the railway running - leaves no tail, and says which train
         Layout running = new Layout(model);
 
         MarklinFeedback otherSensor = model.newFeedback(8397, null);
@@ -282,7 +282,7 @@ public class testAnEditedPlacementSurvivesTheRebuild
     /**
      * A placement NOBODY edited is a record, and a run outran it - so the railway wins.
      *
-     * D2-A1 / W7-A1, and the case the pair above leaves out. The control beside it models the setup
+     * The case the pair above leaves out. The control beside it models the setup
      * having **no** entry for the moved train; OB-183 as it happens on the railway leaves a **stale**
      * entry, because the setup was captured while the train was still at PLATFORM and the run then
      * took it to SIDING. The rebuild therefore has an opinion - the wrong one - and "where the rebuild
@@ -359,7 +359,7 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * A train the last run left on a station is put back on it after the station is renamed (RSA4-A1).
+     * A train the last run left on a station is put back on it after the station is renamed.
      *
      * Where a train stands after a run lives on the running layout alone, and a rebuild from the diagram's setup menu
      * carries each train across by the name of the Point it stands on.  A station renamed there renamed that Point; the
@@ -438,7 +438,7 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * A train on a square that has since become two copies is put back on the copy facing its way (RSA4-A1): the one
+     * A train on a square that has since become two copies is put back on the copy facing its way: the one
      * copy of a station on a one-way line carries the station's plain name, and made two-way again the square is two
      * copies, each named for its heading - so the plain name recorded names no Point, and the train was left off the
      * railway.  A copy is its facing, so the train goes on the copy that faces the way it did.
@@ -568,7 +568,7 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
     /**
      * A train on a station with no facing - one no track arrives at, with one way out - is put back on it after the
-     * station is renamed (RSA4-A1): such a square is one copy that records no facing, so only its name, carried to the
+     * station is renamed: such a square is one copy that records no facing, so only its name, carried to the
      * square's new name, finds it again.
      *
      * MUTATION: carry a name only to the copy facing the same way, and this fails.
@@ -627,7 +627,7 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * A station renamed to the name another station has keeps both trains the last run left on the two (RSA5-A1): the
+     * A station renamed to the name another station has keeps both trains the last run left on the two: the
      * name moves to the renamed square, the other square is called something else, and each train goes back on its own
      * square.
      *
@@ -746,7 +746,7 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
     /**
      * A train the last run left on a station, whose way a direction then takes, is recorded in the setup where it stands
-     * and kept there through the fold (Adam, 2026-10-01, in place of RSA5-A2's refusal): the railway cannot stand it on a
+     * and kept there through the fold (Adam, 2026-10-01): the railway cannot stand it on a
      * copy facing another way, so a rebuild left it where the setup last had it - a square it had left - and a fold of
      * that railway took it off the setup altogether.
      *
@@ -780,7 +780,7 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
             running.getPoint("Beta (westbound)").setArrivedFrom("E");
 
-            // AND A ROAD (RSA19-C2) - nothing arrives at Beta on this row, whose ends turn nothing, so one of its two edges:
+            // AND A ROAD - nothing arrives at Beta on this row, whose ends turn nothing, so one of its two edges:
             // what is asked is that the record carries the road the railway has, whatever it is
             java.util.List<org.traincontrol.automation.Edge> road = new java.util.ArrayList<>();
 
@@ -812,7 +812,7 @@ public class testAnEditedPlacementSurvivesTheRebuild
             assertEquals(session.getFacing(beta), org.traincontrol.automationui.TilePorts.Side.W, "the train recorded on"
                 + " Beta is not recorded facing west, as it stands");
 
-            // AND THE SIDE IT CAME IN BY (RSA18-A2), AND ITS ROAD (RSA19-C2)
+            // AND THE SIDE IT CAME IN BY, AND ITS ROAD
             assertEquals(session.getPointProperty(beta, "arrivedFrom"), "E", "the train recorded on Beta is recorded"
                 + " without the side it came in by");
 
@@ -841,11 +841,11 @@ public class testAnEditedPlacementSurvivesTheRebuild
             assertEquals(session.getFacing(beta), org.traincontrol.automationui.TilePorts.Side.W, "the fold turned the"
                 + " train on Beta round in the setup");
 
-            // AND LISTED FOR THE DIAGRAM TO DRAW WHERE IT STANDS (RSA17-C2)
+            // AND LISTED FOR THE DIAGRAM TO DRAW WHERE IT STANDS
             assertEquals(session.trainsOnNoPoint().get(beta), org.traincontrol.automationui.TilePorts.Side.W, "the train"
                 + " on no Point is not listed, facing west, for the diagram to draw on Beta: " + session.trainsOnNoPoint());
 
-            // AND GREY WHERE THE CONFIGURATION PAUSES IT (RSA60-C5) - asked of the setup's list, since the railway does
+            // AND GREY WHERE THE CONFIGURATION PAUSES IT - asked of the setup's list, since the railway does
             // not have the train
             assertFalse(session.pausedTrainsOnNoPoint().contains(beta), "control: the train on no Point is listed as"
                 + " paused before anybody paused it");
@@ -871,7 +871,7 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * A carry across a load after squares were moved puts each train back on its own station (RSA7-B3): while a declined
+     * A carry across a load after squares were moved puts each train back on its own station: while a declined
      * edit waits the trains are carried by the square the railway says each stands on, and after a move the railway said
      * the square as it was - so each train went on the station that had taken its old square.  A move moves the squares
      * the railway's Points say they are copies of, as it moves the setup's.
@@ -935,7 +935,7 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * A carry across a load after a page was renamed puts each train back on its own station (RSA7-B3): the railway said
+     * A carry across a load after a page was renamed puts each train back on its own station: the railway said
      * each train's square under the page's old name, which no square has, so every train on the page was left where the
      * setup last had it.  A rename moves the squares the railway's Points say they are copies of, as it moves the setup's.
      *
@@ -988,7 +988,7 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * A move cancelled puts the railway's squares back with the setup's (RSA7-B3): a move moves the squares the railway's
+     * A move cancelled puts the railway's squares back with the setup's: a move moves the squares the railway's
      * Points say they are copies of, and a Cancel that put back the setup alone left the carry reading every train's
      * square as the move had made it, against the pages as they were - each train on the station that had its square.
      *
@@ -1057,7 +1057,7 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * Stations moved together in the track editor keep the timetable's legs through them (RSA8-B2): the carry every
+     * Stations moved together in the track editor keep the timetable's legs through them: the carry every
      * build makes kept a name only on the square the build before gave it, and a move had not moved that memory - so
      * each leg was carried to the station now on its old square, one entry dropped and another sent on a journey nobody
      * recorded.  A move moves what the carry remembers with the squares.
@@ -1083,7 +1083,7 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * The same after the track editor's Cancel (RSA8-B2): Cancel put the setup back and rebuilt over what the move had
+     * The same after the track editor's Cancel: Cancel put the setup back and rebuilt over what the move had
      * made the carry remember, and carried every leg the other way.
      *
      * MUTATION: put back the setup and not what the carry remembers, and this fails.
@@ -1110,7 +1110,7 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * The same after the track editor's Ctrl+Z (RSA8-B2): the undo put the page's setup back and rebuilt against what the
+     * The same after the track editor's Ctrl+Z: the undo put the page's setup back and rebuilt against what the
      * move had made the carry remember.  The undo point holds what the carry remembers and every stored leg, and the undo
      * puts both back.
      *
@@ -1139,7 +1139,7 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * A leg to a station with no name of its own names it as before once a move is undone (RSA8-B2): the move renamed
+     * A leg to a station with no name of its own names it as before once a move is undone: the move renamed
      * the names made from its square - "main 5,1" became "main 7,1" - and the undo did not name them back, so the leg
      * named whatever station then stood on the moved square.
      *
@@ -1191,7 +1191,7 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * A move undone puts the railway's squares back with the page's setup (RSA8-B3): Cancel did, and Ctrl+Z - the other
+     * A move undone puts the railway's squares back with the page's setup: Cancel did, and Ctrl+Z - the other
      * way back - did not, so while a declined edit waited the carry put each train on the station its moved square held.
      *
      * MUTATION: put back the page's setup alone at an undo, and this fails.
@@ -1517,7 +1517,7 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * The editor's Cancel after two stations' names were swapped keeps the timetable on its stations (RSA9-B2): Cancel
+     * The editor's Cancel after two stations' names were swapped keeps the timetable on its stations: Cancel
      * put back the setup and the snapshot's legs, but put back what the carry of names remembers only where a move had
      * been made - so its rebuild found each name remembered on the other's square and carried every leg there.  What the
      * carry remembers is taken when the editor opens, as its snapshot is.
@@ -1566,7 +1566,7 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * Start Timetable asks nothing of the entries past the one the run will stop at (RSA10-B2): the run stops at the
+     * Start Timetable asks nothing of the entries past the one the run will stop at: the run stops at the
      * first entry it cannot run, so a train whose only entry comes after it never sets off - and asked where it stands,
      * the check refused the timetable, or sent the operator to stand a train where the run would never send it from.
      *
@@ -1714,7 +1714,7 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
     /**
      * A train the last run left on a station that is then marked one trains only pass through stands there still after
-     * the rebuild (RSA17-A1): the put-back refused a copy that is no station, so the train was left where the setup last
+     * the rebuild: the put-back refused a copy that is no station, so the train was left where the setup last
      * had it - here, on no Point - and the square it stands on read free.  The train IS there.
      *
      * MUTATION: refuse a copy that is no station in the put-back, and this fails.
@@ -1773,7 +1773,7 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
     /**
      * A train the last run turned round on a station, whose turning is then taken away, is recorded where it stands and
-     * reported, not left where the setup last had it (RSA17-A1): no copy of the square faces its way any more, so the
+     * reported, not left where the setup last had it: no copy of the square faces its way any more, so the
      * put-back could not put it back, and said nothing.
      *
      * MUTATION: put nothing on the list of trains not put back for a copy the rebuild has not got, and this fails.
@@ -1819,7 +1819,7 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
             running.getPoint(turned).setArrivedFrom("W");
 
-            // AND THE ROAD IT CAME IN ALONG (RSA19-C2)
+            // AND THE ROAD IT CAME IN ALONG
             java.util.List<org.traincontrol.automation.Edge> road = new java.util.ArrayList<>();
 
             for (org.traincontrol.automation.Edge edge : running.getEdges())
@@ -1857,11 +1857,11 @@ public class testAnEditedPlacementSurvivesTheRebuild
             assertEquals(String.valueOf(session.getFacing(beta)), facing, MOVED + " is not recorded facing the way it"
                 + " stands");
 
-            // AND THE SIDE IT CAME IN BY (RSA18-A2): without it the track put back stands it with no tail
+            // AND THE SIDE IT CAME IN BY: without it the track put back stands it with no tail
             assertEquals(session.getPointProperty(beta, "arrivedFrom"), "W", MOVED + " is recorded without the side it"
                 + " came in by");
 
-            // AND ITS ROAD (RSA19-C2) - in today's names: the turning copy it came in to is plain Beta now
+            // AND ITS ROAD - in today's names: the turning copy it came in to is plain Beta now
             assertTrue(sameRoad(session.getPointProperty(beta, "arrivedAlong"), roadNames), MOVED + " is recorded without"
                 + " the road it came in along: " + session.getPointProperty(beta, "arrivedAlong") + ", came along "
                 + roadNames);
@@ -1890,9 +1890,9 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * A setup record the last run has outrun raises no error (RSA17-B1): the railway has the train on another square, and
+     * A setup record the last run has outrun raises no error: the railway has the train on another square, and
      * the railway wins - an error about a square no train stands on stopped every send.  And the train the railway has
-     * nowhere, recorded where it cannot stand, is listed for the diagram to draw there (RSA17-C2).
+     * nowhere, recorded where it cannot stand, is listed for the diagram to draw there.
      *
      * MUTATION: ask the setup alone for the error, and this fails.
      *
@@ -1949,7 +1949,7 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
     /**
      * A train of the railway's beside a link that is switched off, where no copy then faces its way, is recorded where it
-     * stands (RSA17-C3): `setPortalDisabled` writes it, as a direction does - and no claim drove that.
+     * stands: `setPortalDisabled` writes it, as a direction does - and no claim drove that.
      *
      * MUTATION: take the record out of `setPortalDisabled`, and this fails.
      *
@@ -2037,7 +2037,7 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
     /**
      * A setup record the last run outran raises no error where the railway has the train on the same square facing the
-     * other way (RSA18-B1): a run turned it and brought it back, and the setup's facing is the one it set off with.
+     * other way: a run turned it and brought it back, and the setup's facing is the one it set off with.
      *
      * MUTATION: ask the setup's facing for a train the railway has on the same square, and this fails.
      *
@@ -2090,8 +2090,8 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * Home All Trains Where They Stand homes each train where the railway has it, not where the setup last had it
-     * (RSA18-B2): from the track diagram's menu, which folds nothing first, after a run it homed each train where it set
+     * Home All Trains Where They Stand homes each train where the railway has it, not where the setup last had it:
+     * from the track diagram's menu, which folds nothing first, after a run it homed each train where it set
      * off.
      *
      * MUTATION: walk the setup's placements alone, and this fails.
@@ -2136,7 +2136,7 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * The no-length notice, on the square a train stands on after a run, names that train (RSA19-C1): it named the train
+     * The no-length notice, on the square a train stands on after a run, names that train: it named the train
      * the setup recorded there - nobody, or the wrong one.
      *
      * MUTATION: name the setup's train, and this fails.

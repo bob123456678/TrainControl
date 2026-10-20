@@ -153,7 +153,7 @@ public class testRouteEditorRoundTripCases
      * in two states at once and settles wherever the hardware happens to finish. That is real ironwork,
      * two motors on consecutive addresses.
      *
-     * **This test used to be unable to fail** (TD-6). It built the route text from the same list, in
+     * **This test used to be unable to fail**. It built the route text from the same list, in
      * the same index order, that it read `first` and `second` from - so if `expand` returned its pair
      * the wrong way round, all three swapped together and the comparison came out the same. It was
      * order-invariant by construction, and could not fail for the reason its own message gave, while

@@ -12,7 +12,7 @@ import support.SourceOf;
 /**
  * Every door that changes the railway asks whether it may.
  *
- * REG9-A1: `refuseWhileEditorOpen` and `refuseWhileAutonomyRunning` had no test of any kind. Both were
+ * `refuseWhileEditorOpen` and `refuseWhileAutonomyRunning` had no test of any kind. Both were
  * made to permit everything and fourteen classes stayed green - including `testEditorSurfaceRules`,
  * the 56-test class that exists for this surface and which asserts about `isLayoutEditorOpen()`'s
  * implementation and about nothing that calls it.
@@ -47,7 +47,7 @@ import support.SourceOf;
 public class testTheRefusalsAreAskedAtTheDoors
 {
     /**
-     * A page name cannot take another page's file (BCR-A2).
+     * A page name cannot take another page's file.
      *
      * A page lives in its sanitised name plus `.cs2`, so a name differing from another's only in case - which Windows does
      * not tell apart - or only in a character a file name cannot hold is that page's file, and writing it replaced the
@@ -77,7 +77,7 @@ public class testTheRefusalsAreAskedAtTheDoors
     }
 
     /**
-     * Every door that names a page asks whose file the name is (BCR-A2): Rename, Duplicate and Add Blank Page through one
+     * Every door that names a page asks whose file the name is: Rename, Duplicate and Add Blank Page through one
      * method, Duplicate's own choice of name, and Combine Linked Pages.
      *
      * MUTATION: take the question out of any of the three, and this fails, naming it.
@@ -99,7 +99,7 @@ public class testTheRefusalsAreAskedAtTheDoors
     }
 
     /**
-     * The hand door sends its train as a hand send (BCR-C1): `sendATrainByHand` - the track diagram's and the Auto tab's -
+     * The hand door sends its train as a hand send: `sendATrainByHand` - the track diagram's and the Auto tab's -
      * through `executePathByHand`, which the cap on trains out does not count or refuse.
      *
      * MUTATION: send through plain executePath again, and this fails.
@@ -181,7 +181,7 @@ public class testTheRefusalsAreAskedAtTheDoors
             + "refusal posts its dialog rather than showing it"},
         {"public void doSync(", AUTONOMY,
             "a Central Station sync replaces the databases underneath a running railway"},
-        // NOT the excluded-page label (`openAutonomyEditorIfItCan`), since GUI-C8: it opens the editor, and opening
+        // NOT the excluded-page label (`openAutonomyEditorIfItCan`): it opens the editor, and opening
         // with an editor already open is not refused anywhere - `openLayoutEditor` brings that window forward, which
         // is what the Edit item it stands for does (`whyAutonomyEditorCannotOpen` returns null for an open editor).
         // Asking the refusal first showed "Close the editor first" in exactly the state the Edit item handles.
@@ -238,7 +238,7 @@ public class testTheRefusalsAreAskedAtTheDoors
     /**
      * The one gate asks what every door that sends a train used to ask for itself: the editor, the setup and the power
      * (Adam, 2026-09-29) - and the hand doors in the other two files send through the one door that asks it.  The
-     * editor is asked as one open OR on its way (RLV13-C2): Edit Layout posts the editor's build, and a send queued ahead
+     * editor is asked as one open OR on its way: Edit Layout posts the editor's build, and a send queued ahead
      * of that build would otherwise find no editor and run under it.
      *
      * MUTATION: take any of the three out of `whyNoTrainMayBeSent`, or send from a hand door past the one door, and this
@@ -277,7 +277,7 @@ public class testTheRefusalsAreAskedAtTheDoors
     }
 
     /**
-     * The two locomotive doors that ask a modal question ask again after it, before they write (GSR-B6).
+     * The two locomotive doors that ask a modal question ask again after it, before they write.
      *
      * `refuseWhileARouteDrivesIt` is asked as each door opens, and the edit dialog and the delete confirmation then wait
      * for as long as somebody takes - long enough for an s88 trigger to start a route that drives the locomotive.  The
@@ -349,7 +349,7 @@ public class testTheRefusalsAreAskedAtTheDoors
     /**
      * And no door has quietly appeared that asks nothing.
      *
-     * **A ratchet, and it runs LAST on purpose** (REG9-B1): a staleness detector that pre-empts a
+     * **A ratchet, and it runs LAST on purpose**: a staleness detector that pre-empts a
      * safety check is worse than no ratchet, and this file's sibling
      * `testSwitchingToACentralStationLayout` spent a day proving it - a stale count there kept the
      * assertion protecting Adam's railway from executing at all. So the claim above is a separate test
@@ -371,7 +371,7 @@ public class testTheRefusalsAreAskedAtTheDoors
         // The first version added up the list instead, and two errors then cancelled: a door was
         // declared that never asked at all - `putThePendingTurnsBack`, where the name appears in a
         // COMMENT explaining why another door's guard makes something safe - while
-        // `refreshAutonomyPrompt` asked twice (once since GUI-C8) and was counted once. The totals matched and the check
+        // `refreshAutonomyPrompt` asked twice and was counted once. The totals matched and the check
         // passed. Reading the bodies cannot cancel that way: a door that does not ask contributes
         // nothing and the test above names it, and a door that asks twice contributes two.
         int inDeclaredDoors = 0;
@@ -394,8 +394,7 @@ public class testTheRefusalsAreAskedAtTheDoors
      * Every door that puts a train down uses the railway's answer.
      *
      * `behaviour.md` section 4 states this as a rule - *"nothing about a placement is recorded until
-     * the railway has accepted it"* - and the coverage pass of 2026-09-11 found nothing holding it:
-     * `W21-B3` is cited by no test in the suite.
+     * the railway has accepted it"* - and the coverage pass of 2026-09-11 found nothing holding it.
      *
      * **What it was.** `Layout.moveLocomotive` refuses in four cases - autonomy is running, the
      * locomotive is unknown, the point is unknown, the target is not a destination - and returns false
@@ -408,16 +407,16 @@ public class testTheRefusalsAreAskedAtTheDoors
      * than counting.  `GraphLocAssign.commitChanges` used to be allowed to discard the answer, because
      * `commitAndRecord` asks the POINT what is standing there afterwards and so records no placement
      * for a refused move.  That kept the setup honest and not the locomotive: the dialog's length,
-     * speed and functions were written to a train the railway had just refused to place (GST-B2).
+     * speed and functions were written to a train the railway had just refused to place.
      *
      * MUTATION: drop the `if (!` from any of the three doors, and this names it.
      */
     @Test
     public void testEveryPlacementDoorUsesTheRailwaysAnswer() throws Exception
     {
-        // The doors, for the report: the diagram menu's Place and Remove items (W21-B3 and TWV-B5 are these two), the
-        // diagram's paste door (TWV-B4, which discarded the refusal AND cleared the clipboard, so a train cut with
-        // Control+X was on no square and on no clipboard), and the assign dialog (GST-B2, where a refused placement
+        // The doors, for the report: the diagram menu's Place and Remove items, the
+        // diagram's paste door (which discarded the refusal AND cleared the clipboard, so a train cut with
+        // Control+X was on no square and on no clipboard), and the assign dialog (where a refused placement
         // still wrote the train's length, speed and functions).  Asked of the whole program, so a door that moves to
         // another file is still counted: outside the model's own calls, five answers are tested today - two in the
         // menu, one in the dialog, and the paste and the rebuild's put-back in the window.
@@ -513,15 +512,15 @@ public class testTheRefusalsAreAskedAtTheDoors
 
     /**
      * Only the rebuild's put-back and the three doors that keep a heading a train can leave by stand a train on a copy of
-     * a station trains may not arrive at (REG4-C3, TDY3-A1, OB-284, OB-296).
+     * a station trains may not arrive at (OB-284, OB-296).
      *
      * `moveLocomotive`'s four-argument form accepts such a copy when its last argument is true, and the guard above
      * counts calls without reading their arguments - a door passing `true` would still read as refusing.  A placement
      * the put-back is the railway saying where a train already is; the paste, the Place Locomotive dialog and the
-     * diagram's right-click Place keep a train's heading where it can leave by it (OB-284, OB-296, ADU-B1).  Any other
+     * diagram's right-click Place keep a train's heading where it can leave by it (OB-284, OB-296).  Any other
      * door passing `true` is a new decision.
      *
-     * MUTATION: pass true from any door but these four - the editor's Place, say - and this fails (ADU2-C8).
+     * MUTATION: pass true from any door but these four - the editor's Place, say - and this fails.
      *
      * @throws Exception reading the sources
      */
@@ -617,7 +616,7 @@ public class testTheRefusalsAreAskedAtTheDoors
     }
 
     /**
-     * The diagram's destination sends on the railway its paths were found on (RSA-C6), as the Auto tab's does - so a
+     * The diagram's destination sends on the railway its paths were found on, as the Auto tab's does - so a
      * railway replaced between the gather and the click would refuse the send at its own fence, rather than the new
      * railway locking the old one's track and driving the train over rails it does not hold.
      *
@@ -647,7 +646,7 @@ public class testTheRefusalsAreAskedAtTheDoors
     }
 
     /**
-     * The doors that choose a journey carry the stops counted where it was chosen (RSA2-C1, RSA2-C2): Return Home runs
+     * The doors that choose a journey carry the stops counted where it was chosen: Return Home runs
      * its plan with the count read at the press and refreshes the Auto tab as it starts, a hand send carries the count
      * read at the click, and autonomy reads it before it chooses.
      *
@@ -683,7 +682,7 @@ public class testTheRefusalsAreAskedAtTheDoors
     }
 
     /**
-     * Only the rebuild's put-back stands a train on a copy that is no station at all (RSA17-A1): the five-argument
+     * Only the rebuild's put-back stands a train on a copy that is no station at all: the five-argument
      * `moveLocomotive`'s last argument is the railway saying where a train already is, and from any other door it would
      * put a train where autonomy cannot start it.
      *

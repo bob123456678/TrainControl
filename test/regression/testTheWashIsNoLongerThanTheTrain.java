@@ -196,7 +196,7 @@ public class testTheWashIsNoLongerThanTheTrain
     {
         try
         {
-            // THE GLOBAL FIRST (VD13-T5).  It was restored third, after two statements that can throw -
+            // THE GLOBAL FIRST.  It was restored third, after two statements that can throw -
             // and a throw there leaves mock packets echoing for every later class in the JVM, which is
             // the leak this restore exists to prevent.
             MarklinControlStation.DEBUG_SIMULATE_PACKETS = simulatingWas;
@@ -379,7 +379,7 @@ public class testTheWashIsNoLongerThanTheTrain
     }
 
     /**
-     * A PATH LOCKED AHEAD OF THE TRAIN DOES NOT MOVE THE WASH (VD12-B1).
+     * A PATH LOCKED AHEAD OF THE TRAIN DOES NOT MOVE THE WASH.
      *
      * **The half of MT-438 that the guard's fix did not reach.**  `Layout.walkStandingTrains` now walks
      * one tail per train, anchored at the last milestone of a run.  This picture is computed separately,
@@ -503,8 +503,7 @@ public class testTheWashIsNoLongerThanTheTrain
 
         try
         {
-            // MEASURED, NOT DERIVED, AND INSIDE THE BLOCK THAT PUTS THE RAILWAY BACK (VD13-T8,
-            // VD14-T2, VD14-T3).
+            // MEASURED, NOT DERIVED, AND INSIDE THE BLOCK THAT PUTS THE RAILWAY BACK.
             //
             // The loop above predicts which path moves the old anchor by comparing positions in the
             // graph's own point order, and that prediction is sound only while `getPoints()` and
@@ -517,7 +516,7 @@ public class testTheWashIsNoLongerThanTheTrain
             //
             // And inside the `try`, because the first draft of this line sat above it: a throw there
             // left the path locked and the train's record swept, for every claim after it.
-            // NULL-SAFE, BECAUSE EVERYTHING BELOW IS READ WHEN SOMETHING HAS GONE WRONG (VD15-T7).
+            // NULL-SAFE, BECAUSE EVERYTHING BELOW IS READ WHEN SOMETHING HAS GONE WRONG.
             // The anchor is exactly what a defect here makes null, and a NullPointerException thrown
             // while building the sentence would replace the diagnosis with a stack trace.
             Point held = layout.getLocomotiveLocation(train);
@@ -565,7 +564,7 @@ public class testTheWashIsNoLongerThanTheTrain
             // path's arrival, and `setLocomotive` clears the arrival side on a change of occupant, so
             // both halves have to be written back in this order.
             //
-            // NOTHING IS ASSERTED IN HERE (VD13-T3).  An assertion in a `finally` replaces the body's
+            // NOTHING IS ASSERTED IN HERE.  An assertion in a `finally` replaces the body's
             // own failure with its own, so a real defect arrives as "this claim left no wash" instead
             // of the diagnosis.  What the restore achieved is recorded and judged after the block.
             boolean back = layout.moveLocomotive(train.getName(), standing.getName(), false);

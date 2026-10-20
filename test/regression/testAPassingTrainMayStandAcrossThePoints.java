@@ -185,7 +185,7 @@ public class testAPassingTrainMayStandAcrossThePoints
 
         assertTrue(why.contains("BottomMainA"), "the four-unit refusal does not name BottomMainA: " + why);
 
-        // AND THE NUMBER THAT REFUSED IT (MFR-C6): three units were admitted over this route a moment ago, so a refusal
+        // AND THE NUMBER THAT REFUSED IT: three units were admitted over this route a moment ago, so a refusal
         // quoting the room past the switch tells the operator the square holds less than it just held.
         assertTrue(why.contains(org.traincontrol.util.I18n.f("autolayout.errorTrainTooLongForBerth", standing.getName(),
             "BottomMainA", 3, 4).replaceAll(".*which measures ", "which measures ").replaceAll(" - .*", "")),
@@ -249,7 +249,7 @@ public class testAPassingTrainMayStandAcrossThePoints
     }
 
     /**
-     * And after a rebuild the three units still close B and C: the road comes back with the train (WK7-B1).
+     * And after a rebuild the three units still close B and C: the road comes back with the train.
      *
      * Every setup gesture and every close of the autonomy editor regenerates the running layout from the setup and
      * puts the trains back where they stood (`TrainControlUI.putTheTrainsBack`).  That carried the side and not the
@@ -271,7 +271,7 @@ public class testAPassingTrainMayStandAcrossThePoints
     }
 
     /**
-     * And written to the setup, so a restart - a build from the file alone - still closes B and C (WK7-B1).
+     * And written to the setup, so a restart - a build from the file alone - still closes B and C.
      */
     @Test
     public void testTheRoadIsWrittenToTheSetup() throws Exception
@@ -290,17 +290,17 @@ public class testAPassingTrainMayStandAcrossThePoints
     }
 
     /**
-     * Turned where it stands, the train still covers the road it came in on (TLR-A1).
+     * Turned where it stands, the train still covers the road it came in on.
      *
      * A facing change stands the same train on the other lane's copy of its square and carries its side and road
-     * across (`AutonomySession.moveOntoFacingCopy`, TDR-B2), so the road names the lane it drove in on while the walk
+     * across (`AutonomySession.moveOntoFacingCopy`), so the road names the lane it drove in on while the walk
      * runs down the other.  The walk that follows a road "either way round" matched the platform's own edge from the
      * far end and turned back on itself, so the tail stopped at BottomMainAPre and B and C were offered again.
      */
     @Test
     public void testTheRoadIsFollowedAfterTheTrainIsTurned() throws Exception
     {
-        // BOTH LANES OF BOTTOMMAINA ONES A TRAIN MAY STAND ON, as at `2958fcf3` (GUI-B1).  The turn stands the train on
+        // BOTH LANES OF BOTTOMMAINA ONES A TRAIN MAY STAND ON, as at `2958fcf3`.  The turn stands the train on
         // the other lane's copy, and with arrivals from the east barred - Adam's edit of the same day - that copy is no
         // station, and a train is never stood where autonomy could not start it.  This claim is about the road after a
         // turn, which needs a turn that can happen.
@@ -359,8 +359,7 @@ public class testAPassingTrainMayStandAcrossThePoints
     }
 
     /**
-     * A train that leaves takes its side and road out of the setup, whichever copy of the square they were read from
-     * (TLR-A2).
+     * A train that leaves takes its side and road out of the setup, whichever copy of the square they were read from.
      *
      * The build writes a square's side and road onto every copy of it, and a train leaving clears them only on the copy
      * it stood on.  The capture merges a square's copies, so the others put the departed train's tail back into the

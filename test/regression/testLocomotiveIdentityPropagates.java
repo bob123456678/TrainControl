@@ -357,7 +357,7 @@ public class testLocomotiveIdentityPropagates
         text = text.replace(SourceOf.withoutComments(SourceOf.fileDeclaring("public final class HomeStaging")), "");
 
         // The CODE of the sweep, not its prose. A guard about what a method DOES must not be
-        // satisfiable by a comment mentioning the field - which is TD-3, one file over.
+        // satisfiable by a comment mentioning the field.
         String sweep = SourceOf.withoutComments(SourceOf.body("synchronized public void locDeleted(Locomotive l)"));
 
         List<String> holders = holdersIn(text);
@@ -492,7 +492,7 @@ public class testLocomotiveIdentityPropagates
     }
 
     /**
-     * A positive control for {@link #isSuspectLine(String)} (TST-C15).
+     * A positive control for {@link #isSuspectLine(String)}.
      *
      * The scan above is line-scoped with no floor: a rename of the accessors it looks for, or the
      * pattern going stale in some other way, degenerates it to zero matches over every file in `src` -
@@ -524,7 +524,7 @@ public class testLocomotiveIdentityPropagates
 
     /**
      * One line, judged the way {@code testNoHomeOrPlacementIsComparedWithAName} judges every line in
-     * `src`. Extracted so the same logic can be driven by a known-bad line as a control (TST-C15).
+     * `src`. Extracted so the same logic can be driven by a known-bad line as a control.
      */
     private boolean isSuspectLine(String line)
     {
@@ -700,7 +700,7 @@ public class testLocomotiveIdentityPropagates
      *
      * Testing the rule leaves the CALL as the only uncovered part, and in this codebase that is where
      * the defect usually is - renamePage was faultless and had no caller for weeks (MT-135), and
-     * HomeLocomotiveMenu lost four of its five callers with its tests still green (DD-A6). OB-062 is
+     * HomeLocomotiveMenu lost four of its five callers with its tests still green. OB-062 is
      * the same shape again: repairLocomotiveOnDisk can be perfect and change nothing.
      *
      * So this asks the source whether the null-session path actually calls it, rather than returning
@@ -719,8 +719,7 @@ public class testLocomotiveIdentityPropagates
     }
 
     /**
-     * Deleting a locomotive rewrites the station labels and the timetable, as renaming one does
-     * (DAY-C2).
+     * Deleting a locomotive rewrites the station labels and the timetable, as renaming one does.
      *
      * The finding: both rename doors call `updateVisiblePoints()` and `repaintTimetable()`, and the
      * delete door calls neither. It runs `clearCopyTarget`, `repaintLoc`, `repaintMappings`,
@@ -853,7 +852,7 @@ public class testLocomotiveIdentityPropagates
                 silent.add(body.substring(at, Math.min(at + 160, end)).trim());
             }
 
-            // AND THE TIMETABLE, which names locomotives too (DAY-B1, SVN-B12).
+            // AND THE TIMETABLE, which names locomotives too.
             //
             // MT-149 was that a rename did not reach the timetable on screen, and the fix went to the
             // GUARD inside repaintTimetable - which was keyed on a hash a rename cannot move.  Neither

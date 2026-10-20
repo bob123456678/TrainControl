@@ -96,8 +96,8 @@ public class testConfirmedGoodState
         AutonomySession session = openBaseline();
 
         // An ASSERTION, not a skip.  A reduction that collapses to nothing is the loudest regression a
-        // baseline exists to catch, and as a skip it was the one failure this test could not report
-        // (TD-4 in the history review). Reaching here at all means a baseline was found, so there is
+        // baseline exists to catch, and as a skip it was the one failure this test could not report.
+        // Reaching here at all means a baseline was found, so there is
         // something to reduce.
         assertNotNull(session.getReducer(),
             "the blessed baseline reduced to NOTHING - no graph at all came out of a layout that was "
@@ -262,7 +262,7 @@ public class testConfirmedGoodState
         // baseline: it is the boy who cried wolf, in the one test whose whole value is that it speaks
         // only when something really moved.
         //
-        // Same answer as `FBR-C8`/`RA-A1` gave for `testEditorSurfaceRules`, and for the same reason -
+        // Same answer as for `testEditorSurfaceRules`, and for the same reason -
         // a source read that behaves differently depending on how git wrote the file is not a guard.
         // `test/baseline/**` is pinned to LF in `.gitattributes` as well; both, because either alone
         // leaves a way for this to come back.

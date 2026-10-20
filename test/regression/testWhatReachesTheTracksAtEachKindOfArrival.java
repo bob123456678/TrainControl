@@ -108,7 +108,7 @@ public class testWhatReachesTheTracksAtEachKindOfArrival
 
         // A TRAIN THAT CAN REVERSE, which is the one the operator is asked about: a new locomotive is not, and one that
         // cannot is not turned where its destination has a copy it can stand on facing on (MT-368) - which, since the
-        // may-turn destination here has one (RSA50-A1), is the case these claims are about
+        // may-turn destination here has one, is the case these claims are about
         model.getLocByName(DRIVER).setReversible(true);
 
         wire = support.WireRecorder.open();
@@ -357,7 +357,7 @@ public class testWhatReachesTheTracksAtEachKindOfArrival
         ride.layout.createEdge(tag + "_MIDDLE", tag + "_END");
 
         // A SQUARE TRAINS MAY TURN AT, as the build makes one a train can stand on facing on: its turning copy and a plain
-        // copy beside it, one piece of track on one sensor, the plain one reached from the same approach (RSA50-A1).  A
+        // copy beside it, one piece of track on one sensor, the plain one reached from the same approach.  A
         // lone turning Point is the end of a line - TERMINUS above - where a train is turned whatever is answered.
         if (kind == Kind.REVERSING)
         {

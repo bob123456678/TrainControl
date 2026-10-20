@@ -149,10 +149,10 @@ public class testTheDestinationDoorsAgree
     }
 
     /**
-     * Every why-window names the tier it answers for, so on Manual none of them gives autonomy's reasons (REG4, GUI3-C1).
+     * Every why-window names the tier it answers for, so on Manual none of them gives autonomy's reasons (REG4).
      *
      * `Layout.explainCannotStart`, `explainDestinations` and `explainDestinationsGrouped` each have a form that takes
-     * `byHand`, and the one-argument form answers for autonomy.  GUI3-C1 gave the diagram's Why not Moving? the tier
+     * `byHand`, and the one-argument form answers for autonomy.  The diagram's Why not Moving? is given the tier
      * (Adam, OB-225: *"in manual mode, I still get reasons like ... will never be chosen in autonomy"*); the locomotive
      * list's "No available paths" tooltip and its why-window kept the one-argument form, so on Manual they still said a
      * train on a copy that is no station cannot be sent anywhere - while the list offered it routes.

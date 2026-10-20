@@ -18,14 +18,14 @@ import support.SourceOf;
 /**
  * Cancel on the function editor undoes a Copy Customizations, as it already undoes the two slots.
  *
- * **The dialog's Cancel branch claimed everything in it waits for OK, and one thing did not** (GUX-C3).
+ * **The dialog's Cancel branch claimed everything in it waits for OK, and one thing did not**.
  * `copyCustomizationsActionPerformed` writes the other locomotive's function types, triggers and
  * custom flag straight onto this one - deliberately, so the panel can show them at once, which is the
  * same reason the departure and arrival slots write straight through.  Those two are put back on
  * Cancel and this was not, so Cancel kept the copy: press Copy Customizations, change your mind, and
  * the locomotive keeps somebody else's functions and icons.
  *
- * What makes it worth a test rather than a reading is the comment: SVN-B14 wrote *"everything else in
+ * What makes it worth a test rather than a reading is the comment: a comment says *"everything else in
  * this dialog waits for OK"* directly above the restore, so the next reader has been told this door
  * does not exist.
  *
@@ -47,7 +47,7 @@ public class testCancelUndoesACustomizationCopy
         {
             int[] wereTypes = Arrays.copyOf(up.loc.getFunctionTypes(), up.loc.getFunctionTypes().length);
 
-            // THE TRIGGERS TOO (OP3-C6).  `undoCopiedCustomizations` puts back two arrays and a flag,
+            // THE TRIGGERS TOO.  `undoCopiedCustomizations` puts back two arrays and a flag,
             // and asserting one array let a regression that dropped the triggers from either the save
             // or the restore pass.
             int[] wereTriggers = Arrays.copyOf(

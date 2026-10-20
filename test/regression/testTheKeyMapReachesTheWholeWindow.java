@@ -376,7 +376,7 @@ public class testTheKeyMapReachesTheWholeWindow
 
         settle();
 
-        // A DESKTOP THAT WILL NOT GIVE THE WINDOW THE KEYBOARD CANNOT SHOW THIS (VC2-C6).  Asserted, this
+        // A DESKTOP THAT WILL NOT GIVE THE WINDOW THE KEYBOARD CANNOT SHOW THIS.  Asserted, this
         // failed at random on a loaded battery machine and said nothing about the key map; skipped, the
         // class says it could not be asked.
         if (ui.getMostRecentFocusOwner() != on)
@@ -388,7 +388,7 @@ public class testTheKeyMapReachesTheWholeWindow
     }
 
     /**
-     * The floor: at least one of this class's claims was actually asked (OP2-C8, corrected by FXV-B3).
+     * The floor: at least one of this class's claims was actually asked.
      *
      * **A class where every claim skips reports green while asking nothing**, which is the SOP's "green
      * is not no failures" in its quietest form: each skip message is honest about its own case, and the

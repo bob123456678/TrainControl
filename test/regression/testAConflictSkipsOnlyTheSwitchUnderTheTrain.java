@@ -146,7 +146,7 @@ public class testAConflictSkipsOnlyTheSwitchUnderTheTrain
      * The control: the switch that IS under the train is still refused.
      *
      * Without this the test above passes on a route that sets everything, which is the original
-     * AU-A2 defect back again and the one thing that must not happen.
+     * defect back again and the one thing that must not happen.
      *
      * @throws Exception on a failure to build the fixture
      */

@@ -15,7 +15,7 @@ import support.SourceOf;
 /**
  * Every collection the store keeps is in the registry, and the registry is what the sites walk.
  *
- * DD-A1 / OB-025. `AutonomyCompanionStore` keeps eleven collections and repeats the same per-collection
+ * OB-025. `AutonomyCompanionStore` keeps eleven collections and repeats the same per-collection
  * shape at fourteen sites - saving, loading, clearing, renaming a page, moving squares, forgetting
  * squares, snapshotting and restoring a page, reconciling against the diagram, applying to another
  * store. Adding one collection means finding all fourteen.
@@ -47,9 +47,9 @@ import support.SourceOf;
  *   - Every site that used to list them walks the registry instead. Guards against a collection being
  *     quietly re-inlined at one site, which would put the divergence back.
  *   - `reconcile` and `applyTo` still name every collection, because those two are still written by
- *     hand on purpose (DD-D9): each asks a question the registry cannot express.
+ *     hand on purpose: each asks a question the registry cannot express.
  *
- * The exemptions below are the other half of the value. DD-A1's complaint about `reconcile` was not
+ * The exemptions below are the other half of the value. The complaint about `reconcile` was not
  * only that two collections were missing, but that "there is no comment claiming this is deliberate,
  * and there is one for every other decision in that method." An exemption here is that comment, in a
  * place that fails if it stops being true.
@@ -95,7 +95,7 @@ public class testStoreCollectionsAreHandledEverywhere
     /**
      * The two bookkeeping sites still written out by hand, and why they are.
      *
-     * DD-D9, carried into OB-025's ticket as a condition on doing it at all: these must stay
+     * Carried into OB-025's ticket as a condition on doing it at all: these must stay
      * hand-written. Each asks a question a registry cannot express. `reconcile` decides what a
      * square's absence from the diagram MEANS, and the answer differs per collection - a caption goes
      * when either the square it is drawn on or the sensor it is about goes, which is a rule of its
@@ -105,7 +105,7 @@ public class testStoreCollectionsAreHandledEverywhere
      * they are still checked the old way: name every collection, or say why not.
      */
     private static final String[] SITES = { "reconcile", "applyTo",
-        // The thirteenth site, and the one the registry does not cover (LD-11).
+        // The thirteenth site, and the one the registry does not cover.
         //
         // heldFields says how each collection's entries are picked out of the file when their page is
         // not loaded, and held back verbatim. It cannot be derived from the registry because it is
@@ -159,7 +159,7 @@ public class testStoreCollectionsAreHandledEverywhere
         EXEMPT.put("reconcile:excludedPages", "reconcile compares SQUARES against the diagram");
 
         // Its twin, and keyed by page for the same reason: it records which PAGES the operator
-        // turned back on after the repeated-sensor rule shut them (TST-B15).
+        // turned back on after the repeated-sensor rule shut them.
         EXEMPT.put("reconcile:keptDespiteRepeats", "reconcile compares SQUARES against the diagram");
 
         // HELD_FIELDS is keyed by the name in the FILE, like everything else that reads or writes one.
@@ -336,7 +336,7 @@ public class testStoreCollectionsAreHandledEverywhere
     /**
      * A method body with its comments taken out.
      *
-     * NR-8, from the night review, and it produced its own counter-example. This test asks whether a
+     * It produced its own counter-example. This test asks whether a
      * collection's NAME appears at a site, and its javadoc above argues that "a collection nobody
      * handled is a collection nobody wrote about either" - which stopped being true the moment
      * forgetSquares lost its `tileDirections.remove(key)` line and gained a comment explaining why it

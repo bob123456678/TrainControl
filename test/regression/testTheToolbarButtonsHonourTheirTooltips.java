@@ -17,7 +17,7 @@ import org.testng.annotations.Test;
 /**
  * The four arrow buttons do what their own tooltips say a Control or Alt click does.
  *
- * **The tooltips have promised this since 2.7.4 and only the keyboard delivered it** (UIX-C5, GUX-C1).
+ * **The tooltips have promised this since 2.7.4 and only the keyboard delivered it**.
  * `ui.main.tooltip.switchDir` says *"(+Control to force reverse)"*, `incrSpeed` says *"(+Control to
  * fine-tune, +Alt for 2x increment)"*, and all four listeners took the `ActionEvent` and never looked
  * at it: a Control click reversed a locomotive that was already reversed, and an Alt click on Increase
@@ -65,7 +65,7 @@ public class testTheToolbarButtonsHonourTheirTooltips
         MarklinLocomotive loc;
 
         /**
-         * How many direction commands have been sent since it was last zeroed (FNL-C6).
+         * How many direction commands have been sent since it was last zeroed.
          */
         final java.util.concurrent.atomic.AtomicInteger directions =
             new java.util.concurrent.atomic.AtomicInteger();
@@ -113,7 +113,7 @@ public class testTheToolbarButtonsHonourTheirTooltips
 
             // AND AGAIN, with nothing to do.  A toggle would send it forward here.
             //
-            // WAITED FOR BY THE COMMAND, not by a clock (FNL-C6).  This is the press that tells a force
+            // WAITED FOR BY THE COMMAND, not by a clock.  This is the press that tells a force
             // from a toggle, and the state it should leave - still reversed - is the state the press
             // BEFORE it left.  A `sleep` that ran out before the door's worker did would have seen the
             // right answer for the wrong reason, which is how the first draft of this class passed.
@@ -298,7 +298,7 @@ public class testTheToolbarButtonsHonourTheirTooltips
     }
 
     /**
-     * Waits until a direction command has actually been sent (FNL-C6).
+     * Waits until a direction command has actually been sent.
      *
      * @param up the fixture
      * @return whether one arrived

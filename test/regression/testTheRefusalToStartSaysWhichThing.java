@@ -16,11 +16,11 @@ import support.SourceOf;
  * zero, because nothing turned the problem into a finding.  The greyed Start item's tooltip and the
  * scripting API's exception both chose their wording on that count alone, so they fell through to *"wait
  * for the trains to stop"*: an instruction to wait for something that will never happen.  The guard
- * gained that arm and its two twins did not, and they stood like that for a week (V31-C1, V32-C1).
+ * gained that arm and its two twins did not, and they stood like that for a week.
  *
  * **And then the count itself.**  Even once the fall-through was closed, those two read *"one thing has
  * to be dealt with first"* for ANY number of blocking problems, because neither asked how many there
- * were.  The Start dialog had been given the count and its twins had not - the shape DY3-C7 filed and
+ * were.  The Start dialog had been given the count and its twins had not - the shape
  * that OB-090 wore twice.  MT-263's step 5, *"with three blocking problems, the start door should say
  * three, not 'one thing'"*, was red at two of the three doors when this was written.
  *
@@ -87,7 +87,7 @@ public class testTheRefusalToStartSaysWhichThing
     @Test
     public void testNoDoorWordsItItself() throws Exception
     {
-        // The program's code, comments blanked (FNL-C2's lesson, one day old): two of the three mentions of the
+        // The program's code, comments blanked: two of the three mentions of the
         // singular sentence in the main window are comments describing where the choosing USED to be, and a count
         // that reads those is counting history rather than code.
         String ui = SourceOf.allCode();
@@ -112,7 +112,7 @@ public class testTheRefusalToStartSaysWhichThing
             "the diagram menu still words the refusal itself, and that is the door that read 'one thing'"
             + " for any number of blocking problems");
 
-        // Directly, or through the one reading of Start's sentence and the hand doors' (ADU2-C5), which asks the rule.
+        // Directly, or through the one reading of Start's sentence and the hand doors', which asks the rule.
         assertTrue(menu.contains("whyAutonomyWillNotStart()") || (menu.contains("whyStartAndAHandSendAreRefused()")
             && ui.contains("whyAutonomyWillNotStart(errors, blocking, broken)")),
             "the greyed Start item's tooltip does not come from the rule");
