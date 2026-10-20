@@ -1429,6 +1429,7 @@ public class Layout
     }
 
     /**
+     * Where each train under way is kept, no two on one square and none on a square a standing train stands on - see
      * `getLastPointsReached`.  A square is one place whichever copy of it a train is on (`Point.isSamePlaceAs`): kept
      * by point, two trains could share a square and the carry would take one of them off the railway (RLV12-C2).
      *
