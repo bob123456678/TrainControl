@@ -2881,7 +2881,7 @@ public class testMassAssignLengths
     @Test
     public void testTheWalkAsksTheRefusalsListAndWritesThroughTheOneDoor() throws Exception
     {
-        String door = SourceOf.declaration("private TrainLengthDoor trainLengthDoor()");
+        String door = SourceOf.declaration("    TrainLengthDoor trainLengthDoor()");
 
         assertTrue(door.contains("window.trainsWithoutALength()"),
             "the walk no longer asks the list the Atomic Routes refusal names");
@@ -2893,7 +2893,7 @@ public class testMassAssignLengths
             .contains("trainsWithNoLength()"),
             "TrainControlUI.trainsWithoutALength no longer asks Layout.trainsWithNoLength, the refusal's own list");
 
-        assertFalse(SourceOf.declaration("private void massAssignTrainLengths()").contains("setTrainLength("),
+        assertFalse(SourceOf.declaration("    void massAssignTrainLengths()").contains("setTrainLength("),
             "the walk sets a length itself, past applyTrainLength");
     }
 
