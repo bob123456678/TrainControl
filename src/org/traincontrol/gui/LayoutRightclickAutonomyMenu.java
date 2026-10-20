@@ -45,11 +45,9 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
      * The square the pointer was actually over, station or not.
      *
      * Kept apart from the station above because they answer different questions.  Everything about a
-     * RUNNING layout - where this train may go, which locomotive is here - is about a station, and
-     * there is nothing to say over plain track.  The setup is about the square: whether it should
-     * become a station, which way trains may run through it, how long it is.  Sharing one field meant
-     * the setup menu could only be reached from squares that were already set up, which is exactly
-     * backwards.
+     * RUNNING layout (where this train may go, which locomotive is here) is about a station, and there
+     * is nothing to say over plain track.  The setup is about the square: whether it should become a
+     * station, which way trains may run through it, how long it is.
      */
     private final org.traincontrol.automationui.TileGraph.TileKey here;
 
@@ -58,16 +56,12 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     /**
      * Builds this menu for a square and shows it, if it has anything to say.
      *
-     * The one way in (DD-B5). The four surfaces that offer this menu - a tile, a station caption, the
-     * main window's panel and the popup window's panel - each used to write out the same three steps:
-     * hop to the event thread, build the menu, show it. Three of them also checked whether the menu had
-     * come out empty. The fourth, added later, did not, and over a plain piece of track with autonomy
-     * running and nothing to offer it opened a one-item-high grey box under the pointer - which, as
-     * LayoutLabel's comment puts it, "reads as a fault".
-     *
-     * A guard that has to be remembered at four call sites is a guard that will be missing at one of
-     * them. There is nothing to remember now: the constructor is private, so this is the only way the
-     * menu can be shown at all.
+     * The one way in (DD-B5).  The surfaces that offer this menu (a tile, a station caption, the main window's
+     * panel and the popup window's panel) all hop to the event thread, build the menu and show it only if it came
+     * out non-empty: over plain track with autonomy running and nothing to offer, an empty menu would open a
+     * one-item-high grey box under the pointer, which as LayoutLabel's comment puts it "reads as a fault".  The
+     * constructor is private, so this is the only way the menu can be shown and the check cannot be missing at one
+     * call site.
      *
      * @param ui the application
      * @param station the sensor the caption is about, or null for the diagram-wide menu
@@ -79,38 +73,28 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     static void showFor(TrainControlUI ui, org.traincontrol.automationui.TileGraph.TileKey station, org.traincontrol.automationui.TileGraph.TileKey here,
         final java.awt.Component at, final int x, final int y)
     {
-        // A SQUARE'S MENU ONLY WITH A SETUP LOADED (OB-307; Adam, 2026-09-29: *"right click menus on sensors are also
-        // live ... right click menus also only visible if autonomy loaded."*).  Over a square it offered Start and a
-        // train's routes on a railway nobody had loaded.  The diagram's own menu - no square - still opens: with nothing
-        // loaded it offers the setup, which is how a setup gets loaded from the diagram.
+        // A square's menu only with a setup loaded (OB-307): over a square it would offer Start and a train's routes
+        // on a railway nobody had loaded.  The diagram's own menu (no square) still opens: with nothing loaded it
+        // offers the setup, which is how a setup gets loaded from the diagram.
         if ((station != null || here != null) && (ui == null || !ui.isAutonomyLoaded())) return;
 
-        // THE RAILWAY IS ASKED FIRST, AND NOT ON THE EVENT THREAD (D3-A1).
+        // The railway is asked first, and not on the event thread (D3-A1).
         //
-        // The path section below used to be built inside the `invokeLater`: `getPossiblePaths` -
-        // `synchronized` on the `Layout`, and a search of the whole graph - then `isOfferableToOperator`
-        // and `isChoosableByAutonomy` once per candidate, all on the thread that draws the application.
-        // A dispatch holds that monitor across a `CONFIGURE_SLEEP` per accessory of a path, so
-        // right-clicking an idle train during somebody else's departure froze the whole window for the
-        // length of the switch-throwing.  That is OB-192 by the next door along, on the most ordinary
-        // gesture there is.
+        // The paths section needs `getPossiblePaths` (`synchronized` on the `Layout`, and a search of the whole
+        // graph), then `isOfferableToOperator` and `isChoosableByAutonomy` once per candidate.  A dispatch holds that
+        // monitor across a `CONFIGURE_SLEEP` per accessory of a path, so on the event thread a right-click on an idle
+        // train during somebody else's departure would freeze the whole window for the length of the switch-throwing
+        // (OB-192).
         //
-        // Same shape as `CoveredTrackRenderer` and `ReturnHomeTriageRenderer`: the questions go to a
-        // worker, the answers come back, and the menu is built from them.  A thread rather than a pool
-        // because this is one short-lived answer per right-click and there is nothing to coalesce.
+        // Same shape as `CoveredTrackRenderer` and `ReturnHomeTriageRenderer`: the questions go to a worker, the
+        // answers come back, and the menu is built from them.  A thread rather than a pool, because this is one
+        // short-lived answer per right-click and there is nothing to coalesce.  The menu appears a moment later than
+        // the click when the railway is busy: a popup that arrives late is a popup, and a frozen window is a fault.
         //
-        // The menu therefore appears a moment later than the click when the railway is busy.  That is
-        // the trade, and it is the right way round: a popup that arrives late is a popup, and a frozen
-        // window is a fault.
-        // THE SQUARE IS RESOLVED HERE, ON THE EVENT THREAD, and not on the worker below.
-        //
-        // `getAutonomyPointForTile` goes through `getAutonomySession()` - the LAZY builder that parses
-        // every page, can write to disk and can raise a dialog (SV-B2).  None of that belongs on a raw
-        // thread, and moving the path search off the event thread would have been a poor trade for
-        // putting a modal dialog on one.  The constructor builds the session on this thread anyway, so
-        // this costs nothing that was not already being paid here.
-        //
-        // What crosses to the worker is the Point, which is a value.
+        // The square is resolved here, on the event thread, and not on the worker.  `getAutonomyPointForTile` goes
+        // through `getAutonomySession()`, the LAZY builder that parses every page, can write to disk and can raise a
+        // dialog (SV-B2); none of that belongs on a raw thread.  The constructor builds the session on this thread
+        // anyway.  What crosses to the worker is the Point, which is a value.
         final Point standing = ui != null && ui.getModel() != null && ui.getModel().hasAutoLayout()
             ? ui.getAutonomyPointForTile(station != null ? station : here) : null;
 
@@ -168,15 +152,9 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         /** Offerable, but never chosen by autonomy: More Destinations. */
         final List<List<Edge>> other;
 
-        // `possible` USED TO LIVE HERE and is deliberately gone (Adam, 2026-09-12).
-        //
-        // It counted everything the search returned, before this menu dropped the squares it never
-        // shows, and it existed only to decide whether to draw the "...".  Comparing against it made
-        // that item appear whenever anything at all had been filtered - which after `OB-205` is nearly
-        // every right-click for a train that cannot reverse.
-        //
-        // Removed rather than corrected, so the mistake is unavailable instead of merely fixed: with
-        // no such field there is no wrong number to hand the rule.
+        // There is deliberately no count of everything the search returned before this menu dropped the squares it
+        // never shows (OB-205): comparing against it made the "..." appear whenever anything at all had been
+        // filtered, which is nearly every right-click for a train that cannot reverse.  See `theListWasCutShort`.
 
         /**
          * The railway these paths were found on, which the destination sends on (RSA-C6): a railway replaced between
@@ -198,21 +176,10 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     /**
      * Whether the menu offers the way out to the autonomy tab - the "..." at the foot of the list.
      *
-     * Named so that what it means can be argued with.  Adam asked for it originally as *"if there are
-     * more possible options than what is shown ... always show the ..."*, and the question is what
-     * "possible" counts.
-     *
-     * **What it does NOT count is the squares this menu never shows** (Adam, 2026-09-12: *"why is
-     * the ... below the list of options visible?  shouldn't this be only shown if there are many more
-     * regular destinations than can be displayed?"*).  It used to compare against `possible`, a count
-     * taken before the filter, so it fired whenever anything at all had been left out - a switched-off
-     * square, one that excludes this train, and, after `OB-205`, every ordinary terminus whenever the
-     * train cannot reverse.  On a non-reversible locomotive that is nearly every right-click, which is
-     * the complaint `FR-058` was filed about arriving from a new direction.
-     *
-     * So the ellipsis now means one thing: **there were more destinations than fitted**.  A square
-     * this menu deliberately hides is not something the operator is missing from this list - it is
-     * somewhere they went out of their way to switch off, and the autonomy tab lists it.
+     * It counts only the destinations this menu could have shown, not the squares it deliberately hides: a
+     * switched-off square, one that excludes this train, and, after OB-205, every ordinary terminus whenever the
+     * train cannot reverse.  Those are squares the operator went out of their way to switch off, and the autonomy
+     * tab lists them.  So the ellipsis means one thing: **there were more destinations than fitted** (FR-058).
      *
      * @param offered how many ordinary destinations this menu has to show, after its own filtering
      * @param shown how many of them are on screen
@@ -225,8 +192,8 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     }
 
     /**
-     * Whether a setup edit from this menu is refused because trains are running, having said so (Adam, 2026-09-28:
-     * *"There should be no setup edit possible during a run"*; RLV12-C3) - as the setup menu's own items refuse.
+     * Whether a setup edit from this menu is refused because trains are running, having said so (no setup edit is
+     * possible during a run; RLV12-C3) - as the setup menu's own items refuse.
      *
      * @return true where the edit is refused
      */
@@ -258,13 +225,10 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
      */
     private static PathOptions gatherPathOptions(TrainControlUI ui, Point current)
     {
-        // THE SAME GATES THE CONSTRUCTOR APPLIES, in the same order, because a gather that ran where
-        // the menu will not draw would take the railway's monitor for an answer nobody reads.
-        //
-        // They are asked twice rather than once, and the constructor's copy is the one that decides:
-        // between here and the build the operator can start a run, and a list gathered a moment before
-        // that must not appear on a menu whose other items already know.  The constructor refuses the
-        // options in that case and the section is simply absent, which is what it was.
+        // The same gates the constructor applies, in the same order, because a gather that ran where the menu will
+        // not draw would take the railway's monitor for an answer nobody reads.  They are asked twice, and the
+        // constructor's copy is the one that decides: the operator can start a run between here and the build, and a
+        // list gathered a moment before that must not appear on a menu whose other items already know.
         if (ui == null || current == null || ui.isLayoutEditorOpen()) return null;
 
         // ASKED ONCE, NOT BUILT (RLV12-C5): this runs on a worker, and Unload can clear the model between asking whether
@@ -291,58 +255,36 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         paths.sort((List<Edge> p1, List<Edge> p2) -> Edge.pathToString(p1).compareTo(Edge.pathToString(p2)));
 
 
-        // SWITCHED-OFF SQUARES ARE NOT ON THIS MENU (Adam, 2026-09-01).
-        //
-        // "make the inactive stations disappear from the track diagram menu - they should only be
-        // visible in the autonomy tab."  This menu is the quick way to send a train somewhere ordinary;
-        // a square that has been deliberately taken out of use is not that, and listing it here puts
-        // the least likely destinations among the most likely ones.
-        //
-        // Filtered rather than greyed: a greyed item still costs a line and still has to be read past.
-        // They remain reachable - the autonomy tab lists everything, which is what the ellipsis is for.
+        // Switched-off squares are not on this menu, only in the autonomy tab.  This menu is the quick way to send a
+        // train somewhere ordinary, and a square deliberately taken out of use is not that.  Filtered rather than
+        // greyed: a greyed item still costs a line and still has to be read past.  The autonomy tab lists
+        // everything, which is what the ellipsis is for.
         List<List<Edge>> shownPaths = new java.util.ArrayList<>();
 
-        // AND THE ONES AUTONOMY WOULD NEVER CHOOSE GO IN THEIR OWN SUBMENU (FR-058).
-        //
-        // Adam: "show only active stations that can be chosen in full autonomy.  add a menu called More
-        // Destinations and in there, list the points that cannot be chosen in full autonomy but are
-        // still valid.  the current setup lists both in one flat list, which truncates active stations,
-        // which I don't like".
-        //
-        // The cap is the reason this matters rather than tidiness: a parking track that autonomy will
-        // never pick used to cost one of the twelve lines an ordinary platform wanted, and the ellipsis
-        // appeared with real destinations behind it.
-        //
-        // Asked through `isChoosableByAutonomy`, which is the same predicate the "no available paths"
-        // window and the diagram's caption rule ask - its own javadoc is about not having two answers
-        // to this question, so this does not become a third.
+        // The squares autonomy would never choose go in their own submenu, More Destinations (FR-058): the menu shows
+        // only active stations that can be chosen in full autonomy.  The cap is the reason this matters: a parking
+        // track that autonomy will never pick would cost one of the twelve lines an ordinary platform wanted.
+        // Asked through `isChoosableByAutonomy`, the same predicate the "no available paths" window and the diagram's
+        // caption rule ask, so this does not become a third answer to that question.
         List<List<Edge>> otherPaths = new java.util.ArrayList<>();
 
         for (List<Edge> path : paths)
         {
             Point end = path.get(path.size() - 1).getEnd();
 
-            // OFF THIS MENU ALTOGETHER: switched off, or excluded for this train.
-            //
-            // The rule is named on the layout rather than written out here, because this class is
-            // package-private and a rule nothing can reach is a rule nothing can test - which is how
-            // the terminus went in and out of it twice.  Its javadoc carries both rulings.
-            //
-            // They are not counted towards the ellipsis either: a square somebody switched off is
-            // not a destination missing from this list, it is one they went out of their way to take
-            // out of use, and the autonomy tab lists it.
+            // Off this menu altogether: switched off, or excluded for this train.  The rule is named on the layout
+            // rather than written out here, because this class is package-private and a rule nothing can reach is a
+            // rule nothing can test.  Its javadoc carries both rulings.  They are not counted towards the ellipsis
+            // either: the autonomy tab lists them.
             if (!running.isOfferableToOperator(end, locomotive))
             {
                 continue;
             }
 
-            // WHICH OF THE TWO LISTS, asked about the square and deliberately not about this train
-            // (Adam, 2026-09-04).
-            //
-            // `isOfferableToOperator` above has already asked everything that is about the train.  What
-            // is left is a property of the square - a reversing point, a square marked as not an
-            // automatic destination - and the square form is the same predicate the "no available
-            // paths" window and the diagram's captions ask, which is what that javadoc is for.
+            // Which of the two lists is asked about the square and deliberately not about this train:
+            // `isOfferableToOperator` above has already asked everything that is about the train.  What is left is a
+            // property of the square (a reversing point, a square marked as not an automatic destination), and the
+            // square form is the same predicate the "no available paths" window and the diagram's captions ask.
             if (running.isChoosableByAutonomy(end))
             {
                 shownPaths.add(path);
@@ -359,17 +301,15 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     /**
      * Puts the clicked square's name at the top, greyed.
      *
-     * OB-112. Adam, right-clicking a station on the diagram with a setup loaded: "nothing at the top
-     * there." The autonomy editor's own menu has opened with a bold, disabled name since it was built,
-     * and this menu - the one on the diagram, which is where people actually right-click - never had
-     * one. With a setup loaded the whole menu is about a square: this train, these paths, that home.
-     * Which square was never said, and the menu covers it while it is open.
+     * OB-112.  With a setup loaded the whole menu is about a square (this train, these paths, that home), and the
+     * menu covers the square while it is open, so the name goes at the top, greyed and bold like the autonomy
+     * editor's own menu.
      *
-     * The name comes from the session rather than from three lines written out again here, so the two
-     * menus cannot end up calling one square by different names while both are on screen.
+     * The name comes from the session rather than from lines written out again here, so the two menus cannot call
+     * one square by different names while both are on screen.
      *
-     * Inserted rather than added, because by the time this runs the menu is built - and it runs at all
-     * only once showFor knows there is something to head.
+     * Inserted rather than added, because by the time this runs the menu is built, and it runs at all only once
+     * showFor knows there is something to head.
      */
     private void headline()
     {
@@ -387,14 +327,13 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     }
 
     /**
-     * @param station the sensor the caption is about, or null for the diagram-wide menu.  A square
-     *        rather than a name: a station is several Points now and none of them is called what the
-     *        caption says, so resolving one by its text found nothing and the menu silently lost every
-     *        item below the lookup.
+     * @param station the sensor the caption is about, or null for the diagram-wide menu.  A square rather than a
+     *        name: a station is several Points and none of them is called what the caption says, so resolving one
+     *        by its text finds nothing.
      * @param here the square that was clicked, or null where the click was not on one
-     * @param options what the railway answered about this square's paths, gathered off the event
-     *        thread by `showFor`, or null where there is nothing to list.  NOTHING IN THIS
-     *        CONSTRUCTOR MAY ASK THE RAILWAY ITSELF - see `showFor` for what that cost.
+     * @param options what the railway answered about this square's paths, gathered off the event thread by
+     *        `showFor`, or null where there is nothing to list.  NOTHING IN THIS CONSTRUCTOR MAY ASK THE RAILWAY
+     *        ITSELF (see `showFor`).
      */
     private LayoutRightclickAutonomyMenu(TrainControlUI ui,
         org.traincontrol.automationui.TileGraph.TileKey station,
@@ -408,16 +347,11 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
         JMenuItem menuItem;
 
-        // Nothing here while an editor has the diagram.
-        //
-        // An open editor holds its own unsaved copy of the setup, so anything done from this menu is
-        // done against a picture that is about to be overwritten - and overwritten silently: a
-        // locomotive placed here vanishes when the editor saves, and one removed comes back.  The
-        // Autonomy menu has been shut for exactly this reason since the editor existed.  The diagram's
-        // own menu was simply missed, and it is the one people actually reach for.
-        //
-        // Shown and disabled rather than left out, with the reason on it, so a right-click that does
-        // nothing does not read as a broken menu.
+        // Nothing here while an editor has the diagram.  An open editor holds its own unsaved copy of the setup, so
+        // anything done from this menu would be done against a picture that is about to be overwritten silently: a
+        // locomotive placed here vanishes when the editor saves, and one removed comes back.  The Autonomy menu is
+        // shut for the same reason.  Shown and disabled with the reason on it, so a right-click that does nothing
+        // does not read as a broken menu.
         if (ui.isLayoutEditorOpen())
         {
             menuItem = new JMenuItem(I18n.t("autosetup.ui.menuEditorOpen"));
@@ -429,48 +363,31 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         
         if (!ui.getModel().hasAutoLayout())
         {
-            // Nothing is running because nothing is set up, which is exactly when somebody needs the
-            // setup menu most - and the only place they would think to look is the diagram in front
-            // of them.
+            // Nothing is running because nothing is set up, which is when somebody needs the setup menu most, and
+            // the diagram in front of them is where they would look.
             addSetupMenu();
         }
 
         if (ui.getModel().hasAutoLayout())
         {
-            // UXR-B7: this used to ask isAutoRunning(), which stopLocomotives() clears the instant
-            // Graceful Stop is pressed - while the trains it was stopping keep moving until they reach
-            // their next station. Every item INSIDE this branch already asks isAutonomyBusy() for its
-            // own enabled state (place, remove, edit loc, the setup submenu) - only the choice between
-            // this branch and the Graceful Stop item below asked the other question. isAutonomyBusy()
-            // is what Layout.isRunning() feeds and is true for the whole coast-down window, so the
-            // Stop item now stays offered, and Start does not appear, until the trains actually stop.
+            // UXR-B7: the choice between Start and Graceful Stop asks isAutonomyBusy(), as every item inside this
+            // branch does for its own enabled state.  isAutoRunning() is cleared the instant Graceful Stop is
+            // pressed, while the trains keep moving until they reach their next station; isAutonomyBusy() (what
+            // Layout.isRunning() feeds) is true for the whole coast-down, so the Stop item stays offered, and Start
+            // does not appear, until the trains actually stop.
             if (!ui.isAutonomyBusy())
             {
                 menuItem = new JMenuItem(I18n.t("autolayout.ui.menuStartAutonomy"));
 
-                // Greyed when it could not start (OB-050), and the sentence that used to stand here
-                // was wrong (UI review, B1).
-                //
-                // It said "the Start button has always known; it just was not asked". It had not:
-                // canStartAutonomy was the Start button's enabled state, and no writer of that flag
-                // consults the checks - the button is deliberately left enabled and explains at press
-                // time. So a setup in the "fix it" state offered this item live, and pressing it got
-                // a dialog. Two controls on one window, feet apart, disagreeing about one action.
-                //
-                // canStartAutonomy asks whyAutonomyStartIsRefused's own number now, which is the
-                // rule this repository has paid for six times in two days: the control that OFFERS an
-                // action asks the predicate the guard asks.
+                // Greyed when it could not start (OB-050).  canStartAutonomy asks whyAutonomyStartIsRefused's own
+                // number, so the control that OFFERS an action asks the predicate the guard asks.  (The Start button
+                // itself is left enabled and explains at press time, so its enabled state is not that predicate.)
                 // Asked as few times as the answers allow, and this is not tidiness (LD-C6): once where Start
                 // is offered, and where it is not, once more for both sentences below (ADU2-C5).
                 //
-                // Both of these reach AutonomySession.check(), which is not cached: it rebuilds the
-                // termini and turn-around sets over every point in the graph. Written out four times
-                // - canStartAutonomy twice, autonomyErrorCount twice - that is four full walks of the
-                // railway on the event thread, every time somebody right-clicks a station, to decide
-                // one enabled flag and one tooltip.
-                //
-                // The predicate is unchanged and still the guard's own, which is what the comment
-                // above is about. What changes is how many times it is asked.
+                // Both reach AutonomySession.check(), which is not cached: it rebuilds the termini and turn-around
+                // sets over every point in the graph, so asking four times would be four full walks of the railway
+                // on the event thread, on every right-click of a station, to decide one enabled flag and one tooltip.
                 boolean canStart = ui.canStartAutonomy();
 
                 // BOTH SENTENCES FROM ONE READING (ADU2-C5): Start's tooltip and the Return Home item's, where
@@ -484,21 +401,12 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                 if (!canStart)
                 {
                     // And say which of the FOUR reasons it is (V32-C1; the fourth, a layout on the Central Station,
-                    // since REG2-C2).
-                    //
-                    // The tooltip was hardcoded to the waiting-for-trains message, which is a lie
-                    // whenever Start is off for any other reason - including the one immediately
-                    // above.  Naming the count fixed two of the three and left the third telling the
-                    // same lie: `canStartAutonomy` refuses on `hasErrors()`, which also covers a graph
-                    // that will not build at all with nothing having turned that into a finding, and
-                    // in that case the count is zero.  So the operator was told to wait for trains
-                    // that are not running and never will be.
-                    //
-                    // The guard has this third arm and got it in the same commit that widened it; the
-                    // affordance did not.  `errorCannotBuildDetailOne` is the load door's own wording
-                    // for exactly this state.
-                    // THROUGH THE ONE RULE (MT-263).  This wording was chosen here, and it never asked
-                    // how many blocking problems there were - so three of them read as one.
+                    // since REG2-C2).  The tooltip must not be the waiting-for-trains message whenever Start is off
+                    // for another reason: `canStartAutonomy` also refuses on `hasErrors()`, which covers a graph that
+                    // will not build at all with no finding turned up, where the count that message names is zero.
+                    // `errorCannotBuildDetailOne` is the load door's own wording for exactly this state.
+                    // THROUGH THE ONE RULE (MT-263): the wording asks how many blocking problems there were, so
+                    // three of them do not read as one.
                     menuItem.setToolTipText(AutonomyEditorPanel.wrapped(why[0]));
                 }
 
@@ -521,30 +429,16 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
                 HomeLocomotiveMenu.addReturnHomeItem(this, ui, broken);
 
-                // The Point standing on that square, preferring one with a train on it.
-                //
-                // From the SQUARE rather than from the station, since MT-069.
-                //
-                // `station` is autonomyStationAt, which returns null unless the square has been
-                // DESIGNATED a station - so on a pass-through Point with a locomotive on it, this was
-                // null and the whole block below vanished: no Remove, no paths, no facing. Adam:
-                // "Present in the autonomy editor but not in the track diagram." The editor works from
-                // the square, which is why it had them.
-                //
-                // The comment fifteen lines down already describes this trap one level in - "a
-                // locomotive on a copy that is not [a destination] had no menu at all ... the same
-                // trap the autonomy editor had, where the remove item hung off the designation rather
-                // than off the locomotive". That fix was applied to the inner test and not to where
-                // the square comes from, so the designation was still deciding, one step earlier.
+                // The Point standing on that square, preferring one with a train on it.  From the SQUARE rather than
+                // from the station (MT-069): `station` is autonomyStationAt, which returns null unless the square has
+                // been DESIGNATED a station, so on a pass-through Point with a locomotive on it the whole block below
+                // would vanish (no Remove, no paths, no facing).  The editor works from the square, and so does this.
                 Point current = ui.getAutonomyPointForTile(station != null ? station : here);
 
-                // A destination, or anywhere a train is actually standing.
-                //
-                // Gated on being a destination alone, a locomotive on a copy that is not one had no
-                // menu at all - no remove, no paths, nothing - and arrival restrictions made that
-                // reachable: barring a side makes THAT copy a non-destination, and a train can still
-                // be placed on it by hand.  It is the same trap the autonomy editor had, where the
-                // remove item hung off the designation rather than off the locomotive.
+                // A destination, or anywhere a train is actually standing.  Gated on being a destination alone, a
+                // locomotive on a copy that is not one would have no menu at all (no remove, no paths): arrival
+                // restrictions make that reachable, as barring a side makes THAT copy a non-destination while a train
+                // can still be placed on it by hand.  The remove item hangs off the locomotive, not the designation.
                 if (current != null && (current.isDestination() || current.getCurrentLocomotive() != null))
                 {
                     // Get the locomotive at this station
@@ -552,25 +446,18 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
                     // If we want to view paths, locomotive must not be running
                     //
-                    // A PER-LOCOMOTIVE gate, where AutoLocomotiveStatus asks isAutoRunning() about the
-                    // whole layout - and the two therefore disagree.  Adam, 2026-08-31: "right-clicking
-                    // on the track diagram does not show available options in non-atomic mode", where
-                    // the commands panel does.
+                    // A PER-LOCOMOTIVE gate, where AutoLocomotiveStatus asks isAutoRunning() about the whole layout,
+                    // so the two disagree.
                     //
-                    // CLOSED AS A KNOWN LIMITATION on his ruling (OB-164): "The user can rely on full
-                    // autonomy or the panels to send trains more clearly."  Both of those work in
-                    // non-atomic mode, so what is lost is one of three ways to the same thing.  Neither
-                    // getPossiblePaths nor isPathClear branches on atomicRoutes anywhere, so whatever
-                    // this is, it is state a non-atomic run leaves behind rather than the question being
-                    // asked - and finding it needs a two-train reproduction nobody has built.
+                    // KNOWN LIMITATION, closed on the owner's ruling (OB-164): "The user can rely on full autonomy or
+                    // the panels to send trains more clearly."  Both work in non-atomic mode, so what is lost is one
+                    // of three ways to the same thing.  Neither getPossiblePaths nor isPathClear branches on
+                    // atomicRoutes, so the cause is state a non-atomic run leaves behind.  Left here so the next
+                    // reader who notices the two surfaces disagree finds the ruling rather than re-opening it.
                     //
-                    // Left here so the next reader who notices the two surfaces disagree finds the
-                    // ruling rather than re-opening it.
-                    //
-                    // AND THE ANSWER IS THE ONE GATHERED FOR THIS TRAIN, never a fresh question.
-                    // `gatherPathOptions` applied the running test off the event thread; equality here
-                    // is what says the answer is about the locomotive standing here now rather than the
-                    // one that was standing here when the right-click landed.
+                    // And the answer is the one gathered for this train, never a fresh question: `gatherPathOptions`
+                    // applied the running test off the event thread, and equality here says the answer is about the
+                    // locomotive standing here now rather than the one standing here when the right-click landed.
                     if (locomotive != null && options != null && locomotive.equals(options.locomotive))
                     {
                         List<List<Edge>> paths = options.shown;
@@ -588,33 +475,17 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                             add(menuItem);
                         }
 
-                        // Counted rather than measured off the menu, which also holds the Start item,
-                        // the Return Home item, a separator and the locomotive's name - so the list
-                        // was cut about four paths early, and would have moved again the next time
-                        // anything was added above it.
+                        // Counted rather than measured off the menu, which also holds the Start item, the Return Home
+                        // item, a separator and the locomotive's name.
                         int shown = 0;
 
                         for (List<Edge> path : paths)
                         {
                             add(destinationItem(ui, options.railway, path, locomotive));
 
-                            // The way through, whenever anything at all has been left out.
-                            //
-                            // `possible` counts what could be offered before the switched-off squares
-                            // were dropped and before the cap, so this fires for either reason and for
-                            // both together - which is what Adam asked for: "if there are more
-                            // possible options than what is shown ... always show the ...".
-                            // WHAT IS ACTUALLY LEFT OUT, which the submenu changed (VD11-B1).
-                            //
-                            // `possible` is counted before the split, and the non-choosable paths are
-                            // no longer omitted - they are in More Destinations, on screen.  Comparing
-                            // against `shown` alone therefore made this fire whenever anything at all
-                            // was non-choosable, offering to jump the operator to the autonomy tab
-                            // while every destination was already in front of him.  On the author's own
-                            // configuration, 20 of 71 squares are marked as not automatic destinations
-                            // and 5 more can reverse, so it fired on essentially every right-click -
-                            // which is the complaint FR-058 was filed to fix, arriving from the other
-                            // side.
+                            // The way through, whenever there were more destinations than fitted (VD11-B1): the
+                            // non-choosable paths are on screen in More Destinations, so comparing against `shown`
+                            // alone would fire on essentially every right-click (FR-058).  See `theListWasCutShort`.
                             if (++shown >= Math.min(MAX_PATHS, paths.size())
                                 && theListWasCutShort(paths.size() + otherPaths.size(), shown,
                                     otherPaths.size()))
