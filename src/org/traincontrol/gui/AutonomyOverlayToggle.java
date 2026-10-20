@@ -14,7 +14,7 @@ import org.traincontrol.util.I18n;
  *
  * A thin strip above the track diagram. It was the scroll pane's column header until OB-148 took
  * it out of the pane, and it is now a sibling above the diagram - so it no longer scrolls with the
- * track, which was the point of moving it (RC-C2). A strip above the track that the pane
+ * track, which was the point of moving it. A strip above the track that the pane
  * reserves anyway, so no generated layout is touched and the grid keeps the whole viewport.
  *
  * @author Adam
@@ -355,7 +355,7 @@ public class AutonomyOverlayToggle extends JPanel
         // Against START only.  Stop wins the line above and must keep winning: an error appearing
         // while trains are running is the moment stopping matters most, and swapping the brake for a
         // button that opens an editor would take it away.
-        // THE GUARD'S OWN QUESTION, and only that (AU-C1, V31-B1, V32-B1, then V34-B1).
+        // THE GUARD'S OWN QUESTION, and only that.
         //
         // `fixing` decides what pressing this strip DOES - open the editor, or click Start - so it is
         // not a display.  It asked a COUNT while the guard asked `hasErrors()`, which also covers a
@@ -368,11 +368,11 @@ public class AutonomyOverlayToggle extends JPanel
         // and the band's colour follows `fixing` and `excluded` - so keeping it was a second whole
         // walk of the graph on the event thread, `check()` being uncached, discarded immediately.
         //
-        // That is `LD-C6`'s cost, at one of the doors it names.  **The door is not closed**: the window
+        // That is the cost, at one of the doors.  **The door is not closed**: the window
         // walks `check()` itself to count the findings and hands the counts to `setFindings`, which
-        // calls straight back into here - so a refresh is two walks rather than three (`V36-C5`).  The
+        // calls straight back into here - so a refresh is two walks rather than three.  The
         // strip cannot simply be given the boolean, because `hasErrors()` is wider than `errors > 0`
-        // and that width is `V31-B1`; caching `check()` on the session is what would close it.
+        // so caching `check()` on the session is what would close it.
         //
         // `lastTotalErrors` is what the last `setFindings` left behind, and it is read only when there
         // is no window to ask - a strip built before its owner, not a running application.  As a
@@ -614,7 +614,7 @@ public class AutonomyOverlayToggle extends JPanel
      */
     public static String findingsCountText(int errors, int warnings, int onThisPage)
     {
-        // In the language's own forms (RSA28-C2): Polish has one for 2 to 4, French counts 0 with the singular
+        // In the language's own forms: Polish has one for 2 to 4, French counts 0 with the singular
         String warned = I18n.f("autosetup.ui.countWarnings" + I18n.countForm(warnings), warnings);
         String here = I18n.f("autosetup.ui.countOnThisPage", onThisPage);
 

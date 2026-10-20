@@ -35,7 +35,7 @@ final class EditorWhy
      *
      * @param layout the railway
      * @param index the square-to-Point translation
-     * @param setup what the setup says about turning, arrivals and closed squares, read on the event thread (GSE-C3)
+     * @param setup what the setup says about turning, arrivals and closed squares, read on the event thread
      * @param tile the square that was clicked
      * @param byHand true when Path Type is Manual: the reasons a hand-driven send meets (MT-434)
      * @return what to say and what to draw
@@ -71,7 +71,7 @@ final class EditorWhy
         java.util.Map<TileKey, java.util.List<org.traincontrol.automationui.TileAnnotation.Trace>>
             drawn = new java.util.LinkedHashMap<>();
 
-        // FOR THE TIER ASKED (GUI3-C1): by hand, only what stops a route of any kind.
+        // FOR THE TIER ASKED: by hand, only what stops a route of any kind.
         String cannotStart = layout.explainCannotStart(standing, byHand);
 
         if (cannotStart != null)
@@ -80,7 +80,7 @@ final class EditorWhy
                 AutonomyEditorPanel.escape(standing.getName()), AutonomyEditorPanel.escape(cannotStart)) + unsavedWarning(), true, drawn);
         }
 
-        // THE REASONS AND WHICH OF THEM AUTONOMY WOULD NEVER CHOOSE, taken under one lock (FBR-C6) so a station cannot be
+        // THE REASONS AND WHICH OF THEM AUTONOMY WOULD NEVER CHOOSE, taken under one lock so a station cannot be
         // printed under the wrong heading.
         org.traincontrol.automation.Layout.Destinations grouped = layout.explainDestinationsGrouped(standing, byHand);
 
@@ -114,7 +114,7 @@ final class EditorWhy
         java.util.Map<String, String> choosable = new java.util.TreeMap<>(byPageThenName);
         java.util.Map<String, String> neverChosen = new java.util.TreeMap<>(byPageThenName);
 
-        // FROM THE EVENT THREAD'S COPIES, and never from the session: this runs on WhyRenderer (GSE-C3).
+        // FROM THE EVENT THREAD'S COPIES, and never from the session: this runs on WhyRenderer.
         java.util.Set<TileKey> mustTurn = setup.mustTurn;
         java.util.Set<TileKey> mayTurn = setup.mayTurn;
 
@@ -151,8 +151,7 @@ final class EditorWhy
                 // Drawn, so "where can it go" is read off the track rather than out of a list
                 if (where != null && setup.reducer != null)
                 {
-                    // AND THE CLOSED SQUARES, so this tool and the findings panel walk one railway
-                    // (DIR-B1).
+                    // AND THE CLOSED SQUARES, so this tool and the findings panel walk one railway.
                     editor.trace(drawn, setup.reducer.findPath(tile, where, mayTurn, mustTurn, barred,
                         setup.shut), tile, true, where);
                 }
@@ -266,7 +265,7 @@ final class EditorWhy
 
         for (org.traincontrol.automation.Point point : layout.getPoints())
         {
-            // THE RULE, ASKED, rather than spelled out again (MON-C2): a third copy of it, without `!isReversing()`,
+            // THE RULE, ASKED, rather than spelled out again: a third copy of it, without `!isReversing()`,
             // overcounted every reversing station, and the number feeds "why is nothing considered".
             if (layout.isSendableDestination(point)) count++;
         }

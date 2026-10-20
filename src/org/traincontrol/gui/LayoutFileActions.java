@@ -40,13 +40,13 @@ final class LayoutFileActions
     /**
      * Writes the page index and re-aims every arrow on the layout at the page it was aimed at.
      *
-     * **A LINK TILE HOLDS A POSITION IN THE NAME-SORTED PAGE LIST** (N8-A1), so every operation that changes the set of page names
+     * **A LINK TILE HOLDS A POSITION IN THE NAME-SORTED PAGE LIST**, so every operation that changes the set of page names
      * changes what the arrows mean (Add, Rename, Duplicate, Delete and Combine); nothing re-aimed them, and adding one page repointed
      * FOUR OF SEVEN arrows on the sample layout.  **Delete and Combine go through here**; Add, Duplicate and Rename go through
      * `LayoutPageEdit`, which re-aims the arrows before it writes the page and then writes the index itself
      * (`LayoutDiagram.writeLayoutIndex`).  The order the arrows were written against is worked out here rather than by the caller,
      * and taken from the PAGES this session holds, not from the index file, because an index naming two pages the same aliases them
-     * onto one entry (FV3-A2, T10-C1).  A page that has gone leaves its arrows pointing at nothing rather than at whatever slid into
+     * onto one entry.  A page that has gone leaves its arrows pointing at nothing rather than at whatever slid into
      * its place: see `LayoutDiagramComponent.setLinkedPageIndex`.
      *
      * @param layoutList the new page list, name-sorted, as writeLayoutIndex takes it
@@ -213,7 +213,7 @@ final class LayoutFileActions
      */
     void initializeLocalLayoutMenuItemActionPerformed()
     {
-        // NOT WHILE AUTONOMY RUNS, before its folder window (RSA13-B2), as every other Layout menu door that changes the
+        // NOT WHILE AUTONOMY RUNS, before its folder window, as every other Layout menu door that changes the
         // diagram is not (MT-141): a folder chosen switched the layout, synced with the Central Station and reset the
         // autonomy session under the moving trains
         if (this.ui.refuseWhileARunHoldsTheSetup(this.ui)) return;
@@ -288,7 +288,7 @@ final class LayoutFileActions
 
         final String combined = name.trim();
 
-        // AND NO OTHER PAGE'S FILE (BCR-A2): this name is typed freely, so a character a file name cannot hold comes to the
+        // AND NO OTHER PAGE'S FILE: this name is typed freely, so a character a file name cannot hold comes to the
         // same file as the page whose name has an underscore there
         String usesThatFile = org.traincontrol.automationui.LayoutPageEdit.pageUsingTheFileOf(this.ui.getModel().getLayoutList(),
             combined, null);
@@ -308,7 +308,7 @@ final class LayoutFileActions
             return;
         }
 
-        // The ceiling, asked before anything is made (N8-C1, FV3-C4): the check must not live in `fillCombinedPage`, which runs after the page
+        // The ceiling, asked before anything is made: the check must not live in `fillCombinedPage`, which runs after the page
         // has been written, entered in the index, excluded and the layouts refreshed, so refusing would leave an unfilled copy of the page combined
         // from.  The size is the same arithmetic `fillCombinedPage` does: the widest source page, and every source page's height plus a blank
         // row between them.
@@ -332,7 +332,7 @@ final class LayoutFileActions
             return;
         }
 
-        // On a worker, because it parses every page of the layout twice over.  AND A REFRESH UNDER WAY FROM HERE (RSA23-B1):
+        // On a worker, because it parses every page of the layout twice over.  AND A REFRESH UNDER WAY FROM HERE:
         // the worker writes the page, the index and the setup before it hands over to `layoutEditingComplete`, and a run
         // started meanwhile ran the railway from before and was forgotten by the reset at the end
         this.ui.refreshesUnderWay.incrementAndGet();
@@ -370,7 +370,7 @@ final class LayoutFileActions
                 {
                     session.setPageExcluded(combined, true);
 
-                    // And the answer is read here too (ACC-C6's sweep, found by OV2-C3): a failed write here means the combined page is excluded in
+                    // And the answer is read here too: a failed write here means the combined page is excluded in
                     // memory and not on disk, so the next load offers it to autonomy.
                     if (session.exists() && !session.saveQuietly() && this.ui.getModel() != null)
                     {
@@ -415,7 +415,7 @@ final class LayoutFileActions
     void duplicateOrRenameCurrentLayout(String newLayoutName, boolean rename, boolean duplicate, boolean blank)
     {
         // Not while an editor holds the diagram: both of these finish by calling layoutEditingComplete, which re-enables the Edit button and
-        // rebuilds the autonomy session from pages it has just replaced, so under an open editor it is the AD-B8 failure exactly (a second
+        // rebuilds the autonomy session from pages it has just replaced, so under an open editor it fails (a second
         // editor opens on the same diagram, and closing either unsets the other's edit flag).  Refused at the entry rather than guarded at
         // the end, because by the end the page has already been written.
         if (this.ui.refuseWhileEditorOpen()) return;
@@ -445,7 +445,7 @@ final class LayoutFileActions
             return;
         }
 
-        // NOR ONE WHOSE FILE ANOTHER PAGE USES (BCR-A2): a name differing only in case, or in a character a file name cannot
+        // NOR ONE WHOSE FILE ANOTHER PAGE USES: a name differing only in case, or in a character a file name cannot
         // hold, is written to that page's file.  A page renamed to its own name in another case keeps its own file.
         String usesThatFile = org.traincontrol.automationui.LayoutPageEdit.pageUsingTheFileOf(this.ui.getModel().getLayoutList(),
             newLayoutName, rename ? this.ui.layoutList().getSelectedItem().toString() : null);
@@ -461,14 +461,14 @@ final class LayoutFileActions
         {
             try
             {
-                // The sequence itself lives in LayoutPageEdit, and this hands it the session it has ALREADY BUILT (SV-B2) rather than letting it reach
+                // The sequence itself lives in LayoutPageEdit, and this hands it the session it has ALREADY BUILT rather than letting it reach
                 // for the lazy getter.  Everything above this line is about whether to ask at all (an open editor, running trains, a remote layout, a
                 // name already taken) and stays here because it puts dialogs on screen; everything below it was the ORDER in which a rename has to
                 // happen, where every rename defect has lived, and which could not be reached by a test while it was in here (Adam: "trigger a rename
                 // via the same function that the UI calls... This is the only way to catch bugs across these complex types of features.").
                 String currentLayout = this.ui.layoutList().getSelectedItem().toString();
 
-                // What the last run did, folded in while the naming still agrees with the store (DW-A1): after the rename below the store is rekeyed
+                // What the last run did, folded in while the naming still agrees with the store: after the rename below the store is rekeyed
                 // and the pages this session holds are not, which is why the capture that follows is refused.  Doing it here means the run's
                 // placements are IN the configuration by the time renamePage rekeys it.
                 this.ui.captureRunningLayout();
@@ -538,7 +538,7 @@ final class LayoutFileActions
 
                         this.ui.getModel().downloadLayout(path);
 
-                        // Load the layout - the source a later switch of source compares with, too (RLV9-C8)
+                        // Load the layout - the source a later switch of source compares with, too
                         this.ui.useTheDownloadedLayout(path);
 
                         // The editing controls answer differently now (OB-126): this is what decides whether
@@ -641,7 +641,7 @@ final class LayoutFileActions
      * one being combined), so this empties it, grows it to fit, and writes the squares in square by square rather than by reference,
      * because a LayoutDiagramComponent carries its own coordinates.
      *
-     * **A LINK ON A COMBINED PAGE DOES KEEP ITS DESTINATION, AND THE SEQUENCE IS WHY** (T10-C2, TWV): the copy is written from the source
+     * **A LINK ON A COMBINED PAGE DOES KEEP ITS DESTINATION, AND THE SEQUENCE IS WHY** (TWV): the copy is written from the source
      * page BEFORE the arrows are re-aimed, so the file on disk is briefly stale; `refreshLayouts` then re-reads every page, including the
      * corrected sources; and this method clears the copy and refills it from those sources through `LayoutDiagramComponent`'s copy
      * constructor, which carries `rawAddress` across, so the squares written here are the corrected ones and the save at the end commits
@@ -669,8 +669,8 @@ final class LayoutFileActions
             height += page.getSy() + 1;
         }
 
-        // The ceiling every other growing gesture asks (N8-C1): this goes straight to LayoutDiagram.addRowsAndColumns, which has no ceiling
-        // (the door X8-C5 found shiftDown going through), and it can grow a page MOST (combining the three pages that 1 - Main links to comes
+        // The ceiling every other growing gesture asks: this goes straight to LayoutDiagram.addRowsAndColumns, which has no ceiling
+        // and it can grow a page MOST (combining the three pages that 1 - Main links to comes
         // out 24 x 51 against a ceiling of 60).  Refused BEFORE the page is emptied: `made.clear()` below throws away the page this was
         // copied from, and a page above the ceiling can never be grown again (Increase Size is greyed on it).
         if (height > LayoutEditor.MAX_SIZE || width > LayoutEditor.MAX_SIZE)

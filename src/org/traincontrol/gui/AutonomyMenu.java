@@ -83,7 +83,7 @@ public class AutonomyMenu extends JMenu
         // is two answers waiting to disagree.
         //
         // What the parts are, and why each is there, is at `TrainControlUI.autonomyMenuIsUsable` - a
-        // layout (UXR-C17), and not while the connecting notice holds the bar (OB-187).  Not a LOCAL
+        // layout, and not while the connecting notice holds the bar (OB-187).  Not a LOCAL
         // one: on a Central Station layout the menu opens onto the download and the guide (2026-09-24).
         setEnabled(ui.autonomyMenuIsUsable());
 
@@ -164,7 +164,7 @@ public class AutonomyMenu extends JMenu
         // talking about may well be behind this one, which is exactly why somebody reached for this
         // menu. First in the list, because it is the only thing here that can be done.
         //
-        // UXR-C1: this used to read autosetup.ui.menuEditorOpen, the full refusal sentence ("Close the
+        // This used to read autosetup.ui.menuEditorOpen, the full refusal sentence ("Close the
         // editor first - autonomy cannot be changed from here while it is open.") - a sentence written
         // for a dialog body, not a label, and one that told the user to close the editor on an item
         // whose own action brings that editor forward. menuOpenFullEditor is the label already used
@@ -215,9 +215,9 @@ public class AutonomyMenu extends JMenu
      * out the whole menu while running?"*).  Each door still refuses on its own; this says so before the click, as the
      * editor's item has since OB-045.  Autonomy Settings and Documentation stay live: the guide changes nothing, and the
      * settings are shown greyed while autonomy is busy, each saying why (Adam, 2026-10-02), their own handlers refusing a
-     * change besides (RSA12-C1).  The debug export is
+     * change besides.  The debug export is
      * greyed with the rest (Adam, MT-633: "export raw graph as json should also be disabled while running") - greyed only: it
-     * writes nothing of the setup, and has no refusal of its own (RSA23-C2).
+     * writes nothing of the setup, and has no refusal of its own.
      *
      * @param documentation the guide's item
      */
@@ -273,7 +273,7 @@ public class AutonomyMenu extends JMenu
             // download would not touch - no viewer panel yet, a session that failed to open - and an
             // offer that cannot help is worse than the greyed line it replaced, because pressing it
             // teaches the reader that the notice lies.
-            // The handler's OWN question, both halves of it (DW-C2).
+            // The handler's OWN question, both halves of it.
             //
             // This asked only whether the layout is remote. downloadCSLayoutMenuItemActionPerformed
             // additionally requires a non-empty page list, so a remote layout with nothing downloaded
@@ -321,7 +321,7 @@ public class AutonomyMenu extends JMenu
                 return;
             }
 
-            // A SETUP THAT IS THERE AND WOULD NOT READ SAYS SO, with the reason on the greyed line (GSP-B2).
+            // A SETUP THAT IS THERE AND WOULD NOT READ SAYS SO, with the reason on the greyed line.
             //
             // This line said that autonomy needs a layout stored on this computer whatever had left the session null - and
             // on a layout stored on this computer, whose setup.json had a typing slip in it or came from a newer
@@ -413,8 +413,8 @@ public class AutonomyMenu extends JMenu
             choose.addSeparator();
 
             // Import is greyed only with the rest of the menu while autonomy runs (`guardWhileRunning`), and refuses then
-            // too, saying so (RSA4-C5); into the configuration that is running it refuses a file that would replace it
-            // (RLA2-B1, RLU4-B1), and takes an old file's gaps without its trains (RLD3-C1); otherwise it brings one in -
+            // too, saying so; into the configuration that is running it refuses a file that would replace it
+            //, and takes an old file's gaps without its trains; otherwise it brings one in -
             // and the moment it is most needed is when the current setup will not load, which is repaired by importing
             // one that will.
             choose.add(item(I18n.t("autosetup.ui.btnImportConfiguration"), new Runnable()
@@ -498,8 +498,7 @@ public class AutonomyMenu extends JMenu
             // the pages submenu decides which pages it sees.
             //
             // The split used to be described as choosing above and housekeeping below, which stopped
-            // being true when the manage submenu moved up to sit under the configuration it manages
-            // (RC-C7).
+            // being true when the manage submenu moved up to sit under the configuration it manages.
             addSeparator();
 
             JMenu edit = editMenu(session);
@@ -514,10 +513,10 @@ public class AutonomyMenu extends JMenu
             // Documentation (Adam, MT-613 and MT-626; the debug export too, MT-633); this item asks the editor's own
             // refusals as well, at rest.
             //
-            // UXR-C13: this used to re-derive three of openLayoutEditor's four refusals by hand
+            // This used to re-derive three of openLayoutEditor's four refusals by hand
             // ("chosen && !trainsMoving"), which covers isLocalLayout/session==null (via chosen) and
             // isAutonomyBusy but not the fourth - "an editor is already open" - so this item could stay
-            // live and fail during the same layoutEditingComplete window UXR-B2 names. The sibling
+            // live and fail during the same layoutEditingComplete window. The sibling
             // surface, LayoutRightclickAutonomyMenu.addSetupMenu, already asks the guard's own answer
             // for exactly this reason; ask it here too instead of keeping a second copy of its rule.
             String editRefusal = ui.whyAutonomyEditorCannotOpen();
@@ -836,7 +835,7 @@ public class AutonomyMenu extends JMenu
                 // Applying this rebuilds the layout, and every configuration load stops everything -
                 // including a train somebody is driving by hand.
                 //
-                // isAutonomyBusy above covers a hand DISPATCH now, since UR-2 counts one as running.
+                // isAutonomyBusy above covers a hand DISPATCH now, since it counts one as running.
                 // What is left to catch here is a train being driven on the throttle alone, which
                 // nothing counts and which this still sees.  Stopping a moving train is not something
                 // to do as a side effect of a checkbox without saying so first.
@@ -861,7 +860,7 @@ public class AutonomyMenu extends JMenu
 
                 try
                 {
-                    // The reconciliation the save returns is SHOWN, not dropped (DR-B10).
+                    // The reconciliation the save returns is SHOWN, not dropped.
                     //
                     // A save reconciles the setup against the diagram and reports what it had to let go - a
                     // setting on a page that is no longer there, a pairing whose partner has gone. Thrown away,

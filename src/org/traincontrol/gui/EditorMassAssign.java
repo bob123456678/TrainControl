@@ -38,7 +38,7 @@ final class EditorMassAssign
      * session shares it over the piece's squares.  Then every switch on the page that has no length is outlined and one
      * turnout length is asked for, given to each; likewise the squares two roads share.
      *
-     * OK, Skip and Cancel as in Name Everything; Escape stops, like Cancel (MAL-B4).  0 is an answer - a stretch with no
+     * OK, Skip and Cancel as in Name Everything; Escape stops, like Cancel.  0 is an answer - a stretch with no
      * length, kept apart from one nobody has measured (OB-274).  `setupChanged` once at the end, for the running layout;
      * the session itself rebuilds on every write.
      */
@@ -199,7 +199,7 @@ final class EditorMassAssign
      *
      * **A length is 1 to `TrainControlUI.ROUTE_TRAIN_LENGTH_MAX`**, the range the locomotive menu's own dropdown offers:
      * two places that set one number must not disagree about what a legal value is.  0 is refused with a sentence saying
-     * why (TDU-C7).  Skip leaves the train as it was.
+     * why.  Skip leaves the train as it was.
      *
      * **Written through `applyTrainLength`**, the one door every other train-length gesture uses, so the findings and the
      * grey follow the number as they do from the locomotive menu.  A train length belongs to the locomotive, not to this
@@ -312,7 +312,7 @@ final class EditorMassAssign
         if (tile == null) return "";
 
         // A piece ends at a sensor or at a switch.  A switch has no name of its own in the setup, so it is named by
-        // where it is (MAL-C3: the first version named the sensor a leg led to, where no train need rest).
+        // where it is (not the sensor a leg led to, where no train need rest).
         LayoutDiagramComponent component = editor.session.getGraph() == null ? null : editor.session.getGraph().getTiles().get(tile);
 
         if (component != null && component.isSwitch())
@@ -320,7 +320,7 @@ final class EditorMassAssign
             return I18n.f("autosetup.ui.switchAtSquare", tile.getX() + "," + tile.getY());
         }
 
-        // A CROSSING HAS NO NAME EITHER (SVA-C3).  A piece now ends at one as well as at a switch, and naming it by
+        // A CROSSING HAS NO NAME EITHER.  A piece now ends at one as well as at a switch, and naming it by
         // its raw key put `main:18,10` in the middle of a sentence.
         if (editor.session.sharedSquaresALengthRuleReads().contains(tile))
         {
@@ -331,7 +331,7 @@ final class EditorMassAssign
 
         if (name != null && !name.trim().isEmpty()) return name;
 
-        // AN UNNAMED SENSOR IS NAMED BY WHERE IT IS (AUS-C4), as a switch and a crossing already are.  The raw key
+        // AN UNNAMED SENSOR IS NAMED BY WHERE IT IS, as a switch and a crossing already are.  The raw key
         // - the page name, a colon and two numbers - reads as a fault code in a sentence about a stretch of track.
         return I18n.f("autosetup.ui.sensorAtSquare", tile.getX() + "," + tile.getY());
     }

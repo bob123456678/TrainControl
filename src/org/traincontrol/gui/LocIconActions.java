@@ -343,7 +343,7 @@ final class LocIconActions
 
                 if (crop.isSelected())
                 {
-                    // Cancel is not a failure, and treating it as one was destructive (LD-6): cropLocIcon returned null for both "the user pressed Cancel"
+                    // Cancel is not a failure, and treating it as one was destructive: cropLocIcon returned null for both "the user pressed Cancel"
                     // and "the picture could not be read", and the fallback to the UNCROPPED file set the full photograph as the icon and deleted the
                     // crop that was there.  The dialog's own javadoc says null means "leave everything exactly as it was, not a failure".  Two answers,
                     // not one: was it cancelled, and was the picture unreadable.
@@ -443,7 +443,7 @@ final class LocIconActions
      * @param l the locomotive the icon is for; its name is used to make the file recognisable
      * @param chosen the picture the user picked, never written to
      * @param cancelled set to true when the user dismissed the crop dialog, which is NOT a failure: the caller must then change nothing at
-     *                  all (collapsing the two set the uncropped photograph as the icon and deleted the crop it replaced, LD-6)
+     *                  all (collapsing the two set the uncropped photograph as the icon, deleted the crop it replaced)
      * @return the URL of the cropped icon, or null if there is nothing to use - the user cancelled, the picture could not be read, or the
      *         folder could not be written - in which case the caller must fall back to the uncropped original
      */

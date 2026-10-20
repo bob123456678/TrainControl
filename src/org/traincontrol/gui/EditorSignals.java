@@ -415,7 +415,7 @@ final class EditorSignals
             return I18n.f("autosetup.ui.signalAlreadyPaired", editor.addressOf(signal));
         }
 
-        // NOT THE STATION'S OTHER GUARD (AUT-C2: *"make sure the entry guard can never be the same as the exit guard"*).
+        // NOT THE STATION'S OTHER GUARD (*"make sure the entry guard can never be the same as the exit guard"*).
         // The store refuses it as well; this is where the operator is told why.
         if (signalsOf(guard == AutonomyEditorPanel.Guard.ENTRY ? AutonomyEditorPanel.Guard.EXIT : AutonomyEditorPanel.Guard.ENTRY, station).contains(signal))
         {
@@ -433,7 +433,7 @@ final class EditorSignals
 
         if (redraw) editor.refresh();
 
-        // The running layout is what throws a protecting signal (VD10-B2).
+        // The running layout is what throws a protecting signal.
         editor.setupChanged();
 
         return null;
@@ -461,7 +461,7 @@ final class EditorSignals
 
         editor.refresh();
 
-        // The running layout is what throws a protecting signal (VD10-B2).
+        // The running layout is what throws a protecting signal.
         editor.setupChanged();
     }
 

@@ -138,13 +138,13 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
      * not.
      *
      * **A PARKING BERTH IS SPELLED `autoDestination:false`** in anything the builder has emitted since,
-     * and that limb was not here at all (MON-B1) - so the one case this marker was written for was the
+     * and that limb was not here at all - so the one case this marker was written for was the
      * one it got wrong, for as long as it has existed. `!isActive()` was missing with it.
      *
      * Reversing NON-stations never appear here - getPossiblePaths only enumerates destinations - so
      * the full predicate is spelled out to match the rule in Layout rather than relying on that.
      *
-     * **A TERMINUS THIS TRAIN CANNOT BACK INTO IS THE THIRD REASON** (SVN-C4).  `280ff08b` moved that
+     * **A TERMINUS THIS TRAIN CANNOT BACK INTO IS THE THIRD REASON**.  `280ff08b` moved that
      * rule out of `isPathClear` into `pickPath`, `hasAutonomousDestination` and `barredFromAutonomy`,
      * and this fourth mirror was missed - so before the move a terminus never reached
      * `getPossiblePaths` for a non-reversible locomotive, and after it, one is listed with no dash.
@@ -160,7 +160,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     {
         if (p == null) return "";
 
-        // ALL FIVE LIMBS, in the rule's order (MON-B1).  Two were missing and the guard could not say
+        // ALL FIVE LIMBS, in the rule's order.  Two were missing and the guard could not say
         // so - it built the terminus case and claimed to catch "removing any limb", which a test that
         // constructs one case cannot do for a limb that was never written.
         return !p.isActive()
@@ -334,7 +334,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 this.locAvailPaths.setVisible(false);
             }
             // Layout is in auto mode but loc is not running - show status message and hide the list
-            // AND WHILE A STAGING FLOW OWNS THE RAILWAY (RSA2-C3): the double-click sends nothing then, so nothing is
+            // AND WHILE A STAGING FLOW OWNS THE RAILWAY: the double-click sends nothing then, so nothing is
             // offered to double-click
             else if (layout.isAutoRunning() || layout.isStagingInProgress())
             {
@@ -729,7 +729,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
             javax.swing.SwingUtilities.invokeLater(() ->
             {
                 // No guard on which locomotive this is about, and the one that used to stand here was
-                // worse than nothing (FBR-C1).
+                // worse than nothing.
                 //
                 // It captured `locomotive` into a local and compared the two, under a comment saying
                 // "the panel is reused as trains are placed and cleared". The field is final and
@@ -827,7 +827,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                     .append("\n");
             }
 
-            // FOR THE TIER THIS LIST IS IN (the REG4 lead, GUI3-C1): on Manual it offers routes picked by hand, so the
+            // FOR THE TIER THIS LIST IS IN (the REG4 lead): on Manual it offers routes picked by hand, so the
             // reasons are the ones a hand-driven send meets, as the diagram's Why not Moving? gives them on Manual.
             boolean byHand = !layout.isAutoRunning();
 
@@ -841,7 +841,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 return out.append("\n").append(cannotStart).append("\n").toString();
             }
 
-            // Both halves under ONE acquisition of the Layout monitor (FBR-C6).
+            // Both halves under ONE acquisition of the Layout monitor.
             //
             // Asked separately, the reasons and the grouping could be computed against two different
             // states - a train arrives, or a station is switched off, between the two calls - and a
@@ -975,7 +975,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                     javax.swing.SwingUtilities.invokeLater(() ->
                     {
                         // Still in the STATE the answer was about, which is the half of this guard that
-                        // was ever real (FBR-C1).
+                        // was ever real.
                         //
                         // It used to also check that the locomotive had not changed under it. It cannot:
                         // the field is final and a panel belongs to one locomotive for its whole life.
@@ -1003,7 +1003,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
 
             String cannotStart = layout.explainCannotStart(locomotive, byHand);
 
-            // WRAPPED (GUI4-C5): the sentences with a remedy run to two hundred characters, on one line otherwise.
+            // WRAPPED: the sentences with a remedy run to two hundred characters, on one line otherwise.
             if (cannotStart != null) return AutonomyEditorPanel.wrapped(cannotStart);
 
             java.util.Map<String, String> reasons = layout.explainDestinations(locomotive, byHand);
@@ -1170,7 +1170,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 // trap, since before this class existed.
                 if (index < 0 || !list.getCellBounds(index, index).contains(evt.getPoint())) return;
 
-                // NOR WHILE RETURN HOME OWNS THE RAILWAY (RSA-C2): autonomy's flag is down while it plans, and a train
+                // NOR WHILE RETURN HOME OWNS THE RAILWAY: autonomy's flag is down while it plans, and a train
                 // sent by hand then spent the press on positions the railway no longer had.  A second hand send while
                 // another runs stays allowed here (Adam, OB-164: "The user can rely on full autonomy or the panels to
                 // send trains more clearly.").
@@ -1186,7 +1186,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
 
                     // THROUGH THE ONE DOOR both hand doors send through (Adam, 2026-09-29: "can all the checks go through
                     // a single door?"): whether a train may be sent at all - the editor, which this copy did not ask
-                    // (RLV12-B1), the setup, the power - this path's standing rules, the reversal question, the
+                    //, the setup, the power - this path's standing rules, the reversal question, the
                     // last-moment question again, the atomic-routes gate and the dispatch, in that order.
                     this.parent.sendATrainByHand(this.layout, chosen, locomotive);
                 }

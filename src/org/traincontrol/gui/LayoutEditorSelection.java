@@ -118,7 +118,7 @@ final class LayoutEditorSelection
 
                 if (landing != null)
                 {
-                    // ONLY IF IT CHANGED ANYTHING (SVN-C8).
+                    // ONLY IF IT CHANGED ANYTHING.
                     //
                     // `delete` was fixed for exactly this and said why: "forgetCaptionsAt returns
                     // whether it changed anything, and this ignored it - so deleting a square that had
@@ -224,7 +224,7 @@ final class LayoutEditorSelection
      */
     void initCopy(LayoutLabel label, LayoutDiagramComponent component, boolean move)
     {
-        // WORK OUT WHAT IS BEING PICKED UP BEFORE ANYTHING IS PUT DOWN (X8-B1).
+        // WORK OUT WHAT IS BEING PICKED UP BEFORE ANYTHING IS PUT DOWN.
         //
         // Control+X and Control+C pass `getLastHoveredLabel()` with no null check, and that is null
         // whenever the pointer is over the palette: `lastHoveredX/Y` are set back to -1 every time the
@@ -322,7 +322,7 @@ final class LayoutEditorSelection
                         lc == null ? null : new LayoutDiagramComponent(lc)));
 
                     // Square for square with `taken`, including the empty ones - an empty square can
-                    // still hold a caption, so it has a setup worth moving (LE-A1).
+                    // still hold a caption, so it has a setup worth moving.
                     origins.add(new org.traincontrol.automationui.TileGraph.TileKey(
                         this.editor.layout.getName(), x, y));
                 }
@@ -341,19 +341,19 @@ final class LayoutEditorSelection
         this.editor.clipboardCutHadTiles = null;
 
         // A copy is not a move: the original keeps its setup, so pasting one only clears what it
-        // builds over, exactly as it did before LE-A1.
+        // builds over, exactly as it always did.
         this.editor.clipboardWasCut = false;
 
         return true;
     }
 
     /**
-     * Where each cut square is landing, or null when what is on the clipboard was copied (LE-A1).
+     * Where each cut square is landing, or null when what is on the clipboard was copied.
      *
      * A square that is not moving is left out: it already holds its own setup, and moving a square
      * onto itself would be work with nothing to show for it.
      *
-     * THAT SENTENCE USED TO END "at best wasted work", AND IT WAS THE WRONG REASON (LE-A4). Skipping
+     * THAT SENTENCE USED TO END "at best wasted work", AND IT WAS THE WRONG REASON. Skipping
      * the identity case is right; what was wrong was the belief that skipping it cost nothing. Every
      * square in a block shares one offset, so a paste back over the origin makes the map EMPTY, and an
      * empty map used to fall to the branch that forgets what it built over - which in that case is the
@@ -362,21 +362,21 @@ final class LayoutEditorSelection
      * @param atX the column the block is being pasted at
      * @param atY the row
      * @param wasCut whether the clipboard was cut, decided by the caller BEFORE it snapshotted - this
-     *        must not be re-read from the field, which the snapshot has by then cleared (LE-A7)
+     *        must not be re-read from the field, which the snapshot has by then cleared
      * @return origin square to landing square, empty when there is nothing to carry
      */
     private java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
         org.traincontrol.automationui.TileGraph.TileKey> cutMoves(int atX, int atY, boolean wasCut,
         java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> vacated)
     {
-        // THE FLAG IS NOT RE-READ HERE, and reading it was LE-A7.
+        // THE FLAG IS NOT RE-READ HERE.
         //
         // snapshotLayout used to stand the flag down, and pasteSelection snapshots before it gets this
         // far - so a guard that consulted the field was false on every paste, this returned null every
-        // time, and the whole of LE-A1, A4 and A5 was unreachable while every test stayed green,
+        // time, and the rest of the method was unreachable while every test stayed green,
         // because a source scan cannot see reachability.
         //
-        // RC-A1 took that stand-down out, so the field would answer correctly today.  The argument
+        // That stand-down is gone, so the field would answer correctly today.  The argument
         // stays: the caller has already decided, and a decision passed in cannot go stale between
         // being made and being used.
         if (!wasCut || vacated == null || this.editor.clipboardOrigins == null
@@ -401,17 +401,17 @@ final class LayoutEditorSelection
             org.traincontrol.automationui.TileGraph.TileKey origin = this.editor.clipboardOrigins.get(at);
 
             // Only squares the cut actually emptied.  The clipboard covers a bounding box; the cut
-            // emptied the picked squares inside it, and the rest still hold their track (LE-A5).
+            // emptied the picked squares inside it, and the rest still hold their track.
             if (this.editor.clipboardCutSquares != null && !this.editor.clipboardCutSquares.contains(origin))
             {
                 continue;
             }
 
-            // AND ONLY SQUARES THE CUT LEFT EMPTY, ON THIS PAGE (RC-A1, corrected by RC-A6).
+            // AND ONLY SQUARES THE CUT LEFT EMPTY, ON THIS PAGE.
             //
             // This is what the flag was standing in for, asked per square instead of assumed for the
-            // whole clipboard.  LE-A6 stood the flag down inside snapshotLayout, on the reasoning that
-            // any edit could falsify it and listing the doors would leave the next one unswept - and
+            // whole clipboard.  Standing the flag down inside snapshotLayout, on the reasoning that
+            // any edit could falsify it and listing the doors would leave the next one unswept, fails:
             // every edit snapshots, so cut, press "+" to make room, paste, and the move had quietly
             // become a delete-and-lose.
             //
@@ -420,12 +420,12 @@ final class LayoutEditorSelection
             // diagram changes neither.  Nothing has to be enumerated, and a square that is full again
             // is skipped on its own rather than taking the other nineteen with it.
             //
-            // ASKED OF THE CALLER, NOT OF THE LAYOUT (RC-A6).  pasteSelection places its tiles before
+            // ASKED OF THE CALLER, NOT OF THE LAYOUT.  pasteSelection places its tiles before
             // it gets here, so an origin that is also a landing is full again by now - and asking the
             // layout at this point skipped it, after which it was forgotten as "built over".  The
             // caller reads the squares before it places anything, exactly as it reads the flag.
             //
-            // The page half keeps a decision LE-A6 made deliberately: a setup is not carried ACROSS
+            // The page half keeps a deliberate decision: a setup is not carried ACROSS
             // pages, because paste snapshots only the destination page and arriveAt has thrown away
             // the source page's undo history, so a cross-page move could not be undone.  Left on the
             // source page instead, where it is recoverable - and where coming BACK to that page and
@@ -442,7 +442,7 @@ final class LayoutEditorSelection
     }
 
     /**
-     * Which of the cut squares are still empty, on this page (RC-A6).
+     * Which of the cut squares are still empty, on this page.
      *
      * Taken by pasteSelection BEFORE it places anything, because the paste refills any origin that is
      * also a landing - and an origin read as "full" after that is skipped by cutMoves and then
@@ -534,16 +534,16 @@ final class LayoutEditorSelection
             return false;
         }
 
-        // BOTH HALVES OF THE DECISION ARE TAKEN HERE, before anything is placed (LE-A7, RC-A6).
+        // BOTH HALVES OF THE DECISION ARE TAKEN HERE, before anything is placed.
         //
-        // The flag is read here and passed down as an argument, never re-read: that is LE-A7, where a
+        // The flag is read here and passed down as an argument, never re-read, because a
         // guard consulting the field after the snapshot was false on every paste.
         //
-        // The squares are read here for the same reason and it took a second defect to see it. RC-A1
-        // made cutMoves ask "is this origin still empty?", which is the right question asked too late:
+        // The squares are read here for the same reason and it is easy to miss:
+        // cutMoves asking "is this origin still empty?", which is the right question asked too late:
         // the placement loop below runs first, so an origin that is also a LANDING has just been
         // refilled by this very paste. Its setup was then skipped as "not empty" and forgotten as
-        // "built over" - destroyed, where before RC-A1 it moved correctly. Cut a column and paste it
+        // "built over" - destroyed, where it should have moved. Cut a column and paste it
         // one square down and that is every square on it.
         //
         // A decision about the state before the work has to be taken before the work.
@@ -587,7 +587,7 @@ final class LayoutEditorSelection
                     this.editor.layout.getName(), x, y));
             }
 
-            // THE SETUP FOLLOWS THE TRACK, when the track was cut rather than copied (LE-A1).
+            // THE SETUP FOLLOWS THE TRACK, when the track was cut rather than copied.
             //
             // moveTiles is given what was built over as well, so it does both jobs in one write: the
             // landing squares are cleared of whatever they held and the carried setup lands on them.
@@ -598,14 +598,14 @@ final class LayoutEditorSelection
 
             if (moves != null)
             {
-                // A LANDING SQUARE IS SPARED ONLY IF IT GOT ITS OWN TILE BACK (LE-A4, LE-B6).
+                // A LANDING SQUARE IS SPARED ONLY IF IT GOT ITS OWN TILE BACK.
                 //
                 // builtOver is every landing square. Forgetting a square whose own setup is being
                 // carried onto it destroys what the move is delivering - paste a block back exactly
                 // where it came from and EVERY square is one of those, which is how a cut and put back
                 // wiped a whole yard.
                 //
-                // Subtracting the origins wholesale was too broad, and leaked (LE-B6): the origins are
+                // Subtracting the origins wholesale was too broad, and leaked: the origins are
                 // the bounding BOX and only the picked squares moved, so a landing square inside the
                 // box that was never cut escaped being forgotten while nothing moved onto it - its
                 // track replaced and its station, length and facings surviving, describing a tile that
@@ -636,7 +636,7 @@ final class LayoutEditorSelection
                     this.editor.rememberAutonomy(autonomy);
                 }
 
-                // Used up BY A PASTE THAT ACTUALLY MOVED SOMETHING (SVN-B11).
+                // Used up BY A PASTE THAT ACTUALLY MOVED SOMETHING.
                 //
                 // "Cut then paste twice is a move and then a copy" is still the rule, and it is what
                 // the flag is for.  What was wrong is which paste counts as the move: this cleared it
@@ -648,7 +648,7 @@ final class LayoutEditorSelection
                 // So a paste that carried nothing spent the cut, and the next paste - the one that
                 // would have carried it - fell into the else below and called forgetBuiltOver on the
                 // origins.  Pasting a block back where it came from then DESTROYED its setup instead
-                // of restoring it, which is LE-A4 arriving through a door this rewrite opened.
+                // of restoring it, which is the loss arriving through a door this rewrite opened.
                 //
                 // An empty map is not a move.  The per-square question in cutMoves has already decided
                 // that, and this line now agrees with it.
@@ -907,7 +907,7 @@ final class LayoutEditorSelection
         java.util.List<org.traincontrol.automationui.TileGraph.TileKey> from = this.editor.clipboardOrigins;
 
         // Taken BEFORE the delete, which clears the selection, and covering only the picked squares -
-        // the clipboard above covers their whole bounding box (LE-A5).
+        // the clipboard above covers their whole bounding box.
         java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> emptied =
             new java.util.LinkedHashSet<>();
 
@@ -928,7 +928,7 @@ final class LayoutEditorSelection
         }
 
         // FALSE: the paste carries the setup, captions included, and forgetting them here would
-        // delete the one part of it that is drawn on the diagram (LE2-B7).
+        // delete the one part of it that is drawn on the diagram.
         boolean cut = this.editor.deleteSelection(false);
 
         this.editor.groupClipboard = carried;
@@ -938,7 +938,7 @@ final class LayoutEditorSelection
 
         // SET AFTER THE DELETE, not before: delete() ends by resetting the clipboard, which is the
         // reason the list above has to be held across it, and a flag set first would be cleared with
-        // it.  The paste that follows is the move half of this gesture (LE-A1).
+        // it.  The paste that follows is the move half of this gesture.
         this.editor.clipboardWasCut = cut;
 
         return cut;
@@ -1036,7 +1036,7 @@ final class LayoutEditorSelection
     }
 
     /**
-     * Empties every picked square (LE2-B7).
+     * Empties every picked square.
      *
      *
      * Runs under the editor's monitor: reached only through `LayoutEditor.deleteSelection`, which is `synchronized`;
@@ -1059,7 +1059,7 @@ final class LayoutEditorSelection
 
         this.editor.pauseRepaint = true;
 
-        // AUTONOMY IS TOLD ONCE, ABOUT THE WHOLE SELECTION (N8-B2).
+        // AUTONOMY IS TOLD ONCE, ABOUT THE WHOLE SELECTION.
         //
         // Every per-square delete used to tell it separately, and each of those calls rebuilds the tile
         // graph over every page - so a rubber-band delete over thirty squares paid for thirty full
@@ -1184,8 +1184,7 @@ final class LayoutEditorSelection
      * would be wrong: it says the track is gone, and the track is on its way somewhere else.  The captions
      * are the visible half of that - forgetCaptionsAt deletes the caption on the square and every caption
      * naming it, which the paste cannot bring back - and it is why this parameter exists rather than the
-     * callers reaching past delete().  It was written for the whole-row and whole-column moves, removed
-     * with DCN-C3.
+     * callers reaching past delete().  It was written for the whole-row and whole-column moves, since removed.
      */
     void delete(LayoutLabel label, boolean tellAutonomy)
     {
@@ -1209,7 +1208,7 @@ final class LayoutEditorSelection
                 org.traincontrol.automationui.AutonomySession autonomy =
                     tellAutonomy ? this.editor.parent.getAutonomySession() : null;
 
-                // THE WHOLE SQUARE, NOT ITS CAPTION (X8-B4).
+                // THE WHOLE SQUARE, NOT ITS CAPTION.
                 //
                 // This called `forgetCaptionsAt`, which touches the captions map and nothing else, so a
                 // deleted platform kept its station membership, point name, length, facing, barred
@@ -1228,7 +1227,7 @@ final class LayoutEditorSelection
                 // deleting a square that had nothing on it still wrote the whole setup to disk, every
                 // file of it.
                 //
-                // This is the SINGLE-SQUARE door (T10-C7).  The sentence here used to be "deleting a
+                // This is the SINGLE-SQUARE door.  The sentence here used to be "deleting a
                 // selection is one call per square", which was the cost argument for the check above -
                 // and `deleteSelection` stopped working that way in the same round it was written:
                 // it collects the whole selection into `emptied`, makes ONE `forgetTiles` call, and

@@ -129,7 +129,7 @@ public final class LocomotiveSelector extends javax.swing.JFrame
     
     synchronized private void filterLocList()
     {
-        // singlePass, not invokeLater - the other half of the refresh (VLD-B3).
+        // singlePass, not invokeLater - the other half of the refresh.
         //
         // `refreshLocSelectorList` was converted and this, its last statement, was not.  So every
         // refresh was still two events: one that adds every locomotive, and one that hides the ones
@@ -389,7 +389,7 @@ public final class LocomotiveSelector extends javax.swing.JFrame
     }//GEN-LAST:event_LocFilterBoxKeyReleased
 
     private void LocFilterBoxKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_LocFilterBoxKeyTyped
-        // UXR-C21: getKeyCode() is VK_UNDEFINED for every KEY_TYPED event, so the Escape branch this
+        // getKeyCode() is VK_UNDEFINED for every KEY_TYPED event, so the Escape branch this
         // used to have could never fire - dead code, not a missing feature. Escape is already handled
         // for this window by LocFilterBoxKeyReleased, formKeyPressed and MainLocListKeyPressed.
         filterLocList();

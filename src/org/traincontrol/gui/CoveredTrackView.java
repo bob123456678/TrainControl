@@ -24,7 +24,7 @@ final class CoveredTrackView
      * `Layout.edgesCoveredByStandingTrains`, which is `synchronized` on the `Layout`, and a dispatch holds that monitor for the
      * whole of `configureAndLockPath` (a `CONFIGURE_SLEEP` per accessory of the path).  Worse than a stall, as `Layout.getEdges`'s
      * comment spells out: a driving thread inside that monitor commands an accessory, and `MarklinAccessory.setSwitched` called
-     * `repaintSwitch`, which was `synchronized` on this window until RSA67-C1, so an event thread taking the railway's monitor while
+     * `repaintSwitch`, which used to be `synchronized` on this window, so an event thread taking the railway's monitor while
      * holding its own was AB-BA and unrecoverable.
      *
      * So the answer is worked out on a worker (as `repaintAutoLocListLite` and `repaintAutoLocListFull` also are).  The two sets are
@@ -111,7 +111,7 @@ final class CoveredTrackView
                     {
                         found = ask.setup.routesCoveredByStandingTrains(ask.railway);
 
-                        // The grey is not bounded to a running railway, and this is the one place that decides it (W7B-B1; Adam: "yes, this greyout
+                        // The grey is not bounded to a running railway, and this is the one place that decides it (Adam: "yes, this greyout
                         // should appear at idle and be regenerated if a placement or train/track length is changed."): `Layout.isPathClear` sweeps the
                         // covered edges in every tier at every time, because a tail lying across the rail is a physical fact, so at idle a manual send
                         // across a parked train's tail was refused over track this drew as free.  The guard and the affordance ask one question

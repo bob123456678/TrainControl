@@ -89,7 +89,7 @@ final class LocomotiveActions
             return;
         }
 
-        // AND NOT WHILE A ROUTE THAT DRIVES IT IS RUNNING (CS3-B1).  This door renames as well as re-addresses, and
+        // AND NOT WHILE A ROUTE THAT DRIVES IT IS RUNNING.  This door renames as well as re-addresses, and
         // both rewrite what a running route is reading.
         if (this.ui.refuseWhileARouteDrivesIt(source, l == null ? null : l.getName())) return;
 
@@ -148,7 +148,7 @@ final class LocomotiveActions
 
                     // Routes store locomotives by name, in a comma-separated text format, so renaming into a name with a comma rewrites every existing
                     // command and condition into something that re-parses as a different locomotive, or not at all.  (Brackets are allowed: Adam's
-                    // ruling.)  The route editor refuses these names at both of its own doors; this is the third way in (GSB-C1).
+                    // ruling.)  The route editor refuses these names at both of its own doors; this is the third way in.
                     if (!org.traincontrol.base.RouteCommand.isNameUsable(newName))
                     {
                         JOptionPane.showMessageDialog(
@@ -159,7 +159,7 @@ final class LocomotiveActions
                     }
                 }
 
-                // ASKED AGAIN AFTER THE DIALOG, BEFORE ANYTHING IS WRITTEN (GSR-B6).  The question above was put before
+                // ASKED AGAIN AFTER THE DIALOG, BEFORE ANYTHING IS WRITTEN.  The question above was put before
                 // the dialog opened, an s88 trigger can start a route that drives this locomotive while it is open, and
                 // both writes below rewrite what that route is reading.  The multi-unit dialog and the Central Station's
                 // name proposal already ask after theirs.
@@ -210,7 +210,7 @@ final class LocomotiveActions
                         this.ui.updateVisiblePoints();
                         this.ui.repaintAutoLocList(false);
 
-                        // And the timetable, which names locomotives too (DAY-B1, SVN-B12): the guard inside `repaintTimetable` is keyed on a hash a rename
+                        // And the timetable, which names locomotives too: the guard inside `repaintTimetable` is keyed on a hash a rename
                         // cannot move (MT-149), and neither rename door CALLED it.
                         this.ui.repaintTimetable();
                     }
@@ -292,7 +292,7 @@ final class LocomotiveActions
         inputPanel.add(autonomyOrder);
         
         // Special option for selecting only autonomy locomotives if autonomy is active
-        // Asked, not built (RLV8-C2)
+        // Asked, not built
         if (this.ui.getModel().getAutoLayoutIfLoaded() == null
             || this.ui.getModel().getAutoLayoutIfLoaded().getLocomotivesToRun().isEmpty())
         {
@@ -591,7 +591,7 @@ final class LocomotiveActions
             return;
         }
 
-        // AND NOT WHILE A ROUTE THAT DRIVES IT IS RUNNING (CS3-B1).
+        // AND NOT WHILE A ROUTE THAT DRIVES IT IS RUNNING.
         if (this.ui.refuseWhileARouteDrivesIt(source, value)) return;
         
         // The routes that drive it, counted before it goes: deleting a locomotive removes every command that drives it from every route
@@ -621,12 +621,12 @@ final class LocomotiveActions
                 JOptionPane.PLAIN_MESSAGE,
                 null,
                 TrainControlUI.YES_NO_OPTS,
-                // VAL-B5: default to No - deleting a locomotive from the database is not recoverable
+                // Default to No - deleting a locomotive from the database is not recoverable
                 // from this dialog, and should not be one Enter keypress away.
                 TrainControlUI.YES_NO_OPTS[1]
             ))
         {
-            // ASKED AGAIN AT YES, BEFORE ANYTHING IS WRITTEN (GSR-B6): the question at the top was put before this
+            // ASKED AGAIN AT YES, BEFORE ANYTHING IS WRITTEN: the question at the top was put before this
             // confirmation opened, and an s88 trigger can start a route that drives the locomotive while it is open.
             if (this.ui.refuseWhileARouteDrivesIt(source, value)) return;
 
@@ -670,7 +670,7 @@ final class LocomotiveActions
                 this.ui.repaintMappings();
                 this.ui.getLocSelector().refreshLocSelectorList();
 
-                // And the two the rename doors have, which this one never got (DAY-C2): `updateVisiblePoints()` is the only writer of the station
+                // And the two the rename doors have, which this one never got: `updateVisiblePoints()` is the only writer of the station
                 // captions on the track diagram (OB-081; `refreshUI()` below redraws the overlay, not the captions), so deleting a locomotive
                 // standing at a station left its caption naming a locomotive the database no longer has; and `repaintTimetable()` is MT-149 at the
                 // door its fix never reached.  A locomotive leaving the database changes exactly what a rename changes (which name is right), so

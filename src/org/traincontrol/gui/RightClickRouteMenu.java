@@ -103,7 +103,7 @@ public class RightClickRouteMenu extends MouseAdapter
                 menuItem.addActionListener(event -> ui.duplicateRoute(routeName));
                 add(menuItem);
 
-                // UXR-B6, reconciled. `hasS88()` alone was right against the action as it read an
+                // `hasS88()` alone was right against the action as it read an
                 // hour ago - the whole body was gated on it, disable included - and a second fix has
                 // since corrected that, because turning autofire OFF never needed a sensor.
                 //

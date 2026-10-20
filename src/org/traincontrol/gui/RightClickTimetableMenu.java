@@ -62,7 +62,7 @@ public class RightClickTimetableMenu extends MouseAdapter
 
         public RightClickMenu(TrainControlUI ui, MouseEvent e)
         {
-            // UXR-B12: all four handlers below open with the identical
+            // All four handlers below open with the identical
             // `if (ui.isAutonomyBusy()) { showMessageDialog(...); return; }` guard, so right-clicking
             // the timetable during a run - exactly when an operator is likely to be looking at it -
             // offered four items and refused all four with the same dialog. Greyed here on the same

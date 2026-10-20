@@ -43,7 +43,7 @@ public final class ManualReversalPrompt
      * departure itself, that way there is no dispatch prior to user input."**
      *
      * **The question was right and its moment was wrong.**  Asked from inside the run, the train has
-     * already been dispatched, already reserved its path and already travelled - and `DIR-A1` had to
+     * already been dispatched, already reserved its path and already travelled - and the run had to
      * stop it mid-journey so the dialog was not answered by somebody watching a moving train.  Asked
      * before departure there is nothing to stop: the train is standing where the operator left it, and
      * the answer is carried into the run.
@@ -135,7 +135,7 @@ public final class ManualReversalPrompt
         // says "no opinion" rather than "no", so the arrival would otherwise read the terminus flag on
         // a may-turn square's turning copy and turn the train anyway.
         //
-        // THE TWO HALVES ASK DIFFERENT QUESTIONS, AND ONE SHAPE TELLS THEM APART (SVV-C2).
+        // THE TWO HALVES ASK DIFFERENT QUESTIONS, AND ONE SHAPE TELLS THEM APART.
         //
         // This half fires on `asksAbout`, which is the SETUP's `mayTurnTiles()`.  The arrival's half
         // fires on `hasAWayThrough`, which is the GRAPH's "some copy of this square is neither a
@@ -149,7 +149,7 @@ public final class ManualReversalPrompt
         // right there is the reason given - the answer the operator could have given is not the one
         // they are going to get, it is the opposite - and the reason is the part a reader acts on.
         //
-        // Measured as unreachable on Adam's railway (PRV-C7): all four may-turn squares have plain
+        // Measured as unreachable on Adam's railway: all four may-turn squares have plain
         // copies.  Left as two rules with one sentence rather than merged, because merging them would
         // make this half ask the graph a question the setup can answer, and the setup is what the
         // operator edited.
@@ -221,7 +221,7 @@ public final class ManualReversalPrompt
         // may-turn square, which is the one square this door exists to ask about.
         if (arrival == null || !asking.asksAbout(arrival)) return null;
 
-        // NOT WHERE THE ANSWER COULD NOT BE HONOURED (RSA49-A1): no copy of the square faces on from the way the train
+        // NOT WHERE THE ANSWER COULD NOT BE HONOURED: no copy of the square faces on from the way the train
         // comes, so the arrival turns it whatever is said - `Layout.turnsOnArrival`, the same question
         if (railway != null && railway.noCopyFacesOnFrom(arrival, path.get(path.size() - 1).getStart())) return null;
 

@@ -72,7 +72,7 @@ public final class DiagramExport
     }
 
     /**
-     * Set by a test to make a render fail after its grid is built; null everywhere else (GUX-C4).
+     * Set by a test to make a render fail after its grid is built; null everywhere else.
      */
     public static Runnable stumbleForTest;
 
@@ -113,10 +113,10 @@ public final class DiagramExport
 
         final BufferedImage[] image = new BufferedImage[1];
 
-        // EVERY PATH OUT OF HERE RETIRES THE GRID (GUX-C4, widened by OP3-C11).
+        // EVERY PATH OUT OF HERE RETIRES THE GRID.
         //
         // The discard below used to sit after the paint with no `finally`, so an export that was
-        // interrupted, or whose paint threw, left the grid registered: the NR-3 leak the comment on
+        // interrupted, or whose paint threw, left the grid registered: the leak the comment on
         // the discard describes, back again for that one export, and with no second chance at it -
         // the host panel is a local, so nothing else will ever match its owner and prune its labels.
         //
@@ -125,7 +125,7 @@ public final class DiagramExport
         // returning - left the `finally` unentered: the same leak by the one door the first version of
         // this fix did not cover.
         //
-        // Moving the build in was not enough on its own (FNL-C1): a constructor that throws never
+        // Moving the build in was not enough on its own: a constructor that throws never
         // assigns `grid[0]`, so a `finally` discarding `grid[0]` still discarded nothing.  It retires by
         // the PANEL now, which is the key the constructor registers under before it builds anything.
         try
@@ -139,7 +139,7 @@ public final class DiagramExport
                 grid[0] = new LayoutGrid(layout, size, host, null, true, ui);
             });
 
-            // A WAY TO MAKE THIS FAIL ON PURPOSE (GUX-C4).
+            // A WAY TO MAKE THIS FAIL ON PURPOSE.
             //
             // Null in the application.  Nothing between here and the discard throws on any input a
             // test can hand in - the wait answers to an interrupt, and an interrupt lands at whichever
@@ -190,7 +190,7 @@ public final class DiagramExport
         }
         finally
         {
-            // Finished with, and said so (NR-3).
+            // Finished with, and said so.
             //
             // This grid is built for one render into a panel nobody will ever show, and then dropped -
             // so nothing ever retired it, and every caption it registered stayed in the window's label
@@ -199,7 +199,7 @@ public final class DiagramExport
             //
             // Its panel is a local, so it is never in the page cache and the window will always agree
             // it is finished with.
-            // AND THE RETIRING DOES NOT REPLACE WHAT WENT WRONG (FXV-C8).
+            // AND THE RETIRING DOES NOT REPLACE WHAT WENT WRONG.
             //
             // `invokeAndWait` throws `InterruptedException` when the calling thread's interrupt flag is
             // set, which is exactly one of the failures this bracket exists for - so the interrupt came
@@ -210,7 +210,7 @@ public final class DiagramExport
             {
                 javax.swing.SwingUtilities.invokeAndWait(() ->
                 {
-                    // BY THE PANEL, not by the reference (FNL-C1).  `grid[0]` is assigned only if the
+                    // BY THE PANEL, not by the reference.  `grid[0]` is assigned only if the
                     // constructor returned, and a constructor that threw part-way has already
                     // registered itself and may already have registered captions - so discarding what
                     // this call holds covered every door but that one.  `LayoutGrid.retire` asks the
@@ -224,13 +224,13 @@ public final class DiagramExport
             }
             catch (java.lang.reflect.InvocationTargetException fromTheRetirement)
             {
-                // THE RETIREMENT'S OWN FAILURE MUST NOT REPLACE THE RENDER'S (VD12-C5).
+                // THE RETIREMENT'S OWN FAILURE MUST NOT REPLACE THE RENDER'S.
                 //
                 // This `finally` runs while a render failure may already be on its way out, and
                 // `invokeAndWait` wraps anything the task throws - `forgetLayoutStations`, say -
                 // in an InvocationTargetException.  `render` declares `throws Exception`, so that
                 // one would propagate from here and discard the cause the caller needs, which is
-                // the wrong-cause reporting FXV-C8 was filed for and fixed only for the interrupt.
+                // the wrong-cause reporting that is fixed only for the interrupt.
                 //
                 // Logged rather than thrown: a grid that could not be retired leaves a stale
                 // registration, which is a leak; losing the reason an export failed leaves nobody

@@ -33,8 +33,8 @@ import javax.swing.Timer;
  * parts.
  *
  * The turn at the end of each cycle is free: an emptied hourglass turned through half a circle is
- * pixel for pixel a full one, so there is no frame where the sand jumps back up the glass. (VAL-C3:
- * that used to describe the whole loop, drawn by rotating rather than by resetting; as of 2026-08-29
+ * pixel for pixel a full one, so there is no frame where the sand jumps back up the glass.
+ * (That used to describe the whole loop, drawn by rotating rather than by resetting; as of 2026-08-29
  * only the turn itself rotates and the drain is always drawn upright - see the halfTurns comment in
  * paintComponent - so "loops by rotating" is now true of the twelve turn frames only.)
  *
@@ -99,7 +99,7 @@ public class LoadingSpinner extends JPanel
     /**
      * Frames since the animation started, modulo two whole cycles.
      *
-     * VAL-C3: two whole cycles used to be load-bearing, because the drawing alternated between upright
+     * Two whole cycles used to be load-bearing, because the drawing alternated between upright
      * and inverted and one cycle left it standing on its head. As of 2026-08-29 the drain is always
      * drawn upright and only the twelve turn frames rotate (see the halfTurns comment in
      * paintComponent), so every frame `n` now renders identically to `n + CYCLE_FRAMES` and the true
@@ -167,8 +167,7 @@ public class LoadingSpinner extends JPanel
     /**
      * A default only, and only when nobody has said otherwise.
      *
-     * This used to return 120x120 unconditionally, which quietly overrode all three callers (DOC-C24:
-     * there are now three, not two - LayoutGrid.showWhenTilesAreReady, BusyDialog, and StartupSplash):
+     * This used to return 120x120 unconditionally, which quietly overrode all three callers (LayoutGrid.showWhenTilesAreReady, BusyDialog and StartupSplash):
      * the grid asks for the space the diagram is about to take so that nothing jumps when the two are
      * swapped, the busy dialog asks for something small enough to sit above a line of text, and the
      * splash asks for its own fixed size. None of them got what they asked for, and the grid's comment
@@ -223,7 +222,7 @@ public class LoadingSpinner extends JPanel
                 halfTurns += (at - DRAIN_FRAMES + 1) / (double) TURN_FRAMES;
             }
 
-            // WK-C3: centred on the VISIBLE part of this component, not the whole of it. This
+            // Centred on the VISIBLE part of this component, not the whole of it. This
             // component is sized to the whole diagram page (LayoutGrid.showWhenTilesAreReady), which
             // on a page bigger than the LayoutArea viewport put the glass's true centre off whatever
             // screenful the operator happens to be scrolled to - the "blank page" symptom OB-129 was

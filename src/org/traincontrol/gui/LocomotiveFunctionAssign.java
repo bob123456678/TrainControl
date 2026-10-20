@@ -54,7 +54,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
     String customIconPath;
     
     /**
-     * What Copy Customizations overwrote, or null if it was never pressed (GUX-C3, MT-466).
+     * What Copy Customizations overwrote, or null if it was never pressed (MT-466).
      *
      * One value rather than the three fields this was: the types, the triggers and the custom flag
      * were remembered and put back one by one, and the custom ICONS - the other half of what the
@@ -117,7 +117,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
             new javax.swing.DefaultComboBoxModel(iconModel.toArray(new Object[0])) 
         );
                 
-        // THE TRIGGER-TYPE COMBO IS LOCALISED BEFORE ANYTHING IS SELECTED IN IT (W21-C8).
+        // THE TRIGGER-TYPE COMBO IS LOCALISED BEFORE ANYTHING IS SELECTED IN IT.
         //
         // These four lines stood at the END of the constructor, after `fNoItemStateChanged` and
         // `setSelectedIndex` had already chosen the current function's trigger type.
@@ -284,7 +284,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
     /**
      * Remembers what a Copy Customizations press is about to overwrite, the first time it is pressed.
      *
-     * **This door does not wait for OK, and the dialog's Cancel branch says everything does** (GUX-C3).
+     * **This door does not wait for OK, and the dialog's Cancel branch says everything does**.
      * The copy writes the other locomotive's function types, triggers and custom flag straight onto
      * this one so the panel can show them at once, which is the same reason the two autonomy slots
      * write straight through - and those are restored on Cancel.  These were not, so Cancel kept the
@@ -522,7 +522,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
 
     private void resetButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resetButtonActionPerformed
 
-        // ON THE EVENT THREAD (VB-B1), and the thread now holds the only slow thing here.
+        // ON THE EVENT THREAD, and the thread now holds the only slow thing here.
         //
         // The thread existed to hold a modal confirm - everything the answer led to was already being
         // marshalled straight back with invokeLater, which is the tell: the background thread was
@@ -538,7 +538,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
             JOptionPane.PLAIN_MESSAGE,
             null,
             TrainControlUI.YES_NO_OPTS,
-            // NOT [0] (VB-B2): Yes here throws away every custom function and icon on this
+            // NOT [0]: Yes here throws away every custom function and icon on this
             // locomotive, so it is not the answer a reflexive Enter should give.
             TrainControlUI.YES_NO_OPTS[1]
         );
@@ -652,7 +652,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
 
     private void useCustomFunctionIconActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_useCustomFunctionIconActionPerformed
 
-        // NO THREAD AT ALL (VB-B1).
+        // NO THREAD AT ALL.
         //
         // A modal JFileChooser opened on a raw thread, and so did every setEnabled, the icon preview
         // and the repaint that followed it. Nothing in this handler is slow: it reads a preference,
@@ -725,7 +725,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
         
         if (copyFrom != null)
         {
-            // WHAT THE COPY IS ABOUT TO OVERWRITE, so that Cancel can put it back (GUX-C3), icons
+            // WHAT THE COPY IS ABOUT TO OVERWRITE, so that Cancel can put it back, icons
             // included since MT-466.
             rememberBeforeACopy();
 

@@ -50,7 +50,7 @@ final class EditorPrompts
         {
             int value = Integer.parseInt(entered.trim());
 
-            // REFUSED BEFORE IT IS WRITTEN, rather than by the layer that loads it (SET-B1).  Nothing is stored,
+            // REFUSED BEFORE IT IS WRITTEN, rather than by the layer that loads it.  Nothing is stored,
             // which is what the NumberFormatException arm below does and for the same reason.
             String refused = AutonomyEditorPanel.whyNotThisNumber(key, value);
 
@@ -68,7 +68,7 @@ final class EditorPrompts
             // About numbers, not about lengths: this prompt is also used for a station's priority, where negatives are
             // valid.
             JOptionPane.showMessageDialog(editor.owner(), I18n.f("autosetup.ui.errorNotANumber", entered));
-            // NOTHING WAS WRITTEN, so there is nothing to announce (VD10-C14): the call belongs after the last statement
+            // NOTHING WAS WRITTEN, so there is nothing to announce: the call belongs after the last statement
             // of the success path, and after the failure path it would save the setup and rebuild the railway having
             // changed nothing.
             return;
@@ -88,7 +88,7 @@ final class EditorPrompts
      */
     void promptBlockingPoints(TileKey station)
     {
-        // Read FIRST, because what is already stored decides what has to be offered (FSR-C5).
+        // Read FIRST, because what is already stored decides what has to be offered.
         java.util.List<TileKey> already = editor.session.getStore().getBlockingPoints(station);
 
         java.util.List<TileKey> choices = new java.util.ArrayList<>();
@@ -97,9 +97,8 @@ final class EditorPrompts
         {
             // STATIONS ONLY (MT-376: *"works, but exclude non-station points from the list entirely."*): a name is not a station (a
             // caption square, an approach guard or a labelled piece of track all carry one), and this setting watches whether a place
-            // trains stop is OCCUPIED.  ...unless it is ALREADY STORED (FSR-C5): this dialog is the only way to edit `blockedPoints`,
-            // and `chosen` is built from what the list offers, so hiding a stored entry would delete it when somebody pressed OK
-            // (FBR-A2).
+            // trains stop is OCCUPIED.  ...unless it is ALREADY STORED: this dialog is the only way to edit `blockedPoints`,
+            // and `chosen` is built from what the list offers, so hiding a stored entry would delete it when somebody pressed OK.
             if (!editor.session.getStore().isStation(tile) && !already.contains(tile)) continue;
 
             // Not the station itself: standing there already decides whether it is free, so watching
@@ -108,9 +107,9 @@ final class EditorPrompts
 
             // And not a square that IS this station by another name (OB-083): a caption points AT the station and carries a name, so
             // choosing it would hold the station back with itself.  THIS station's captions only: widening to every caption square was
-            // tried and withdrawn (FBR-C4), because a caption square is often real track (`mayCarryACaption` allows one on a feedback
-            // square, and importLegacy captions every imported station WITH ITSELF, FBR-B3).
-            // ... unless it is ALREADY stored (FSR-C5, which subsumes FBR-A2): the filters are about what may be CHOSEN, and hiding an
+            // tried and withdrawn, because a caption square is often real track (`mayCarryACaption` allows one on a feedback
+            // square, and importLegacy captions every imported station WITH ITSELF).
+            // ... unless it is ALREADY stored: the filters are about what may be CHOSEN, and hiding an
             // entry chosen earlier makes it permanent.  It appears ticked, it can be unticked, and the filters still decide what may
             // be added.
             if (station.equals(editor.session.getCaptionTarget(tile)) && !already.contains(tile)) continue;
@@ -184,7 +183,7 @@ final class EditorPrompts
 
         for (TileKey tile : choices)
         {
-            // describeTile, not getPointName: a carried entry that has lost its name would render with NO TEXT AT ALL (RA-C2).
+            // describeTile, not getPointName: a carried entry that has lost its name would render with NO TEXT AT ALL.
             // describeTile falls back to the s88 where the square is a sensor, its coordinates otherwise; testEditorSurfaceRules pins
             // the caption rule here as there.
             javax.swing.JCheckBox box = new javax.swing.JCheckBox(
@@ -250,7 +249,7 @@ final class EditorPrompts
 
         java.util.List<TileKey> chosen = new java.util.ArrayList<>();
 
-        // Every stored entry is on the list above, so the boxes are the whole answer (FSR-C5).
+        // Every stored entry is on the list above, so the boxes are the whole answer.
         for (int at = 0; at < boxes.size(); at++)
         {
             if (boxes.get(at).isSelected()) chosen.add(choices.get(at));
@@ -342,7 +341,7 @@ final class EditorPrompts
 
         // The "home" arm of this is not reached: the only caller passes "excludedLocs".  Kept because the shape is right
         // for any list-valued property, but anything that starts using it for a HOME has to go through session.setHome,
-        // which sweeps that locomotive's home off every other square (TD-8).
+        // which sweeps that locomotive's home off every other square.
         if (JOptionPane.showConfirmDialog(editor.owner(), asked, I18n.t(key.equals("home")
                 ? "autosetup.ui.labelHomeFor" : "autosetup.ui.labelLocomotiveExclusions"),
             JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) != JOptionPane.OK_OPTION)
@@ -404,7 +403,7 @@ final class EditorPrompts
         // NOT WHILE A RUN HOLDS THE SETUP - see `heldByARun`
         if (editor.heldByARun()) return;
 
-        // A GESTURE IN PROGRESS IS PUT DOWN FIRST, as the right-click menu and Control+N do (MFV-C4).
+        // A GESTURE IN PROGRESS IS PUT DOWN FIRST, as the right-click menu and Control+N do.
         editor.cancelPendingGesture();
 
         if (!editor.offersALength(tile))
@@ -432,7 +431,7 @@ final class EditorPrompts
 
         editor.session.setLinkName(tile, name);
 
-        // The running layout carries link names too (VD10-B2).
+        // The running layout carries link names too.
         editor.setupChanged();
     }
 }

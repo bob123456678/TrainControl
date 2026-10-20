@@ -79,7 +79,7 @@ public class LocIconCropDialog extends JDialog
     /**
      * How far the picture may be enlarged beyond the point where it just fills the crop window.
      *
-     * DOC-C2: this used to be 8, and eight was "generous on purpose" for the case this feature exists
+     * This used to be 8, and eight was "generous on purpose" for the case this feature exists
      * for - a locomotive that occupies a small part of a large photograph, where a limit that stops
      * before the user has it filling the window would leave the feature unable to do the one job it
      * was asked for. Raised to 32 at Adam's request ("add more zoomability" - see getScale()'s own
@@ -218,7 +218,7 @@ public class LocIconCropDialog extends JDialog
 
         reset.addActionListener(event ->
         {
-            // JUST resetView (LE2-B21).
+            // JUST resetView.
             //
             // It restores the covering view and pushes that fraction into the slider itself, under the
             // syncingZoom guard.  A zoom.setValue(0) after it is outside that guard, so it fires the
@@ -332,7 +332,7 @@ public class LocIconCropDialog extends JDialog
     public interface ZoomObserver
     {
         /**
-         * DOC-C24: 0 is MIN_ZOOM, not "the whole crop window just filled" - MIN_ZOOM is 0.5, so 0 is
+         * 0 is MIN_ZOOM, not "the whole crop window just filled" - MIN_ZOOM is 0.5, so 0 is
          * HALF the picture fitting the panel, with white on every side (see CropPanel's own
          * zoomFraction javadoc, which already says this correctly).
          *
@@ -480,7 +480,7 @@ public class LocIconCropDialog extends JDialog
         /**
          * @param source the picture to crop, must not be null
          * @param outWidth width of the icon that will be produced - only its RATIO to outHeight is
-         *        used here, and it is what the crop window's shape STARTS at (DOC-C24: not "locks" -
+         *        used here, and it is what the crop window's shape STARTS at (not "locks" -
          *        dragging an edge changes {@link #frameAspect} away from this ratio; see cropWindow())
          * @param outHeight height of the icon that will be produced
          */
@@ -666,7 +666,7 @@ public class LocIconCropDialog extends JDialog
          * The crop window, in panel coordinates: centred, and shaped to {@link #frameAspect} - the
          * icon's own ratio until an edge has been dragged, and whatever ratio was dragged to after.
          *
-         * DOC-C24: this used to say "inset by WINDOW_MARGIN, and locked to the ratio the locomotive
+         * This used to say "inset by WINDOW_MARGIN, and locked to the ratio the locomotive
          * icon is displayed at", which held only before either kind of pull. `largestWindow` is the
          * one that is actually inset by {@link #WINDOW_MARGIN} - this returns that box scaled down by
          * {@link #frameSize} (1.0 until the WINDOW itself has been shrunk), so once {@code frameSize}
@@ -978,7 +978,7 @@ public class LocIconCropDialog extends JDialog
             // got the zoomed-out view rather than the one it opens at. Its own tests found that: a
             // crop taken with nobody having touched anything came back letterboxed on white.
             //
-            // NOT safe against recursion by the reason this used to give (IPR-C5).
+            // NOT safe against recursion by the reason this used to give.
             //
             // It said "startAtCover asks cropWindow and getMinScale, and neither of those asks this".
             // `startAtCover` calls `clampCenter`, and `clampCenter` asks `getScale()` - so the chain
@@ -1082,7 +1082,7 @@ public class LocIconCropDialog extends JDialog
          * same whether the zoom came from the wheel, the slider or the reset button.
          *
          * @param fraction 0 (MIN_ZOOM of what it takes to fill the window - so half size, with white
-         *        on every side, and NOT the whole window filled as this said until RC-C6) to 1
+         *        on every side, and NOT the whole window filled) to 1
          *        (MAX_ZOOM); out of range values are clamped rather than rejected, because the wheel
          *        routinely asks for them
          */
@@ -1419,8 +1419,7 @@ public class LocIconCropDialog extends JDialog
          * resolution. Where it reaches past the edge - which the user can now ask for - the rest is
          * white, because that is what the dialog has been showing them under the frame while they
          * dragged it there, and **the result is scaled down to at most the icon's size** on the way
-         * out (`IPR-B4`; this javadoc said "at the picture's own resolution" and "exactly that
-         * rectangle", and both stopped being true of that branch - `VD9-C4`).
+         * out.
          *
          * Drawn rather than sub-imaged: getSubimage throws on a rectangle that is not wholly inside,
          * and clipping the rectangle to make it legal would quietly return a different crop.
@@ -1437,7 +1436,7 @@ public class LocIconCropDialog extends JDialog
                     this.source.getSubimage(region.x, region.y, region.width, region.height));
             }
 
-            // AT THE SIZE THE CALLER CAN USE, NOT AT THE SOURCE'S (IPR-B4).
+            // AT THE SIZE THE CALLER CAN USE, NOT AT THE SOURCE'S.
             //
             // This used to allocate region.width x region.height and then throw all of it away:
             // getCroppedImage scales whatever comes back down to outWidth x outHeight, which is the
@@ -1522,12 +1521,12 @@ public class LocIconCropDialog extends JDialog
         /**
          * Produces the icon the current view describes.
          *
-         * Cut and then scaled once - never twice, which is the property that matters and the one that
-         * survived `IPR-B4`. A rectangle wholly inside the picture is cut at its own resolution and
+         * Cut and then scaled once - never twice, which is the property that matters.
+         * A rectangle wholly inside the picture is cut at its own resolution and
          * resampled by `ImageUtil.getScaledImage`, the same helper `getLocImage` uses. An overhanging
          * one is composed and resampled in the same step by `Graphics2D`, and the `getScaledImage`
          * below it is then an identity scale, because `fit` comes out at exactly 1. Two paths, one
-         * resampling each (`VD9-C4`).
+         * resampling each.
          *
          * @return a new image of exactly the requested icon size, never null
          */

@@ -2,7 +2,7 @@ package org.traincontrol.gui;
 
 /**
  * Which station captions autonomy can never choose, worked out on `CoveredTrackRenderer` rather than on the event
- * thread (D3-B1), coalesced as the covered marks are, and painted on the event thread when the answer lands.
+ * thread, coalesced as the covered marks are, and painted on the event thread when the answer lands.
  *
  * The answer, the flags and the ask stay on `TrainControlUI`; this holds the machine that drives them.
  */
@@ -20,14 +20,14 @@ final class CaptionVisibility
      * labels being rebuilt (the setting toggled, a configuration loaded or unloaded); visibility is otherwise decided once, as each
      * label is registered.
      *
-     * **THE ANSWER IS WORKED OUT ON A WORKER AND PAINTED WHEN IT LANDS** (D3-B1): the rule reaches `Layout.isChoosableByAutonomy`,
+     * **THE ANSWER IS WORKED OUT ON A WORKER AND PAINTED WHEN IT LANDS**: the rule reaches `Layout.isChoosableByAutonomy`,
      * `synchronized` on the `Layout`, once per captioned square, and an `invokeLater` loop over every registered station parked the
      * event thread on the railway's monitor for the length of a dispatch.  `refreshCoveredTrack` is the same fix for the same reason.
      */
     void refreshCaptionVisibility()
     {
         // Captured here, on the caller's thread, for the reason `refreshCoveredTrack` gives: both getters BUILD when there is nothing yet.
-        // The session comes off the FIELD rather than the lazy getter, which parses every page and can raise a dialog (SV-B2).
+        // The session comes off the FIELD rather than the lazy getter, which parses every page and can raise a dialog.
         org.traincontrol.automation.Layout railway =
             this.ui.getModel() != null && this.ui.getModel().hasAutoLayout() ? this.ui.getModel().getAutoLayout() : null;
 

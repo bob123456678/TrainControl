@@ -56,7 +56,7 @@ final class EditorTileMenus
         }
 
         // Nothing on an ignored square is the user's to set, so it says so rather than offering a menu of no-ops.  EXCEPT BULK
-        // TOOLS, which are not about this square (V35-C1): on a page excluded from autonomy every square is ignored, and Clear All
+        // TOOLS, which are not about this square: on a page excluded from autonomy every square is ignored, and Clear All
         // Home Locomotives would be unreachable though its subject is not that page.
         if (editor.isIgnored(tile))
         {
@@ -144,7 +144,7 @@ final class EditorTileMenus
                         editor.session.placeLocomotive(target, null);
 
                         // The setup's new answer for this train is "nowhere", and it is an answer -
-                        // without naming it the rebuild puts the train straight back (D2-A1).
+                        // without naming it the rebuild puts the train straight back.
                         editor.placementChanged(java.util.Collections.singletonList(standing));
                     }));
             }
@@ -564,8 +564,8 @@ final class EditorTileMenus
                 {
                     editor.session.setPortalDisabled(target, !on);
 
-                    // A shut link is a missing edge in the running graph, so the railway has to be told (VD10-B2).  This
-                    // writer is not inside a door, which is why it pushes no undo point (VD9-B3).
+                    // A shut link is a missing edge in the running graph, so the railway has to be told.  This
+                    // writer is not inside a door, which is why it pushes no undo point.
                     editor.setupChanged();
                 }));
 
@@ -580,9 +580,9 @@ final class EditorTileMenus
                 menu.add(editor.item(I18n.f("autosetup.ui.menuGoToLinkPartner", editor.linkLabel(partner)),
                     () -> editor.goToLink(partner)));
 
-                // AND THE RAILWAY HAS TO BE TOLD, because this item REMOVES an edge (GSE-B1): `session.unpairPortal` rebuilds only the
+                // AND THE RAILWAY HAS TO BE TOLD, because this item REMOVES an edge: `session.unpairPortal` rebuilds only the
                 // editor's own graph, so on the track-diagram door, which saves at once, the unpair would reach disk while autonomy went
-                // on routing through it.  (Go To Link Partner is navigation and tells the railway nothing, VD17-C5.)
+                // on routing through it.  (Go To Link Partner is navigation and tells the railway nothing.)
                 menu.add(editor.item(I18n.t("autosetup.ui.menuUnpairLink"),
                     () ->
                     {
@@ -719,7 +719,7 @@ final class EditorTileMenus
 
         // The name is NOT repeated here (MT-162): the item below already reads "Stop Showing <name>".  The two keys still differ
         // ("a Station Name" when the square shows none, "a Different Station" when it already shows one).
-        // A STATION SQUARE HAS THREE STATES, AND ONLY ONE OF THEM HAS NOTHING TO DO (SVV-C6, SVX-B2).  `promptStationLabel`
+        // A STATION SQUARE HAS THREE STATES, AND ONLY ONE OF THEM HAS NOTHING TO DO.  `promptStationLabel`
         // captions a STATION square with itself whatever it is showing, so none is ever offered a choice; what differs is whether
         // choosing it would CHANGE anything:
         //
@@ -743,7 +743,7 @@ final class EditorTileMenus
                     : I18n.t("autosetup.ui.menuShowStationHereNamed"),
                 () -> editor.promptStationLabel(tile, component));
 
-            // Greyed, with the reason, on a square the running diagram does not draw (AD-C6)
+            // Greyed, with the reason, on a square the running diagram does not draw
             boolean inTheDrawnArea = editor.session.isInTheDrawnArea(tile);
 
             name.setEnabled(!showsItself && inTheDrawnArea);
@@ -756,7 +756,7 @@ final class EditorTileMenus
                     : !mine ? I18n.t("autosetup.ui.tooltipTextInTheWay")
                     : I18n.t("autosetup.ui.tooltipShowStationHere"))
                 // AND ITS KEY (FR-086), added to the sentence rather than replacing it: this tooltip is the only place that says what a
-                // caption is.  IN THE EDITOR ONLY (MFX-C3): the main window builds this menu with `setMenuOnly`, where Control+N is the
+                // caption is.  IN THE EDITOR ONLY: the main window builds this menu with `setMenuOnly`, where Control+N is the
                 // notes key.
                 + (editor.menuOnly ? "" : "  (" + AutonomyEditorPanel.SHORTCUT_STATION + ")")));
 
@@ -819,9 +819,9 @@ final class EditorTileMenus
 
         if (point == null) return null;
 
-        // A TRAIN HAS TO BE STANDING THERE ON THE RUNNING RAILWAY (OP3-C7): the offer above asks the SETUP, and `pointOnTheLayout`
+        // A TRAIN HAS TO BE STANDING THERE ON THE RUNNING RAILWAY: the offer above asks the SETUP, and `pointOnTheLayout`
         // falls back to any copy, so a square the setup assigns a train to while the running layout has not placed one would
-        // write a side onto an unoccupied Point, which `Point.toJSON` declines to save (AUR-C1).  The cost (FXV-C6): while the
+        // write a side onto an unoccupied Point, which `Point.toJSON` declines to save.  The cost: while the
         // running layout is held (during a run, before the first rebuild after a configuration is loaded) the item is absent
         // rather than greyed; otherwise `setupChanged`'s rebuild catches the placement up within the gesture.
         if (point.getCurrentLocomotive() == null) return null;
@@ -837,7 +837,7 @@ final class EditorTileMenus
 
         final String recorded = editor.session.getArrivedFrom(target);
 
-        // A RECORDED SIDE THE TRACK DOES NOT HAVE IS SHOWN, NOT OFFERED (RGD-C4; Adam: **"75 407 DB's menu now lets you select
+        // A RECORDED SIDE THE TRACK DOES NOT HAVE IS SHOWN, NOT OFFERED (Adam: **"75 407 DB's menu now lets you select
         // arrival from the west at BottomMainPost, which makes no sense"**).  The radios are a ButtonGroup ticked by
         // `side.equals(recorded)`, so a recorded side not in the list would tick NOTHING and read as "no tail recorded" for a
         // square that has one, a value still steering the tail walk.  Unlike the facing menu (OB-177) it is not added to the list:
@@ -872,7 +872,7 @@ final class EditorTileMenus
                     editor.setupChanged();
 
                     // THE RUNNING LAYOUT TOO, not only the setup: what blocks track is the Point, and a setting that
-                    // changes the diagram while the railway uses the old value is the shape SPEC-B4 had.
+                    // changes the diagram while the railway uses the old value is a defect.
                     org.traincontrol.automation.Layout now =
                         editor.runningLayout == null ? null : editor.runningLayout.get();
 
@@ -927,7 +927,7 @@ final class EditorTileMenus
         org.traincontrol.automation.Layout showing =
             editor.runningLayout == null ? null : editor.runningLayout.get();
 
-        // THE TRAIN THE RAILWAY HAS HERE, and only then the setup's (TDY4-C5).  After a run the setup still names each
+        // THE TRAIN THE RAILWAY HAS HERE, and only then the setup's.  After a run the setup still names each
         // square's pre-run occupant (behaviour.md 6a) and nothing captures before this menu, so it would name the setup's
         // train and tick the railway's, and a click would turn neither.  `setFacingAndMove` turns the one named here.
         String onTheRailway = editor.session == null ? null : editor.session.trainOnTheRailway(target, showing);
@@ -986,13 +986,13 @@ final class EditorTileMenus
         {
             facingMenu.add(editor.radio(facingGroup,
                 I18n.t("autosetup.ui.facing" + facing.name()), "autosetup.ui.hintFacing",
-                // NOTHING TICKED WHERE NOTHING IS KNOWN (GUI3-C4): with no facing recorded and none on the railway,
+                // NOTHING TICKED WHERE NOTHING IS KNOWN: with no facing recorded and none on the railway,
                 // the build stands the train on a copy it can start from, which need not be the first facing.  Where
-                // the square holds one facing, that one IS known - the only copy is where the train stands (DCN4-C3).
+                // the square holds one facing, that one IS known - the only copy is where the train stands.
                 recorded != null ? facing == recorded : facings.size() == 1,
-                // The redraw is in radio() itself (TD-1), where every one of these answers gets it.
+                // The redraw is in radio() itself, where every one of these answers gets it.
                 //
-                // AND THE RAILWAY, NOT ONLY THE SETUP (SPEC-B4): `setFacingAndMove` stands the train on the copy that says
+                // AND THE RAILWAY, NOT ONLY THE SETUP: `setFacingAndMove` stands the train on the copy that says
                 // the new direction, so the caption and the train cannot disagree until the next build.
                 () -> editor.session.setFacingAndMove(target, facing)));
         }

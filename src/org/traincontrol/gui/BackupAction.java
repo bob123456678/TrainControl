@@ -107,7 +107,7 @@ final class BackupAction
         try
         {
             // Written LIVE first, so the archive holds the state as it is now rather than as it was when something last happened to save it.
-            // WITHOUT the session capture (IAR-A2): writing live must not imply it, or this menu item would commit whatever was open in the
+            // WITHOUT the session capture: writing live must not imply it, or this menu item would commit whatever was open in the
             // autonomy editor to setup.json and every configuration file from a thread that is not the event thread, and the editor's Cancel
             // could not undo it (discardEdits re-reads the file just written).  Taking a copy must not change anything.
             this.ui.saveState(false, false);
@@ -148,7 +148,7 @@ final class BackupAction
                 }
             }
 
-            // The LEGACY autonomy file (IAR-B1): for an operator coming from the hand-authored graph this is what their setup is imported from
+            // The LEGACY autonomy file: for an operator coming from the hand-authored graph this is what their setup is imported from
             // (nothing writes it any more, OB-254), and it was in neither half of the backup (this archive, or the copy into the backup folder,
             // which only a timestamped save makes).  Skipped silently when it is not there, like every other source.
             state.put(TrainControlUI.AUTONOMY_FILE_NAME,

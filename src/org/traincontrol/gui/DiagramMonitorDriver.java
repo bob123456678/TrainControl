@@ -160,7 +160,7 @@ public class DiagramMonitorDriver
     }
 
     /**
-     * Tells the diagram again which trains the setup records where the railway stands them on no Point (RSA18-C1): a record
+     * Tells the diagram again which trains the setup records where the railway stands them on no Point: a record
      * written after the load - the put-back's - was drawn nowhere.
      *
      * @param session the setup
@@ -431,7 +431,7 @@ public class DiagramMonitorDriver
 
     private Layout currentLayout()
     {
-        // ASKED, NOT BUILT (RLV7-C2, CS3-C4).  `getAutoLayout` makes a Layout where there is none, so after Unload the
+        // ASKED, NOT BUILT.  `getAutoLayout` makes a Layout where there is none, so after Unload the
         // monitor's next look built an empty one, and `hasAutoLayout` then answered yes about nothing.  The monitor
         // reads no layout as nothing to show.
         return ui == null || ui.getModel() == null ? null : ui.getModel().getAutoLayoutIfLoaded();

@@ -235,7 +235,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public static final boolean SHOW_INACTIVE_LABELS_DEFAULT = true;
 
     // Removed settings have no constant, because nothing reads them: ShowCoordinates (OB-179), and HideReversingEdges,
-    // ShowHomeLocomotives, HideReversing, HideInactive and ShowStationLength (R28-C3).  Their stored values stay in the
+    // ShowHomeLocomotives, HideReversing, HideInactive and ShowStationLength.  Their stored values stay in the
     // preferences store, since clearing a key cannot be undone and a stale value must not come back if a key is reused.
     // The diagram's column and row numbers follow the grid preference alone: `LayoutGrid.coordinatesVisible`, key
     // `EDITOR_GRID_PREF`.
@@ -485,7 +485,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private static final int SAVE_KEY_ACTIVE_BUTTON = -2;
 
     /**
-     * The page names, without the two sentinels stored beside them (SVN-C13).  `saveState` puts the active page number and
+     * The page names, without the two sentinels stored beside them.  `saveState` puts the active page number and
      * the active button's key code into `pageNames` under the negative keys above, so "is this a page name" must skip them.
      *
      * @return the names, trimmed, as a set
@@ -531,16 +531,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private AddLocomotive adder;
     private LocomotiveStats stats;
     /**
-     * Set when a setup edit could not be applied because autonomy was running (ACC-B3).
+     * Set when a setup edit could not be applied because autonomy was running.
      *
      * The edit reached the file and not the running layout, so the configuration on disk is NEWER than the layout for at
      * least one point, and the save on the way out folds the layout back over it; this stops that save from deleting the edit.
-     * Cleared by a rebuild that replaces the running layout (AMS-B1): a rebuild covers every point, the edit included.
+     * Cleared by a rebuild that replaces the running layout: a rebuild covers every point, the edit included.
      */
     private boolean setupEditDeclinedDuringRun;
 
     /**
-     * The configuration whose name the last reset forgot, while its layout is still the one in the model (RLV7-C2).
+     * The configuration whose name the last reset forgot, while its layout is still the one in the model.
      * A load that carries the trains across (while an edit waits, or a train is under way) carries them from the
      * configuration running, and with the name forgotten it read "nothing running".  Unload, a deleted setup and a switch of
      * railway forget it too (`forgetTheRailway`).
@@ -549,7 +549,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * The layout source the railway came from - the local folder, or none for the Central Station's - so that a switch
-     * of source can tell another railway from the same one chosen again (RLV8-C5).  Null until the window is given its
+     * of source can tell another railway from the same one chosen again.  Null until the window is given its
      * model, and then a switch forgets the railway whatever it is.
      */
     private String railwaySource;
@@ -558,7 +558,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     RouteEditorFrame routeEditor;
 
     /**
-     * Whether every window holding unsaved work is willing to be closed - the exit's first question (UIX-B1, SVT-B1).
+     * Whether every window holding unsaved work is willing to be closed - the exit's first question.
      * `WindowClosed` ends in `System.exit`, so this is the part that decides, lifted out so
      * `core.testLayoutTiles.testTheExitAsksEveryOpenWindow` can ask it with a dirty route editor open (the editors answer
      * with their own modal question, which a test answers through `RouteEditorFrame`'s test hook).
@@ -570,13 +570,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (openEditor != null && openEditor.isDisplayable() && !openEditor.maySettleBeforeExit()) return false;
 
-        // The route editor, the other window holding unsaved typing (UIX-B1): a non-modal frame with its own discard question,
+        // The route editor, the other window holding unsaved typing: a non-modal frame with its own discard question,
         // which the exit must consult too, or File > Exit would throw the typing away without a dialog.
         return routeEditor == null || !routeEditor.isDisplayable() || routeEditor.maySettleBeforeExit();
     }
 
     /**
-     * Whether an open route editor is holding work the exit would throw away (UIX-B1).  The same question as the exit's
+     * Whether an open route editor is holding work the exit would throw away.  The same question as the exit's
      * `maySettleBeforeExit` without the modal dialog, so `core.testLayoutTiles.testTheExitKnowsTheRouteEditorHasUnsavedWork`
      * can ask it on both sides of a typed change.
      *
@@ -765,7 +765,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {"FileChooser.newFolderActionLabelText", "swing.fileChooser.newFolder"},
             {"FileChooser.listViewActionLabelText", "swing.fileChooser.list"},
             {"FileChooser.detailsViewActionLabelText", "swing.fileChooser.details"},
-            // AND THE WORDS SHOWN ONLY WHEN A FOLDER IS MADE OR RENAMED (RSA37-C3): the name a new folder is given -
+            // AND THE WORDS SHOWN ONLY WHEN A FOLDER IS MADE OR RENAMED: the name a new folder is given -
             // Windows' and every other system's - and the errors.  The two names are read once, by the first chooser
             // made, which the language being fixed for a run makes enough.
             {"FileChooser.win32.newFolder", "swing.fileChooser.newFolderName"},
@@ -855,7 +855,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Set internationalized options
 
         // The Utilities menu heading, set here because the generated block holds a hard-coded "Utilities" that is not ours to
-        // edit.  A key of its own, not the old `ui.main.toolbar.functions` ("Functions" was a different menu) (OP3-C1); the
+        // edit.  A key of its own, not the old `ui.main.toolbar.functions` ("Functions" was a different menu); the
         // translations say tools rather than functions: Werkzeuge, Utilitaires, Hulpmiddelen.
         this.functionsMenu.setText(I18n.t("ui.main.menu.utilities"));
 
@@ -1144,7 +1144,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Defaulted ON: a layout with a setup on it otherwise opens with the setup not loaded (station names as plain text, no
         // sensor shown as a Point, only a banner offering to load it).  Loading is not running - it builds the graph and draws
         // it, and starting trains is a separate press; a layout with no setup is unaffected.  A loaded, idle configuration still
-        // puts locomotives onto Points, and several rules ask whether a Point holds one (REL-B3, REL-A1, REL-A2).
+        // puts locomotives onto Points, and several rules ask whether a Point holds one.
         this.AutoLoadAutonomyMenuItem.setSelected(prefs.getBoolean(AUTO_LOAD_AUTONOMY, true));
         this.enhancedPathValidationMenuItemCheckbox.setSelected(prefs.getBoolean(ENHANCED_PATH_VALIDATION, true));
         Layout.PATH_INTEGRITY_VALIDATION = this.enhancedPathValidationMenuItemCheckbox.isSelected();
@@ -1407,13 +1407,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (station == null || this.model == null || !this.model.hasAutoLayout()) return true;
 
-        // And the SESSION, where the answer actually comes from (LD-C8): `getAutonomyPointsForTile` below reads the autonomySession
+        // And the SESSION, where the answer actually comes from: `getAutonomyPointsForTile` below reads the autonomySession
         // FIELD and returns nothing when it is null, and `resetAutonomySession` nulls it without touching the model, so between a
         // reset and the rebuild the loop would find no Points and hide EVERY caption.  An unanswerable question is not grounds for
         // hiding anything: the same answer `mayRestHere` gives.
         if (this.autonomySession == null) return true;
 
-        // The railway is not asked here (D3-B1): `Layout.isChoosableByAutonomy` is `synchronized` on the `Layout`, a dispatch holds
+        // The railway is not asked here: `Layout.isChoosableByAutonomy` is `synchronized` on the `Layout`, a dispatch holds
         // that monitor across a `CONFIGURE_SLEEP` per accessory, and this runs on the event thread once per captioned square
         // (OB-192; `refreshCoveredTrack` says why the event thread must never queue for it).  So `workOutCaptionVisibility` holds
         // the rule and runs on a worker, and this reads its answer.  It is the HIDE-list, not a show-list: a square the worker has
@@ -1429,7 +1429,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * about the square, which is what deciding whether to draw its name needs.
      *
      * Handed the railway and the setup rather than reading the fields, because the only caller is `workOutCaptionVisibility`
-     * on a worker thread and the two must be the pair that ask was made with (the capture is in `refreshCaptionVisibility`, SV-B2).
+     * on a worker thread and the two must be the pair that ask was made with (the capture is in `refreshCaptionVisibility`).
      *
      * @param railway the running layout, captured by the ask
      * @param session the setup, captured by the same ask
@@ -1446,7 +1446,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return new java.util.ArrayList<org.traincontrol.automation.Point>();
         }
 
-        // The station index's own answer (RSA40-C2): `pointsAt` falls back to the square each Point was built for, so a station
+        // The station index's own answer: `pointsAt` falls back to the square each Point was built for, so a station
         // renamed while the setup could not build still has its Points found.
         return session.getStationIndex().pointsAt(railway, station);
     }
@@ -1484,7 +1484,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 JLabel existing = i.next();
 
-                // Not one of this build's own (RSA40-C1): a station named on two squares (a hand-edited setup can; the setup check calls it
+                // Not one of this build's own: a station named on two squares (a hand-edited setup can; the setup check calls it
                 // an error, OB-341) registers two labels in one build, neither on screen yet, and the second evicted the first.
                 Object build = value.getClientProperty(LAYOUT_STATION_BUILD);
 
@@ -1515,7 +1515,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private static final String LAYOUT_STATION_OWNER = "tcLayoutStationOwner";
 
     /**
-     * Which build of a grid a caption label came from, so a build does not evict its own (RSA40-C1).  Set by the grid as it
+     * Which build of a grid a caption label came from, so a build does not evict its own.  Set by the grid as it
      * registers each caption; a client property for the reason `LAYOUT_STATION_OWNER` is one.
      */
     public static final String LAYOUT_STATION_BUILD = "tcLayoutStationBuild";
@@ -1886,7 +1886,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
     
     /**
-     * Writes a line to the log when a save left the setup alone because a page is not loaded (DR-B10).  For the save doors
+     * Writes a line to the log when a save left the setup alone because a page is not loaded.  For the save doors
      * that fire constantly (an edit, a placement), where a dialog would be unusable.  The refusal is correct - it stops a page
      * whose file has not hydrated costing its settings - but it must not be silent.
      *
@@ -1986,7 +1986,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * @param renamedFromTo old name -&gt; new name, whose old names are not absences
      * @param deliberatelyRemoved names being removed on purpose, which are not absences either
      * @return the names to keep in the index, and null when the index must not be written at all: there is no local layout to
-     *         reconcile against (OB-127), or the index could not be read (RA-C3).  All three callers treat null as "do not proceed".
+     *         reconcile against (OB-127), or the index could not be read.  All three callers treat null as "do not proceed".
      */
     private java.util.Collection<String> settleAbsentPages(java.util.List<String> layoutList,
         java.util.Map<String, String> renamedFromTo,
@@ -2005,7 +2005,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         final java.util.List<String> absent = LayoutDiagram.pagesTheIndexWouldDrop(
             this.getLocalLayoutPath(), layoutList, renamedFromTo, deliberatelyRemoved);
 
-        // The index has to be READABLE before any caller touches the disk (RA-C3): writeLayoutIndex refuses a layout whose index is
+        // The index has to be READABLE before any caller touches the disk: writeLayoutIndex refuses a layout whose index is
         // present and unreadable (a sync client holding gleisbild.cs2 open) at the END of the operation, when the page file is
         // already deleted and the setup has forgotten it, and `layoutEditingComplete` never runs.  Asked here because all three
         // writers come through this method and treat null as "do not proceed"; getUnreadableIndex is null when there is no index yet.
@@ -2018,8 +2018,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return null;
         }
 
-        // Nothing is pruned (Adam: "drop it"): the settings of a page whose file will not read are simply kept, always.  Since
-        // NSV-B3 every page named in the index comes back, as itself or as a blank stand-in, so `layoutList` always covers the
+        // Nothing is pruned (Adam: "drop it"): the settings of a page whose file will not read are simply kept, always.
+        // Every page named in the index comes back, as itself or as a blank stand-in, so `layoutList` always covers the
         // index; a stand-in is a file that is missing right now, which is not a page that is gone.
         // `AutonomyCompanionStore.forgetHeldPages` stays, with its own tests, as the mechanism a deliberate "forget this page's
         // settings" would use.
@@ -2027,7 +2027,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The floor `writeLayoutIndex` must not issue a fresh page id at or below (IAR-A1).
+     * The floor `writeLayoutIndex` must not issue a fresh page id at or below.
      *
      * The index remembers a retired id for exactly one write and hands it out again afterwards.  Harmless for a DELETED page,
      * whose settings deletePage forgets first; not for a page whose FILE was merely absent when the index was written: its
@@ -2040,7 +2040,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         try
         {
-            // The FIELD, never getAutonomySession() (SV-B2): that method is a lazy builder, which parses every page, runs the caption
+            // The FIELD, never getAutonomySession(): that method is a lazy builder, which parses every page, runs the caption
             // migration (it writes to disk) and can put a dialog on screen, and this runs on the event thread in the middle of writing
             // the layout index - in the delete path it would build and CACHE a session over a page list that still includes the page
             // being deleted.  No session means no floor; the case the floor is FOR is where the session is already built.
@@ -2067,7 +2067,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The same, with the session capture said separately from where the files go (IAR-A2).  The archive (FR-015) must hold
+     * The same, with the session capture said separately from where the files go.  The archive (FR-015) must hold
      * the state as it is NOW, so it writes live; but a capture lifts the running layout back into the active configuration,
      * from a backup's thread and without the editor's Cancel being able to take it back, which a copy must never do.
      *
@@ -2109,7 +2109,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // ordinary exit destroyed everything the user had set up (as the locomotive database learned), and writing atomically is
         // no protection, since a complete write of nothing is not a partial write.  Once, and the save still happens - but not
         // over a file whose copy could not be made: the mark is cleared only once the copy is known to exist, and the next save
-        // tries again (BPV-C7, RLD-B1).
+        // tries again.
         if (!backup && this.uiStateLoadFailed)
         {
             try
@@ -2177,11 +2177,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // When the running layout came from the diagram, what was changed while it ran - placements, homes, settings - is lifted
         // back into the configuration it came from, so it is what loads next time.  autonomy.json is not written (OB-254, below).
         // Not on backup: backups run this method from their own thread, and the session is an event thread object.
-        // Not all of it after a declined setup edit (ACC-B3, RSA20-A1): `captureFromLayout` writes what the running layout knows
+        // Not all of it after a declined setup edit: `captureFromLayout` writes what the running layout knows
         // over the configuration and removes what it does not carry, which is exactly wrong once an edit has reached the file
         // without reaching the layout.  So while the setup is newer the exit writes only what the railway owns: where the trains
         // stand, and the settings and timetable it changed since it was built.
-        // Asked once (OV2-C5): the conditions are not restated above, since two predicates that have to agree will not.
+        // Asked once: the conditions are not restated above, since two predicates that have to agree will not.
         boolean wouldCapture = captureSession && this.activeDiagramConfiguration != null
             && this.model.hasAutoLayout()
             && this.model.getAutoLayout().isValid()
@@ -2199,7 +2199,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // try whose catch is about save failures.
                 if (session != null && setupEditDeclinedDuringRun)
                 {
-                    // WHAT THE RAILWAY OWNS ALONE while the setup is newer (RSA20-A1): the exit wrote no train's place and
+                    // WHAT THE RAILWAY OWNS ALONE while the setup is newer: the exit wrote no train's place and
                     // none of the timetable the run captured
                     session.captureWhatTheRailwayOwns(this.model.getAutoLayout().toJSON(),
                         this.activeDiagramConfiguration, settingsAsBuiltFor(this.model.getAutoLayout()));
@@ -2379,7 +2379,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         List<Map<Integer,String>> instance = new ArrayList<>();
         
-        // The stream in its own resource, because the one wrapping it can throw before it exists (AC3-B1): ObjectInputStream's
+        // The stream in its own resource, because the one wrapping it can throw before it exists: ObjectInputStream's
         // constructor reads the stream header and throws on a corrupt file, so with a single resource the variable is never
         // assigned, try-with-resources closes nothing and the FileInputStream stays open.  Then the keep-aside-and-write-fresh
         // recovery fails, because `writeAtomically` ends in Files.move(REPLACE_EXISTING) and Windows will not replace an open file.
@@ -2448,12 +2448,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Why the autonomy setup on this computer would not read, in words - or null when it read, or there is none to read
-     * (GSP-B2).  Worked out afresh by `getAutonomySession` at every attempt to build the session.
+     *.  Worked out afresh by `getAutonomySession` at every attempt to build the session.
      */
     private String autonomySetupUnreadable;
 
     /**
-     * Why the autonomy setup on this computer would not read, in words - or null when it read, or there is none (GSP-B2).
+     * Why the autonomy setup on this computer would not read, in words - or null when it read, or there is none.
      *
      * `getAutonomySession` hands back null for two different things: a layout with no folder to keep a setup in, and a setup
      * that is there and would not read (a setup.json that is not JSON, one written by a newer TrainControl, a configuration
@@ -2468,7 +2468,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * A failure to open the autonomy setup, in words somebody can act on (GSP-B2).  The store's refusal of a setup written by
+     * A failure to open the autonomy setup, in words somebody can act on.  The store's refusal of a setup written by
      * a newer TrainControl arrives as its message KEY with the two version numbers after it (`AutonomyCompanionStore.ERROR_VERSION
      * + " (3 > 2)"`), because the store writes no sentences; it is translated here, numbers kept.  Anything else arrives in words.
      *
@@ -2497,7 +2497,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (autonomySession != null) return autonomySession;
 
-        // EACH ATTEMPT SAYS AFRESH WHY IT FAILED (GSP-B2): a setup mended since, or a layout with no folder now, is not
+        // EACH ATTEMPT SAYS AFRESH WHY IT FAILED: a setup mended since, or a layout with no folder now, is not
         // the reason the last attempt gave.
         autonomySetupUnreadable = null;
 
@@ -2541,14 +2541,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.model.logf("autosetup.log.unfinishedEditNoteUnusable");
             }
 
-            // And the pages it did rewrite (RGN-B1): this edits files the user owns - a `Point:` name typed onto their track diagram is
+            // And the pages it did rewrite: this edits files the user owns - a `Point:` name typed onto their track diagram is
             // taken into the setup and emptied out of the `.cs2`, one-way, so somebody who opens an older version finds their station
             // captions gone.  `saveChanges` keeps a `.cs2.bak` the FIRST time it rewrites a page, which makes them recoverable by hand
-            // but only helps a reader who knows it exists, hence "the first time this version rewrote it" (VD9-B8).  The log rather than
+            // but only helps a reader who knows it exists, hence "the first time this version rewrote it".  The log rather than
             // a dialog: it happens once, as a record of something already done.
             if (!session.getMigratedPages().isEmpty())
             {
-                // N counts what was removed, so it is attached to the removal (VD10-C6): the setup is saved before any page is written, so
+                // N counts what was removed, so it is attached to the removal: the setup is saved before any page is written, so
                 // a page whose write throws has its captions in the setup and its labels still on disk.
                 this.model.logf("autosetup.log.captionsMigrated",
                     String.join(", ", session.getMigratedPages()),
@@ -2578,7 +2578,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             this.model.log(e);
 
-            // And why, kept for the doors (GSP-B2).  A setup that is there and would not read is not a layout with no folder to keep one
+            // And why, kept for the doors.  A setup that is there and would not read is not a layout with no folder to keep one
             // in, which is what every door said when all it had was this null.  Nothing is written: the setup stays as it is on disk.
             autonomySetupUnreadable = describeSetupFailure(e);
 
@@ -2597,7 +2597,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return loc == null ? null : loc.getTrainLength();
         });
 
-        // AND THE RAILWAY RUNNING, from the moment it is made (RSA6-A1): the refusal of a direction or a link asks where
+        // AND THE RAILWAY RUNNING, from the moment it is made: the refusal of a direction or a link asks where
         // the railway's trains stand, and a session told only by a station's Facing menu or the editor judged one set
         // from a plain track square's menu against the setup alone - where the run began.
         session.setRunningLayoutSource(() -> this.model == null ? null : this.model.getAutoLayoutIfLoaded());
@@ -2628,8 +2628,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Whether the setup on disk is newer than the running layout: a setup edit made as a run started was written to the
-     * file and not to the running layout, and no rebuild has carried it since (ACC-B3, WKW-B2, AMS-B1).  Every fold of the
-     * running layout back into the setup asks this first, since folding would take that edit away (RLD4-C3).
+     * file and not to the running layout, and no rebuild has carried it since.  Every fold of the
+     * running layout back into the setup asks this first, since folding would take that edit away.
      *
      * @return true while such an edit waits
      */
@@ -2639,7 +2639,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The configuration whose name the last reset forgot, while its layout is still the one loaded (RLV7-C2).
+     * The configuration whose name the last reset forgot, while its layout is still the one loaded.
      *
      * @return its name, or null once another railway, or none, has replaced it
      */
@@ -2650,7 +2650,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Forgets the railway that was loaded, at the doors that replace it with another or with none: Unload, a deleted
-     * setup, a switch of railway (RLV7-C2).  An edit waiting for its rebuild belonged to that railway's setup, and a
+     * setup, a switch of railway.  An edit waiting for its rebuild belonged to that railway's setup, and a
      * load afterwards has nothing of it to carry - it carried the previous railway's trains across by Point name onto
      * stations of the new one that shared a name.
      */
@@ -2663,10 +2663,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * The switch-of-source rule, at every door that changes the layout source.  Where the source is another railway, the
-     * railway loaded is forgotten (RLV7-C2) and its autonomy layout leaves memory as Unload clears it, so none of its
+     * railway loaded is forgotten and its autonomy layout leaves memory as Unload clears it, so none of its
      * trains stands or claims track under the next one's pages; its locomotives stay in the database (OB-363).  Not where
      * the source in use is chosen again, which reloads the same railway, whose trains are carried as any reload carries
-     * them (RLV8-C5).
+     * them.
      *
      * @param source the layout source now in use - a folder, or empty for the Central Station's
      */
@@ -2685,7 +2685,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The layout source is now the folder the Central Station's layout was downloaded into (RLV9-C8).  The Download door
+     * The layout source is now the folder the Central Station's layout was downloaded into.  The Download door
      * reloads the pages itself and never reaches `initializeTrackDiagram`, where every other switch of source meets the
      * rule, so the source remembered stayed the Central Station's - and choosing that folder again read as a switch to
      * another railway, and forgot the one shown.
@@ -2701,11 +2701,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Runs a load while a setup edit a run declined waits for its rebuild, carrying where every train stands across it
-     * (RLA5-B1, RLV6-B1).  The running layout is then the older of the two, so no door folds all of it into the setup (the folds
-     * made meanwhile take what the railway owns alone, RSA20-A1) and where its trains stand is still the railway's to say
+     *.  The running layout is then the older of the two, so no door folds all of it into the setup (the folds
+     * made meanwhile take what the railway owns alone) and where its trains stand is still the railway's to say
      * (OB-183): they are recorded before the load replaces it and put back after, with the turns they were due, as
      * `rebuildRunningLayoutFromSetup` does for the editor doors; once a valid layout carries the edit the flag comes down
-     * (AMS-B1).  Unlike that rebuild this runs whatever `isAutonomyBusy` says: it is reached after `prepareAutonomyReload` has
+     *.  Unlike that rebuild this runs whatever `isAutonomyBusy` says: it is reached after `prepareAutonomyReload` has
      * stopped the run, and a train stopped between sensors keeps the old layout reading busy until something replaces it.
      *
      * @param load the load, which replaces the running layout or leaves it
@@ -2717,8 +2717,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         java.util.Map<String, String[]> pendingTurns = takeThePendingTurns();
 
-        // ASKED, NOT BUILT (RLV7-C2): `getAutoLayout` makes a Layout where there is none, and hasAutoLayout then answers
-        // yes about nothing (CS3-C4)
+        // ASKED, NOT BUILT: `getAutoLayout` makes a Layout where there is none, and hasAutoLayout then answers
+        // yes about nothing
         final Object runningBefore = this.model == null ? null : this.model.getAutoLayoutIfLoaded();
 
         boolean carried = false;
@@ -2727,8 +2727,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             load.run();
 
-            // ONLY OVER A RAILWAY THE LOAD REPLACED (RSA18-A1), as `rebuildRunningLayoutFromSetup`.  Both callers come here with
-            // the setup already marked newer than the railway, so a load that declines leaves it marked (RSA20-C1).
+            // ONLY OVER A RAILWAY THE LOAD REPLACED, as `rebuildRunningLayoutFromSetup`.  Both callers come here with
+            // the setup already marked newer than the railway, so a load that declines leaves it marked.
             if (this.model != null && this.model.getAutoLayoutIfLoaded() != runningBefore) putTheTrainsBack(standing, null);
 
             carried = this.model != null && this.model.hasAutoLayout() && this.model.getAutoLayout() != runningBefore
@@ -2746,10 +2746,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Runs a load that folds the running layout, keeping the destination turns the railway has made and not yet written
-     * into the setup (RLV9-C1).  A turn is written only while the railway is idle, so during a run every one made since
+     * into the setup.  A turn is written only while the railway is idle, so during a run every one made since
      * it started is still owed; the fold writes where each train stands, not which way it has been turned, and the load
      * replaced the railway with the records on it.  Put back on whatever railway the load leaves, as the carry and the
-     * rebuild put them back (D3-C5).
+     * rebuild put them back.
      *
      * @param load the load
      */
@@ -2773,10 +2773,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * A run moves locomotives, and where they ended up lives in the running Layout until a fold writes it into the setup: this
      * one, behind the reset after a diagram edit and the editor doors; the save on the way out; the one
      * `AutonomyViewerPanel.load` makes as it chooses a configuration; and the one an old file's import into the configuration
-     * in use makes before it writes.  Stopping autonomy does not capture.  Each asks `isSetupNewerThanTheRunningLayout` first
-     * (RLD4-C3).
+     * in use makes before it writes.  Stopping autonomy does not capture.  Each asks `isSetupNewerThanTheRunningLayout` first.
      *
-     * The capture happens BEFORE a page changes (DW-A1), while the naming and the store still agree, and `renamePage` then
+     * The capture happens BEFORE a page changes, while the naming and the store still agree, and `renamePage` then
      * rekeys what was captured.  Refused after a run (run, stop, rename), it would discard every placement the run produced; and
      * occupancy is derived from placements (`Point.isOccupied` is `currentLoc != null`, `isPathClear` never consults the s88), so
      * the rebuilt configuration would put trains where they were before the run, and Start could route one into an occupied block.
@@ -2790,7 +2789,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * The same, told whether a railway that holds a path is folded too, each train under way written on the one point it
-     * is kept at (RLV9-A1): Unload's fold, made after its Yes has stopped the trains, as a reload's is (RLV8-B1).  Every
+     * is kept at: Unload's fold, made after its Yes has stopped the trains, as a reload's is.  Every
      * other door here is refused while autonomy runs, or is the reset after one, and keeps the rule that a railway
      * reading busy is not folded.
      *
@@ -2806,19 +2805,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return;
         }
 
-        // While a setup edit waits for a load, what the railway owns and nothing of the setup's (WKW-B2, RSA20-A1, RSA21-A1).  An
+        // While a setup edit waits for a load, what the railway owns and nothing of the setup's.  An
         // edit the railway could not take yet is in the configuration and not in the running layout: folding the whole running
-        // layout wrote the older layout over it (WKW-B2), and folding nothing lost where the run left the trains and the timetable
-        // it captured (RSA20-A1).  So every door that folds makes this one then: where the trains stand, and the settings the
-        // railway changed since it was built.  The rebuild or load that replaces the running layout clears the flag (AMS-B1).
+        // layout wrote the older layout over it, and folding nothing lost where the run left the trains and the timetable
+        // it captured.  So every door that folds makes this one then: where the trains stand, and the settings the
+        // railway changed since it was built.  The rebuild or load that replaces the running layout clears the flag.
         try
         {
-            // Each train under way on the one point it is kept at (RLV8-B1, RLV9-A1); a railway at rest keeps none
+            // Each train under way on the one point it is kept at; a railway at rest keeps none
             org.traincontrol.automation.Layout folding = this.model.getAutoLayout();
 
             String railway = folding.toJSON(folding.getLastPointsReached());
 
-            // WHILE THE SETUP IS NEWER THAN THE RAILWAY, WHAT THE RAILWAY OWNS ALONE (RSA20-A1): where the trains stand, the
+            // WHILE THE SETUP IS NEWER THAN THE RAILWAY, WHAT THE RAILWAY OWNS ALONE: where the trains stand, the
             // settings and the timetable - not the older railway's homes, lengths and priorities over the edit, and not
             // nothing, which lost where the run left the trains and the timetable it captured
             if (setupEditDeclinedDuringRun)
@@ -2847,9 +2846,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         // Save what this session knows BEFORE forgetting it: nulling activeDiagramConfiguration first made the exit-path capture
         // (gated on it) skip everything, so a re-download silently threw away every placement, home and setting made since the last
-        // save.  And while an edit waits, what the railway owns (RSA21-A1): Open Layout on the folder in use and Combine Linked Pages
+        // save.  And while an edit waits, what the railway owns: Open Layout on the folder in use and Combine Linked Pages
         // keep the railway and leave no configuration running, so nothing folded it after; a switch of railway writes it into the
-        // railway's own file, which it leaves - not onto the next one (RLV7-C2).
+        // railway's own file, which it leaves - not onto the next one.
         captureRunningLayout();
 
         autonomySession = null;
@@ -2871,7 +2870,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // captured into one at exit.
         autonomyViewerPanel = null;
 
-        // Remembered, for a load of it to carry its trains across (RLV7-C2)
+        // Remembered, for a load of it to carry its trains across
         if (activeDiagramConfiguration != null) forgottenByTheReset = activeDiagramConfiguration;
 
         activeDiagramConfiguration = null;
@@ -2910,10 +2909,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // loop must not switch it back on when no editor is open.
             if (child == localHeading || child == centralStationHeading) continue;
 
-            // Taken away, never handed back (UXR-A1): these three are owned by `repaintPathLabel`, which greys them when no Central
+            // Taken away, never handed back: these three are owned by `repaintPathLabel`, which greys them when no Central
             // Station is reachable (OB-098, OB-100), and that greying IS the guard - switchCSLayoutMenuItemActionPerformed has no
             // connection check of its own and clears the layout path preference and every page when pressed (the state OB-127 was filed
-            // from).  An open editor may still take them away; only their owner may give them back.  VAL-C4: initializeLocalLayoutMenuItem
+            // from).  An open editor may still take them away; only their owner may give them back.  initializeLocalLayoutMenuItem
             // is in the list for the same reason - its action listener disables it before createAndApplyEmptyLayout runs off the EDT,
             // and only that flow's completion callback re-enables it.
             if (child == switchCSLayoutMenuItem || child == downloadCSLayoutMenuItem
@@ -2927,7 +2926,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             child.setEnabled(!busy);
         }
 
-        // The owner, asked at the moment somebody looks (UXR-B2, OB-128): `applyLayoutEditingAvailability` already owns Manage Pages,
+        // The owner, asked at the moment somebody looks (OB-128): `applyLayoutEditingAvailability` already owns Manage Pages,
         // and answering for it here made a second writer that disagreed during every diagram rebuild.  Adam: "You can make this check
         // when the layout menu opens."  Asking the owner keeps one writer, refreshed where its answer is certainly current.
         applyLayoutEditingAvailability();
@@ -2943,7 +2942,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             boolean workable = layoutCanBeEdited();
 
-            // Manage Pages is NOT set here (UXR-B2): `applyLayoutEditingAvailability` owns the item, and this menu, opening on its own
+            // Manage Pages is NOT set here: `applyLayoutEditingAvailability` owns the item, and this menu, opening on its own
             // schedule, was the later writer - during the seconds `layoutEditingComplete` spends rebuilding the layout database after a
             // save, this line said yes while the Edit Layout button correctly said no.  Same property, two writers.
             if (editPageMenu != null) editPageMenu.setEnabled(workable && isLayoutLoaded());
@@ -2957,7 +2956,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             if (exportDiagramItem != null) exportDiagramItem.setEnabled(loaded);
 
-            // Its own question, because nothing else asks one (VAL-B1): excluded from the loop above, its only other writer disables it
+            // Its own question, because nothing else asks one: excluded from the loop above, its only other writer disables it
             // when the station is not a CS3 and never puts it back, so on a CS3 opening this menu once with an editor open greyed the
             // item for the session.
             if (openCS3AppMenuItem != null) openCS3AppMenuItem.setEnabled(
@@ -3140,7 +3139,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         if (station >= 0) layoutMenu.add(centralStationHeading, station);
 
         // Below both sections (Adam: "Move pop up all... and save as picture to below the central station layout section."): both
-        // take whatever is loaded and put it in a window or a file, so they sit under no heading (UXR-C11).  Moved together and in
+        // take whatever is loaded and put it in a window or a file, so they sit under no heading.  Moved together and in
         // that order, so the export stays beside the pop-out.
         if (popUpAllMenuItem != null)
         {
@@ -3241,7 +3240,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         String source;
 
-        // UXR-C3: asked isLayoutLoaded() rather than model.getLayoutList().isEmpty(), the raw question being the one asked at
+        // Asked isLayoutLoaded() rather than model.getLayoutList().isEmpty(), the raw question being the one asked at
         // sixteen places that each caught a different instant of a rebuild (see the layoutLoaded field); this item sits beside
         // guardLayoutMenu's, which already ask isLayoutLoaded(), and must not disagree with them during a refreshLayouts() rebuild.
         if (this.model == null || !isLayoutLoaded())
@@ -3357,7 +3356,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Whether the autonomy menu can be opened, asked in one place (OB-202).
      *
      * Two conditions, each of which has already been a defect: a layout, asked of `isLayoutLoaded` rather than of the list
-     * (UXR-C17: the live question was asked at eighteen places, each catching a different moment of a rebuild); and not while
+     * (the live question was asked at eighteen places, each catching a different moment of a rebuild); and not while
      * the connecting notice still holds the bar (OB-187).
      *
      * NOT WHETHER THE LAYOUT IS LOCAL (Adam: "open the autonomy menu with everything but those 2 greyed"): a diagram read
@@ -3498,7 +3497,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // still rebuilds.
         if (javax.swing.SwingUtilities.isEventDispatchThread() && theShownDiagramHasItsCaptions())
         {
-            // AND THE OTHER PAGES KEPT FOR THE PAGE LIST FORGOTTEN, as the rebuild emptied the cache (RSA38-B1)
+            // AND THE OTHER PAGES KEPT FOR THE PAGE LIST FORGOTTEN, as the rebuild emptied the cache
             forgetTheCachedPagesButTheShownOne(InnerLayoutPanel.getComponent(0));
 
             updateVisiblePoints();
@@ -3610,7 +3609,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Forgets every page the page cache keeps but the one on screen (RSA38-B1), as the rebuild a setup change now skips did: a
+     * Forgets every page the page cache keeps but the one on screen, as the rebuild a setup change now skips did: a
      * page drawn before the change and kept for the page list would come back as it was drawn (a page put back into autonomy
      * with none of its captions, a station added with none, a station renamed with its old name).  The page on screen keeps
      * its grid.
@@ -3683,7 +3682,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         org.traincontrol.automationui.AutonomySession session = getAutonomySession();
 
-        // Wired unconditionally, ABOVE the no-session return below (UXR-B1): both are about the Layout menu itself, not about an
+        // Wired unconditionally, ABOVE the no-session return below: both are about the Layout menu itself, not about an
         // autonomy session, and a Central Station layout has no local path so `session` is always null for it.  Below the return,
         // `guardLayoutMenu` was never registered for it, the FR-040 data-source label never appeared, the two section headings were
         // never mounted, and popUpAllMenuItem/exportDiagramItem were decided by nobody.
@@ -3745,7 +3744,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             this.repaintTimetable();
             this.repaintAutoLocListLite();
 
-            // And the graph, whenever a run ends (W7-A2): `updateVisiblePoints()` is the only route to `reconcileFacingWhenIdle`, the
+            // And the graph, whenever a run ends: `updateVisiblePoints()` is the only route to `reconcileFacingWhenIdle`, the
             // only thing that writes a reversal the railway made at a destination into the setup.  It refuses while anything is moving,
             // on purpose, so it needs a refresh AFTER the railway has gone idle.  The door every run passes through is
             // `Layout.announceRunFinished()` (fired when the last locomotive thread goes; a timetable announces again once its
@@ -3759,7 +3758,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The railway the settings below were read off, and its settings and timetable as it was built (RSA20-B1): what a fold
+     * The railway the settings below were read off, and its settings and timetable as it was built: what a fold
      * compares the railway against, to take only what the railway itself changed since.
      */
     private Object settingsBuiltFor;
@@ -3825,7 +3824,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.model.log(cannotSave);
             }
 
-            // And the railway's settings as built (RSA60-B1), for THESE TRAINS ONLY (OB-343).  The tick changed these trains on the
+            // And the railway's settings as built, for THESE TRAINS ONLY (OB-343).  The tick changed these trains on the
             // railway and in the setup together, so for them the two agree; left as it was built, a press of the Auto tab's pause button
             // afterwards (which changes the railway alone) read to the next rebuild's fold as no change, and the rebuild undid the
             // button.  Not for the other trains this call names but leaves as they were: a press made BEFORE this call has not reached
@@ -3841,8 +3840,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Writes these trains' pauses into the railway's settings as built (RSA60-B1), for a door that changed them on the railway
-     * and in the setup together - as `keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack` writes atomic routes (RSA21-C1).  Only
+     * Writes these trains' pauses into the railway's settings as built, for a door that changed them on the railway
+     * and in the setup together - as `keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack` writes atomic routes.  Only
      * for the railway the settings were read off.
      *
      * **ONLY THE TRAINS THE DOOR CHANGED (OB-343).**  The settings as built are what the railway was built with, and the fold
@@ -3895,7 +3894,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         diagramMonitorDriver.trainsPausedChanged();
 
-        // AND THE GREY OF A PAUSED TRAIN THE RAILWAY STANDS ON NO POINT (FR-126; RSA60-C5).  Drawn from the setup's list, which
+        // AND THE GREY OF A PAUSED TRAIN THE RAILWAY STANDS ON NO POINT (FR-126).  Drawn from the setup's list, which
         // the Is Active tick and the bulk tools have just changed and the diagram was told nothing of.  On the event thread,
         // where every caller is: the driver hands the monitor a copy of each set, and the monitor reads them on its own thread
         // through volatile fields.
@@ -3903,7 +3902,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Reads the railway just built's settings and timetable, for the folds to compare against (RSA20-B1).  Called by the
+     * Reads the railway just built's settings and timetable, for the folds to compare against.  Called by the
      * one door that builds a railway, straight after it.
      */
     void noteTheRailwaysSettingsAsBuilt()
@@ -4003,13 +4002,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // train somebody was driving keeps rolling while the new layout thinks everything is parked
         this.refreshRouteList();
 
-        // On an interactive load only, which is what `resumed` has always been for (VD11-A2): the stop is for CHOOSING A DIFFERENT
+        // On an interactive load only, which is what `resumed` has always been for: the stop is for CHOOSING A DIFFERENT
         // RAILWAY (the layout is replaced under a train nobody told), and does not reach an edit to the setup this railway is
         // already running - `setupChanged` puts every such edit through here, and typing a link's display name or a tile length
         // stopped every locomotive on the layout.  `resumed` is `!interactive`; the two interactive callers are the autonomy menu
         // and the Configurations dialog, somebody deliberately switching railways.
         // A third non-interactive caller is `autonomyEditorClosed()`, which reloads through `getAutonomyViewerPanel().load(wasRunning,
-        // false)` after the TRACK DIAGRAM EDITOR closes (ACC-B2).  Adam ruled that closing that editor does NOT stop the trains: the
+        // false)` after the TRACK DIAGRAM EDITOR closes.  Adam ruled that closing that editor does NOT stop the trains: the
         // boundary is not "has the layout been replaced" but whether the OPERATOR asked for a different railway, and finishing an
         // edit to the one already running is not that, however much of the layout object it rebuilds.
         if (!resumed)
@@ -4149,7 +4148,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             this.gracefulStopRequested = true;
 
-            // THE RAILWAY'S OWN STOP (RSA-C1): a stop counted first, which every journey dispatched before it obeys -
+            // THE RAILWAY'S OWN STOP: a stop counted first, which every journey dispatched before it obeys -
             // a train still claiming or choosing its route is not sent, one reaching its next sensor is not given its
             // speed back - then autonomy stops choosing, then every train under way stops where it is.
             this.model.getAutoLayout().stopEveryTrainWhereItIs();
@@ -4221,7 +4220,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             this.startAutonomy.setEnabled(false);
 
-            // UXR-C4: disableReturnHome, not a bare setEnabled(false) - otherwise the button keeps
+            // disableReturnHome, not a bare setEnabled(false) - otherwise the button keeps
             // whatever tooltip a previous session left on it (possibly "Send every locomotive back to
             // the station it started on") while there is no session behind it at all.
             this.disableReturnHome(I18n.t("autosetup.ui.whyNoLayout"));
@@ -4299,7 +4298,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         repairAutonomyLocomotive(from, to);
 
-        // And the direction this window remembers, also keyed by name (DIR-C5): the by-name state pattern, and the reason this door
+        // And the direction this window remembers, also keyed by name: the by-name state pattern, and the reason this door
         // and the delete door exist on `View`.  Left unrepaired, the first direction command after a rename finds nothing to compare
         // against, teaches, and does not act - one change silently swallowed.
         Boolean was = lastSeenDirection.remove(from);
@@ -4317,7 +4316,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         repairAutonomyLocomotive(name, null);
 
-        // Evicted, the half worth guarding (DIR-C5): delete a locomotive and create another with the same name at a different
+        // Evicted, the half worth guarding: delete a locomotive and create another with the same name at a different
         // address, and a stale entry makes its FIRST direction message read as a change, flipping a facing nobody asked to flip.
         lastSeenDirection.remove(name);
 
@@ -4373,7 +4372,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             if (to == null) session.getStore().locomotiveDeleted(from);
             else session.getStore().locomotiveRenamed(from, to);
 
-            // And something reads it (VD11-B2): `repairTheUnfinishedEditNote` records a failure in a field, which had no reader - the
+            // And something reads it: `repairTheUnfinishedEditNote` records a failure in a field, which had no reader - the
             // note would keep the old name, and the revert on the next start would put back a locomotive the database no longer has.
             if (session.getStore().didTheNoteRepairFail())
             {
@@ -4396,7 +4395,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // anything to redraw - the station labels are written by updateVisiblePoints and the locomotive panel by
             // repaintAutoLocListLite, which run only when called.  Posted rather than called: this runs on the event thread inside a
             // rename dialog, and updateVisiblePoints is synchronized on this window and reaches into the layout - taking both locks in
-            // that order from here is the DR-B7 deadlock shape.
+            // that order from here is a deadlock.
             javax.swing.SwingUtilities.invokeLater(() ->
             {
                 updateVisiblePoints();
@@ -4472,7 +4471,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // a configuration is loaded, and a supplier set on the wrong instance is set on nothing.
         if (getAutonomySession() != null)
         {
-            // Asked, not built (RLV9-C2): each reader takes no railway as nothing to show
+            // Asked, not built: each reader takes no railway as nothing to show
             getAutonomySession().setRunningLayoutSource(
                 () -> this.model == null ? null : this.model.getAutoLayoutIfLoaded());
         }
@@ -4492,7 +4491,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (tile == null || liveSetupPanel() == null) return null;
 
-        // What the panel knows is refreshed before the menu is built (AUS-B1): the panel is built once per session and learns which
+        // What the panel knows is refreshed before the menu is built: the panel is built once per session and learns which
         // squares are runs, and which square speaks for each run, only when it refreshes (after its OWN actions).  When the editor
         // changed the railway underneath it, the first right-click on a run found no leader and bound every item to the square
         // itself, so Segment Length wrote the follower.  One cheap derivation per right-click cannot go stale.
@@ -4536,7 +4535,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 try
                 {
-                    // Logged rather than shown (DR-B10): this door fires on an ordinary edit and the one below on every placement, so a dialog
+                    // Logged rather than shown: this door fires on an ordinary edit and the one below on every placement, so a dialog
                     // would be unusable, but the refusal has to reach somebody.
                     noteIfTheSetupWasNotTidied(session.save());
                 }
@@ -4570,7 +4569,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             // Asked for on every use rather than held, for the same reason the editor does it: loading
             // a configuration replaces the Layout wholesale.
-            // Asked, not built (RLV8-C2): the menus read no railway as nothing to offer
+            // Asked, not built: the menus read no railway as nothing to offer
             autonomyTileMenus.setLayoutSource(() -> this.model.getAutoLayoutIfLoaded());
 
             autonomyTileMenus.setLocomotiveNames(() ->
@@ -4600,7 +4599,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * The same, for a finding that names squares beside its own - a guard's signal - which are outlined with it when the
-     * editor opens, as the editor's own list outlines them (MT-505, RLV9-C5).
+     * editor opens, as the editor's own list outlines them (MT-505).
      *
      * @param tile the square to go to, or null just to open the editor on the current page
      * @param related the squares the finding names beside it, or null
@@ -4649,7 +4648,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     void applyLayoutEditingAvailability()
     {
-        // AND NO EDITOR WINDOW THERE (RSA28-B1): a switch's hand-over says no editor is open while its window still is
+        // AND NO EDITOR WINDOW THERE: a switch's hand-over says no editor is open while its window still is
         boolean live = this.noEditorOpen && !isLayoutEditorOpen() && layoutCanBeEdited();
 
         this.editLayoutButton.setEnabled(live);
@@ -4799,7 +4798,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (!this.isLocalLayout()) return "layout.ui.errorEditingOnlySupportedForLocalFiles";
 
-        // A SETUP THAT IS THERE AND WOULD NOT READ is not a layout with nowhere to keep one (GSP-B2), and openLayoutEditor
+        // A SETUP THAT IS THERE AND WOULD NOT READ is not a layout with nowhere to keep one, and openLayoutEditor
         // says which of the two it is - so both keys are answered here.  `sayWhyAutonomyEditorCannotOpen` puts the reason
         // into the first.
         if (this.getAutonomySession() == null)
@@ -4822,7 +4821,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * A refusal `whyAutonomyEditorCannotOpen` handed back, as the sentence to show (GSP-B2).  Every refusal there is a message
+     * A refusal `whyAutonomyEditorCannotOpen` handed back, as the sentence to show.  Every refusal there is a message
      * key shown as it stands but one: a setup that is there and would not read is said with the reason it would not
      * (`whyTheSetupCannotBeRead`), which only this window holds.
      *
@@ -4863,7 +4862,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The same, with the squares a finding names beside the one revealed, outlined with it (RLV9-C5).
+     * The same, with the squares a finding names beside the one revealed, outlined with it.
      *
      * @param outline those squares, or null
      */
@@ -4894,7 +4893,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // An explicit request says why it cannot be honoured; a remembered one just falls back
             if (autonomy != null)
             {
-                // WITH THE REASON, when the setup is there and would not read (GSP-B2) - the two keys
+                // WITH THE REASON, when the setup is there and would not read - the two keys
                 // whyAutonomyEditorCannotOpen answers this refusal with.
                 JOptionPane.showMessageDialog(this, whyTheSetupCannotBeRead() != null
                     ? I18n.f("autosetup.ui.errorSetupUnreadable", whyTheSetupCannotBeRead())
@@ -4958,22 +4957,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // regenerate every placement from the file.  BEFORE the constructor, because the constructor is where the undo point is taken
         // (which also makes Cancel right).  Regardless of which editor is being opened, since the track editor can switch into
         // autonomy mode without closing (`arriveAt` re-takes the undo point).  A no-op with no session, no active configuration, or
-        // a run in progress (refused above).  This is DW-A1 through a second door, fixed the same way, by an ORDER.
+        // a run in progress (refused above).
         captureRunningLayout();
 
         final org.traincontrol.automationui.AutonomySession opening = wantsAutonomy ? session : null;
 
-        // WHETHER A SQUARE WAS CLICKED in the editor this one replaces, asked now - the build is posted (RSA44-C1)
+        // WHETHER A SQUARE WAS CLICKED in the editor this one replaces, asked now - the build is posted
         final boolean carried = clickCarried;
 
-        // ON ITS WAY from here until the posted build shows it (RLV13-C2) - every door that sends a train asks this too
+        // ON ITS WAY from here until the posted build shows it - every door that sends a train asks this too
         this.editorOnItsWay = true;
 
         javax.swing.SwingUtilities.invokeLater(() ->
         {
             try
             {
-                // NOT OVER A RUN THAT BEGAN SINCE IT WAS ASKED FOR (RLV13-C2).  Whether trains run was asked above, and this
+                // NOT OVER A RUN THAT BEGAN SINCE IT WAS ASKED FOR.  Whether trains run was asked above, and this
                 // is posted: a door that had already passed its own question - Start's worker, a staging flow's planning -
                 // can have begun a run in between, and the editor would open over it.  Refused and said, and the Edit
                 // button given back, as the question above does.
@@ -5003,7 +5002,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 if (carried) editor.carryTheClick();
 
-                // SHOWN BY render()'s OWN POSTED TASK, which this runs after (RLV13-C2)
+                // SHOWN BY render()'s OWN POSTED TASK, which this runs after
                 javax.swing.SwingUtilities.invokeLater(() -> this.editorOnItsWay = false);
 
                 // Posted, twice over: render() and setAutonomyMode both only QUEUE the work that builds the grid, so calling reveal here ran
@@ -5015,7 +5014,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         {
                             editor.reveal(reveal);
 
-                            // AND WHAT A FINDING NAMES BESIDE IT, outlined as the editor's own list outlines it (RLV9-C5)
+                            // AND WHAT A FINDING NAMES BESIDE IT, outlined as the editor's own list outlines it
                             // Every finding, as that list now outlines every one it goes to (OB-352); a door that is
                             // not a finding's hands no list
                             if (outline != null && editor.getAutonomyPanel() != null)
@@ -5033,7 +5032,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 this.editorOnItsWay = false;
 
-                // AN ERROR TOO (RSA30-C6), given back and then thrown on: past a catch of exceptions only, Edit stayed
+                // AN ERROR TOO, given back and then thrown on: past a catch of exceptions only, Edit stayed
                 // greyed and every train was refused "Close the editor first" for the session, with no editor anywhere
                 if (e instanceof Error) throw (Error) e;
 
@@ -5200,7 +5199,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Which locomotive LIVES at a square, as opposed to which one is standing on it (MT-261 ruling 2); drawn because the home
-     * assignment was otherwise visible only one square's menu at a time (R28-C3).
+     * assignment was otherwise visible only one square's menu at a time.
      *
      * @param station the square
      * @return the home locomotive's name, or null where the square has no home or there is no setup
@@ -5413,7 +5412,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Through the session, so this and the facing MENU cannot come apart (OB-181): this was the only place that read the copy
         // the train is standing on while the menu read the stored facing.
         // Asked, not built: the station labels post this, and one landing after Unload built an empty railway, which hasAutoLayout then
-        // answered yes about (RLV10-B1; RLV8-C2, RLV9-C2).
+        // answered yes about.
         org.traincontrol.automationui.TilePorts.Side facing = session.facingOnTheRailway(square,
             this.model == null ? null : this.model.getAutoLayoutIfLoaded());
 
@@ -5457,7 +5456,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         final org.traincontrol.automationui.TileGraph.TileKey named =
             labelSession == null ? null : labelSession.tileForPointName(point.getName());
 
-        // OR THE SQUARE THE RAILWAY BUILT IT FOR, where the setup no longer knows its name (RSA40-C2): a station renamed
+        // OR THE SQUARE THE RAILWAY BUILT IT FOR, where the setup no longer knows its name: a station renamed
         // while the setup cannot build, the railway left as it was
         final org.traincontrol.automationui.TileGraph.TileKey square = named != null || labelSession == null ? named
             : org.traincontrol.automationui.AutonomyCompanionStore.parseTileKey(point.getSquare());
@@ -5621,13 +5620,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         if (getAutonomySession() == null) return null;
 
         // Asked of the session rather than counted here, so the strip deciding what to OFFER and this deciding what to ALLOW cannot
-        // drift apart (OB-090).  Through hasErrors(), the method written to BE this question (SVN-B10): "the question every
+        // drift apart (OB-090).  Through hasErrors(), the method written to BE this question: "the question every
         // affordance that offers to run it has to ask".  The count below is only for the message, and can legitimately be zero while
         // this refuses: a graph that cannot be BUILT is a blocking problem.
         if (!getAutonomySession().hasErrors()) return null;
 
         // Through the one rule (MT-263), where the wording and the counting live: this door was the only one that counted, and the
-        // singular is the load door's form, right where no finding was produced but wrong for three blocking problems (DY3-C7).
+        // singular is the load door's form, right where no finding was produced but wrong for three blocking problems.
         return whyAutonomyWillNotStart();
     }
 
@@ -5638,9 +5637,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * cleared it, and that is true - wrongly - in two states: a path with no measured edge anywhere, and a train whose length is
      * 0 (a locomotive's length is 0 until somebody sets it).  In either, an edge is released with the train still lying over it
      * and another train can be routed onto occupied track.  Atomic mode releases nothing until the run ends.  So there are TWO
-     * HALVES, track and train (VD14-B1); the tooltip has always said "edge and train lengths".
+     * HALVES, track and train; the tooltip has always said "edge and train lengths".
      *
-     * **THE QUESTION IS THE RAILWAY'S, NOT THE EDITOR'S** (VD13-B1, VD13-B2): it asks `Layout.unmeasuredTrackThatCouldBeReleased`
+     * **THE QUESTION IS THE RAILWAY'S, NOT THE EDITOR'S**: it asks `Layout.unmeasuredTrackThatCouldBeReleased`
      * and `Layout.trainsWithNoLength`, so the checkbox and the load door give one answer, and a railway with no diagram behind it
      * is asked the same question as one built in the editor.  The editor's `squaresNeedingALength` refused a railway whose every
      * edge is measured, and answered "nothing unmeasured" for a legacy setup, where the danger actually lives.
@@ -5667,7 +5666,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             why = I18n.f("autolayout.errorNonAtomicNeedsLengths", track.size(), someOf(track));
         }
 
-        // Both halves at once (VD15-C3): told one at a time, he measures every rail, reloads, and only then hears it was forced back
+        // Both halves at once: told one at a time, he measures every rail, reloads, and only then hears it was forced back
         // on for a different reason; the remedy is named "rail by rail and train by train".
         if (!trains.isEmpty())
         {
@@ -5681,7 +5680,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * A few of a list, for a message that has to fit on a dialog (VD14-C1, VD14-R10): the count alone told how much was
+     * A few of a list, for a message that has to fit on a dialog: the count alone told how much was
      * unmeasured and nothing about WHERE, so three names and an ellipsis is what a refusal can carry.
      *
      * @param names what was found
@@ -5705,7 +5704,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * How much drivable track has no length - THE question, asked by the checkbox (`whyNonAtomicRoutesAreRefused`) and by the gate
-     * `keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack`, which every load and dispatch door calls (VD13-B1, B2, B3; VD17-R11).
+     * `keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack`, which every load and dispatch door calls.
      *
      * `Layout.unmeasuredTrackThatCouldBeReleased` is the question in the form the hazard takes: the editor's
      * `squaresNeedingALength` is non-empty whenever one switch square is unmeasured on a railway whose every edge is measured
@@ -5739,7 +5738,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The locomotives autonomy would run that have no train length - the gate's second half (VD14-B1).
+     * The locomotives autonomy would run that have no train length - the gate's second half.
      *
      * @return their names, empty when every one has a length or there is no railway to ask
      */
@@ -5761,7 +5760,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * mode releases nothing until a run ends, so turning it on can never be the unsafe answer.  The same holds at a dispatch,
      * where the operator pressed Start, not "tell me about my train lengths".
      *
-     * **FIVE CALLERS (VD17-B1, RLV13-C8).**  The editor's own apply in `AutonomyViewerPanel` (the parse door); and the four
+     * **FIVE CALLERS.**  The editor's own apply in `AutonomyViewerPanel` (the parse door); and the four
      * dispatch doors: Start, Execute Timetable, Return Home, and `sendATrainByHand`, through which both hand dispatches go.  A
      * train length is written on the LIVE layout long after a parse, so a door that dispatches without asking would run a
      * zero-length train over track it hands back underneath itself.
@@ -5778,8 +5777,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (layout == null || layout.isAtomicRoutes()) return;
 
-        // The same question the checkbox asks, and there is only one now (VD13-B1): `Layout.unmeasuredTrackThatCouldBeReleased`, and
-        // `Layout.trainsWithNoLength` beside it (VD14-B1; VD17-R11), asked by the checkbox and by this gate.  It asks first (Adam:
+        // The same question the checkbox asks, and there is only one now: `Layout.unmeasuredTrackThatCouldBeReleased`, and
+        // `Layout.trainsWithNoLength` beside it, asked by the checkbox and by this gate.  It asks first (Adam:
         // "just force the checkbox checked as well"), because a railway that IS measured end to end would otherwise lose non-atomic
         // mode at every load (MT-470).
         java.util.List<String> track = unmeasuredTrackAutonomyRunsOver();
@@ -5790,11 +5789,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         layout.setAtomicRoutes(true);
 
-        // THE RAILWAY'S OWN RULE, NOT A CHANGE TO FOLD (RSA21-C1): as built, as far as the folds are concerned, so the
+        // THE RAILWAY'S OWN RULE, NOT A CHANGE TO FOLD: as built, as far as the folds are concerned, so the
         // operator's "off" stays in the setup for the day the lengths are given (MT-470)
         if (layout == settingsBuiltFor && settingsAsBuilt != null) settingsAsBuilt.put("atomicRoutes", true);
 
-        // BOTH, WHERE BOTH HOLD (VD15-C3): two lines in the log rather than one reason at a time.
+        // BOTH, WHERE BOTH HOLD: two lines in the log rather than one reason at a time.
         if (!track.isEmpty())
         {
             this.model.logf("autolayout.warnAtomicRoutesKeptOn", track.size(), someOf(track));
@@ -5809,7 +5808,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Refuses to edit or delete a locomotive while a route that drives it is running, and says which route (CS3-B1).  The
+     * Refuses to edit or delete a locomotive while a route that drives it is running, and says which route.  The
      * autonomy refusal beside this one does not cover it: a route runs by hand, from its own button or an s88 trigger, with
      * autonomy idle.  The route itself no longer breaks when its list is rewritten (it runs the list it began with), so this is
      * what prevents the operator taking a locomotive out from under a road being set for it.
@@ -5939,11 +5938,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * What stops a train being sent now, or null - the one question every door that sends a train asks: the Auto tab's list of
      * paths and the diagram's destinations (through `sendATrainByHand`), Start, Execute Timetable and Return Home (Adam: "can all
      * the checks go through a single door?").  Each door asked its own copy in its own order, and the Auto tab's had no editor
-     * question, so an editor opened at rest stayed open for the run it sent (RLV12-B1).
+     * question, so an editor opened at rest stayed open for the run it sent.
      *
      * In this order: an open editor holds the diagram the trains would run on, and no setup edit is made during a run (OB-047,
      * MT-135); no route running, which a run waits for; a setup with errors sends nothing (MT-263); the power comes before any
-     * question about the journey (SPEC-C4).  What a door asks besides is its own action's - a hand send's path
+     * question about the journey.  What a door asks besides is its own action's - a hand send's path
      * (`whyThisPathCannotBeTaken`), the trains already running for the three that start a run.
      *
      * @param startingAutonomy whether the door is Start, which refuses a broken setup in its own words
@@ -5951,10 +5950,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     String whyNoTrainMayBeSent(boolean startingAutonomy)
     {
-        // OR ON ITS WAY (RLV13-C2): the editor is built in a posted task, and a send that ran in between passed this
+        // OR ON ITS WAY: the editor is built in a posted task, and a send that ran in between passed this
         if (anEditorIsOpenOrOnItsWay()) return I18n.t("autosetup.ui.menuEditorOpen");
 
-        // NOR WHILE THE DIAGRAM RELOADS AFTER A PAGE DOOR (RSA23-B1): the reset at its end forgot a run started meanwhile
+        // NOR WHILE THE DIAGRAM RELOADS AFTER A PAGE DOOR: the reset at its end forgot a run started meanwhile
         if (refreshesUnderWay.get() > 0) return I18n.t("autosetup.ui.errorDiagramRefreshing");
 
         // NOR WHILE A ROUTE RUNS: a run must not begin under one, or a turn held for the route (`turnsHeldByARoute`) would
@@ -5985,7 +5984,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Asks before a run that would not move - see `wouldRunUnsimulated` - Start anyway or not, not the default (Adam: "adding a
      * warning popup when you start autonomy when the app is in simulate, and simulate isn't checked").  Asked by the one gate
-     * once it has passed (`refusedToSendATrain`, RSA10-C1).  Not asked of a run nobody attends.
+     * once it has passed (`refusedToSendATrain`).  Not asked of a run nobody attends.
      *
      * @return true where the operator declined
      */
@@ -6001,7 +6000,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Refuses a train sent now where `whyNoTrainMayBeSent` says so, saying why over this window - on the event thread, as
      * `refuseWhileEditorOpen` does.  Every door asks it on the event thread today; the posted branch is there so that a
-     * caller on a worker can never show a dialog off it (RLV13-C8).
+     * caller on a worker can never show a dialog off it.
      *
      * @param startingAutonomy whether the door is Start
      * @return true when the door must not send it
@@ -6010,7 +6009,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         final String why = whyNoTrainMayBeSent(startingAutonomy);
 
-        // And a simulation that is not simulating, once the gate has passed (RSA10-C1): every door that sends trains asks it, and a
+        // And a simulation that is not simulating, once the gate has passed: every door that sends trains asks it, and a
         // press the gate refuses does not.  On the event thread, where the doors ask.
         if (why == null) return javax.swing.SwingUtilities.isEventDispatchThread() && declinedToRunUnsimulated();
 
@@ -6027,7 +6026,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Whether an editor holds the diagram or is on its way to it (RLV13-C2).  The editor is built in a task posted after it is
+     * Whether an editor holds the diagram or is on its way to it.  The editor is built in a task posted after it is
      * asked for, so between the two its window does not exist yet and a door that asked only `isLayoutEditorOpen` sent a train.
      * Package-visible for `TailCrossedPrompt.saveBeforeAsking`, which saves a placement before its tail question only while no
      * editor holds the setup (OB-305).
@@ -6040,9 +6039,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Refuses to dispatch where an editor has come since the door's click, or a refresh of the diagram (RSA23-B1), or a route has
+     * Refuses to dispatch where an editor has come since the door's click, or a refresh of the diagram, or a route has
      * begun (the gate's own question, `whyNoTrainMayBeSent`, asked again), and says so.  Asked by the run doors at their last
-     * event-thread moment before the dispatch (RLV13-C2): Start, Execute Timetable and Return Home, and a hand send after its
+     * event-thread moment before the dispatch: Start, Execute Timetable and Return Home, and a hand send after its
      * questions.
      *
      * @return true when the door must not dispatch
@@ -6074,7 +6073,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Why this train cannot take this path whatever the minute, or null - the standing rules a hand send explains before it
-     * asks anything: the train's length (MT-262), a berth that cannot hold it (PRW-C2), a loop into its own tail (OB-294).
+     * asks anything: the train's length (MT-262), a berth that cannot hold it, a loop into its own tail (OB-294).
      * Each is the railway's own rule, which `isPathClear` asks at dispatch too, so a door and the railway cannot disagree;
      * what clears itself in a minute - a busy sensor - is left to the dispatch, where it is not a dialog.
      *
@@ -6096,14 +6095,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Sends one train along one path by hand - the one door both hand doors go through: the Auto tab's list of paths and the
-     * diagram's destinations (RLV12-B1: they were two copies of one sequence, and what one learned the other did not).
+     * diagram's destinations (one sequence, so that what one learns the other knows).
      *
      * In this order, on the event thread: whether a train may be sent at all (`refusedToSendATrain`); whether this path can take
      * this train (`whyThisPathCannotBeTaken`); the reversal question, on departure itself so that nothing is dispatched before the
      * answer; the last-moment question again (`refusedForAnEditorOnItsWay`), since the questions leave room for an editor, a
-     * refresh or a route to begin (RSA73-C1); the atomic-routes gate (GS-B1).  Then the dispatch on its own thread, since it
+     * refresh or a route to begin; the atomic-routes gate.  Then the dispatch on its own thread, since it
      * holds the railway's monitor for the whole path (OB-192); a dispatch the railway turns down says so.  The graph hears where
-     * the run ends from `executePath` itself, which announces it when its thread count falls to zero (W7-A2).
+     * the run ends from `executePath` itself, which announces it when its thread count falls to zero.
      *
      * @param railway the railway the path was offered on
      * @param path the path, as read where the operator chose it
@@ -6133,11 +6132,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack();
 
-        // THE STOPS COUNTED AT THE CLICK, carried to the journey (RSA2-C2): the reload's Yes between here and the
+        // THE STOPS COUNTED AT THE CLICK, carried to the journey: the reload's Yes between here and the
         // dispatch's own thread is one it obeys
         final int stopsAtClick = railway.stopsOrdered();
 
-        // COUNTED FROM THE CLICK (RSA27-C2), and the Auto tab greyed with it: the dispatch sets the route before the train
+        // COUNTED FROM THE CLICK, and the Auto tab greyed with it: the dispatch sets the route before the train
         // sets off, and the railway's first refresh came only then
         this.handSendsUnderWay.incrementAndGet();
 
@@ -6185,8 +6184,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void rebuildRunningLayoutFromSetup()
     {
-        // No placement edit is pending here (D2-A1), a fact about this door: the callers are `autonomyEditorClosed()` and a discard in
-        // the autonomy editor (`LayoutEditor.discardAutonomyWork`, RSA26-C1), and every placement made in the editor reached the
+        // No placement edit is pending here, a fact about this door: the callers are `autonomyEditorClosed()` and a discard in
+        // the autonomy editor (`LayoutEditor.discardAutonomyWork`), and every placement made in the editor reached the
         // running layout when it was made, so the trains to carry across are the ones a run moved.
         rebuildRunningLayoutFromSetup(false, null);
     }
@@ -6206,7 +6205,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The road a train came in on, put back on the Point it was put back on (WK7-B1).
+     * The road a train came in on, put back on the Point it was put back on.
      *
      * @param built the layout the rebuild produced
      * @param back the Point the train is standing on again
@@ -6225,9 +6224,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * The same, over a layout handed in, so a rebuild can be tested without a window.
      *
-     * **And the road it came in on (WK7-B1)**, as `Layout.namesOfRoad` writes it: the rebuild regenerates every Point, so only the
+     * **And the road it came in on**, as `Layout.namesOfRoad` writes it: the rebuild regenerates every Point, so only the
      * edges' names can be carried, which `putTheTrainsBack` looks up again on the layout it has just built.  **And the square and
-     * facing of the Point each stands on, and of each on its road** (RSA5-A1): a rebuild carries them by those, since a rename
+     * facing of the Point each stands on, and of each on its road**: a rebuild carries them by those, since a rename
      * can hand a Point's name to another square.
      *
      * @param layout the running layout
@@ -6240,10 +6239,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (layout == null) return standing;
 
-        // A train under way is where it was last known to be (RLV7-C1): the last station on its path whose sensor it has tripped, or
+        // A train under way is where it was last known to be: the last station on its path whose sensor it has tripped, or
         // where it set off - `Layout.getLastPointsReached` says the rule.  Its locked path holds every point on it, so read point by
         // point it stood in several places and this kept whichever the map yielded last.  A carry reads a train under way because a
-        // reload confirmed during a run stops the trains and releases nothing (RLV7-B1).
+        // reload confirmed during a run stops the trains and releases nothing.
         java.util.Map<org.traincontrol.base.Locomotive, org.traincontrol.automation.Point> underWay =
             layout.getLastPointsReached();
 
@@ -6269,7 +6268,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             if (name == null || standing.containsKey(name)) continue;
 
-            // UNLESS ANOTHER TRAIN STANDS THERE - recorded above - not merely one whose path runs through it (RLV8-C4): a
+            // UNLESS ANOTHER TRAIN STANDS THERE - recorded above - not merely one whose path runs through it: a
             // train locking a path through the point is recorded on it, and skipping for that left this one where the
             // setup had it, before the run
             boolean anotherStands = false;
@@ -6289,7 +6288,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The square and facing of each Point on a road, by name, as `whereTheTrainsAre` records it (RSA5-A1): what the
+     * The square and facing of each Point on a road, by name, as `whereTheTrainsAre` records it: what the
      * road's names are carried by across a rebuild.
      *
      * @param road the rails a train came in along, or null
@@ -6317,11 +6316,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The destination turns the railway has made and not yet written into the setup (D3-C5).  DRAINED rather than copied,
+     * The destination turns the railway has made and not yet written into the setup.  DRAINED rather than copied,
      * because the Layout this reads from is about to be thrown away; the pair with `putThePendingTurnsBack` is
      * `whereTheTrainsAre`/`putTheTrainsBack`.
      *
-     * @return each locomotive against the Point it turned at, with that Point's square and facing (RSA5-C2), never null
+     * @return each locomotive against the Point it turned at, with that Point's square and facing, never null
      */
     private java.util.Map<String, String[]> takeThePendingTurns()
     {
@@ -6331,7 +6330,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         java.util.Map<String, String[]> out = new java.util.LinkedHashMap<>();
 
-        // WITH THE SQUARE AND FACING OF THE POINT EACH TURN WAS MADE AT (RSA5-C2), read off this railway before the load
+        // WITH THE SQUARE AND FACING OF THE POINT EACH TURN WAS MADE AT, read off this railway before the load
         // replaces it: the turn goes back on the Point the rebuild gives that copy, however it is named then
         for (java.util.Map.Entry<String, String> turn : layout.takeReversalsOnArrival().entrySet())
         {
@@ -6345,7 +6344,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Puts those turns onto whatever Layout the rebuild produced (D3-C5).  `restoreReversalsOnArrival` puts each back only IF
+     * Puts those turns onto whatever Layout the rebuild produced.  `restoreReversalsOnArrival` puts each back only IF
      * ABSENT (stated on the Layout, where it is enforced), which makes this safe to do after the load: a train that has turned
      * again on the new railway has a newer record, and this must not overwrite it with the square it has since left.
      *
@@ -6365,7 +6364,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             String[] at = turn.getValue();
 
-            // BY THE NAME THE REBUILD GIVES THE SAME COPY (RSA5-C2); where it has none, the name recorded, owed as before
+            // BY THE NAME THE REBUILD GIVES THE SAME COPY; where it has none, the name recorded, owed as before
             String now = naming == null || at[0] == null ? at[0] : naming.pointNamedNow(at[0], at[1], at[2]);
 
             named.put(turn.getKey(), now != null ? now : at[0]);
@@ -6377,7 +6376,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Puts each train back where it was standing before the rebuild (OB-183).
      *
-     * **On the Point the rebuild gives the copy the train stood on** (RSA4-A1): by the name recorded, or where a square was
+     * **On the Point the rebuild gives the copy the train stood on**: by the name recorded, or where a square was
      * renamed or its copies changed, by the name the session traces it to.  A train whose square is gone has no Point to go back
      * on, and is left where the rebuild put it.  The arrival side goes back with the train, because `Point.setLocomotive` clears
      * it when the occupant changes, and without it the tail blocking would switch itself off on every home change (OB-183).
@@ -6390,7 +6389,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (this.model == null || !this.model.hasAutoLayout()) return;
 
-        // BY THE NAMES THE REBUILD GIVES THE SAME POINTS (RSA4-A1), which the session traces
+        // BY THE NAMES THE REBUILD GIVES THE SAME POINTS, which the session traces
         org.traincontrol.automationui.AutonomySession naming = this.autonomySession;
 
         java.util.Set<String> notBack = putTheTrainsBack(this.model.getAutoLayout(), standing, this.model::log,
@@ -6398,7 +6397,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         recordTheTrainsNotPutBack(this.model.getAutoLayout(), standing, notBack, naming, this.model::log);
 
-        // AND THE DIAGRAM TOLD (RSA18-C1): it learned which trains stand on no Point inside the load, before this
+        // AND THE DIAGRAM TOLD: it learned which trains stand on no Point inside the load, before this
         if (!notBack.isEmpty() && naming != null && diagramMonitorDriver != null)
         {
             diagramMonitorDriver.trainsOnNoPointChanged(naming);
@@ -6407,7 +6406,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * A train the rebuild could not put back where the railway had it, taken off wherever the rebuild put it and recorded
-     * in the setup where it stands, facing the way it faces (RSA17-A1).  The rebuild put it where the setup last had it -
+     * in the setup where it stands, facing the way it faces.  The rebuild put it where the setup last had it -
      * a square a run had moved it off - or nowhere, and the square it stands on read free: another train could be sent
      * into it, and nothing in the setup check said so.  Recorded, the build stands it on no Point where no copy faces
      * its way, and the setup check's error stops every send until it is turned, moved, or the track is put back.
@@ -6453,7 +6452,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             if (facing != null) setup.setFacing(square, facing);
 
-            // AND THE SIDE IT CAME IN BY, AND ITS ROAD (RSA18-A2): without them the track put back stood it with no tail, and
+            // AND THE SIDE IT CAME IN BY, AND ITS ROAD: without them the track put back stood it with no tail, and
             // the track its tail lies over was offered to other trains
             if (was.length > 1 && was[1] != null) setup.setArrivedFrom(square, was[1]);
 
@@ -6488,7 +6487,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Where a Point a rebuild's record names is now: given its name, and the square and facing it had (RSA5-A1).
+     * Where a Point a rebuild's record names is now: given its name, and the square and facing it had.
      * `AutonomySession.pointNamedNow` is the answer.
      */
     public interface NamedNow
@@ -6503,7 +6502,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The same, each train and its road put back on the Point the rebuild gives the copy it stood on (RSA4-A1, RSA5-A1):
+     * The same, each train and its road put back on the Point the rebuild gives the copy it stood on:
      * found by `namedNow` from the name, square and facing recorded.
      *
      * @param built the layout the rebuild just produced
@@ -6521,7 +6520,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         java.util.Set<String> notBack = putTheTrainsBack(built,
             namedNow == null ? standing : namedNow(standing, namedNow, nowhere), log, placementsJustEdited);
 
-        // AND THOSE WHOSE COPY THE REBUILD HAS NOT GOT (RSA17-A1), unless the setup was just given a newer answer for them
+        // AND THOSE WHOSE COPY THE REBUILD HAS NOT GOT, unless the setup was just given a newer answer for them
         for (String train : nowhere)
         {
             if (placementsJustEdited == null || !placementsJustEdited.contains(train)) notBack.add(train);
@@ -6531,8 +6530,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * What `whereTheTrainsAre` recorded, in the names the rebuild gives the same Points (RSA4-A1): the Point each train
-     * stands on, and the road it came in on - each by the square it was a copy of and its facing (RSA5-A1).  A train
+     * What `whereTheTrainsAre` recorded, in the names the rebuild gives the same Points: the Point each train
+     * stands on, and the road it came in on - each by the square it was a copy of and its facing.  A train
      * whose Point the rebuild does not have is left out, and stays where the rebuild put it.
      *
      * @param standing what `whereTheTrainsAre` recorded, or null
@@ -6554,7 +6553,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 now[0] = namedNow.pointNamedNow(now[0], now.length > 3 ? now[3] : null, now.length > 4 ? now[4] : null);
 
-                // NO COPY OF ITS SQUARE FACING ITS WAY NOW: said, not left where the rebuild put it (RSA17-A1)
+                // NO COPY OF ITS SQUARE FACING ITS WAY NOW: said, not left where the rebuild put it
                 if (now[0] == null)
                 {
                     nowhere.add(was.getKey());
@@ -6615,7 +6614,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The same, told which trains the setup has just been given a new placement for (D2-A1 / W7-A1).
+     * The same, told which trains the setup has just been given a new placement for.
      *
      * The rebuild has regenerated every placement from the setup, and `standing` is where the running railway had those trains a
      * moment ago.  Where the two disagree one of them is newer, and which does not show in either: the setup is newer where
@@ -6631,7 +6630,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * @param standing what `whereTheTrainsAre` recorded before it
      * @param log where to say that one train could not be put back
      * @param placementsJustEdited locomotives the setup was just given a new placement for, or null
-     * @return the trains it could not put back where the railway had them (RSA17-A1) - left where the rebuild put them
+     * @return the trains it could not put back where the railway had them - left where the rebuild put them
      */
     public static java.util.Set<String> putTheTrainsBack(org.traincontrol.automation.Layout built,
         java.util.Map<String, String[]> standing, java.util.function.Consumer<String> log,
@@ -6657,13 +6656,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 }
 
                 // A STATION COPY FACING THE SAME WAY, where the recorded one is barred and the square has one
-                // (TDY4-B1, AUT4-B1) - a turning copy at a square trains may turn at.  The train faces the same way
+                // - a turning copy at a square trains may turn at.  The train faces the same way
                 // there, and autonomy can start it.
                 org.traincontrol.automation.Point twin = built.startableTwinOf(back);
 
                 if (twin != null) back = twin;
 
-                // The railway wins, unless this train's placement is the edit (D2-A1 / W7-A1).  Adam's OB-183 ruling is the default: where a
+                // The railway wins, unless this train's placement is the edit.  Adam's OB-183 ruling is the default: where a
                 // train IS is a fact, and where the file thinks it is is a record.  The exception is a train the operator has just placed, whose
                 // new square exists only in the setup, and it is supplied by the door that made it rather than inferred.
                 if (placementsJustEdited == null || !placementsJustEdited.contains(was.getKey()))
@@ -6671,11 +6670,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     if (back.getCurrentLocomotive() == null
                         || !was.getKey().equals(back.getCurrentLocomotive().getName()))
                     {
-                        // And only where it went (AMS-C2): `moveLocomotive` refuses a square that is not a destination (a station demoted with the train
+                        // And only where it went: `moveLocomotive` refuses a square that is not a destination (a station demoted with the train
                         // still on it) and says so in the log, while the side and road below were written onto the square regardless.
-                        // Except a barred copy of a station (TDY3-A1): a train reversed there on the throttle, or turned by the Facing menu, stands on
+                        // Except a barred copy of a station: a train reversed there on the throttle, or turned by the Facing menu, stands on
                         // that copy because it IS its direction; refused, the model kept it where the setup last had it, somewhere it is not.
-                        // Onto its own copy even where that is no station now (RSA17-A1): it stands there
+                        // Onto its own copy even where that is no station now: it stands there
                         if (!built.moveLocomotive(was.getKey(), back.getName(), false, true, true))
                         {
                             notBack.add(was.getKey());
@@ -6689,7 +6688,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     // off on every rebuild - the half of OB-183 that is not the placement.
                     if (was.getValue()[1] != null) back.setArrivedFrom(was.getValue()[1]);
 
-                    // AND THE ROAD, looked up again on this layout (WK7-B1).  After the move above, which clears
+                    // AND THE ROAD, looked up again on this layout.  After the move above, which clears
                     // both on a change of occupant.
                     putTheRoadBack(built, back, was.getValue());
 
@@ -6715,7 +6714,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     }
                 }
 
-                // AND THE ROAD, where the train is where it was (WK7-B1).
+                // AND THE ROAD, where the train is where it was.
                 if (now == back) putTheRoadBack(built, back, was.getValue());
 
                 if (now == back && was.getValue()[1] != null)
@@ -6744,9 +6743,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The same rebuild, saying so when it declines one the operator has not been warned about (VD11-C8).
+     * The same rebuild, saying so when it declines one the operator has not been warned about.
      *
-     * `VD10-C2` coalesced the rebuild into one per gesture, posted an event later than the write that asked for it, so a run
+     * The rebuild is coalesced into one per gesture and posted an event later than the write that asked for it, so a run
      * starting inside that event finds this gate shut and the edit is thrown away - correctly, because rebuilding underneath a
      * moving railway is what `prepareAutonomyReload` exists to refuse.  The rebuild is NOT deferred to when the run ends: "the
      * setup is the newer of the two" holds only because every caller reaches this BECAUSE the setup just changed, with the running
@@ -6756,7 +6755,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      *
      * @param sayIfDeclined true where the caller has not already warned about editing during a run
      * @param placementsJustEdited locomotives whose placement this gesture wrote into the setup, so the rebuild's answer for them
-     *     is the newer one; null where the gesture edited no placement, which is most of them (D2-A1)
+     *     is the newer one; null where the gesture edited no placement, which is most of them
      */
     public void rebuildRunningLayoutFromSetup(boolean sayIfDeclined,
         java.util.Set<String> placementsJustEdited)
@@ -6767,14 +6766,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             this.model.logf("autosetup.log.setupEditNotApplied");
         }
 
-        // And a declined edit is recorded so the exit does not delete it (ACC-B3): the save on the way out folds the RUNNING layout back
+        // And a declined edit is recorded so the exit does not delete it: the save on the way out folds the RUNNING layout back
         // over the configuration - `captureFromLayout` walks `POINT_OPERATIONAL_KEYS` writing what the layout has and REMOVING what it
-        // does not - and the running layout was built before the edit.  Only from the door that carries an edit (OPV-C5): the flag rides
+        // does not - and the running layout was built before the edit.  Only from the door that carries an edit: the flag rides
         // on `sayIfDeclined`, because `autonomyEditorClosed()` reaches here on EVERY close, edit or no edit.  One flag, two questions,
-        // and why that is safe (OV2-C2): `sayIfDeclined` also means "the operator has not been warned", and the door it excludes DOES
+        // and why that is safe: `sayIfDeclined` also means "the operator has not been warned", and the door it excludes DOES
         // carry edits (closing the track diagram editor is how a geometry change arrives), but it cannot reach here while autonomy is
         // busy: the editor cannot be opened during a run (OB-047) and `refuseWhileEditorOpen()` guards every door that starts one,
-        // through `whyNoTrainMayBeSent` (RLV12-B1).  If that guard is ever relaxed, this flag needs its own parameter.
+        // through `whyNoTrainMayBeSent`.  If that guard is ever relaxed, this flag needs its own parameter.
         if (sayIfDeclined && activeDiagramConfiguration != null && isAutonomyBusy()
             && getAutonomyViewerPanel() != null)
         {
@@ -6787,32 +6786,32 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // Without capturing the running layout's state first: every caller of this shape reaches it BECAUSE the setup just changed, so
             // an ordinary load, which folds the running layout's placements, homes and facings back into the configuration, would write the
             // stale answer over the edit that asked for the rebuild.  An explicit edit beats an inferred one.
-            // "Newer of the two" is a claim about the RUNNING layout, and it is true only because of an ORDER upstream (OB-144, as DW-A1):
+            // "Newer of the two" is a claim about the RUNNING layout, and it is true only because of an ORDER upstream (OB-144):
             // `openLayoutEditor` captures the running layout before it constructs the editor, so by the time an edit exists the setup knows
             // where the trains are; `placementChanged` and the rename both run inside a session that opened that way.  This method cannot
             // check that for itself.
             // And where the trains actually ARE survives the rebuild (OB-183): where a train IS is a fact, and where the file thinks it is is
             // a record, so the placements are carried across.  PLACEMENTS ONLY: folding the entire running layout back (`captureFromLayout`)
-            // writes the stale answer over the edit, and is what silently deleted a declined edit (ACC-B3).
-            // The one exception is named, not inferred (D2-A1 / W7-A1): an editor placement lives only in the setup (MT-337), while the
+            // writes the stale answer over the edit, and is what silently deleted a declined edit.
+            // The one exception is named, not inferred: an editor placement lives only in the setup (MT-337), while the
             // diagram viewer's right-click menu is an `AutonomyEditorPanel` too, ends here, and captures nothing (OB-183 through the door
             // used most).  So `placementsJustEdited` names the trains this gesture wrote a placement for, and `putTheTrainsBack` makes the
             // exception for exactly those.
             java.util.Map<String, String[]> standing = whereTheTrainsAre();
 
-            // And the turns nobody has managed to write down yet (D3-C5): `Layout.reversedOnArrival` holds the reversals the railway made at
+            // And the turns nobody has managed to write down yet: `Layout.reversedOnArrival` holds the reversals the railway made at
             // a destination and has not yet drained into the setup, and lives on the Layout, which the load below replaces wholesale - so
-            // every pending turn died here, silently, on any setup gesture.  That is the retry case RGD-C7 preserves (a turn that DECLINED
+            // every pending turn died here, silently, on any setup gesture.  That is the retry case this preserves (a turn that DECLINED
             // to write once is put back and tried again at the next idle refresh), and OB-189 through a third door.  Carried the way the
             // placements are: what the railway did is a fact, and the file is a record of it.
             java.util.Map<String, String[]> pendingTurns = takeThePendingTurns();
 
-            // Asked, not built, as the carry asks (RLV7-C2, CS3-C4)
+            // Asked, not built, as the carry asks
             final Object runningBefore = this.model == null ? null : this.model.getAutoLayoutIfLoaded();
 
             try
             {
-                // THE RAILWAY'S SETTINGS AND TIMETABLE FIRST (RSA20-B1): the Auto tab and a run write them to the railway, and
+                // THE RAILWAY'S SETTINGS AND TIMETABLE FIRST: the Auto tab and a run write them to the railway, and
                 // this rebuilds from the setup - the timetable entries captured since the last fold, and the settings moved
                 // since, were thrown away.  Not where the trains stand: the put-back below carries those, and the gesture may
                 // just have placed one
@@ -6838,7 +6837,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 getAutonomyViewerPanel().load(activeDiagramConfiguration, false, false);
 
-                // ONLY OVER A RAILWAY THE LOAD REPLACED (RSA18-A1): a load declined for a problem that stops the build -
+                // ONLY OVER A RAILWAY THE LOAD REPLACED: a load declined for a problem that stops the build -
                 // a link unpaired, say - leaves the railway as it was, with its trains where they stand, while the setup's
                 // naming is the edited one; put back in those names, every train whose copy the edit renamed was taken off
                 // it and recorded where nothing then kept it
@@ -6848,18 +6847,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 }
                 else if (runningBefore != null && activeDiagramConfiguration != null)
                 {
-                    // AND THE SETUP IS THEN NEWER THAN THE RAILWAY (RSA19-B1), as after a rebuild a run declined: every
+                    // AND THE SETUP IS THEN NEWER THAN THE RAILWAY, as after a rebuild a run declined: every
                     // fold of the railway built before the edit - opening or closing the editor, Export, New
                     // Configuration, the exit - wrote its homes, priorities, lengths and placements back over the edit
                     setupNewerThanTheRailway(true);
 
-                    // AND THE DIAGRAM TOLD OF THE EDIT ALL THE SAME (RSA39-C3), as the Autonomy menu's door tells it: a load
+                    // AND THE DIAGRAM TOLD OF THE EDIT ALL THE SAME, as the Autonomy menu's door tells it: a load
                     // that replaces the railway does so through autonomyLoadedFromDiagram, and one the build refuses did
                     // not, so a page left out, say, came back from the page list with the captions it had before
                     autonomySetupChanged();
                 }
 
-                // And a declined edit has now been carried (AMS-B1): the guard exists because the running layout was built BEFORE the edit, and a
+                // And a declined edit has now been carried: the guard exists because the running layout was built BEFORE the edit, and a
                 // rebuild that replaced it was built from the setup, edit included, with the trains put back where they stand - so the running
                 // layout is the newer of the two again.  Left up, the guard stopped every fold for the rest of the session (OB-183 kept alive by
                 // the guard).  Only when the layout was REPLACED: `load` declines without rebuilding, and a declined load has carried nothing.
@@ -6890,12 +6889,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         // The editor, not the button that opens it (OB-126): reading `!editLayoutButton.isEnabled()` was true while the button being grey
         // had exactly one cause; a second (a Central Station layout, no local layout to edit) greyed every item in the Layout and
-        // Autonomy menus, the escape hatches included.  Asked of the editor windows (RSA28-B1).
+        // Autonomy menus, the escape hatches included.  Asked of the editor windows.
         return anEditorWindow() != null;
     }
 
     /**
-     * An editor window of this window's that is still there, or null (RSA28-B1).  Asked of the windows, not of `openEditor` or the
+     * An editor window of this window's that is still there, or null.  Asked of the windows, not of `openEditor` or the
      * Edit button: an editor's switch hands over through the teardowns that give Edit back (`autonomyEditorClosed`,
      * `layoutRefreshCompleteInternal`) and only its posted arrival greyed it again, so a press in between opened a second editor,
      * and the gate, asking the newest, let Start run with the other still open.  A window is there from its construction until its
@@ -6919,7 +6918,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * An editor window has gone: Edit and the doors beside it asked again (RSA28-B1).  From `LayoutEditor.dispose`, which
+     * An editor window has gone: Edit and the doors beside it asked again.  From `LayoutEditor.dispose`, which
      * every ending passes through.
      */
     void editorWindowClosed()
@@ -6986,9 +6985,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Refreshes of the diagram under way - from a page door's hand-over to `layoutEditingComplete` until its event-thread
-     * half has reset the session and loaded the configuration again (RSA23-B1); from the track editor's Save or Cancel,
-     * counted before it closes (RSA24-C1); and from the autonomy editor's Save, Cancel or a jump to another page, notice
-     * or square until the `autonomyEditorClosed` posted behind it has run (RSA25-C1).  Read by the one gate: a run started
+     * half has reset the session and loaded the configuration again; from the track editor's Save or Cancel,
+     * counted before it closes; and from the autonomy editor's Save, Cancel or a jump to another page, notice
+     * or square until the `autonomyEditorClosed` posted behind it has run.  Read by the one gate: a run started
      * in between ran the railway built before the door, the reset then forgot it mid-run, and where the run left the
      * trains was never written.  A count, because Combine Linked Pages holds one of its own across the worker it writes on.
      */
@@ -6996,13 +6995,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * An editor asked for and not yet shown - from the request until its posted build has shown the window, or refused, or
-     * failed (RLV13-C2).  Read by `anEditorIsOpenOrOnItsWay`.  Event thread only.
+     * failed.  Read by `anEditorIsOpenOrOnItsWay`.  Event thread only.
      */
     private boolean editorOnItsWay;
 
     /**
      * A message with every line longer than a dialog should be broken at spaces, so a dialog showing it fits the screen
-     * however long a list inside it runs (RLU-C3).  A line with no space to break at is left whole.
+     * however long a list inside it runs.  A line with no space to break at is left whole.
      *
      * @param text the message, its paragraphs on lines of their own
      * @return the same words, on lines of at most 90 characters where a space allows
@@ -7038,7 +7037,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * The layout editor's window while one is open where it can be seen, or null - for a question that has to open in front of it
-     * rather than over this window, which the editor covers (MT-575).  NOT A MINIMISED ONE (RLA-C4): on Windows a window it owns
+     * rather than over this window, which the editor covers (MT-575).  NOT A MINIMISED ONE: on Windows a window it owns
      * is hidden with it, so a modal hung from it was invisible and held the application; then this window is where the operator is.
      *
      * @return the editor, or null when none is open and showing
@@ -7067,13 +7066,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Whether the editor about to be opened starts knowing a square was clicked - set only for the length of
-     * `openCarryingTheClick`, and read by `openLayoutEditor` as it is asked (RSA44-C1).
+     * `openCarryingTheClick`, and read by `openLayoutEditor` as it is asked.
      */
     private boolean clickCarried = false;
 
     /**
      * Opens an editor in the place of one that closed itself to change page, carrying whether a square had been clicked
-     * in it (RSA44-C1): the click's tooltip line is for the visit, and the user closed nothing.  Cleared whatever the
+     * in it: the click's tooltip line is for the visit, and the user closed nothing.  Cleared whatever the
      * opening does, so an opening it refused cannot hand the click to the next Edit.
      *
      * @param clicked whether a square was clicked in the editor that closed
@@ -7095,7 +7094,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * An autonomy editor closing - its Save, its Cancel, a jump to another page, notice or square: the refresh counted before its
-     * window goes (RSA25-C1), and taken over by the `autonomyEditorClosed` posted behind it.  Posted after the window closed and
+     * window goes, and taken over by the `autonomyEditorClosed` posted behind it.  Posted after the window closed and
      * counted nowhere, an event queued while the editor's own handler ran found neither an editor nor a refresh, and after
      * Cancel's "exit without saving" a train sent there ran on the discarded setup.  As the track editor's
      * (`layoutEditingCompleteFromTheEditor`).
@@ -7140,13 +7139,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // changes how a square SPLITS (a terminus becoming a may-turn station) changes how many copies it becomes and what they are
         // called, so the running layout would hold names the setup no longer knows and the caption and the right-click menu would find
         // nothing.  Not while trains are moving (a courtesy, not a reason to stop their trains).  Through the extracted method, not a
-        // second copy of it (TD-9).
+        // second copy of it.
         rebuildRunningLayoutFromSetup();
 
         // And the file is written (Adam: "on exit or editor load or editor close, save to the setup file."): exit and editor OPEN
         // capture the running layout, and closing did not, so between one close and the next open the file said where the trains had
         // started.  AFTER the rebuild, not before, and the order is what makes it safe: capturing first folds the running layout, built
-        // before the edit, over the configuration and REMOVES what it does not carry (ACC-B3); after the rebuild it carries the edit,
+        // before the edit, over the configuration and REMOVES what it does not carry; after the rebuild it carries the edit,
         // so what is written back is the edit plus where the trains really are.
         captureRunningLayout();
     }
@@ -7167,7 +7166,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * The station on a square, for a right-click on the track itself.  Only while the overlay is on, because that checkbox says
      * the user is looking at autonomy rather than at track, and only for a square that is a station, since the menu it opens is
      * about where a train may be sent.  There is no page-less overload: it passed null and so fell back to the page the MAIN window
-     * is showing, which says nothing about a popup (AD-B7, where a right-click in a popup opened the menu of a station on another
+     * is showing, which says nothing about a popup (a right-click in a popup opened the menu of a station on another
      * page).
      *
      * @param onPage the page the square is actually on
@@ -7330,7 +7329,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 return true;
             }
 
-            // Asked of the square, not of one copy (SPEC-B5): on an empty square getAutonomyPointForTile hands back any copy, and
+            // Asked of the square, not of one copy: on an empty square getAutonomyPointForTile hands back any copy, and
             // that one may be the dead end while another can depart.  A station no copy can leave is placed on all the same (OB-350).
             boolean anyWayOut = onto.canDepartFrom(this.model.getAutoLayout(), aimed);
 
@@ -7345,7 +7344,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // cut.  Only where the landing can HOLD it (Adam's rule for every other placement, `facingAfterAPaste`, MT-377: "as long as the
             // direction isnt flipped"), and only for the train on the clipboard, so an ordinary drag keeps the walked answer, which really
             // can say where the train would end up.
-            // And only while it is actually off the railway (SVV-C5): `placing == this.cutLocomotive` stays true while the clipboard is
+            // And only while it is actually off the railway: `placing == this.cutLocomotive` stays true while the clipboard is
             // loaded, and the cut train can be put back by another door in between; once it stands somewhere the walk CAN answer, and its
             // answer is the better one.  So the condition is "the walk had nowhere to start", a question about the railway, not the clipboard.
             boolean stillLifted = this.model == null || this.model.getAutoLayout() == null
@@ -7372,7 +7371,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             // And where its tail is, asked BEFORE anything moves (Adam: "Simply don't place the train, leave it on the clipboard as if no
             // paste had been done." - on what a dismissed prompt should do): asking it from `rememberPlacement` is too late, when the train has
-            // already been picked up and put down.  A dismissal, and not the other two nulls (IND9-B5): `forPlacement` answers null when the
+            // already been picked up and put down.  A dismissal, and not the other two nulls: `forPlacement` answers null when the
             // operator declined, when the square offers no side to choose between, or when the dialog could not be shown, and only the first
             // is a refusal to place.  `wouldAsk` is asked rather than inferred: the same condition under which forPlacement reaches its
             // dialog, kept in one place with it.
@@ -7412,7 +7411,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 if (org.traincontrol.gui.FacingPrompt.wouldAsk(canHold))
                 {
-                    // NAMED AS THE SQUARE, not as the copy `point` happens to be (GUI-C7): a copy's name
+                    // NAMED AS THE SQUARE, not as the copy `point` happens to be: a copy's name
                     // states a heading, and the heading is what this asks.
                     facingChosenAtTheLanding = org.traincontrol.gui.FacingPrompt.forPlacement(
                         canHold, facingAtTheLanding, getAutonomySession().baseNameOf(point.getName()), this);
@@ -7450,12 +7449,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 if (facingThatWay != null) point = facingThatWay;
             }
 
-            // The railway's answer decides, here too (TWV-B4, after W21-B3): `isAutonomyBusy()` above closes the "autonomy started in
+            // The railway's answer decides, here too: `isAutonomyBusy()` above closes the "autonomy started in
             // between" door, but not a target that is not a destination - `getAutonomyPointForTile` hands back a non-destination copy when no
             // copy of the square is one, and this door's guard asks `canDepartFrom`, a different question, true for an ordinary sensor on
             // plain track.  Discarded, the clipboard was cleared for a move that did not happen, and a train cut by Control+X was on no
             // square and no clipboard.
-            // What the train had on the railway, before this paste moves it (TLW-A1): the tail question's keep-or-drop is decided from
+            // What the train had on the railway, before this paste moves it: the tail question's keep-or-drop is decided from
             // these, because a run leaves its arrival on the running layout and not in the setup.
             org.traincontrol.automation.Point wasOn = null;
 
@@ -7543,7 +7542,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private String tailAtTheLanding;
 
-    /** The road, side and square the pasted train had on the running layout before it moved (TLW-A1). */
+    /** The road, side and square the pasted train had on the running layout before it moved. */
     private java.util.List<org.traincontrol.automation.Edge> roadBeforeTheLanding;
 
     private String sideBeforeTheLanding;
@@ -7584,7 +7583,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return null;
         }
 
-        // The session's rule, which every door that puts a train down asks (GUI-B1, TDY2-A1): a copy facing that way,
+        // The session's rule, which every door that puts a train down asks: a copy facing that way,
         // one trains may arrive at first (MT-394), the plain one before its turning twin.  The doors ask it for a facing
         // among `placeableFacings`, which since OB-284 are the copies a train may LEAVE by - so where only a copy no train
         // arrives at faces that way, this falls back to it, which is how a paste keeps a train facing the way it was.
@@ -7594,7 +7593,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Writes the turns the railway has made at its destinations into the setup, each train faced the way it came in, and
      * keeps on the railway those it could not write - the drain `reconcileFacingWhenIdle` makes whenever the railway is
-     * idle, and the doors that leave a railway during a run make before their fold (RLV10-C1).
+     * idle, and the doors that leave a railway during a run make before their fold.
      *
      * @param built the railway the turns were made on
      * @param session the session to write them into, or null to write none
@@ -7602,7 +7601,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private void writeTheTurns(org.traincontrol.automation.Layout built,
         org.traincontrol.automationui.AutonomySession session)
     {
-        // FORGOTTEN ONLY ONCE WRITTEN (RGD-C7).  The drain happens before any of these reach
+        // FORGOTTEN ONLY ONCE WRITTEN.  The drain happens before any of these reach
         // the graph, so every way of not reaching it - no session to write to, a store that throws
         // on the second of three - would lose the turn for good. The remainder goes back.
         java.util.Map<String, String> turnedRound = built.takeReversalsOnArrival();
@@ -7616,7 +7615,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 {
                     java.util.Map.Entry<String, String> turned = pending.next();
 
-                    // The way it came in, not the other of what the setup remembers (REV9-A1): `flipFacing` pivoted on `getFacing(tile)`, the SETUP's
+                    // The way it came in, not the other of what the setup remembers: `flipFacing` pivoted on `getFacing(tile)`, the SETUP's
                     // stored facing for the arrival square, which is stale at exactly this moment (a run moves trains and nothing writes where they
                     // ended up back to the setup; behaviour.md 6a), so the turn was written nowhere or BACKWARDS, with `moveOntoFacingCopy` standing
                     // the train on the wrong copy (OB-190).  What the railway does know is which Point the train turned at and which side it came in
@@ -7642,10 +7641,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Writes the turns the railway owes into the configuration running, before a fold that leaves the railway during a run - Stop
-     * Using Autonomy, or another configuration chosen (RLV10-C1).  A turn is written only while the railway is idle, and after Yes
+     * Using Autonomy, or another configuration chosen.  A turn is written only while the railway is idle, and after Yes
      * a train stopped between sensors keeps it running, so every turn made since the run started was dropped with the railway
      * (OB-189).  "Only while idle" is about a train between two copies; a turn is written only for a train still standing where it
-     * turned and not under way again (`faceTheWayItCameIn`, RLV11-C3), which is no such train.
+     * turned and not under way again (`faceTheWayItCameIn`), which is no such train.
      */
     void writeTheTurnsOwed()
     {
@@ -7682,8 +7681,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // and the next dispatch offered paths for the wrong heading.  Drained, so each is written exactly once.
             org.traincontrol.automationui.AutonomySession session = getAutonomySession();
 
-            // AND FORGOTTEN ONLY ONCE WRITTEN (RGD-C7) - `writeTheTurns`, which the doors that leave the railway
-            // during a run share (RLV10-C1)
+            // AND FORGOTTEN ONLY ONCE WRITTEN - `writeTheTurns`, which the doors that leave the railway
+            // during a run share
             writeTheTurns(built, session);
 
             for (org.traincontrol.automation.Point point : built.getPoints())
@@ -7721,7 +7720,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * where a train IS, as long as the train; this says what its presence has made unusable: the squares its tail claims, which is
      * what routing refuses (OB-280, `AutonomySession.routesBlockedByStandingTrains`).
      *
-     * At idle as well as during a run (W7B-B1; Adam: "this greyout should appear at idle and be regenerated if a placement or
+     * At idle as well as during a run (Adam: "this greyout should appear at idle and be regenerated if a placement or
      * train/track length is changed."): the refusal it draws was never fenced to a running railway, so a stopped railway refused
      * manual sends over track this said was free.  `workOutCoveredTrack` holds the argument.
      *
@@ -7736,7 +7735,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Whether a standing train has blocked this square, so the diagram can grey it.  Answered the same way whether or not anything
-     * is running (W7B-B1), since the refusal it draws is never fenced that way.
+     * is running, since the refusal it draws is never fenced that way.
      *
      * @param square the tile
      * @return true when the track is blocked and worth saying so
@@ -7818,7 +7817,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * A gesture has changed what track a standing train blocks, so the marks are worked out again: the narrow door onto
-     * `refreshCoveredTrack` for a caller that has changed one of the three things the marks depend on and nothing else (W7B-B1).
+     * `refreshCoveredTrack` for a caller that has changed one of the three things the marks depend on and nothing else.
      * `updateVisiblePoints` also reconciles facings and rewrites every station label, far more than a length dialog should ask for.
      *
      * It does not rebuild anything (`regression.testTheGreyDoesNotRebuildTheDiagram` measures a full rebuild as the failure, MT-334:
@@ -8008,7 +8007,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (session == null) return;
 
-        // Whether the setup this door writes to is still the window's once its tail question is answered (TDU4-C2).
+        // Whether the setup this door writes to is still the window's once its tail question is answered.
         boolean setupStands = true;
 
         session.placeLocomotive(tile,
@@ -8017,7 +8016,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // And which way it is pointing, which this door never wrote (Adam: "When pasting the train from bottommainpost to bottommainb,
         // its direction in the dropdown was wrong"): a square is several Points, one per side a train can arrive by, and
         // `placementCopy` picks between them by the stored facing, so a pasted train with no recorded direction fell through to COPY 0
-        // (since GUI2-B1, the first copy trains may arrive at), which nobody chose; the next `captureFromLayout` then wrote that copy's
+        // (the first copy trains may arrive at), which nobody chose; the next `captureFromLayout` then wrote that copy's
         // side back as though the operator had picked it.  Taken from the copy the LAYOUT put it on, not from where it came from: the
         // layout has already chosen a Point, whose side is the heading the train actually has, and at a terminus that side is the only
         // one there is.  Nothing is written when the square has no named copies (every square that is not a station): a guessed
@@ -8030,7 +8029,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // recorded here: asking now would be asking about a train already put down, and a dismissal could undo nothing.
             String tail = tailAtTheLanding;
 
-            // AND EVERY OTHER PART OF THE LANDING, READ NOW (TDU-B2).  Since FR-100 the tail question below waits on the
+            // AND EVERY OTHER PART OF THE LANDING, READ NOW.  Since FR-100 the tail question below waits on the
             // diagram with the window live, and a second Control+V in that wait runs this door again and writes these
             // fields for its own train.  Read after the question, the first train's road, side and facing were the
             // second's.
@@ -8040,14 +8039,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             final org.traincontrol.automationui.TilePorts.Side facingChosen = facingChosenAtTheLanding;
             final org.traincontrol.automationui.TilePorts.Side facingFound = facingAtTheLanding;
 
-            // SPEC-A1: the landing copy's own side is not the train's heading (`StationIndex.speakerAt`: on an empty square "any copy will
+            // The landing copy's own side is not the train's heading (`StationIndex.speakerAt`: on an empty square "any copy will
             // do", so that side was copy 0, chosen arbitrarily); the heading is read before the move, in `facingAtTheLanding`, and handed to
             // the rule.  The operator's answer wins where they gave one: `facingAfterAPaste` is the rule for a paste nobody was asked about
             // (keep the walk's heading where the landing can hold it, and MT-377's "as long as the direction isnt flipped" otherwise), and at
             // a may-reverse square the answer is the heading, needing no filtering because the choices offered were the square's own.
             // Over the copies a train may stand on (OB-270; Adam: "we shouldn't allow an impossible facing to be saved"): the copies the paste
             // itself chose among, so the record and the copy agree.
-            // Written before the tail question (TDU3-C1), as the locomotive dialog writes it: it was chosen before, and written after it was
+            // Written before the tail question, as the locomotive dialog writes it: it was chosen before, and written after it was
             // dropped with a late answer - where only the road can have gone stale.
             session.setFacing(tile, facingChosen != null ? facingChosen
                 : org.traincontrol.automationui.AutonomySession.facingAfterAPaste(
@@ -8055,9 +8054,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             session.setArrivedFrom(tile, tail);
 
-            // And the railway, not only the setup (VAL8-A2, REG7-B1): the walk that blocks track reads the live Point, and the setup value
-            // only reaches it at the next rebuild, so the operator answered the question and watched nothing become blocked.  As SPEC-B4
-            // (the facing menu wrote the setup and left the railway alone): one door, both stores, every time.
+            // And the railway, not only the setup: the walk that blocks track reads the live Point, and the setup value
+            // only reaches it at the next rebuild, so the operator answered the question and watched nothing become blocked.  Like the facing menu
+            // (which wrote the setup and left the railway alone): one door, both stores, every time.
             point.setArrivedFrom(tail);
 
             // And how far back its tail reaches, asked where the answer matters
@@ -8075,7 +8074,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.model.getAutoLayout(), point, tail, point.getCurrentLocomotive().getTrainLength(),
                 point.getCurrentLocomotive().getName(), this, session::baseNameOf, roadBefore);
 
-            // ONLY WHERE THE PLACEMENT STILL STANDS (TDU2-A1, TDU3-B1): the question waited with the window live, and what
+            // ONLY WHERE THE PLACEMENT STILL STANDS: the question waited with the window live, and what
             // stands on this copy now may be another train, with the road a run brought it by - or the railway may have
             // been rebuilt, and the copy that holds the train is a new one.
             setupStands = org.traincontrol.gui.TailCrossedPrompt.sameSetup(session, getAutonomySession())
@@ -8085,7 +8084,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 org.traincontrol.gui.TailCrossedPrompt.runningNow(this.model), point, placed, tail, roadAtTheQuestion,
                 setupStands);
 
-            // THE ANSWER, OR THE ROAD IT HAD ON THE RAILWAY (TLR-C5, TLV-A1, TLW-A1).  Not Known forgets a road; no
+            // THE ANSWER, OR THE ROAD IT HAD ON THE RAILWAY.  Not Known forgets a road; no
             // question, or a closed one, keeps the road the train had where it is still on the same square with the same
             // side - read from the running layout, which a run has told and the setup has not - and both stores are
             // written so they agree, including on another copy of the square the paste moved it onto.
@@ -8106,13 +8105,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         }
 
-        // NOT A SETUP THE WINDOW HAS LET GO (TDU4-C2): replaced in the wait, it was captured and written by the reset
+        // NOT A SETUP THE WINDOW HAS LET GO: replaced in the wait, it was captured and written by the reset
         // that replaced it, and saved now it would reconcile against pages the editor changed in place.
         if (!setupStands) return;
 
         try
         {
-            // Logged rather than shown, for the reason given at the other placement door (DR-B10).
+            // Logged rather than shown, for the reason given at the other placement door.
             noteIfTheSetupWasNotTidied(session.save());
         }
         catch (java.io.IOException e)
@@ -8305,7 +8304,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Shows the tab where locomotives are placed and autonomy is started.  Offered only once a configuration has loaded, because
      * that tab does not exist before then.
      *
-     * UXR-C20: guarded the same way `setAutoTabEnabled` guards the same index - `getTabCount() <= 2` (the tab is not built yet) and
+     * Guarded the same way `setAutoTabEnabled` guards the same index - `getTabCount() <= 2` (the tab is not built yet) and
      * `isEnabledAt(2)` (`showLayoutTab`'s OB-128 rule for this tab) - so a caller reached before a configuration is loaded selects
      * nothing rather than a greyed, empty tab.
      */
@@ -8323,7 +8322,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Shows the settings that apply to the whole setup, wherever that tab currently sits: by COMPONENT rather than by index, like
-     * showAutonomyRunTab, since the inner tabs are removed and reinserted on every load.  UXR-C20: same guard as showAutonomyRunTab.
+     * showAutonomyRunTab, since the inner tabs are removed and reinserted on every load.  Same guard as showAutonomyRunTab.
      */
     public void showAutonomySettingsTab()
     {
@@ -8459,7 +8458,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         if (session.hasBlockingProblems())
         {
             // Opening is not refused while an editor is open, unlike loading below: `openAutonomyEditor` brings
-            // the open one forward, which is what somebody pressing Fix Setup is looking for (GUI-C8).
+            // the open one forward, which is what somebody pressing Fix Setup is looking for.
             autonomyDiagramBanner.offer(I18n.t("autosetup.ui.bannerSetupCannotRun"),
                 I18n.t("autosetup.ui.btnFixSetup"),
                 () -> openAutonomyEditor(null));
@@ -8513,13 +8512,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Asks first if anything is moving, and stops it
         if (!prepareAutonomyReload()) return false;
 
-        // THE TURNS THE RAILWAY OWES, written into the configuration first (RLV10-C1)
+        // THE TURNS THE RAILWAY OWES, written into the configuration first
         writeTheTurnsOwed();
 
-        // Folded before it is cleared (RLV9-A1): the reset below folds the running layout into the configuration but asks the model for
+        // Folded before it is cleared: the reset below folds the running layout into the configuration but asks the model for
         // its railway, which Unload empties just before it, so Unload folded nothing and the next load built every train the run moved
-        // back where the file had it before the run (DW-A1's shape).  A train under way - Yes above stops it and releases nothing - is
-        // written on the one point it is kept at, as a reload writes it (RLV8-B1).
+        // back where the file had it before the run.  A train under way - Yes above stops it and releases nothing - is
+        // written on the one point it is kept at, as a reload writes it.
         captureRunningLayout(true);
 
         this.model.clearAutoLayout();
@@ -8569,15 +8568,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Opens the autonomy editor if the Edit item would be enabled, and does nothing if it would not: the excluded-page label's
      * gesture.  It asks the REFUSAL half of the question the menu item asks (`whyAutonomyEditorCannotOpen`); the other half,
-     * `pagesAvailable`, is a property of that menu's own construction and is not asked here (FXV-C2).  Silent when the refusal
+     * `pagesAvailable`, is a property of that menu's own construction and is not asked here.  Silent when the refusal
      * bites, since the label carries the reason in its own tooltip.  An editor already open is not a refusal: it is brought
-     * forward, as the Edit item does (GUI-C8).
+     * forward, as the Edit item does.
      */
     public void openAutonomyEditorIfItCan()
     {
         if (whyAutonomyEditorCannotOpen() != null) return;
 
-        // NOT `refuseWhileEditorOpen` (GUI-C8).  With an editor open the Edit item is enabled and brings that
+        // NOT `refuseWhileEditorOpen`.  With an editor open the Edit item is enabled and brings that
         // window forward (`openLayoutEditor`, OB-058); asking the guard first showed "Close the editor first"
         // in exactly that state - the one place this label and the item it imitates differed.
         javax.swing.SwingUtilities.invokeLater(() -> openAutonomyEditor(null));
@@ -8624,7 +8623,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Whether a tile is the kind of thing an address of this kind names.  A lamp answers to an accessory address (VD12-B2):
+     * Whether a tile is the kind of thing an address of this kind names.  A lamp answers to an accessory address:
      * `isSignal()` covers `componentType.LAMP`, a lamp is one output of an accessory decoder, so a route commanding that address
      * really does throw it.  What was reported was tiles that CANNOT answer to an accessory address (a page link, another route's
      * tile, an s88).
@@ -8673,7 +8672,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // IT HAS TO BE THE RIGHT KIND OF THING (MT-462, the first half).
             if (!answersTo(tile, kind)) return false;
 
-            // AN ACCESSORY IS ASKED OF ITS DECODER (GUI-C5), in whatever protocol the tile has - this door is
+            // AN ACCESSORY IS ASKED OF ITS DECODER, in whatever protocol the tile has - this door is
             // given numbers only; `highlightAccessories` is the one that knows the protocol.  Which answers a
             // three-way's second address as well as its first.
             if (kind == AddressedAs.ACCESSORY)
@@ -8750,7 +8749,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * The same, leaving out every square one of `notThese` also reaches (OB-286).  A square a route both commands and checks is
-     * drawn as commanded; a three-way answers to two addresses (GUI-C5), so commanded under one and checked under the other it was
+     * drawn as commanded; a three-way answers to two addresses, so commanded under one and checked under the other it was
      * lit twice, the checked wash last, which only a question asked of the SQUARE can see.
      *
      * @param byAddress each logical address, and the protocols it is asked in
@@ -8766,7 +8765,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (byAddress == null || byAddress.isEmpty()) return 0;
 
-        // THE DECODER, NOT THE NUMBER (GUI-C5): the protocol each address is commanded in, and a three-way's
+        // THE DECODER, NOT THE NUMBER: the protocol each address is commanded in, and a three-way's
         // second decoder - both asked of the tile, which is what knows them.
         return lightWhere(tile ->
             answersTo(tile, AddressedAs.ACCESSORY) && reaches(tile, byAddress)
@@ -8774,7 +8773,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Whether an accessory tile answers to any of these addresses in any of its protocols (GUI-C5).
+     * Whether an accessory tile answers to any of these addresses in any of its protocols.
      *
      * @param tile the tile
      * @param byAddress each logical address, and the protocols it is asked in
@@ -9124,7 +9123,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             input = input.trim();
 
-            // The page names, not the two sentinels that share the map (SVN-C13): `pageNames` also holds the active page number and the
+            // The page names, not the two sentinels that share the map: `pageNames` also holds the active page number and the
             // active button's key code under keys -1 and -2, written as strings, and `containsValue` saw them, so naming a page "3" or "81"
             // was refused as a duplicate of a page that does not exist.
             if (namesOfPages().contains(input)
@@ -9219,7 +9218,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Set the model reference
         this.model = listener;
 
-        // The railway's source, for a switch of source to compare with (RLV8-C5)
+        // The railway's source, for a switch of source to compare with
         this.railwaySource = prefs.get(LAYOUT_OVERRIDE_PATH_PREF, "");
 
         // AND THE FOLDER IT STARTED ON REMEMBERED (OB-308), as every folder chosen since is
@@ -10009,7 +10008,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void connectingFailed()
     {
-        // On the event thread, whoever calls it (REL-C1): the three callers are failure paths in `MarklinControlStation.init`, on the
+        // On the event thread, whoever calls it: the three callers are failure paths in `MarklinControlStation.init`, on the
         // caller's own thread, and this method swaps the content pane, revalidates, repaints and hides a realized visible frame, which
         // races on paint at the moment an error dialog is about to go up.  Here rather than at the three call sites, so a fourth cannot
         // forget.
@@ -10249,13 +10248,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private void checkAutoLayoutLatency(double latency)
     {
-        // ASKED, NOT BUILT (RLV8-C2): with nothing loaded there is nothing to check, and building an empty railway
+        // ASKED, NOT BUILT: with nothing loaded there is nothing to check, and building an empty railway
         // on every reply made what hasAutoLayout answers depend on the power and the time since start-up
         Layout l = model.getAutoLayoutIfLoaded();
 
         if (l != null && l.isRunning() && l.getMaxLatency() > 0 && latency > l.getMaxLatency())
         {
-            // WHATEVER THE POWER FLAG SAYS (RSA2-C6), as a route's stop is (RSA-C4): the flag is only the last GO or
+            // WHATEVER THE POWER FLAG SAYS, as a route's stop is: the flag is only the last GO or
             // STOP echo heard, and one lost GO kept this cut-off from firing with the track live.  It chooses the log
             // line and the dialog now, and nothing else - a STOP sent to a station already stopped does nothing.
             final boolean wasOn = model.getPowerState();
@@ -10415,7 +10414,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // still monitoring or capturing against it - has to go
             this.resetAutonomySession();
 
-            // and the railway with it where the source is another railway - `sourceIsNow` says the rule (RLV7-C2, RLV8-C5)
+            // and the railway with it where the source is another railway - `sourceIsNow` says the rule
             this.sourceIsNow(prefs.get(LAYOUT_OVERRIDE_PATH_PREF, ""));
 
             // OB-093, Adam: "when using a CS2 layout and the autonomy tab is greyed out, the autonomy checkbox is still visible on the track
@@ -10900,7 +10899,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Repaints a single switch on the keyboard
      *
-     * Not synchronized (RSA67-C1): it only posts to the event thread, and a driving thread calls it holding the railway's
+     * Not synchronized: it only posts to the event thread, and a driving thread calls it holding the railway's
      * monitor, a signal's lock and the accessory's, so waiting here for the window's monitor - which the window can hold
      * while it reaches a protection refresh - was a deadlock.
      *
@@ -11239,7 +11238,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The squares autonomy can NOT choose, worked out off the event thread (D3-B1).  Null until a pass has answered, and every
+     * The squares autonomy can NOT choose, worked out off the event thread.  Null until a pass has answered, and every
      * reader treats null as "show the caption" (`captionIsActive` explains why this is the hide-list).  Replaced wholesale, so a
      * reader on the event thread sees one pass's answer or the previous one's, never half of each.
      *
@@ -11289,7 +11288,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Whether the routing dropdown is being put back by us rather than chosen by a person (RC-B11).  A JComboBox fires an
+     * Whether the routing dropdown is being put back by us rather than chosen by a person.  A JComboBox fires an
      * ActionEvent from setSelectedIndex, so restoring the control re-enters the listener that asked for the restore, and unguarded
      * that is a second dialog on top of the first.  Its checkbox siblings need nothing of the kind (setSelected fires no ActionEvent).
      * Neither volatile nor synchronized: every read and write is on the event thread, the only thread that delivers the event.
@@ -11325,7 +11324,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Puts the routing dropdown back to the rule the layout is actually using (RC-B11).  Two callers wanting the same thing for
+     * Puts the routing dropdown back to the rule the layout is actually using.  Two callers wanting the same thing for
      * different reasons: a refused change has to stop the control reporting a rule that is not in force, and loading a configuration
      * has to show that configuration's rule.  It holds the flag so the listener does not run at all, rather than relying on the
      * listener returning early.  ROUTING_ORDER covers every PathPreference; a rule it could not find leaves the control alone, since
@@ -11366,7 +11365,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Fills in the routing-logic dropdown Adam put in the autonomy settings panel (MT-226).  The control itself is his, added in the
      * designer beside its label, so nothing here touches the layout (building a panel and taking the departure checkbox's slot with
-     * GroupLayout.replace looked wrong on screen and, in the wrong order, stopped the application starting, LE2-A8).  The VALUE is not
+     * GroupLayout.replace looked wrong on screen and, in the wrong order, stopped the application starting).  The VALUE is not
      * set here: loadAutoLayoutSettings pulls it from the live layout, which is what makes it follow a configuration being switched.
      */
     private void mountRoutingLogic()
@@ -11403,7 +11402,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         algorithmType.addActionListener(event ->
         {
-            // OUR OWN RESTORE, NOT A PERSON (RC-B11).
+            // OUR OWN RESTORE, NOT A PERSON.
             //
             // Checked out here rather than inside the invokeLater below, because setSelectedIndex
             // delivers this event synchronously and the flag is only held for that call.
@@ -11420,7 +11419,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     {
                         this.applyAutoRouteListSelections();
 
-                        // And the dropdown goes back, before the message (RC-B11): the rule is read as each path is chosen, so changing it while trains
+                        // And the dropdown goes back, before the message: the rule is read as each path is chosen, so changing it while trains
                         // run would leave the railway following two rules at once - hence the refusal - and this control is the only place the rule in
                         // force is reported.  Before the dialog, which is modal: the control would otherwise contradict the message while it is on screen.
                         restoreRoutingLogicSelection();
@@ -11446,7 +11445,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                         // Said out loud when it cannot be kept.  A rule that applies now and reverts
                         // on the next start is the shape of "it did not save" that costs an hour to
-                        // work out (LE-B5).
+                        // work out.
                         //
                         // true: somebody just chose this from the dropdown.
                         if (!persistPathPreference(option, true))
@@ -11478,13 +11477,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         org.traincontrol.automation.Layout.PathPreference.BALANCED_PRIORITY
     };
     /**
-     * Writes the routing rule into the configuration it belongs to (LE-B5).
+     * Writes the routing rule into the configuration it belongs to.
      *
      * @param option the rule chosen
      * @param mayBuildSession true only when a person just clicked something.  The session getter is a lazy builder that parses
-     *        every page, runs the caption migration (which writes to disk) and can raise a dialog, and SV-B2 forbids it in the
+     *        every page, runs the caption migration (which writes to disk) and can raise a dialog, and it is forbidden in the
      *        layout-index write path; a deliberate click on a menu is the context it exists to serve, but a settings refresh must
-     *        not do any of that, so it passes false and settles for the session that already exists (LE2-C16)
+     *        not do any of that, so it passes false and settles for the session that already exists
      * @return true when it was stored, false when there was nothing to store it in
      */
     private boolean persistPathPreference(org.traincontrol.automation.Layout.PathPreference option,
@@ -11492,7 +11491,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         try
         {
-            // The field when nobody clicked, the builder when they did (LE2-C16): `loadAutoLayoutSettings` has fourteen callers (every autonomy
+            // The field when nobody clicked, the builder when they did: `loadAutoLayoutSettings` has fourteen callers (every autonomy
             // settings checkbox among them) and reaches this through the migration, so the lazy builder must not run from a settings
             // refresh; the caller says which context it is.
             org.traincontrol.automationui.AutonomySession session = mayBuildSession
@@ -11508,13 +11507,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }
     /**
-     * Whether this session has already carried the pre-3.0.0 routing preference across (RC-A8).  Not derivable from the state: see
+     * Whether this session has already carried the pre-3.0.0 routing preference across.  Not derivable from the state: see
      * migrateStoredPathPreference, where both ways of reading the running layout give the wrong answer on the second call.
      */
     private boolean pathPreferenceCarried = false;
 
     /**
-     * Carries a routing choice made before it lived in the configuration (LE-B2).  Until this became a per-configuration setting
+     * Carries a routing choice made before it lived in the configuration.  Until this became a per-configuration setting
      * the choice was a java Preference pushed into a static on Layout; with that removed, an existing user's choice sat on disk
      * with nothing reading it and they got RANDOM after the upgrade, silently.  Moved once and the old key deleted, so it cannot
      * come back and overrule a later choice; only when the configuration does not already carry one.
@@ -11538,20 +11537,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (was == null) return;
 
-        // Already carried, once, this session (RC-A8): the flag is here because the STATE cannot answer the question in either
+        // Already carried, once, this session: the flag is here because the STATE cannot answer the question in either
         // direction.  On the second call `live` holds a non-RANDOM rule, which is either the answer read out of the user's own
         // autonomy.json (which must not be overwritten) or the value THIS METHOD wrote a moment ago (which must not be mistaken for the
         // configuration having answered).  The question is "have I done this yet", and a flag is the honest way to ask it.
         if (this.pathPreferenceCarried) return;
 
-        // The stored answer, not the live one (RC-A2): asking live.getPathPreference() on the second call through here read what THIS
+        // The stored answer, not the live one: asking live.getPathPreference() on the second call through here read what THIS
         // METHOD wrote into memory on the first, decided the configuration had answered, and deleted the legacy key with nothing ever
         // stored, leaving RANDOM for ever (the second call is one checkbox away: `loadAutoLayoutSettings` has fourteen callers).  The
         // field rather than getAutonomySession(), for the reason persistPathPreference is passed false: this runs from a settings
-        // refresh (LE2-C16).
+        // refresh.
         org.traincontrol.automationui.AutonomySession stored = this.autonomySession;
 
-        // The loaded layout's own answer counts too (RC-A8): `Layout.fromJSON` reads pathPreference, so a legacy user's autonomy.json can
+        // The loaded layout's own answer counts too: `Layout.fromJSON` reads pathPreference, so a legacy user's autonomy.json can
         // carry a rule even though getGlobal cannot see it (no active configuration to look in).  Checked before the store, the cheaper
         // question and the one true for the whole legacy population; safe only because of the flag above.
         if (live.getPathPreference() != org.traincontrol.automation.Layout.PathPreference.RANDOM)
@@ -11582,7 +11581,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // persistPathPreference answers is only whether it is DURABLE yet.
             this.pathPreferenceCarried = true;
 
-            // The old key goes only once the new home has it (LE-B5): deleting it first threw away the only durable copy of a choice when
+            // The old key goes only once the new home has it: deleting it first threw away the only durable copy of a choice when
             // nothing could be stored (no session, no active configuration), so the next restart was RANDOM for ever.  Kept until it has
             // landed, so a migration that cannot run today runs tomorrow.  false: this runs from loadAutoLayoutSettings, a refresh, not a click.
             if (persistPathPreference(option, false)) prefs.remove(legacy);
@@ -12063,14 +12062,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // The guards come before the recording, which is the whole fix: a reversal made DURING a journey would be written into
             // `lastSeenDirection` and then dropped by the `isRunning` guard, so when the run ended the next echo would match what was recorded and
             // the change would be swallowed.  Declining to act and claiming to have acted are different things, and this map is the record of the
-            // second.  What is swallowed now is swallowed on purpose (MON-C15; Adam: "if a manual command is sent, ignore it, as this is likely
+            // second.  What is swallowed now is swallowed on purpose (Adam: "if a manual command is sent, ignore it, as this is likely
             // corrective by the user"): a direction command arriving mid-run is ignored, and the baseline is brought level when the railway
             // goes idle so nothing is replayed.  A ROUTE ALONE IS NOT AUTONOMY'S RUN: its turn is recorded here and held by `followTheTurn`,
             // then followed when the route finishes (`routeFinished`), so it is declined for now and not for good.
-            // The field, never the getter (FTN-B2): this runs inside the window's monitor, on whatever thread the Central Station's message
+            // The field, never the getter: this runs inside the window's monitor, on whatever thread the Central Station's message
             // arrived on, and `getAutonomySession()` is the lazy builder (every page parsed, files possibly rewritten); `repaintTimetable`
-            // states the rule (SV-B2).  No session yet means nothing to follow.
-            // Asked once, not built (RLV11-C5): this is the Central Station's thread, and Unload can clear the model between asking whether
+            // states the rule.  No session yet means nothing to follow.
+            // Asked once, not built: this is the Central Station's thread, and Unload can clear the model between asking whether
             // there is a railway and asking for it.
             final Layout shown = this.model == null ? null : this.model.getAutoLayoutIfLoaded();
 
@@ -12090,7 +12089,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // Never seen, or unchanged: nothing to follow.
             if (was == null || was == forward) continue;
 
-            // The cheap half here, the rest on the event thread (DIR-B4): this runs on `locMessageProcessor` (the Central Station's message
+            // The cheap half here, the rest on the event thread: this runs on `locMessageProcessor` (the Central Station's message
             // thread) inside a `synchronized` method of this window, and what follows is the heaviest refresh the window has (`flipFacing`
             // writes the store and rebuilds the station index; `autonomySetupChanged` recomputes every finding, the panels and the grid), while
             // `AutonomySession` had only event-thread writers of `setFacing`.  The DECISION stays up here, above the renderer's concurrency
@@ -12102,9 +12101,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Follows one train's direction change into the setup and the running layout, on the event thread (DIR-B3, DIR-B4).
+     * Follows one train's direction change into the setup and the running layout, on the event thread.
      *
-     * **Not once trains run, asked here again** (RLV12-C4): `followDirectionChanges` decides on the Central Station's thread and
+     * **Not once trains run, asked here again**: `followDirectionChanges` decides on the Central Station's thread and
      * posts this, so a hand send queued ahead of it was under way when it landed.  A direction change during a run is ignored (Adam:
      * "if a manual command is sent, ignore it, as this is likely corrective by the user"), and no setup edit is made during a run.
      *
@@ -12132,10 +12131,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (session == null) return null;
 
-        // The running layout too, on Adam's ruling (DIR-B3): the setup and the layout are two
+        // The running layout too, on Adam's ruling: the setup and the layout are two
         // records of one fact, and captureFromLayout writes the layout's answer back over the
         // setup at the next editor open.
-        // Asked, not built (RLV11-C5): posted, and it can land after Unload - the setup is then written alone
+        // Asked, not built: posted, and it can land after Unload - the setup is then written alone
         final org.traincontrol.automationui.TileGraph.TileKey moved =
             session.flipFacing(name, this.model.getAutoLayoutIfLoaded());
 
@@ -12241,7 +12240,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
         
     /**
-     * For tests only: run on the renderer thread just BEFORE a locomotive render is handed to the event thread (TDR-B5, FTN-B1).
+     * For tests only: run on the renderer thread just BEFORE a locomotive render is handed to the event thread.
      * Null in the program.  Before, and not after, because what it has to hold open is the render being IN FLIGHT: a request made
      * while the renderer is held here certainly finds one in flight and is kept; held after posting, the painting could clear the
      * flag first and the deferral would go untested.
@@ -12259,10 +12258,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         renderActiveLoc(force, updatedLocs);
     }
 
-    /** Whether a locomotive render has been started and has not yet finished on the event thread (TDR-B5). */
+    /** Whether a locomotive render has been started and has not yet finished on the event thread. */
     private boolean locRenderInFlight;
 
-    /** Whether a render was asked for while one was in flight, and what it asked for (TDR-B5). */
+    /** Whether a render was asked for while one was in flight, and what it asked for. */
     private boolean locRenderPending;
     private boolean locRenderPendingForce;
     private boolean locRenderPendingEveryLoc;
@@ -12270,7 +12269,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Renders the active locomotive, or - when a render is already in flight - remembers the request and runs it when that render
-     * finishes (TDR-B5).
+     * finishes.
      *
      * ONE RENDER AT A TIME, AND THE LAST ASK ALWAYS LANDS.  A guard that returned while an earlier render's future was unfinished
      * dropped a request made after the render had handed its painting to the event thread (a future finishes on the renderer thread
@@ -12586,7 +12585,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The end of a render: clears the flag and runs whatever was asked for while it was in flight (TDR-B5).
+     * The end of a render: clears the flag and runs whatever was asked for while it was in flight.
      */
     synchronized private void renderFinished()
     {
@@ -12716,7 +12715,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
     
     /**
-     * Whether a button click carried Control, the way the key handler asks `isControlDown` (UIX-C5).  The four arrow buttons'
+     * Whether a button click carried Control, the way the key handler asks `isControlDown`.  The four arrow buttons'
      * tooltips promise Control and Alt behaviour that only the keyboard delivered: their listeners never looked at the `ActionEvent`.
      * The behaviour is the key handler's, at `VK_LEFT` and `VK_UP`; these three methods let the buttons reach it, and the numbers are
      * read off those arms so the two halves cannot drift apart.  Null is plain, because the key handler's own plain arms call the
@@ -12759,7 +12758,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Stops the shown locomotive and sets it running backwards, on a thread of its own because stopping talks to the Central Station.
-     * The locomotive the press was for (GST-C2) is captured here on the event thread, since the worker would read `activeLoc` again
+     * The locomotive the press was for is captured here on the event thread, since the worker would read `activeLoc` again
      * and a quick pick of another locomotive would stop and turn that one; the direction buttons are Swing's, so they are set back on
      * the event thread, and only while the same locomotive is still the one shown.
      */
@@ -12787,7 +12786,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Stops the shown locomotive and sets it running forwards, as `backwardLoc` does the other way: the locomotive the
      * press was for is captured before the thread starts, and the buttons are set on the event thread while it is still
-     * the one shown (GST-C2).
+     * the one shown.
      */
     private void forwardLoc()
     {
@@ -19051,7 +19050,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // The open editor first of all, because this is a door out of it (OB-070): "One save/discard/cancel question, asked wherever a page
         // is left" was enforced at every door but this one, which went on to System.exit and discarded whatever was open without asking
         // (in autonomy mode the exit capture below SAVES the setup, committing work the user was about to Cancel).  Cancel here cancels
-        // the exit, which DO_NOTHING_ON_CLOSE makes possible.  Asked once per window, in `everyOpenWindowMaySettle` (VB2-B1): asked here
+        // the exit, which DO_NOTHING_ON_CLOSE makes possible.  Asked once per window, in `everyOpenWindowMaySettle`: asked here
         // too, a dirty diagram editor was asked twice, and since `settleUnsavedWork` decides from `canUndo()`, which a Save does not
         // clear, Discard then Save wrote the discarded work to disk on the way out.
         if (!everyOpenWindowMaySettle()) return;
@@ -19066,7 +19065,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             if (this.model.getAutoLayout().isRunning())
             {
-                // A warning, and nothing done to the trains (RSA-C7; Adam: "If autonomy, display a warning popup to the user allowing them to keep
+                // A warning, and nothing done to the trains (Adam: "If autonomy, display a warning popup to the user allowing them to keep
                 // the app open, or to proceed to close.  For simplicity, don't change train state here."): neither answer touches a train - kept
                 // open, the run goes on; closed, the trains run on as they were, which the warning says.  Keeping it open is the default.
                 int dialogResult = JOptionPane.showOptionDialog(
@@ -19081,7 +19080,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 );
                 
                 // Anything but Yes, so that Escape and the close box do not shut the application
-                // down with trains at speed (UR-1’s twin).
+                // down with trains at speed.
                 if (dialogResult != JOptionPane.YES_OPTION) return;
             }
         }
@@ -19154,7 +19153,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Unless there is nothing to show (OB-128): `setEnabledAt` stops the USER picking a tab and does nothing about the program picking
         // it, and nine methods picked it outright by index (Add Blank Page selected the tab before it asked for a name, so closing that
         // prompt left the diagram tab open, greyed, showing the railway a failed switch to a Central Station layout had unloaded).  Those
-        // nine come through here, which also stops them assuming the diagram is tab 1.  DOC-C24: jumpToLayoutTab below still compares its
+        // nine come through here, which also stops them assuming the diagram is tab 1.  jumpToLayoutTab below still compares its
         // saved currentIndex against a literal 1 to decide whether to move focus, so that one narrower assumption survives.
         if (!this.KeyboardTab.isEnabledAt(index)) return;
 
@@ -19167,7 +19166,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
         if (route != null)
         {            
-            // The routes that run it, counted before it goes (GSR-B4): deleting a route removes the other routes' commands that run it, and
+            // The routes that run it, counted before it goes: deleting a route removes the other routes' commands that run it, and
             // the question says how many routes call it, as deleting a locomotive does with the commands that drive it.  Counted here because
             // afterwards there is nothing left to count; which routes, by name, goes to the log as each loses its commands.
             int calledBy = this.model.routesCalling(route.getName()).size();
@@ -19182,7 +19181,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 JOptionPane.PLAIN_MESSAGE,
                 null,
                 YES_NO_OPTS,
-                // VAL-B5: default to No. A destructive delete confirmation should not pre-select the
+                // Default to No. A destructive delete confirmation should not pre-select the
                 // destructive answer - Enter should not delete a route by accident.
                 YES_NO_OPTS[1]
             );
@@ -19193,7 +19192,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // The lock, not the id: see enableOrDisableRoute for why the id cannot say (MT-467).
                 boolean wasLocal = !route.isLocked();
 
-                // THE DOOR'S OWN DELETE, which takes the route out of every route that runs it (GSR-B4).  Not the
+                // THE DOOR'S OWN DELETE, which takes the route out of every route that runs it.  Not the
                 // model's `deleteRoute`: `editRoute` deletes and re-adds through that, and an edit keeps its callers.
                 this.model.deleteRouteAndItsCalls(route.getName());
                 refreshRouteList();
@@ -19202,7 +19201,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // whole database, behind a modal spinner, twice the connect timeout when the station is off) can bring back nothing about it.
                 if (!wasLocal) this.syncWithCS2();
 
-                // And again after the sync (VLD-C3), as `duplicateRoute` does: the sync deletes and re-adds routes and the table model holds live
+                // And again after the sync, as `duplicateRoute` does: the sync deletes and re-adds routes and the table model holds live
                 // Route OBJECTS, so the refresh above can leave the table pointing at instances the sync has replaced.
                 if (!wasLocal) refreshRouteList();
 
@@ -19283,7 +19282,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         String conflict = why == null ? null : why[0];
 
-        // No conflict any more is its own answer (LD-8, A3): returning false for "nothing to confirm" and for "the user said no" made the
+        // No conflict any more is its own answer: returning false for "nothing to confirm" and for "the user said no" made the
         // route do nothing at all, with no dialog and no log line, when the conflict (autonomy releases accessories from its own threads)
         // cleared between the caller's check and this one; returning true instead bought a full override nobody had asked for, since the
         // callers ran the route with EVERY conflict check off.  So the callers run such a route the ordinary guarded way.
@@ -19299,7 +19298,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // conflict this is.
         String reason = why == null ? null : why[1];
 
-        // AND A PLATFORM ONLY RESERVED, asked about as that (GSR-C2): a locked path holds its destination for a train still
+        // AND A PLATFORM ONLY RESERVED, asked about as that: a locked path holds its destination for a train still
         // on its way there, and the question said a train was standing at it.
         String question = "route.refusedSignalProtectingOccupiedPlatform".equals(reason)
             ? "layout.ui.confirmRouteProtectingSignal"
@@ -19324,7 +19323,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return RouteConflict.REFUSED;
         }
 
-        // Only an explicit OK.  Escape and the close box mean no, which is the whole of UR-1 and the
+        // Only an explicit OK.  Escape and the close box mean no, which is the whole rule for the
         // six confirmations it was swept into this file for.
         return choice[0] == 0 ? RouteConflict.OVERRIDE : RouteConflict.REFUSED;
     }
@@ -19485,7 +19484,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 JOptionPane.PLAIN_MESSAGE,
                 null,
                 YES_NO_OPTS,
-                YES_NO_OPTS[1] // NOT [0]: this replaces a page of mappings, and its twin was fixed and this one was not (VB-B2)
+                YES_NO_OPTS[1] // NOT [0]: this replaces a page of mappings, and its twin was fixed and this one was not
             );
             if (dialogResult == JOptionPane.YES_OPTION)
             {
@@ -19527,7 +19526,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 JOptionPane.PLAIN_MESSAGE,
                 null,
                 YES_NO_OPTS,
-                // VAL-B5: default to No, same reasoning as the route-delete confirmation - a page's
+                // Default to No, same reasoning as the route-delete confirmation - a page's
                 // entire set of key mappings is destructive to lose to a stray Enter.
                 YES_NO_OPTS[1]
             );
@@ -19666,7 +19665,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return;
         }
 
-        // ASKED ONLY OF THE DIALOG THAT CAN CHANGE ONE (RSA30-C8): a Central Station multi-unit's is a read-only list,
+        // ASKED ONLY OF THE DIALOG THAT CAN CHANGE ONE: a Central Station multi-unit's is a read-only list,
         // and nothing is written for one - refusing it guarded nothing.
         if (!isCSMultiUnit && this.model.isAutonomyRunning())
         {
@@ -20019,7 +20018,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             if (refuseWhileARouteDrivesAny(this, involved)) return;
 
-            // One call (NSV-B2): this runs on the event thread and syncWithCS2 rebuilds consists
+            // One call: this runs on the event thread and syncWithCS2 rebuilds consists
             // off it, and the two-call form stages on a field they would share.
             l.setLinkedLocomotives(newLinkedLocos);
             this.repaintLoc(true, null);
@@ -20252,7 +20251,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Turns automatic execution on or off for every route whose name contains the search - Bulk Enable/Disable's work, after its
      * question has been answered.  A door of its own so the batch can be reached past the prompt (MT-467); the prompt stays in
-     * `BulkEnableOrDisable`, on the event thread, for the reason VB-B1 gives there.
+     * `BulkEnableOrDisable`, on the event thread, for the reason given there.
      *
      * @param search what a route's name must contain, or "*" for every route
      * @param enable the state to write
@@ -20261,7 +20260,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         new Thread(()->
         {
-            // WHETHER THE STATION HAS HEARD OF ANY OF THEM (OB-155, swept here by GUX-C5).  One sync
+            // WHETHER THE STATION HAS HEARD OF ANY OF THEM (OB-155).  One sync
             // per batch, and none at all when every route touched was allocated here.
             boolean anyOnTheStation = false;
 
@@ -20269,7 +20268,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 Route r = this.model.getRoute(routeName);
 
-                // A NAME FROM A LIST IS NOT A ROUTE (MKR-C4's shape).  The list is a copy; the lookup
+                // A NAME FROM A LIST IS NOT A ROUTE.  The list is a copy; the lookup
                 // is not, and the sync's re-read of a station route deletes an id and puts it back a
                 // few statements later on its own thread.
                 if (r == null) continue;
@@ -20282,7 +20281,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                          // Read before the write, which replaces the route object.  See enableOrDisableRoute.
                          if (r.isLocked()) anyOnTheStation = true;
 
-                         // VAL-C6: routed through the same write enableOrDisableRoute uses, so the write itself cannot drift between the two, though the guard
+                         // Routed through the same write enableOrDisableRoute uses, so the write itself cannot drift between the two, though the guard
                          // around it (this method's own hasS88() || isEnabled() filter, versus enableOrDisableRoute's !enable || hasS88()) stays deliberately
                          // separate: this loop syncs once after the whole batch, and folding in enableOrDisableRoute's own sync/refresh would turn one sync
                          // into as many as there are matching routes.
@@ -20305,18 +20304,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             Route r = this.model.getRoute(routeName);
 
-            // A name from a list is not a route (MKR-C4's shape, swept here by OP3-B2): `editRoute` is a delete-then-re-add, and the sync's
+            // A name from a list is not a route: `editRoute` is a delete-then-re-add, and the sync's
             // re-read of a station route does the same on its own thread, so a route can be absent for a moment between the name being chosen
             // and this lookup; on a worker with no handler the dereference would take the toggle, the sync and the refresh down silently.
             if (r == null) return;
 
-            // UXR-B6: an s88 is what lets the route FIRE itself, so only enabling needs one; turning auto-fire off never reads a sensor.
+            // An s88 is what lets the route FIRE itself, so only enabling needs one; turning auto-fire off never reads a sensor.
             // Requiring it either way meant a route enabled with no s88 (BulkEnableOrDisable's own filter, `hasS88() || isEnabled()`, can produce
             // exactly that) could be disabled from Bulk but errored from its own right-click item, which offers "Disable Automatic Execution"
             // on every route with no check of its own.
             if (!enable || r.hasS88())
             {
-                // Only when the station carried the route (OB-155, swept here by GUX-C5; MT-467): the write below is a delete-and-re-add in the LOCAL
+                // Only when the station carried the route (OB-155; MT-467): the write below is a delete-and-re-add in the LOCAL
                 // database and tells the station nothing, so for a route the station never carried the round trip (the whole database, behind a
                 // modal spinner, twice the connect timeout with the station off) brings back nothing.  The route's LOCK says whether the station
                 // carried it: only the sync's import sets it, to exactly the routes the station sent.  The id does not: `isLocalRouteId` is true of
@@ -20347,7 +20346,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Writes a route's enabled/disabled flag - the one call both enableOrDisableRoute and BulkEnableOrDisable make, with the same six
-     * arguments (VAL-C6), so the write itself cannot drift between the two guards around it.  Just the write, not the guard or the
+     * arguments, so the write itself cannot drift between the two guards around it.  Just the write, not the guard or the
      * sync/refresh after it: the callers sync at different granularity (once per route here, once per batch in BulkEnableOrDisable),
      * and folding that in would change how often a bulk operation talks to the Central Station.
      *
@@ -20570,7 +20569,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 JOptionPane.PLAIN_MESSAGE,
                 null,
                 YES_NO_OPTS,
-                // UXR-B5: index 0 is Yes - this said "No" and pre-selected the option that queries the
+                // Index 0 is Yes - this said "No" and pre-selected the option that queries the
                 // Central Station and turns every function off first. Enter on a live dialog took the
                 // destructive path with no warning beyond the pre-selection nobody was reading.
                 YES_NO_OPTS[1] // default selection = "No"
@@ -20808,7 +20807,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // for as long as the fetch and parse took and a user would reasonably conclude the command was ignored.  syncWithCS2 replaces the
         // locomotive, route and layout databases and belongs off the event thread; initializeTrackDiagram builds Swing components and
         // belongs on it.  Through the wrapper, so this takes the one-sync-at-a-time guard like every other caller.
-        // A second spinner DOES appear here (RC-C1): syncWithCS2 opens one of its own when it finds itself off the event thread (OB-140), and
+        // A second spinner DOES appear here: syncWithCS2 opens one of its own when it finds itself off the event thread (OB-140), and
         // BusyDialog runs this work off it.  Left as it is, deliberately: the two do not deadlock (both are shown and disposed on the event
         // thread in posted order), and suppressing a nested spinner would mean BusyDialog deciding not to show, and a mistake in that hides
         // EVERY spinner.
@@ -20854,7 +20853,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 JOptionPane.PLAIN_MESSAGE,
                 null,
                 YES_NO_OPTS,
-                // UXR-B5: index 0 is Yes - this said "No" and pre-selected Yes. Harmless here (opening
+                // Index 0 is Yes - this said "No" and pre-selected Yes. Harmless here (opening
                 // a folder), but the same wrong index as the two destructive sites beside it, and a
                 // pattern worth keeping honest even where the cost of Enter is small.
                 YES_NO_OPTS[1] // default selection = "No"
@@ -20905,7 +20904,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_PrevKeyboardActionPerformed
 
     /**
-     * Whether a click on the switch keyboard may go to the railway, asking the operator when it may not (SVN-B17, V31-C2, AU-C12).
+     * Whether a click on the switch keyboard may go to the railway, asking the operator when it may not.
      *
      * **This surface asked nothing at all**: it went straight to `setAccessoryState` and `turn()`/`straight()`, while the diagram tile
      * and the route door both ask two questions before commanding the same accessory.  The two questions are asked of the same code:
@@ -21039,7 +21038,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         javax.swing.JToggleButton b = (javax.swing.JToggleButton) evt.getSource();
         int switchId = Integer.parseInt(b.getText());
 
-        // The third hand-switching door now asks what the other two ask (SVN-B17, V31-C2, AU-C12), and about the power too (MT-261 ruling
+        // The third hand-switching door now asks what the other two ask, and about the power too (MT-261 ruling
         // 4): before the button is repainted, because a refusal has to leave it as it was (REFUSED has already put the toggle back).
         final KeyboardSwitch allowed = keyboardSwitchAllowed(switchId, b);
 
@@ -21094,14 +21093,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     private void BulkDisableActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_BulkDisableActionPerformed
 
-        // No wrapper thread (VB-B1): it bought nothing. Everything it wrapped is either the
+        // No wrapper thread: it bought nothing. Everything it wrapped is either the
         // prompt, which has to be on the event thread, or the batch, which starts its own.
         BulkEnableOrDisable(false);
     }//GEN-LAST:event_BulkDisableActionPerformed
 
     private void BulkEnableActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_BulkEnableActionPerformed
 
-        // No wrapper thread (VB-B1): it bought nothing. Everything it wrapped is either the
+        // No wrapper thread: it bought nothing. Everything it wrapped is either the
         // prompt, which has to be on the event thread, or the batch, which starts its own.
         BulkEnableOrDisable(true);
     }//GEN-LAST:event_BulkEnableActionPerformed
@@ -21161,7 +21160,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                     routeEditor = new RouteEditorFrame(this, null, null);
 
-                    // The name the loop above worked out, which until RC-B3 was computed and dropped -
+                    // The name the loop above worked out, which was once computed and dropped -
                     // so Add Route opened with an empty name box and the first Save was refused for
                     // not having one.  Offered rather than imposed: it is ordinary text in the box.
                     routeEditor.proposeName(newName);
@@ -21178,7 +21177,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_RouteListMouseClicked
 
     /**
-     * The track editor's hand-over, from its Save and its Cancel (RSA24-C1): the refresh counted from here, before the
+     * The track editor's hand-over, from its Save and its Cancel: the refresh counted from here, before the
      * editor closes, and taken over by the `layoutEditingComplete` posted behind it.  Counted only there, an event queued
      * while the editor's own handler ran found neither an editor nor a refresh - and a train sent from it ran on the
      * railway the reset then forgot.
@@ -21232,7 +21231,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         Thread refresh = new Thread(() ->
         {
-            // Posted whatever happens (SVN-A3): `after` is how an editor finishes a page switch, and it runs at the END of the refresh, so a
+            // Posted whatever happens: `after` is how an editor finishes a page switch, and it runs at the END of the refresh, so a
             // throw in refreshLayouts would mean the EDT half never runs, and the editor would be left with its switch latch raised, refusing
             // every further page and mode change in silence.  A finally rather than a catch: there is nothing useful to do with the failure
             // here, and swallowing it would hide a layout that will not parse; the EDT half below puts the window back together either way.
@@ -21257,7 +21256,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         });
 
-        // UNDER WAY UNTIL ITS EVENT-THREAD HALF HAS RUN (RSA23-B1): no train is sent meanwhile - see `refreshesUnderWay`
+        // UNDER WAY UNTIL ITS EVENT-THREAD HALF HAS RUN: no train is sent meanwhile - see `refreshesUnderWay`
         refreshesUnderWay.incrementAndGet();
 
         try
@@ -21283,7 +21282,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
         finally
         {
-            // The guarantee, here (SVN-A3): `layoutEditingCompleteThen` must not hold it in a finally of its own around a call that is
+            // The guarantee, here: `layoutEditingCompleteThen` must not hold it in a finally of its own around a call that is
             // asynchronous, so it would cover only `setEditLayoutEnabled(false)`, one field read and `Thread.start()` and none of the dozen statements its
             // javadoc named; and it would run the continuation at once, so the refresh becomes the LAST writer and its `setEditLayoutEnabled(true)` lights
             // the Edit Layout button with the editor still open.
@@ -21293,7 +21292,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
             finally
             {
-                // AND THE REFRESH NO LONGER UNDER WAY (RSA23-B1), whatever happened before it
+                // AND THE REFRESH NO LONGER UNDER WAY, whatever happened before it
                 refreshesUnderWay.updateAndGet(n -> Math.max(0, n - 1));
             }
         }
@@ -21353,12 +21352,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * the last statement of a dozen, so anything throwing on the way skipped it and left the editor's switch latch raised, refusing
      * every further page and mode change in silence for the life of the window.
      *
-     * **The guarantee (a `finally`) is not in this method, and that is the whole point of the arrangement** (SVN-A3, CD3-B1).
+     * **The guarantee (a `finally`) is not in this method, and that is the whole point of the arrangement**.
      * `layoutEditingComplete` is asynchronous: it lowers the button, reads a field and starts a thread, so a finally here covered
      * those three statements and the continuation ran at once (the editor's `arriveAt` was queued on the EDT before the refresh was),
      * and the refresh, arriving last, re-enabled the Edit Layout button with the editor still open.  It lives in
      * `layoutRefreshComplete`, where the dozen statements are; what is left here is the case where there is no worker to reach it.  A
-     * reader who "simplified" this back to a finally here would reintroduce SVN-A3.
+     * reader who "simplified" this back to a finally here would put the defect back.
      *
      * @param after what to run when the refresh has finished, failed, or thrown
      */
@@ -21518,7 +21517,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_SpacebarButtonActionPerformed
 
     private void LeftArrowLetterButtonPressed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_LeftArrowLetterButtonPressed
-        // Control FORCES reverse, which is what this button's tooltip says it does (UIX-C5, controlHeld).
+        // Control FORCES reverse, which is what this button's tooltip says it does (controlHeld).
         if (controlHeld(evt))
         {
             backwardLoc();
@@ -21530,7 +21529,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_LeftArrowLetterButtonPressed
 
     private void RightArrowLetterButtonPressed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RightArrowLetterButtonPressed
-        // And Control forces forward here (UIX-C5, controlHeld).
+        // And Control forces forward here (controlHeld).
         if (controlHeld(evt))
         {
             forwardLoc();
@@ -21629,7 +21628,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Jumps to the locomotive tab on the autonomy page
      *
-     * UXR-C20: same guard as showAutonomyRunTab/showAutonomySettingsTab - `getTabCount() <= 2` and
+     * Same guard as showAutonomyRunTab/showAutonomySettingsTab - `getTabCount() <= 2` and
      * `isEnabledAt(2)`, the two checks `setAutoTabEnabled` already applies to this tab.
      */
     public void jumpToAutonomyLocTab()
@@ -21713,7 +21712,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Greys "Activate Routes" and its list while autonomy is busy (UXR-B3).  Both handlers already ask `isAutonomyBusy()` and refuse, but
+     * Greys "Activate Routes" and its list while autonomy is busy.  Both handlers already ask `isAutonomyBusy()` and refuse, but
      * refusing is not offering: a live checkbox that flips and is flipped back by a dialog reads as a mistake the operator made, a
      * greyed one as the railway being busy (OB-101: "the fix was to make the affordance agree with the guard rather than to add a
      * guard.").  Called from `repaintAutoLocListLite`, which already runs on every arrival and departure, the moments `isAutonomyBusy()`
@@ -21722,7 +21721,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     void refreshActivateRoutesControls()
     {
-        // THE SAME QUESTION AND THE SAME GREY as the rest of what waits for the trains, saying why (RSA27-C3): this asked
+        // THE SAME QUESTION AND THE SAME GREY as the rest of what waits for the trains, saying why: this asked
         // `isAutonomyBusy` alone and set no tooltip, so it was offered while only Graceful Stop was, and greyed saying what
         // it does rather than why it was greyed
         boolean busy = theAutoTabWaits();
@@ -21746,7 +21745,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Greys what waits for the trains to stop, saying why on each: the Auto tab's settings, Execute Timetable and the capture toggle
-     * beside it, with "Activate Routes" and its list (UXR-B3).  Each handler already refused while autonomy was busy, but refusing is
+     * beside it, with "Activate Routes" and its list.  Each handler already refused while autonomy was busy, but refusing is
      * not the same as not offering (OB-101); the tooltip of a greyed control says why, and its own comes back with it.
      *
      * Busy is `theAutoTabWaits`.  Called where that changes - every departure and arrival (`repaintAutoLocListLite`), a placement
@@ -21780,7 +21779,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Hand sends under way, from the click until the dispatch's thread has ended (RSA27-C2): that thread sets the route
+     * Hand sends under way, from the click until the dispatch's thread has ended: that thread sets the route
      * before the train sets off, and the railway's first word to this window came only then - seconds in which the Auto
      * tab offered what it then refused.  Event thread up, the dispatch's thread down.
      */
@@ -21788,7 +21787,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Whether what waits for the trains on the Auto tab is greyed: autonomy busy (`isAutonomyBusy`), a hand send under way
-     * from its click (RSA27-C2), or Graceful Stop offered - Start and Execute Timetable hand their run to a thread of its
+     * from its click, or Graceful Stop offered - Start and Execute Timetable hand their run to a thread of its
      * own, and the button says a run is on before the railway counts it.
      *
      * @return true while it waits
@@ -21806,7 +21805,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private static final String TOOLTIP_AT_REST = "TrainControl.tooltipAtRest";
 
     /**
-     * Greys one control while the trains run, saying why, or gives it back.  SAYS WHY WHOEVER GREYED IT (RSA27-C3): Return
+     * Greys one control while the trains run, saying why, or gives it back.  SAYS WHY WHOEVER GREYED IT: Return
      * Home's press greys Execute Timetable and the capture toggle, and Execute Timetable's press greys itself, before any
      * refresh.  TAKES BACK ONLY WHAT IT GREYED: those owners give theirs back themselves, and a refresh landing between
      * Execute Timetable's press and its run being counted must not offer it a second time - its own tooltip comes back,
@@ -21887,7 +21886,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * can GREY the item rather than offer it and then refuse (OB-050).
      *
      * `requestStartAutonomy` asks the button's enabled state directly, and the button is deliberately left enabled and explains at
-     * press time, so this is not that state.  **And `isRemoteLayout`, the guard's first question** (REG-C3): an `autonomy.json` still
+     * press time, so this is not that state.  **And `isRemoteLayout`, the guard's first question**: an `autonomy.json` still
      * loads on a Central Station layout and enables the button, and the diagram's right-click menu then offered Start while
      * `whyAutonomyStartIsRefused` refused it.
      *
@@ -21900,11 +21899,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The guard's own question, for the things that OFFER to start (TS3-B6, WK3-C1, D3F-C3).  The guard is `hasErrors()`, which also
+     * The guard's own question, for the things that OFFER to start.  The guard is `hasErrors()`, which also
      * covers a graph that will not build with no check having turned that into a finding; affordances asking
      * `autonomyErrorCount() == 0` said yes where the guard said no (the OB-090 shape).  The count stays for the RIGHT-CLICK TOOLTIP,
      * which needs the NUMBER to say what is wrong; the strip reads its number from `setFindings`' own arguments, since reading it again
-     * was a second whole walk of the graph on the event thread (V34-B1).  What must not differ is which question DECIDES.
+     * was a second whole walk of the graph on the event thread.  What must not differ is which question DECIDES.
      *
      * @return whether the loaded setup has anything that stops it running
      */
@@ -21920,13 +21919,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      *
      * **Three doors ask this**: the greyed Start item's tooltip on the diagram menu, the scripting API's exception and the Start dialog.
      * Two of them said *"one thing has to be dealt with first"* whenever `hasErrors()` was true and the error COUNT was zero, which is a
-     * graph that will not build, and with three such problems they said one (DY3-C7, OB-090).  The wait-for-trains sentence is the right
+     * graph that will not build, and with three such problems they said one (OB-090).  The wait-for-trains sentence is the right
      * answer only when nothing is wrong with the setup at all; with a broken graph it tells the operator to wait for trains that are not
      * running and never will be.
      *
      * Five answers, in the order they have to be asked:
      *
-     *  - a layout that lives on the Central Station -> it needs one on this computer, the guard's own first reason (REG2-C2);
+     *  - a layout that lives on the Central Station -> it needs one on this computer, the guard's own first reason;
      *  - error findings -> name how many, because the editor can take them there;
      *  - more than one blocking problem -> name how many, and point at the count along the top;
      *  - exactly one, or a setup that will not run for any other reason -> the singular of the same sentence;
@@ -21936,7 +21935,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public String whyAutonomyWillNotStart()
     {
-        // Over a Central Station layout, the guard's own first reason (REG2-C2): `whyAutonomyStartIsRefused` and `canStartAutonomy` ask
+        // Over a Central Station layout, the guard's own first reason: `whyAutonomyStartIsRefused` and `canStartAutonomy` ask
         // `isRemoteLayout` before anything about the setup, and the rule below, which knows only the setup, would answer "wait for the trains".
         if (isRemoteLayout()) return I18n.t("autosetup.ui.menuNoSetupPossible");
 
@@ -21973,7 +21972,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * track diagram viewer and the autonomy tab, which should throw an error instead.").  A hand send runs over the railway the same
      * setup built, so it is refused on the question Start is refused on - `autonomyHasErrors`.  Both hand doors ask it before the
      * reversal question, so nothing is asked about a journey that is going to be refused; Execute Timetable and Return Home ask it too
-     * (TDU-B1) - named for the hand doors, where it was first asked.
+     * - named for the hand doors, where it was first asked.
      *
      * @return the sentence to show, or null
      */
@@ -22004,7 +22003,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Start's sentence and the hand doors', from one reading of the setup (ADU-C3, ADU2-C5): {why Start is refused, why a
+     * Start's sentence and the hand doors', from one reading of the setup: {why Start is refused, why a
      * hand send is refused or null}.
      *
      * For the right-click menu, which shows both where Start is not offered.  Asked one after the other, the two rules
@@ -22024,7 +22023,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // `hasErrors`, from the count already read.
         boolean broken = asked != null && (asked.hasBlockingProblems() || errors > 0);
 
-        // Over a Central Station layout, the guard's own first reason, which asks nothing of the setup (REG2-C2).
+        // Over a Central Station layout, the guard's own first reason, which asks nothing of the setup.
         String start = isRemoteLayout() ? whyAutonomyWillNotStart() : whyAutonomyWillNotStart(errors, blocking, broken);
 
         return new String[] {start, broken ? whyAHandSendIsRefused(errors, blocking) : null};
@@ -22032,7 +22031,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * How many blocking findings the loaded setup has, or zero when there is nothing to ask: the number, for saying WHAT is wrong, not
-     * the question that decides (TS3-B6).  `whyAutonomyStartIsRefused` read exactly this until the guard was widened to `hasErrors()`,
+     * the question that decides.  `whyAutonomyStartIsRefused` read exactly this until the guard was widened to `hasErrors()`,
      * which also covers a graph that will not build at all; the two are the same on any setup where a blocking problem also produced a
      * finding, but "the same in practice" is what OB-090 was, twice.  `autonomyHasErrors()` is the question; this is the count the
      * messages print.  `canStartAutonomy` is the Start BUTTON's enabled state and nothing else, and no writer of that flag consults the
@@ -22059,9 +22058,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
         else
         {
-            // UXR-C5: `startAutonomy.isEnabled()` is false for different reasons, split the way `LayoutRightclickAutonomyMenu`'s tooltip does so
+            // `startAutonomy.isEnabled()` is false for different reasons, split the way `LayoutRightclickAutonomyMenu`'s tooltip does so
             // a caller of this API is not told to wait for trains when the real problem is an error count nothing will clear on its own.  Three
-            // reasons, not two (V31-C1): the guard also covers a graph that will not build with nothing turned into a finding, where the count is
+            // reasons, not two: the guard also covers a graph that will not build with nothing turned into a finding, where the count is
             // zero.  Through the one rule (MT-263): any number of blocking problems must not read as "one thing has to be dealt with first".
             throw new Exception(whyAutonomyWillNotStart());
         }
@@ -22076,7 +22075,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public void requestReturnToHome()
     {
         // As Start Autonomy and Execute Timetable: this drives every train on the layout, and an open editor means the diagram it is driving
-        // over is being changed underneath it.  Through the one gate: the editor, the setup (MT-263's rule, TDU-B1) and the power, as every
+        // over is being changed underneath it.  Through the one gate: the editor, the setup (MT-263's rule) and the power, as every
         // door that moves trains.
         if (refusedToSendATrain(false)) return;
 
@@ -22133,7 +22132,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // and the settings, which wait for the trains as these do
         refreshWhatWaitsForTheTrains();
 
-        // THE STOPS COUNTED AT THE PRESS (RSA2-C1): the plan runs with them, so the reload's Yes while it is worked out
+        // THE STOPS COUNTED AT THE PRESS: the plan runs with them, so the reload's Yes while it is worked out
         // - nothing yet moving - is answered by starting nothing, whether the load that asked it succeeds or not
         final int stopsAtPress = layout.stopsOrdered();
 
@@ -22145,7 +22144,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             try
             {
-                // THE AUTO TAB STOPS OFFERING PATHS (RSA2-C3): its double-click sends nothing while this flow owns the
+                // THE AUTO TAB STOPS OFFERING PATHS: its double-click sends nothing while this flow owns the
                 // railway, so its lists are hidden, as they are while autonomy runs - refreshed from this worker, as the
                 // finally refreshes it
                 this.repaintAutoLocList(true);
@@ -22168,13 +22167,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     return;
                 }
 
-                // AND THE SAME QUESTION THE OTHER RUN DOORS ASK (GS-B1).  This is the run where it costs most: several
+                // AND THE SAME QUESTION THE OTHER RUN DOORS ASK.  This is the run where it costs most: several
                 // trains move at once, so one of them with no train length hands back the track under itself while the
-                // others are being routed around it.  After every refusal, the plan's included (TDU-C8, TDU2-C2, GUI-A1's
-                // rule): a refused press should change nothing, and this writes the setting - which the planner does
+                // others are being routed around it.  After every refusal, the plan's included:
+                // a refused press should change nothing, and this writes the setting - which the planner does
                 // not read.  On the event thread, where the setting's checkbox lives; a gate that fails stops the run,
                 // and the finally hands the timetable back.
-                // AND NO EDITOR COME SINCE THE PRESS (RLV13-C2), asked at the same event-thread moment as the gate
+                // AND NO EDITOR COME SINCE THE PRESS, asked at the same event-thread moment as the gate
                 final boolean[] editorCame = {false};
 
                 try
@@ -22314,7 +22313,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (this.stagingFlowActive) return true;
 
-        // ASKED ONCE, AND NOT BUILT (RLV12-C5).  A question about whether autonomy is busy must not bring a Layout
+        // ASKED ONCE, AND NOT BUILT.  A question about whether autonomy is busy must not bring a Layout
         // into being to answer it; and it is asked off the event thread too - the path gather's worker - where Unload
         // can clear the model between asking whether there is a railway and asking for it.
         final Layout shown = this.model == null ? null : this.model.getAutoLayoutIfLoaded();
@@ -22400,13 +22399,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // repaintAutoLocList can run while the window is still being built, before the buttons exist
         if (this.returnHomeButton == null) return;
 
-        // Asked, not built (RLV9-C2): the refresh a railway's last thread fires as it ends runs this, and after Unload `getAutoLayout` built an
-        // empty railway which hasAutoLayout then answered yes about (CS3-C4); the null branch below was written for exactly that state.
+        // Asked, not built: the refresh a railway's last thread fires as it ends runs this, and after Unload `getAutoLayout` built an
+        // empty railway which hasAutoLayout then answered yes about; the null branch below was written for exactly that state.
         Layout layout = this.model == null ? null : this.model.getAutoLayoutIfLoaded();
 
         if (layout == null)
         {
-            // UXR-C4: same reasoning as the other disableReturnHome sites - a bare setEnabled(false)
+            // Same reasoning as the other disableReturnHome sites - a bare setEnabled(false)
             // here leaves the tooltip from whatever this button last had to say, which is nonsense once
             // there is no autonomy layout behind it at all.
             this.disableReturnHome(I18n.t("autosetup.ui.whyNoLayout"));
@@ -22523,7 +22522,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (this.returnHomeButton == null) return;
 
-        // Asked, not built (RLV9-C2)
+        // Asked, not built
         if (this.model == null || this.model.getAutoLayoutIfLoaded() != asked) return;
 
         if (this.isAutonomyBusy())
@@ -22601,7 +22600,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * this action must not each ask the railway for itself (the button, the diagram's right-click menu, the click handler), three descriptions
      * of one situation and three doors onto the railway's monitor from the event thread.  There is one asker,
      * `refreshReturnHomeButton`, and the button it maintains is what the others read.  Over a setup with errors the right-click item
-     * parts from it on purpose - greyed with the setup's sentence while the button stays live and explains (TDU2-C3).
+     * parts from it on purpose - greyed with the setup's sentence while the button stays live and explains.
      *
      * @return true when the action can be taken
      */
@@ -23040,7 +23039,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             case IMPOSSIBLE:
                 return I18n.f("autolayout.ui.errorCannotReachHome", namesWithHomes(blocked));
 
-            // Its own sentence, and not the default one (SG-A3).
+            // Its own sentence, and not the default one.
             //
             // Falling through to "no return plan found" would be the wrong thing twice: a plan almost
             // certainly exists, and the obstacle is not the track but that nobody can say where the
@@ -23239,7 +23238,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     private void exportRoutesMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exportRoutesMenuItemActionPerformed
 
-        // The panel is built and shown on the event thread (VB-B1): "showMessageDialog" reads like a toast, but what it shows is a whole
+        // The panel is built and shown on the event thread: "showMessageDialog" reads like a toast, but what it shows is a whole
         // AutoJSONExport (a JTextArea, a JButton and a GroupLayout), and constructing Swing components off the event thread is as wrong as
         // showing them.  Generating the export is the slow part and the only thing left on the thread; it runs once, for the panel and the
         // clipboard.
@@ -23317,7 +23316,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         final int[] added = new int[1];
         final int[] rearmed = new int[1];
 
-        // Read here, and asked about before anything is replaced (REG2-C7; Adam: "save the state in the file on export, and ask the user on
+        // Read here, and asked about before anything is replaced (Adam: "save the state in the file on export, and ask the user on
         // import.  if they want them armed, arm them.  otherwise, don't."): the question is a dialog, so it is asked on this thread; a file
         // this cannot read is reported by the import below.
         String read = null;
@@ -23338,7 +23337,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         // No is the default: an import that starts nothing cannot surprise anybody.  The routes by name, as the sentence reads in every
         // language ("saved with their automatic firing on: {0}") and as MT-496 expects; given the count it read "...on: 1.".  And wrapped
-        // (RLU-C3): a question does not wrap a line, and the names go into the middle of the first one, so many routes made a dialog wider
+        //: a question does not wrap a line, and the names go into the middle of the first one, so many routes made a dialog wider
         // than the screen.
         final boolean arm = !savedArmed.isEmpty() && JOptionPane.showOptionDialog(this,
             wrappedToFit(I18n.f("route.ui.confirmRearmImported", String.join(", ", savedArmed))),
@@ -23398,8 +23397,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 resetRouteSpinners();
                     refreshRouteList();
 
-                // The routes arrive off, and the door says so (REG-B3), since the log line alone is not where somebody restoring a backup is looking;
-                // or, asked, the ones saved armed come back armed (REG2-C7).  The model's own choice of sentence: re-armed where it armed some, and
+                // The routes arrive off, and the door says so, since the log line alone is not where somebody restoring a backup is looking;
+                // or, asked, the ones saved armed come back armed.  The model's own choice of sentence: re-armed where it armed some, and
                 // otherwise the notice that they arrived off.  And what it split: a route with an emergency stop among other commands now fires a
                 // stop-only route, named after it, in the stop's place.
                 java.util.List<String> split = new java.util.ArrayList<>();
@@ -23861,7 +23860,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
         String newName = this.LayoutList.getSelectedItem().toString() + " copy";
 
-        // Check if the new name already exists in the layout list - or another page's file is its file (BCR-A2)
+        // Check if the new name already exists in the layout list - or another page's file is its file
         while (this.model.getLayoutList().contains(newName)
             || org.traincontrol.automationui.LayoutPageEdit.pageUsingTheFileOf(this.model.getLayoutList(), newName, null)
                 != null)
@@ -23933,7 +23932,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 JOptionPane.PLAIN_MESSAGE,
                 null,
                 YES_NO_OPTS,
-                // VAL-B5: default to No - this deletes a whole track diagram page.
+                // Default to No - this deletes a whole track diagram page.
                 YES_NO_OPTS[1]
             );
 
@@ -23976,7 +23975,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         }
                         else
                         {
-                            // Before forgetting the page, for the same reason as the rename (DW-C1).
+                            // Before forgetting the page, for the same reason as the rename.
                             //
                             // The capture that runs afterwards works its keys out from a session whose
                             // pages still include this one, so it wrote the deleted page's settings
@@ -23984,7 +23983,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             // which makes deleting a page look as though it half worked.
                             captureRunningLayout();
 
-                            // AND THE SESSION'S PAGES STALE (RSA22-C2): the fold behind the reset below would write the page back
+                            // AND THE SESSION'S PAGES STALE: the fold behind the reset below would write the page back
                             int forgotten = session.deletePage(going);
 
                             if (forgotten > 0)
@@ -24158,8 +24157,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                 continue;
                             }
 
-                            // AND NOT WHILE A ROUTE THAT DRIVES IT IS RUNNING (CS3-B1, corrected by SVB-C2 and
-                            // VB2-C6).  The Central Station's own name proposal is the fourth door into
+                            // AND NOT WHILE A ROUTE THAT DRIVES IT IS RUNNING.
+                            // The Central Station's own name proposal is the fourth door into
                             // `renameLoc`, and it rewrites every route command naming the locomotive exactly as the
                             // others do - and it may DELETE a locomotive of the target name first, so that one is
                             // asked about too.
@@ -24200,7 +24199,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                     this.updateVisiblePoints();
                                     this.repaintAutoLocList(false);
 
-                                    // And the timetable, as the rename dialog does (DAY-B1).
+                                    // And the timetable, as the rename dialog does.
                                     this.repaintTimetable();
                                 }
                             }
@@ -24220,7 +24219,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     private void exportLocsToCSVMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exportLocsToCSVMenuItemActionPerformed
 
-        // The panel is built and shown on the event thread (VB-B1): "showMessageDialog" reads like a toast, but what it shows is a whole
+        // The panel is built and shown on the event thread: "showMessageDialog" reads like a toast, but what it shows is a whole
         // AutoJSONExport (a JTextArea, a JButton and a GroupLayout), and constructing Swing components off the event thread is as wrong as
         // showing them.  Generating the export is the slow part and the only thing left on the thread; it runs once, for the panel and the
         // clipboard.
@@ -24393,7 +24392,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // editor was open.  This should not be possible."): this button and Return Home start trains just as surely, over a diagram the
         // editor is still changing, and isAutonomyBusy knows nothing about an editor.  Refused BEFORE the button is greyed, so a refusal
         // cannot leave it dead.  Through the one gate: the editor, the setup (a timetable run drives over the railway the setup built,
-        // through the same dispatch as a hand send, MT-263, TDU-B1) and the power; and the Simulate warning, once it has passed (RSA10-C1).
+        // through the same dispatch as a hand send, MT-263) and the power; and the Simulate warning, once it has passed.
         if (refusedToSendATrain(false)) return;
 
         this.executeTimetable.setEnabled(false);
@@ -24407,9 +24406,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     return;
                 }
 
-                // A GRACEFUL STOP OF AN EARLIER RUN EXCUSES NOTHING IN THIS ONE (RSA10-B1): its flag kept the dialog that
+                // A GRACEFUL STOP OF AN EARLIER RUN EXCUSES NOTHING IN THIS ONE: its flag kept the dialog that
                 // says where and why a run stopped from being shown.  Lowered once the busy refusal has passed, as Return
-                // Home lowers its own (RSA11-C1): a press while the trains finish a Graceful Stop forgot the stop
+                // Home lowers its own: a press while the trains finish a Graceful Stop forgot the stop
                 this.gracefulStopRequested = false;
 
                 if (this.model.getAutoLayout().getTimetable().isEmpty())
@@ -24427,7 +24426,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 {
                     Route r = this.model.getRoute(routeName);
 
-                    // A NAME FROM A LIST IS NOT A ROUTE (MKR-C4's shape, swept here by FXV-B4).  The list
+                    // A NAME FROM A LIST IS NOT A ROUTE.  The list
                     // is a copy of the names; the lookup is live, and both `editRoute` and the station's
                     // re-read of a route are a delete followed by a re-add.
                     if (r == null) continue;
@@ -24476,7 +24475,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 if (notThere != null)
                 {
-                    // THE STATION AS THE TIMETABLE SHOWS IT, AND THE WAY TO FACE (RSA53-B1, RSA54-C1): a train refused at its
+                    // THE STATION AS THE TIMETABLE SHOWS IT, AND THE WAY TO FACE: a train refused at its
                     // start's square faces the other way, and the station's name alone told it to move where it stood
                     String facing = notThere.getStart() == null ? null : notThere.getStart().getCopyFacing();
 
@@ -24492,10 +24491,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     return;
                 }
 
-                // And not non-atomic over a railway that could release track under a train (GS-B1): this door dispatches without going near Start,
+                // And not non-atomic over a railway that could release track under a train: this door dispatches without going near Start,
                 // and a train length cleared on the live layout since the checkbox was unticked is not something anything here would otherwise
-                // notice.  After every refusal above, not before them (GUI-A1, TDU2-C2): a refused press should change nothing, and this gate writes
-                // the setting.  And no editor come since the press (RLV13-C2): this is posted, and an editor asked for after the press, with
+                // notice.  After every refusal above, not before them: a refused press should change nothing, and this gate writes
+                // the setting.  And no editor come since the press: this is posted, and an editor asked for after the press, with
                 // nothing running yet, is on its way or built by now.
                 if (refusedForAnEditorOnItsWay())
                 {
@@ -24504,7 +24503,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     return;
                 }
 
-                // AND A GATE THAT FAILS STOPS THE RUN AND GIVES THE BUTTON BACK (TDU3-C4), as at Start and Return Home.
+                // AND A GATE THAT FAILS STOPS THE RUN AND GIVES THE BUTTON BACK, as at Start and Return Home.
                 try
                 {
                     keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack();
@@ -24529,7 +24528,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             {
                                 this.startAutonomy.setEnabled(false);
 
-                                // UXR-C4: the button's tooltip has to say trains are moving for the length of this
+                                // The button's tooltip has to say trains are moving for the length of this
                                 // run, not keep whatever it said before the timetable started - refreshReturnHomeButton
                                 // below (on completion) puts the real answer back once it is safe to ask again.
                                 this.disableReturnHome(describeStagingOutcome(HomeStaging.Outcome.LOCOMOTIVES_RUNNING, null));
@@ -24537,7 +24536,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                             // The ANSWER, not just the call: it was discarded, so a timetable that gave up part way looked exactly like one that finished, and
                             // the only account of it was a line in a scrolling log.  A graceful stop is not a failure (the operator asked for it and watched
-                            // it), so it is not reported.  The railway it ran on, asked once (RLV9-C2): Unload during the run empties the model, and asking again
+                            // it), so it is not reported.  The railway it ran on, asked once: Unload during the run empties the model, and asking again
                             // afterwards built an empty railway to read the index from.
                             final Layout running = this.model.getAutoLayout();
                             final boolean completed = running.executeTimetable();
@@ -24545,7 +24544,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                             if (!completed && !this.gracefulStopRequested)
                             {
-                                // WITH ITS REASON where it stopped at an entry it cannot run (RSA9-B1)
+                                // WITH ITS REASON where it stopped at an entry it cannot run
                                 final String because = running.whyTheTimetableStopped();
 
                                 javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this,
@@ -24587,22 +24586,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // autonomy while the editor was open.  This should not be possible."): the editor holds the pages the session is built from, so
         // starting underneath it runs trains over a diagram still being changed.  Both are refused BEFORE the button is greyed below, since
         // greying first and returning would leave it dead.  Through the one gate: the editor, the setup in Start's own words, and the power,
-        // asked here rather than by the worker (SPEC-C4); the Simulate warning is asked by the gate, once it has passed (RSA10-C1, see
+        // asked here rather than by the worker; the Simulate warning is asked by the gate, once it has passed (see
         // `refusedToSendATrain`).
         if (refusedToSendATrain(true)) return;
 
-        // A GRACEFUL STOP OF AN EARLIER RUN EXCUSES NOTHING IN THIS ONE (RSA10-B1), as Return Home's press says of its own
+        // A GRACEFUL STOP OF AN EARLIER RUN EXCUSES NOTHING IN THIS ONE, as Return Home's press says of its own
         this.gracefulStopRequested = false;
 
-        // And not non-atomic over a railway that could release track under a train (VD16-B2).  THE THIRD DOOR, the one the other two cannot
+        // And not non-atomic over a railway that could release track under a train.  THE THIRD DOOR, the one the other two cannot
         // cover: an edge's length is only written by `parseAuto` (the file door re-asks this afterwards), but a TRAIN's length is written on
         // the live layout by `applyTrainLength` (whose zero means "not set") and by `GraphLocAssign.commitChanges`, neither of which rebuilds
         // anything, so a length cleared after the checkbox was unticked puts `behind >= trainLength` back to `0 >= 0`: every edge handed
-        // back as that train's head passes it, with the train still lying over it.  One of FIVE dispatch doors (GS-B1, VD17-C1): the release
+        // back as that train's head passes it, with the train still lying over it.  One of FIVE dispatch doors: the release
         // lives in `executePathInternal`, which Execute Timetable, Return Home and the two hand dispatches reach without passing here, and
         // every one asks now (`ui.testNonAtomicRoutesNeedTheirLengths.testEveryDispatchDoorAsksTheGate` is the list).  The remedy is the
         // file door's rather than the checkbox's: the setting was chosen deliberately and the railway has changed under it, and there is
-        // nothing for the operator to answer.  Asked below, once the worker's refusals have passed (TDU-C8, GUI-A1): a press refused for the
+        // nothing for the operator to answer.  Asked below, once the worker's refusals have passed: a press refused for the
         // power or for having no trains should change nothing, and the gate writes the setting.
 
         // Greyed here, on the EDT, before anything is dispatched: there are three ways to press it (this button, the diagram strip's mirror,
@@ -24621,7 +24620,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     {
                         Route r = this.model.getRoute(routeName);
 
-                        // A NAME FROM A LIST IS NOT A ROUTE (MKR-C4's shape, swept here by FXV-B4).  This
+                        // A NAME FROM A LIST IS NOT A ROUTE.  This
                         // runs on a worker with nothing to catch it, so a route deleted between the listing
                         // and the lookup meant a Start press that did nothing and logged nothing.
                         if (r == null) continue;
@@ -24670,10 +24669,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                     if (this.model.getAutoLayout().isValid() && !this.isAutonomyBusy())
                     {
-                        // THE ATOMIC ROUTES GATE, after every refusal (TDU-C8) and on the event thread, which the setting's
-                        // checkbox lives on.  A gate that fails stops Start (TDU2-C2): it is what keeps a run atomic over
+                        // THE ATOMIC ROUTES GATE, after every refusal and on the event thread, which the setting's
+                        // checkbox lives on.  A gate that fails stops Start: it is what keeps a run atomic over
                         // unmeasured track, and the finally below gives the button back.
-                        // AND NO EDITOR COME SINCE THE CLICK (RLV13-C2).  This runs after whatever the event thread took in
+                        // AND NO EDITOR COME SINCE THE CLICK.  This runs after whatever the event thread took in
                         // between: an editor asked for after Start was pressed, with nothing running yet, is on its way or
                         // built by now, and the run would begin under it.
                         final boolean[] editorCame = {false};
@@ -24703,7 +24702,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             // Swing, so on the EDT.  These two were being set from the worker thread
                             // directly, which the run-button mirror beside them already defends itself
                             // against by re-marshalling - the buttons themselves did not.  POSTED BEFORE THE
-                            // RUN'S THREAD STARTS, so its word that nothing started lands after them (RSA27-C1).
+                            // RUN'S THREAD STARTS, so its word that nothing started lands after them.
                             javax.swing.SwingUtilities.invokeLater(() ->
                                 {
                                     this.startAutonomy.setEnabled(false);
@@ -24721,7 +24720,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                 }
                                 finally
                                 {
-                                    // NOTHING STARTED (RSA27-C1, RC-B5): every train to run was skipped - its station out
+                                    // NOTHING STARTED: every train to run was skipped - its station out
                                     // of service, its speed unset - and the railway cleared its own flag and only logged
                                     // it, leaving Start greyed and Graceful Stop offered over nothing, and the Auto tab
                                     // greyed with them.  Start comes back and Graceful Stop goes.  Asked of the whole
@@ -24803,7 +24802,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         new Thread(() ->
             {
-                // THE RAILWAY THE STOP WAS ASKED OF, read once and not built (RLV13-C7): this is a worker, Unload is
+                // THE RAILWAY THE STOP WAS ASKED OF, read once and not built: this is a worker, Unload is
                 // allowed during the coast-down, and asking whether there is one and then for it builds an empty one
                 // where Unload cleared the model between the two
                 final Layout stopping = this.model == null ? null : this.model.getAutoLayoutIfLoaded();
@@ -24825,7 +24824,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // Ensure list is updated after stopping a timetable run
                 this.repaintAutoLocListLite();
 
-                // UXR-B7, second surface: stopLocomotives() clears the running flag and returns at once, and the trains it was driving keep going
+                // stopLocomotives() clears the running flag and returns at once, and the trains it was driving keep going
                 // until each reaches its next station, so isRunning() (therefore isAutonomyBusy()) stays true for that whole coast-down.  Enabling
                 // Start here, synchronously, is what AutonomyOverlayToggle faithfully mirrored when it flipped the diagram strip from "Graceful Stop"
                 // to "Start Autonomous Operation" while trains were still moving (the strip picks its button from these two, and
@@ -24963,7 +24962,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                       }
                   });
             
-            // UXR-B4: setVisible(true) on an APPLICATION_MODAL dialog does not return until the dialog is dismissed, so a call placed after it
+            // setVisible(true) on an APPLICATION_MODAL dialog does not return until the dialog is dismissed, so a call placed after it
             // focuses nothing.  Queued instead: an invokeLater posted before a modal show enters Swing's nested event loop runs from inside that
             // loop, once the dialog is on screen, which is what the caller wanted a focused field for.
             javax.swing.SwingUtilities.invokeLater(edit::focusFno);
@@ -25098,7 +25097,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // LEFT re-crops; RIGHT does what the picture underneath does (C7): the mark has a listener of its own, so Swing targets IT and never
                 // passes the event on to locIcon, and `locIconMouseReleased` (which opens "set icon") does not run over these fifteen pixels.  A guard
                 // that returned on a right click removed the wrong behaviour without putting the right one back: a fifteen-pixel hole where
-                // right-clicking the locomotive did nothing.  The hole moves with the mark (DOC-B10), so this passthrough matters wherever "there"
+                // right-clicking the locomotive did nothing.  The hole moves with the mark, so this passthrough matters wherever "there"
                 // currently is.
                 if (SwingUtilities.isLeftMouseButton(evt))
                 {
@@ -25410,7 +25409,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (l == null) return;
 
-        // NOT WHILE TRAINS RUN (RSA-A1; Adam, MT-141: "Never allow any modifications to a running layout.  This
+        // NOT WHILE TRAINS RUN (Adam, MT-141: "Never allow any modifications to a running layout.  This
         // includes locomotive database").  A run hands the track behind a train back by this number, so a length
         // cleared mid-run gave back the track the train was lying across.  Refused at the click, and again below at OK.
         if (refuseWhileAutonomyRunning(evt == null ? null : evt.getComponent())) return;
@@ -25445,7 +25444,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * lifted out so that it can be driven (`promptTrainLength` opens a modal, and a test cannot answer one without a robot);
      * `regression.testEditorSurfaceRules` pins the call site.
      *
-     * **The grey on the diagram follows the number** (W7B-B1; Adam: "yes, this greyout should appear at idle and be regenerated if a
+     * **The grey on the diagram follows the number** (Adam: "yes, this greyout should appear at idle and be regenerated if a
      * placement or train/track length is changed."): how far a standing train's tail reaches is `getTrainLength()` hops of measured track,
      * which `Layout.edgesCoveredByStandingTrains` reads off the locomotive every time it is asked, so a length typed here changes what the
      * railway refuses IMMEDIATELY with no rebuild in between, and the drawing had no way to know.  The other two gestures reach the marks
@@ -25458,7 +25457,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (l == null) return;
 
-        // AND AT OK, for a dialog that was open when a run began (RSA-A1)
+        // AND AT OK, for a dialog that was open when a run began
         if (refuseWhileAutonomyRunning(null)) return;
 
         l.setTrainLength(units);
@@ -25656,8 +25655,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     boolean isAutoLayoutRunning()
     {
-        // WHILE AUTONOMY IS BUSY, not only while the railway runs (RSA12-C1): Return Home plans before any train moves, and
-        // a setting written then ran under the plan - the same question every other setup refusal asks (RLV13-C3)
+        // WHILE AUTONOMY IS BUSY, not only while the railway runs: Return Home plans before any train moves, and
+        // a setting written then ran under the plan - the same question every other setup refusal asks
         if (this.aRunHoldsTheSetup())
         {
             JOptionPane.showMessageDialog(
@@ -25804,7 +25803,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     synchronized public void updateVisiblePoints()
     {
-        // WITH NOTHING LOADED, THE COVERED TRACK IS EMPTIED - and the wash with it (RLV8-C1).  Returning first, Unload
+        // WITH NOTHING LOADED, THE COVERED TRACK IS EMPTIED - and the wash with it.  Returning first, Unload
         // left the unloaded configuration's standing trains' track washed out.
         if (!this.model.hasAutoLayout())
         {
@@ -25852,7 +25851,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * named "Platform 3 (northbound)" and so on so that a running log can say which way round a train is; that is machinery, and in the
      * timetable it is noise that widens the column.  The suffix is kept in the editor, the logs and the path descriptions, where knowing
      * which copy matters.  Off the FIELD, never getAutonomySession(): this runs from repaintTimetable, which deliberately works off the
-     * event thread, and that getter is a lazy builder that parses every page, can write to disk and can raise a dialog (SV-B2).  With no
+     * event thread, and that getter is a lazy builder that parses every page, can write to disk and can raise a dialog.  With no
      * session the emitted name is the only name there is, and it is returned unchanged.
      *
      * @param point a Point of the running configuration, or null
@@ -25934,13 +25933,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             TimetablePath ttp = layout.getTimetable().get(i);
 
             // Nothing from the first entry the railway cannot run: the run stops there and says why (Adam), so no entry after it sets off, and
-            // asked otherwise a train was sent to stand where the run would never send it from (RSA10-B2)
+            // asked otherwise a train was sent to stand where the run would never send it from
             if (!ttp.isRunnable()) break;
 
             if (seen.contains(ttp.getLoc())) continue;
 
             // ON ITS START COPY, or on another copy of that square facing the same way, which the entry runs from
-            // (RSA53-B1, RSA54-A1): the exit and the next start, Autonomy > Load and the placement doors stand a train on
+            //: the exit and the next start, Autonomy > Load and the placement doors stand a train on
             // the plain copy, and the entry may name the turning one
             if (layout.pathFromWhereItStands(ttp.getPath(), ttp.getLoc()) == null) return ttp;
 
@@ -25962,7 +25961,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * What the timetable table would SHOW, as one string (MT-149): the redraw is skipped when this has not changed, and it has to be built
      * from the text rather than the objects, because a locomotive hashes by identity, so renaming one changes every row and no hash.
      * Everything the table draws is in here (the order, the locomotive, the two stations, whether the entry has run, its execution time and
-     * its countdown), but not the other way round (X8-C7): `getSecondsToNext` is in milliseconds (X8-C4) and the cell shows it divided by
+     * its countdown), but not the other way round: `getSecondsToNext` is in milliseconds and the cell shows it divided by
      * 1000, so a change smaller than a second moves this string and not the table.  A repaint is asked for whenever one is needed, and
      * sometimes when it is not; the redraw is the cheap half and the wrong direction to be wrong in.
      *
@@ -26064,7 +26063,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // through here, so it carries the same line (an earlier version claimed it did and moved the staleness from arrivals onto placements).
             this.refreshReturnHomeButton();
 
-            // Same reasoning, for "Activate Routes" (UXR-B3) and the rest of what waits for the trains: isAutonomyBusy
+            // Same reasoning, for "Activate Routes" and the rest of what waits for the trains: isAutonomyBusy
             // can turn false on its own the moment the last active locomotive arrives, with none of them having been
             // touched, and this is the refresh that already runs at that moment.
             refreshWhatWaitsForTheTrains();
@@ -26135,7 +26134,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // and what waits for the trains, which Lite refreshes beside it
             refreshWhatWaitsForTheTrains();
 
-            // ASKED ONCE, NOT BUILT (RLV11-C5): posted by callers that asked first, and it can land after Unload
+            // ASKED ONCE, NOT BUILT: posted by callers that asked first, and it can land after Unload
             final Layout shown = this.model.getAutoLayoutIfLoaded();
 
             // Display locomotive status and possible paths
@@ -26318,7 +26317,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // The same dialog the two doors ask BEFORE a route starts, asked again when the railway changed under it (Adam: "ask me, at the two
         // human doors"): one wording for both moments, since from where the operator stands they are the same question (autonomy has taken
         // this accessory, do you want it set anyway).  Reached only from a route a person started; the s88 trigger door has nobody to ask, so
-        // it sets none of its accessories and runs the rest (VD9-C18).  Called on the route's own thread, and the dialog marshals itself onto
+        // it sets none of its accessories and runs the rest.  Called on the route's own thread, and the dialog marshals itself onto
         // the event thread, so this blocks that route and nothing else.
         if (!(r instanceof org.traincontrol.marklin.MarklinRoute)) return false;
 
@@ -26502,7 +26501,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         // Later of the two: when the route ended, or when the grey has been on screen long enough.  A route finishes fast enough that the button
         // was put back before the grey could be seen, so the state was correct, brief and invisible (the CLEAR was the problem, not the
-        // drawing).  A floor rather than a fixed hold, though on today's code the two are the same (V34-C4): `execRoute` starts a thread and
+        // drawing).  A floor rather than a fixed hold, though on today's code the two are the same: `execRoute` starts a thread and
         // returns, so `releaseTheRoutePlayButton` is reached milliseconds after `routeStarted` and `showFor` is always about the whole minimum.
         // The floor makes the grey VISIBLE; it is not what keeps it honest about a slow route, and nothing here is.  If execution ever becomes
         // synchronous the floor is already right and a fixed hold would not be.
@@ -27514,7 +27513,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Whether there is anything on the Central Station to download.
      *
      * The second half of the question the download handler asks, exposed for the autonomy menu's
-     * offer so that the two cannot ask different things (DW-C2). An offer that cannot be honoured is
+     * offer so that the two cannot ask different things. An offer that cannot be honoured is
      * worse than no offer: pressing it teaches the reader that the notice lies.
      *
      * @return true when the station has pages that could be fetched

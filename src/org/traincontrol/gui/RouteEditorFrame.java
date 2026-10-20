@@ -78,7 +78,7 @@ public class RouteEditorFrame extends JFrame
     private final String originalName;
 
     /**
-     * What the route looked like in the database when this window opened (GUX-B1).
+     * What the route looked like in the database when this window opened.
      *
      * Everything the window can write, as one string.  Compared at Save against the route as it stands now: this
      * window is not modal and does not hold the route, so Enable/Disable, a delete, an import or another editor can
@@ -89,7 +89,7 @@ public class RouteEditorFrame extends JFrame
     private final String loadedFromDatabase;
 
     /**
-     * The id of the route this window opened on, or null for a new one (OP2-C9).
+     * The id of the route this window opened on, or null for a new one.
      *
      * A route tile binds by id and so does an autonomy selection, so the id is what the route IS; the
      * name is what it is called this minute.  Kept so that a rename under the window reads as a rename
@@ -209,10 +209,10 @@ public class RouteEditorFrame extends JFrame
         this.parent = parent;
         this.originalName = routeName == null ? "" : routeName;
 
-        // WHAT THE DATABASE SAID WHEN THIS WINDOW OPENED (GUX-B1), so Save can tell whether it still says it.
+        // WHAT THE DATABASE SAID WHEN THIS WINDOW OPENED, so Save can tell whether it still says it.
         this.loadedFromDatabase = signatureOf(route);
 
-        // AND WHICH ROUTE IT WAS, which the name alone cannot say once somebody renames it (OP2-C9).
+        // AND WHICH ROUTE IT WAS, which the name alone cannot say once somebody renames it.
         this.loadedId = route == null ? null : route.getId();
 
         setTitle(routeName == null ? I18n.t("route.ui.frameNewRoute")
@@ -250,11 +250,10 @@ public class RouteEditorFrame extends JFrame
         // asks about is the difference between this and the same question asked later.
         loadedSignature = stateSignature();
 
-        // ABOVE THE MAIN WINDOW IF IT IS (RC-B4), as every other child window is: capture is ticked here and
+        // ABOVE THE MAIN WINDOW IF IT IS, as every other child window is: capture is ticked here and
         // the switches are thrown on the layout window, so clicking over there would otherwise put the window
         // being watched behind the one being clicked.  Null-checked, because this window is built with a null
-        // parent by five test classes and setLocationRelativeTo(null) is legal and centres on the screen
-        // (RC-B6).
+        // parent by five test classes and setLocationRelativeTo(null) is legal and centres on the screen.
         if (parent != null) setAlwaysOnTop(parent.isAlwaysOnTop());
 
         pack();
@@ -262,7 +261,7 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * Fills in a name for a route that does not exist yet (RC-B3).
+     * Fills in a name for a route that does not exist yet.
      *
      * NOT the constructor’s routeName, which is a different thing wearing the same word: that
      * becomes originalName, and a non-empty originalName is what makes Save an EDIT of an existing
@@ -427,7 +426,7 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * Everything a route says about itself, as one string, for the comparison above (GUX-B1).
+     * Everything a route says about itself, as one string, for the comparison above.
      *
      * Tolerant on purpose, like `stateSignature`: it is only ever compared with another of its own kind.
      *
@@ -450,7 +449,7 @@ public class RouteEditorFrame extends JFrame
             out.append(String.valueOf(command)).append('\u0003');
         }
 
-        // THE CONDITIONS BY THEIR CONTENT, not by the object (OP2-B5).  `NodeExpression` has no `toString`, so
+        // THE CONDITIONS BY THEIR CONTENT, not by the object.  `NodeExpression` has no `toString`, so
         // `String.valueOf` printed an identity hash - and `Route.locomotiveRenamed` rewrites condition commands IN
         // PLACE, so a locomotive renamed while this window was open left the signature identical and Save wrote the
         // dead name back into every condition.
@@ -464,13 +463,13 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * Whether the route this window is editing has changed in the database since it opened (GUX-B1).
+     * Whether the route this window is editing has changed in the database since it opened.
      *
      * Four answers, and they need different words: it is GONE (deleted, or replaced by an import that did not
      * carry it), it has been RENAMED (it is still there, under another name), it has CHANGED (somebody toggled
      * Enable/Disable, or edited it elsewhere), or it is as it was.
      *
-     * **Renamed is not gone** (OP2-C9): looking the route up by name only would call a renamed route gone,
+     * **Renamed is not gone**: looking the route up by name only would call a renamed route gone,
      * name two causes that had not happened, and offer save as new, which would leave a second route beside
      * the renamed one, with a fresh id that no route tile and no autonomy selection follows.
      *
@@ -487,7 +486,7 @@ public class RouteEditorFrame extends JFrame
 
         if (now == null) return nameNowHeldById() != null ? "renamed" : "gone";
 
-        // AND THE NAME MAY BE BACK, HELD BY SOMEBODY ELSE (FNL-C5).  A route renamed away and a second one
+        // AND THE NAME MAY BE BACK, HELD BY SOMEBODY ELSE.  A route renamed away and a second one
         // given its old name leaves a route answering to `originalName` that is not the one this window
         // opened: saving onto it would overwrite a stranger.  The id is what the route IS.
         if (loadedId != null && now.getId() != loadedId)
@@ -499,7 +498,7 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * Which name a save onto a renamed route should use (FXV-B2).
+     * Which name a save onto a renamed route should use.
      *
      * The window does not refresh and `originalName` is final, so the name field still holds the name this
      * window opened with unless the operator has typed in it.  Passing that as the new name renames the route
@@ -519,7 +518,7 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * What the route this window opened on is called now, or null if no route carries that id (OP2-C9).
+     * What the route this window opened on is called now, or null if no route carries that id.
      *
      * By id, walking the list, because the view interface offers no lookup by id and a dialog can afford it.
      *
@@ -540,7 +539,7 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * Whether closing this window now would throw away work (UIX-B1).
+     * Whether closing this window now would throw away work.
      *
      * The question `closeIfThrowingNothingAway` asks, on its own and without a dialog, so that the exit can ask it
      * too and a test can ask it at all.  Compared against what was loaded rather than against a flag, for the reason
@@ -554,7 +553,7 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * What a test answers the discard question with, or null to ask the operator (SVT-B1).
+     * What a test answers the discard question with, or null to ask the operator.
      *
      * `maySettleBeforeExit` is modal, and the exit that calls it ends in `System.exit`, so the only way to pin the
      * exit's own decision rather than the predicate under it is to let a test answer the dialog.  Null in every
@@ -563,7 +562,7 @@ public class RouteEditorFrame extends JFrame
     public static Boolean discardAnswerForTest;
 
     /**
-     * Asked by the application's exit, which is a door out of this window too (UIX-B1).
+     * Asked by the application's exit, which is a door out of this window too.
      *
      * The layout editor has `maySettleBeforeExit` since OB-070 - *"one save/discard/cancel question, asked
      * wherever a page is left"* - and this window, which is the other one holding unsaved typing, is asked
@@ -946,7 +945,7 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * The names to offer in a locomotive or route cell: the database's, and the name already in the cell (GSR-B5).
+     * The names to offer in a locomotive or route cell: the database's, and the name already in the cell.
      * A combo box cannot show a value it has not got: handed one, it keeps whatever was selected, so a route
      * naming a locomotive or route since deleted would have that cell rewritten to the first name in the list
      * by a click and a click away, and the Save gate, which names "a locomotive nobody owns", would then be
@@ -961,7 +960,7 @@ public class RouteEditorFrame extends JFrame
     {
         java.util.List<String> out = names == null ? new ArrayList<>() : new ArrayList<>(names);
 
-        // AS IT STANDS, spaces and all (RSA56-C3): offered trimmed, a name a hand-edited file padded was still not the
+        // AS IT STANDS, spaces and all: offered trimmed, a name a hand-edited file padded was still not the
         // value the combo box was handed, and the click wrote the first name in the list
         if (has != null && !has.trim().isEmpty() && !out.contains(has)) out.add(has);
 
@@ -1566,9 +1565,9 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * For tests: the condition outline as the table holds it (FR3-B1).
+     * For tests: the condition outline as the table holds it.
      *
-     * A silent change to when a route fires (FR3-B1) lived in the condition table undetected, for want of
+     * A silent change to when a route fires lived in the condition table undetected, for want of
      * a way to look at it as the command table can be looked at.
      *
      * @return the live list, so a caller can read what an edit left behind
@@ -1605,7 +1604,7 @@ public class RouteEditorFrame extends JFrame
      *
      * Written for FR-068, on a condition with a bracket that is not the first term: *"it should be
      * representable already in the UI, right?"*  That question is not about whether `ConditionOutline` can
-     * HOLD the shape, which `core.testConditionOutline` has covered since IPR-B2; it is about whether the
+     * HOLD the shape, which `core.testConditionOutline` has covered; it is about whether the
      * indent marks can REACH it from a list somebody typed.  Only this method can answer it, because the
      * rule that decides - a row may be at most one level deeper than the row above it - lives in
      * `ConditionTable.indent` and nowhere else.
@@ -1750,7 +1749,7 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * How many conditions the list holds, so a test can see that a capture arrived (GUX-C6).
+     * How many conditions the list holds, so a test can see that a capture arrived.
      */
     public int conditionCount()
     {
@@ -2098,7 +2097,7 @@ public class RouteEditorFrame extends JFrame
      */
     private static java.awt.Component unshaded(java.awt.Component out, JTable which, boolean selected)
     {
-        // AND NO TOOLTIP (GUI-C2).  The same recycled component, and both rows that come here return before
+        // AND NO TOOLTIP.  The same recycled component, and both rows that come here return before
         // OB-246's tooltip is set - so the + row wore the refusal of the row drawn a moment before it.
         if (out instanceof javax.swing.JComponent) ((javax.swing.JComponent) out).setToolTipText(null);
 
@@ -2112,7 +2111,7 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * Files an accessory command under its address and the protocol it is sent in (GUI-C5).
+     * Files an accessory command under its address and the protocol it is sent in.
      *
      * @param into the addresses so far
      * @param command an accessory command
@@ -2178,7 +2177,7 @@ public class RouteEditorFrame extends JFrame
                 //
                 // SET ON EVERY CELL, never skipped: this renderer hands back one recycled component for the
                 // whole table, so a row that is fine would otherwise wear the tooltip of the marked row drawn a
-                // moment earlier.  The two rows that return above have it cleared in `unshaded` (GUI-C2).
+                // moment earlier.  The two rows that return above have it cleared in `unshaded`.
                 String refused = which instanceof CommandTable
                     ? ((CommandTable) which).whyWrong(row) : null;
 
@@ -2612,7 +2611,7 @@ public class RouteEditorFrame extends JFrame
             else anythingElse = true;
         }
 
-        // In the editor's own words for the two rows (RLA5-C6, RLU5-C3)
+        // In the editor's own words for the two rows
         if (aStop && anythingElse)
         {
             wrong.add(I18n.f("route.ui.frameStopStandsAlone", I18n.t("route.kind.STOP"), I18n.t("route.kind.ROUTE")));
@@ -2687,14 +2686,14 @@ public class RouteEditorFrame extends JFrame
      */
     public java.util.List<String> functionChoicesForTest(int row)
     {
-        // THROUGH THE CELL EDITOR THE TABLE WOULD ACTUALLY USE (VD12-T3), not `functionsOffered` directly:
+        // THROUGH THE CELL EDITOR THE TABLE WOULD ACTUALLY USE, not `functionsOffered` directly:
         // that is the list but not the affordance, and what decides whether a number can be typed is the
         // editor this column is given.
         return offeredBy(commands, row, 5);
     }
 
     /**
-     * What a command's locomotive or route cell would offer, for a test (GSR-B5).
+     * What a command's locomotive or route cell would offer, for a test.
      *
      * @param row which row
      * @return the names offered, or null where the cell is not a list
@@ -2705,7 +2704,7 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * What a condition's locomotive cell would offer, for a test (GSR-B5).
+     * What a condition's locomotive cell would offer, for a test.
      *
      * @param line which line of the conditions
      * @return the names offered, or null where the cell is not a list
@@ -2716,7 +2715,7 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * What one cell's editor offers, read through the editor the table would use (VD12-T3).
+     * What one cell's editor offers, read through the editor the table would use.
      *
      * @param table the table
      * @param row its row
@@ -2793,11 +2792,11 @@ public class RouteEditorFrame extends JFrame
                     // A COMMA in the name breaks the format a route is written in - the command line is
                     // comma-separated - and a name offered in a dropdown and saved would produce a route file that
                     // reads back as something else.  BRACKETS ARE ALLOWED: *"bracketed loc names should just be
-                    // allowed"* (VD14-R11).  Real names look like this - "SBB 460 (2)".
+                    // allowed"*.  Real names look like this - "SBB 460 (2)".
                     wrong.add(I18n.f("route.ui.frameNameNotUsable", target));
                 }
 
-                // AND THE SENSOR an "is at" condition watches, its setting (GSR-C1): saved as 0 or nothing, the condition
+                // AND THE SENSOR an "is at" condition watches, its setting: saved as 0 or nothing, the condition
                 // can never be true and the route never fires - FEEDBACK's own check, below
                 if (CommandRow.asksWhereATrainIs(row.getKind()) && numberOr(row.getSetting(), 0) <= 0)
                 {
@@ -2892,7 +2891,7 @@ public class RouteEditorFrame extends JFrame
 
         int address = numberOr(target, 0);
 
-        // THE LOGICAL ADDRESS, ASKED AS ONE (S14-C1).  Accessory's maxima are raw and say so, so the operator's
+        // THE LOGICAL ADDRESS, ASKED AS ONE.  Accessory's maxima are raw and say so, so the operator's
         // number has to be converted before it is compared: unconverted, logical MM2 320 and logical DCC 2048
         // would be refused here and accepted by the diagram editor, which converts.
         if (address <= 0 || !Accessory.isValidLogicalAddress(address, speaks))
@@ -2955,7 +2954,7 @@ public class RouteEditorFrame extends JFrame
         // condition names an s88 or an accessory - and a tile of any kind carries a number, so the kind has to
         // travel with the address or the wrong tiles light.
         //
-        // AND BY DECODER (GUI-C5): an accessory address is one per protocol, so the protocol travels with it.
+        // AND BY DECODER: an accessory address is one per protocol, so the protocol travels with it.
         java.util.Map<Integer, java.util.Set<org.traincontrol.base.Accessory.accessoryDecoderType>> commanded =
             new java.util.LinkedHashMap<>();
         java.util.Set<Integer> commandedRoutes = new java.util.LinkedHashSet<>();
@@ -2963,14 +2962,14 @@ public class RouteEditorFrame extends JFrame
             new java.util.LinkedHashMap<>();
         java.util.Set<Integer> checkedSensors = new java.util.LinkedHashSet<>();
 
-        // A sensor a COMMAND names, which only a route saved by an older version can hold (VD13-C6).
+        // A sensor a COMMAND names, which only a route saved by an older version can hold.
         java.util.Set<Integer> commandedSensors = new java.util.LinkedHashSet<>();
 
         for (Entry entry : commands.rows)
         {
             org.traincontrol.base.RouteCommand command = entry.toCommand();
 
-            // ASKED WHETHER IT HAS ONE FIRST (IPR-B1).
+            // ASKED WHETHER IT HAS ONE FIRST.
             //
             // `getAddress()` is `Integer.parseInt` over a key other command types do not carry, and its own
             // javadoc says it throws for them, so a route holding a LOCOMOTIVE command would throw out of
@@ -2981,7 +2980,7 @@ public class RouteEditorFrame extends JFrame
 
             if (command.isRoute()) commandedRoutes.add(command.getAddress());
 
-            // AND A SENSOR THIS ROUTE COMMANDS (VD12-C4).  `canBeACommand` will not let a new FEEDBACK row be
+            // AND A SENSOR THIS ROUTE COMMANDS.  `canBeACommand` will not let a new FEEDBACK row be
             // made, but a route saved by an older version can hold one and `CommandRow` says in as many words
             // that such a row "still opens and still shows", so it has to reach the highlight.
             if (command.isFeedback()) commandedSensors.add(command.getAddress());
@@ -2991,7 +2990,7 @@ public class RouteEditorFrame extends JFrame
         {
             if (row.isJoiner() || row.getCommand() == null) continue;
 
-            // The same question on the condition side (IPR-B1): a condition can name a locomotive.
+            // The same question on the condition side: a condition can name a locomotive.
             if (!row.getCommand().hasAddress() || row.getCommand().getAddress() <= 0) continue;
 
             if (row.getCommand().isAccessory()) byDecoder(checked, row.getCommand());
@@ -3009,7 +3008,7 @@ public class RouteEditorFrame extends JFrame
         // two statements - the route does something to it - and two washes on one tile is a colour
         // neither of them chose.  Asked within a kind, because an accessory and a sensor numbered alike
         // are two different squares and neither says anything about the other - and within a decoder, for
-        // the same reason: MM2 5 and DCC 5 are two turnouts (GUI-C5).
+        // the same reason: MM2 5 and DCC 5 are two turnouts.
         for (java.util.Map.Entry<Integer, java.util.Set<org.traincontrol.base.Accessory.accessoryDecoderType>>
             both : commanded.entrySet())
         {
@@ -3022,14 +3021,14 @@ public class RouteEditorFrame extends JFrame
             if (alsoChecked.isEmpty()) checked.remove(both.getKey());
         }
 
-        // AND THE SAME FOR THE SENSORS, HERE, BEFORE EITHER IS PAINTED (VD13-C6, VD14-C3, VD15-B1).
+        // AND THE SAME FOR THE SENSORS, HERE, BEFORE EITHER IS PAINTED.
         //
         // `canBeACommand` will not make a new FEEDBACK row, but an older route can hold one, and the legend
         // says "what it checks in orange", so a sensor the route writes to must not be washed as checked.
         // Commanded is the stronger statement, the same way round as the accessories' rule above.
         //
         // **THE CASE THIS IS ACTUALLY FOR, on any route made since `canBeACommand`, is the route's own
-        // TRIGGER** (VD14-C3, VD16-C2): a trigger is always in `checkedSensors`, so a route triggered by a
+        // TRIGGER**: a trigger is always in `checkedSensors`, so a route triggered by a
         // sensor it also commands would have that square painted as a condition.  The removal has to come
         // BEFORE the paint calls: after them the checked sensors have already been washed.
         checkedSensors.removeAll(commandedSensors);
@@ -3065,12 +3064,12 @@ public class RouteEditorFrame extends JFrame
     private JButton highlightButton;
 
     /**
-     * Answers "would this route fire right now", off the event thread (GSR-B1).
+     * Answers "would this route fire right now", off the event thread.
      *
      * **THE EVALUATION CANNOT RUN ON THE EVENT THREAD.**  An autoloc condition - "train X at sensor
      * Y" - is evaluated by the static `Route.evaluate`, which waits for the autonomy resolution to finish
      * (`Layout.waitForS88Reached`) while the train stands on a sensor its run has not yet recorded, three
-     * seconds at most (RSA56-C1).  Run on the event thread, that would freeze the whole window - Stop with it.
+     * seconds at most.  Run on the event thread, that would freeze the whole window - Stop with it.
      *
      * The two halves are asked separately, because they fail for different reasons and a single "no" would
      * leave the user to guess which: the trigger sensor is either occupied or it is not, and the conditions
@@ -3089,7 +3088,7 @@ public class RouteEditorFrame extends JFrame
 
         final String s88;
 
-        // READ ON THE EVENT THREAD, AND STILL INSIDE A TRY (VD17-C8, narrowed by VD18-C3).
+        // READ ON THE EVENT THREAD, AND STILL INSIDE A TRY.
         //
         // The table's rows are the event thread's to read, so building the expression cannot move to the
         // worker.  Everything KNOWN to throw here - a sensor that names nothing, an address that is not a
@@ -3211,7 +3210,7 @@ public class RouteEditorFrame extends JFrame
             }
             else
             {
-                // THE ROUTE MAY HAVE MOVED UNDER THIS WINDOW (GUX-B1).
+                // THE ROUTE MAY HAVE MOVED UNDER THIS WINDOW.
                 //
                 // This is not a modal window and it does not hold the route: Enable/Disable, a delete, an import or
                 // another editor can change it while it is open, and Save is a delete-and-re-add of everything the
@@ -3222,12 +3221,12 @@ public class RouteEditorFrame extends JFrame
 
                 if ("renamed".equals(moved))
                 {
-                    // RENAMED IS NOT DELETED (OP2-C9).  Saving onto the route under its new name keeps its id, and
+                    // RENAMED IS NOT DELETED.  Saving onto the route under its new name keeps its id, and
                     // with it every route tile bound to it and any autonomy selection on it, which save-as-new
                     // would throw away.
                     String nowCalled = nameNowHeldById();
 
-                    // ASKED TWICE, AND IT CAN ANSWER DIFFERENTLY (FNL-C5).  `howTheRouteMoved` found a
+                    // ASKED TWICE, AND IT CAN ANSWER DIFFERENTLY.  `howTheRouteMoved` found a
                     // route under this id a moment ago; if it has gone since, the message would name it
                     // as "renamed to null" and the save would edit a route called null.  Treated as gone,
                     // which is what it now is.
@@ -3239,7 +3238,7 @@ public class RouteEditorFrame extends JFrame
                         return;
                     }
 
-                    // AND IT KEEPS THE NAME THE OTHER PARTY GAVE IT (FXV-B2).
+                    // AND IT KEEPS THE NAME THE OTHER PARTY GAVE IT.
                     //
                     // `name` is what the name field holds, and this window does not refresh, so unless the
                     // operator has typed in it themselves it is still the name the window opened with, and passing
@@ -3311,7 +3310,7 @@ public class RouteEditorFrame extends JFrame
             parent.refreshRouteList();
             parent.repaintLayout();
 
-            // NO DIAGRAM EDIT TO COMPLETE (RLV7-A1).  A tile follows its route by number - `rebindRouteTiles`
+            // NO DIAGRAM EDIT TO COMPLETE.  A tile follows its route by number - `rebindRouteTiles`
             // runs after every write to the route database - and `repaintLayout` above redraws it, so
             // `layoutEditingComplete` is not called: it re-reads every page and resets autonomy, and during a
             // run the reload after the reset asks to abandon it (Yes stands every train the run had moved back
@@ -3367,7 +3366,7 @@ public class RouteEditorFrame extends JFrame
     /**
      * The delay the railway will actually wait for, given the one somebody asked for.
      *
-     * **THE FLOOR, SHOWN RATHER THAN APPLIED SILENTLY (X8-C2).**  `MarklinRoute` sleeps
+     * **THE FLOOR, SHOWN RATHER THAN APPLIED SILENTLY.**  `MarklinRoute` sleeps
      * `max(delay, DEFAULT_SLEEP_MS)` between commands, because 150ms is the gap it leaves between two
      * route commands and `THREEWAY_ROUTE_DELAY_MS` is defined as sitting above it.  So a delay between
      * 1 and 150 would be accepted, stored, written to the file, read back and redisplayed - and never used,
@@ -3376,7 +3375,7 @@ public class RouteEditorFrame extends JFrame
      * Zero is left alone: it means "no delay asked for", which is a different thing from "as short as
      * possible" and is what an untouched row holds.
      *
-     * ASKED ON THE WAY OUT AS WELL AS ON THE WAY IN (X8V-C7): a delay that arrives another way - a route
+     * ASKED ON THE WAY OUT AS WELL AS ON THE WAY IN: a delay that arrives another way - a route
      * saved by an earlier build, imported from a station, read out of a JSON file - must show a number the
      * railway will use.
      *
@@ -3620,7 +3619,7 @@ public class RouteEditorFrame extends JFrame
                         if (!CommandRow.hasDelay(at.getKind())) return "";
 
                         // The number the railway will wait, not the number somebody once typed
-                        // (X8V-C7).  A delay below the floor arrives here from every route saved before
+                        //.  A delay below the floor arrives here from every route saved before
                         // the floor was made visible, and from every import.
                         int shown = delayTheRailwayWillUse(at.getDelay());
 
@@ -3648,7 +3647,7 @@ public class RouteEditorFrame extends JFrame
 
                 CommandRow at = entry.getRow();
 
-                // A KIND THE DROPDOWN DOES NOT OFFER CANNOT BE EDITED (LE2-B20).
+                // A KIND THE DROPDOWN DOES NOT OFFER CANNOT BE EDITED.
                 //
                 // The Kind dropdown is built from canBeACommand, which since OB-141 excludes FEEDBACK, but a
                 // stored row may still hold one (from the old text editor, from RouteCommand.fromLine, or from an
@@ -3874,7 +3873,7 @@ public class RouteEditorFrame extends JFrame
                 }
             });
 
-            // Wrapped AROUND the renderer above, and it has to be after it (AR-19): setDefaultRenderer replaces
+            // Wrapped AROUND the renderer above, and it has to be after it: setDefaultRenderer replaces
             // whatever was set before.  This table greys by KIND through model.isCellEditable in the renderer
             // above; what that does not do is the background.  Most unusable cells are EMPTY - a function number
             // on a signal command, a protocol on a stop - and grey text in an empty cell looks exactly like
@@ -3940,7 +3939,7 @@ public class RouteEditorFrame extends JFrame
 
                 if (kind == CommandRow.Kind.ROUTE)
                 {
-                    // NOT THIS ROUTE (GSR-C3): Save refuses a route that calls itself (`frameRouteCallsItself`), so
+                    // NOT THIS ROUTE: Save refuses a route that calls itself (`frameRouteCallsItself`), so
                     // offering it was offering a mistake.  A cell already holding it keeps it (`withTheCellsOwn`), so it
                     // is still shown and the gate still names it.
                     java.util.List<String> others = new ArrayList<>(parent.getModel().getRouteList());
@@ -4603,7 +4602,7 @@ public class RouteEditorFrame extends JFrame
 
             if (!joiner)
             {
-                // THE WORD AT THIS ROW'S OWN DEPTH, and that is not always the one before it (VD13-B4).
+                // THE WORD AT THIS ROW'S OWN DEPTH, and that is not always the one before it.
                 //
                 // "1 and 2" without the 2 is "1", so the word before is the usual answer - but the FIRST row of a
                 // group has the OUTER word before it, one level shallower.  Deleting the 2 of `1 or (2 and 3)`
@@ -4742,7 +4741,7 @@ public class RouteEditorFrame extends JFrame
         {
             for (int at = 0; at < rows.size(); at++)
             {
-                // ROW 0 KEEPS ITS OWN DEPTH (FR3-B1).
+                // ROW 0 KEEPS ITS OWN DEPTH.
                 //
                 // Forcing the first row flat would be wrong: a condition that begins with a bracketed group
                 // legitimately starts one level in.  `ConditionOutline.write` emits `(A or B) and C` as

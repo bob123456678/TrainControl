@@ -87,7 +87,7 @@ public class LayoutGrid
      * the registry of captions, which an excluded page's caption is never in.
      *
      * A method rather than a line of `&&`, so the rule can be asked its truth table without building a window.
-     * `testEditorSurfaceRules` reads the call, to check the caller passes the right THREE booleans (DOC-C5).
+     * `testEditorSurfaceRules` reads the call, to check the caller passes the right THREE booleans.
      *
      * @param inEditor whether this grid is inside an editor at all
      * @param autonomyMode whether that editor is the autonomy one
@@ -463,7 +463,7 @@ public class LayoutGrid
     private JPanel container;
 
     /**
-     * The spinner this grid put into the panel, and the panel it went into (VLD-C2).
+     * The spinner this grid put into the panel, and the panel it went into.
      *
      * Held so that `discard()` can take it out again.  The spinner is added by the grace timer and removed by the
      * reveal, and discarding cancels the reveal, so a grid discarded between those two moments would leave its
@@ -474,7 +474,7 @@ public class LayoutGrid
     private LoadingSpinner mountedSpinner;
 
     /**
-     * Whether this grid's container ever reached the panel (VLD-C2).
+     * Whether this grid's container ever reached the panel.
      *
      * The panel is emptied and the new container added at the very end of the build, so anything that throws before
      * then leaves the panel holding the OLD container: visible, its timers stopped by `discard()`, its captions
@@ -498,10 +498,10 @@ public class LayoutGrid
     private volatile boolean discarded = false;
 
     /**
-     * The panel this grid was built into, which `discard()` empties when the build never reached the swap (VLD-C2).
+     * The panel this grid was built into, which `discard()` empties when the build never reached the swap.
      *
      * It is not how `discard()` finds the labels to hand back.  That is `registeredCaptions`, because one panel
-     * serves every page, so forgetting by panel would forget every page's captions (DOC-B16).
+     * serves every page, so forgetting by panel would forget every page's captions.
      */
     private JPanel owner;
 
@@ -571,7 +571,7 @@ public class LayoutGrid
     /**
      * Where a container remembers the grid that built it - for the window to ask whether the grid on screen is still the
      * setup's (MT-670).  Hung on the container for the reason `CAPTIONS_REGISTERED` is: a map of containers to grids kept
-     * every grid the window ever built, as each grid holds its container (RSA38-C3).
+     * every grid the window ever built, as each grid holds its container.
      */
     private static final String GRID = "TrainControl.layoutGrid";
 
@@ -589,7 +589,7 @@ public class LayoutGrid
     }
 
     /**
-     * The grid currently drawn into each panel, so that building a new one can retire the old one (DD-B3).
+     * The grid currently drawn into each panel, so that building a new one can retire the old one.
      *
      * Four places build a grid over an existing panel, and a rule remembered at three of four call sites is one that
      * is missed at the fourth (a spinner dropped into the middle of the page the new grid had just drawn).  So the
@@ -605,7 +605,7 @@ public class LayoutGrid
 
     /**
      * Retires whatever grid is registered against this panel, whether or not the caller ever got a reference
-     * to it (FNL-C1).
+     * to it.
      * **A constructor that throws part-way has already registered.**  `LIVE.put` is the first thing the
      * constructor does, so a build that fails later leaves a grid holding captions with no reference anywhere for a
      * `finally` to discard.  The diagram export's bracket discards `grid[0]`, which is only assigned if the
@@ -698,7 +698,7 @@ public class LayoutGrid
         if (failsafe != null) failsafe.stop();
         if (grace != null) grace.stop();
 
-        // AND THE SPINNER THIS GRID MOUNTED, if the reveal never ran to take it out (VLD-C2).  Stopping the timers
+        // AND THE SPINNER THIS GRID MOUNTED, if the reveal never ran to take it out.  Stopping the timers
         // stops a spinner being added, not one already there.
         if (mountedSpinner != null && spinnerPanel != null)
         {
@@ -707,7 +707,7 @@ public class LayoutGrid
             mountedSpinner = null;
         }
 
-        // AND A PANEL LEFT HOLDING SOMETHING THIS GRID NEVER REPLACED (VLD-C2).  When a build threw before the
+        // AND A PANEL LEFT HOLDING SOMETHING THIS GRID NEVER REPLACED.  When a build threw before the
         // swap, the panel still holds the container of the grid BEFORE this one, its timers stopped and its captions
         // gone; emptying it makes the failure look like one.  At discard rather than in a catch, because three
         // callers build a grid over an existing panel and only one of them catches, and this is where all three go
@@ -753,7 +753,7 @@ public class LayoutGrid
                 // drawn here once every square is drawn: its own square cuts it off at its edges, and a square
                 // painted after it would paint its white over what reached that far.  Under the captions, the
                 // trains and the addresses, as the icon on its own square is; the captions are drawn again over it
-                // below (RSA61-C2).
+                // below.
                 java.util.Map<LayoutLabel, java.awt.Rectangle> spilt = new java.util.LinkedHashMap<>();
 
                 for (java.awt.Component child : getComponents())
@@ -769,7 +769,7 @@ public class LayoutGrid
                 // of its edges, exactly where a curve's station reaches its neighbours.
                 if (!spilt.isEmpty())
                 {
-                    // ONLY WHERE THE SPILL WAS DRAWN, and the captions over that again (RSA61-C2): everywhere else
+                    // ONLY WHERE THE SPILL WAS DRAWN, and the captions over that again: everywhere else
                     // the arrows and captions are as the squares drew them, a caption in front of the tiles (OB-117),
                     // and arrows drawn over the whole square would come out in front of a caption covering it.
                     java.awt.geom.Area spilled = new java.awt.geom.Area();
@@ -833,7 +833,7 @@ public class LayoutGrid
                 // are rendered on top of the autonomy locomotive icons").  An address is what the operator turned
                 // Show Addresses on to read, and it covers only its letters and their halo, so drawn last it hides
                 // nothing of the icon but the number.
-                // ONLY THOSE IN WHAT IS BEING REPAINTED (RSA60-C1): a hover repaints three squares by three, and
+                // ONLY THOSE IN WHAT IS BEING REPAINTED: a hover repaints three squares by three, and
                 // painting every address on the page each time would be clipped to nothing.  The pass above already
                 // skips what the clip misses.
                 java.awt.Rectangle clip = g.getClipBounds();
@@ -999,7 +999,7 @@ public class LayoutGrid
             //
             // "Being edited" is a fact about the DIAGRAM and is true in both windows at once (the main window
             // shares the LayoutDiagram with the editor), so it is the wrong question for anything about how THIS
-            // grid is arranged.  The flag is shared at all only for the editors' mutual exclusion (NR-7).  So this
+            // grid is arranged.  The flag is shared at all only for the editors' mutual exclusion.  So this
             // asks whether THIS grid is in an editor (MT-106): with the shared flag, any repaint of the viewer while
             // an editor was open re-laid the viewer the editor's way.  The viewer's tiles stay clickable while an
             // editor is open because the clickability line below passes `inEditor`.
@@ -1037,7 +1037,7 @@ public class LayoutGrid
         // `master instanceof LayoutEditor` rather than `inEditor`, because the window test answers "is this an
         // editor at all" instead of borrowing a flag that means "the diagram is editable" and happens to agree.
         // The flag is set in autonomy mode too: `LayoutEditor.render()` calls `layout.setEdit()` unconditionally,
-        // after `setAutonomyMode` has run (RGD-C6).
+        // after `setAutonomyMode` has run.
         //
         // AND ONLY WITH THE GRID ON, which is what `coordinatesVisible` answers; asked through it so there is one
         // place to read the rule and one place to change it.
@@ -1251,7 +1251,7 @@ public class LayoutGrid
                         // captions and are not.
                         text.setText("");
 
-                        // Of this build, so registering its other caption of the same station spares it (RSA40-C1)
+                        // Of this build, so registering its other caption of the same station spares it
                         text.putClientProperty(TrainControlUI.LAYOUT_STATION_BUILD, registeredCaptions);
 
                         // And of this page, so another page's build does not let it go (OB-341)
@@ -1342,7 +1342,7 @@ public class LayoutGrid
                                 || ((LayoutEditor) master).getAutonomyPanel() == null
                                 || !((LayoutEditor) master).getAutonomyPanel().isShowingParkedTrains();
 
-                            // WHERE THE TRAIN LIVES, if that is what has been asked for (MT-261 ruling 2, R28-C3).
+                            // WHERE THE TRAIN LIVES, if that is what has been asked for (MT-261 ruling 2).
                             //
                             // Adam: "labels show the home locomotive in white to indicate it's not there (and
                             // black/no change if it's there)."
@@ -1685,7 +1685,7 @@ public class LayoutGrid
                             }
                         }
 
-                        // AND ITS EXIT (RSA46-C1): the label covers the top left of its square, and a pointer that left
+                        // AND ITS EXIT: the label covers the top left of its square, and a pointer that left
                         // the squares from here told no square - the track editor's outline stayed on it, and the main
                         // window's keys still aimed at it
                         @Override

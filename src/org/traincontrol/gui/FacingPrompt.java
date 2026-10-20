@@ -37,7 +37,7 @@ import org.traincontrol.util.I18n;
  * caller asks BEFORE the move, and `null` from `forPlacement` means "leave everything as it was" -
  * which is why `wouldAsk` exists separately, exactly as it does on the sibling prompt: a null that
  * means "nothing to ask" and a null that means "the operator said no" are different answers, and
- * reading them alike is `IND9-B5`.
+ * reading them alike is a defect.
  */
 public class FacingPrompt
 {
@@ -244,7 +244,7 @@ public class FacingPrompt
         }
         catch (Exception cannotAsk)
         {
-            // Nothing, and null stands - which every caller reads as a dismissal (GUI-C6): the paste
+            // Nothing, and null stands - which every caller reads as a dismissal: the paste
             // returns without moving the train, and the home door sets no home (OB-282).  The safe
             // answer to a question that could not be asked is to do nothing it would have decided.
         }

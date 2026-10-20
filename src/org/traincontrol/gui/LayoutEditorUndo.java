@@ -53,14 +53,14 @@ final class LayoutEditorUndo
 
         autonomy.restorePage(this.editor.layout.getName(), captions);
 
-        // AND NOTHING OUTSIDE THE PAGE (RC-B1).
+        // AND NOTHING OUTSIDE THE PAGE.
         //
         // A snapshot taken before a shrink holds captions on the row and column the shrink then
         // removed, and an undo does not give those back - the page SIZE is not part of an undo entry,
         // and a shrink is only allowed when that edge holds no track, so no component pins it back
         // either. Restored blind, the name returns to a square that no longer exists: present, never
-        // drawn, and with nowhere to click to remove it. That is exactly the state LE-B1 was raised
-        // for, reached through undo instead of through the shrink.
+        // drawn, and with nowhere to click to remove it. That is exactly the state the cleanup exists
+        // to prevent, reached through undo instead of through the shrink.
         //
         // A caption outside the page is never valid, whatever put it there, so it is enforced here
         // rather than by teaching undo about page size - which would change what an undo entry is, on
@@ -71,7 +71,7 @@ final class LayoutEditorUndo
         // rememberAutonomy.  An undo that only reached memory would be forgotten by the reset that
         // follows the next edit, and the thing it undid would come back.
         //
-        // AND THE ANSWER IS READ, as its sibling reads it (ACC-C6).  This discarded the boolean, so a
+        // AND THE ANSWER IS READ, as its sibling reads it.  This discarded the boolean, so a
         // write that failed at exactly this moment left the undo not sticking and said nothing - and
         // disk is authoritative after the session rebuild, so what comes back is the thing that was
         // undone.  `rememberAutonomy` has logged this since it was written; this door did not.
@@ -82,7 +82,7 @@ final class LayoutEditorUndo
     }
 
     /**
-     * Drops any caption whose square is off the page (RC-B1).
+     * Drops any caption whose square is off the page.
      *
      * Reuses the sweep the shrink itself does, widened from the edge to everything beyond it: after a
      * shrink and an undo, a caption can sit anywhere outside the current bounds, not only on the row
@@ -165,10 +165,10 @@ final class LayoutEditorUndo
      */
     void snapshotLayout()
     {
-        // A PENDING CUT IS NO LONGER STOOD DOWN HERE (RC-A1, replacing LE-A6).
+        // A PENDING CUT IS NO LONGER STOOD DOWN HERE.
         //
-        // clipboardWasCut asserts that the squares the clipboard came from are EMPTY, and LE-A6
-        // asserted that invariant in this method because every edit that can change the diagram
+        // clipboardWasCut asserts that the squares the clipboard came from are EMPTY, and it used to be
+        // asserted in this method because every edit that can change the diagram
         // snapshots first - so no door that could falsify it had to be listed.
         //
         // That was true and far too wide.  The claim is about EACH square, and standing the whole
@@ -206,14 +206,14 @@ final class LayoutEditorUndo
      */
     void undo()
     {
-        // A CUT THAT HAS BEEN UNDONE IS NO LONGER A MOVE (LE-A3), and cutMoves is where that is
-        // settled now (RC-A1).
+        // A CUT THAT HAS BEEN UNDONE IS NO LONGER A MOVE, and cutMoves is where that is
+        // settled now.
         //
         // clipboardWasCut means "the squares these tiles came from are empty now, so the setup should
         // follow the paste", and stepping through history can make that false: cut, Ctrl+Z - the track
         // and its setup come back - then paste, and the paste would move the setup off the restored
         // originals onto the copy, stripping squares that still visibly hold track.  Worse than the
-        // defect LE-A1 fixed, where the setup was at least orphaned on squares that really were empty.
+        // old defect, where the setup was at least orphaned on squares that really were empty.
         //
         // Standing the flag down here said that about every square on the clipboard.  cutMoves asks
         // each square whether it is still empty, so the ones this restored are skipped and the ones it
@@ -281,14 +281,14 @@ final class LayoutEditorUndo
      */
     void redo()
     {
-        // A CUT THAT HAS BEEN UNDONE IS NO LONGER A MOVE (LE-A3), and cutMoves is where that is
-        // settled now (RC-A1).
+        // A CUT THAT HAS BEEN UNDONE IS NO LONGER A MOVE, and cutMoves is where that is
+        // settled now.
         //
         // clipboardWasCut means "the squares these tiles came from are empty now, so the setup should
         // follow the paste", and stepping through history can make that false: cut, Ctrl+Z - the track
         // and its setup come back - then paste, and the paste would move the setup off the restored
         // originals onto the copy, stripping squares that still visibly hold track.  Worse than the
-        // defect LE-A1 fixed, where the setup was at least orphaned on squares that really were empty.
+        // old defect, where the setup was at least orphaned on squares that really were empty.
         //
         // Standing the flag down here said that about every square on the clipboard.  cutMoves asks
         // each square whether it is still empty, so the ones this restored are skipped and the ones it

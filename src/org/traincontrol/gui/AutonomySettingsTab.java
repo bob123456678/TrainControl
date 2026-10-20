@@ -401,7 +401,7 @@ final class AutonomySettingsTab
         {
             this.ui.migrateStoredPathPreference(this.ui.getModel().getAutoLayout());
 
-            // The same restore the refusal uses (RC-B11): the helper holds the flag, so the listener does not run here at all, where a copy of the
+            // The same restore the refusal uses: the helper holds the flag, so the listener does not run here at all, where a copy of the
             // loop relied on the listener returning early when nothing had changed (the same rule in two places).
             this.ui.restoreRoutingLogicSelection();
         }        

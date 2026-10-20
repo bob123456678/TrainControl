@@ -160,7 +160,7 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
                 int at = Integer.parseInt(addr) - 1;
 
                 // A link to nothing shows as such, rather than leaving the combo on whatever happened to
-                // be first (FV3-C8).
+                // be first.
                 if (at >= 0 && at < all.size()) this.addressSelector.setSelectedItem(all.get(at));
                 else this.addressSelector.setSelectedItem(NO_PAGE);
             }
@@ -218,9 +218,9 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
 
                 // "No page" is zero, which is what getLogicalAddress reports for a link holding -1; the
                 // caller turns it back into -1 rather than pushing it through setLogicalAddress, which
-                // refuses a negative (FV3-C8).
+                // refuses a negative.
                 //
-                // BY REFERENCE, which is what the constant's own comment always claimed (T10-C5).
+                // BY REFERENCE, which is what the constant's own comment always claimed.
                 // `NO_PAGE.equals(chosen.toString())` is value equality, so a page named exactly the
                 // localised label read as "(none)" and had its arrow set to -1. The entry the combo
                 // holds IS the constant - `pagesThatCanBeLinkedTo` puts that very object in - so this
@@ -248,7 +248,7 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
     {
         List<String> out = new java.util.ArrayList<>();
 
-        // "NO PAGE" FIRST, AND IT IS A REAL CHOICE (FV3-C8).
+        // "NO PAGE" FIRST, AND IT IS A REAL CHOICE.
         //
         // An arrow whose page was deleted carries -1 - Adam's ruling, so that it resolves to nothing and
         // the operator re-aims it when they next edit the square.  Without an entry for that, opening
@@ -274,7 +274,7 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
      *
      * Compared BY REFERENCE where it is read, so a page cannot collide with it by being called
      * "(none)" - the combo is given this very object, and no page name can be it. The comparison was
-     * `equals` for a while under this same sentence (T10-C5), which is the shape of comment that hides
+     * `equals` for a while under this same sentence, which is the shape of comment that hides
      * a defect rather than explaining one: it described the design and not the code.
      */
     private static final String NO_PAGE = I18n.t("autosetup.ui.labelNone");

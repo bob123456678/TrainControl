@@ -32,7 +32,7 @@ final class RouteListPanel
      */
     void executeRoute(String route)
     {
-        // The same answer at all three doors (SVN-B7, corrected by V31-B2).  Not protection against two threads throwing one route's
+        // The same answer at all three doors.  Not protection against two threads throwing one route's
         // accessories at once: `Route.setExecuting()` is a synchronized re-entrancy guard on the model's own funnel, so a second attempt has
         // always returned immediately.  What it IS: the play button greys itself while `routesExecuting` holds the name, and the other two
         // doors (the row click with its confirmation, and the right-click menu) did not ask, so the same gesture was refused at one door and
@@ -81,7 +81,7 @@ final class RouteListPanel
                         return;
                     }
 
-                    // Said out loud, as the midway door says it (DIR-C2): MT-247 made the two doors agree that a cancel ends the route, but this one
+                    // Said out loud, as the midway door says it: MT-247 made the two doors agree that a cancel ends the route, but this one
                     // returned in silence while the midway one logs two lines; the operator confirmed a dialog and is owed a reason why nothing
                     // happened.  The two cancels are not the same size: a REFUSED here happens BEFORE the route starts, so not one command goes out,
                     // whereas the midway question is answered from inside `MarklinRoute.execRoute`'s command loop, so every earlier command has gone
@@ -112,7 +112,7 @@ final class RouteListPanel
      * The three ways out of executeRoute's thread, wrapped so all of them are timed.  Left as a wrapper rather than a try/finally
      * around the body because the body returns early twice (an overridden conflict and a refused one), and a measurement that misses
      * those two measures the happy path only.  It puts the button back on the last line of the finally, through
-     * `releaseTheRoutePlayButton`, which holds the grey for a minimum time first (V34-C4).
+     * `releaseTheRoutePlayButton`, which holds the grey for a minimum time first.
      *
      * @param route the route's name
      * @param work what to run
@@ -127,7 +127,7 @@ final class RouteListPanel
         }
         finally
         {
-            // What this measures is the dialog and the spawn, not the route (V34-C4): `work.run()` ends at `model.execRoute(route)`, which
+            // What this measures is the dialog and the spawn, not the route: `work.run()` ends at `model.execRoute(route)`, which
             // starts a thread, so this returns milliseconds later whatever the route is still doing.  It answers "did the press get through and
             // how long did the asking take", not "how long did the route take".
             if (this.ui.getModel() != null && this.ui.getModel().isDebug())
@@ -149,7 +149,7 @@ final class RouteListPanel
         {  
             Route asked = routeName == null ? null : this.ui.getModel().getRoute(routeName);
 
-            // LOOKED UP ONCE (FXV-B4).  This tested one lookup and then dereferenced a second, so a
+            // LOOKED UP ONCE.  This tested one lookup and then dereferenced a second, so a
             // route deleted between the two threw on a worker with nothing to catch it.
             if (asked != null)
             {
@@ -255,7 +255,7 @@ final class RouteListPanel
      */
     void BulkEnableOrDisable(boolean enable)
     {
-        // The question is asked on the event thread (VB-B1): a modal JOptionPane raised inside `new Thread(...)` (both callers had started a
+        // The question is asked on the event thread: a modal JOptionPane raised inside `new Thread(...)` (both callers had started a
         // thread of their own) pumps events from a thread Swing does not expect to, and can come up behind the window or not at all.  An
         // action handler already runs on the event thread.  The thread below stays for what it was really for - a write per route and one
         // station sync - and the two calls after it marshal themselves.
@@ -303,7 +303,7 @@ final class RouteListPanel
         if (isOverTheRoutePlayButton(evt))
         {
             // Disabled means disabled (MT-217): the button greys while its route runs, and a greyed button that still fires is a lie, and would
-            // start the same route twice.  Asked in executeRoute now (SVN-B7), not here: this was the only door that asked, and the two that do
+            // start the same route twice.  Asked in executeRoute now, not here: this was the only door that asked, and the two that do
             // not (the row click with its confirmation, and the right-click menu) reach the same method; one guard on the funnel is the
             // OB-057/OB-090 shape, where two copies, one per door, is how the other two came to be missing.
             executeRoute(route.getName());

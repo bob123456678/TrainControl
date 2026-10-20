@@ -429,7 +429,7 @@ public final class LayoutLabel extends JLabel
                                                 return;
                                         }
                                     }
-                                    // ASKED WHETHER OR NOT THE POWER WAS ON (V35-C2).  The power-off gesture is
+                                    // ASKED WHETHER OR NOT THE POWER WAS ON.  The power-off gesture is
                                     // exactly the one somebody makes after an emergency stop, with trains standing
                                     // where they stopped and autonomy still loaded, and "Turn power on and proceed"
                                     // must not clear protection at an occupied platform without the platform being
@@ -445,7 +445,7 @@ public final class LayoutLabel extends JLabel
                                     {
                                         Collection<Accessory> activeAccs = tcUI.getModel().getAutoLayout().getActiveAccs();
                                         
-                                        // AND THE PROTECTING-SIGNAL HALF (SVN-B16).
+                                        // AND THE PROTECTING-SIGNAL HALF.
                                         //
                                         // `getActiveAccs` walks the config commands of active edges, and a
                                         // platform's protecting signal is usually not one of them: it is driven by
@@ -455,8 +455,8 @@ public final class LayoutLabel extends JLabel
                                         // at.  Asked of the layout, where the rule lives, so this and
                                         // MarklinRoute.heldReason cannot drift apart.
                                         //
-                                        // ONLY THE GREEN DIRECTION, as the route door asks it (WK3-B1, DY3-B1,
-                                        // D3F-C4).  A protecting signal's only harmful command is the one that turns
+                                        // ONLY THE GREEN DIRECTION, as the route door asks it.
+                                        // A protecting signal's only harmful command is the one that turns
                                         // protection OFF; setting it RED is what the protection mechanism itself
                                         // would do, and refusing that would be "pure over-strictness" (see
                                         // MarklinRoute.heldReason).
@@ -466,14 +466,13 @@ public final class LayoutLabel extends JLabel
                                         // A signal or a lamp goes through `Accessory.doSwitch()`, which is
                                         // `isStraight() ? turn() : straight()`.  A THREE-WAY does not: `execSwitching`
                                         // drives its two accessories directly, in three cases.  The accounting is
-                                        // over all FOUR states rather than over the three branches (V34-C5): every
+                                        // over all FOUR states rather than over the three branches: every
                                         // drive commanded GREEN is either on an accessory whose `isStraight()` is
                                         // false or was green already, and the drives commanded RED, which happen in
                                         // two of the three branches, cannot clear protection, because red is the
                                         // direction protection itself commands.  So the tile's test has neither a
                                         // false negative nor a false positive on a three-way.  What is true is that
-                                        // the method named here is not the method that runs for the second limb
-                                        // (V32-C3).
+                                        // the method named here is not the method that runs for the second limb.
                                         boolean protecting =
                                             aboutToClearProtection(tcUI, c.getAccessory())
                                             || aboutToClearProtection(tcUI, c.getAccessory2());
@@ -583,7 +582,7 @@ public final class LayoutLabel extends JLabel
                                             }
                                         }
 
-                                        // The route conflict is asked HERE, not before the worker (LD-7).  Asked
+                                        // The route conflict is asked HERE, not before the worker.  Asked
                                         // above, between the power-off dialog that sets powerOnFirst and the worker
                                         // that consumes it, "turn the power on and proceed" would run the route into
                                         // a dead track with the power still off, silently, which is precisely the
@@ -626,7 +625,7 @@ public final class LayoutLabel extends JLabel
                                             return;
                                         }
 
-                                        // AND ASK AGAIN, HERE, WHERE THE COMMAND ACTUALLY GOES (V32-C5).
+                                        // AND ASK AGAIN, HERE, WHERE THE COMMAND ACTUALLY GOES.
                                         //
                                         // The question above was answered on the event thread; this runs later, on
                                         // the single switching thread, after a power-on that waits a further second,
@@ -953,7 +952,7 @@ public final class LayoutLabel extends JLabel
                             img
                         );
 
-                        // A FLASH THAT IS UP IS GIVEN UP WHENEVER THE PICTURE IS REPLACED (UIX-B2, SVB-B1).  The
+                        // A FLASH THAT IS UP IS GIVEN UP WHENEVER THE PICTURE IS REPLACED.  The
                         // flash's timer holds the icon it captured when it started, and setting it back later would
                         // draw the tile as it WAS: a switch in the position it was thrown out of, or a sensor drawn
                         // clear while a train stands on it.  What is drawn now is the truth, so the flash is dropped
@@ -974,11 +973,11 @@ public final class LayoutLabel extends JLabel
                         // Temporarily highlight changes when they happen from a route/CS/keyboard command
                         if (!edit && (this.component.isSignal() || this.component.isSwitch()) && hadIcon && (System.currentTimeMillis() - lastClicked) > CLICK_TIMEOUT)
                         {
-                            // THE ONE BEFORE IT IS STOPPED FIRST (VC2-C3; OB-333, OB-334).  Nulling the field would
+                            // THE ONE BEFORE IT IS STOPPED FIRST (OB-333, OB-334).  Nulling the field would
                             // say "no restore is armed" while the old timer was still counting down, and it would
                             // fire `setIcon(lastIcon)` over whatever was drawn by then: a three-way's second
                             // highlight, or a flash.  And FIRST, before this highlight's yellow goes on: ending a
-                            // highlight puts the plain picture back (UIX-B2), so ended after the yellow was laid it
+                            // highlight puts the plain picture back, so ended after the yellow was laid it
                             // would put the plain picture back over it, and a square changed twice inside the hold,
                             // which autonomy does, would show no yellow at all.
                             endAccessoryHighlight();
@@ -1003,15 +1002,15 @@ public final class LayoutLabel extends JLabel
 
                                     // COUNTED, so a test can see how many restores actually fired - which is
                                     // what distinguishes a superseded timer being stopped from being left to
-                                    // go off over the highlight that replaced it (VC2-C3).
+                                    // go off over the highlight that replaced it.
                                     accessoryRestores++;
                                 }
 
-                                // AND IT IS NO LONGER OUTSTANDING (SVB-C1): the field is what says whether a
+                                // AND IT IS NO LONGER OUTSTANDING: the field is what says whether a
                                 // restore is still armed, and a timer that has fired holds nothing.  Only if
                                 // it is still THIS timer: a three-way drives twice, so a second highlight can
                                 // have replaced it, and clearing the field then would say no restore is armed
-                                // while one is (VB2-C4).
+                                // while one is.
                                 if (accessoryHighlight == mine[0]) accessoryHighlight = null;
                             });
 
@@ -1118,7 +1117,7 @@ public final class LayoutLabel extends JLabel
         // The plain icon is captured ONCE and kept until the flash ends.  Capturing it on every call would let a
         // second flash arriving before the first had finished record the already-highlighted icon as the thing to
         // restore, and the tile would be put back yellow and stay that way.
-        // AND AN ACCESSORY HIGHLIGHT THAT IS UP IS ENDED FIRST (UIX-B2), so what this captures to put back is the
+        // AND AN ACCESSORY HIGHLIGHT THAT IS UP IS ENDED FIRST, so what this captures to put back is the
         // tile's own picture rather than a yellow-washed copy of it.
         endAccessoryHighlight();
 
@@ -1149,11 +1148,11 @@ public final class LayoutLabel extends JLabel
     private Icon flashRestore;
     private javax.swing.Timer flashTimer;
 
-    /** How many accessory highlights have put their picture back, for the test in VC2-C3. */
+    /** How many accessory highlights have put their picture back, for the test. */
     private int accessoryRestores;
 
     /**
-     * How many accessory highlights have ended by putting the tile's picture back (VC2-C3).
+     * How many accessory highlights have ended by putting the tile's picture back.
      *
      * @return the count since this label was made
      */
@@ -1162,7 +1161,7 @@ public final class LayoutLabel extends JLabel
         return accessoryRestores;
     }
 
-    /** The accessory highlight's own timer, so it can be ended rather than left to fire later (UIX-B2). */
+    /** The accessory highlight's own timer, so it can be ended rather than left to fire later. */
     private javax.swing.Timer accessoryHighlight;
 
     /**
@@ -1180,7 +1179,7 @@ public final class LayoutLabel extends JLabel
     }
 
     /**
-     * Whether an accessory highlight is outstanding on this tile (UIX-B2).
+     * Whether an accessory highlight is outstanding on this tile.
      *
      * @return true while the yellow wash of a state change will still be taken off by its own timer
      */
@@ -1190,7 +1189,7 @@ public final class LayoutLabel extends JLabel
     }
 
     /**
-     * Ends an accessory highlight at once, putting back the picture it was laid over (UIX-B2).
+     * Ends an accessory highlight at once, putting back the picture it was laid over.
      *
      * A no-op when none is up.  Public for the test that drives the two highlights against each other.
      */
@@ -1206,7 +1205,7 @@ public final class LayoutLabel extends JLabel
     }
 
     /**
-     * Gives up a flash without putting its picture back (UIX-B2), because something truer has just been drawn.
+     * Gives up a flash without putting its picture back, because something truer has just been drawn.
      */
     private void discardFlash()
     {
@@ -1302,7 +1301,7 @@ public final class LayoutLabel extends JLabel
 
         autonomyAnnotation = effective;
 
-        // AND THE TILES AROUND IT WHERE A TRAIN STANDS (RSA23-C1): the annotation can say where the icon goes, and the
+        // AND THE TILES AROUND IT WHERE A TRAIN STANDS: the annotation can say where the icon goes, and the
         // icon reaches past this tile - repainting it alone left the old icon's reach on the neighbours
         java.awt.Container around = getParent();
 
@@ -1435,7 +1434,7 @@ public final class LayoutLabel extends JLabel
             // `refused` is what drew the art at `BLOCKED_ALPHA` above, and the annotation lays a wash of its own
             // under its arrows, so on a square that has already been faded the two would compound.
             //
-            // THE REGION ALREADY FADED, not merely whether any of it was (PRW-C1).  On a double curve
+            // THE REGION ALREADY FADED, not merely whether any of it was.  On a double curve
             // `theRoadToFade` fades one road and leaves the other alone, so a tile-wide "yes" would make the
             // annotation skip the wash under BOTH roads' arrows.  The shape says which part is already faint; on
             // every other square it is the whole tile.
@@ -1463,7 +1462,7 @@ public final class LayoutLabel extends JLabel
             // running train's tail lies on the road it has just driven, which the run line draws as reached, so the
             // tail drawn first and under everything would be covered for the whole of the run.
             //
-            // ONLY WHERE A RUN LINE LIES (RSA66-C5): drawn over the whole of any square with an overlay, it would lie
+            // ONLY WHERE A RUN LINE LIES: drawn over the whole of any square with an overlay, it would lie
             // a second time over itself wherever no run line was under it (all of a standing train's own square, the
             // part of a run's first or last square the run does not reach) and come out a second, lighter orange.
             java.awt.Shape run = overlay == null ? null
@@ -2248,7 +2247,7 @@ public final class LayoutLabel extends JLabel
     }
 
     /**
-     * What this square's spill covers, in the diagram's coordinates, or null (RSA61-C2) - `TileAnnotation.spillShape`.
+     * What this square's spill covers, in the diagram's coordinates, or null - `TileAnnotation.spillShape`.
      *
      * @return the region, or null
      */
@@ -2276,7 +2275,7 @@ public final class LayoutLabel extends JLabel
 
     /**
      * The middle of the train's own road on this square, for its icon (MT-642): from the square's own ports - its track
-     * type and orientation - on a curve or a double curve (RSA23-C1), since the autonomy annotation knows the roads only
+     * type and orientation - on a curve or a double curve, since the autonomy annotation knows the roads only
      * while the restriction arrows are shown, and a station's first road otherwise; from the annotation anywhere else,
      * and where the square has no track of its own to ask.
      *
@@ -2377,13 +2376,13 @@ public final class LayoutLabel extends JLabel
     {
         if (accessory == null || tcUI == null || tcUI.getModel() == null) return false;
 
-        // ASKED ONCE, NOT BUILT (RLV12-C5): this is the switching thread, and Unload can clear the model between asking
+        // ASKED ONCE, NOT BUILT: this is the switching thread, and Unload can clear the model between asking
         // whether there is a railway and asking for it
         final org.traincontrol.automation.Layout running = tcUI.getModel().getAutoLayoutIfLoaded();
 
         if (running == null) return false;
 
-        // AND ONLY WHILE AUTONOMY IS RUNNING, which is what the other two doors ask (REL-A1).  The dialog that can
+        // AND ONLY WHILE AUTONOMY IS RUNNING, which is what the other two doors ask.  The dialog that can
         // authorise the click asks `hasAutoLayout() && isAutonomyRunning()`, so this must too.  With a configuration
         // loaded and autonomy idle (the ordinary state, since the active diagram loads at start-up and places
         // locomotives onto Points) no dialog could be shown, `warnedAboutProtection` would always be false, and the
@@ -2396,7 +2395,7 @@ public final class LayoutLabel extends JLabel
 
         // A tile TOGGLES, so the click is about to command green exactly when the accessory is not
         // straight now.  The rest of the question - and the reason the aspect is half of it - lives on
-        // `Layout.clearsProtection`, which the switch keyboard asks too (V31-C2).
+        // `Layout.clearsProtection`, which the switch keyboard asks too.
         return running.clearsProtection(accessory, !accessory.isStraight());
     }
 }

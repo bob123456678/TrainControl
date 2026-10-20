@@ -79,7 +79,7 @@ final class RouteRunningMarks
      *
      * The name is not taken out here: `check` takes out every route that is no longer executing, on the event thread.  A
      * route started again between this run's `stopExecuting` and this call is executing once more, and taking its name
-     * out would leave its mark drawn and still (RSA75-C2).
+     * out would leave its mark drawn and still.
      *
      * @param name the route's name
      */

@@ -21,8 +21,7 @@ final class LayoutEditorReshape
         this.editor = editor;
     }
 
-    // The four "shift the whole diagram" wrappers used to live here, then didn't, then did again
-    // (DOC-B2).
+    // The four "shift the whole diagram" wrappers used to live here, then didn't, then did again.
     //
     // Taken off the menu when multi-select arrived, on the reasoning that making room by dragging
     // what is in the way out of it can be seen before it happens. Restored below - see shiftUp's own
@@ -34,7 +33,7 @@ final class LayoutEditorReshape
 
 
     /**
-     * Whether shiftUp would do anything (LE-C1).
+     * Whether shiftUp would do anything.
      *
      * Public because the menu asks it before offering the item, and the method asks it before acting -
      * ONE predicate, asked in both places. Written out twice, the menu and the method drift, and the
@@ -51,7 +50,7 @@ final class LayoutEditorReshape
     }
 
     /**
-     * Whether the page has room to grow by this much (X8-C5).
+     * Whether the page has room to grow by this much.
      *
      * **The ceiling had three copies and two of the gestures that need it had none.**  It was written
      * out in `growEdges`, again in `addRowsAndColumns`, and a third time in the right-click menu that
@@ -60,11 +59,11 @@ final class LayoutEditorReshape
      * `addRowsAndColumns(1, 0)`, and neither it nor the model's own grower knows the limit exists.
      *
      * So at the ceiling the menu greyed one item with a tooltip explaining why, and offered another
-     * that did the same thing and worked.  `canShiftDown`'s javadoc cites LE-C1 - one submenu
-     * expressing one rule two ways - which is exactly this.
+     * that did the same thing and worked.  That was one submenu
+     * expressing one rule two ways.
      *
      * Public because the menu asks it before offering an item and the methods ask it before acting:
-     * ONE predicate, asked in both places, which is the arrangement LE-C1 put here.
+     * ONE predicate, asked in both places, which is the arrangement.
      *
      * @param rows how many rows the gesture would add
      * @param columns how many columns it would add
@@ -72,7 +71,7 @@ final class LayoutEditorReshape
      */
     boolean roomToGrow(int rows, int columns)
     {
-        // EACH DIMENSION ONLY WHERE THE GESTURE ADDS TO IT (X8V-C2).
+        // EACH DIMENSION ONLY WHERE THE GESTURE ADDS TO IT.
         //
         // Written as one conjunction over both, `roomToGrow(0, 1)` still asked `getSy() <= MAX_SIZE` -
         // so a page taller than the ceiling refused a COLUMN shift, which adds nothing to its height,
@@ -90,7 +89,7 @@ final class LayoutEditorReshape
     }
 
     /**
-     * Whether shiftLeft would do anything (LE-C1).
+     * Whether shiftLeft would do anything.
      *
      * Public because the menu asks it before offering the item, and the method asks it before acting -
      * ONE predicate, asked in both places. Written out twice, the menu and the method drift, and the
@@ -107,13 +106,13 @@ final class LayoutEditorReshape
     }
 
     /**
-     * Whether shiftDown would do anything (LE-C2).
+     * Whether shiftDown would do anything.
      *
      * The twin of canShiftUp, and it was missed when that one was written - so the same submenu
-     * expressed one rule two ways, which is the drift LE-C1 was about.
+     * expressed one rule two ways, which is drift.
      *
      * Asked by addShift alongside canShiftUp and canShiftLeft, and the answer goes straight to
-     * setEnabled - so this is live, not the dormant trap it was described as until RC-C11. It is
+     * setEnabled - so this is live, not dormant. It is
      * nearly always true, because opening the popup sets the hovered position, but "nearly always" is
      * not the same as "never asked".
      *
@@ -121,19 +120,19 @@ final class LayoutEditorReshape
      */
     boolean canShiftDown()
     {
-        // AND THE CEILING (X8-C5).  This grows the page by a row, and Increase Size beside it on the
+        // AND THE CEILING.  This grows the page by a row, and Increase Size beside it on the
         // same popup is greyed at the limit with a tooltip saying why.
         return this.editor.lastHoveredY >= 0 && roomToGrow(1, 0);
     }
 
     /**
-     * Whether shiftRight would do anything (LE-C2).
+     * Whether shiftRight would do anything.
      *
      * The twin of canShiftUp, and it was missed when that one was written - so the same submenu
-     * expressed one rule two ways, which is the drift LE-C1 was about.
+     * expressed one rule two ways, which is drift.
      *
      * Asked by addShift alongside canShiftUp and canShiftLeft, and the answer goes straight to
-     * setEnabled - so this is live, not the dormant trap it was described as until RC-C11. It is
+     * setEnabled - so this is live, not dormant. It is
      * nearly always true, because opening the popup sets the hovered position, but "nearly always" is
      * not the same as "never asked".
      *
@@ -141,7 +140,7 @@ final class LayoutEditorReshape
      */
     boolean canShiftRight()
     {
-        // AND THE CEILING (X8-C5), for the same reason as canShiftDown: this grows the page by a
+        // AND THE CEILING, for the same reason as canShiftDown: this grows the page by a
         // column.
         return this.editor.lastHoveredX >= 0 && roomToGrow(0, 1);
     }
@@ -166,7 +165,7 @@ final class LayoutEditorReshape
      * That sentence used to read the other way round: "the reason these do not appear in autonomy mode
      * is that shifting moves the track without moving those keys." It was true when it was written and
      * false eighteen lines later in the same method, and it was stated as established fact, which is
-     * the form a reader trusts without checking (TD-12).
+     * the form a reader trusts without checking.
      */
     void shiftUp()
     {
@@ -224,14 +223,14 @@ final class LayoutEditorReshape
     void shiftDown()
     {
         // No refusal here, unlike shiftUp and shiftLeft, and the reason is worth stating rather than
-        // being left to be worked out from a side effect two files away (TD-12).
+        // being left to be worked out from a side effect two files away.
         //
         // LayoutDiagram normalises an out-of-range start to the FIRST row or column in all four
         // directions, which is what made the destructive pair dangerous.  This pair calls
         // addRowsAndColumns BEFORE the range is checked, so the page has already grown by one and the
         // out-of-range start cannot be reached from a hover.  If that ever stops being true - if the
         // growth moves or becomes conditional - this needs shiftUp's guard, which costs nothing.
-        // GUARDED BEFORE THE SNAPSHOT (LE-B2).
+        // GUARDED BEFORE THE SNAPSHOT.
         //
         // Snapshotting first pushed an undo entry for an edit that never happened: with no hovered
         // square this method does nothing, but the entry clears the redo stack and makes the editor
@@ -326,14 +325,14 @@ final class LayoutEditorReshape
     void shiftRight()
     {
         // No refusal here, unlike shiftUp and shiftLeft, and the reason is worth stating rather than
-        // being left to be worked out from a side effect two files away (TD-12).
+        // being left to be worked out from a side effect two files away.
         //
         // LayoutDiagram normalises an out-of-range start to the FIRST row or column in all four
         // directions, which is what made the destructive pair dangerous.  This pair calls
         // addRowsAndColumns BEFORE the range is checked, so the page has already grown by one and the
         // out-of-range start cannot be reached from a hover.  If that ever stops being true - if the
         // growth moves or becomes conditional - this needs shiftUp's guard, which costs nothing.
-        // GUARDED BEFORE THE SNAPSHOT (LE-B2).
+        // GUARDED BEFORE THE SNAPSHOT.
         //
         // Snapshotting first pushed an undo entry for an edit that never happened: with no hovered
         // square this method does nothing, but the entry clears the redo stack and makes the editor
@@ -441,13 +440,13 @@ final class LayoutEditorReshape
      * FOR ADAM: the top row is deliberately not done. Say the word and it becomes a proper
      * shift-the-page operation with the store rewritten to match.
      *
-     * (DOC-A3: this block used to sit 280 lines away, above shiftUp, attached to nothing - Java
+     * (This block used to sit 280 lines away, above shiftUp, attached to nothing - Java
      * attaches only the last javadoc before a declaration, and a second block followed it before this
      * method ever got one. Moved here, onto the method it is actually about.)
      */
     void growEdges()
     {
-        if (!roomToGrow(1, 1))  // ONE PREDICATE (X8-C5)
+        if (!roomToGrow(1, 1))  // ONE PREDICATE
         {
             JOptionPane.showMessageDialog(this.editor, I18n.f("layout.ui.errorMaxSizeExceeded", LayoutEditor.MAX_SIZE));
 
@@ -478,7 +477,7 @@ final class LayoutEditorReshape
     }
 
     /**
-     * Drops any caption sitting on the row and column a shrink is about to remove (LE-B1).
+     * Drops any caption sitting on the row and column a shrink is about to remove.
      *
      * Called before trimEdges, while those squares still exist to be named.
      */
@@ -525,7 +524,7 @@ final class LayoutEditorReshape
 
         try
         {
-            // THE EDGE MAY HOLD A NAME EVEN WHEN IT HOLDS NO TRACK (LE-B1).
+            // THE EDGE MAY HOLD A NAME EVEN WHEN IT HOLDS NO TRACK.
             //
             // edgesAreEmpty looks at the grid, which is track. A station's caption is placed on a blank
             // square by preference - placeCaption looks for "an empty square next to it" - and the
@@ -557,11 +556,11 @@ final class LayoutEditorReshape
 
     void addRowsAndColumns(int rows, int cols)
     {
-        // ASKED ABOUT WHAT IS BEING ADDED (NSV-C3).  `roomToGrow(1, 1)` is the question "is there room
+        // ASKED ABOUT WHAT IS BEING ADDED.  `roomToGrow(1, 1)` is the question "is there room
         // for one more of each", which a call adding twenty rows can pass and then overflow.  It could
-        // not today - the one caller pads a blank page to 16 x 21 - and it is X8-C5's own "one
-        // predicate" rule asked about the wrong amount, in a method X8-C5 touched.
-        if (!roomToGrow(rows, cols))  // ONE PREDICATE (X8-C5)
+        // not today - the one caller pads a blank page to 16 x 21 - and it is the "one
+        // predicate" rule asked about the wrong amount.
+        if (!roomToGrow(rows, cols))  // ONE PREDICATE
         {
             JOptionPane.showMessageDialog(
                 this.editor,
