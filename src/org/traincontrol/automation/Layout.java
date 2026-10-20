@@ -8284,8 +8284,8 @@ public class Layout
      * needs.  That is what turns a sequential plan into as much parallelism as the layout allows,
      * without a scheduler - and it is why the order matters and must not be rearranged.
      *
-     * Capture is NOT touched here: nothing in this method reads or writes `timetableCapture`.  The moves are kept out of the
-     * timetable during the RUN by `addTimetableEntry`, which refuses while `timetableExecuting` is set (S14-C3).
+     * Capture is not touched here: addTimetableEntry keeps the moves out of the timetable while timetableExecuting is
+     * set.
      *
      * @return the plan, whether or not it could be loaded - check isPossible()
      */
@@ -8302,8 +8302,6 @@ public class Layout
                 new LinkedList<>(), new LinkedList<>());
         }
 
-        // Capture is left exactly as the operator set it: the moves are appended during the RUN, and addTimetableEntry
-        // excludes them for as long as timetableExecuting is set, which is the whole duration (S14-C3).
         List<TimetablePath> staged = new LinkedList<>();
 
         for (HomeStaging.Move move : plan.getMoves())
@@ -8317,15 +8315,13 @@ public class Layout
             staged.add(entry);
         }
 
-        // His own, for a fold to write while the plan occupies the timetable (RLV9-B1)
+        // The owner's own, for a fold to write while the plan occupies the timetable
         List<TimetablePath> owners = new ArrayList<>(this.timetable);
 
         this.setTimetable(staged);
 
-        // Must be after setTimetable, which clears it.  The plan is built on a model in which nothing is moving (see
-        // HomeStaging), so the moves are only safe run one at a time: executeTimetable normally dispatches an entry once the
-        // one before it has STARTED, and two overlapping staging moves can contend for an edge the planner never considered,
-        // the second retrying forever on a route it cannot abandon.
+        // After setTimetable, which clears it.  The plan assumes nothing else moves, so its moves run one at a time:
+        // overlapping, two could contend for an edge the planner never considered.
         this.timetableSequential = true;
 
         // And so is this
@@ -8337,11 +8333,8 @@ public class Layout
     }
         
     /**
-     * Says whether the timetable's entries must run one at a time.
-     *
-     * Public because setTimetable clears it and only the staging planner sets it.  Nothing in the application calls it now
-     * (`fromJSON` sets the field itself, and a fold no longer writes a plan, RLV9-B1); tests use it to state the flag by
-     * hand for a file written before that (RLV10-C4).
+     * Says whether the timetable's entries must run one at a time.  setTimetable clears it; the application no longer
+     * calls this, and tests use it to set the flag by hand.
      *
      * @param sequential true to wait for each entry to arrive before starting the next
      */
@@ -8351,12 +8344,10 @@ public class Layout
     }
 
     /**
-     * Whether the loaded timetable must run one train at a time.
+     * Whether the loaded timetable must run one train at a time: true only for a staging plan, built on a model in
+     * which nothing else moves.
      *
-     * True only for a staging plan: it is built on a model in which nothing is moving, so overlapping
-     * its moves can contend for an edge the planner never considered.
-     *
-     * @return
+     * @return true for one train at a time
      */
     public boolean isTimetableSequential()
     {
@@ -8455,8 +8446,8 @@ public class Layout
     {        
         l.setCallback(Layout.CB_ROUTE_START, (lc) -> 
         {
-            // Optionally skip turning on the functions.  ASKED, NOT BUILT (RLV11-C5): this runs on the train's own thread,
-            // after Unload as well, and asking for the railway built an empty one where there was none
+            // Optionally skip turning on the functions.  Asked, not built: this runs on the train's thread, after
+            // Unload too, and asking for the railway would build an empty one.
             Layout layout = lc.getModel().getAutoLayoutIfLoaded();
             
             if (layout != null && layout.isTurnOnFunctionsOnDeparture())
@@ -8481,7 +8472,7 @@ public class Layout
 
         l.setCallback(Layout.CB_ROUTE_END, (lc) ->
         {
-            // Optionally disable the arrival functions.  Asked, not built, as above (RLV11-C5)
+            // Optionally disable the arrival functions.  Asked, not built, as above
             Layout layout = lc.getModel().getAutoLayoutIfLoaded();
             
             if (layout != null && layout.isTurnOffFunctionsOnArrival())
@@ -8507,13 +8498,9 @@ public class Layout
     }
 
     /**
-     * The same, with each train under way written on the one point it is kept at (RLV8-B1): `getLastPointsReached`'s.
+     * The same, with each train under way written on the one point it is kept at (getLastPointsReached), since a
+     * locked path holds every point on it and a configuration refuses a train in several places.  Synchronized.
      *
-     * A locked path holds every point on it for its train, so written point by point a train under way stands in several
-     * places, which a configuration refuses.  A fold of a railway holding a path writes it on the kept point and no other
-     * point it holds; a kept point a released path no longer records it on is written with it while the railway still shows
-     * the train and the database has it, and a point another train only passes through gives way to the train kept there
-     * (RLV8-C4).
      * @param keptAt each train under way against the point it is kept at; empty for a railway at rest
      * @return the railway
      * @throws IllegalArgumentException from the JSON
@@ -8578,9 +8565,7 @@ public class Layout
             edgeJson.add(e.toJSON());
         }
         
-        // THE OWNER'S TIMETABLE, not a staging plan that borrows it (RLV9-B1): Return Home puts its plan in the
-        // timetable while it runs and hands the original back when it ends, and a fold in between (a reload confirmed
-        // during the run, or Unload) must not save the plan as the timetable.
+        // The owner's timetable, not a staging plan borrowing it: a fold during Return Home must not save the plan.
         List<TimetablePath> owners = this.timetableOnLoan;
 
         for (TimetablePath p : owners != null ? owners : this.timetable)
@@ -8611,9 +8596,8 @@ public class Layout
         jsonObj.put("maxLocInactiveSeconds", this.maxLocInactiveSeconds);
         jsonObj.put("timetable", timeTableJson);
 
-        // Written only when set, and not while a plan has the timetable on loan, since the owner's timetable is what is
-        // written then (RLV9-B1).  Without it a Return Home plan folded into a file would reload as an ordinary
-        // timetable, whose entries dispatch as the previous one STARTS rather than arrives (RLV10-C4).
+        // Written only when set and no plan has the timetable on loan, or a folded Return Home plan would reload as an
+        // ordinary timetable, dispatching each entry as the previous one starts.
         if (this.timetableSequential && owners == null)
         {
             jsonObj.put("timetableSequential", true);
@@ -8621,8 +8605,8 @@ public class Layout
         jsonObj.put("activateRoutes", this.isActivateRoutes());
         jsonObj.put("activateRouteIDs", new JSONArray(this.activateRouteIDs));
 
-        // THE TRAINS PAUSED (FR-117): every train the database has paused, by name and sorted, so the file is the same
-        // file when nothing has changed.  Written only while it names somebody.
+        // The trains paused (FR-117), by name and sorted so an unchanged file is the same file; only when there are
+        // any.
         List<String> paused = pausedNamesOf(this.control);
 
         if (!paused.isEmpty()) jsonObj.put(PAUSED_LOCOMOTIVES, new JSONArray(paused));
@@ -8642,8 +8626,7 @@ public class Layout
     public static final String PAUSED_LOCOMOTIVES = "pausedLocomotives";
 
     /**
-     * Every train the database has paused, by name and sorted (FR-117): the list `toJSON` writes under
-     * `PAUSED_LOCOMOTIVES`.  Nothing but `toJSON` calls it.
+     * Every train the database has paused, by name and sorted (FR-117): what toJSON writes under PAUSED_LOCOMOTIVES.
      *
      * @param control the model, or null for none
      * @return the names, possibly none
@@ -8697,11 +8680,11 @@ public class Layout
         // order, so a restriction routinely names a point further down it.  Resolved after the loop.
         java.util.Map<String, List<String>> blockersByPoint = new java.util.LinkedHashMap<>();
 
-        // AND THE ARRIVAL SIDES, applied only after the locomotives are placed (REG8-A1): `Point.setLocomotive` drops the
-        // arrival side whenever the occupant changes, so one applied while the points are created is lost.
+        // And the arrival sides, applied after the locomotives are placed: setLocomotive drops the side on every
+        // change.
         java.util.Map<String, String> arrivalSideByPoint = new java.util.LinkedHashMap<>();
 
-        // AND THE ROADS, held back for the same reason and applied in the same place (WK7-B1).
+        // And the roads, held back likewise.
         java.util.Map<String, Object> arrivalRoadByPoint = new java.util.LinkedHashMap<>();
 
         // Validate basic required data
@@ -8863,10 +8846,8 @@ public class Layout
             );
         }
 
-        // WHICH TRAINS ARE PAUSED (FR-117), and every train the database has is told yes or no: the pause lives on the
-        // locomotive, which outlives this railway, so a train paused under the last configuration and not under this
-        // one runs again.  A list that will not read pauses nobody.  The log names the paused trains, since an import,
-        // a start-up and a rebuild all load through here.
+        // Which trains are paused (FR-117), every train told yes or no: the pause lives on the locomotive, which
+        // outlives this railway.  Logged, since an import, a start-up and a rebuild all load through here.
         java.util.Set<String> pausedNames = new java.util.HashSet<>();
 
         JSONArray pausedList = o.optJSONArray(PAUSED_LOCOMOTIVES);
@@ -8920,7 +8901,7 @@ public class Layout
             }    
         }
            
-        // The trains placed on a copy that is no station, warned about once every copy is read (GUI4-C5).
+        // Trains placed on a copy that is no station, warned about once every copy is read.
         List<String[]> placedOffAStation = new ArrayList<>();
 
         // ONE LINE PER STATION (OB-362): the copies a square builds into, one per direction, all carry its maximum; say it
@@ -8998,8 +8979,8 @@ public class Layout
                     layout.getPoint(point.getString("name")).setBlock(point.optString("block", null));
                 }
 
-                // AND WHICH SQUARE OF THE DIAGRAM IT IS A COPY OF (RSA5-A1): what a rebuild carries a train by, since a
-                // rename can hand a Point's name to another square
+                // And which square of the diagram it is a copy of: what a rebuild carries a train by, as a rename can
+                // move a name.
                 if (point.has("square"))
                 {
                     layout.getPoint(point.getString("name")).setSquare(point.optString("square", null));
@@ -9046,8 +9027,8 @@ public class Layout
                     layout.getPoint(point.getString("name")).setEntrySignals(signals);
                 }
 
-                // WHERE THE TAIL IS, which facing cannot answer once a train has been turned.  Kept and applied after the
-                // locomotives are placed, not here (REG8-A1).
+                // Where the tail is, which facing cannot answer once a train has turned; applied after the trains are
+                // placed.
                 if (point.has("arrivedFrom"))
                 {
                     arrivalSideByPoint.put(point.getString("name"),
