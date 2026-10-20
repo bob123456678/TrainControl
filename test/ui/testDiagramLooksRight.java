@@ -3545,8 +3545,7 @@ public class testDiagramLooksRight
     }
 
     /**
-     * A square's address is drawn over the locomotive standing on it, not under it (FR-116; Adam, 2026-10-09: "Red
-     * address labels look good, but make sure they are rendered on top of the autonomy locomotive icons").
+     * A square's address is drawn over the locomotive standing on it, not under it (FR-116).
      *
      * The diagram's container paints its children and then every tile's train over them (OB-159), so an address,
      * being a child, was painted over by the icon.  Here an address lies across the middle of a square with a running
@@ -3644,9 +3643,7 @@ public class testDiagramLooksRight
     }
 
     /**
-     * The mark beside "No available paths" on the Auto tab is the dark grey of the window's side tabs' icons, not blue
-     * (Adam, 2026-10-09: "the (i) icon in no available paths should be dark grey, matching the color in the sidebar
-     * tabs").
+     * The mark beside "No available paths" on the Auto tab is the dark grey of the window's side tabs' icons, not blue.
      *
      * The card's own icon, read off the class that draws it, against the commonest colour of the side tabs' pictures.
      *
@@ -3705,9 +3702,7 @@ public class testDiagramLooksRight
     }
 
     /**
-     * A running train's destination is drawn in the orange the train's line shows on white, solid (Adam, 2026-10-09:
-     * "Make the yellow labels (trains on their way somewhere) have the same orange background color as occupied train
-     * tiles, just without the fading", then "Go with as the line actually looks on white").
+     * A running train's destination is drawn in the orange the train's line shows on white, solid.
      *
      * The colour against the train's see-through line laid on white - worked out here from the line's own colour and
      * see-through - and the pill painted on white: its commonest colour, the fill between the ring and the letters, is
@@ -3779,8 +3774,7 @@ public class testDiagramLooksRight
 
     /**
      * A repaint of a corner of the diagram paints the addresses in that corner and no others (RSA60-C1): the pass that
-     * draws the addresses over the trains took every one on the page, whatever was being repainted - with Show Addresses
-     * on, a hover's 3 x 3 repaint cost a pass over all 112 on Adam's main page.
+     * draws the addresses over the trains must take only those inside the clip, not every one on the page.
      *
      * Forty addresses across a diagram, a repaint clipped to the first one's corner: it is painted, by the ordinary pass
      * and the one over the trains, and nothing else is.
@@ -3834,9 +3828,8 @@ public class testDiagramLooksRight
 
     /**
      * A station on a curve spills onto the squares beside it on the diagram itself: drawn once every square is drawn,
-     * over squares that paint their own white (Adam, 2026-10-10: *"can we instead make the stations spill over onto
-     * adjacent tiles?"*).  Nine squares of 30 pixels in the diagram's own container, a station on an E-S curve in the
-     * middle: its blue reaches the squares to its right and below, which were painted after it.
+     * over squares that paint their own white.  Nine squares of 30 pixels in the diagram's own container, a station on
+     * an E-S curve in the middle: its blue reaches the squares to its right and below, which were painted after it.
      *
      * MUTATION: take the spill pass out of `LayoutGrid.newDiagramContainer`, and this fails.
      */
@@ -3991,12 +3984,11 @@ public class testDiagramLooksRight
 
     /**
      * A caption over the square a curve's station spills onto stays in front of the spill, as it is in front of the icon
-     * on the station's own square (RSA61-C2; OB-117, captions in front of the tiles) - and the arrows drawn again over the
-     * spill go no further than the spill, so a caption stays in front of them too.  The spill was drawn once every square
-     * was, over every caption: on Adam's main page the icon at 13,9 was paled by its own pill and then drawn bright over
-     * the pill below.  Nine squares in the diagram's own container, a station on an E-S curve in the middle, the square to
-     * its right a one-way road under an opaque yellow caption covering the whole square: none of the station's blue and
-     * none of the arrows' red or green shows on that square.
+     * on the station's own square (RSA61-C2; OB-117, captions in front of the tiles), and the arrows drawn again over the
+     * spill go no further than the spill, so a caption stays in front of them too.  Nine squares in the diagram's own
+     * container, a station on an E-S curve in the middle, the square to its right a one-way road under an opaque yellow
+     * caption covering the whole square: none of the station's blue and none of the arrows' red or green shows on that
+     * square.
      *
      * MUTATION: draw the spill over the captions again, or the arrows again over the whole square, and this fails.
      */
@@ -4121,11 +4113,11 @@ public class testDiagramLooksRight
     }
 
     /**
-     * And the whole of every kind of station's spill is under the captions, at both sizes (RSA62-C1): round 123 kept only
-     * the icon's OUTLINE behind them - the region was the outline's stroke, a ring - so at 60 pixels the body of a block
-     * or a terminus was still drawn in front of a caption over the square it reaches, 44 and 64 pixels of it.  Nine
-     * squares in the diagram's own container, a station on an E-S curve in the middle, opaque yellow captions over the
-     * whole of the squares to its right and below: none of the station's blue on either.
+     * And the whole of every kind of station's spill is under the captions, at both sizes (RSA62-C1), not only the
+     * icon's OUTLINE (a ring): at 60 pixels the body of a block or a terminus would otherwise be drawn in front of a
+     * caption over the square it reaches.  Nine squares in the diagram's own container, a station on an E-S curve in the
+     * middle, opaque yellow captions over the whole of the squares to its right and below: none of the station's blue on
+     * either.
      *
      * MUTATION: make the region the icon's outline alone again, and this fails at 60 pixels.
      */
@@ -4155,9 +4147,8 @@ public class testDiagramLooksRight
     }
 
     /**
-     * And its region is built once for a size, and quickly (RSA62-B1): it was built again on every paint, as an `Area` of
-     * a stroke of the icon's stroked outline, and on Adam's main page at 60 pixels two curve stations' took 0.36 s each -
-     * a repaint near them 0.7 s, the window stalled.  A named block on an N-E curve, as those two are: asked twice for its
+     * And its region is built once for a size, and quickly (RSA62-B1): building it again on every paint, as an `Area` of
+     * a stroke of the icon's stroked outline, stalls the window.  A named block on an N-E curve: asked twice for its
      * region, it answers the same region, built in well under a frame.
      *
      * MUTATION: build the region afresh on every call, and this fails.
@@ -4285,9 +4276,9 @@ public class testDiagramLooksRight
     }
 
     /**
-     * A curve's station spills onto the squares beside it at the middle of their edges, which is where their arrows are
-     * (Adam, 2026-10-10: *"make sure that the optional ingress/egress arrows remain visible, especially on curves"*).  The
-     * arrows of a square a spill reaches are drawn back over it.  Nine squares in the diagram's own container, a station
+     * A curve's station spills onto the squares beside it at the middle of their edges, which is where their arrows are,
+     * and the optional ingress/egress arrows must remain visible, especially on curves: the arrows of a square a spill
+     * reaches are drawn back over it.  Nine squares in the diagram's own container, a station
      * on an E-S curve in the middle, every kind - the may-turn and must-turn icons and a terminus are longer than the
      * curve's chord - and the square to its right a one-way road from W to E, or the square below from N to S, at 30 and
      * 60 pixels: that square's arrows have all their pixels with the station beside it as without.
@@ -4419,12 +4410,10 @@ public class testDiagramLooksRight
     }
 
     /**
-     * Writing of the user's own on the diagram has a white halo round its letters, as an address has, so it can be read
-     * where it lies over black track (Adam, 2026-10-10: *"Give regular text labels on the track diagram (.text) the same
-     * halo as address labels (possibly a smaller outline) so that labels are visible against black backgrounds like
-     * tracks."*).  A label as the grid builds one - black, the diagram's font at half the square - painted over black: with
-     * its halo it shows white round its letters, at 30 and 60 pixels; and the halo is thinner than an address's, as he
-     * allowed - no wider round the letters than a sixth of their size.
+     * Writing of the user's own on the diagram has a white halo round its letters, as an address has (a smaller outline),
+     * so it can be read where it lies over black track.  A label as the grid builds one - black, the diagram's font at
+     * half the square - painted over black: with its halo it shows white round its letters, at 30 and 60 pixels; and the
+     * halo is thinner than an address's: no wider round the letters than a sixth of their size.
      *
      * MUTATION: draw the label without its halo, and this fails.
      */
@@ -4488,10 +4477,9 @@ public class testDiagramLooksRight
 
     /**
      * The outline of a square a curve station's spill reaches is drawn over the spill, as its arrows are (RSA63-C4): the
-     * spill was drawn over the square's own paint and only the arrows and captions were drawn again, so its selection
-     * outline was broken where the station reached it.  Nine squares in the diagram's own container, a station on an E-S
-     * curve in the middle, the square to its right selected: all of its outline's orange with the station beside it as
-     * without.
+     * spill is drawn over the square's own paint, so its selection outline would be broken where the station reached it.
+     * Nine squares in the diagram's own container, a station on an E-S curve in the middle, the square to its right
+     * selected: all of its outline's orange with the station beside it as without.
      *
      * MUTATION: leave the outline out of what is drawn again over a spill, and this fails.
      */
@@ -4581,9 +4569,8 @@ public class testDiagramLooksRight
     }
 
     /**
-     * The Medium size is between Small and Large in the size list, 46 pixels a square (FR-122; Adam, 2026-10-11: *"Let's
-     * implement the 46px diagram.  I added mediumButton to the UI.  Finish internationalizing it, add the option and
-     * phrasing to SizeList"*): the list names Small, Medium and Large in that order, and they are 30, 46 and 60.
+     * The Medium size is between Small and Large in the size list, 46 pixels a square (FR-122): the list names Small,
+     * Medium and Large in that order, and they are 30, 46 and 60.
      *
      * MUTATION: give Medium Large's size, and this fails.
      *
@@ -4618,9 +4605,9 @@ public class testDiagramLooksRight
     }
 
     /**
-     * A square at the Medium size is drawn from the Large art scaled down (FR-122: *"Start with the cheap 60px
-     * scaling"*), its own picture 46 pixels across, cached apart from the Large one it comes from - a sensor, a switch,
-     * a curve and a signal.
+     * A square at the Medium size is drawn from the Large art scaled down (FR-122, the cheap 60px scaling), its own
+     * picture 46 pixels across, cached apart from the Large one it comes from; checked for a sensor, a switch, a curve
+     * and a signal.
      *
      * MUTATION: look for a 46 pixel icon set, or cache a Medium picture under its Large one's key, and this fails.
      *
@@ -4685,8 +4672,7 @@ public class testDiagramLooksRight
     }
 
     /**
-     * The Medium pop-up button opens the page in a window at the Medium size (FR-122; Adam's *"I added mediumButton to
-     * the UI"*): its squares 46 pixels across.
+     * The Medium pop-up button opens the page in a window at the Medium size (FR-122): its squares 46 pixels across.
      *
      * MUTATION: leave the button's handler empty again, and this fails.
      *
@@ -4757,8 +4743,7 @@ public class testDiagramLooksRight
     }
 
     /**
-     * A pop-up's title names the configuration that is loaded, beside the page, and follows it (FR-127; Adam: *"the current
-     * autonomy configuration name (not just the page name) in the autonomy/layout editor and layout popups. (if active)"*).
+     * A pop-up's title names the configuration that is loaded, beside the page, and follows it (FR-127).
      *
      * The window starts with the fixture's configuration loaded (the start-up resume).  A pop-up open while it is unloaded,
      * loaded, switched, renamed and unloaded is asked for its title after each, and a title with nothing loaded is today's.
