@@ -12,25 +12,31 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 
 /**
- * Comments in `src/` stay lean (CLAUDE.md, "Comments stay lean"): history in a comment and comment blocks over 15 lines
- * are counted, and neither count may go up.  A comment states the current rule and why; what the code used to do, which
+ * Comments stay lean (CLAUDE.md, "Comments stay lean"): history in a comment, comment blocks over 15 lines and review
+ * ids are counted, and no count may go up.  A comment states the current rule and why; what the code used to do, which
  * round found it and who said what on which date belong in the commit message and the tracker.
  *
- * Two ratchets, each a total plus a per-file breakdown, so a swap between files (one trimmed, another grown) fails and
+ * Three ratchets, each a total plus a per-file breakdown, so a swap between files (one trimmed, another grown) fails and
  * names both:
  * <ul>
  * <li>HISTORY: comment lines (in `//`, block and javadoc comments, never in a string literal or in code) carrying one of
  * the markers below.</li>
  * <li>LONG BLOCKS: a run of more than 15 consecutive `//` lines, or a non-javadoc block comment over 15 lines.  A
  * javadoc contract may be long.</li>
+ * <li>REVIEW IDS: an id of a review finding in a comment of `src/` or `test/` - a prefix from the first column of
+ * `docs/manual-tests/findings.tsv`, a dash, an optional capital letter and digits.  The store is read when the test runs,
+ * so a prefix added to it is guarded from that day.  OB, MT and FR are Adam's tracker ids, which comments may cite, and
+ * are not counted.  The generated regions are counted too.</li>
  * </ul>
- * Not counted: `test/`, the NetBeans generated regions (from a line holding `//GEN-BEGIN` to the one holding `//GEN-END`,
- * which includes the "Variables declaration - do not modify" block).
+ * Not counted by the first two: `test/`, the NetBeans generated regions (from a line holding `//GEN-BEGIN` to the one
+ * holding `//GEN-END`, which includes the "Variables declaration - do not modify" block).
  *
  * The history markers, each measured against the whole of `src/` and kept only where most of its matches were history:
  * <ul>
@@ -40,7 +46,7 @@ import org.testng.annotations.Test;
  * <li>"used to be", or "used to" after it, this, that, they, there, here, which, who, and, but, else: 119 lines, nearly
  * all "it used to do X".  A bare "used to" is NOT counted: "a socket used to send" and "is used to" state a role.</li>
  * <li>"Round N" / "round N" and "review round": 15 lines, all review or build rounds.</li>
- * <li>"found by" only before a reviewer, review, sweep, rendering, audit or an id such as RSA36 or OV2-C3: 6 lines, all
+ * <li>"found by" only before a reviewer, review, sweep, rendering, audit or a review id: 6 lines, all
  * how a bug was found.  A bare "found by" is not counted: "found by the square" states how a lookup works.</li>
  * </ul>
  * Dropped after measuring, because most matches state a live rule: "no longer" (182 lines, "a train no longer stands
@@ -52,6 +58,9 @@ import org.testng.annotations.Test;
 public class testCommentsStayLean
 {
     private static final int BLOCK_LINES = 15;
+
+    private static final String LEAN_ADVICE = "see CLAUDE.md, 'Comments stay lean': state the current rule, put history "
+        + "in the commit message.";
 
     private static final Pattern[] HISTORY_MARKERS = {
         Pattern.compile("20\\d\\d-\\d\\d-\\d\\d"),
@@ -65,7 +74,7 @@ public class testCommentsStayLean
     };
 
     /** Comment lines carrying a history marker, as they stand.  Lower it whenever some go; never raise it. */
-    private static final int HISTORY_ALLOWED = 337;
+    private static final int HISTORY_ALLOWED = 336;
 
     /** WHICH files carry them, so that a swap between files fails and names both.  Files at zero are not listed. */
     private static final String[] HISTORY_BY_FILE = {
@@ -115,7 +124,6 @@ public class testCommentsStayLean
         "src/org/traincontrol/gui/LayoutEditorReshape.java (1)",
         "src/org/traincontrol/gui/LayoutEditorRightclickMenu.java (3)",
         "src/org/traincontrol/gui/LayoutEditorSelection.java (4)",
-        "src/org/traincontrol/gui/LayoutFileActions.java (1)",
         "src/org/traincontrol/gui/LayoutLabel.java (1)",
         "src/org/traincontrol/gui/LoadingSpinner.java (7)",
         "src/org/traincontrol/gui/LocIconActions.java (1)",
@@ -180,15 +188,55 @@ public class testCommentsStayLean
         "src/org/traincontrol/marklin/file/CS2File.java (6)",
     };
 
+    /** The finding store: the part of a first-column ref before its dash is a prefix of review ids. */
+    private static final File FINDINGS = new File("docs/manual-tests/findings.tsv");
+
+    /** Adam's tracker ids, which comments may cite (CLAUDE.md); every other prefix in the store is a review id. */
+    private static final Set<String> TRACKER_PREFIXES = new HashSet<>(java.util.Arrays.asList("OB", "MT", "FR"));
+
+    /** Review ids in comments, as they stand.  Lower it whenever some go; never raise it. */
+    private static final int IDS_ALLOWED = 168;
+
+    /** WHICH files carry them, so that a swap between files fails and names both.  Files at zero are not listed. */
+    private static final String[] IDS_BY_FILE = {
+        "src/org/traincontrol/automation/Point.java (1)",
+        "src/org/traincontrol/automationui/AutonomySession.java (5)",
+        "src/org/traincontrol/gui/AutonomyBanner.java (1)",
+        "src/org/traincontrol/gui/LayoutEditor.java (100)",
+        "src/org/traincontrol/gui/ManualReversalPrompt.java (10)",
+        "src/org/traincontrol/gui/TrainControlUI.java (2)",
+        "test/core/testACompulsoryTurnIsNotAQuestion.java (2)",
+        "test/core/testAPastedTrainKeepsItsDirection.java (2)",
+        "test/core/testATrainCoversTheTrackBehindIt.java (1)",
+        "test/core/testATrainTooLongIsRefusedTheBerth.java (1)",
+        "test/core/testAdvancedRoutes.java (6)",
+        "test/core/testAutonomySimulationSanity.java (3)",
+        "test/core/testHomeStaging.java (2)",
+        "test/core/testInvalidInput.java (5)",
+        "test/core/testLayoutPickPath.java (1)",
+        "test/core/testLayoutRenameKeys.java (2)",
+        "test/core/testLocomotive.java (4)",
+        "test/core/testNonReversibleTrains.java (9)",
+        "test/core/testParseCS2Layout.java (1)",
+        "test/core/testParseCS3Loks.java (1)",
+        "test/core/testRoutes.java (1)",
+        "test/core/testTheAutoTierScopeMatchesTheRuntime.java (1)",
+        "test/regression/testARunSurvivesADiagramEdit.java (2)",
+        "test/regression/testEditorSurfaceRules.java (1)",
+        "test/regression/testPageIdsAreDurable.java (3)",
+        "test/ui/testDismissingTheReversalPromptKeepsTheDirection.java (1)",
+    };
+
     @Test
     public void testHistoryInCommentsOnlyGoesDown() throws Exception
     {
         Map<String, List<String>> found = new TreeMap<>();
 
-        scanSource(found, null);
+        scanSource(new String[]{"src"}, found, null, null);
 
         ratchet("lines of history in comments", found, HISTORY_ALLOWED, HISTORY_BY_FILE, "HISTORY_ALLOWED",
-            "HISTORY_BY_FILE", "a comment line with a date, 'used to', 'Round N' or 'found by <reviewer>' in it");
+            "HISTORY_BY_FILE", "a comment line with a date, 'used to', 'Round N' or 'found by <reviewer>' in it",
+            LEAN_ADVICE);
     }
 
     @Test
@@ -196,19 +244,30 @@ public class testCommentsStayLean
     {
         Map<String, List<String>> found = new TreeMap<>();
 
-        scanSource(null, found);
+        scanSource(new String[]{"src"}, null, found, null);
 
         ratchet("comment blocks over " + BLOCK_LINES + " lines", found, LONG_BLOCKS_ALLOWED, LONG_BLOCKS_BY_FILE,
             "LONG_BLOCKS_ALLOWED", "LONG_BLOCKS_BY_FILE", "a run of more than " + BLOCK_LINES
-            + " // lines or a non-javadoc block comment of more than " + BLOCK_LINES + " lines");
+            + " // lines or a non-javadoc block comment of more than " + BLOCK_LINES + " lines", LEAN_ADVICE);
+    }
+
+    @Test
+    public void testNoReviewIdsInComments() throws Exception
+    {
+        Map<String, List<String>> found = new TreeMap<>();
+
+        scanSource(new String[]{"src", "test"}, null, null, found);
+
+        ratchet("review ids in comments", found, IDS_ALLOWED, IDS_BY_FILE, "IDS_ALLOWED", "IDS_BY_FILE",
+            "a review-finding id in a comment", "Review ids stay out of comments: see CLAUDE.md.");
     }
 
     /**
-     * The counts against the pinned ones: a rise fails naming the offenders, a fall fails asking for the number to be
-     * lowered so that the gain is kept.
+     * The counts against the pinned ones: a rise fails naming the offenders and giving the advice, a fall fails asking
+     * for the number to be lowered so that the gain is kept.
      */
     private void ratchet(String what, Map<String, List<String>> found, int allowed, String[] pinnedList,
-        String totalName, String listName, String kind)
+        String totalName, String listName, String kind, String advice)
     {
         Map<String, Integer> pinned = new TreeMap<>();
 
@@ -268,28 +327,33 @@ public class testCommentsStayLean
         assertTrue(rose.isEmpty() && total <= allowed,
             what + ": there are now " + total + ", " + (total > allowed ? "up from " + allowed : "against " + allowed)
             + ", and these files rose: " + rose + ".  The new ones are " + kind + "; they are listed below with the "
-            + "file's other offenders (git diff shows which are yours)." + offenders + "\nsee CLAUDE.md, 'Comments "
-            + "stay lean': state the current rule, put history in the commit message.  Do not raise " + totalName + ".");
+            + "file's other offenders (git diff shows which are yours)." + offenders + "\n" + advice
+            + "  Do not raise " + totalName + ".");
 
         assertTrue(total == allowed && fell.isEmpty(),
             what + ": " + total + " remain, fewer than the " + allowed + " recorded.  Lower " + totalName + " to " + total
             + " so the improvement is kept, and in " + listName + ": " + fell);
     }
 
-    /** Fills either map (the other may be null) with `path:line: text` for each offender, per file. */
-    private void scanSource(Map<String, List<String>> history, Map<String, List<String>> longBlocks)
-        throws IOException
+    /** Fills the maps asked for (the others may be null) with `path:line: text` for each offender, per file. */
+    private void scanSource(String[] roots, Map<String, List<String>> history, Map<String, List<String>> longBlocks,
+        Map<String, List<String>> ids) throws IOException
     {
-        File src = new File("src");
-
-        assertTrue(src.isDirectory(), "cannot find " + src.getAbsolutePath()
-            + " - this test reads the source, so it has to run from the project root");
-
         List<File> files = new ArrayList<>();
 
-        collect(src, files);
+        for (String root : roots)
+        {
+            File dir = new File(root);
+
+            assertTrue(dir.isDirectory(), "cannot find " + dir.getAbsolutePath()
+                + " - this test reads the source, so it has to run from the project root");
+
+            collect(dir, files);
+        }
 
         Collections.sort(files);
+
+        Pattern idPattern = ids == null ? null : reviewIds();
 
         for (File file : files)
         {
@@ -301,7 +365,9 @@ public class testCommentsStayLean
 
             List<String> blocks = new ArrayList<>();
 
-            scanFile(path, source, historyLines, blocks);
+            Map<Integer, List<String>> idLines = new LinkedHashMap<>();
+
+            scanFile(path, source, historyLines, blocks, idPattern, idLines);
 
             if (history != null && !historyLines.isEmpty())
             {
@@ -316,15 +382,74 @@ public class testCommentsStayLean
             }
 
             if (longBlocks != null && !blocks.isEmpty()) longBlocks.put(path, blocks);
+
+            if (ids != null && !idLines.isEmpty())
+            {
+                List<String> lines = new ArrayList<>();
+
+                for (Map.Entry<Integer, List<String>> each : idLines.entrySet())
+                {
+                    for (String id : each.getValue()) lines.add(path + ":" + each.getKey() + ": " + id);
+                }
+
+                ids.put(path, lines);
+            }
+        }
+    }
+
+    /** Any prefix the finding store holds except Adam's tracker ones, a dash, an optional capital letter and digits. */
+    private Pattern reviewIds() throws IOException
+    {
+        assertTrue(FINDINGS.isFile(), FINDINGS + " is missing, so the review-id prefixes cannot be read - this test has "
+            + "to run from the project root");
+
+        Set<String> prefixes = new TreeSet<>();
+
+        for (String line : new String(Files.readAllBytes(FINDINGS.toPath()), StandardCharsets.UTF_8).split("\n"))
+        {
+            if (line.startsWith("#") || line.trim().isEmpty()) continue;
+
+            String ref = line.split("\t")[0].split(" @")[0];
+
+            int dash = ref.indexOf('-');
+
+            if (dash > 0 && !TRACKER_PREFIXES.contains(ref.substring(0, dash))) prefixes.add(ref.substring(0, dash));
+        }
+
+        assertTrue(prefixes.size() > 100, "only " + prefixes.size() + " prefixes were read from " + FINDINGS
+            + ", far fewer than it holds - its format has changed and review ids would go uncounted");
+
+        StringBuilder any = new StringBuilder();
+
+        for (String prefix : prefixes) any.append(any.length() == 0 ? "" : "|").append(Pattern.quote(prefix));
+
+        return Pattern.compile("(?<![A-Za-z0-9_-])(?:" + any + ")-[A-Z]?\\d+[a-z]?(?![A-Za-z0-9_])");
+    }
+
+    /** Records each review id on a comment line, by line number; a null pattern records nothing. */
+    private void noteIds(int line, String commentLine, Pattern idPattern, Map<Integer, List<String>> idLines)
+    {
+        if (idPattern == null) return;
+
+        Matcher match = idPattern.matcher(commentLine);
+
+        while (match.find())
+        {
+            List<String> here = idLines.get(line);
+
+            if (here == null) idLines.put(line, here = new ArrayList<>());
+
+            here.add(match.group());
         }
     }
 
     /**
-     * One file: the comment lines that carry a history marker (by line number) and the long blocks, leaving out the
-     * generated regions.  Comments are found the way javac finds them, so a `//` or a quote inside a string literal is
-     * never a comment.
+     * One file: the comment lines that carry a history marker (by line number), the long blocks (both leaving out the
+     * generated regions) and the review ids.  Comments are found the way javac finds them, so a `//` or a quote inside a
+     * string literal is never a comment.
      */
-    private void scanFile(String path, String source, Map<Integer, String> historyLines, List<String> blocks)
+    private void scanFile(String path, String source, Map<Integer, String> historyLines, List<String> blocks,
+        Pattern idPattern, Map<Integer, List<String>> idLines)
     {
         Set<Integer> generated = generatedLines(source);
 
@@ -363,6 +488,8 @@ public class testCommentsStayLean
 
                 noteHistory(path, line, source.substring(i, end), generated, historyLines);
 
+                noteIds(line, source.substring(i, end), idPattern, idLines);
+
                 if (!codeOnLine && !generated.contains(line)) fullLineComments.add(line);
 
                 i = end;
@@ -377,7 +504,12 @@ public class testCommentsStayLean
 
                 String[] parts = text.split("\n", -1);
 
-                for (int k = 0; k < parts.length; k++) noteHistory(path, line + k, parts[k], generated, historyLines);
+                for (int k = 0; k < parts.length; k++)
+                {
+                    noteHistory(path, line + k, parts[k], generated, historyLines);
+
+                    noteIds(line + k, parts[k], idPattern, idLines);
+                }
 
                 boolean javadoc = text.startsWith("/**") && !text.startsWith("/**/");
 

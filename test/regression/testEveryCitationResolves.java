@@ -16,21 +16,21 @@ import org.testng.annotations.Test;
 /**
  * Every review-finding id cited from the code leads somewhere.
  *
- * Adam's ruling on MON-C11, 2026-09-08: *"update our MT triage database to catalog each review item.
+ * Adam's ruling, 2026-09-08: *"update our MT triage database to catalog each review item.
  * Now, no reference will ever be stale or lost, but useless prose will go away."*
  *
  * The review folder had reached 143 documents and 1,252 findings, and the comments in this codebase
- * cite them constantly - `RGD-B2`, `MON-C6`, `DD-A7` - because that is how a comment says *why* rather
+ * cited them constantly, because that is how a comment says *why* rather
  * than *what*. The plan is to delete the prose once it has stopped earning its place. That is only safe
  * if every id a comment names still resolves to something, which is what this holds.
  *
  * **Forty-five do not, today**, and they are not scattered: they cluster into whole prefixes whose
- * declaring document is gone. `RC` has one that defines `A1-A5` and `B1-B5` and stops, so every
- * `RC-A6` upward is a dead end; `LE2` and `LD` have no declaring document in `docs/` at all. Those
+ * declaring document is gone. One has a document that defines its first few findings and stops, so every
+ * later one is a dead end; two others have no declaring document in `docs/` at all. Those
  * three are two thirds of the list.
  *
  * They are rolled at the foot of `docs/manual-tests/findings.tsv` - `ref` and four dashes, the citing
- * files being in the `dead_citation` table rather than in the mirror (VD12-R11) -
+ * files being in the `dead_citation` table rather than in the mirror -
  * so the citation leads somewhere even though the finding does not - and this holds the count at
  * forty-five.
  *
@@ -45,8 +45,8 @@ import org.testng.annotations.Test;
  * gone, or only that this file cannot see it.
  *
  * **It asks the catalogue, not the prose**, which is the whole point. An earlier version searched every
- * `.md` under `docs/` and passed if anything mentioned the id at all. Three of the ten above -
- * `LD-4`, `LD-9`, `SM31-108` - are named in a review paragraph that never filed them, so they passed.
+ * `.md` under `docs/` and passed if anything mentioned the id at all. Three of the ten above
+ * are named in a review paragraph that never filed them, so they passed.
  * Under a ruling whose second clause is *"useless prose will go away"*, that check goes vacuous at the
  * moment it matters: delete the paragraph and the citation still "resolves", to a file that is gone.
  *
@@ -102,7 +102,7 @@ public class testEveryCitationResolves
      * A ratchet, not a target: it may fall, and when it does this test says so and asks for the number
      * to come down with it.
      */
-    private static final int DEAD_CITATIONS = 42;
+    private static final int DEAD_CITATIONS = 20;
 
     /**
      * Every id cited from the code is defined in `docs/`, or is one of the known dead ones.
@@ -198,9 +198,9 @@ public class testEveryCitationResolves
     }
 
     /**
-     * No comment cites a LINE NUMBER (X8-C1).
+     * No comment cites a LINE NUMBER.
      *
-     * `CommandRow` states the rule and nothing enforced it: *"By method name, not by line (VD9-C12):
+     * `CommandRow` states the rule and nothing enforced it: *"By method name, not by line:
      * the first version of this paragraph cited `RouteEditorFrame:3415-3419`, which was already wrong
      * when it was copied here out of a review, and a stale line number in a javadoc outlives every
      * edit above it with nothing able to notice."*
@@ -278,20 +278,20 @@ public class testEveryCitationResolves
     /**
      * How many sub-lettered findings the catalogue held when the last review documents were deleted.
      *
-     * `DD-D7a`, a severity revision in a document deleted on 2026-09-08, and `WP-C19d`, a dead
+     * One is a severity revision in a document deleted on 2026-09-08, the other a dead
      * citation.  Both name documents that are gone, which is why the floor above could no longer be
      * "at least one row is resolvable".
      */
     private static final int SUBLETTERED = 2;
 
     /**
-     * No catalogued finding carries a sub-letter its document does not write (N8-B3, NSV-B1).
+     * No catalogued finding carries a sub-letter its document does not write.
      *
      * **A parser read a mutation table as findings.** `catalog-findings.py` accepted any table row whose
      * first cell looked like `A1a` as a finding of the document's declared prefix, and
      * `X8V-validation.md` opens with a Method table keyed exactly that way - so fifteen findings entered
      * the catalogue that the document never made, four of them at severity A against an A section that
-     * says "Nothing". The same rows outranked the real status table, so `X8V-C1` was catalogued as
+     * says "Nothing". The same rows outranked the real status table, so one finding was catalogued as
      * "2 of 2 red" where its own table said closed.
      *
      * **Why the guard is this narrow.** The obvious check - every catalogued ref must appear in its
@@ -305,7 +305,7 @@ public class testEveryCitationResolves
      * This reads the mirror rather than the database, for the reason the test above does: the mirror is
      * what is committed and greppable, and a Java test cannot run the generator.
      *
-     * **WHAT THIS STILL HOLDS, AND WHAT IT NO LONGER CAN (VD12-R17).**  With every review document
+     * **WHAT THIS STILL HOLDS, AND WHAT IT NO LONGER CAN.**  With every review document
      * deleted, `resolvable` is zero by design and the `document == null` skip below fires for every
      * row - so the `unwritten` assertion at the foot cannot fail, and the count ratchet is the live
      * half.  Both are kept: the ratchet catches the fault (a fresh crop of sub-lettered rows), and
@@ -534,7 +534,7 @@ public class testEveryCitationResolves
     }
 
     /**
-     * How many rows the mirror holds, counted rather than quoted (VD13-T7).
+     * How many rows the mirror holds, counted rather than quoted.
      *
      * The figure in the ratchet's message was typed in twice and was wrong both times: 3,353 was the
      * finding count BEFORE the dead citations were rolled in, and 3,398 was that stale number plus

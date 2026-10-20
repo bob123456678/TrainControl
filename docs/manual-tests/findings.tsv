@@ -5677,31 +5677,14 @@ X8V-D7	X8V-validation.md	Closed	it does	the lock restore lands on the route the 
 X8V-D8	X8V-validation.md	Closed	untested, and correct	`addBareKey`'s underscore filter is what stops `_type=_bareKeys` reaching the file, and nothing tests it
 X8V-D9	X8V-validation.md	Closed	all four true	the four comment-only findings say true things
 # DEAD - cited, no finding behind them
-FCR-B3	-	-	-	-
 IND-M1	-	-	-	-
 IND-M4	-	-	-	-
 INT-A1	-	-	-	-
 INT-A2	-	-	-	-
-LD-1	-	-	-	-
-LD-11	-	-	-	-
-LD-4	-	-	-	-
-LD-5	-	-	-	-
-LD-6	-	-	-	-
-LD-7	-	-	-	-
-LD-8	-	-	-	-
 LD-9	-	-	-	-
-LE2-A8	-	-	-	-
-LE2-B20	-	-	-	-
-LE2-B21	-	-	-	-
 LE2-B7	-	-	-	-
 LE2-B8	-	-	-	-
-LE2-C12	-	-	-	-
-LE2-C13	-	-	-	-
-LE2-C14	-	-	-	-
-LE2-C16	-	-	-	-
 NET-1	-	-	-	-
-RA-A1	-	-	-	-
-RC-A10	-	-	-	-
 RC-A11	-	-	-	-
 RC-A12	-	-	-	-
 RC-A6	-	-	-	-
@@ -5709,13 +5692,8 @@ RC-A8	-	-	-	-
 RC-A9	-	-	-	-
 RC-B10	-	-	-	-
 RC-B11	-	-	-	-
-RC-B6	-	-	-	-
 RC-B8	-	-	-	-
-RC-B9	-	-	-	-
 SM31-108	-	-	-	-
-VAL-D4	-	-	-	-
-VAL9-B3	-	-	-	-
 VAL9-B4	-	-	-	-
 VAL9-B5	-	-	-	-
-WP-C19	-	-	-	-
 WP-C19d	-	-	-	-
