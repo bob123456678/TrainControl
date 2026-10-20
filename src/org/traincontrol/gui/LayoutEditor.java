@@ -5509,15 +5509,10 @@ public class LayoutEditor extends PositionAwareJFrame
         // Handle key shortcuts
         javax.swing.SwingUtilities.invokeLater(() ->
         {
-            // The shortcuts that belong to autonomy mode too, handled BEFORE the guard that turns the
-            // rest of them off (GC-B2).
-            //
-            // It was below the return, which made it unreachable in the only mode where it does
-            // anything - and toggleTrackLengths returns in the other mode, so the key did nothing at
-            // all, anywhere. Filed as fixed and would have come back as "does not work".
-            //
-            // The guard's own sentence says why this one is different: "Every shortcut below places,
-            // cuts, rotates or retextures a tile." This one shows and hides a number.
+            // The shortcuts that belong to autonomy mode too, handled BEFORE the guard that turns the rest of them off (GC-B2):
+            // below the return they would be unreachable in the only mode where they do anything.  The guard's own sentence says
+            // why this one is different: "Every shortcut below places, cuts, rotates or retextures a tile."  This one shows and
+            // hides a number.
             if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_G)
             {
                 toggleTrackLengths();
@@ -5525,17 +5520,9 @@ public class LayoutEditor extends PositionAwareJFrame
                 return;
             }
 
-            // Control+L and Control+D, for the same reason and by the same rule (MT-109).
-            //
-            // Adam: "Control+G works, but control +L does not in the autonomy editor." Of course it
-            // did not - it was below the guard, exactly where Control+G had been. Moving one key above
-            // a guard fixes the key somebody just tried and leaves its neighbours where they were, and
-            // these three are neighbours in every sense: all show or hide something ABOUT the diagram
-            // without changing it.
-            //
-            // Control+D was not reported. It is here because it is the third of the same three, and
-            // finding out later that the sweep stopped at the two that were mentioned is worse than
-            // the original bug.
+            // Control+L and Control+D, for the same reason and by the same rule (MT-109; Adam: "Control+G works, but control +L
+            // does not in the autonomy editor."): all three show or hide something ABOUT the diagram without changing it, so all
+            // three sit above the guard.
             if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_L)
             {
                 // IN THE AUTONOMY EDITOR, THE NEXT CAPTION OPTION (OB-272: *"make control+L cycle the options"*),
@@ -5555,20 +5542,11 @@ public class LayoutEditor extends PositionAwareJFrame
                 return;
             }
 
-            // Control+K draws and hides the grid, and with it the column and row numbers (OB-179).
-            //
-            // It was the coordinates' own key (FR-057) and they no longer have a setting to toggle:
-            // they are part of the grid now, so the key that showed them is the key that shows the
-            // grid.  KEPT RATHER THAN DELETED because it is not a duplicate of anything - the grid had
-            // no shortcut of its own, only the checkbox in the tools column - and because it does from
-            // the keyboard exactly what somebody pressing it for the numbers expects to see happen.
-            //
-            // With Control+G, Control+L and Control+D, above the guard, and by that guard's own rule:
-            // "Every shortcut below places, cuts, rotates or retextures a tile."  This one shows and
-            // hides scenery, which is what all four of these do.
-            //
-            // Both modes, because the coordinates are what warnings are written in and the track
-            // editor is where squares get moved to the coordinates a warning named.
+            // Control+K draws and hides the grid, and with it the column and row numbers (OB-179).  The numbers are part of the
+            // grid now, so the key that showed them (FR-057) is the key that shows the grid; the grid has no shortcut of its own
+            // besides the checkbox in the tools column.  With Control+G, Control+L and Control+D, above the guard, and by that
+            // guard's own rule: this shows and hides scenery.  Both modes, because the coordinates are what warnings are written
+            // in and the track editor is where squares get moved to the coordinates a warning named.
             if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_K)
             {
                 setShowGrid(!showGrid());
@@ -5576,15 +5554,11 @@ public class LayoutEditor extends PositionAwareJFrame
                 return;
             }
 
-            // Control+H sets the home locomotive of the square under the pointer (R28-C5).
-            //
-            // Adam: "set control+H for home."  The graph window had a key for this and the autonomy
-            // editor has only the menu item, which is the half of `R28-C5` that is a second door onto
-            // something already here - the same relationship Control+S has to Rename.
-            //
-            // Autonomy mode only, and it takes `autonomyHover` for the reason MT-258 item 4 records:
-            // the placement variables are deliberately not set in that mode, so asking them gets -1,-1
-            // and a key that fires and finds nothing.
+            // Control+H sets the home locomotive of the square under the pointer (R28-C5; Adam: "set control+H for home.").  The
+            // graph window had a key for this and the autonomy editor has only the menu item, so this is a second door onto
+            // something already here, the same relationship Control+S has to Rename.  Autonomy mode only, and it takes
+            // `hoveredSquare` for the reason MT-258 item 4 records: the placement variables are deliberately not set in that
+            // mode, so asking them gets -1,-1 and a key that fires and finds nothing.
             if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_H)
             {
                 org.traincontrol.automationui.TileGraph.TileKey over = hoveredSquare();
@@ -5594,28 +5568,17 @@ public class LayoutEditor extends PositionAwareJFrame
                 return;
             }
 
-            // Control+S names the square under the pointer (MT-257 item 4).
-            //
-            // Adam: "add the keyboard shortcut back to the autonomy editor, we already have the
-            // function in the right click menu there."  It was the graph window's Place Autonomy
-            // Station Label and went with the window; the ACTION survived as `Rename` on the autonomy
-            // editor's own right-click menu, so this is a second door onto something already here.
-            //
-            // Above the guard below, with the four keys that are already above it, and by that guard's
-            // own rule: "Every shortcut below places, cuts, rotates or retextures a tile."  Naming a
-            // square does none of the four.
-            //
-            // It needs a square, and takes the one the pointer is over - the same square the
-            // right-click menu would open on, so the key and the menu cannot disagree about which one
-            // is meant.
+            // Control+S names the square under the pointer (MT-257 item 4; Adam: "add the keyboard shortcut back to the autonomy
+            // editor, we already have the function in the right click menu there.").  The ACTION is `Rename` on the autonomy
+            // editor's right-click menu, so this is a second door onto something already here.  Above the guard below, by that
+            // guard's own rule: "Every shortcut below places, cuts, rotates or retextures a tile."  Naming a square does none of
+            // the four.  It takes the square the pointer is over, the same square the right-click menu would open on, so the key
+            // and the menu cannot disagree about which one is meant.
             if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_S)
             {
-                // `hoveredSquare`, NOT the placement variables (MT-258 item 4).
-                //
-                // The first version asked those, which autonomy mode deliberately never sets - so the
-                // key fired, found nothing, and did nothing, in the only mode where it means anything.
-                // It then read `autonomyHover` directly, which is OB-198: nothing clears that field,
-                // so a page change left it naming a square on the page before.
+                // `hoveredSquare`, NOT the placement variables (MT-258 item 4): autonomy mode deliberately never sets those, so the
+                // key would fire, find nothing, and do nothing, in the only mode where it means anything.  Nor `autonomyHover`
+                // directly, which is OB-198: nothing clears that field, so a page change left it naming a square on the page before.
                 org.traincontrol.automationui.TileGraph.TileKey over = hoveredSquare();
 
                 if (over != null && autonomyPanel != null) autonomyPanel.promptNameFor(over);
@@ -5623,28 +5586,14 @@ public class LayoutEditor extends PositionAwareJFrame
                 return;
             }
 
-            // Control+E measures the square under the pointer (FR-066).
-            //
-            // Adam asked for *"a keyboard shortcut for setting a square's length"* and picked the key
-            // himself once both handlers had been read for what was free: **"let's do E"**.  Control+D,
-            // which the ticket proposed, is taken twice - this editor toggles addresses with it and the
-            // main window opens the locomotive adder - and E is the e in "length".
-            //
-            // "FREE IN BOTH" WAS NOT TRUE WHEN THIS WAS WRITTEN, and is now (OB-197).  The main
-            // window's key chain ended in an arm that took every letter, Control held or not, so
-            // Control+E selected a locomotive button there; the reading that picked this key could not
-            // see it.  Adam, 2026-09-10: *"it should stop doing that.  that was not intended."*  The
-            // arm filters Control now, and `regression.testNoTwoShortcutsShareAKey` is what keeps it
-            // filtering.
-            //
-            // Above the guard below, with the other keys that are, and by that guard's own rule:
-            // "Every shortcut below places, cuts, rotates or retextures a tile."  Measuring a square
-            // does none of the four.
-            //
-            // `hoveredSquare` for the same reason Control+S takes it: the placement variables are
-            // deliberately not set in autonomy mode, so asking them gets -1,-1 and a key that fires
-            // and finds nothing (MT-258 item 4).  And it is the one door that refuses a label the page
-            // change left behind (OB-198).
+            // Control+E measures the square under the pointer (FR-066; Adam: *"a keyboard shortcut for setting a square's
+            // length"*, and for the key **"let's do E"**).  E is the e in "length"; Control+D is taken twice, by this editor's
+            // addresses toggle and the main window's locomotive adder.  The main window's key chain filters Control (OB-197), so
+            // Control+E selects no locomotive button there, and `regression.testNoTwoShortcutsShareAKey` keeps it filtering.
+            // Above the guard below, with the other keys that are, and by that guard's own rule: "Every shortcut below places,
+            // cuts, rotates or retextures a tile."  Measuring a square does none of the four.  `hoveredSquare` for the same
+            // reason Control+S takes it (MT-258 item 4), and it is the one door that refuses a label the page change left behind
+            // (OB-198).
             if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_E)
             {
                 org.traincontrol.automationui.TileGraph.TileKey over = hoveredSquare();
@@ -5654,12 +5603,10 @@ public class LayoutEditor extends PositionAwareJFrame
                 return;
             }
 
-            // Control+N shows a station's name on the square under the pointer (FR-086).
-            //
-            // Adam, on MT-397 (2026-09-15): *"let's add a hotkey for 'show station name here' too"*, and asked which key,
-            // **Control+N** - free here, and N for name.  Above the guard below with the other keys that are, by that
-            // guard's own rule: a caption places, cuts, rotates and retextures nothing.  The square under the pointer,
-            // as Control+S and Control+E take it.
+            // Control+N shows a station's name on the square under the pointer (FR-086; MT-397: *"let's add a hotkey for 'show
+            // station name here' too"*).  N for name, free here.  Above the guard below with the other keys that are, by that
+            // guard's own rule: a caption places, cuts, rotates and retextures nothing.  The square under the pointer, as
+            // Control+S and Control+E take it.
             if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_N)
             {
                 org.traincontrol.automationui.TileGraph.TileKey over = hoveredSquare();
@@ -5669,28 +5616,13 @@ public class LayoutEditor extends PositionAwareJFrame
                 return;
             }
 
-            // Control+B is the same door onto the STATION's own maximum (Adam, 2026-09-12).
-            //
-            // He asked for Control+M - *"is control+M taken in the autonomy editor?  If not, map it to
-            // the station maximum train length"* - and it is taken in the MAIN window, which toggles the
-            // menu bar with it.  Shift does not help either; that map never looks at it.
-            //
-            // It is NOT taken in this one, and this comment used to say it was (UIX-C2).  The main
-            // window's `KeyEventPostProcessor` is JVM-wide but returns at once unless the focus owner
-            // `isDescendingFrom` that window, and a top-level frame's parent is null - so Control+M
-            // pressed in this editor reaches nothing at all.  The choice below stands on its own; what
-            // is corrected is the reason given for it, in a file whose comments are the authority.
-            //
-            // `regression.testNoTwoShortcutsShareAKey` printed what was actually free in both windows -
-            // B J O P Q U W - and he chose **B**, for berth, which is the word this project already
-            // uses for the platform the maximum belongs to.
-            //
-            // Above the page-turning guard for the same reason Control+E is: setting a maximum neither
-            // places, cuts, rotates nor retextures a tile.
-            //
-            // `hoveredSquare` rather than the placement variables, again for Control+E's reason: those
-            // are deliberately not set in autonomy mode, so asking them gets -1,-1 and a key that fires
-            // and finds nothing.
+            // Control+B is the same door onto the STATION's own maximum.  Control+M was asked for and is taken in the MAIN
+            // window, which toggles the menu bar with it; it is NOT taken in this editor, since the main window's
+            // `KeyEventPostProcessor` returns at once unless the focus owner `isDescendingFrom` that window (UIX-C2), but the
+            // choice stands on its own.  `regression.testNoTwoShortcutsShareAKey` prints what is free in both windows (B J O P Q
+            // U W), and **B** is for berth, the word this project already uses for the platform the maximum belongs to.  Above
+            // the page-turning guard for the same reason Control+E is: setting a maximum neither places, cuts, rotates nor
+            // retextures a tile.  `hoveredSquare` rather than the placement variables, again for Control+E's reason.
             if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_B)
             {
                 org.traincontrol.automationui.TileGraph.TileKey over = hoveredSquare();
@@ -5703,17 +5635,11 @@ public class LayoutEditor extends PositionAwareJFrame
                 return;
             }
 
-            // Plus and minus walk through the pages, in BOTH editors (FR-036).
-            //
-            // Above the guard below, and for the reason its own sentence gives: moving to another page
-            // neither places, cuts, rotates nor retextures anything. Adam asked for it in "the
-            // layout/autonomy editor", and MT-109 is the ticket about keys that were filed as fixed
-            // while sitting below that line doing nothing at all.
-            //
-            // Four keycodes for two keys. The main row reports plus as VK_EQUALS unless shift is held,
-            // the numpad reports VK_ADD, and a keyboard laid out for another language may report either
-            // - so all of them are taken rather than making the shortcut depend on which key somebody
-            // reached for.
+            // Plus and minus walk through the pages, in BOTH editors (FR-036).  Above the guard below, for the reason its own
+            // sentence gives: moving to another page neither places, cuts, rotates nor retextures anything (MT-109 is the ticket
+            // about keys filed as fixed while sitting below that line doing nothing).  Four keycodes for two keys: the main row
+            // reports plus as VK_EQUALS unless shift is held, the numpad reports VK_ADD, and a keyboard laid out for another
+            // language may report either, so all of them are taken.
             if (!evt.isControlDown())
             {
                 int code = evt.getKeyCode();
@@ -5734,14 +5660,10 @@ public class LayoutEditor extends PositionAwareJFrame
                 }
             }
 
-            // ESCAPE SITS ABOVE THE GUARD, with Control+G, L, D and K, and for a reason of its own
-            // (FR-065, and the review's B5).
-            //
-            // Adam: "escape closes autonomy/track editor - same as closing via button, with warning
-            // shown as needed."  Below the guard it did nothing whatever in autonomy mode - the branch
-            // was never reached - and `AutonomyEditorPanel`'s own Escape binding could not cover for
-            // it, for the reason the paragraph below this guard spells out about key bindings in this
-            // window.
+            // ESCAPE SITS ABOVE THE GUARD, with Control+G, L, D and K (FR-065, and the review's B5; Adam: "escape closes
+            // autonomy/track editor - same as closing via button, with warning shown as needed.").  Below the guard it would do
+            // nothing in autonomy mode, and `AutonomyEditorPanel`'s own Escape binding cannot cover for it, for the reason the
+            // paragraph below this guard spells out about key bindings in this window.
             if (evt.getKeyCode() == KeyEvent.VK_ESCAPE)
             {
                 escapePressed();
@@ -5753,17 +5675,11 @@ public class LayoutEditor extends PositionAwareJFrame
             // anything while setting autonomy up, and all of them would edit the diagram silently.
             if (isAutonomyMode()) return;
 
-            // The selection shortcuts live HERE, in the handler that actually runs.
-            //
-            // They were first written as key bindings on the root pane's WHEN_IN_FOCUSED_WINDOW map,
-            // which in this window is dead: every control is setFocusable(false) and tiles are JLabels
-            // that never take focus, so the FRAME is the focus owner - and for a heavyweight focus
-            // owner the focus manager walks the parent chain, which for a top-level frame is empty.
-            // The bindings never fired at all, and Delete went on deleting whatever the mouse happened
-            // to be over rather than what the user had picked.
-            //
-            // Selection first, then the single-tile behaviour, so nothing that worked before changes
-            // while nothing is picked.
+            // The selection shortcuts live HERE, in the handler that actually runs.  Key bindings on the root pane's
+            // WHEN_IN_FOCUSED_WINDOW map are dead in this window: every control is setFocusable(false) and tiles are JLabels that
+            // never take focus, so the FRAME is the focus owner, and for a heavyweight focus owner the focus manager walks the
+            // parent chain, which for a top-level frame is empty.  Selection first, then the single-tile behaviour, so nothing
+            // that worked before changes while nothing is picked.
             if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_V)
             {
                 if (this.hasGroupClipboard() && getLastHoveredLabel() != null)
@@ -5777,10 +5693,8 @@ public class LayoutEditor extends PositionAwareJFrame
             }
             else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_X)
             {
-                // The verb the selection was missing.  Copy, paste, rotate and delete were all there
-                // for a group and cut was not, so moving several squares to another page meant
-                // copying them, pasting them, and then going back to delete the originals by hand -
-                // three steps for one idea, with the third easy to forget.
+                // The verb the selection was missing: copy, paste, rotate and delete exist for a group, and without cut, moving
+                // several squares to another page means copying them, pasting them, and going back to delete the originals by hand.
                 if (!this.selection.isEmpty())
                 {
                     this.cutSelection();
@@ -5805,10 +5719,8 @@ public class LayoutEditor extends PositionAwareJFrame
             {
                 this.rotate(getLastHoveredLabel());
             }
-            // Shift+C and Shift+R pasted a whole column or row from the hovered tile to the edge
-            // of the diagram.  Both went with the menu items they belonged to: they are what
-            // selecting the squares you mean and dragging them replaces, and a mis-aimed one wrote
-            // over a whole row with undo as the only way back.
+            // There is no Shift+C or Shift+R (a whole column or row pasted from the hovered tile): selecting the squares you mean
+            // and dragging them replaces them, and a mis-aimed one wrote over a whole row with undo as the only way back.
             else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_T)
             {
                 this.editText(getLastHoveredLabel());
@@ -5819,8 +5731,7 @@ public class LayoutEditor extends PositionAwareJFrame
             }
             else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_I)
             {
-                // growEdges, the same thing the menu does.  This called addRowsAndColumns directly, so
-                // the keyboard and the menu grew the diagram DIFFERENTLY and only the menu one had a
+                // growEdges, the same thing the menu does, so the keyboard and the menu grow the diagram alike and both have the
                 // matching shrink.
                 this.growEdges();
             }
