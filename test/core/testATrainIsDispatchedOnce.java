@@ -3617,11 +3617,11 @@ public class testATrainIsDispatchedOnce
 
     /**
      * A sensor is held for the train whose route runs to it until the rail to it is given back, not just until its head
-     * has reached it (RSA3-C3; Adam, 2026-09-29, on RSA2-B1: *"it should be allowed once unlocked"*).
+     * has reached it (RSA3-C3; Adam, on RSA2-B1: *"it should be allowed once unlocked"*).
      *
-     * Between the head's arrival and the release, only the sensor's own reading kept a second train off the other place
-     * on it, and a gap between two axles reads clear: the second train was sent, and the first train's next axle ended
-     * its journey at once.  Non-atomic, the track unmeasured: the rail to the shared sensor is given back one sensor on,
+     * Between the head's arrival and the release, only the sensor's own reading would keep a second train off the other
+     * place on it, and a gap between two axles reads clear: the second train would be sent, and the first train's next
+     * axle would end its journey at once.  Non-atomic, the track unmeasured: the rail to the shared sensor is given back one sensor on,
      * which `testASensorAJourneyHasPassedIsFreeAgain` holds to.
      *
      * MUTATION: free the sensor when the head reaches it, and this fails.
@@ -3699,8 +3699,8 @@ public class testATrainIsDispatchedOnce
      * to finish throwing its switches.
      *
      * An arrival takes the journeys' lock and then the railway's monitor, which a dispatch holds for as long as it throws
-     * a route's switches; the Yes took the journeys' lock too, on the event thread, so the window froze and every train
-     * ran on for the length of the wait.  Held here: the journeys' lock taken by another thread, and the Yes asked.
+     * a route's switches; the Yes taking the journeys' lock too, on the event thread, would freeze the window and let every
+     * train run on for the length of the wait.  Held here: the journeys' lock taken by another thread, and the Yes asked.
      *
      * MUTATION: take the journeys' lock in the Yes again, and this fails.
      *
@@ -3932,9 +3932,9 @@ public class testATrainIsDispatchedOnce
      * A timetable entry the Yes found refusing leaves with its run (RSA3-C5): it does not wake into the next run and stop
      * it at its stuck limit, blaming the track.
      *
-     * The entry paused between refusals, counted by nothing, so the run read idle, its call returned and the next run
-     * began; the entry then woke into that run, could never be sent, and at its stuck limit stopped it.  Now an entry is
-     * counted while it lives, and a stop wakes it to leave.
+     * An entry is counted while it lives, and a stop wakes it to leave.  An entry paused between refusals that nothing
+     * counted would let the run read idle, its call return and the next run begin; the entry would then wake into that
+     * run, never be sent, and at its stuck limit stop it.
      *
      * MUTATION: let a stop not wake a pausing entry, or count it not at all, and this fails.
      *
@@ -4131,9 +4131,9 @@ public class testATrainIsDispatchedOnce
      * The tail rule sees a train handing over from claim to journey (RSA4-C3): the track behind its start, which its
      * body lies across, stays refused to a second train's route throughout.
      *
-     * Across the hand-over the walk found the train in neither map and anchored its tail at whichever reserved Point
-     * the railway's map gave first - the start is named so that another comes first - and the track behind the train's
-     * start was claimed by nobody.
+     * Across the hand-over the walk must not find the train in neither map and anchor its tail at whichever reserved
+     * Point the railway's map gives first (the start is named so that another comes first), which would leave the track
+     * behind the train's start claimed by nobody.
      *
      * MUTATION: read the journeys before the claims for the path a train holds, and this fails.
      *
