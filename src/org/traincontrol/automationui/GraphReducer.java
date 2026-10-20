@@ -1203,13 +1203,9 @@ public class GraphReducer
     /**
      * The length assigned to one tile.
      *
-     * The END of an edge is included in that edge's length, and the start is not.  A route is a chain
-     * of edges, so counting the tile a train ARRIVES on gives every tile along the way exactly once -
-     * and it is what makes a length set on a station count for anything.
-     *
-     * Without it the sum covered only the track strictly BETWEEN two sensors, and a user who set
-     * lengths on their platforms - which is where the length of a train matters, and the first place
-     * anybody would put them - saw every edge come out as zero.
+     * The END of an edge is included in that edge's length, and the start is not.  A route is a chain of edges, so
+     * counting the tile a train ARRIVES on gives every tile along the way exactly once, and it is what makes a length set
+     * on a station count for anything: the sum would otherwise cover only the track strictly BETWEEN two sensors.
      */
     private int lengthOf(TileKey tile)
     {
@@ -1219,11 +1215,10 @@ public class GraphReducer
     /**
      * Whether the berth-room walk stops at this tile: a switch, or a turnout declared permanently set.
      *
-     * **A PERMANENT TURNOUT IS STILL THE LAST SWITCH** (OB-233 / IND9X-A2, and Adam's ruling of
-     * 2026-09-22: *"Leave them as declared and warned - fix the berth walk"*).  Topologically it is not
-     * a choice - nothing can throw it, and every train over it takes the same road - but it is shared
-     * metal, and a train standing across it fouls the merge exactly as it would foul a throwable one.
-     * `behaviour.md` 5a's rule is about where the train comes to REST, not about what can be commanded.
+     * **A PERMANENT TURNOUT IS STILL THE LAST SWITCH** (OB-233 / IND9X-A2).  Topologically it is not a choice - nothing
+     * can throw it, and every train over it takes the same road - but it is shared metal, and a train standing across it
+     * fouls the merge exactly as it would foul a throwable one.  `behaviour.md` 5a's rule is about where the train comes
+     * to REST, not about what can be commanded.
      *
      * **It is `isSwitch()` plus the declared permanent types, and `isSwitch()` is left alone.**  That
      * method has seventeen call sites and four of them ask it in order to offer an accessory address
@@ -1248,10 +1243,9 @@ public class GraphReducer
     /**
      * The track between the last switch on this edge and the square it ends at, endpoint included.
      *
-     * Adam's ruling of 2026-09-02: the room a train needs is measured "between the switch and the
-     * station", not over the whole route - and *"for the switches, for simplicity, let's use any
-     * direction, that way we are guaranteed to be safe"*, so which way the path crosses the points
-     * does not enter into it.
+     * Adam's ruling: the room a train needs is measured "between the switch and the station", not over the whole route -
+     * and *"for the switches, for simplicity, let's use any direction, that way we are guaranteed to be safe"*, so which
+     * way the path crosses the points does not enter into it.
      *
      * The switch tile itself is NOT counted.  The whole point of the rule is that the train comes to
      * rest clear of the points; track the train would be standing on while fouling them is not room.
@@ -1266,7 +1260,7 @@ public class GraphReducer
      * @param end the square the edge arrives at, whose own length is part of the room
      * @return the measured room, or `Integer.MIN_VALUE` when this edge crosses no switch at all; `-1` when it crosses one
      *  and NOT ONE tile of the stretch is measured, which is the only case that is genuinely no information - and 0, not
-     *  `-1`, where every one was answered 0 on purpose, which is a room of no length (Adam, 2026-09-25)
+     *  `-1`, where every one was answered 0 on purpose, which is a room of no length
      */
     private int roomAfterTheLastSwitch(List<TileStep> path, TileKey end)
     {
@@ -1296,7 +1290,9 @@ public class GraphReducer
         int room = Math.max(0, atTheEnd);
 
         // AND WHETHER EVERY TILE IS KNOWN - a length, or a 0 answered on purpose.  A stretch answered 0 throughout is a
-        // room of 0, not no information (Adam, 2026-09-25: *"we can't possibly have positive lengths everywhere because the tracks just aren't that long.  We need to find a way to allow trains in atomic mode in as well if the total track lengths allow"*); the runtime's room walk reads it so.
+        // room of 0, not no information: the tracks may simply not be long enough for positive lengths everywhere, and
+        // trains in atomic mode must still be let in if the total track lengths allow.  The runtime's room walk reads it
+        // so.
         boolean known = atTheEnd > 0 || answeredAtZero(end);
 
         for (int i = path.size() - 1; i >= 0; i--)
@@ -1320,7 +1316,7 @@ public class GraphReducer
     }
 
     /**
-     * The squares in an edge's bounding stretch that nobody has measured (Adam's ruling 2, 2026-09-02).
+     * The squares in an edge's bounding stretch that nobody has measured.
      *
      * The mirror of `roomAfterTheLastSwitch`: that one adds the lengths up, this one names the tiles
      * that have none, so the editor can ask for exactly what the guard needs and no more.
@@ -1342,28 +1338,15 @@ public class GraphReducer
 
         if (edge == null) return out;
 
-        // AND IT STOPS ASKING ONCE THE STRETCH IS MEASURED AT ALL (Adam, MT-364, 2026-09-12).
+        // AND IT STOPS ASKING ONCE THE STRETCH IS MEASURED AT ALL (MT-364).
         //
-        // *"I set the track at 10,10 to length 2, so now we know that the track to TunnelLongPark is
-        // 2.  But it is still asking for the tile at 10,9 (TunnelLongPark) to get a length.  The
-        // calculation should add 10,10's length plus 10,9's length, both of which are past the switch
-        // at 10,8."*
+        // The notice must agree with the guard about what "measured" means: `roomAfterTheLastSwitch` answers a partly
+        // measured stretch with what it knows and binds on it, so a stretch the guard can already judge carries no notice
+        // asking for the rest of it (MT-305: a half-measured stretch makes the guard pessimistic rather than blind).
         //
-        // **The notice and the guard disagreed about what "measured" means.**  `roomAfterTheLastSwitch`
-        // just above has followed his ruling of 2026-09-06 since it was written - *"It is only
-        // indeterminate if the entire logical segment has length 0"* - so a partly measured stretch
-        // answers with what it knows and binds on it.  This walk went on naming every square with no
-        // number of its own, so a stretch the guard could already judge still carried a notice asking
-        // for the rest of it.
-        //
-        // The call site's own comment put that question to him on `MT-305`, saying the cost had
-        // *"changed shape"* - a half-measured stretch makes the guard pessimistic rather than blind -
-        // and that whether it still earned a place *"in a list Adam has called a wall is his call"*.
-        // This is the call.
-        //
-        // **A stretch with nothing measured still names every square**, which is the other half of the
-        // same ruling and the case this notice exists for: there the guard is blind, not pessimistic,
-        // and somebody clearing the list would otherwise be left with a guard that judges nothing.
+        // **A stretch with nothing measured still names every square**, which is the case this notice exists for: there
+        // the guard is blind, not pessimistic, and somebody clearing the list would otherwise be left with a guard that
+        // judges nothing.
         int measured = Math.max(0, authored.getTileLength(edge.getEnd()));
 
         if (measured <= 0) out.add(edge.getEnd());
@@ -1415,15 +1398,6 @@ public class GraphReducer
     // locks
 
     /**
-     * Two edges that share a tile are the same piece of railway and cannot run at once.
-     *
-     * The exceptions are the three tile types whose roads never meet - an overpass, where the two tracks are at
-     * different heights, and the two kinds of double curve, whose curves sit in opposite corners (AUR-B1, OP2-C3).  Crossing one by
-     * different routes is not a conflict, though crossing it by the same one still is.  Getting that
-     * backwards is costly either way - treating it as a conflict needlessly serialises two independent
-     * routes, while treating a same-route share as safe would allow a real collision.
-     */
-    /**
      * Says so where a sensor lost its only way out to a switch it needed two ways.
      *
      * Only where NOTHING got out.  A fork refusing one of its legs is what a switch is for, and warning
@@ -1451,6 +1425,15 @@ public class GraphReducer
         }
     }
 
+    /**
+     * Two edges that share a tile are the same piece of railway and cannot run at once.
+     *
+     * The exceptions are the three tile types whose roads never meet - an overpass, where the two tracks are at
+     * different heights, and the two kinds of double curve, whose curves sit in opposite corners (AUR-B1, OP2-C3).
+     * Crossing one by different routes is not a conflict, though crossing it by the same one still is.  Getting that
+     * backwards is costly either way - treating it as a conflict needlessly serialises two independent routes, while
+     * treating a same-route share as safe would allow a real collision.
+     */
     private void deriveLocks()
     {
         // index every edge by the locations it occupies
@@ -1496,24 +1479,20 @@ public class GraphReducer
      * The location identifiers a step occupies.
      *
      * Normally the tile itself.  Three tile types are identified per route instead, so their roads are separate
-     * places - and so is a DOUBLE CURVE, and a feedback double curve, for the same reason (AUR-B1, 2026-09-19).
+     * places: an overpass, a DOUBLE CURVE and a feedback double curve (AUR-B1).
      *
      * **Two roads that never meet must not be one place.**  `TilePorts` gives a double curve `route(N, W)` and
-     * `route(E, S)`: two curves in opposite corners of the square, with no rail between them.  Keyed by the tile
-     * alone they became one location, so `deriveLocks` made the two curves rivals for the same track and a
-     * route over one refused a route over the other; once lengths are recorded, the tail walk and
-     * `whyABerthCannotHoldIt` then blamed the road the train is not on.  Adam has three of these on 1 - Main.
-     * A CROSSING is different and stays one place: its two roads cross, so a train on one really is on the
-     * other's metal.
+     * `route(E, S)`: two curves in opposite corners of the square, with no rail between them.  Keyed by the tile alone
+     * they would be one location, so `deriveLocks` would make the two curves rivals for the same track and a route over
+     * one would refuse a route over the other; once lengths are recorded, the tail walk and `whyABerthCannotHoldIt`
+     * would blame the road the train is not on.  A CROSSING is different and stays one place: its two roads cross, so a
+     * train on one really is on the other's metal.
      *
-     * A paired portal is NOT unioned with its partner here, although a tunnel and its far end are one
-     * piece of track drawn twice.  It does not need to be, and the reason is worth writing down because
-     * the next reader will otherwise assume the union is missing: a portal tile carries no feedback, so
-     * it is never a Point, so a walk that crosses the jump records BOTH tiles as steps - and the two
-     * edges then share the first tile's location key anyway.  Adding the union would be redundant
-     * rather than a correction.
-     *
-     * This comment used to describe the union as something the method did.  It never has.
+     * A paired portal is NOT unioned with its partner here, although a tunnel and its far end are one piece of track
+     * drawn twice.  It does not need to be, and the reason is worth writing down because the next reader will otherwise
+     * assume the union is missing: a portal tile carries no feedback, so it is never a Point, so a walk that crosses the
+     * jump records BOTH tiles as steps - and the two edges then share the first tile's location key anyway.  Adding the
+     * union would be redundant rather than a correction.
      */
     private List<String> locationsOf(TileStep step)
     {
@@ -1572,7 +1551,7 @@ public class GraphReducer
         }
 
         /**
-         * @return whether this place measures 0 because it was answered 0 on purpose (Adam, 2026-09-23)
+         * @return whether this place measures 0 because it was answered 0 on purpose
          */
         public boolean isAnswered()
         {
@@ -1599,18 +1578,13 @@ public class GraphReducer
     /**
      * The places an edge runs over, in order from its start, each with what it measures (OB-207).
      *
-     * **The reduction has always known this and never said it.** `locationsOf` gives every step a place
-     * id - the tile, or tile/route on an overpass - and `deriveLocks` builds the whole shared-metal
-     * relation by intersecting those sets between edges. What reached the runtime was only the RESULT,
-     * "edge A cannot run with edge B", so `Layout` could answer at whole-edge grain and no finer: a
-     * one-unit train lying in the FIRST tile of a twelve-tile run refused every path that shared any of
-     * the other eleven, and made a station on the far side unreachable from anywhere.
-     *
-     * Adam, 2026-09-12, proposing the fix as extra nodes: *"Wouldn't the best solution be to create /
-     * leverage additional edges, as there has to be a computed pre-reduction point where the switch
-     * is?"* There is, and this is it without the nodes - a Point in this model is a SENSOR, and an
-     * edge's identity is the pair of Point names, so splitting the graph at switches would rename every
-     * edge that crosses one and put a Point with no feedback in the middle of the clearance check.
+     * `locationsOf` gives every step a place id - the tile, or tile/route on an overpass - and `deriveLocks` builds the
+     * whole shared-metal relation by intersecting those sets between edges.  Handing the runtime only that RESULT
+     * ("edge A cannot run with edge B") would let `Layout` answer at whole-edge grain and no finer: a one-unit train
+     * lying in the FIRST tile of a twelve-tile run would refuse every path that shared any of the other eleven.  The
+     * places are not extra nodes: a Point in this model is a SENSOR, and an edge's identity is the pair of Point names,
+     * so splitting the graph at switches would rename every edge that crosses one and put a Point with no feedback in
+     * the middle of the clearance check.
      *
      * **The far endpoint is included and the near one is not**, which is exactly how an edge's length is
      * built a few lines up: `sumLength(path) + lengthOf(tile)`. So these lengths sum to `getLength()`,
