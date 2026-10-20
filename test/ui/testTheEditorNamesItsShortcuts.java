@@ -2988,9 +2988,13 @@ public class testTheEditorNamesItsShortcuts
             // CLOSED BY THE USER: the setting back
             closeAsTheUserDoes(a);
 
-            settleTheEditor();
-
-            assertTrue(ui.isAlwaysOnTop(), "after the editor closed, the main window is not put back on top as the"
+            // WAITED FOR, NOT SLEPT FOR (2026-10-19).  The restore is posted work: `dispose` asks the main window to apply the setting
+            // from `editorWindowClosed`, and the Window menu's handler applies it again from the posted `autonomyEditorClosed`.  A fixed
+            // settle is a guess about when a loaded event thread gets to it, and this claim failed once in a laned battery (it passed 29
+            // of 29 alone).  The condition that ends the wait is the thing being claimed, on the event thread that owns the flag, with a
+            // deadline long enough that only a restore that never comes fails it.  The two claims above are the opposite kind - the
+            // flag must STAY down - and cannot be waited for; they read it after the settle, as before.
+            assertTrue(alwaysOnTopWithin(true, 30000), "after the editor closed, the main window is not put back on top as the"
                 + " operator's setting asks");
         }
         finally
@@ -3752,6 +3756,32 @@ public class testTheEditorNamesItsShortcuts
         Thread.sleep(500);
 
         for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+    }
+
+    /**
+     * Whether the main window's always-on-top flag reaches the value asked for within a deadline, asked on the event thread.
+     *
+     * Polled rather than slept for: the flag is set by posted work, and how long that work waits depends on how busy the machine is.
+     *
+     * @param wanted the value the flag should have
+     * @param millis the longest to wait for it
+     * @return whether the flag had the value when last read
+     * @throws Exception from the event thread
+     */
+    private static boolean alwaysOnTopWithin(boolean wanted, long millis) throws Exception
+    {
+        final boolean[] now = new boolean[1];
+
+        long until = System.currentTimeMillis() + millis;
+
+        while (true)
+        {
+            SwingUtilities.invokeAndWait(() -> now[0] = ui.isAlwaysOnTop());
+
+            if (now[0] == wanted || System.currentTimeMillis() >= until) return now[0] == wanted;
+
+            Thread.sleep(50);
+        }
     }
 
     /** Closes a right-click menu as Swing tells the editor it has closed, and lets what that posts run. */
