@@ -30,12 +30,12 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 
 /**
- * The Autonomy menu's Import, driven as Adam drives it, on a sandbox copy of his railway with his own 2.7.4c file (Adam,
- * 2026-09-25: automated tests supersede the MTs they answer).
+ * The Autonomy menu's Import, driven as Adam drives it, on a sandbox copy of his railway with his own 2.7.4c file.
  *
- * The door is `AutonomyViewerPanel.importConfiguration` - the file chooser, the name prompt, the question about a configuration of that name and the
- * messages it shows - answered from a thread of its own, as he would answer them.  What each import then says, logs and
- * leaves in the setup is what MT-491, MT-501, MT-502, MT-582 and MT-298 ask him to read.
+ * The door is `AutonomyViewerPanel.importConfiguration` - the file chooser, the name prompt, the question about a
+ * configuration of that name and the messages it shows - answered from a thread of its own, as he would answer them.
+ * What each import then says, logs and leaves in the setup is what MT-491, MT-501, MT-502, MT-582 and MT-298 ask him to
+ * read.
  *
  * @author Adam
  */
@@ -49,7 +49,7 @@ public class testTheImportDoorReadsAnOldFile
      * An old autonomy.json imported from the menu into a new configuration: the message says it placed his four trains
      * (MT-491), the log says the 176 pieces of track it ran one way were left as the diagram has them and changes no
      * direction (MT-501), ParkingTrack7 arrives as a station trains can stop at and autonomy does not choose (MT-502), Load
-     * Autonomy is as it was (MT-582) - and the configuration in use before is untouched (Adam, 2026-09-25: *"(a)"*).
+     * Autonomy is as it was (MT-582) - and the configuration in use before is untouched (Adam's choice, "(a)").
      *
      * MUTATION: import into the configuration in use, untick Load Autonomy, carry the old file's directions, or place the
      * trains facing a guessed way, and this fails.
@@ -291,9 +291,9 @@ public class testTheImportDoorReadsAnOldFile
             List<String> said = importFromTheMenu(ui[0], MT298, "MT-298 import");
 
             // ASKED WHAT IT DOES (RLA-B2, RLU-B1, RLD-C4): an old file fills gaps, so the door does not ask to replace.
-            // AND SAYS WHAT COUNTS AS NOT SET (RLA3-B1; Adam, 2026-09-28): a setting at its default, a home taken off or
-            // an emptied exclusion list reads as a gap, and takes the file's
-            // THE WHOLE QUESTION, since `said` holds whole dialogs (RLV12-C6 added its third sentence)
+            // AND SAYS WHAT COUNTS AS NOT SET (RLA3-B1): a setting at its default, a home taken off or an emptied
+            // exclusion list reads as a gap, and takes the file's.  The whole question is compared, since `said` holds
+            // whole dialogs.
             assertTrue(said.contains(I18n.f("autosetup.ui.confirmImportFillsGaps", "MT-298 import") + "  "
                 + I18n.t("autosetup.ui.importTakesTheFilesForDefaults") + "  "
                 + I18n.f("autosetup.ui.importKeepsTheStationMaximums", "MT-298 import")), "importing an old file into a configuration of"
@@ -347,9 +347,8 @@ public class testTheImportDoorReadsAnOldFile
             assertEquals(sharedLinesIn(log), sharedThen + sharedNow, "the log does not list each old point the messages say"
                 + " shared a square (RSA44-C3): " + log);
 
-            // AND EACH LIST ONE ENTRY, ITS HEADING FIRST (Adam, 2026-10-06: "Fix them", on RSA45's notes): the main window's
-            // log puts its newest entry on top, so a heading logged as an entry of its own before its lines stood below
-            // them, and the list read upwards.  One entry is put on top whole, and reads down from its heading.
+            // AND EACH LIST ONE ENTRY, ITS HEADING FIRST: the main window's log puts its newest entry on top, so each
+            // list is one entry put on top whole, and reads down from its heading.
             List<String> entries = loggedEntries().subList(entryFrom, loggedEntries().size());
 
             String sharedEntry = lastStartingWith(entries, I18n.t("autosetup.ui.importSharedSquaresHeading"));
@@ -405,9 +404,9 @@ public class testTheImportDoorReadsAnOldFile
      * A second import of the same file, into a configuration where one of its trains has been moved since, does not stand
      * that train on two squares: it stays where it was moved to, and the message says it was not placed (RLA-B2).
      *
-     * One locomotive stands in one place was kept across the file only, so the square the train had left read as a gap
-     * and the import put it there as well - and a configuration naming one train on two squares is refused whole
-     * (`autosetup.ui.checkDuplicateLocomotive`).
+     * The one-place check covers the configuration's own trains as well as the file's: otherwise the square the train had
+     * left reads as a gap and the import puts it there too - and a configuration naming one train on two squares is
+     * refused whole (`autosetup.ui.checkDuplicateLocomotive`).
      *
      * MUTATION: start the one-place check empty again, and this fails.
      *
@@ -529,9 +528,9 @@ public class testTheImportDoorReadsAnOldFile
      * An old file the import cannot finish reading leaves the setup as it was: no configuration made of it, the one in use
      * still chosen, and nothing of it saved (RLA-C3, RLU-C1).
      *
-     * The door chose the new configuration before reading, and saved before the last of its reads - so a file whose
-     * timetable was not a list was imported, saved with its configuration chosen, and then reported as unreadable, and the
-     * next start resumed that configuration instead of the one that had been running.
+     * The door must neither choose the new configuration before reading nor save before the last of its reads: a file
+     * whose timetable was not a list would be imported, saved with its configuration chosen, and then reported as
+     * unreadable, and the next start would resume that configuration instead of the one that had been running.
      *
      * MUTATION: save before the file is read to its end, or leave the new configuration chosen on a failure, and this
      * fails.
@@ -612,13 +611,13 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * An import while autonomy runs is refused before it asks for anything, whatever it would be imported into, as
-     * Delete beside it is (RSA4-C5; Adam, 2026-09-28: *"There should be no setup edit possible during a run"*).
+     * Delete beside it is (RSA4-C5; Adam: *"There should be no setup edit possible during a run"*).
      *
-     * Into a configuration not in use it went on while trains ran: a bundle, or an old file, fills the gaps of the
+     * Into a configuration not in use it would go on while trains run: a bundle, or an old file, fills the gaps of the
      * setup's shared half - a station's name among them - and saves, and the reload it then asks may be declined.
-     * Nothing marked the setup newer than the running railway, so the next fold read the running railway through names
-     * the import had changed, and a train on a square it renamed was written nowhere.  Refused with it is the case
-     * RLD-C3 was: a declined reload after an import while trains moved, which left the imported configuration chosen
+     * Nothing marks the setup newer than the running railway, so the next fold would read the running railway through
+     * names the import had changed, and a train on a square it renamed would be written nowhere.  Refusing it also
+     * covers RLD-C3: a declined reload after an import while trains moved, which left the imported configuration chosen
      * for the next start.
      *
      * The trains are "moving" as a Return Home in progress makes them: the flag the window asks.
@@ -704,8 +703,8 @@ public class testTheImportDoorReadsAnOldFile
      * another name and chosen from there (RLA2-B1, RLD3-C2).  The case is the backup round trip: Export suggests the
      * configuration's name and Import suggests the file's.
      *
-     * A bundle replaces the configuration it is imported into, and the reload after it captured the running railway
-     * straight back over its settings and timetable - so "Replace it?" answered Yes did not replace; and its placements
+     * A bundle replaces the configuration it is imported into, and the reload after it captures the running railway
+     * straight back over its settings and timetable - so "Replace it?" answered Yes would not replace; and its placements
      * are not where the running railway's trains stand, which is the railway's to say (OB-183).  An old file under that
      * name is not refused: it fills gaps and places no train (RLD3-C1), as the claims below say.
      *
@@ -797,8 +796,8 @@ public class testTheImportDoorReadsAnOldFile
      * file's trains: where a train stands on the railway running is the railway's to say, and a train moved on it before
      * the import is where it was moved (RLD3-C1, RLA2-B3, RLD2-C3, OB-183).
      *
-     * Round 2 refused the name outright, which MT-298's own steps cannot get past: a hand change is made in the
-     * configuration chosen, and the second import is into that one.
+     * The name is not refused outright: MT-298's own steps make a hand change in the configuration chosen, and the
+     * second import is into that one.
      *
      * And what the file brings to it stays: a priority the configuration had lost is there after the reload, which does
      * not capture again (RLU4-C2, RLA4-C2, RLD4-C2) - the moved train is kept by either capture, so it pins neither.  The
@@ -940,7 +939,7 @@ public class testTheImportDoorReadsAnOldFile
                 + inUse + " was captured over by the reload after the import (RLU4-C2, RLA-C2): " + said);
 
             // AND THE QUESTION SAID NONE WOULD BE PLACED (RLU4-C3)
-            // THE WHOLE QUESTION, since `said` holds whole dialogs (RLV12-C6 added its third sentence)
+            // THE WHOLE QUESTION, since `said` holds whole dialogs
             assertTrue(said.contains(I18n.f("autosetup.ui.confirmImportFillsGapsInUse", inUse) + "  "
                 + I18n.t("autosetup.ui.importTakesTheFilesForDefaults") + "  "
                 + I18n.f("autosetup.ui.importKeepsTheStationMaximums", inUse)), "the question into " + inUse + ", the"
@@ -1062,7 +1061,7 @@ public class testTheImportDoorReadsAnOldFile
     /**
      * A configuration of the older, bare shape - the setup folder's own configuration file, or an export from before
      * bundles - imported into the configuration in use by its name is refused as a bundle is, before anything is asked
-     * or written (RLU4-B1, RLA2-B1).  It replaces the configuration as a bundle does, and the reload after it captured
+     * or written (RLU4-B1, RLA2-B1).  It replaces the configuration as a bundle does, and the reload after it captures
      * the running railway straight back over it, after a message saying it was imported.
      *
      * MUTATION: refuse only a bundle, and this fails.
@@ -1154,8 +1153,8 @@ public class testTheImportDoorReadsAnOldFile
      * nothing (RLU4-C1, RLA4-C1, RLD4-C1).
      *
      * The capture before the import is skipped while autonomy is busy - the reload stops the trains and captures where
-     * they stopped - so the reload's capture took back the homes and settings the import had just written and counted;
-     * and with the stop declined, the next fold did the same.
+     * they stopped - so the reload's capture would take back the homes and settings the import had just written and
+     * counted; and with the stop declined, the next fold would do the same.
      *
      * The trains are "moving" as a Return Home in progress makes them: the flag the window asks.
      *
@@ -1238,9 +1237,9 @@ public class testTheImportDoorReadsAnOldFile
      * that carries it - survives an old file's import, into the configuration in use or beside it (RLD4-C3, ACC-B3,
      * WKW-B2).
      *
-     * The import into the configuration in use captured the running layout into it first, and the reload after an import
-     * into another captured it into the one running: each a fold of the layout built before the edit back over it, which
-     * the exit save and the editor doors refuse while such an edit waits.
+     * The import into the configuration in use would capture the running layout into it first, and the reload after an
+     * import into another would capture it into the one running: each a fold of the layout built before the edit back
+     * over it, which the exit save and the editor doors refuse while such an edit waits.
      *
      * MUTATION: fold without asking whether an edit waits - before the import, or at the reload - and this fails.
      *
@@ -1336,11 +1335,11 @@ public class testTheImportDoorReadsAnOldFile
      * Reloading the configuration running while a setup edit a run declined waits for its rebuild keeps every train where
      * the run left it, and the edit is then carried (RLA5-B1, RLU5-B2, RLD5-B1).
      *
-     * RLD4-C3 kept `load` from folding the older running layout over the edit, and `load` then rebuilt the railway from
-     * the setup with each train back where it stood before the run - so choosing the configuration from the Autonomy
-     * menu, ticking a page out of autonomy, or the reload after an import modelled a moved train on the square it had
-     * left, and the square it stood on read free.  It now rebuilds as the editor doors do, carrying the trains across,
-     * and lowers the flag.
+     * `load` rebuilds the railway as the editor doors do, carrying the trains across, and lowers the flag (RLD4-C3 keeps
+     * it from folding the older running layout over the edit).  Rebuilt from the setup alone, each train would be back
+     * where it stood before the run, so choosing the configuration from the Autonomy menu, ticking a page out of
+     * autonomy, or the reload after an import would model a moved train on the square it had left, and the square it
+     * stood on would read free.
      *
      * MUTATION: reload without carrying the trains, or leave the flag up, and this fails.
      *
@@ -1449,8 +1448,8 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * The reload after a track-diagram edit or a page operation, while a setup edit a run declined waits, keeps every
-     * train where the run left it (RLV6-B1, door a).  (A route editor's Save reached it too, until RLV7-A1.)  That reset forgets the configuration's
-     * name before it reloads, so round 5's fix, which asked for the configuration running by its name, missed it.
+     * train where the run left it (RLV6-B1, door a).  That reset forgets the configuration's name before it reloads, so the
+     * carrying must not depend on a load that names the configuration running.
      *
      * MUTATION: carry the trains only for a load that names the configuration running, and this fails.
      *
@@ -1625,9 +1624,9 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * A reload of the configuration running, confirmed while autonomy is busy and a setup edit a run declined waits,
-     * replaces the running layout with every train carried across (RLV6-B1, door c).  It went to the editor doors'
+     * replaces the running layout with every train carried across (RLV6-B1, door c).  It must not go to the editor doors'
      * rebuild, which does nothing while autonomy reads busy - and a train stopped between sensors keeps the old layout
-     * reading busy - so the confirmed reload did nothing, and autonomy stayed busy until a restart.
+     * reading busy - or the confirmed reload would do nothing, and autonomy would stay busy until a restart.
      *
      * Busy as a Return Home in progress makes it: the flag the window asks.
      *
@@ -1715,7 +1714,7 @@ public class testTheImportDoorReadsAnOldFile
     /**
      * A reload the operator asks for, while a setup edit a run declined waits, stops a train driven by hand, as the same
      * reload does with nothing waiting (RLV6-C1, VD11-A2: *"whether the OPERATOR asked for a different railway.  Choosing
-     * a configuration is that"*).  It went through the editor doors' quiet rebuild, which stops nothing.
+     * a configuration is that"*).  It must not go through the editor doors' quiet rebuild, which stops nothing.
      *
      * MUTATION: load quietly while an edit waits, and this fails.
      *
@@ -1792,10 +1791,11 @@ public class testTheImportDoorReadsAnOldFile
     /**
      * Saving a route while autonomy runs leaves the run alone (RLV7-A1).
      *
-     * The route editor's Save ended by completing a diagram edit, whose reset forgot the configuration running and whose
-     * reload asked to abandon the run.  Yes rebuilt the railway with every train the run had moved back where it set off,
-     * the square it stood on reading free; No left the run going with no configuration to fold it into.  A route is no
-     * page of the diagram - its tiles follow it by id (`rebindRouteTiles`) - so there is nothing of autonomy to rebuild.
+     * A route is no page of the diagram - its tiles follow it by id (`rebindRouteTiles`) - so there is nothing of
+     * autonomy to rebuild, and the route editor's Save must not complete a diagram edit: its reset forgets the
+     * configuration running and its reload asks to abandon the run.  Yes would rebuild the railway with every train the
+     * run had moved back where it set off, the square it stood on reading free; No would leave the run going with no
+     * configuration to fold it into.
      *
      * Running as `isRunning` reads it, set after the move since a move is refused while running.
      *
