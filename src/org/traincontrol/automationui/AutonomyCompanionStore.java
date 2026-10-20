@@ -5118,11 +5118,9 @@ public class AutonomyCompanionStore
     /**
      * The lowest version that can read what is about to be written.
      *
-     * Not simply VERSION.  Bumping every file to 2 would make every setup this build touches
-     * unreadable by the previous one, including the great majority that use nothing new - and the
-     * whole point of writing a single signal as a bare string is that those files stay readable.  So
-     * the number describes the SHAPES actually present rather than the build that wrote them, and it
-     * rises only for the file that really does need the newer reader.
+     * Not simply VERSION: bumping every file to 2 would make every setup this build touches unreadable by the previous one,
+     * including the great majority that use nothing new, and the point of writing a single signal as a bare string is that
+     * those files stay readable.  So the number describes the SHAPES actually present rather than the build that wrote them.
      *
      * @return 2 where some station carries more than one signal, 1 otherwise
      */
@@ -5149,15 +5147,13 @@ public class AutonomyCompanionStore
     /**
      * Whether another configuration would be written to the same file as this name.
      *
-     * The name is free text and the filename is sanitised, and sanitising is many to one - every
-     * character a filename may not hold becomes an underscore.  So "Night: Yard" and "Night_ Yard" are
-     * two different configurations by name and one file on disk: saving wrote both to it, the second
-     * over the first, and the next load - which rebuilds the list by scanning the folder - came back
-     * with one of them simply gone.  Deleting or renaming either took the other's data with it.
+     * The name is free text and the filename is sanitised, and sanitising is many to one - every character a filename may
+     * not hold becomes an underscore.  So "Night: Yard" and "Night_ Yard" are two different configurations by name and one
+     * file on disk: saving would write both to it, the second over the first, and the next load, which rebuilds the list by
+     * scanning the folder, would find one of them gone.
      *
-     * Checked at the three doors a name comes in by - create, import and rename (GSP-C3) - rather than at save time, so
-     * the answer arrives
-     * while the user is still looking at the name they typed.
+     * Checked at the three doors a name comes in by - create, import and rename (GSP-C3) - rather than at save time, so the
+     * answer arrives while the user is still looking at the name they typed.
      *
      * @param name the name being taken
      * @param except a name that may share the file - the one being renamed away from
@@ -5213,32 +5209,21 @@ public class AutonomyCompanionStore
     /**
      * A key as it is stored: the page id where one is known, the page name otherwise.
      *
-     * A page added since the index was last read still round trips - by name, which is no worse than
-     * before.
+     * A key as it is stored: the page id where one is known, the page name otherwise.  A page added since the index was last
+     * read still round trips, by name.
      *
-     * This used to say "ids are numeric and names are not, so the two never collide", and that is not
-     * true: `validateLayoutName` allows digits, so a page may legally be called "2", and a page whose
-     * NAME equals another page's ID misroutes this translation and pageOf both. Nothing enforces the
-     * invariant they rest on (OB-067).
-     *
-     * Adam ruled on it rather than have the name forbidden: "A page should be allowed to be named 2 -
-     * let FR-013 dissolve it." FR-013 replaces these string keys with TileKey objects, at which point
-     * an id and a name stop sharing a representation and the question cannot be asked. Until then this
-     * is a known trap with nothing standing in it, and the on-disk repair path is the most exposed to
-     * it - every key there is in id form, so this would rewrite "2:x,y" through the page NAMED "2".
+     * "Ids are numeric and names are not, so the two never collide" is not true: `validateLayoutName` allows digits, so a
+     * page may legally be called "2", and a page whose NAME equals another page's ID misroutes this translation and pageOf
+     * both (OB-067).  The page is allowed to be named 2 ("let FR-013 dissolve it"): FR-013 replaces these string keys with
+     * TileKey objects, so an id and a name stop sharing a representation.  Until then this is a known trap, and the on-disk
+     * repair path is the most exposed to it: every key there is in id form, so this would rewrite "2:x,y" through the page
+     * NAMED "2".
      */
     private String toStored(String key)
     {
-        // The LAST colon, as parseTileKey, isOnPage and rekeyOne all do (OB-071).
-        //
-        // A key is "page:x,y" and a page name may contain a colon - parseTileKey's own comment calls
-        // "Yard: Upper" an ordinary thing to call a page. Splitting on the first colon read that name
-        // as "Yard", so every square on "Yard: Upper" was stored under the id belonging to a DIFFERENT
-        // page, and renaming that other page would orphan this one's entire setup: MT-135-class loss
-        // triggered by renaming a page you were not touching.
-        //
-        // These two were the last sites still splitting on the first colon; the other three were fixed
-        // when the hazard was found, and nobody came back for these. Found by review.
+        // The LAST colon, as parseTileKey, isOnPage and rekeyOne all do (OB-071): a key is "page:x,y" and a page name may
+        // contain a colon ("Yard: Upper"), so splitting on the first would store every square on it under the id of a
+        // DIFFERENT page, and renaming that other page would orphan this one's entire setup (MT-135-class loss).
         int colon = key.lastIndexOf(':');
 
         if (colon < 0) return key;
@@ -5264,13 +5249,8 @@ public class AutonomyCompanionStore
     /**
      * The page a stored key names, or null when the index does not know it.
      *
-     * The ONE place that answers "which page is this", asked two ways by the two methods below
-     * (DR-B5). They used to ask it separately, branch for branch, kept in step by a comment on the
-     * second saying it "has to agree with it exactly" - which is a comment doing a compiler's job,
-     * and the shape of finding this codebase has paid for more than once.
-     *
-     * FR-018 is the change that would have split them: it alters what happens to a page whose file is
-     * merely absent, and only one of the two would have been edited.
+     * The ONE place that answers "which page is this", asked two ways by the two methods below (DR-B5), so the two cannot
+     * drift out of step.  FR-018 alters what happens to a page whose file is merely absent, and both must change together.
      *
      * @param stored the page part of a stored key - an id, or a name on a file old enough
      * @return the page's current name, or null when neither question finds it
@@ -5282,9 +5262,8 @@ public class AutonomyCompanionStore
         // RENUMBERED: the name the file recorded is still in the index, under whatever number.
         if (whenWritten != null && pageNameToId.containsKey(whenWritten)) return whenWritten;
 
-        // RENAMED, or simply unmoved: the index knows this id.  This is the case page ids exist for,
-        // and leaving it out held back the whole of a renamed page - which is the MT-135 loss, caused
-        // by the mechanism written to prevent it.
+        // RENAMED, or simply unmoved: the index knows this id.  This is the case page ids exist for; leaving it out would
+        // hold back the whole of a renamed page (the MT-135 loss).
         return pageIdToName.get(stored);
     }
 
@@ -5303,13 +5282,10 @@ public class AutonomyCompanionStore
      * The deciding question is the same one pageIdConflicts asks - whether the name this id used to
      * carry still exists somewhere.  If it does, this is a renumber and the name is followed.
      *
-     * This is why "pages" is written at all, and until now it was only ever used to warn: the reading
-     * went through the current index either way, so a renumber silently reattached the whole setup and
-     * the next save reconciled away every setting whose coordinates did not exist on the page it had
-     * been given to.  Adam lost 19 point names, 14 stations, 22 directions and 15 captions that way on
-     * 2026-08-23, to a page rename that moved one page to the end of the index.
-     *
-     * Both branches agree whenever nothing has moved, which is the ordinary case.
+     * Reading through the current index regardless would silently reattach the whole setup after a renumber, and the next
+     * save would reconcile away every setting whose coordinates did not exist on the page it had been given to (lost once:
+     * 19 point names, 14 stations, 22 directions and 15 captions, to a page rename that moved one page to the end of the
+     * index).  Both branches agree whenever nothing has moved, which is the ordinary case.
      *
      * @param id the page id as stored in the file
      * @return the page name those settings belong to, or the id itself when nothing is known about it
@@ -5318,9 +5294,8 @@ public class AutonomyCompanionStore
     {
         String resolved = resolvePage(id);
 
-        // The id itself when nothing resolves it, which is what every caller of this has always been
-        // handed - and the reason pageIsHere exists, since an id is a legal page name and a caller
-        // cannot tell that fallback from a success by looking at it.
+        // The id itself when nothing resolves it, which is what every caller has always been handed; pageIsHere exists
+        // because an id is a legal page name and a caller cannot tell that fallback from a success by looking.
         return resolved == null ? id : resolved;
     }
 
@@ -5341,21 +5316,19 @@ public class AutonomyCompanionStore
         // The file names this id and neither question found it: the page is genuinely not loaded.
         if (pageNamesWhenWritten.get(stored) != null) return false;
 
-        // Otherwise it is a NAME, and an unambiguous one.  Files written before keys were stored by
-        // id hold names, and a page added since the index was read has no id yet - both were always
-        // meant to survive, and testAnExcludedPageWithNoIdKeepsItsName says so.  Nothing can be
-        // confused here: no id in the index and none in the file's own record is this string, so
-        // there is no second reading for it to be mistaken for.
+        // Otherwise it is a NAME, and an unambiguous one.  Files written before keys were stored by id hold names, and a
+        // page added since the index was read has no id yet; both are meant to survive
+        // (testAnExcludedPageWithNoIdKeepsItsName).  Nothing can be confused here: no id in the index and none in the
+        // file's own record is this string.
         return true;
     }
 
     /**
      * Whether every square a stored entry names belongs to a page that is here.
      *
-     * The VALUE side matters as much as the key side. A caption is a square pointing at a station, a
-     * portal is a square paired with another, and a station's signals are squares too - so an entry
-     * anchored on a loaded page can still name one that is absent, and half-translating it leaves the
-     * same id-as-name in memory that this whole mechanism exists to prevent.
+     * The VALUE side matters as much as the key side.  A caption is a square pointing at a station, a portal is a square
+     * paired with another, and a station's signals are squares too, so an entry anchored on a loaded page can still name
+     * one that is absent, and half-translating it would leave the id-as-name this whole mechanism exists to prevent.
      *
      * @param parts the stored keys the entry is made of - its key, and any square it names
      * @return true when all of them are resolvable
@@ -5377,9 +5350,7 @@ public class AutonomyCompanionStore
     /**
      * A collection's keys in the form they go on disk - page ID rather than page name.
      *
-     * Generic over {@link SquareKeyed} since FR-013 stage two, which is what let
-     * `translateSuffixedKeys` be deleted: it did exactly this, over a string key, and existed only
-     * because erasure would not let it be an overload.
+     * Generic over {@link SquareKeyed} (FR-013 stage two), so one method serves a square and a square plus a route.
      *
      * @param <K> what the collection is keyed by
      * @param map the collection
@@ -5400,15 +5371,13 @@ public class AutonomyCompanionStore
     /**
      * Reads the directions in, translating each key as it is read.
      *
-     * The counterpart of readSquareMap for the one collection keyed by a square AND a route. Reading
-     * and translating in one pass rather than reading raw and translating afterwards is the point:
-     * the two-step version left the collection holding STORED keys in a memory-keyed field for the
-     * length of a statement, and stage one showed what that costs - `Map.get` and `Set.contains` take
-     * Object, so a stored key handed to a typed collection compiles and silently answers false.
+     * The counterpart of readSquareMap for the one collection keyed by a square AND a route.  Reading and translating in
+     * one pass is the point: reading raw and translating afterwards would leave the collection holding STORED keys in a
+     * memory-keyed field, and `Map.get` and `Set.contains` take Object, so a stored key handed to a typed collection
+     * compiles and silently answers false.
      *
-     * A key that will not parse is dropped, which is what the other ten do. Nothing unresolvable
-     * reaches here anyway: entries whose page the index cannot resolve are held out of memory and
-     * written back verbatim (OB-067).
+     * A key that will not parse is dropped, as in the other collections.  Nothing unresolvable reaches here anyway: entries
+     * whose page the index cannot resolve are held out of memory and written back verbatim (OB-067).
      *
      * @param root the shared object being read
      * @param field which field
@@ -5486,12 +5455,11 @@ public class AutonomyCompanionStore
     /**
      * The same for a set of whole PAGES rather than of squares.
      *
-     * toStored and fromStored split a key on its page and leave anything without a colon alone, so a
-     * bare page name went through them unchanged - which is how the one collection that holds page
-     * names came to be the one collection stored by name.
+     * toStored and fromStored split a key on its page and leave anything without a colon alone, so a bare page name goes
+     * through them unchanged - which is how the one collection that holds page names came to be stored by name.
      *
-     * A page the index has never heard of keeps its name, which is what makes this safe on a file
-     * written before the change and on a page added since the index was read.
+     * A page the index has never heard of keeps its name, which keeps this safe on a file written before the change and on
+     * a page added since the index was read.
      */
     private Set<String> translatePages(Set<String> pages)
     {
@@ -5513,19 +5481,14 @@ public class AutonomyCompanionStore
 
         for (String stored : pages)
         {
-            // The same question as fromStored - an excluded page is named by id like everything else,
-            // and a renumber moved it just the same.  This was the collection that used to be written
-            // raw, and getting it wrong silently re-includes a page in autonomy.
+            // The same question as fromStored: an excluded page is named by id like everything else, and a renumber moves
+            // it just the same; getting it wrong silently re-includes a page in autonomy.
             //
-            // But ONLY when the file itself recorded that id (OB-092). `translatePages` falls back to
-            // writing a bare page NAME when it cannot find an id, and a name that happens to look like
-            // a number was then read straight back as somebody else's id. The file's own `pages`
-            // record is the discriminator: an id this file wrote is in it, and a name is not.
-            //
-            // Defence rather than the fix. The fix is that renamePage keeps the numbering current, so
-            // the fallback is not reached; this is here because the fallback still exists for a page
-            // that is genuinely not in the index, and one silent transplant of a page's whole setup
-            // was enough.
+            // But ONLY when the file itself recorded that id (OB-092).  `translatePages` falls back to writing a bare page
+            // NAME when it cannot find an id, and a name that looks like a number would be read straight back as somebody
+            // else's id.  The file's own `pages` record is the discriminator: an id this file wrote is in it, and a name is
+            // not.  Defence rather than the fix, which is that renamePage keeps the numbering current: the fallback still
+            // exists for a page genuinely not in the index, and one silent transplant of a page's whole setup was enough.
             out.add(pageNamesWhenWritten.containsKey(stored) ? pageOf(stored) : stored);
         }
 
@@ -5548,11 +5511,9 @@ public class AutonomyCompanionStore
     /**
      * Takes the map rather than reaching for the field.
      *
-     * It reached for `tileLengths` while there was only ever one caller, which was true and would have
-     * stayed true right up until a second int-valued collection was registered - at which point it
-     * would have written the lengths out under the new collection's name and lost the new one, with
-     * nothing in the registry looking wrong.  The registry's whole promise is that one entry is
-     * enough, so a helper that only works for one particular entry breaks it quietly.
+     * Takes the map rather than reaching for the field: a helper that only works for one particular entry breaks the
+     * registry's promise that one entry is enough, as a second int-valued collection would be written out under the first
+     * one's name.
      *
      * @param lengths the collection to translate
      * @return it, keyed by stored key
@@ -5620,12 +5581,8 @@ public class AutonomyCompanionStore
 
         if (stationTile == null) return out;
 
-        // Compared as SQUARES (FR-013).
-        //
-        // This held the printed form and asked `wanted.equals(entry.getValue())`, which compiles -
-        // String.equals takes Object - and is false for every entry once the values are squares. The
-        // symptom was a platform captioned at both ends reporting none: "both ends of the platform
-        // name it, expected 2, found 0".
+        // Compared as SQUARES (FR-013): comparing the printed form, `wanted.equals(entry.getValue())` compiles, as
+        // String.equals takes Object, and is false for every entry once the values are squares.
         for (Map.Entry<TileKey, TileKey> entry : captions.entrySet())
         {
             if (stationTile.equals(entry.getValue()))
@@ -5659,25 +5616,19 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Forgets every caption whose square, or whose sensor's square, is no longer on the diagram.
+     * Forgets every caption whose station, or whose page, is no longer on the diagram, and says which were dropped.  Called
+     * from reconcile.
      *
-     * Called from reconcile, for the same reason everything else there is: track gets redrawn between
-     * sessions, and a caption about a sensor that has been deleted would be text pointing at nothing.
+     * A caption goes when the STATION it is about is gone, and not before.  The square the text sits on is deliberately not
+     * required to hold anything: a caption is drawn on whatever square it names (placeCaption prefers blank space beside a
+     * platform), and the migration puts one on a square whose text label it then empties, which makes that square vanish
+     * from the layout file entirely.  Requiring the caption square to host a component would delete, on the next save, both
+     * the captions the user had just placed and every caption the migration had just created.
+     *
+     * The page still has to exist: a caption on a page somebody deleted is about a diagram that is gone.
      *
      * @param existing every square the diagram still has
      * @return the caption squares that were dropped
-     */
-    /**
-     * A caption goes when the STATION it is about is gone, and not before.
-     *
-     * The square the text sits on is deliberately not required to hold anything.  A caption is drawn by
-     * autonomy on whatever square it names - placeCaption prefers blank space beside a platform, which
-     * is the most readable place of all - and the migration puts one on a square whose text label it
-     * then empties, which makes that square vanish from the layout file entirely.  Requiring the caption
-     * square to host a component therefore deleted, on the very next save, both the captions the user
-     * had just placed and every caption the migration had just created.
-     *
-     * The page still has to exist: a caption on a page somebody deleted is about a diagram that is gone.
      */
     private List<String> reconcileCaptions(Set<TileKey> existing)
     {
@@ -5746,9 +5697,8 @@ public class AutonomyCompanionStore
         return byRow != 0 ? byRow : Integer.compare(first.getX(), second.getX());
     }
 
-    // Package-private rather than private: the session prunes stale point data by tile, and has to be
-    // able to read the page out of a stored key to tell "this square is gone" from "this square is on a
-    // page autonomy was told to ignore".
+    // Public: the session prunes stale point data by tile, and has to be able to read the page out of a stored key to tell
+    // "this square is gone" from "this square is on a page autonomy was told to ignore".
     public static TileKey parseTileKey(String key)
     {
         if (key == null) return null;
@@ -5773,9 +5723,8 @@ public class AutonomyCompanionStore
     /**
      * The same square on a renamed page, or the square unchanged (FR-013).
      *
-     * A construction rather than string surgery. The string form had to find the page part and splice
-     * a new one in front of the coordinates, and it had to agree with `parseTileKey` about where that
-     * part ended - an agreement kept by comment, and broken once.
+     * A construction rather than string surgery: the string form had to agree with `parseTileKey` about where the page part
+     * ended, an agreement kept by comment.
      *
      * @param key the square
      * @param fromPage the old page name
@@ -5792,10 +5741,8 @@ public class AutonomyCompanionStore
     /**
      * The same key on a renamed page.
      *
-     * Same rule as isOnPage, and it matters more here: renaming "Yard" would have rewritten every key
-     * belonging to "Yard: Upper" as well, orphaning that page's whole setup for the next reconcile to
-     * find and drop.  Nothing renames a page today - but "Manage Pages" is where a rename lands, and
-     * that menu was built this week.
+     * Same rule as isOnPage, and it matters more here: renaming "Yard" would otherwise rewrite every key belonging to "Yard:
+     * Upper" as well, orphaning that page's whole setup for the next reconcile to find and drop.
      */
     private static String rekeyOne(String key, String fromPage, String toPage)
     {
@@ -5865,12 +5812,8 @@ public class AutonomyCompanionStore
     /**
      * Keys, as the strings a report shows a person (FR-013).
      *
-     * The reconciliation report is read by somebody rather than by code, so it stays a list of
-     * strings; this is the one door where a key becomes its printed form. Collected here rather
-     * than at five call sites so the printed form has one definition.
-     *
-     * Generic since stage two: the keys it is given are squares at most call sites and squares plus a
-     * route at one of them, and a report does not care which.
+     * The reconciliation report is read by somebody rather than by code, so it stays a list of strings; this is the one door
+     * where a key becomes its printed form.  Generic: the keys are squares at most call sites and squares plus a route at one.
      *
      * @param <K> what the keys are
      * @param keys what was dropped
@@ -5939,12 +5882,11 @@ public class AutonomyCompanionStore
     /**
      * Reads a square-keyed field, translating each key as it arrives (FR-013).
      *
-     * One step, where this was two: fill the map with the FILE's keys, then rewrite them in place.
-     * The state in between - a map full of stored keys, in a field the rest of the class reads as
-     * memory keys - is the state OB-067 was about, and it cannot be written down any more.
+     * One step: fill the map from the FILE's keys, translating as each arrives.  A map full of stored keys, in a field the
+     * rest of the class reads as memory keys, is the state OB-067 was about.
      *
-     * A key that will not parse is dropped rather than kept as something unusable. That is not new:
-     * `parseTileKey` has always returned null for one, and every caller has always skipped it.
+     * A key that will not parse is dropped rather than kept as something unusable: `parseTileKey` returns null for one, and
+     * every caller skips it.
      *
      * @param root the shared object
      * @param field which field
@@ -5984,9 +5926,8 @@ public class AutonomyCompanionStore
     /**
      * The same, where the VALUE is a square as well - a portal's partner, a caption's station.
      *
-     * An entry whose value will not parse is dropped whole. Half of a pairing is worse than none: a
-     * portal with no partner and a caption pointing nowhere are both states the rest of the class
-     * would have to guard against for ever.
+     * An entry whose value will not parse is dropped whole.  Half of a pairing is worse than none: a portal with no partner
+     * and a caption pointing nowhere are both states the rest of the class would have to guard against for ever.
      */
     private void readSquarePairMap(JSONObject root, String field, Map<TileKey, TileKey> into)
     {
