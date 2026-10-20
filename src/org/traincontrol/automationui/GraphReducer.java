@@ -858,6 +858,13 @@ public class GraphReducer
         return reached;
     }
 
+    /**
+     * The sides a train that arrived at this square by the given side can carry on out of - the track it is actually
+     * standing on, rather than every side the square happens to have.
+     *
+     * Never includes the arrival side: the tile graph builds its exits from routes, and a route never leads back out the
+     * way it came in.  Turning round is therefore always the separate case.
+     */
     private Set<Side> onwardSides(TileKey tile, Side arrival)
     {
         Set<Side> out = new java.util.LinkedHashSet<>();
@@ -915,28 +922,20 @@ public class GraphReducer
                 continue;
             }
 
-            // A DOUBLE-CURVE SENSOR IS NO LONGER REPORTED, and the reasoning is worth keeping.
+            // A DOUBLE-CURVE SENSOR IS NOT REPORTED, and the reasoning is worth keeping.
             //
-            // Such a square draws two curves, the reduction makes ONE Point of it, and that Point
-            // carries one s88. If the physical contact is on only one of the two tracks, a train
-            // routed over the other passes without triggering it and autonomy waits for an arrival
-            // that never reports. That was the warning, and it was a real hazard to describe.
+            // Such a square draws two curves, the reduction makes ONE Point of it, and that Point carries one s88.  If the
+            // physical contact is on only one of the two tracks, a train routed over the other passes without triggering
+            // it and autonomy waits for an arrival that never reports.  That is a real hazard, but it can never be turned
+            // into a finding, because WHICH track carries the contact is not in the diagram: the .cs2 records one tile, one
+            // type, one article number, and the wiring is in the layout and nowhere this program can read.  So the check
+            // could only say "two curves and one sensor, and I do not know whether that matters" to every such square,
+            // every time, whether or not anything was wrong - and Adam saw no problem with such tiles without a specific
+            // failure scenario: "No warning needed otherwise."
             //
-            // It could never be turned into a finding, because WHICH track carries the contact is not
-            // in the diagram. The .cs2 records one tile, one type, one article number; the wiring is
-            // in the layout and nowhere this program can read. So the check could only say "two curves
-            // and one sensor, and I do not know whether that matters" - to every such square, every
-            // time, whether or not anything was wrong.
-            //
-            // Adam, asked for a failure scenario and given none: "I don't see any problem with such
-            // tiles, unless you can point out a specific failure scenario.  No warning needed
-            // otherwise."  The only one on his railway sits on a page normally excluded from autonomy,
-            // with track on all four sides, so it fired and said nothing he did not know.
-            //
-            // WHAT WOULD BRING IT BACK: a way to record which curve carries the contact - a per-tile
-            // setting, or a second Point for the second curve. The check then becomes "a route uses
-            // the curve without the sensor", which has a remedy. Until then this is a guess dressed as
-            // a warning.
+            // WHAT WOULD BRING IT BACK: a way to record which curve carries the contact - a per-tile setting, or a second
+            // Point for the second curve. The check then becomes "a route uses the curve without the sensor", which has a
+            // remedy. Until then this is a guess dressed as a warning.
 
             String name = authored.getPointName(tile);
 
@@ -1110,16 +1109,14 @@ public class GraphReducer
 
         // Going in circles - but judged by the tile AND the side entered by, not the tile alone.
         //
-        // A square can legitimately be crossed twice by one run, on two different tracks: a crossing or
-        // an overpass carries two routes that never meet, so a line that passes over one and comes back
-        // through the other is ordinary railway, not a loop.  Keyed on the tile alone, the second
-        // arrival looked identical to the first and the walk simply stopped - the run vanished and
-        // nothing was reported, which is the worst of the three possible outcomes.  It also contradicted
-        // locationsOf, which goes out of its way to treat an overpass's two routes as independent for
-        // locking: the model already says the two levels are separate.
+        // A square can legitimately be crossed twice by one run, on two different tracks: a crossing or an overpass
+        // carries two routes that never meet, so a line that passes over one and comes back through the other is ordinary
+        // railway, not a loop.  Keyed on the tile alone, the second arrival would look identical to the first and the walk
+        // would simply stop, the run vanishing with nothing reported.  This agrees with locationsOf, which treats an
+        // overpass's two routes as independent for locking.
         //
-        // Still terminates: a genuine circle re-enters a tile by the same side it did before, so it is
-        // caught on that pass, and there are only four sides.
+        // Still terminates: a genuine circle re-enters a tile by the same side it did before, so it is caught on that
+        // pass, and there are only four sides.
         //
         // AND BY THE TRACK, on a two-square crossing (OB-320).  Its two tracks share the side its squares meet at, so a
         // square entered by that side is told which track the walk came along - the square before and its road there -
