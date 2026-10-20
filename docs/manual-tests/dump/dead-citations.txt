@@ -57,9 +57,6 @@ cited_by: LayoutEditor.java,testTheEditorTellsAutonomy.java
 [dead LE2-B8]
 cited_by: AutonomySession.java,testAutonomyDiagramSession.java
 
-[dead LE2-B9]
-cited_by: Layout.java
-
 [dead LE2-C12]
 cited_by: testTheEditorTellsAutonomy.java
 
@@ -104,9 +101,6 @@ cited_by: TrainControlUI.java,testTheRoutingChoiceSurvivesTheUpgrade.java
 
 [dead RC-B6]
 cited_by: RouteEditorFrame.java
-
-[dead RC-B7]
-cited_by: Layout.java
 
 [dead RC-B8]
 cited_by: Layout.java,testRoutePicking.java
