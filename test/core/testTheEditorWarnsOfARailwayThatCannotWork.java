@@ -327,7 +327,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     }
 
     /**
-     * Closing arrivals from the side a trapped arrival comes in by clears the warning (RSA37-B1).  It is the first of the
+     * Closing arrivals from the side a trapped arrival comes in by clears the warning.  It is the first of the
      * three ways out the warning offers (OB-201), and the check never asked which arrivals were closed: the operator who
      * took that advice got the same warning back, still telling them to close arrivals from that side.
      *
@@ -366,7 +366,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     }
 
     /**
-     * The trapped-arrival warning offers to close arrivals only where the arrivals menu can do it (RSA37-B1): not at a
+     * The trapped-arrival warning offers to close arrivals only where the arrivals menu can do it: not at a
      * station trapped from every way in, whose last open side the menu will not shut.  There it offers the other two ways
      * out, and names the side once.  A plain point is not told at all: no train is sent there (OB-361).
      *
@@ -543,7 +543,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
             org.traincontrol.automationui.AutonomyChecks.Severity.ERROR, new TileKey("main", 3, 1)), "a through station"
             + " was reported at the end of a line");
 
-        // ONE FINDING AND ONE PIECE OF ADVICE (RSA17-C1): not the error and the warning that trains cannot turn there
+        // ONE FINDING AND ONE PIECE OF ADVICE: not the error and the warning that trains cannot turn there
         assertNull(trappedAt(alpha), "a station at the end of a line is reported twice, an error and a warning, with"
             + " advice that disagrees: " + session.check());
 
@@ -580,7 +580,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     }
 
     /**
-     * Every clashing sensor is reported, and a page that clashes still poisons nothing (MT-223, LE2-B8).
+     * Every clashing sensor is reported, and a page that clashes still poisons nothing (MT-223).
      *
      * TWO RULES THAT PULL IN OPPOSITE DIRECTIONS, which is why they are tested together.
      *
@@ -588,7 +588,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
      * between page 1 and page 3, since page 3 is basically a zoomed view of page 1.  all conflicting
      * sensors should be listed." A page that duplicates forty sensors is forty things to fix.
      *
-     * And LE2-B8: a page that repeats anything must contribute NOTHING to what counts as seen, or a
+     * And a page that repeats anything must contribute NOTHING to what counts as seen, or a
      * third page sharing one of its other sensors is reported too - blamed against the page that
      * should itself have been switched off.
      *
@@ -651,7 +651,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
                 + "sensor first: " + clash);
         }
 
-        // and the page that only shares what "repeat" alone brought is innocent (LE2-B8)
+        // and the page that only shares what "repeat" alone brought is innocent
         for (String clash : clashes)
         {
             assertFalse(clash.contains("third"),
@@ -684,7 +684,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
      * whichever way round they are, and false if nothing is watching.
      *
      * The LAST assertion is the exception, and it is why the trapping direction is put back before it:
-     * it asks `check()` about the current state rather than comparing the two answers (V33-C5).
+     * it asks `check()` about the current state rather than comparing the two answers.
      *
      * NOT COVERED HERE: the no-way-IN half of the same check.  It could not be provoked, and the
      * reason is worth writing down rather than rediscovering.  A copy is emitted per side a train can
@@ -833,7 +833,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
             "the same arrival was reported as trapped whichever way the far section was barred, so "
             + "the check is not reading the direction at all.  Out: " + outA + " then " + outB);
 
-        // THE TRAPPING DIRECTION, PUT BACK FIRST (V33-C5, 2026-09-03).
+        // THE TRAPPING DIRECTION, PUT BACK FIRST (2026-09-03).
         //
         // `subjectsOf` asks `check()` about the CURRENT state, and the assertions above leave whatever
         // the last `setDirection` set.  So this used to pass on the accident that the trapping
@@ -1035,7 +1035,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     }
 
     /**
-     * A pocket whose only station is one autonomy may never choose still leads nowhere (V36-C4).
+     * A pocket whose only station is one autonomy may never choose still leads nowhere.
      *
      * **Adam, 2026-09-04: "Make it a notice."** - which is the severity half of the question, and it
      * is why this is safe to tighten. `20` of the `71` squares on his own railway carry
@@ -1367,7 +1367,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     }
 
     /**
-     * A compulsory turn that reaches nothing is named as a terminus (AMG-C1).
+     * A compulsory turn that reaches nothing is named as a terminus.
      *
      * `AutonomyChecks.isTerminus` asked the authored "terminus" key, which setting a square's flags now clears, and
      * fell back to "no reduced edge leaves the tile" - false for every compulsory turn, whose turning copy departs.
@@ -1682,7 +1682,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
             "nothing told the user autonomy will no longer send a train to their station");
     }
     /**
-     * And the CHECKS are actually given it, which is a separate question (V31-C3).
+     * And the CHECKS are actually given it, which is a separate question.
      *
      * **The first attempt at this was a test of the rule, and it could not fail.** It pinned a helper
      * that barred every side of a closed square, and reverting the call site left it green -

@@ -14,7 +14,7 @@ import org.traincontrol.marklin.udp.NetworkProxy;
 /**
  * A message handed to the proxy arrives on the wire, byte for byte.
  *
- * TA-B7, from the test suite audit, inside [OB-089]: "nothing anywhere asserts an outgoing datagram".
+ * From the test suite audit, inside [OB-089]: "nothing anywhere asserts an outgoing datagram".
  * The existing `testNetworkProxy` covers the socket's LIFECYCLE well - a transient receive error does
  * not stop the listener, closing stops it, a send reopens a closed socket - and `testSendReopensAClosedSocket`
  * asserts that `sendMessage` returned true and that the socket is open afterwards. Neither of those

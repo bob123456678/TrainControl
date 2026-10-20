@@ -109,7 +109,7 @@ public class testReturnHomeKeepsClearOfTheTailsItLeaves
     }
 
     /**
-     * A plan found only one way round is found, though the other way round reaches the same squares first (MFR-B2).
+     * A plan found only one way round is found, though the other way round reaches the same squares first.
      *
      * The search keyed an arrangement by where the trains stand, and a move's tail by the one chain of moves it kept -
      * so two orders reaching the same squares with different tails were one arrangement, and whichever was found first
@@ -178,10 +178,10 @@ public class testReturnHomeKeepsClearOfTheTailsItLeaves
     }
 
     /**
-     * The retry from the start still has time when the first search spends its share (MFV-B1, claimed as MFW-C3).
+     * The retry from the start still has time when the first search spends its share.
      *
      * OB-228 added a second search, from the railway as it stands, for the arrangement the greedy pass boxes itself
-     * into; MFR-C2 then put both searches on one deadline, so a first search that ran to it left the retry nothing,
+     * into; a later change then put both searches on one deadline, so a first search that ran to it left the retry nothing,
      * and a plan the retry would have found came back NO_PLAN_FOUND.  The budget is shared out now.  The X, Y, Z
      * railway of the claim above needs the retry; sixty sidings Z can wander along keep the first search from running
      * out of arrangements before its time does; and the search's clock is stepped 300 ms a read, so the fifteen-second
@@ -285,8 +285,7 @@ public class testReturnHomeKeepsClearOfTheTailsItLeaves
     }
 
     /**
-     * A road that shares metal with a parked train's tail is refused, and the build's places say when it does not
-     * (AMH-C2).
+     * A road that shares metal with a parked train's tail is refused, and the build's places say when it does not.
      *
      * `passesTheTailsOfTrainsItHasMoved` has two arms.  The first - the edge the mover wants IS one the tail covers -
      * is what the claim above pins.  The second was exercised by nothing: an edge the tail does not cover but which is
@@ -348,7 +347,7 @@ public class testReturnHomeKeepsClearOfTheTailsItLeaves
     }
 
     /**
-     * The tail of a train that never moves closes the roads over its metal, locked or not (OB-184, AUT-B1).
+     * The tail of a train that never moves closes the roads over its metal, locked or not (OB-184).
      *
      * Every other claim in this class has the plan move A, so A's tail is the one `passesTheTailsOfTrainsItHasMoved`
      * asks about.  Here A is already home and never moves: its tail is the one it left at the START of the plan, and the
@@ -391,7 +390,7 @@ public class testReturnHomeKeepsClearOfTheTailsItLeaves
             missed += " The lock partner's tail was not seen (OB-184): " + locked + ".";
         }
 
-        // NO LOCK AT ALL: the same two roads are two copies of one piece of metal only by their places (AUT-B1).
+        // NO LOCK AT ALL: the same two roads are two copies of one piece of metal only by their places.
         if (unlocked != HomeStaging.Outcome.NO_PLAN_FOUND)
         {
             missed += " The tail was not seen by place (AUT-B1): " + unlocked + ".";

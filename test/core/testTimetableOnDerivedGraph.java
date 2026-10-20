@@ -100,7 +100,7 @@ public class testTimetableOnDerivedGraph
     /**
      * The configuration this runs against, by name.
      *
-     * TST-B11: this named "Autonomy 1", which exists nowhere in the fixture's config/autonomy/ (the
+     * This named "Autonomy 1", which exists nowhere in the fixture's config/autonomy/ (the
      * fixture holds only configuration-Main.json, and setup.json's own activeConfiguration is "Main") -
      * so the guard in derivedLayout() that is supposed to select it deterministically never matched,
      * and every run silently fell through to "whichever happened to be active", which the comment
@@ -210,7 +210,7 @@ public class testTimetableOnDerivedGraph
             }
         }
 
-        // THE ONES THIS TEST PLACED, not a count of all of them (TSX-C11).
+        // THE ONES THIS TEST PLACED, not a count of all of them.
         //
         // `startedAt` is filled by walking every locomotive on the graph, and the configuration parks
         // trains all over the railway - so a count comparison was satisfied by the fixture's own
@@ -458,7 +458,7 @@ public class testTimetableOnDerivedGraph
 
         // The configuration Adam actually runs.  Deriving whichever happened to be active last would
         // make this test describe a different railway from one machine to the next.
-        // A GUARD, not a preference (TSX-C11, and what is left of TST-B11).
+        // A GUARD, not a preference.
         //
         // The `if` meant a fixture without this configuration silently fell back to whichever was
         // active last, which is the very thing the comment above forbids - and the reason it has always

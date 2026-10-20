@@ -70,11 +70,11 @@ public class testATrainCoversTheTrackBehindIt
     }
 
     /**
-     * `wouldAsk` answers exactly when the prompt would ask (VAL9-B4).
+     * `wouldAsk` answers exactly when the prompt would ask.
      *
      * The paste door abandons a placement when the arrival-side question came back null AND the prompt
      * would have asked one. That second half has to be the same condition the prompt itself uses to
-     * decide, or the door is guessing again - which was the defect (IND9-B5): null means "declined",
+     * decide, or the door is guessing again - which was the defect: null means "declined",
      * "no side to choose between", and "could not show the dialog", and only the first is a refusal.
      *
      * **`return mayReverse;` restores the whole defect with every other test green**, which is why this
@@ -382,7 +382,7 @@ public class testATrainCoversTheTrackBehindIt
             + " the arrival wrote - and on a curve it will, which blocks nothing while looking correct");
 
         int written = flat.indexOf("arrived.setArrivedFrom(");
-        // The turn, which since RLV12-C5 asks whether its railway is still the current one after the pause before it
+        // The turn, which asks whether its railway is still the current one after the pause before it
         int turned = flat.indexOf("if (stillThisRailway) loc.switchDirection()");
 
         assertTrue(turned > written,
@@ -622,7 +622,7 @@ public class testATrainCoversTheTrackBehindIt
 
     /**
      * A tail blocks every copy of the rail it lies on - the rail into a square's turning copy as well as into its plain
-     * copy (AUT-B1).
+     * copy.
      *
      * On a square a train may turn round at, the build emits the rail into it twice: once into the plain copy and once
      * into the turning copy, over exactly the same places.  The tail walk covers the one it walks, and `isPathClear`
@@ -701,7 +701,7 @@ public class testATrainCoversTheTrackBehindIt
 
     /**
      * A train turned where it stands and re-stood on the other arrival's copy spends the square it stands on first, as it
-     * does everywhere (AUT-C3, OB-278).
+     * does everywhere (OB-278).
      *
      * After a train turns at a square it may turn round at, the idle drain stands it on the copy facing its new way -
      * which can be the plain copy of the OTHER arrival - and puts back the side it came in by.  No rail arrives at that
@@ -803,7 +803,7 @@ public class testATrainCoversTheTrackBehindIt
     }
 
     /**
-     * The tail's first step takes the rail from the neighbour's plain copy, not from its turning twin (AUT3-C3).
+     * The tail's first step takes the rail from the neighbour's plain copy, not from its turning twin.
      *
      * Rails arriving at a standing copy from a neighbour N come from the copies of N that face it: N's plain copy, and -
      * where trains may turn at N - its turning copy, which arrived from this side.  Both come in by the same side, and the
@@ -900,12 +900,12 @@ public class testATrainCoversTheTrackBehindIt
 
     /**
      * A train with no recorded side, on a square emitted as one Point, spends that square first like every other
-     * (TDY2-C5, OB-278).
+     * (OB-278).
      *
      * With nothing saying which side it came in by, the walk takes the fork rule, which kept the first rail it met to
      * each neighbour - and the running layout lists the rails LEAVING a Point before those arriving at it.  A leaving
      * rail's places begin after the square the train stands on, so the square was neither claimed nor spent and the tail
-     * reached one square further back than the train lies.  The AUT-C3 read that spends the square off an arriving rail
+     * reached one square further back than the train lies.  The read that spends the square off an arriving rail
      * needs the square's block, which the build writes only where a square is split into several Points - so a square
      * emitted once, a dead end's turning copy among them, was left out.
      *

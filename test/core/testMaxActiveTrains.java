@@ -224,7 +224,7 @@ public class testMaxActiveTrains
     }
 
     /**
-     * A train sent by hand while a run is going is not refused by the cap (BCR-C1).
+     * A train sent by hand while a run is going is not refused by the cap.
      *
      * behaviour.md 1: a hand dispatch is *"neither counted nor refused, however many trains a run already has out"* - and
      * the exemption rested on the running flag alone, which a run sets, so a hand send made during one was refused and
@@ -277,7 +277,7 @@ public class testMaxActiveTrains
     }
 
     /**
-     * A train on a journey sent by hand does not count against the cap the run's own trains are held to (BCR-C1).
+     * A train on a journey sent by hand does not count against the cap the run's own trains are held to.
      *
      * The second train marked as on a hand send - as `executePathByHand` marks it for its journey - and holding its route:
      * the first train's claim, autonomy's, is still under a cap of one.
@@ -329,7 +329,7 @@ public class testMaxActiveTrains
 
     /**
      * The reasons a train's right-click menu gives for a hand send ask as a hand send: no destination is said to be over
-     * the cap (BCR-C1).
+     * the cap.
      *
      * A run going, the cap reached by the first train's claim: the second train's destination down its own clear route is
      * offered by hand, with no reason against it.

@@ -853,7 +853,7 @@ public class testMessageBundles
     /**
      * Nothing asks for a key the bundle does not have.
      *
-     * `CMT-C2` counted 229 keys present in all eight bundles that nothing in `src/` asks for.  That is
+     * An audit counted 229 keys present in all eight bundles that nothing in `src/` asks for.  That is
      * noise: it costs a reader time and nothing else.  **The direction that costs an OPERATOR
      * something is the other one**, and it had no test - a key renamed in the bundle and not at its
      * call site puts the raw key on screen, in the one place a person is being told what went wrong.
@@ -890,7 +890,7 @@ public class testMessageBundles
 
         List<File> sources = javaSources(new File("src"));
 
-        // A FLOOR, like the two other scans in this file (TSX-B6).
+        // A FLOOR, like the two other scans in this file.
         //
         // `javaSources` answers empty rather than failing when `listFiles()` returns null - run from
         // anywhere but the project root and this scans nothing, which is indistinguishable from
@@ -935,10 +935,10 @@ public class testMessageBundles
      * label should be, which is the other thing its walk looked for.  Every bundle, every key a screen asks for, by any
      * of the four roads - the fourth being a key held in a constant, `static final String X = "..."`, and handed to I18n
      * by name: Routes > Import's own two messages and every setup check's sentence are asked for that way, and the other
-     * three did not see them (RLU-C8).
+     * three did not see them.
      *
      * A key asked for by any other road - a ternary, a switch, a helper, the log - is not seen here; its value is held by
-     * `testEveryKeyHasAValueInEveryLanguage`, which asks every key of the bundle (RLU2-C3, RLU3-C6).
+     * `testEveryKeyHasAValueInEveryLanguage`, which asks every key of the bundle.
      *
      * MUTATION: take a form's key out of any bundle, or give a key one of the four roads sees an empty value in one
      * language, and this fails naming it.
@@ -958,7 +958,7 @@ public class testMessageBundles
         Pattern form = Pattern.compile("<ResourceString bundle=\"org/traincontrol/resources/messages\\.properties\""
             + " key=\"([^\"]+)\"");
 
-        // THE FOURTH: a key held in a constant (RLU-C8).
+        // THE FOURTH: a key held in a constant.
         Pattern constant = Pattern.compile("static\\s+final\\s+String\\s+\\w+\\s*=\\s*\"([^\"]+)\"");
 
         Set<String> inConstants = new TreeSet<>();
@@ -1049,8 +1049,7 @@ public class testMessageBundles
     }
 
     /**
-     * Every key of the English bundle has a value in every language - not only the keys a road above can see asked for
-     * (RLD2-C5, RLU2-C3).
+     * Every key of the English bundle has a value in every language - not only the keys a road above can see asked for.
      *
      * The roads above find a key where it is the first argument of I18n, a generated read, a form entry or a constant;
      * about 340 are asked another way - chosen by a ternary, returned from a switch, handed to a helper, or logged -
@@ -1091,7 +1090,7 @@ public class testMessageBundles
     }
 
     /**
-     * The findings that name the turning setting quote it as its menu item says it (RLV13-C5).  French and Italian quoted
+     * The findings that name the turning setting quote it as its menu item says it.  French and Italian quoted
      * words the menu does not use, and the terminus finding named "may turn round", which no menu item is called.
      *
      * MUTATION: quote the setting in any words but the menu item's, in any language, and this fails.
@@ -1165,7 +1164,7 @@ public class testMessageBundles
     /**
      * Allow Every Path, with nothing to open, says that track only one way can be driven stays as it is - the sentence its
      * confirmation says it in - rather than that every piece of track already runs both ways, on a railway still showing
-     * a turnout with no address's red arrow (RSA37-C2).
+     * a turnout with no address's red arrow.
      *
      * MUTATION: say again that everything runs both ways, in any language, and this fails.
      *
@@ -1201,7 +1200,7 @@ public class testMessageBundles
     }
 
     /**
-     * The refusals of non-atomic routes do not put their count before a plural noun (RLV13-C4): "1 locomotives have no
+     * The refusals of non-atomic routes do not put their count before a plural noun: "1 locomotives have no
      * train length" in every language, and Polish wrong for 1 to 4.
      *
      * MUTATION: put the count back before the noun in any language, and this fails.
@@ -1246,7 +1245,7 @@ public class testMessageBundles
     }
 
     /**
-     * The lighter touch kept the reasons the reader decides by (RLV13-C6): the half-measured approach's condition, and
+     * The lighter touch kept the reasons the reader decides by: the half-measured approach's condition, and
      * that a save tidies nothing while the page numbering is in doubt.
      *
      * MUTATION: drop either, and this fails.
@@ -1285,7 +1284,7 @@ public class testMessageBundles
 
     /**
      * The question before closing TrainControl with trains running names everything the exit leaves unsaved: where the
-     * trains are, any change to the autonomy settings, and the timetable recorded since the last save (RSA49-C1; Adam,
+     * trains are, any change to the autonomy settings, and the timetable recorded since the last save (Adam,
      * 2026-10-10, asked: *"b, easier to manage edge cases.  document as a future item to revisit"* - keep 2.8.x's exit,
      * which saves nothing while anything runs, and say so).  It named the timetable and not the settings.
      *

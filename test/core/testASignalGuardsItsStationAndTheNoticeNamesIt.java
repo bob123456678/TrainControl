@@ -31,7 +31,7 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
 
     /**
      * A station's protecting signal survives a save, and is not read while the square is not a station - it is kept for
-     * when it is one again (GSE-C4, `testADemotedStationHasItsSettingsBackWhenItIsAStationAgain`).
+     * when it is one again (`testADemotedStationHasItsSettingsBackWhenItIsAStationAgain`).
      *
      * Kept with the captions and the arrival restrictions rather than beside the running state: it is a
      * fact about the railway, not about today's traffic.
@@ -125,10 +125,10 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     }
 
     /**
-     * A signal on an excluded page is still reported gone (REL-B1).
+     * A signal on an excluded page is still reported gone.
      *
      * **The two sides of a pairing are not symmetric, and one filter treated them as if they were.**
-     * `SVN-C6` added an excluded-page filter to `signalsThatAreGone` because a pairing whose STATION is
+     * An excluded-page filter was added to `signalsThatAreGone` because a pairing whose STATION is
      * on a page that is switched off is not in play, and a warning about it is noise. The same filter
      * was applied to the SIGNAL, and that silenced a warning that was true: `protectingSignalNames`
      * resolves signals through the graph, which does not carry an excluded page, so a signal on one
@@ -265,7 +265,7 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
 
     /**
      * A station's entry guard survives a save, is kept apart from its protecting signals, and is not read while the
-     * square is not a station (FR-096; kept for when it is one again, GSE-C4).
+     * square is not a station (FR-096, kept for when it is one again).
      */
     @Test
     public void testAnEntryGuardIsKeptApartAndForgottenWithTheStation() throws Exception
@@ -334,7 +334,7 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
      * A run of track with a station at one end and two signals beside it.
      */
     /**
-     * A station's entry guard is never its exit guard, whichever is set first (AUT-C2).
+     * A station's entry guard is never its exit guard, whichever is set first.
      *
      * Adam, 2026-09-24: *"make sure the entry guard can never be the same as the exit guard.  otherwise, it's up to the
      * user to set it up right."*  One signal on both lists is thrown red on arrival and then set by the platform's
@@ -365,7 +365,7 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     }
 
     /**
-     * A file that carries one signal on both lists anyway is warned about (AUT-C2).
+     * A file that carries one signal on both lists anyway is warned about.
      *
      * Loading a setup does not go through the setters, so a file written before the rule - or by hand - can still hold
      * it.  The editor says so rather than letting it run.
@@ -408,7 +408,7 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     }
 
     /**
-     * A guard no way into its station passes is noticed, and one on the approach is not (AUT-C2).
+     * A guard no way into its station passes is noticed, and one on the approach is not.
      *
      * Adam: *"if the guard signal is not on a path leading to the chosen station, we can add notice to the autonomy
      * editor."*  The approach is the track a train runs from the last station it could have stopped at.
@@ -463,7 +463,7 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     }
 
     /**
-     * An exit guard on its station's way in - a home signal - is named for the entry guard (RSA42-C1).
+     * An exit guard on its station's way in - a home signal - is named for the entry guard.
      *
      * The arriving route turns it green, and the arrival's claim of the station can turn it red in front of that train -
      * or, on the last track in, it stays green over the train standing there.  Adam, 2026-08-23: *"The protecting signal
@@ -503,7 +503,7 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     }
 
     /**
-     * An exit guard on its station's way out is not noticed; an entry guard there still is (RSA41-C3).
+     * An exit guard on its station's way out is not noticed; an entry guard there still is.
      *
      * An exit signal - the one a train leaving the station passes, which its own route sets green as it goes - lies on
      * the station's way out, and the notice asked only of the ways in: on Adam's railway it named his exit signals 38, 63
@@ -591,7 +591,7 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
 
         javax.swing.SwingUtilities.invokeAndWait(() -> { });
 
-        // OUTLINED, not selected (RLV9-C3) - read by reflection, as the claim came first
+        // OUTLINED, not selected - read by reflection, as the claim came first
         java.lang.reflect.Method outlined = org.traincontrol.gui.AutonomyEditorPanel.class.getMethod("isOutlined",
             TileKey.class);
 
@@ -603,7 +603,7 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     }
 
     /**
-     * A click on a guard notice outlines its squares without making them the bulk selection (RLV9-C3), so a length set
+     * A click on a guard notice outlines its squares without making them the bulk selection, so a length set
      * afterwards on another square goes to that square.  The outline was the selection, and the next Segment Length - on
      * any square - was written to the station and its signal instead.
      *
@@ -646,7 +646,7 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     }
 
     /**
-     * A clicked notice's outline goes with the next click on the diagram (RLV10-C5): it is drawn as the bulk selection
+     * A clicked notice's outline goes with the next click on the diagram: it is drawn as the bulk selection
      * is, and left standing it reads as a selection nothing is in.
      *
      * MUTATION: leave the outline after a click on the diagram, and this fails.
@@ -678,7 +678,7 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     }
 
     /**
-     * A guard notice about a station on another page takes its signal with it to that page (RLV9-C5): the jump handed on
+     * A guard notice about a station on another page takes its signal with it to that page: the jump handed on
      * only the station, and the editor opened there outlined the station alone.  Read by reflection, as the claim came
      * first.
      *
@@ -859,7 +859,7 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
 
         assertFalse(copied.contains("<"), "the copied notice carries markup, which is not plain text: " + copied);
 
-        // AND A HEADING IS NOT A NOTICE (RSA75-C3): clicking "Warnings" or a page's name leaves the clipboard alone
+        // AND A HEADING IS NOT A NOTICE: clicking "Warnings" or a page's name leaves the clipboard alone
         java.lang.reflect.Field severities = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredField("findingSeverity");
 
         severities.setAccessible(true);
@@ -980,7 +980,7 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
 
     /**
      * The guard line's pages opened as a railway: a station at each end of the two-signal line, and trains free to turn at
-     * both, so it has routes.  The guard notices read the routes the built railway has (RSA42-C2), and a station whose
+     * both, so it has routes.  The guard notices read the routes the built railway has, and a station whose
      * only approach is a sensor nothing reaches has none.
      *
      * @param pages the pages, the guard line's first

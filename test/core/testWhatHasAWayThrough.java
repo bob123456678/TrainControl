@@ -19,9 +19,9 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * **Why this class exists, which is a story about coverage rather than about railways.**  `hasAWayThrough`
  * used to skip the copy it was being asked about.  That is wrong in principle - ask it about a plain
  * copy and it answered "there is no way to stand here without being turned round" while BEING the way
- * through - and SEV-C1 repaired it on 2026-09-13.
+ * through - and it was repaired on 2026-09-13.
  *
- * The validation round after that (SVV-C4) found the repair had nothing that could fail.  Both callers
+ * The validation round after that found the repair had nothing that could fail.  Both callers
  * inside `Layout` hand it a copy they have already established is a terminus or a reversing point, and
  * such a copy is never the answer, so skipping it or counting it gives the identical answer at every
  * call the program can make.  The method was private, so no test could ask it either.  A rule that no
@@ -76,7 +76,7 @@ public class testWhatHasAWayThrough
      * A plain square is its own way through, which is what the skip got wrong.
      *
      * MUTATION, run 2026-09-13: restoring `if (copy == square) continue;` fails this claim, and the
-     * plain-copy half of `testAMayTurnSquareAnswersFromEitherCopy` below. SVV-C4 measured every claim
+     * plain-copy half of `testAMayTurnSquareAnswersFromEitherCopy` below. A later run found every claim
      * in `testAMayTurnStationIsNotATerminus` and `testTheArrivalHonoursTheAnswer` passing under the same
      * mutation, which is the whole reason this class was written.
      */

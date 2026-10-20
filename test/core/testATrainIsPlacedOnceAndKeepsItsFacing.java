@@ -36,7 +36,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
 
     /**
      * A copy of a square nothing arrives at is no arrival, so a side barred while trains did arrive does not shut it
-     * (RSA3-C6, its first half).
+     * (its first half).
      *
      * Round 18 gave such a square one copy per way out, each standing for a train that faces it - and so named after the
      * side that train would have come in by.  The build then asked the store's barred sides about it: a side barred while
@@ -86,7 +86,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     }
 
     /**
-     * A square nothing arrives at offers no home facing: no train can be brought home to either copy (RSA3-C6, its second half).
+     * A square nothing arrives at offers no home facing: no train can be brought home to either copy (its second half).
      *
      * *"we shouldn't allow an impossible facing to be saved"* (OB-282).  Its facings were offered, and a train homed
      * facing one way and standing there the other was one Return Home called IMPOSSIBLE - where before round 18 the home
@@ -131,7 +131,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     }
 
     /**
-     * The same on a feedback double curve whose two arcs each lead out one way (RSA2-C7): each copy stands for a train
+     * The same on a feedback double curve whose two arcs each lead out one way: each copy stands for a train
      * facing its way out, and so came in by the OTHER end of that arc - which here is no way out at all.
      *
      * On the straight of `testASquareNothingArrivesAtFacesItsPlacedTrain` the far end of each way out is the other way
@@ -229,7 +229,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
 
     /**
      * A station no track arrives at records which way the train placed on it faces, and offers it only the way out it
-     * faces (RSA2-C7; Adam, 2026-09-29: *"Go with a."*).
+     * faces (Adam, 2026-09-29: *"Go with a."*).
      *
      * A square nothing arrives at was built whole - one Point with no facing - so a train placed on it by hand was
      * offered both ways out, and sent the way it does not face it drives off the other way over track nothing locked:
@@ -593,7 +593,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     }
 
     /**
-     * Taking a train off a square takes its arrival side with it (IND9-A1).
+     * Taking a train off a square takes its arrival side with it.
      *
      * `arrivedFrom` describes the TRAIN that was standing here, not the square - the same thing the
      * comment beside the facing in `placeLocomotive` says about the facing, three lines from where this
@@ -656,7 +656,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     }
 
     /**
-     * A NEW occupant does not inherit the old one's tail (VAL9-B5).
+     * A NEW occupant does not inherit the old one's tail.
      *
      * The third branch of the same rule, and the one nothing exercised. Emptying a square is covered
      * above; handing it straight from one train to another is the case where the stale value is least
@@ -711,7 +711,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     /**
      * The arrival side reaches the running layout, and comes back from a save.
      *
-     * `VAL8-A2` reported that `arrivedFrom` never crosses between the setup and the railway - that the
+     * It was reported that `arrivedFrom` never crosses between the setup and the railway - that the
      * builder does not emit it, so an answer the operator gives blocks nothing.  It is not in the
      * builder's skip list and not in DERIVED, so by reading it should pass through as an extra; that
      * is exactly the kind of reading that has been wrong twice this week, so it is measured here
@@ -762,7 +762,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     }
 
     /**
-     * A direction change never flips the facing of a square the train has LEFT (REG7-A2).
+     * A direction change never flips the facing of a square the train has LEFT.
      *
      * **The mechanism, which is sharper than "it might double-follow".**  `flipFacing` builds a list
      * of candidate squares: the ones the running layout says hold this train, then the ones the SETUP
@@ -778,7 +778,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
      * Not an exotic interleaving: it is the ordinary state of things between a run ending and the
      * editor next being opened.
      *
-     * The rule now is that the setup only gets a vote when the railway has no opinion. `DIR-C3` is
+     * The rule now is that the setup only gets a vote when the railway has no opinion. The other rule is
      * untouched - its case is a locomotive recorded on two SETUP squares, which is still walked in
      * full when the running layout does not know.
      *
@@ -808,7 +808,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
 
         session.setFacing(departed, choices.get(0));
 
-        // A RAILWAY THAT KNOWS NOTHING still lets the setup answer - DIR-C3, and the half of the old
+        // A RAILWAY THAT KNOWS NOTHING still lets the setup answer - the half of the old
         // behaviour that must survive.  A train recorded in the setup and not yet running is the
         // ordinary state before anything has moved.
         org.traincontrol.automation.Layout knowsNothing =
@@ -915,8 +915,8 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
      *
      * The running model used to invalidate the WHOLE layout for one such name, so an old graph naming a
      * locomotive since renamed or deleted imported cleanly and then produced a setup that refused to
-     * open, reported as a locomotive problem with nothing to say the import put it there.  Since
-     * AMR-C3 (Adam, 2026-09-16: *"drop the train and keep the rest."*) that loader drops the placement
+     * open, reported as a locomotive problem with nothing to say the import put it there.  Now,
+     * per Adam (2026-09-16: *"drop the train and keep the rest."*), that loader drops the placement
      * with a log line too - `core.testHomeStaging
      * .testAPlacementForALocomotiveNotInTheDatabaseDropsOnlyThePlacement` - so the two doors now agree
      * about the same file, which is why this test is about the importer NAMING what it dropped.
@@ -1455,10 +1455,10 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     }
 
     /**
-     * A station demoted and promoted again has every setting it had as a station (GSE-C4).
+     * A station demoted and promoted again has every setting it had as a station.
      *
      * Adam, 2026-10-10, asked: keep them, ignored while not a station - as its maximum train length (OB-291) and its
-     * blockers (AMS-B2) already were.  Demoting cleared five, with no warning, from the editor and from the track
+     * blockers already were.  Demoting cleared five, with no warning, from the editor and from the track
      * diagram's own menu: the caption, the sides it bars arrivals by, its exit guard, its entry guards, and the turn flag
      * older setups spell "terminus".  This claim replaces one that said it forgot its arrival restriction - the rule his
      * ruling reverses.
@@ -1502,7 +1502,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     }
 
     /**
-     * A double-curve station whose track runs out on the contact's curve is a terminus facing that way (RSA63-C2): round 124
+     * A double-curve station whose track runs out on the contact's curve is a terminus facing that way: round 124
      * put its badge on the contact's curve, and `deadEndSide` still asked the square's first road, the other curve - so a
      * double curve was never drawn as a terminus.  Every orientation, the side past the contact's curve's second end left
      * with no track: the badge's dead end is that side.
@@ -1552,7 +1552,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
 
     /**
      * A two-ended station with a signal on each side of it, for every setting a station has and a plain point has not
-     * (GSE-C4): the station at 3,1, entered from the west and from the east, and signals at 2,1 (address 21) and 4,1
+     *: the station at 3,1, entered from the west and from the east, and signals at 2,1 (address 21) and 4,1
      * (address 22) on the track either side, wired as parsing a real layout wires them.
      *
      * @return the page, its file written
@@ -1572,7 +1572,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     }
 
     /**
-     * Opens that page, makes 3,1 a station and gives it every setting a plain point does not have (GSE-C4): a caption
+     * Opens that page, makes 3,1 a station and gives it every setting a plain point does not have: a caption
      * two squares below it at 3,3, its first arrival side barred, the signal at 2,1 as its exit guard, the one at 4,1 as
      * its entry guard, and the turn flag older setups spell "terminus".  Each is asserted as set before anything is
      * demoted.
@@ -1689,8 +1689,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     }
 
     /**
-     * A demoted station's settings are kept and IGNORED while it is not a station: nothing builds, checks or draws them
-     * (GSE-C4).
+     * A demoted station's settings are kept and IGNORED while it is not a station: nothing builds, checks or draws them.
      *
      * Each was cleared on demotion for a reason that still holds of a plain point: a caption is drawn, and lights a
      * station's name up when a train reverses there; a guard is thrown red over a square nothing is sent to; the old turn
@@ -1940,7 +1939,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     }
 
     /**
-     * The bulk clear touches exactly the squares the findings call homes (WK3-C3).
+     * The bulk clear touches exactly the squares the findings call homes.
      *
      * **Four walks of one map, and nothing made them agree.** `homeTiles()` fed the findings the
      * diagram shows; `tilesWithAHome()` decided what the Clear All Home Locomotives button touches;
@@ -1995,7 +1994,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
             + "answered: " + elsewhere);
     }
     /**
-     * A facing that follows the track moves the locomotive on the running layout too (DIR-B3).
+     * A facing that follows the track moves the locomotive on the running layout too.
      *
      * Adam, 2026-09-06: **"flipFacing should also update the running layout."**
      *
@@ -2066,7 +2065,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
         String source = SourceOf.declaration("private org.traincontrol.automationui.TileGraph.TileKey followTheTurn(")
             .replaceAll("\\s+", " ");
 
-        // Asked without building one since RLV11-C5: the follow is posted, and can land after Unload
+        // Asked without building one: the follow is posted, and can land after Unload
         assertTrue(source.contains("session.flipFacing(name, this.model.getAutoLayoutIfLoaded())"),
             "the window no longer hands the running layout to flipFacing, so the setup moves and the "
             + "layout does not - and captureFromLayout will write the layout's answer back over it "

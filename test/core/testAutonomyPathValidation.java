@@ -417,7 +417,7 @@ public class testAutonomyPathValidation
 
         MarklinLocomotive loc = dummyLoc();
 
-        // TST-C13: a freshly-built dummyLoc() already sits at speed 0, so asserting getSpeed() == 0
+        // A freshly-built dummyLoc() already sits at speed 0, so asserting getSpeed() == 0
         // afterwards proved nothing about handleMisconfiguredPath's loc.setSpeed(0) (Layout.java:2772) -
         // deleting that production line would leave this test green.  Giving the locomotive a nonzero
         // speed here means the closing assertion below can only pass if the guard actually stopped it.
@@ -643,7 +643,7 @@ public class testAutonomyPathValidation
     }
 
     /**
-     * Two paths holding one crossing, and the first to finish does not free it (RC-A9).
+     * Two paths holding one crossing, and the first to finish does not free it.
      *
      * `Edge.occupied` was a boolean, so it could hold one claim however many were made.  Two edges
      * naming a third as a lock edge is what a crossing looks like when the editor writes it, and with
@@ -698,7 +698,7 @@ public class testAutonomyPathValidation
     }
 
     /**
-     * A path does not give up an edge twice, because the second time it may not be its own (RC-A9).
+     * A path does not give up an edge twice, because the second time it may not be its own.
      *
      * With atomicRoutes off, executePath releases each edge the moment the train's tail has provably
      * passed it - deliberately keeping that edge's own lock edges held, since a crossing behind the
@@ -764,7 +764,7 @@ public class testAutonomyPathValidation
         cleared.put(first, java.util.concurrent.ConcurrentHashMap.<Edge>newKeySet());
         cleared.get(first).add(shared);
 
-        // AND THE RECORD OF WHAT WAS GIVEN BACK, which is the one `unlockPath` reads since GUI-A1: the cleared set is
+        // AND THE RECORD OF WHAT WAS GIVEN BACK, which is the one `unlockPath` reads: the cleared set is
         // kept in atomic mode too, where nothing in it has been released, so it cannot say what a run still holds.
         // `executePath` writes both on an early release; this writes both.
         java.lang.reflect.Field releasedField = Layout.class.getDeclaredField("releasedEarly");

@@ -319,7 +319,7 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
 
         if (berth != null) return berth;
 
-        // A platform's sentence, with the refusing figure where there is one (TDA-C10).
+        // A platform's sentence, with the refusing figure where there is one.
         org.traincontrol.automationui.AutonomyChecks.Finding platform = findingFor(RUN_IN_AT_A_PLATFORM);
 
         return platform != null ? platform : findingFor(RUN_IN_AT_A_PLATFORM_REFUSED);
@@ -328,11 +328,11 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
     /** The platform's own sentence (MT-555), by its key so the claims compile before it exists. */
     private static final String RUN_IN_AT_A_PLATFORM = "autosetup.ui.checkRunInShorterThanThePlatform";
 
-    /** The same, with the figure a train is refused above on the shortest way in (TDA-C10), by its key likewise. */
+    /** The same, with the figure a train is refused above on the shortest way in, by its key likewise. */
     private static final String RUN_IN_AT_A_PLATFORM_REFUSED = "autosetup.ui.checkRunInShorterThanThePlatformRefused";
 
     /**
-     * The platform notice names the figure a train is refused above, where there is one (Adam, 2026-09-24, TDA-C10).
+     * The platform notice names the figure a train is refused above, where there is one (Adam, 2026-09-24).
      *
      * *"Add the refusing figure where there is one."*  `Layout.whyTooLongForThisRoute` admits a train longer than the
      * room past the switch only as far as the measured route in holds (FR-087, `theApproachItselfHoldsIt`), so a train
@@ -385,7 +385,7 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
     }
 
     /**
-     * No refusing figure from a station no train is started at facing the platform's way (TDA-C10, found measuring the
+     * No refusing figure from a station no train is started at facing the platform's way (found measuring the
      * frozen railway: Tunnel's notice said 3, from BottomInnerOtherside, where no route the railway runs into Tunnel
      * measures under 6).
      *
@@ -434,7 +434,7 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
     }
 
     /**
-     * The refusing figure counts back over a sensor no train is started at, as the route in does (ADD-C6, ADA-C4): read
+     * The refusing figure counts back over a sensor no train is started at, as the route in does: read
      * off one leg, it was given only where a station stood straight behind the platform - and on his railway a `...Pre`
      * sensor stands behind most of them.
      *
@@ -478,8 +478,8 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
     }
 
     /**
-     * The refusing figure over built railways written by hand, one shape each (ADA2-C1, ADA2-C2, ADA2-C3, ADD2-C5,
-     * ADD2-C7): the walk that reads it off the built railway, asked directly.
+     * The refusing figure over built railways written by hand, one shape each:
+     * the walk that reads it off the built railway, asked directly.
      *
      * - **A loop walked whole**: a leg first reached inside a loop of sensors is not remembered as having no way in.
      * - **A turn stops it**: behind a copy trains turn at, nothing counts, as the route in stops there.
@@ -675,7 +675,7 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
     }
 
     /**
-     * The sentence with the refusing figure is in all eight languages and names it as {4} (TDA-C10).
+     * The sentence with the refusing figure is in all eight languages and names it as {4}.
      *
      * @throws Exception reading the bundles
      */
@@ -785,7 +785,7 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
     }
 
     /**
-     * A side trains may not stop on is still asked to be measured for a turn there (Adam, 2026-09-24, TDA-C8).
+     * A side trains may not stop on is still asked to be measured for a turn there (Adam, 2026-09-24).
      *
      * *"Arrivals THAT STOP THERE should only be allowed from the configured side(s).  Turning shouldn't need to factor
      * this in, since the former would govern the behavior."*  A barred side keeps its turning copy, so a train may come
@@ -909,9 +909,9 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
      * warning on BottomMainC, but it is an active terminus that would forbid non reversing trains.  The warning should
      * only be shown for a parking spot (terminus, not chooseable by autonomy) without a way to reverse in"*).  A way to
      * reverse in is another terminus that leads straight to the berth: Return Home rests a train that cannot reverse
-     * there and drives it home tail first - Adam's two-step parking (AMH-B1: *"That's why we started the 2 step process
+     * there and drives it home tail first - Adam's two-step parking (*"That's why we started the 2 step process
      * for parking, which is OK in my opinion."*) - and with one, MT-552's *"Non-reversible trains can still be backed in
-     * there"* holds.  A reversing point on the way is not one: no door drives a route on through it and back (RSA66-C3).
+     * there"* holds.  A reversing point on the way is not one: no door drives a route on through it and back.
      *
      * A line B - X - R: B the home, every train turning there.  Active: no warning.  A parking berth with R a plain
      * sensor: the warning.  R a reversing point: still the warning.  R a terminus - a train rested there is backed into
@@ -949,7 +949,7 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
             + " warned about - Adam: \"The warning should only be shown for a parking spot ... without a way to reverse"
             + " in\"");
 
-        // A reversing point beyond it is not a way in: no door drives a route on through one and back (RSA66-C3)
+        // A reversing point beyond it is not a way in: no door drives a route on through one and back
         session.setPointFlag(far, org.traincontrol.automationui.AutonomyBuilder.MUST_REVERSE, true);
         session.rebuild();
 
@@ -966,7 +966,7 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
     }
 
     /**
-     * A way to back a train into a berth counts the turns on the way (the fix-validation fanout's C3-B, on RSA66-C3).  A
+     * A way to back a train into a berth counts the turns on the way.  A
      * train rested on a terminus sets off turned, and each reversing point it passes turns it again; an odd count brings
      * it in tail first - backed in.  A reversing point passed inline (MT-245's S - reversing M - terminus T, which Return
      * Home drives) is a way in; one on a stub, which turns the train back where it came from, is not, nor is a rest
@@ -1073,7 +1073,7 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
     }
 
     /**
-     * And the station-capacity notice is gated the same way (SVN-C3).
+     * And the station-capacity notice is gated the same way.
      *
      * The two halves of the length rule are `placedTrainsWithoutLength` and `stationsWithoutMaxLength`,
      * and only the reversal notice ever got Adam's condition: *"if any other track length is set
@@ -1116,9 +1116,9 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
     }
 
     /**
-     * The station-capacity notice does not need a measured tile (REL-C2).
+     * The station-capacity notice does not need a measured tile.
      *
-     * `SVN-C3` gated this check on `measuresAnyTrack()`, which is Adam's condition for the REVERSAL
+     * This check was gated on `measuresAnyTrack()`, which is Adam's condition for the REVERSAL
      * notice - and there the gate and the notice are about the same data, tile lengths. Station
      * capacity is not that data: `Point.validateTrainLength` compares the station's typed maximum
      * against the locomotive's own authored length, and no tile length enters into it.

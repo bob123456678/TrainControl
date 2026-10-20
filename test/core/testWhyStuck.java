@@ -37,7 +37,7 @@ public class testWhyStuck
     }
 
     /**
-     * By hand, a station beyond a headshunt is somewhere to go, as the right-click menu says it is (MFR-B1).
+     * By hand, a station beyond a headshunt is somewhere to go, as the right-click menu says it is.
      *
      * Adam, on MT-434 (2026-09-15), asked which tool: Why Not Moving? should follow Path Type, and on Manual answer for
      * a hand-driven send.  `reversesAlongTheWay` is autonomy's rule - its own javadoc: *"NOT asked by isPathClear, so a
@@ -178,7 +178,7 @@ public class testWhyStuck
     }
 
     /**
-     * By hand, a station the right-click menu does not offer is not listed as somewhere to go (AMR-B2).
+     * By hand, a station the right-click menu does not offer is not listed as somewhere to go.
      *
      * On Manual, Why Not Moving? skips autonomy's standing bars (MT-434) and decides each station the way the menu's
      * route search does.  The menu itself asks one more question first - `isOfferableToOperator` - and leaves out two
@@ -247,7 +247,7 @@ public class testWhyStuck
     }
 
     /**
-     * By hand, the menu's own reason outranks being too short (Adam, 2026-09-15, AMV-C5).
+     * By hand, the menu's own reason outranks being too short (Adam, 2026-09-15).
      *
      * A physical refusal outranks a preference (MT-262), so a standing bar is replaced by "too long for the berth"
      * where the train would not fit.  That is right for autonomy's bars and wrong for the menu's: a station the menu
@@ -292,7 +292,7 @@ public class testWhyStuck
     }
 
     /**
-     * A train with no length recorded is not an error against a station with a stated limit (AMR-C1).
+     * A train with no length recorded is not an error against a station with a stated limit.
      *
      * `Point.validateTrainLength` unboxed the train's length, where every other reader of it treats null as nothing
      * known.  Its callers ask it inside route checks, so a null reached a dispatch as a NullPointerException.
@@ -501,7 +501,7 @@ public class testWhyStuck
     }
 
     /**
-     * THE DASH AND THE RULE, swept limb by limb rather than on the one that was missed (MON-B1).
+     * THE DASH AND THE RULE, swept limb by limb rather than on the one that was missed.
      *
      * `AutoLocomotiveStatus.notChosenByAutonomy` is a deliberate lock-free copy of
      * `Layout.barredFromAutonomy` - the rule is `synchronized` on the Layout and this runs on the event
@@ -661,8 +661,8 @@ public class testWhyStuck
     }
 
     /**
-     * A train on a copy of a station that has a way out but reaches no station autonomy may choose is told so (OB-299,
-     * ADU2-C2) - where Why not Moving? listed every station's own reason instead of the copy's, and the train sat there
+     * A train on a copy of a station that has a way out but reaches no station autonomy may choose is told so (OB-299)
+     * - where Why not Moving? listed every station's own reason instead of the copy's, and the train sat there
      * with nothing saying why.  Told to turn it round where the square's other copy reaches a station, since turning
      * puts it on that copy; and where neither does, told what would help instead, since turning round would not.
      *
@@ -709,9 +709,9 @@ public class testWhyStuck
             org.traincontrol.util.I18n.t("autosetup.ui.menuArrivalsGroup")), "a train on a square where neither copy"
             + " reaches a station autonomy may choose is told to turn round, which would not help (OB-299)");
 
-        // AND THE SIDE A TRAIN WOULD ARRIVE ON, WITH GUI4-C3'S EXCEPTION (RLU4-C4, RLU3-C1).  At a station trains pass
+        // AND THE SIDE A TRAIN WOULD ARRIVE ON, WITH ITS EXCEPTION.  At a station trains pass
         // through, a closed side is what keeps it out of reach, and switching it on and ticking - true there already - is
-        // no remedy (RLU2-C10); where every train turns round, opening it is the terminus error that refuses the whole
+        // no remedy; where every train turns round, opening it is the terminus error that refuses the whole
         // setup.  The sentence does not know which station is meant, so it names the side with the exception.
         assertTrue(stranded.explainCannotStart(loc).contains(org.traincontrol.util.I18n.t("autosetup.ui.menuArrivalsGroup")),
             "the either-way sentence gives only remedies already true of a station reached across a closed side (RLU4-C4,"
@@ -726,7 +726,7 @@ public class testWhyStuck
 
     /**
      * Turning round is offered only onto a copy a train may be started from: where the square's other copy reaches a
-     * station but is switched off, the train is told what would help instead (RLA-C5).
+     * station but is switched off, the train is told what would help instead.
      *
      * Turned round onto a copy autonomy will not start a train from, the next Why not Moving? gave that copy's refusal,
      * and turning back led to this sentence again.
@@ -747,7 +747,7 @@ public class testWhyStuck
 
         layout.moveLocomotive(loc.getName(), "WS11 Platform (eastbound)", false);
 
-        // NOT "WHICHEVER WAY" (RLU3-C2): the other way does reach a station; autonomy only starts no train there.
+        // NOT "WHICHEVER WAY": the other way does reach a station; autonomy only starts no train there.
         assertEquals(layout.explainCannotStart(loc), org.traincontrol.util.I18n.f(
             "autolayout.why.startReachesNoStationOtherWayRefused", "WS11 Platform"), "a train on the copy of WS11 Platform"
             + " that reaches no station is told to turn round onto a copy that is switched off (RLA-C5), or told no station"
@@ -762,9 +762,9 @@ public class testWhyStuck
 
     /**
      * Turning round is not offered onto a copy that is no station - the copy of a square trains may not arrive at - even
-     * where it reaches a station (RLA-C5, RLA2-C6).
+     * where it reaches a station.
      *
-     * The barred copy is the case RLA-C5 led with: turned round onto it, the next Why not Moving? refuses it and sends
+     * The barred copy is the lead case: turned round onto it, the next Why not Moving? refuses it and sends
      * the operator back.  The claim beside this one switches a copy off, which a built railway never does to one copy
      * alone.
      *
@@ -784,8 +784,8 @@ public class testWhyStuck
         assertTrue(layout.isABarredCopyOfAStation(layout.getPoint("WS12 Platform (westbound)")), "precondition: the"
             + " westbound copy is not a copy of the station trains may not arrive at");
 
-        // NOT "WHICHEVER WAY" (RLU3-C2): the other way reaches WS12 Far; trains may only not arrive facing it.  Its
-        // remedy is that copy's own - open that side, then turn round - where not every train turns there (GUI4-C3).
+        // NOT "WHICHEVER WAY": the other way reaches WS12 Far; trains may only not arrive facing it.  Its
+        // remedy is that copy's own - open that side, then turn round - where not every train turns there.
         assertEquals(layout.explainCannotStart(loc), org.traincontrol.util.I18n.f(
             "autolayout.why.startReachesNoStationOtherWayBarred", "WS12 Platform",
             org.traincontrol.util.I18n.t("autosetup.ui.menuArrivalsGroup")), "a train on the copy of WS12 Platform that"
@@ -795,8 +795,8 @@ public class testWhyStuck
 
     /**
      * Where the other way reaches a station only across a side trains may not arrive by, and every train turns round at
-     * that square, the train is told that side is closed and not told to open it (RLU4-C6, RLU4-C7, RLA4-C4, RLD4-C6):
-     * opened there, a terminus reached from two sides is the error that refuses the whole setup (GUI4-C3).
+     * that square, the train is told that side is closed and not told to open it:
+     * opened there, a terminus reached from two sides is the error that refuses the whole setup.
      *
      * The claims beside this one build no square whose every copy turns a train, so the exception had no claim; and the
      * sentence chosen here said only that autonomy starts no train that way, without the reason.

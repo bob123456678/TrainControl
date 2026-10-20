@@ -132,14 +132,14 @@ public class testNonReversibleTrains
      * moved one of them this month.
      *
      * **The exception is not this door.**  Return Home plans through `HomeStaging` and executes with
-     * `ALWAYS_REVERSE`, which `turnsOnArrival` reads as a plan rather than an operator (SEV-B2); the
+     * `ALWAYS_REVERSE`, which `turnsOnArrival` reads as a plan rather than an operator; the
      * execution tier permits it, which `testAReversingPointIsRefusedToANonReversibleLocomotive` above
      * asserts by asking `isPathClear`. Backing into a terminus is how such a train gets home at all
      * (MT-245), so a rule that refused everywhere would stop Return Home working.
      *
      * The control is the same train made reversible: without it this would pass on a layout where
      * autonomy picks nothing for anybody.  The terminus is given a way back out for it, because a terminus
-     * nothing leads out of is refused to a reversible train too (E2E-B1, round 92).
+     * nothing leads out of is refused to a reversible train too (round 92).
      *
      * MUTATIONS, run 2026-09-13. Deleting `(!end.isTerminus() || loc.isReversible())` from `pickPath`
      * fails this. Deleting `!end.isReversing()` from `isSendableDestination` does NOT - a reversing
@@ -159,7 +159,7 @@ public class testNonReversibleTrains
 
             if (!reversing) layout.getPoint("REV_end").setTerminus(true);
 
-            // A WAY BACK OUT, for the control's sake (E2E-B1): since round 92 autonomy sends even a reversible train to a
+            // A WAY BACK OUT, for the control's sake: since round 92 autonomy sends even a reversible train to a
             // terminus only where some station is reachable from it again, and the fixture's one edge leads in and not out
             if (!reversing) layout.createEdge("REV_end", "REV_start");
 
@@ -445,7 +445,7 @@ public class testNonReversibleTrains
             // inside the run: "make it be on departure itself, that way there is no dispatch prior to
             // user input."
             // IN THE ONE HAND DOOR, before its dispatch
-            // ITS DISPATCH, by the name it has had since round 61 (BCR-C1) or the one before
+            // ITS DISPATCH, by the name it has had since round 61 or the one before
             int dispatch = source.indexOf("executePathByHand(");
 
             if (dispatch < 0) dispatch = source.indexOf("executePath(");
@@ -880,7 +880,7 @@ public class testNonReversibleTrains
             "executePathInternal no longer decides an intermediate reversal through shouldReverseAt, "
             + "so the rule is tested here and something else decides what the railway does");
 
-        // AND THE ARRIVAL, which is a SECOND site and was asking nobody (DIR-A2).
+        // AND THE ARRIVAL, which is a SECOND site and was asking nobody.
         //
         // The policy is consulted from inside `if (i != path.size() - 1)`; the last point is turned
         // forty lines below the loop by a different statement. So a hand-driven send whose
@@ -967,10 +967,10 @@ public class testNonReversibleTrains
         // its owner had set to run slow, and stayed there until the next point recalculated.  The stop
         // was added for the reversal question; handing back a speed limit was not part of it.
         //
-        // Written through `drive` since RSA-C1, which leaves a stop ordered since dispatch standing - and then the
+        // Written through `drive`, which leaves a stop ordered since dispatch standing - and then the
         // wait for the speed is not made either.
         //
-        // And its wait for the speed gives up on a stop or a retirement since RSA2-C2.
+        // And its wait for the speed gives up on a stop or a retirement.
         assertTrue(flat.contains("if (drive(loc, resume, stopsAtDispatch)) {")
             && flat.contains("loc.waitForSpeedAtOrAbove(resume, () -> this.stopsOrdered.get() != stopsAtDispatch"
             + " || !this.isCurrentLayout());"),

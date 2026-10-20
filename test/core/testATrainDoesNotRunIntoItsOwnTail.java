@@ -227,7 +227,7 @@ public class testATrainDoesNotRunIntoItsOwnTail
 
         Matcher m = Pattern.compile(regex.toString(), Pattern.DOTALL).matcher(reason);
 
-        // The sentence begins the reason; what is unmeasured on the way round may follow it (TDA-B1).
+        // The sentence begins the reason; what is unmeasured on the way round may follow it.
         return m.lookingAt() ? Integer.valueOf(m.group(1)) : null;
     }
 
@@ -327,7 +327,7 @@ public class testATrainDoesNotRunIntoItsOwnTail
         assertTrue(tightest.contains("BottomMainAPre") && tightest.contains("BottomCrossover"), "the refusal does not name"
             + " BottomMainAPre -> BottomCrossover, where the way round comes back to the train (MT-571): " + tightest);
 
-        // THE FIGURE ITSELF, measured on the frozen railway (TDD-C4): from BottomSecondary west round by the tunnel and
+        // THE FIGURE ITSELF, measured on the frozen railway: from BottomSecondary west round by the tunnel and
         // back to row 11 at 14,11 - 11,8 and 11,7, 11,4 and 10,3, 7,4 and 7,5, 7,11 and 9,12, 12,12 are measured, one
         // unit each.  A claim that the sentence agrees with itself would pass a rule that moved every figure alike.
         assertEquals(gap.intValue(), 9, "the way round from BottomSecondary back to its own tail measures 9 on the frozen"
@@ -375,7 +375,7 @@ public class testATrainDoesNotRunIntoItsOwnTail
         assertFalse(offersLowerFront(), "at " + (gap + 1) + " units LowerFront is still offered by the send doors"
             + " (MT-571)");
 
-        // AND EVERY WAY THERE, which is what a person sees (TDA-C2): a destination is offered if any route to it is
+        // AND EVERY WAY THERE, which is what a person sees: a destination is offered if any route to it is
         // clear, so a train one unit past the figure is kept off LowerFront only if every route there refuses it.
         for (Map.Entry<List<Edge>, String> each : routesToLowerFront().entrySet())
         {
@@ -392,7 +392,7 @@ public class testATrainDoesNotRunIntoItsOwnTail
      * Every other length rule reads track answered 0 on purpose as measured track of no length (behaviour.md 5b), and errs
      * towards refusing.  This one judged a return only where the route had run some length since it left the place, and
      * added only lengths above 0 - so a loop answered 0 throughout was never judged, and a train of any length went round
-     * it into itself: the one length rule that erred towards letting through (RLA-C6).  A way round is judged now once it
+     * it into itself: the one length rule that erred towards letting through.  A way round is judged now once it
      * is measured: a length on it, or every place on it answered.  A loop nobody measured is still not judged - *"only
      * apply if lengths are specified"* - and nor is one answered everywhere but one square, a switch nobody has given a
      * length, which `Edge.isMeasured` would not count as measured either.
@@ -714,7 +714,7 @@ public class testATrainDoesNotRunIntoItsOwnTail
 
     /**
      * Return Home judges a train it has already moved by the road it moved it along, not by what the railway records
-     * there (TDA-C3).
+     * there.
      *
      * The plan's second move of a train starts where its first left it, and the railway knows nothing of that yet: here
      * the plan has brought the train to BottomSecondary down RampDown, and BottomSecondary is empty on the railway.  Asked

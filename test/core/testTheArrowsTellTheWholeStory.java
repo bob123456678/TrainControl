@@ -510,7 +510,7 @@ public class testTheArrowsTellTheWholeStory
     }
 
     /**
-     * Every road of the square stores an answer its blades leave a meaning (VD18-C2).  A road left at its default stores
+     * Every road of the square stores an answer its blades leave a meaning.  A road left at its default stores
      * nothing: a permanent turnout's is `BOTH`, which the blades narrow to the one way there is.
      */
     private static void assertPossible(AutonomySession on, TileKey square, String after)

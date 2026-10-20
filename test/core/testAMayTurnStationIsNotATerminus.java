@@ -290,7 +290,7 @@ public class testAMayTurnStationIsNotATerminus
 
     /**
      * On his railway: autonomy does not choose BottomMainB's turning copy for a reversible train of 4, which no station
-     * reachable from there takes, and does for one of 3, which BottomInner beyond it takes (E2E-B1).
+     * reachable from there takes, and does for one of 3, which BottomInner beyond it takes.
      *
      * The end-to-end validator ran his railway for twelve minutes with eight trains: a reversible train of 4 was turned
      * there in four runs of seven and never moved again, and while it stood there Return Home found no plan for anyone.
@@ -363,7 +363,7 @@ public class testAMayTurnStationIsNotATerminus
 
     /**
      * On his railway: Return Home names a train of 4 standing on BottomMainB's turning copy, from which nothing it fits
-     * can be reached, rather than searching the whole fleet and answering that no plan was found (OB-325, from E2E-B1).
+     * can be reached, rather than searching the whole fleet and answering that no plan was found (OB-325).
      *
      * The end-to-end validation found it there: about fifteen seconds of searching, then "no plan found", naming nobody.
      * Since round 92 autonomy does not send a train there; one placed or sent there by hand still stands there.
@@ -465,8 +465,8 @@ public class testAMayTurnStationIsNotATerminus
     }
 
     /**
-     * On his railway the right-click menu offers a standing train the same stations every time it is asked (RSA59-B1;
-     * Adam, 2026-10-09: "Fix B1").
+     * On his railway the right-click menu offers a standing train the same stations every time it is asked (Adam,
+     * 2026-10-09: "Fix B1").
      *
      * The final validation asked it twelve times for a train standing alone at BottomMainA and got twelve different
      * menus: the lower level's stations - LowerBack, LowerFront, LowerParkingOuter, ParkingTrack4 to 10 - came and went,

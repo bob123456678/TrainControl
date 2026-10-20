@@ -185,8 +185,7 @@ public class testATrainComesHomeFacingTheWayItWasHomed
     }
 
     /**
-     * A train standing turned round on its home square - on the turning copy of the arrival it was homed in - is not home
-     * (TDY-B1, AUT-B2).
+     * A train standing turned round on its home square - on the turning copy of the arrival it was homed in - is not home.
      *
      * A turning copy points back at the side it came in by, so it faces the other way from its plain twin.  Return Home
      * counted the twin as home because the two share an arrival, and on a square trains may turn at, a train left turned
@@ -250,12 +249,12 @@ public class testATrainComesHomeFacingTheWayItWasHomed
     }
 
     /**
-     * A home is set facing the way the train faces ON THE RAILWAY, not the way the setup last said (TDY-C2).
+     * A home is set facing the way the train faces ON THE RAILWAY, not the way the setup last said.
      *
      * Adam's rule for the facing: *"Direction it is facing when home is set."*  It was read from the setup's FACING,
      * which names the heading a train set off with until a capture writes the arrival back - so after a run that turned
      * the train at this square, the home was saved facing the way it no longer faces.  `facingOf` was given the
-     * running-layout-first reading for exactly this staleness (CONF-B1); the home door is its sibling.
+     * running-layout-first reading for exactly this staleness; the home door is its sibling.
      *
      * MUTATION: read the setup's facing alone again and this fails.
      *
@@ -315,9 +314,9 @@ public class testATrainComesHomeFacingTheWayItWasHomed
     }
 
     /**
-     * A train the railway has somewhere else gets no facing from the setup's stale word for it (TDY2-C4).
+     * A train the railway has somewhere else gets no facing from the setup's stale word for it.
      *
-     * TDY-C2 made a home's facing come from the railway first.  But where the setup still has the train on this square
+     * A home's facing comes from the railway first.  But where the setup still has the train on this square
      * and it has since driven off, the running layout finds it on no copy here and the setup's FACING - the heading of a
      * train that is no longer here - was saved as the home's facing, and the editor did not ask, because it decided
      * whether to ask from the setup.  Where the railway knows where the train is, the setup does not answer for it.
@@ -387,7 +386,7 @@ public class testATrainComesHomeFacingTheWayItWasHomed
 
     /**
      * A home held to a facing the train cannot stand in there is IMPOSSIBLE, with the reason - not a search that
-     * exhausts and says "maybe" (TDY-C1).
+     * exhausts and says "maybe".
      *
      * The pre-check that turns an unreachable home into a proof asked whether the train could reach and stand on ANY
      * copy of the home square.  Once a home is held to a facing, only the copies facing that way will do: here the train

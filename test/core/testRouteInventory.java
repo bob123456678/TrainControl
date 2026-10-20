@@ -40,7 +40,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  *
  * @author Adam
  *
- * <p><b>A missing input is a failure, not a pass or a skip (TS-C3).</b> The three bundles are copies of Adam's, kept in
+ * <p><b>A missing input is a failure, not a pass or a skip.</b> The three bundles are copies of Adam's, kept in
  * {@code test/layouts/autonomy-bundles}; they were read from his gitignored {@code tc_backup/}, so on every other
  * machine these claims skipped and checked nothing.
  */
@@ -243,7 +243,7 @@ public class testRouteInventory
      * What one call to {@link #report} actually found, so a caller can assert on it instead of only
      * writing it to a file for a person to read later.
      *
-     * TST-B5: this class used to compute all of this and throw every bit of it away except the file on
+     * This class used to compute all of this and throw every bit of it away except the file on
      * disk, which is how seven of its eight {@code @Test} methods could pass without checking anything.
      */
     private static final class RouteInventoryResult
@@ -556,7 +556,7 @@ public class testRouteInventory
 
         org.traincontrol.automationui.GraphReducer reducer = session.getReducer();
 
-        // TST-B5: reducer.getEdges() is the whole reason this test exists - if the reducer stops
+        // Reducer.getEdges() is the whole reason this test exists - if the reducer stops
         // producing lock edges for the live layout, there is nothing left below to write down or to
         // debug, and that is itself the regression this floor catches.
         assertFalse(reducer.getEdges().isEmpty(),

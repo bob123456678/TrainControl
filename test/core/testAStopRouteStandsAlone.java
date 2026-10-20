@@ -133,7 +133,7 @@ public class testAStopRouteStandsAlone
 
             mixed.add(RouteCommand.RouteCommandAccessory(39, Accessory.accessoryDecoderType.MM2, true));
 
-            // A STOP WITH A WAIT AFTER IT, which holds back the command after it (RLA5-C4, RLD5-C3)
+            // A STOP WITH A WAIT AFTER IT, which holds back the command after it
             RouteCommand stop = RouteCommand.RouteCommandStop();
 
             stop.setDelay(700);
@@ -159,7 +159,7 @@ public class testAStopRouteStandsAlone
 
             assertTheSplit(name, I18n.f("route.stopRouteSplitName", name), 48451, true, 1);
 
-            // AND WHAT ELSE IT SAYS IT KEEPS (RLU5-C5): the id its tiles are bound by, the trigger, the conditions, the lock
+            // AND WHAT ELSE IT SAYS IT KEEPS: the id its tiles are bound by, the trigger, the conditions, the lock
             MarklinRoute kept = model.getRoute(name);
 
             assertEquals(kept.getId(), 84951, "the split changed the route's id, which its tiles are bound by");
@@ -207,7 +207,7 @@ public class testAStopRouteStandsAlone
     /**
      * The stop route a split makes is numbered as a route made in the editor is - from 1000 up - so a Central Station
      * sync, which numbers its own routes below, cannot replace it and take the power cut out of the route that fires it
-     * (RLU5-B1, RLA5-C5, RLD5-C2).  Read from a file whose one route is numbered below 1000.
+     *.  Read from a file whose one route is numbered below 1000.
      *
      * @throws Exception from the file or the model
      */
@@ -246,7 +246,7 @@ public class testAStopRouteStandsAlone
 
     /**
      * A route that reaches a split route by two paths - the longer listed first - still counts as cutting the power
-     * (RLV6-C2).  The walk remembered every route it had asked, so the split route, first met too deep to fire its stop,
+     *.  The walk remembered every route it had asked, so the split route, first met too deep to fire its stop,
      * was not asked again by the shorter path that does; the route was then asked about at the human doors, and Cancel
      * called off the power cut.
      *
@@ -394,7 +394,7 @@ public class testAStopRouteStandsAlone
     }
 
     /**
-     * A route's emergency stop is sent whatever the model believes about the power (RSA-C4).  It was skipped while the
+     * A route's emergency stop is sent whatever the model believes about the power.  It was skipped while the
      * power flag read off - and that flag is only the last GO or STOP echo the Central Station sent, so one lost GO left
      * a stop route that fired with nobody present cutting nothing.  behaviour.md 7a: an emergency stop is obeyed whatever
      * else is true.  The flag now decides only whether the notice is shown.
@@ -460,8 +460,8 @@ public class testAStopRouteStandsAlone
     }
 
     /**
-     * The latency cut-off cuts the power whatever the model believes about it (RSA2-C6), as a route's stop does
-     * (RSA-C4): it asked only while the power flag read on, and that flag is only the last echo heard.
+     * The latency cut-off cuts the power whatever the model believes about it, as a route's stop does
+     *: it asked only while the power flag read on, and that flag is only the last echo heard.
      *
      * MUTATION: send the latency cut-off's stop only while the power flag reads on, and this fails.
      *

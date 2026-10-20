@@ -343,7 +343,7 @@ public class testACompulsoryTurnIsNotAQuestion
 
     /**
      * A line of three stations - Alpha, Beta, Gamma - set up as an operator would and built into the running layout by the
-     * setup's own builder (RSA50-A1: a claim whose railway is assembled by hand can give a Point a block the build never
+     * setup's own builder (a claim whose railway is assembled by hand can give a Point a block the build never
      * emits, and pass on a shape no user has).  Alpha is a compulsory turn; Gamma is one too, or a may-turn square at the
      * end of the line; Beta may be a may-turn square.
      *
@@ -591,7 +591,7 @@ public class testACompulsoryTurnIsNotAQuestion
 
     /**
      * The end of a line marked "Trains May Change Direction Here", as the build makes it - one copy, no block - turns a
-     * train sent there by hand, and the operator is not asked (RSA50-A1).  Round 82 left the copy with no block out, as
+     * train sent there by hand, and the operator is not asked.  Round 82 left the copy with no block out, as
      * a Point of a hand-written railway, and the build gives a single copy no block: so the operator was asked, "keep"
      * was honoured, and the train stood facing the end of the line with its next journey routed back.
      *
@@ -642,7 +642,7 @@ public class testACompulsoryTurnIsNotAQuestion
     }
 
     /**
-     * A timetable entry recorded with "keep" plays back turned where the railway turns every train (RSA50-A2): the end of
+     * A timetable entry recorded with "keep" plays back turned where the railway turns every train: the end of
      * a line marked "may" - recorded before round 83 - or a station marked "must" after the recording.  The compulsory
      * turn is asked before the recorded answer.
      *
@@ -708,7 +708,7 @@ public class testACompulsoryTurnIsNotAQuestion
 
     /**
      * A train turned by hand at a may-turn station's plain copy is stood at once on the copy that faces the way it came
-     * in - the copy the window's idle drain would stand it on, which then changes nothing (RSA50-A3).  The drain ran only
+     * in - the copy the window's idle drain would stand it on, which then changes nothing.  The drain ran only
      * once the railway was idle: while another train was out, this one stood on the copy for its old heading, and its next
      * hand send set the route ahead while its decoder drove it back.
      *
@@ -787,7 +787,7 @@ public class testACompulsoryTurnIsNotAQuestion
     }
 
     /**
-     * A timetable recorded by hand where the operator turned a train at a may-turn station plays back (RSA50-B1): the
+     * A timetable recorded by hand where the operator turned a train at a may-turn station plays back: the
      * window's idle drain stood the turned train on another copy between the recorded sends, and the next entry was
      * recorded from it; playback is never idle, so the train was still on the copy it turned on and the next entry could
      * not start.  It is stood there at the arrival now, in the recording and in the playback alike.
@@ -795,7 +795,7 @@ public class testACompulsoryTurnIsNotAQuestion
      * MUTATION: in `Layout.playedBack`, `final boolean turn = recorded && turnsTrains;` to `final boolean turn = false;`
      * (the recorded turn not played back) and this fails: the second entry never starts.  The older mutation, leaving a
      * turned train for the idle drain again (`else if (restandAfterTheTurn) standOnTheCopyItFacesAfterTheTurn(...)` to
-     * `else if (false) ...` in `Layout`), is an equivalent mutant here since RSA52-B1 and leaves this green: the turn is
+     * `else if (false) ...` in `Layout`), is an equivalent mutant here and leaves this green: the turn is
      * made on the turning copy, which already faces the way the train came in, so the arrival's re-stand and the drain
      * alike leave the train where it is.
      *
@@ -907,17 +907,17 @@ public class testACompulsoryTurnIsNotAQuestion
 
     /**
      * A train a plan turns - autonomy, Return Home, staging, a timetable recorded from autonomy - stays on the turning
-     * copy it arrived on, where the plan's next leg starts (RSA51-B1).  Round 83 stood every turned train at once on the
+     * copy it arrived on, where the plan's next leg starts.  Round 83 stood every turned train at once on the
      * copy the window's idle drain would choose, a plain copy of the other approach where there is one; Return Home's
-     * planner models the train on the move's end and plans its next move from there (AMH-D4), so that move was refused
+     * planner models the train on the move's end and plans its next move from there, so that move was refused
      * at its start check three times and the run stopped half-staged.  The re-stand at the arrival is for the turns an
      * operator answered, whose next journey nobody has planned.
      *
-     * MUTATION: in `AutonomySession`'s re-stand onto the copy a train faces, take out the RSA52-B1 return
+     * MUTATION: in `AutonomySession`'s re-stand onto the copy a train faces, take out the return
      * (`if (from != null && facing == facingsFor(tile).get(from.getName()) && from.isDestination()) return;`) and this
      * fails at the idle drain: the drain moves the train onto the other side's plain copy.  The older mutation, standing a
      * train a plan turned on the drain's copy at the arrival again (`reversals != ALWAYS_REVERSE` dropped from
-     * `restandAfterTheTurn` in `Layout`), is an equivalent mutant since RSA52-B1 and leaves this green: a plan turns a
+     * `restandAfterTheTurn` in `Layout`), is an equivalent mutant and leaves this green: a plan turns a
      * train on a turning copy, which already faces the way it came in, and `Layout.copyAfterTheTurn` answers such a copy
      * with itself, so the re-stand it would add moves nothing.
      *
@@ -949,7 +949,7 @@ public class testACompulsoryTurnIsNotAQuestion
                 + " onto " + standing(rail, x) + " - the plan's next leg starts from the turning copy, and is refused"
                 + " (RSA51-B1)");
 
-            // AND THE WINDOW'S IDLE DRAIN LEAVES IT THERE (RSA52-B1): the copy already faces the way the train came in,
+            // AND THE WINDOW'S IDLE DRAIN LEAVES IT THERE: the copy already faces the way the train came in,
             // and trains may arrive at it - moved onto the other side's plain copy, the next entry of a timetable
             // recorded from the turning copy could not start after a Graceful Stop, or after any idle moment in the
             // recording
@@ -977,7 +977,7 @@ public class testACompulsoryTurnIsNotAQuestion
     }
 
     /**
-     * A turn recorded by hand is not played back where the station no longer lets trains turn (RSA52-C1; Adam,
+     * A turn recorded by hand is not played back where the station no longer lets trains turn (Adam,
      * 2026-10-07: *"The path should organically fail in the direction no longer allowed."*).  The recorded answer is
      * honoured where a turn is still the railway's to make - a square with a turning copy - and otherwise the train
      * keeps its direction, so an entry that needs it the other way fails as any journey would.  Playback turned it
@@ -1055,7 +1055,7 @@ public class testACompulsoryTurnIsNotAQuestion
     }
 
     /**
-     * A train turned by hand on a may-turn station's turning copy stays on it (RSA52-B1): that copy already faces the way
+     * A train turned by hand on a may-turn station's turning copy stays on it: that copy already faces the way
      * the train came in, and trains may arrive at it.  The arrival moved it onto the other side's plain copy, which faces
      * the same way - while a plan's turned train, and now the window's idle drain, leave a train on the turning copy, so
      * the same turn stood the train on two different copies by which door had sent it.  On its way, the railway names the
@@ -1136,11 +1136,11 @@ public class testACompulsoryTurnIsNotAQuestion
 
     /**
      * A timetable entry that starts on a may-turn station's turning copy runs after TrainControl has been closed and opened
-     * again (RSA53-B1).  A turn there leaves the train on the turning copy, and the entry is recorded from it (RSA52-B1);
+     * again.  A turn there leaves the train on the turning copy, and the entry is recorded from it;
      * but the setup keeps a standing train as its square and facing only, and the next start stands it on the plain copy
      * of that square facing the same way - so Execute Timetable said the train *"must be moved to"* a square it already
      * stood on facing its way, and the entry's own check refused it.  Both now count it as at its start, and the entry
-     * runs from the copy it stands on (RSA54-A1).  The exit and the start are the two calls they make: the setup captures
+     * runs from the copy it stands on.  The exit and the start are the two calls they make: the setup captures
      * the railway, and the railway is built again from the setup.
      *
      * MUTATION: ask the entry's start by copy again, in the window's check or in the entry's own, and this fails.
@@ -1175,7 +1175,7 @@ public class testACompulsoryTurnIsNotAQuestion
 
             assertNotNull(back, "precondition: no edge from Beta's turning copy back to Alpha");
 
-            // AT REST ON THE TURNING COPY, as a turn there leaves a train (RSA52-B1), with an entry recorded from it
+            // AT REST ON THE TURNING COPY, as a turn there leaves a train, with an entry recorded from it
             turning.setLocomotive(x);
 
             rail.setTimetable(java.util.Arrays.asList(new org.traincontrol.automation.TimetablePath(x,
@@ -1244,7 +1244,7 @@ public class testACompulsoryTurnIsNotAQuestion
     }
 
     /**
-     * A train on the start square of a timetable entry facing the other way is not at its start (RSA53-B1's bound): only a
+     * A train on the start square of a timetable entry facing the other way is not at its start: only a
      * copy facing the start copy's way leaves to the same Points.  Counted as at its start, the entry would run it off
      * the way its decoder does not drive.
      *
@@ -1327,8 +1327,8 @@ public class testACompulsoryTurnIsNotAQuestion
 
     /**
      * A timetable entry recorded from a may-turn station's turning copy leaves a train that came in from the other side
-     * where it stands, with its tail where it lies (RSA54-A1).  The plain copy it stands on faces the turning copy's way,
-     * so the entry counts it as at its start (RSA53-B1) - but a turning copy has rails on one side only, the side it is
+     * where it stands, with its tail where it lies.  The plain copy it stands on faces the turning copy's way,
+     * so the entry counts it as at its start - but a turning copy has rails on one side only, the side it is
      * arrived at from, and round 86 stood the train on it with its own tail side: the railway then claimed none of the
      * track the train lay over, and a second train was routed onto it, while the entry waited for its way and after the
      * run gave up.  The entry runs from the copy the train stands on now.

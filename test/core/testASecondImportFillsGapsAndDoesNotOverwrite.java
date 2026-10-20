@@ -84,8 +84,7 @@ public class testASecondImportFillsGapsAndDoesNotOverwrite
     }
 
     /**
-     * The import's {4} counts squares that had a name before it, and the old points that shared a square are said apart
-     * (RSA44-C3).
+     * The import's {4} counts squares that had a name before it, and the old points that shared a square are said apart.
      *
      * A second old point on a sensor - a station and its approach guard, the ordinary shape of an old file - found its
      * square already named by the same import, and was counted in {4} as a square that "already had a name and was left
@@ -138,7 +137,7 @@ public class testASecondImportFillsGapsAndDoesNotOverwrite
 
     /**
      * A second import of the same file counts in {4} the squares that had a name, once each, and says again the old points
-     * that shared a square (RSA45-C1).
+     * that shared a square.
      *
      * Names are shared by every configuration, so an import into a diagram that already has its names - a second import
      * of the same file (MT-298), or an old file brought into a new configuration of a named railway - finds every square
@@ -215,7 +214,7 @@ public class testASecondImportFillsGapsAndDoesNotOverwrite
                 + " plural: " + one);
         }
 
-        // AND IN EACH LANGUAGE'S OWN FORM (RSA46-C2): French says 0 in the singular, and Polish has a form of its own for 2
+        // AND IN EACH LANGUAGE'S OWN FORM: French says 0 in the singular, and Polish has a form of its own for 2
         // to 4 but not 12 to 14 - asked of the bundle's own One, Few and plain keys
         String[][] keys = {{"sharedSquaresSentence", "autosetup.ui.importSharedSquares"},
             {"leftBehindSentence", "autosetup.ui.leftBehind"}};

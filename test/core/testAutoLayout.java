@@ -291,7 +291,7 @@ public class testAutoLayout
     }
 
     /**
-     * An edge's arrival side survives Export JSON and Load JSON (S14-B3).
+     * An edge's arrival side survives Export JSON and Load JSON.
      *
      * `entrySide` is the side of the end point an edge arrives by.  `AutonomyBuilder` writes it when it
      * traces the diagram, `Layout.fromJSON` reads it back, and the field's own javadoc says it *"travels
@@ -648,7 +648,7 @@ public class testAutoLayout
     }
 
     /**
-     * Track answered 0 on purpose is measured track of no length (TDU-C6: *"0 lengths count as measures, so
+     * Track answered 0 on purpose is measured track of no length (Adam, 2026-09-24: *"0 lengths count as measures, so
      * non-atomic should be allowed"*): to the Atomic Routes gate and the release escape it stands for, and to every
      * other length rule as well.
      *
@@ -833,14 +833,14 @@ public class testAutoLayout
     }
 
     /**
-     * A railway can say which track non-atomic mode could release under a train (VD13-B2/B3, VD14-C6).
+     * A railway can say which track non-atomic mode could release under a train.
      *
      * This is the one question the atomic-routes gate asks, at all seven of its doors - the checkbox, the load door,
      * and the five that dispatch a train.  It is the hazard in the form the hazard takes: non-atomic mode releases an
      * edge as soon as `tailHasProvablyPassed` returns true, and that happens immediately when `pathIsUnmeasured` -
      * when NO edge on the path has a length.
      *
-     * Nine claims about the count and one about its order (VD17-T4, T5, T10):
+     * Nine claims about the count and one about its order:
      *
      *  - **An unmeasured rail counts**, and a measured one does not.  (The control: a counter that
      *    answered "some" whatever the railway looked like would take the setting away from an operator
@@ -857,13 +857,13 @@ public class testAutoLayout
      *    UE_F` is unmeasured end to end, and the rail into `UE_G` counts as much as the one into the
      *    destination does.
      *  - **And it runs out of track rather than out of patience**: `UE_I` is one rail further back
-     *    again, and a walk bounded at two levels stops before it (VD17-T5).
+     *    again, and a walk bounded at two levels stops before it.
      *  - **A point that is switched off is not a way through**: the rail INTO `UE_J` is not counted,
-     *    because no path may run through a point that is off (VD17-T4).
-     *  - **The answer is alphabetical** (VD15-C2, VD17-T10): the
+     *    because no path may run through a point that is off.
+     *  - **The answer is alphabetical**: the
      *    message names only the first three, and three arbitrary ones are no list to work down.
      *
-     * **ONE-WAY EDGES ARE THE POINT OF THE FOURTH CLAIM (VD16-T1).**
+     * **ONE-WAY EDGES ARE THE POINT OF THE FOURTH CLAIM.**
      * `createEdge` makes ONE directed edge, so `UE_C -> UE_E` with no reverse is a rail a train can
      * only be sent along, never back down - which is how facing is encoded on this railway and is why
      * nothing can be released onto it.  Adding the reverse makes `UE_E -> UE_C` a complete unmeasured
@@ -925,7 +925,7 @@ public class testAutoLayout
             + " over it and it must not hold the setting back.  Counted: "
             + layout.unmeasuredTrackThatCouldBeReleased());
 
-        // AND AN UNMEASURED RAIL WITH MEASURED TRACK BETWEEN IT AND EVERY DESTINATION (VD15-T1).
+        // AND AN UNMEASURED RAIL WITH MEASURED TRACK BETWEEN IT AND EVERY DESTINATION.
         //
         // THIS IS THE CLAIM THE NARROWING HAS: the three above are all about rails whose far end IS an active
         // destination, so replacing the whole reachability walk with "every unmeasured edge" would leave them
@@ -937,7 +937,7 @@ public class testAutoLayout
         layout.createPoint("UE_E", false, null);
         layout.createPoint("UE_F", true, "4");
 
-        // ONE-WAY, AND THAT IS THE WHOLE POINT (VD16-T1).  `createEdge` makes one directed edge, so
+        // ONE-WAY, AND THAT IS THE WHOLE POINT.  `createEdge` makes one directed edge, so
         // a train can be sent UE_C -> UE_E and can never come back: there is no unmeasured way from
         // UE_E to any destination, and the fifth claim below adds the reverse to show the difference.
         Edge ce = layout.createEdge("UE_C", "UE_E");
@@ -986,7 +986,7 @@ public class testAutoLayout
             + " - a walk that marks only the direct predecessors of a destination finds three of"
             + " them, and one that asks whether a rail's far end IS a destination finds one");
 
-        // AND THE WALK RUNS OUT OF TRACK, NOT OUT OF PATIENCE (VD17-T5).  The claim above is satisfied
+        // AND THE WALK RUNS OUT OF TRACK, NOT OUT OF PATIENCE.  The claim above is satisfied
         // by a walk bounded at two levels, because nothing lies behind UE_H: marking it or not changes
         // no count.  One more rail behind it, and only a walk that goes on until there is nothing left
         // to mark finds five.
@@ -1000,7 +1000,7 @@ public class testAutoLayout
             + layout.unmeasuredTrackThatCouldBeReleased() + " - a walk that stops two marks deep"
             + " finds four");
 
-        // AND A POINT THAT IS SWITCHED OFF IS NOT A WAY THROUGH (VD17-T4).  The walk's `isActive` test needs
+        // AND A POINT THAT IS SWITCHED OFF IS NOT A WAY THROUGH.  The walk's `isActive` test needs
         // an inactive point with a rail out of it, or the line could be deleted with every claim still green.
         // A path may not run through a
         // point that is off, so a rail whose only route to a destination passes through one can never
@@ -1020,7 +1020,7 @@ public class testAutoLayout
             + layout.unmeasuredTrackThatCouldBeReleased() + " - seven means the walk marks squares"
             + " that are off, and a railway is refused non-atomic mode over track nothing can reach");
 
-        // AND IN ALPHABETICAL ORDER (VD15-C2, VD17-T10).  `this.edges` is a
+        // AND IN ALPHABETICAL ORDER.  `this.edges` is a
         // HashMap, the message names only the first three, and three arbitrary names that move between
         // runs of the same configuration are no list to work down.
         java.util.List<String> named = layout.unmeasuredTrackThatCouldBeReleased();
@@ -1372,7 +1372,7 @@ public class testAutoLayout
     }
 
     /**
-     * Where the trains have been survives a setup gesture (AUR-C3).
+     * Where the trains have been survives a setup gesture.
      *
      * **A session is longer than a `Layout`.**  `lastArrival` is kept in memory because it describes this session's
      * running, but `parseAuto` replaces the whole object, and applying a diagram edit, placing a locomotive from the
@@ -1381,7 +1381,7 @@ public class testAutoLayout
      * Recently Visited who stops to place a train and starts again must not get a rule that knows nothing (every
      * station never visited, the choice random), the degraded state the preference's own javadoc was written to end.
      *
-     * **The carry has to be READABLE, not merely copied** (FXV-C5).  It is keyed by point NAME, not by `recencyKeyOf`
+     * **The carry has to be READABLE, not merely copied**.  It is keyed by point NAME, not by `recencyKeyOf`
      * (the block, or failing that the unique id): unique ids come from a global allocator that hands a new one to every
      * Point built, so an entry keyed by one for a point with no block is dead weight the rebuilt railway can never
      * match.  This assertion is about names, so a key the rule cannot use is a key this notices.
@@ -1605,7 +1605,7 @@ public class testAutoLayout
      * is the one rule all three doors consult - the diagram tile, the switch keyboard and the route -
      * and the direction is supplied by the caller because each knows it differently.
      *
-     * **The aspect is half the rule (WK3-B1).** Turning protection ON is doing
+     * **The aspect is half the rule.** Turning protection ON is doing
      * what the protection mechanism would do anyway, and refusing that was over-strictness the route
      * door had already had removed. So:
      *
@@ -1805,7 +1805,7 @@ public class testAutoLayout
         return false;
     }
     /**
-     * One signal protecting TWO platforms stays red while either of them is claimed (RG5-C1).
+     * One signal protecting TWO platforms stays red while either of them is claimed.
      *
      * One signal can have a second owner: 63 protects R1 **and** R0; 64 protects R2 **and** R0.  That is the shape of
      * Adam's 2.8.1 file, which reds Signals 63 and 64 on the edge `TopMainR0 -> TopMainPost` so that the locked
@@ -2148,7 +2148,7 @@ public class testAutoLayout
         java.util.Set<Locomotive> hadExcludedLocs = new java.util.HashSet<>(point.getExcludedLocs());
         boolean hadAllowOnly = point.isAllowOnlyListed();
 
-        // TST-B20: these four are put back in the finally below, or this point of the shared sample layout would stay
+        // These four are put back in the finally below, or this point of the shared sample layout would stay
         // non-dispatchable and speed-scaled for every test that runs after this one in the same JVM.
         Integer hadMaxTrainLength = point.getMaxTrainLength();
         int hadPriority = point.getPriority();
@@ -2234,7 +2234,7 @@ public class testAutoLayout
         // MUTATION each of the three assertions below catches on its own: delete the corresponding
         // `jsonObj.put(...)` write in Point.toJSON (Point.java:941 terminus, :946 reversing, :1031 loc)
         // - the terminus flag, the reversing flag, or the locomotive standing on a point is then
-        // silently dropped by export, exactly as TST-A1 describes for the fields above.
+        // silently dropped by export, exactly as for the fields above.
         Point standalone = new Point("Terminus check", true, "999");
 
         standalone.setTerminus(true);
@@ -2442,9 +2442,9 @@ public class testAutoLayout
     }
 
     /**
-     * A failure does not release an edge the tail had already given up (VD10-A1).
+     * A failure does not release an edge the tail had already given up.
      *
-     * `unlockPath` reads `releasedEarly` (since GUI-A1; `clearedEdges` before it) to know which edges the tail
+     * `unlockPath` reads `releasedEarly` to know which edges the tail
      * released as it passed them, so that it does not release them again. The comment at that lookup says what a
      * second release costs: *"the second release would take away a claim somebody else made in
      * between"* - the edge comes free under a train that locked it after the tail went by, and its
@@ -2522,7 +2522,7 @@ public class testAutoLayout
 
             given.add(first);
 
-            // AND AS RELEASED, which is what the unlock reads to know it was given back (GUI-A1): the cleared set is kept
+            // AND AS RELEASED, which is what the unlock reads to know it was given back: the cleared set is kept
             // in atomic mode too, where nothing in it is released, so it alone no longer says so.
             try
             {
@@ -2652,7 +2652,7 @@ public class testAutoLayout
         assertFalse(layout.isChoosableByAutonomy(off),
             "a switched-off square is being offered to autonomy");
 
-        // (No assertion reads back the setter two lines above: it would pass for as long as a setter sets - VD11-C6.)
+        // (No assertion reads back the setter two lines above: it would pass for as long as a setter sets.)
     }
 
     /**
@@ -2660,7 +2660,7 @@ public class testAutoLayout
      *
      * Two rulings on one gesture: *"We should still show the same number of base options (unless unselectable)"* and
      * *"if it excludes the loc, don't even include it in the list."*  The menu asks `isOfferableToOperator` and not
-     * `isChoosableByAutonomy(end, locomotive)` (VD11-C2), which would move a terminus out of the base list.
+     * `isChoosableByAutonomy(end, locomotive)`, which would move a terminus out of the base list.
      *
      * **The terminus rule is about a berth** (OB-205, MT-367): *"75 407 DB can go from Tunnel to BottomMainC manually,
      * even though it is not reversible and THIS IS NOT A PARKING BERTH (excluded from autonomy). it should not be
@@ -2753,9 +2753,9 @@ public class testAutoLayout
     }
     /**
      * A failure during the LOCK PHASE leaves the train where it is standing, and leaves other trains'
-     * claims alone (ACC-A1).
+     * claims alone.
      *
-     * **The fixture has to reach the lock loop** (`OV2-B1`).  Putting a `null` into an edge's `lockEdges` does not:
+     * **The fixture has to reach the lock loop**.  Putting a `null` into an edge's `lockEdges` does not:
      * `isPathClear` walks the same list four statements earlier, so the `NullPointerException` comes out THERE,
      * before `takingPath` is claimed and before anything is locked - a strictly weaker window.
      *
@@ -2850,7 +2850,7 @@ public class testAutoLayout
 
         caught.printStackTrace(new java.io.PrintWriter(trace));
 
-        // `configureEdge` ALONE DOES NOT SAY WHICH (FR3-C1).
+        // `configureEdge` ALONE DOES NOT SAY WHICH.
         //
         // `configureAndLockPath` calls `configureEdge` twice over: once through `isPathClear`, which
         // previews the configuration, and once directly in the lock loop.  A stack carrying
@@ -2879,7 +2879,7 @@ public class testAutoLayout
     }
 
     /**
-     * Autonomy does not send a reversible train to a terminus it could not leave again at its length (E2E-B1).
+     * Autonomy does not send a reversible train to a terminus it could not leave again at its length.
      *
      * A may-turn square's turning copy is a terminus whose one way out is back the way the train came.  On Adam's railway
      * BottomMainB admits a train of 4, and every station its turning copy leads to is shorter: a reversible train of 4
@@ -2982,8 +2982,7 @@ public class testAutoLayout
     }
 
     /**
-     * A clear route is found although a shorter one that throws a switch both ways reaches a square on it first
-     * (RSA59-B1).
+     * A clear route is found although a shorter one that throws a switch both ways reaches a square on it first.
      *
      * The route search must not mark a square visited the first time any route reaches it: a shorter route that sets a
      * switch one way and then the other - refused for its conflicting commands - would hide a clear route reaching the
@@ -3051,7 +3050,7 @@ public class testAutoLayout
     }
 
     /**
-     * Two routes of the same length to a station are both offered, every time (RSA59-B1's fix).
+     * Two routes of the same length to a station are both offered, every time.
      *
      * The route search marks a square when it is taken OFF the queue, not when it is put on, so a square two routes reach
      * at the same distance is followed on from by both - and the menu, which asks again with each route it has been given
@@ -3116,7 +3115,7 @@ public class testAutoLayout
     }
 
     /**
-     * Where the only route to a station throws a switch both ways, Why Not Moving? still says so (RSA59-B1's fix).
+     * Where the only route to a station throws a switch both ways, Why Not Moving? still says so.
      *
      * The search B1 brought in keeps a route whose switch commands disagree out of the way of every route whose commands
      * do not - but it still follows it, and still returns it when it reaches the station, because that is how Why Not

@@ -18,7 +18,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * One train's tail claim does not hide another train's on the same place (TDD-A1).
+ * One train's tail claim does not hide another train's on the same place.
  *
  * The walk that claims the track behind every standing train records ONE train per place, and the train walked last
  * wins - in the order of the railway's map of Points, which nobody chose.  Two tails that foul one switch from its two
@@ -31,14 +31,14 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * whichever of the two the walk records on S, one of them is the train being routed.
  *
  * A third train stands on a rail of its own, unmoved, so a record that blamed every train for every tail has somebody to
- * blame (TDA2-C2, TDD2-C4).
+ * blame.
  *
  * MUTATION: walk the train being routed along with the others in `isPathClear`, and
  * `testTheRailwayAsksAboutEveryTailOnThePlace` fails; give each train Return Home's whole record of the starting tails
  * (R2e), and `testReturnHomeAsksAboutEveryTailOnThePlace` fails at its control, where the unmoved third train is
  * charged with the first train's own rail; keep one owner per place in it (R2f), and it fails at the two-train claims,
  * the train that does not own the switch's square losing it.  Both fail
- * `testReturnHomeKeepsTheSensorShutWhileEitherTailIsOnIt` too (TDA4-C4, TDD4-C2).
+ * `testReturnHomeKeepsTheSensorShutWhileEitherTailIsOnIt` too.
  *
  * @author Adam
  */
@@ -263,7 +263,7 @@ public class testATailIsNotHiddenByAnother
         assertTrue((Boolean) passes.invoke(staging, outOne, one, twoGone), "control: with the second train moved, Return"
             + " Home still refuses the first train's way out, so the claims above are not about the second train's tail");
 
-        // AND THE RAIL THE SECOND TRAIN'S TAIL LAY ALONG IS FREE, though the third train has not moved (TDA2-C2, TDD2-C4):
+        // AND THE RAIL THE SECOND TRAIN'S TAIL LAY ALONG IS FREE, though the third train has not moved:
         // each train answers only for its own tail.
         assertTrue((Boolean) passes.invoke(staging, inTwo, one, twoGone), "with the second train moved, the rail its tail"
             + " lay along is still refused - blamed on the third train, which stands unmoved on a rail of its own: each"
@@ -271,10 +271,10 @@ public class testATailIsNotHiddenByAnother
     }
 
     /**
-     * Return Home keeps the switch's sensor shut while EITHER train still lies across it (TDD2-C5): each train accounts
+     * Return Home keeps the switch's sensor shut while EITHER train still lies across it: each train accounts
      * for the end of the rail its own tail reaches, so the first to move does not free the sensor under the other.
      *
-     * The switch's sensor reads occupied, as tails hold sensors (AMH-B2), with no train standing on its square.
+     * The switch's sensor reads occupied, as tails hold sensors, with no train standing on its square.
      *
      * @throws Exception from the reflection
      */

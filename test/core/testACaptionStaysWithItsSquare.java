@@ -187,7 +187,7 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
     }
 
     /**
-     * The session says which pages the migration rewrote, and how many names it took (RGN-B1).
+     * The session says which pages the migration rewrote, and how many names it took.
      *
      * The migration edits files the user owns. A `Point:` name typed onto their own track diagram is
      * taken into the setup and emptied out of the `.cs2`, and nothing at this build writes those
@@ -246,7 +246,7 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
         // The counters are per-open, not cumulative: a session that reported the same pages every
         // time it was opened would put the notice in front of a user whose files nothing had touched.
         //
-        // ON THE SAME SESSION, which is the only version of this that can fail (VD9-C19).  A brand-new
+        // ON THE SAME SESSION, which is the only version of this that can fail.  A brand-new
         // AutonomySession has empty counters before open() has run at all, so asking a fresh one
         // stayed green with the reset removed - it was asserting the constructor, not the reset.
         reopened.open(Arrays.asList(page));
@@ -432,7 +432,7 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
     }
 
     /**
-     * A caption is never placed outside the area the RUNNING diagram draws, with the page in edit mode too (AD-C6).
+     * A caption is never placed outside the area the RUNNING diagram draws, with the page in edit mode too.
      *
      * `testACaptionIsNeverPlacedOutsideTheDrawnArea` builds its page with edit mode off.  The autonomy editor puts the page
      * object the session shares into edit mode, where its bounds are the whole page - and a caption is not a component, so
@@ -623,7 +623,7 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
     @Test
     public void testCopiesOfOneSquareAreTheSamePlaceAndNeighboursAreNot() throws Exception
     {
-        // A SQUARE THAT GENUINELY BECOMES TWO POINTS (TCX-B9).
+        // A SQUARE THAT GENUINELY BECOMES TWO POINTS.
         //
         // This used to run on `pageOnDisk()`, whose sensors are at the two ENDS of a straight run. A
         // square with one arrival side emits one Node, so `copies` held one member, the nested loop
@@ -773,9 +773,9 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
      * calls.  captionsOnPage/restoreCaptionsOnPage looked like the same feature - same javadoc claim,
      * same shape - but were a second, parallel implementation that round-tripped against themselves and
      * would have stayed green even if AutonomyCompanionStore.kept() stopped carrying captions through
-     * the real snapshot.  restoreCaptionsOnPage was deleted as uncalled (REL-C15); captionsOnPage has
+     * the real snapshot.  restoreCaptionsOnPage was deleted as uncalled; captionsOnPage has
      * one caller, LayoutEditor.forgetCaptionsOutsideThePage, which wants the keys and not the round
-     * trip (VD9-C16).  MUTATION this catches: remove "captions" from kept()
+     * trip.  MUTATION this catches: remove "captions" from kept()
      * (AutonomyCompanionStore.java:4354) - restorePage then puts the plaque's TILE back with no name on
      * it, which is the defect this class exists to prevent.
      */
@@ -846,7 +846,7 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
      * The editor works on one page, so restoring every caption in the setup would undo work done
      * somewhere it was never looking.  Driven through snapshotPage/restorePage for the same reason as
      * the two tests above.  captionsOnPage's page filter has one caller in src/ -
-     * LayoutEditor.forgetCaptionsOutsideThePage - and it is not an undo path (VD9-C16).
+     * LayoutEditor.forgetCaptionsOutsideThePage - and it is not an undo path.
      */
     @Test
     public void testACaptionSnapshotIsPerPage() throws Exception
@@ -874,7 +874,7 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
 
     /**
      * A caption kept for a square that is not a station now survives the setup being opened, undrawn, and is drawn again
-     * once the square is a station (GSE-C4).
+     * once the square is a station.
      *
      * Opening used to forget every caption naming a square that is not a station - a clean-up for setups written before
      * demoting took the caption with it.  Adam, 2026-10-10, asked for the opposite rule: keep them, ignored while not a

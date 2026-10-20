@@ -254,7 +254,7 @@ public class testReturnHomeOnRealLayout
                 + describe(layout));
         }
 
-        // TST-B12: the pre-round block above is skipped when already home, and each round below
+        // The pre-round block above is skipped when already home, and each round below
         // `continue`s past everything when the random stop also happens to land at home - so nothing
         // counted whether a single round ever actually reached planReturnToHome()/executeTimetable().
         // MUTATION this catches: make Layout.planReturnToHome() always return a plan with
@@ -308,7 +308,7 @@ public class testReturnHomeOnRealLayout
                 + ", started from " + arrangement + andTheSeed());
         }
 
-        // The floor TST-B12 asks for: if every round happened to land at home, planReturnToHome() and
+        // The floor: if every round happened to land at home, planReturnToHome() and
         // executeTimetable() were never exercised and this test proved nothing about either of them,
         // however green it reads.  Re-running with a different seed is the escape hatch if this trips.
         assertTrue(meaningfulRounds > 0,
@@ -395,7 +395,7 @@ public class testReturnHomeOnRealLayout
      * Adam, 2026-09-21, on MT-463: *"Could not run this.  make an automated test for this with
      * appropriate placements."*  The rule is `behaviour.md` section 6 and his ruling of 2026-09-15: a
      * plan may rest a train that cannot reverse on a terminus or reversing point only when its next move
-     * takes it home, *"a train the railway already had standing on one moves as before"*.  RTX-B1 was
+     * takes it home, *"a train the railway already had standing on one moves as before"*.  The defect was
      * that second clause: the code asked the SQUARE whether it turns trains, and a square cannot say who
      * turned the train standing on it, so a train merely FOUND on one could be planned nowhere but its
      * own home - and where that home was occupied, or the train had no home at all, the answer was
@@ -459,7 +459,7 @@ public class testReturnHomeOnRealLayout
             Point home = layout.getHomeStation(l);
             Point was = standingAt(layout, l);
 
-            // A TRAIN WITH NO HOME IS A DIFFERENT CASE, AND STAGING ONE CREATES THE HOME (VD13-T2).
+            // A TRAIN WITH NO HOME IS A DIFFERENT CASE, AND STAGING ONE CREATES THE HOME.
             //
             // `moveLocomotive` calls `claimHome`, which claims an unclaimed square for a locomotive
             // that has none - so putting such a train on a turning square makes that square ITS HOME,
@@ -505,7 +505,7 @@ public class testReturnHomeOnRealLayout
 
                     asked++;
 
-                    // AND THE STAGING DID NOT MOVE IT (VD13-T2).  Only a locomotive with no home is
+                    // AND THE STAGING DID NOT MOVE IT.  Only a locomotive with no home is
                     // re-homed by a hand placement, and those are skipped above - this is the claim
                     // that keeps that true, because it is the thing that would make the assertion
                     // below about a different arrangement than the one it names.
@@ -534,7 +534,7 @@ public class testReturnHomeOnRealLayout
                     // than against this loop's leftovers.  A train the configuration had NOWHERE is taken
                     // off the square instead of being left on it - otherwise the one case with no `was`
                     // leaves a train standing on a turning berth for every iteration after it, which is
-                    // this loop arranging the railway rather than staging one train (VD12-T8).
+                    // this loop arranging the railway rather than staging one train.
                     if (moved && was != null) layout.moveLocomotive(l.getName(), was.getName(), false);
 
                     if (moved && was == null) onto.setLocomotive(null);
@@ -545,7 +545,7 @@ public class testReturnHomeOnRealLayout
         }
 
         // THE FLOOR.  Every train could have been passed over by its own control, or never staged at
-        // all, which would leave this green having asked nothing - the hole TST-B12 found in the round
+        // all, which would leave this green having asked nothing - the hole in the round
         // loop above, and the skip this test was rewritten to stop.
         assertTrue(asked > 0,
             "no train could be staged on a turning square at all, so the rule this is about was never"

@@ -198,7 +198,7 @@ public class testParseCS2Routes
     }
 
     /**
-     * A route file whose FIRST route carries conditions parses, conditions and commands both (X8-B3).
+     * A route file whose FIRST route carries conditions parses, conditions and commands both.
      *
      * **The shipped fixture cannot see this.**  ` .S88Flag` has no `=`, so it takes the array-HEADER
      * arm of `parseFileContents`, whose character class was still `[a-z]+` while its sibling nine lines

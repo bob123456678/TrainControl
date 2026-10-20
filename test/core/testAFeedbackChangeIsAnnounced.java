@@ -18,7 +18,7 @@ import org.traincontrol.model.View;
 /**
  * A sensor that changes state says so, however it changed.
  *
- * `W21-B1`, and `TWV-C5`: that fix shipped with no test at all. A module changes state two ways and
+ * The fix for this once shipped with no test at all. A module changes state two ways and
  * only one of them announced it - `parseMessage`, a sensor arriving over the wire, called
  * `feedbackChanged`; `setState` is every OTHER way and did not. Its callers are clicking an s88 tile on
  * the track diagram, the simulation's own announce and clear, and the restore at start-up.

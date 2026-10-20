@@ -44,7 +44,7 @@ public class testRoutePicking
     private static MarklinControlStation model;
 
     /**
-     * Every rule this class chooses a winner for, and WHICH method does it (TSX-C8).
+     * Every rule this class chooses a winner for, and WHICH method does it.
      *
      * This was a bare set, which is a comment: deleting `testTheSensorRulesAreMirrors` left
      * `FEWEST_POINTS` and `MOST_POINTS` tested by nothing anywhere in the suite, and
@@ -312,9 +312,9 @@ public class testRoutePicking
                 + "fixture in this class, or add it to COVERED_ELSEWHERE saying which railway it "
                 + "needs and where that test is");
 
-            // AND THE SAME FOR THE NEAR HALF (TSX-C8).  A rule named here is covered by a method in
+            // AND THE SAME FOR THE NEAR HALF.  A rule named here is covered by a method in
             // THIS class, and that method has to exist and still be a @Test - otherwise deleting it
-            // leaves the claim standing on nothing, which is what happened to `TST-C4` before.
+            // leaves the claim standing on nothing, which has happened before.
             if (COVERED_HERE.contains(rule))
             {
                 String covering = COVERED_HERE_BY.get(rule);
@@ -391,7 +391,7 @@ public class testRoutePicking
         Layout layout = twoWaysAcrossUnmeasured();
         Locomotive loc = placedLocomotive(layout);
 
-        // REPEATED, because the regression it names is settled by a coin toss (LE2-C14).
+        // REPEATED, because the regression it names is settled by a coin toss.
         //
         // Without the floor every route scores 0, every route ties, and `cost < bestCost` keeps
         // whichever the search reached first - which getNeighbors and pickPath both shuffle. A single
@@ -503,7 +503,7 @@ public class testRoutePicking
     }
 
     /**
-     * Start with nothing startable leaves the layout NOT running (RC-B5).
+     * Start with nothing startable leaves the layout NOT running.
      *
      * runLocomotives sets `running` before it looks at a single locomotive, and both of its skips -
      * start point inactive, preferred speed outside 1 to 100 - return out of the forEach without
@@ -538,7 +538,7 @@ public class testRoutePicking
             layout.runLocomotives();
 
             // isAutoRunning(), not isRunning().  isRunning() is `running || anything active ||
-            // any thread alive`, so it answers about three things and RC-B5 is about one of them -
+            // any thread alive`, so it answers about three things and only one of them matters here -
             // and the extra two are set from the started thread, which is a race in the control
             // below.  The flag is set and cleared on this thread, so there is nothing to wait for.
             assertFalse(layout.isAutoRunning(),
@@ -556,7 +556,7 @@ public class testRoutePicking
     }
 
     /**
-     * And a locomotive that CAN start still starts it - the control (RC-B5).
+     * And a locomotive that CAN start still starts it - the control.
      *
      * Without this, "never set running" passes the test above and turns Start into a no-op.
      */
@@ -759,7 +759,7 @@ public class testRoutePicking
      * The sibling above cannot tell the ratio from plain 1/distance: at priority 5 the far station
      * scores (5+1)*1000/18 = 333 against the near one's 500, so both rules choose the near station and
      * a numerator replaced by a constant passes.  That was the hole the suite review found, and it is
-     * the hole the negative-priority inversion (RC-B2) sat in.
+     * the hole the negative-priority inversion sat in.
      *
      * At 9 the far station scores (9+1)*1000/18 = 555 and wins.  Nothing that ignores priority can
      * produce that answer, because the near station is closer under every measure.
@@ -782,7 +782,7 @@ public class testRoutePicking
     }
 
     /**
-     * A de-prioritised station is not reached by the longest route available (RC-B2).
+     * A de-prioritised station is not reached by the longest route available.
      *
      * ratioOf was ((priority + 1) * 1000) / length, reasoned about only from a default of zero.  Point.
      * setPriority takes negatives and the editor calls them perfectly valid, so at -1 the numerator was
@@ -820,13 +820,13 @@ public class testRoutePicking
             "a shorter route to a de-prioritised station must still be worth more than a longer one: "
             + "scored " + near + " at length 2 against " + away + " at length 18 (RC-B2)");
 
-        // AND ORDERED AMONG THEMSELVES, at one distance (RC-B2, RC-B8).
+        // AND ORDERED AMONG THEMSELVES, at one distance.
         //
         // The fix says a station pushed further down is worth less.  Without this, replacing the whole
         // weight with a constant passes everything above - the inversion is gone and so is the reason
         // for having a weight at all, and "-20 is visited as often as -1" is invisible.
         //
-        // It is also what RC-B8 was about: at the original scale the two tied at zero on any route
+        // It is also why: at the original scale the two tied at zero on any route
         // longer than a few hundred, because the division is integer.
         int gently = ratioFor(layout, 100, -1);
         int firmly = ratioFor(layout, 100, -20);

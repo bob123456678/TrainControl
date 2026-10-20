@@ -344,7 +344,7 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
     /**
      * A berth whose approach nobody has measured refuses nothing.
      *
-     * **The rule has to be able to say "I do not know"** (PRW-B1).  The claim walk spends the train's
+     * **The rule has to be able to say "I do not know"**.  The claim walk spends the train's
      * length backwards over the approach's places and stops when it runs out; where every place
      * measures zero it never runs out, so it claims the WHOLE approach and refuses the berth against
      * any road sharing any part of it.  That refusal is invented: nothing has been measured, so
@@ -368,10 +368,9 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
      * @throws Exception from the railway
      */
     /**
-     * One measured square behind an unmeasured piece closes the berth, and the refusal now says why
-     * (RTX-C2, AUR-C2).
+     * One measured square behind an unmeasured piece closes the berth, and the refusal now says why.
      *
-     * **This is the ordinary intermediate state of Mass Assign Lengths.**  MAL-B1's ruling gives every switch
+     * **This is the ordinary intermediate state of Mass Assign Lengths.**  The ruling gives every switch
      * on a page one length in a step of its own, and MT-455 tells the operator to reach that prompt by
      * skipping a piece - so switches measured with pieces still at zero is not an odd state, it is the state
      * the tool leaves between sittings.  A berth behind such a piece then has an approach where `anyMeasured`
@@ -495,11 +494,11 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
 
             // AND ONE MEASUREMENT IS ENOUGH TO JUDGE AGAIN, which is the other half of the ruling.
             //
-            // NOT THE LAST PLACE (SVV-B2).  The last place is the BERTH ITSELF, and since Adam's
+            // NOT THE LAST PLACE.  The last place is the BERTH ITSELF, and since Adam's
             // allowance ruling the walk does not spend it - so measuring that one left the walk with
             // nothing to spend, claiming the whole approach, and this claim passed because of the
             // over-claim rather than because of the arithmetic it names.  It would have gone red
-            // against the repair for SVV-B1, which is a guard arguing for the defect it guards.
+            // against the repair, which is a guard arguing for the defect it guards.
             //
             // The place BEFORE it is track the train really does lie back over, which is what "one
             // measurement is something to reason from" means.
@@ -519,9 +518,9 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
                 + " when ALL of it is zero (Adam, MT-364); one measurement is something to reason"
                 + " from, and declining to judge here would be the over-correction");
 
-            // AND THE BERTH'S OWN MEASUREMENT IS NOT ONE OF THEM (SVV-B1, and SVX-C5 for keeping it).
+            // AND THE BERTH'S OWN MEASUREMENT IS NOT ONE OF THEM.
             //
-            // The arrangement above cannot tell SVV-B1's repair from what it replaced: with `size-2`
+            // The arrangement above cannot tell the repair from what it replaced: with `size-2`
             // measured, "has anything been measured?" is true under both the old bound and the new
             // one.  This is the arrangement that moves - the LAST place measured and nothing else -
             // and it is the one Adam's manual produces first, because it tells him to measure the

@@ -350,7 +350,7 @@ public class testAutonomyDiagramReversal
      * Marking nothing changes nothing.  The split is opt-in per tile, so a configuration that uses none
      * of this has to come out byte for byte as it did before.
      *
-     * **The pair, not the half** (TCX-B5).  This used to assert only that an empty mark set builds what
+     * **The pair, not the half**.  This used to assert only that an empty mark set builds what
      * an unconfigured builder builds - and `reversible` is already an empty set from its field
      * initialiser, so the two builders were in provably identical state and the assertion could not
      * fail for the reason it named.  Marking a real tile is what shows the comparison is live: if the

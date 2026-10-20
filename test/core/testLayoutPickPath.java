@@ -485,7 +485,7 @@ public class testLayoutPickPath
 
         layout.getPoint("START").setLocomotive(loc);
 
-        // THE CONTROL RUNS FIRST (TCX-B13).
+        // THE CONTROL RUNS FIRST.
         //
         // With the middle point an ordinary passing point, FAR has to be reachable through it - so a
         // regression that refused every multi-edge path, or one that broke pickPath outright, cannot

@@ -32,11 +32,11 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
 {
 
     /**
-     * A stand-in for a page that would not read is not a page autonomy may judge (FV3-A1, FV3-A3).
+     * A stand-in for a page that would not read is not a page autonomy may judge.
      *
      * **`CS2File` substitutes a blank page when a file will not parse**, so that a link tile after it
      * still resolves to the right page - Adam's ruling of 2026-09-10, and the reason is that a page
-     * which simply vanished re-aimed every arrow after it (NSV-B3).
+     * which simply vanished re-aimed every arrow after it.
      *
      * The stand-in carries the missing page's NAME and ID, and both are how this session decides whether
      * it is looking at the whole railway. So it made things worse than the absence it replaced:
@@ -46,7 +46,7 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
      * stations are gone"* - reached by a third route.
      *
      * **Three loops in this class build that name set, and a repair reaching two of them is worse than
-     * one reaching none** (FV3-A3): the prune is then declined while `Reconciliation.declined` with an
+     * one reaching none**: the prune is then declined while `Reconciliation.declined` with an
      * empty absent-list reports `wasDeclined()` as false, so the save refuses to judge the page and
      * tells every caller it did not. This asserts the ANSWER rather than the loops, so it holds however
      * many copies of them there are.
@@ -115,13 +115,13 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
     }
 
     /**
-     * A capture does not judge a page whose file would not read either (AMS-A1).
+     * A capture does not judge a page whose file would not read either.
      *
      * `captureFromLayout` folds the running layout back into the configuration and prunes every entry whose
      * square is not in the graph, on the pages "in play".  That set was every page not excluded - so a blank
      * stand-in for a page that would not read counted, the one text tile it carries was all that was "still
      * there", and every placement, home, priority and exclusion on the real page was removed and written.  It
-     * is the same loss FV3-A1 closed for `save()`, by a door that fix did not reach: the capture runs when the
+     * is the same loss `save()` is guarded against, by a door that guard did not reach: the capture runs when the
      * autonomy editor opens and closes, at the exit save, and before every configuration load.
      *
      * THE CONTROL is on the page that did read: a setting on a square that is not there is pruned, so the
@@ -216,10 +216,10 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
     }
 
     /**
-     * Moving a train in the setup takes its tail off the square it left (AMS-C1).
+     * Moving a train in the setup takes its tail off the square it left.
      *
      * `placeLocomotive(tile, null)` and `clearEveryPlacement` clear `loc`, the facing, `arrivedFrom` and
-     * `arrivedAlong` together (IND9-A1, WK7-B1).  The third door - placing the same train somewhere else, which
+     * `arrivedAlong` together.  The third door - placing the same train somewhere else, which
      * sweeps it off every other square - cleared the first two only.
      */
     @Test
@@ -253,7 +253,7 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
     }
 
     /**
-     * An entry of a page in play whose file does not load at a start is kept until the page is back (RSA8-B6): the load
+     * An entry of a page in play whose file does not load at a start is kept until the page is back: the load
      * dropped what it could not build and the next fold wrote the railway's timetable without it.  While the pages are
      * not all there, the build sets such an entry aside rather than hand it to the railway.
      *
@@ -294,7 +294,7 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
             + " (RSA8-B6)");
     }
 
-    /** A blank page standing in for one whose file would not read, as `CS2File` makes it (NSV-B3). */
+    /** A blank page standing in for one whose file would not read, as `CS2File` makes it. */
     private static LayoutDiagram aStandInFor(String name, String id) throws Exception
     {
         LayoutDiagram standIn = new LayoutDiagram(name, 7, 3, null, null);
@@ -1043,7 +1043,7 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
     }
 
     /**
-     * A save that declines to tidy up SAYS SO, and names the pages (DR-B10).
+     * A save that declines to tidy up SAYS SO, and names the pages.
      *
      * The test next door proves the setup survives a page that did not load. This one is about the
      * other half of that finding, which had no coverage at all: nobody was ever told.
@@ -1178,7 +1178,7 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
     }
 
     /**
-     * The model, and the doors that ask about the railway off the event thread, ask for it once (RLV11-C5, RLV12-C5).
+     * The model, and the doors that ask about the railway off the event thread, ask for it once.
      * `hasAutoLayout()` then `getAutoLayout()` is two takes of the model's lock, and Unload, on the event thread, can
      * clear the model between them; the second then builds an empty railway that `hasAutoLayout` answers yes about.  The
      * sync and a route edit reach the model's pairs, the switching thread the protection question, a worker the path
@@ -1216,7 +1216,7 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
             {"TrainControlUI", "boolean isAutonomyBusy()"},
             {"LayoutRightclickAutonomyMenu", "private static PathOptions gatherPathOptions("},
             {"LayoutLabel", "private static boolean aboutToClearProtection("},
-            // Graceful Stop's worker waits out the coast-down, while Unload is allowed (RLV13-C7)
+            // Graceful Stop's worker waits out the coast-down, while Unload is allowed
             {"TrainControlUI", "private void gracefulStopActionPerformed("}};
 
         for (String[] door : doors)
@@ -1229,7 +1229,7 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
     }
 
     /**
-     * The diagram's path gather asks for the railway once, and asks every question of that one (RSA2-C5).  It read the
+     * The diagram's path gather asks for the railway once, and asks every question of that one.  It read the
      * railway once at its head and then asked the model for it again, build-on-miss, twice per path on its worker: Unload
      * in between built an empty railway, and a load in between put the new railway's questions to the old one's Points.
      *

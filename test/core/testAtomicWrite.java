@@ -64,7 +64,7 @@ public class testAtomicWrite
     }
 
     /**
-     * A wrapper that throws in its constructor does not leak the stream underneath it (AC3-B1).
+     * A wrapper that throws in its constructor does not leak the stream underneath it.
      *
      * **The protection was defeated by the code that triggered it.** `restoreState` opened the
      * database as `new ObjectInputStream(new FileInputStream(file))` in one try-with-resources, under
@@ -136,7 +136,7 @@ public class testAtomicWrite
                 + "will not replace a file somebody has open, and the session's database changes are "
                 + "lost with one log line while the corrupt file stays put for the next run (AC3-B1)");
 
-            // AND NO STAGING FILE LEFT BESIDE IT (AC3-C1), which the same probe found.
+            // AND NO STAGING FILE LEFT BESIDE IT, which the same probe found.
             assertFalse(new java.io.File(folder, "LocDB.data.part").exists(),
                 "the staging file was left behind beside the target");
         }

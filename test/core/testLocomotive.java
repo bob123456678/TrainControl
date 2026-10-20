@@ -183,7 +183,7 @@ public class testLocomotive
         l.waitForAccessoryState(100, Accessory.accessoryDecoderType.MM2, true);
         assertTrue(model.getAccessoryState(100, Accessory.accessoryDecoderType.MM2));
 
-        // THE MODULE HAS TO EXIST, AND THIS USED TO PARK THE WHOLE SUITE (FV3-B1).
+        // THE MODULE HAS TO EXIST, AND THIS USED TO PARK THE WHOLE SUITE.
         //
         // `waitForOccupiedFeedback` is an untimed Object.wait(), and the only thing that can release it
         // is the `setFeedbackState("1001", true)` on the thread above.  That setter looks the module up
@@ -759,11 +759,11 @@ public class testLocomotive
         if (model != null) model.deleteLoc("Test loc child 1");
         if (model != null) model.deleteLoc("Test loc child 2");
 
-        // TST-B20: testMultiUnitCommands creates "Test loc child 3" (:720) and nothing ever deleted it -
+        // testMultiUnitCommands creates "Test loc child 3" (:720) and nothing ever deleted it -
         // left in the restored DB image for whatever ran next in this JVM.
         if (model != null) model.deleteLoc("Test loc child 3");
 
-        // TST-B20: testLocomotiveConstructor (:41) and testMultiUnitCommands (:359) both set this true
+        // testLocomotiveConstructor (:41) and testMultiUnitCommands (:359) both set this true
         // with no restore.  Left true, testAutoLayoutRace.testWaitingForPowerGivesUp can have its GO
         // echoed back by the simulated-packet branch and waitForPowerState(true, 400) return true - a
         // false failure/pass in a class that never touched this flag itself.
@@ -954,7 +954,7 @@ public class testLocomotive
      * An address with exactly one locomotive on it is not in the duplicate list - the fact the
      * "check for duplicates" dialog's bug (and its fix) both turn on.
      *
-     * TST-B14: this used to close with `assertTrue(all.containsKey(single), ...)`, labelled as the
+     * This used to close with `assertTrue(all.containsKey(single), ...)`, labelled as the
      * substantive check - but `single` was obtained by iterating `all.entrySet()` in the first place,
      * so that assertion could never fail; it is true by construction, not by anything about the
      * database.  Removed rather than kept as padding.
@@ -963,7 +963,7 @@ public class testLocomotive
      * reverted to consult getDuplicateLocAddresses instead of getLocAddresses (the actual regression
      * this class is named for) - that logic is private, inline in a Swing action handler inside a
      * JDialog, and exercising it means instantiating AddLocomotive, which is GUI-dialog testing outside
-     * test/core's scope here (see TST-B22: no test file anywhere in test/ mentions AddLocomotive).  What
+     * test/core's scope here (no test file anywhere in test/ mentions AddLocomotive).  What
      * this DOES verify, with a control proving the check can detect a presence rather than only its
      * absence, is the contract the fix depends on: getDuplicateLocAddresses() excludes an address with
      * exactly one locomotive, and includes one that genuinely has more than one.

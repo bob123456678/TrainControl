@@ -174,7 +174,7 @@ public class testAPasteDoesNotTurnTheTrainRound
     @Test
     public void testTheSquareCanGetThisWrong()
     {
-        // AND WHAT THIS FIXTURE CANNOT TELL YOU (PRV-C1, PRV-C9).
+        // AND WHAT THIS FIXTURE CANNOT TELL YOU.
         //
         // The rule is "among the copies at the NEAREST distance, prefer one that is not a turning
         // copy".  A validator showed that deleting the preference leaves every claim in this class
@@ -471,7 +471,7 @@ public class testAPasteDoesNotTurnTheTrainRound
     /**
      * A train that IS on the railway but cannot be driven there keeps the heading it has.
      *
-     * **PRV-C2: deleting that arm passed every claim.**  The no-path claims above use a train that is
+     * **Deleting that arm passed every claim.**  The no-path claims above use a train that is
      * not on the railway at all, so `facingOf` answers null and the code falls straight through to the
      * first departable copy - which means the line implementing Adam's actual ruling, *"Option 1 is
      * fine as long as the direction isnt flipped"*, was never executed by a test.
@@ -727,7 +727,7 @@ public class testAPasteDoesNotTurnTheTrainRound
             "a square that can hold no heading at all still puts a question, and the dialog has no"
             + " buttons on it");
 
-        // THE PASTE ASKS IT, and asks it before anything moves (SVX-C4's guard, one block on).
+        // THE PASTE ASKS IT, and asks it before anything moves.
         String flat = SourceOf.declaration("private boolean locomotiveGestureOnDiagram(").replaceAll("\\s+", " ");
 
         assertTrue(flat.contains("if (mayTurnHere(aimed) && getAutonomySession() != null)"),
@@ -738,7 +738,7 @@ public class testAPasteDoesNotTurnTheTrainRound
             + " question one step above it: \"simply don't place the train, leave it on the clipboard"
             + " as if no paste had been done\"");
 
-        // READ BEFORE THE TAIL QUESTION WAITS (TDU-B2), and written from there.
+        // READ BEFORE THE TAIL QUESTION WAITS, and written from there.
         String placement = SourceOf.declaration("private void rememberPlacement(").replaceAll("\\s+", " ");
 
         assertTrue(placement.contains("final org.traincontrol.automationui.TilePorts.Side facingChosen ="
@@ -779,8 +779,8 @@ public class testAPasteDoesNotTurnTheTrainRound
     /**
      * A cut train's remembered heading is preferred only while it is off the railway.
      *
-     * **SVX-C4, and what this can and cannot say.**  Nothing under `test/` named `cutFacing` at all,
-     * so neither MT-368's clipboard clause nor SVV-C5's narrowing of it had a claim. The branch itself
+     * **What this can and cannot say.**  Nothing under `test/` named `cutFacing` at all,
+     * so neither MT-368's clipboard clause nor its narrowing had a claim. The branch itself
      * sits in `locomotiveGestureOnDiagram`, a private key handler that needs a shown window, a hovered
      * tile and a loaded clipboard, and the paste it performs can raise a modal facing prompt - the
      * shape of test that hung this suite for twenty minutes on 2026-09-13 and left a preference

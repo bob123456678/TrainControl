@@ -44,7 +44,7 @@ import support.SourceOf;
 public class testAutonomyDiagramReducer
 {
     /**
-     * `findPath` and `reachableTiles` agree about a square switched out of service (DIR-B1).
+     * `findPath` and `reachableTiles` agree about a square switched out of service.
      *
      * **A rule given to one of a pair.** `reachableTiles` gained a `closed` set so the findings panel
      * would stop routing through squares the runtime refuses; `findPath` - the editor's *test a path*
@@ -263,7 +263,7 @@ public class testAutonomyDiagramReducer
      * fixture happens to lay its track out.
      */
     /**
-     * And it reaches the running layout, through the builder and the file (TSX-A1).
+     * And it reaches the running layout, through the builder and the file.
      *
      * The test above proves the REDUCER computes the room after the last switch.  Between that number
      * and the guard that uses it are three steps nothing touched: `AutonomyBuilder` writes the key,
@@ -356,7 +356,7 @@ public class testAutonomyDiagramReducer
         assertEquals(again.getInt("roomAtTheEnd"), 9, "the room did not survive the round trip");
     }
     /**
-     * The editor asks for the squares AFTER the last switch, and not the ones before it (TSX-B5).
+     * The editor asks for the squares AFTER the last switch, and not the ones before it.
      *
      * `unmeasuredAfterTheLastSwitch` is the mirror of `roomAfterTheLastSwitch`: that one adds the
      * lengths up, this one names the squares that have none, so the notice asks for exactly what the
@@ -559,7 +559,7 @@ public class testAutonomyDiagramReducer
     }
 
     /**
-     * The session hands out a reducer only once it is reduced (OB-298, ADA-C2, ADD-C9).
+     * The session hands out a reducer only once it is reduced (OB-298).
      *
      * The application never reduces one reducer twice: `AutonomySession.rebuild` makes a new one - and assigned it to the
      * field a line before reducing it, so a build asking for it in between walked lists being filled.  Swapping the
@@ -848,7 +848,7 @@ public class testAutonomyDiagramReducer
 
     /**
      * The room walk stops at a switch that can be thrown AND at a permanent turnout - but not at a
-     * crossing (AMG-C3, Adam's ruling on AMG-B2, and his ruling of 2026-09-22 which changed half of it).
+     * crossing (Adam's ruling, and his ruling of 2026-09-22 which changed half of it).
      *
      * `roomAfterTheLastSwitch` walks back from the far sensor and stops where the room ends.  Asked on
      * **2026-09-15** whether a crossing or a permanent turnout should stop it - a permanent turnout is a
@@ -856,7 +856,7 @@ public class testAutonomyDiagramReducer
      * *"Neither"*, and that was pinned here.
      *
      * **He changed the permanent-turnout half on 2026-09-22**, shown what it costs: `OB-233` /
-     * `IND9X-A2`.  A berth BEYOND a permanent turnout had the track on the far side of the points
+     * A berth BEYOND a permanent turnout had the track on the far side of the points
      * counted as room, so a four-unit train was admitted to a two-unit berth and came to rest fouling
      * the merge - the over-admission direction `behaviour.md` 5a exists to prevent.  His words:
      * *"treat them the same as regular switches for the purposes of the check"*.
@@ -1247,7 +1247,7 @@ public class testAutonomyDiagramReducer
 
     /**
      * The SHORTER of two parallel roads is the one kept, and the other is reported rather than dropped
-     * in silence (AMG-C3).
+     * in silence.
      *
      * The test above pins the invariant the model forces - at most one edge per ordered pair, an edge's
      * identity being its pair of Point names - and stops there.  WHICH road survives is a separate
@@ -2064,7 +2064,7 @@ public class testAutonomyDiagramReducer
     }
 
     /**
-     * The two roads of a double curve are separate places; a crossing's two roads are one (AUR-B1).
+     * The two roads of a double curve are separate places; a crossing's two roads are one.
      *
      * `TilePorts` gives a double curve `route(N, W)` and `route(E, S)` - two curves in opposite corners with no rail
      * between them - so a train on one is not on the other's metal, and they must not be rivals for the same track.
@@ -2132,7 +2132,7 @@ public class testAutonomyDiagramReducer
      *  - a **double slip** (`SWITCH_CROSSING`) is a switch, thrown one way or the other, and its roads share the
      *    frog: they lock too - and it is cut out of the length pieces with the other switches.  It carries FOUR
      *    roads rather than two, because its thrown state adds both diagonals, so eight directed legs cross it;
-     *    every pair of different roads locks, and only a road against its own reverse does not (OP3-C10).
+     *    every pair of different roads locks, and only a road against its own reverse does not.
      *
      * The double curve is the fourth case and has its own claim above: two curves in opposite corners, which never
      * touch, so they do not lock.
@@ -2192,7 +2192,7 @@ public class testAutonomyDiagramReducer
 
         GraphReducer reduced = reduce(graph, authored(new HashMap<>(), null, null));
 
-        // EVERY LEG OVER THE SQUARE, not the first of each kind (OP3-C10).
+        // EVERY LEG OVER THE SQUARE, not the first of each kind.
         //
         // Four directed legs run over the middle tile - east and west, north and south - and taking
         // the first match of each made the answer depend on what order `getEdges()` happened to yield.
@@ -2219,7 +2219,7 @@ public class testAutonomyDiagramReducer
                 + " road this test knows about - so it is being dropped rather than asked about");
         }
 
-        // HOW MANY LEGS THERE ARE, not merely that there is one (FXV-C11).  The javadoc claims a double
+        // HOW MANY LEGS THERE ARE, not merely that there is one.  The javadoc claims a double
         // slip carries four roads and eight directed legs, and `assertFalse(isEmpty())` is satisfied by
         // one of each - so a reduction that stopped emitting the diagonals would leave this green while
         // the claim above it went on being made.

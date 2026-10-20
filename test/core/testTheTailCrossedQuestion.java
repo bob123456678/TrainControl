@@ -94,7 +94,7 @@ public class testTheTailCrossedQuestion
      *
      * Adam, 2026-09-23, on MT-477: *"when set to lenth 3, the tail always follows switch 51 turned, rather than facing
      * straight toward rampdown.  Not a major issue, but technically that length should qualify for the prompt."*  Until
-     * then a junction the tail passed without crossing a sensor beyond was not asked about (TLR-B1), on the reading that
+     * then a junction the tail passed without crossing a sensor beyond was not asked about, on the reading that
      * every answer would be J.  But the last two units lie on A's rail or on C's, and those are different track.
      */
     @Test
@@ -272,12 +272,12 @@ public class testTheTailCrossedQuestion
             "TQ_A and TQ_C are both nearest the back, and the list chose one of them: " + farthestOf(both));
     }
 
-    // RESTORED (MFR-C4): these seven claims were dropped when OB-226, OB-227 and FR-088 rewrote this class on
-    // 2026-09-15, and the rules they hold - TLR-B1, TLR-B2, TLV-B1, TLV-B2/TLR-B3, TLV-B3, TLW-B1, TLW-C4 - are still
+    // RESTORED: these seven claims were dropped when OB-226, OB-227 and FR-088 rewrote this class on
+    // 2026-09-15, and the rules they hold are still
     // in the code.
 
     /**
-     * One road with a crossed sensor is enough to ask, when the other road has none (TLR-B1).
+     * One road with a crossed sensor is enough to ask, when the other road has none.
      *
      * A -> J measures three and C -> J five.  Five units leave four past J: A is crossed with one left, C is not
      * (five, since OB-226 offers a sensor exactly the train's length back).
@@ -307,7 +307,7 @@ public class testTheTailCrossedQuestion
     }
 
     /**
-     * Two copies of one square are one road, not two (TLR-B2).
+     * Two copies of one square are one road, not two.
      *
      * A square a train may turn at is split into a lane copy and a turning copy (`AutonomyBuilder`), the same metal
      * under two names.  Counted by name they were two roads back from J, so the question was put on plain track and
@@ -347,7 +347,7 @@ public class testTheTailCrossedQuestion
     }
 
     /**
-     * A fork right behind the platform: the answer picks the rail the tail lies on, and the walk follows it (TLV-B1).
+     * A fork right behind the platform: the answer picks the rail the tail lies on, and the walk follows it.
      *
      * K -> S and L -> S both come in from the west.  The walk's first hop chose between them by side alone and took
      * whichever it met first, so answering L covered K -> S and left L -> S - where the train stands - open.
@@ -399,10 +399,10 @@ public class testTheTailCrossedQuestion
     }
 
     /**
-     * A train with no road still follows the only road back past a square it reaches by two names (TLV-B2, TLR-B3).
+     * A train with no road still follows the only road back past a square it reaches by two names.
      *
      * The fork rule counted the junction's neighbours by name, so a lane copy and a turning copy of one square read as
-     * two roads and the tail stopped at J - and with the question rightly not put there (TLR-B2), nothing could ever
+     * two roads and the tail stopped at J - and with the question rightly not put there, nothing could ever
      * extend it.  Adam's rule is to stop where the track SPLITS, and two copies of one square are not a split.
      */
     @Test
@@ -429,7 +429,7 @@ public class testTheTailCrossedQuestion
     }
 
     /**
-     * Two roads that part and meet again before the sensor are told apart in the list (TLV-B3).
+     * Two roads that part and meet again before the sensor are told apart in the list.
      *
      * Behind S: M, then K or L, meeting again at N, then A.  "A (via N)" named both roads to A.
      */
@@ -472,7 +472,7 @@ public class testTheTailCrossedQuestion
     }
 
     /**
-     * Two ends of one square reached from one junction are two roads, and the tail still stops there (TLW-B1).
+     * Two ends of one square reached from one junction are two roads, and the tail still stops there.
      *
      * A balloon: from J one rail reaches square A's west end and a loop reaches its east end.  The builder splits A by
      * arrival side, so those are two copies with one block - different track.  Counted by block they were one road,
@@ -523,7 +523,7 @@ public class testTheTailCrossedQuestion
     }
 
     /**
-     * The list starts on the road the train already has, so OK does not throw it away (TLW-C4).
+     * The list starts on the road the train already has, so OK does not throw it away.
      */
     @Test
     public void testTheRecordedRoadIsTheOneOfferedFirst() throws Exception

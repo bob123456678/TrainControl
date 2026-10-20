@@ -123,7 +123,7 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
      *
      * One finding for the station, on its own square, carrying both caption squares and their number.  THE CONTROLS are
      * the same setup before the edit - one station captioned once beside itself, another on its own square - and the
-     * station once it is no station, whose captions are kept but not drawn (GSE-C4).
+     * station once it is no station, whose captions are kept but not drawn.
      *
      * MUTATION: leave the error out, report a station with one caption, or count a square that is no station, and this
      * fails.  A station named on its own square and beside it is NOT an error (it is drawn once): the next claims.
@@ -206,7 +206,7 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
         // and it is one more thing to fix before the setup runs, not just a line in a list
         assertEquals(edited.errorCount(), once.errorCount() + 1, "the setup is not refused for it");
 
-        // A square that is no station now is not drawn, so it is not shown twice (GSE-C4)
+        // A square that is no station now is not drawn, so it is not shown twice
         edited.getStore().setStation(station, false);
 
         assertTrue(shownTwice(edited).isEmpty(), "captions kept for a square that is no station are reported as shown"

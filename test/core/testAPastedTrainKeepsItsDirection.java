@@ -49,7 +49,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  *
  * **The defect this covers.**  `TrainControlUI.rememberPlacement` wrote the locomotive and not the
  * facing, so a pasted train had no recorded direction; `AutonomyBuilder.placementCopy` then fell
- * through to COPY 0 when nothing matched (since GUI2-B1, to the first copy trains may arrive at) -
+ * through to COPY 0 when nothing matched (to the first copy trains may arrive at) -
  * whichever the builder emitted first.  The next
  * `captureFromLayout` wrote that copy's side back as though it had been chosen.  A probe on the real
  * layout caught every step of it: a facing of `S` carried into a square whose only built copy was
@@ -221,7 +221,7 @@ public class testAPastedTrainKeepsItsDirection
             else
             {
                 // Several copies and none of them can hold it. Nothing here knows which the operator
-                // meant, so the value is cleared rather than invented - SPEC-A1.
+                // meant, so the value is cleared rather than invented.
                 assertNull(afterwards,
                     station.getName() + " invented a heading for a train none of its copies can hold: "
                     + held);
@@ -308,7 +308,7 @@ public class testAPastedTrainKeepsItsDirection
             + " sets off from the wrong place - or from nowhere at all");
     }
     /**
-     * WHAT A COMPULSORY-TURN STATION ACTUALLY BUILDS TO (MON-C14): a station autonomy may choose exactly when it is not
+     * WHAT A COMPULSORY-TURN STATION ACTUALLY BUILDS TO: a station autonomy may choose exactly when it is not
      * marked parking.
      *
      * A review read `AutonomyBuilder:994` - `json.put(stops ? "terminus" : "reversing", true)` - and observed that the
@@ -928,10 +928,10 @@ public class testAPastedTrainKeepsItsDirection
      *
      * Both defects live in exactly that gap, and they are its two halves:
      *
-     * - **REG8-A1, the value never arrives.** `parseAuto` applied the side while creating the points
+     * - **The value never arrives.** `parseAuto` applied the side while creating the points
      *   and placed the trains afterwards, and placing a train clears the side. Written, then wiped, on
      *   every build. The setup was right the whole time, so every existing assertion passed.
-     * - **IND9-A1, a value arrives that nobody set.** Emptying a square cleared the placement and the
+     * - **A value arrives that nobody set.** Emptying a square cleared the placement and the
      *   facing and left the side behind, so the next train inherited the last one’s tail. Again
      *   invisible: the setup faithfully reported the stale value it had been left.
      *
@@ -1022,7 +1022,7 @@ public class testAPastedTrainKeepsItsDirection
             + " behind it is blocked on the strength of where a different train came in (IND9-A1)");
     }
     /**
-     * The arrival side survives the BUILD, not just the file (REG8-A1).
+     * The arrival side survives the BUILD, not just the file.
      *
      * `parseAuto` applies `arrivedFrom` while it is creating the points and places the locomotives in a
      * later pass. `Point.setLocomotive` drops the arrival side whenever the occupant changes - right on

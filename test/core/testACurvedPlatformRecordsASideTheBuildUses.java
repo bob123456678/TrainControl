@@ -20,11 +20,10 @@ import org.traincontrol.gui.ArrivalSidePrompt;
 import org.traincontrol.marklin.MarklinLocomotive;
 
 /**
- * A train put down by hand on a CURVED station has its tail recorded on a side no track enters by
- * (REV9-B3).
+ * A train put down by hand on a CURVED station has its tail recorded on a side no track enters by.
  *
  * **FIXED 2026-09-08, and this class was written RED first.**
- * REV9-B3 was found by reading, and a defect
+ * This one was found by reading, and a defect
  * found by reading is a claim until something executes it - so this ran against the unrepaired door
  * and failed in its own words, on exactly the two methods about the curve, while the two CONTROL
  * methods over a straight platform passed.  That split is what makes it a statement about the curve
@@ -53,7 +52,7 @@ import org.traincontrol.marklin.MarklinLocomotive;
  *
  * **Why it needed a new fixture.**  Every tail test in this suite ran on a straight chain of ordinary
  * points - `testATrainCoversTheTrackBehindIt` is all "E" and "W" on one row - where the two vocabularies
- * agree and the bug cannot appear.  `test/README.md` recorded that blind spot as MON-C17 before this
+ * agree and the bug cannot appear.  `test/README.md` recorded that blind spot before this
  * defect walked through it.  `test/layouts/curve-into-platform` is the shape, and this is its first use.
  *
  * **The fix**, which is the one already made twice at the sibling sites: the sides are given and the
@@ -168,7 +167,7 @@ public class testACurvedPlatformRecordsASideTheBuildUses
     }
 
     /**
-     * THE SUBJECT. On the curved platform it does not - REV9-B3.
+     * THE SUBJECT. On the curved platform it does not.
      */
     @Test
     public void testTheCurvedPlatformIsAnsweredWithASideTheBuildUses() throws Exception
@@ -186,7 +185,7 @@ public class testACurvedPlatformRecordsASideTheBuildUses
     }
 
     /**
-     * THE SUBJECT, and the failure REV9-B3 names: nothing at all is blocked behind the curved one.
+     * THE SUBJECT, and the failure: nothing at all is blocked behind the curved one.
      */
     @Test
     public void testTheTailIsBlockedBehindTheCurvedPlatform() throws Exception

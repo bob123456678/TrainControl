@@ -11,7 +11,7 @@ import org.traincontrol.marklin.file.CS2File;
 /**
  * A CS3 that answers "Not Found" in the BODY is recognised as not having it.
  *
- * TA-B6, from the test suite audit inside [OB-089]. `isNotFoundError` has two branches and the suite
+ * From the test suite audit inside [OB-089]. `isNotFoundError` has two branches and the suite
  * only ever exercised one: the mock Central Station returns real HTTP 404s, which land in the
  * `FileNotFoundException` catch. The audit demonstrated the gap by replacing the whole method with
  * `return false` and watching everything stay green.

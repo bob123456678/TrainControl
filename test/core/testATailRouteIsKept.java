@@ -17,10 +17,10 @@ import org.traincontrol.marklin.MarklinControlStation;
 /**
  * The road a standing train arrived along is kept, so its tail is the same after a save, a load or a rebuild.
  *
- * Adam, 2026-09-14, on WK7-B1: *"why not ask the user to specify the last sensor it crossed from a list of
+ * Adam, 2026-09-14: *"why not ask the user to specify the last sensor it crossed from a list of
  * possible sensors?  Then state will always be fully consistent."*  And: *"Go - build it."*
  *
- * **WK7-B1, which this closes.**  `Point.arrivedAlong` lived in memory only.  Every rebuild of the running
+ * **What this closes.**  `Point.arrivedAlong` lived in memory only.  Every rebuild of the running
  * layout - every setup gesture, closing the autonomy editor - put a driven train back with its side and not
  * its road, so its tail stopped at the first fork again and roads it was lying across were offered.  A
  * restart did the same.  The road is now written with the point (`Point.toJSON`), read back by

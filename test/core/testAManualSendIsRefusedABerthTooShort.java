@@ -281,7 +281,7 @@ public class testAManualSendIsRefusedABerthTooShort
     }
 
     /**
-     * The window's reason for a manual-only berth is the BERTH rule as well as the length rule (AMR-C2).
+     * The window's reason for a manual-only berth is the BERTH rule as well as the length rule.
      *
      * MT-262's ruling is that a physical refusal outranks a preference, and there are two physical refusals, not one:
      * the train does not fit down the route, and the train fits but its body would lie across a road something else

@@ -65,7 +65,7 @@ public class testParseCS2Layout
     }
     
     /**
-     * A page edit keeps the parts of the index TrainControl does not model (AC2-C1).
+     * A page edit keeps the parts of the index TrainControl does not model.
      *
      * **Silent modification of a file the user did not ask to change.** The page exporter was given
      * a rule - *"what TrainControl does not understand it is not entitled to throw away"* - and the
@@ -87,10 +87,10 @@ public class testParseCS2Layout
      * assertion fails; remove the `inPage` guard from the id reader and the third does.
      */
     /**
-     * A block name the station capitalised is still a block (T10-C6).
+     * A block name the station capitalised is still a block.
      *
      * The Central Station writes `Version` with a capital V, and `LayoutDiagram.readLayoutIndexIds`
-     * has matched block names without regard to case since `VLD-B2` - the test below this one exists
+     * has matched block names without regard to case - the test below this one exists
      * for exactly that. `CS2File.parseFile` did not: its block-name arm was `^[a-z]+$`, so a page
      * block spelled `Seite` was not a block, its `.name=` and `.id=` lines were attached to whatever
      * came before, and the parser returned **zero pages and zero failures**.
@@ -129,7 +129,7 @@ public class testParseCS2Layout
             java.nio.file.Files.write(new java.io.File(config, "gleisbild.cs2").toPath(),
                 index.getBytes(java.nio.charset.StandardCharsets.UTF_8));
 
-            // THE INDEX READER, which has been case-insensitive since VLD-B2.
+            // THE INDEX READER, which is case-insensitive.
             java.util.Map<String, Integer> ids =
                 org.traincontrol.base.LayoutDiagram.readLayoutIndexIds(folder.getAbsolutePath());
 
@@ -194,7 +194,7 @@ public class testParseCS2Layout
             // "benign by luck" means, and it is also what makes it untestable if copied literally.
             String original = "[gleisbild]\n"
                 // CAPITAL V, as the shipped `sample_layout/config/gleisbild.cs2` spells it, and the
-                // whole reason the first version of this test could not fail (VLD-B2).  Spelled the
+                // whole reason the first version of this test could not fail.  Spelled the
                 // way the WRITER spells it, the block is matched, skipped, and regenerated - so a
                 // case-sensitive match looks correct.  The genuine export is the case that breaks.
                 + "Version\n .major=1\n"
@@ -247,7 +247,7 @@ public class testParseCS2Layout
             assertEquals(after.split("zuletztBenutzt", -1).length - 1, 1,
                 "the block appears more than once - carried over AND regenerated:\n" + after);
 
-            // AND THE MODELLED HEADER TOO, which is the assertion that was missing (VLD-B2).
+            // AND THE MODELLED HEADER TOO, which is the assertion that was missing.
             //
             // The one above is on a block that is genuinely unmodelled, so it can only catch a
             // duplicate of something the writer never emits.  The duplicate that actually happened
@@ -752,7 +752,7 @@ public class testParseCS2Layout
     }
 
     /**
-     * The `page=` line at the top of a page file survives a save (X8-A1).
+     * The `page=` line at the top of a page file survives a save.
      *
      * **A line deleted from every page the application has ever saved.**  `parseFileContents` knew
      * three shapes of line - a block name, a `" .key=value"`, a `" .key"` array header - and the second
@@ -807,7 +807,7 @@ public class testParseCS2Layout
     }
 
     /**
-     * A page file that is nothing but a header and its key does not lose the key (X8-A1).
+     * A page file that is nothing but a header and its key does not lose the key.
      *
      * The keys are held until a block opens, because that is where the file puts them and the exporter
      * has to write them back in that order.  A file with no block at all - which a truncated or
@@ -827,12 +827,12 @@ public class testParseCS2Layout
     }
 
     /**
-     * What the station wrote INSIDE a page's own block survives a page edit (X8-B2).
+     * What the station wrote INSIDE a page's own block survives a page edit.
      *
      * `readLayoutIndexExtras` keeps whole blocks it has no name for and declares `seite` modelled.
      * That is true of the two keys the writer emits - `.id` and `.name` - and false of the block: a
      * Central Station writes the page's scroll position into it as `.xoffset` and `.yoffset`.  So the
-     * index kept `zuletztBenutzt` at the top of the file, which AC2-C1 was written for, and still
+     * index kept `zuletztBenutzt` at the top of the file, as the earlier version intended, and still
      * deleted what sat inside each page.
      *
      * The same rule as the test above, one file up.
@@ -899,13 +899,12 @@ public class testParseCS2Layout
     }
 
     /**
-     * Each page keeps the unmodelled keys the file states for it, even when two pages claim one id
-     * (N8-B1, X8V-B1).
+     * Each page keeps the unmodelled keys the file states for it, even when two pages claim one id.
      *
      * **The ambiguity was in the map key, not in the file.** `readLayoutIndexPageExtras` was keyed by
      * page id, and two pages can resolve to one: a map keeps the last, and `writeLayoutIndex` reissues
      * the LATER page's id - so the page that kept the id inherited the keys of the page that lost it.
-     * That much was `X8V-B1`, and it was real.
+     * That much was real.
      *
      * **Its fix withdrew the contested id, and that threw away a real page's keys.** `Oles kreds` - the
      * genuine Central Station export in this repository - opens with a `seite` that carries
@@ -920,7 +919,7 @@ public class testParseCS2Layout
      * and which the file states on every block.
      *
      * **Both shapes, because only one of them was ever tested.** Alpha/Beta is the synthetic pair that
-     * `X8V-B1` was written against; Gamma/Delta is the shape in the repository, where the first page
+     * the first fix was written against; Gamma/Delta is the shape in the repository, where the first page
      * states no id at all.
      *
      * MUTATION: key the map by `pageIdOrPosition(idText, position)` again and the first case puts Beta's
@@ -1043,7 +1042,7 @@ public class testParseCS2Layout
     }
 
     /**
-     * A page with NO id keeps what the station wrote inside its block (X8-B2).
+     * A page with NO id keeps what the station wrote inside its block.
      *
      * The genuine Central Station export in this repository - `Oles kreds/config/gleisbild.cs2` -
      * opens with exactly this: a `seite` carrying `.xoffset=1` and `.yoffset=3` and no `.id` at all.
@@ -1100,7 +1099,7 @@ public class testParseCS2Layout
     }
 
     /**
-     * A renamed page keeps what the station wrote inside its block (X8-B2).
+     * A renamed page keeps what the station wrote inside its block.
      *
      * The reason the extras are keyed by id.  A rename is the one operation where the writer is
      * holding a name the index has never seen, and by-name bookkeeping would drop the offsets of

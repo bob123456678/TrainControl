@@ -471,7 +471,7 @@ public class testAutonomyDiagramStore
 
     /**
      * A name that would share another configuration's file is refused as that, naming the other - not as a name already
-     * in use (VD17-C6).
+     * in use.
      *
      * The window says ERROR_NAME_IN_USE as "a configuration called Night_ Yard already exists", which is
      * false of a shared file: what exists is Night: Yard, and the two names are one file because a file
@@ -660,7 +660,7 @@ public class testAutonomyDiagramStore
     }
 
     /**
-     * A page renamed outside TrainControl is still a page that is loaded (GSE-C2).
+     * A page renamed outside TrainControl is still a page that is loaded.
      *
      * `pagesNotLoaded` is the question every save asks before it tidies the setup.  A page renamed on the
      * Central Station, or in its file, keeps its id and changes its name (the case page ids exist for, and
@@ -703,11 +703,11 @@ public class testAutonomyDiagramStore
     }
 
     /**
-     * A page RENUMBERED, whose page did not load, is still reported as not loaded (GSE-C2).
+     * A page RENUMBERED, whose page did not load, is still reported as not loaded.
      *
      * The guard on the fix above: the id is believed only where `resolvePage` believes it.  Here id 2 belonged to
      * "Yard" and now belongs to "Main Line", while "Yard" is still in the index under another id and did not load -
-     * the shape an unreadable page's stand-in gives (FV3-A1).  Asked by id alone, the question finds "Main Line"
+     * the shape an unreadable page's stand-in gives.  Asked by id alone, the question finds "Main Line"
      * loaded and calls "Yard" present, the save tidies against a picture without it, and a page of settings goes,
      * which is the MT-135 loss.  Green before the fix and after it; it is here to catch the fix done the short way.
      *
@@ -950,7 +950,7 @@ public class testAutonomyDiagramStore
 
         assertEquals(report.getDroppedTileProperties().size(), 2, "both are reported, not just removed");
 
-        // AND THE OPERATOR IS TOLD (IPR-A2).
+        // AND THE OPERATOR IS TOLD.
         //
         // `isClean()` counts this list, so the dialog has to be built from it too: a save whose only
         // casualty was lengths and directions would otherwise pass `isClean()` false, produce an empty text
@@ -1019,7 +1019,7 @@ public class testAutonomyDiagramStore
     /**
      * A deleted tile takes its link name and its switched-off flag too.
      *
-     * DD-A1: `reconcile` has to cover every kept collection, and these two were missing from it.
+     * `reconcile` has to cover every kept collection, and these two were missing from it.
      *
      * The consequence is not merely untidy. Both are remembered BY SQUARE, so a name and a "this link
      * is switched off" flag for track that no longer exists sit in the file indefinitely, and **a link
@@ -1722,7 +1722,7 @@ public class testAutonomyDiagramStore
     /**
      * A page's EXCLUSION survives a rename too, because it is stored by id like everything else.
      *
-     * UR-7: `excludedPages` goes through the page-level translators like every other shared collection,
+     * `excludedPages` goes through the page-level translators like every other shared collection,
      * which is the class's own rule at the top of setPageIds: "A name is something a user renames on a
      * whim, and every key here begins with one, so a rename would otherwise orphan a whole page of names,
      * lengths, directions and pairings at once."
@@ -1799,7 +1799,7 @@ public class testAutonomyDiagramStore
     /**
      * Renaming a locomotive repairs EVERY configuration, not only the one that is running.
      *
-     * UR-9: three places in a configuration hold a locomotive by NAME (the placement, the home assignment
+     * Three places in a configuration hold a locomotive by NAME (the placement, the home assignment
      * and the exclusion list), so renameLoc and deleteLoc must reach all of them in every configuration.
      * `captureFromLayout` launders the ACTIVE configuration back from the running layout, but a
      * configuration that was not active at the time is never touched at all.
@@ -1906,9 +1906,9 @@ public class testAutonomyDiagramStore
     /**
      * Importing a bundle from a layout numbered differently puts each setting on the page it names.
      *
-     * Since TDR-A1 an import translates the exporter's page ids into this layout's by page name before it
+     * An import translates the exporter's page ids into this layout's by page name before it
      * merges, so there is no renumber left to warn about, and the claim is the outcome the warning exists
-     * to protect (UR-10): a renumber "would silently reattach a page of settings to the WRONG page, which is
+     * to protect: a renumber "would silently reattach a page of settings to the WRONG page, which is
      * worse than losing them, because nothing looks wrong."  An import from a layout numbered differently
      * would otherwise attach their station names, lengths, one-way directions, portal pairings and captions
      * to my pages, quietly.
@@ -1950,7 +1950,7 @@ public class testAutonomyDiagramStore
 
         store.importBundle("Imported", bundle);
 
-        // WHERE THINGS LANDED, not whether a conflict was reported (TDR-A1).
+        // WHERE THINGS LANDED, not whether a conflict was reported.
         //
         // An import translates their ids into mine by page name before it merges, so a renumber leaves
         // nothing to warn about, and the claim is the outcome the warning existed to protect: their id 2
@@ -1966,7 +1966,7 @@ public class testAutonomyDiagramStore
     /**
      * An import that fails leaves nothing behind, the configuration included.
      *
-     * UR-10, second half. The shared merge is rolled back when `readShared` throws (it uses the
+     * The shared merge is rolled back when `readShared` throws (it uses the
      * type-strict accessors on an object assembled out of somebody else's file, because clearing first
      * would empty the shared half and then fail while the panel's 'import unreadable' told the user
      * nothing had happened).  The configuration installed before it must be rolled back with it: an
@@ -2010,7 +2010,7 @@ public class testAutonomyDiagramStore
     /**
      * A station that was never named goes when its tile does.
      *
-     * UR-12: `stations` must be pruned by square, not only as a side effect of pruning `pointNames`,
+     * `stations` must be pruned by square, not only as a side effect of pruning `pointNames`,
      * whose loop walks the NAMES that no longer have a square and so never visits a square carrying a
      * station designation and no name.  An unnamed station is an ordinary state rather than a corner
      * case: `setStation` asks for no name, and `placeCaption` has a dedicated "not named yet" answer
@@ -2031,7 +2031,7 @@ public class testAutonomyDiagramStore
         TileKey unnamed = new TileKey("1 - Main", 3, 3);
         TileKey named = new TileKey("1 - Main", 4, 3);
 
-        // A station with no name whose tile IS still there (CR-C3).
+        // A station with no name whose tile IS still there.
         //
         // Without it this test only pins one direction: mutating the rule to delete every unnamed
         // station, rather than only the ones whose tile has gone, would silently strip a designation off
@@ -2070,7 +2070,7 @@ public class testAutonomyDiagramStore
     /**
      * A protecting signal goes when the SIGNAL's tile does, not only when the station's does.
      *
-     * UR-13: `dropMissing(stationSignals, keys, false)` tests the KEY, the station's square.
+     * `dropMissing(stationSignals, keys, false)` tests the KEY, the station's square.
      * `stationSignals` is the only square-referencing collection whose VALUE reconcile never checked:
      * portals are checked on both ends, and captions inside reconcileCaptions.
      *
@@ -2143,7 +2143,7 @@ public class testAutonomyDiagramStore
     /**
      * A load that fails on the CONTENT leaves the setup exactly as it was, like one that fails on the file.
      *
-     * UR-14: load()'s own comment promises this outright ("Read and parse BEFORE anything is thrown
+     * load()'s own comment promises this outright ("Read and parse BEFORE anything is thrown
      * away ..."), and it holds for a parse failure, which happens before `clear()`.  It must hold for a
      * TYPE failure too: `readShared` runs after `clear()` and uses the strict accessors throughout
      * (`getString`, `getInt`), each of which can throw part way through with the store already empty.
@@ -2196,7 +2196,7 @@ public class testAutonomyDiagramStore
     /**
      * A failed import that was REPLACING a configuration puts the old one back.
      *
-     * UR-10, second half, and the branch the first test of this pair did not reach: importing over an
+     * The branch the first test of this pair did not reach: importing over an
      * existing name replaces it (the panel says so and asks first), but that consents to being replaced
      * by a good file, not to losing the configuration to an unreadable one.  The replaced object is
      * kept and put back, as load() does with snapshotSetup.
@@ -2362,7 +2362,7 @@ public class testAutonomyDiagramStore
     }
 
     /**
-     * Undo re-opens a link whose two halves are on different pages (SVN-B8).
+     * Undo re-opens a link whose two halves are on different pages.
      *
      * A portal is a pair of squares on two pages (that is what it is for), and `setPortalDisabled`
      * writes **both** ends.  `PairMapKept` and `ListMapKept` capture an entry with either end on the page
@@ -2387,7 +2387,7 @@ public class testAutonomyDiagramStore
 
         store.pairPortals(here, there);
 
-        // AND A SECOND LINK, ON PAGES THIS RESTORE IS NOT ABOUT (VD9-B5).
+        // AND A SECOND LINK, ON PAGES THIS RESTORE IS NOT ABOUT.
         //
         // Without it the test passes against a putPairedMembersBack that simply empties the set, because
         // the snapshot of page 1 was empty, so "put back nothing" and "put back what was there" look
@@ -2989,7 +2989,7 @@ public class testAutonomyDiagramStore
     }
 
     /**
-     * A rename reaches every configuration's list of paused trains, and a deletion takes the train off it (RSA60-C2): the
+     * A rename reaches every configuration's list of paused trains, and a deletion takes the train off it: the
      * list is a holder of a locomotive's name like the placements, homes, exclusions and timetable, and a train paused in
      * a configuration not loaded ran again after a rename.
      *

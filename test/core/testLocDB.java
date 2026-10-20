@@ -25,7 +25,7 @@ public class testLocDB
     public static MarklinControlStation model;
     
     /**
-     * The locomotive CSV is produced without a window (AC2-C3).
+     * The locomotive CSV is produced without a window.
      *
      * **A method that needed the one thing a headless session does not have.** Nine of its ten
      * columns come from the locomotive; the tenth, button mappings, is a fact about the main window,
@@ -289,7 +289,7 @@ public class testLocDB
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        // TST-B20: testRenameLoc creates "New locomotive test 2" (MFX 20) and renames it to "New
+        // testRenameLoc creates "New locomotive test 2" (MFX 20) and renames it to "New
         // locomotive test 2 copy" - nothing ever deleted either name, so one of them was left in the
         // restored DB image for whatever ran next in this JVM.
         if (model != null) model.deleteLoc("New locomotive test 2");

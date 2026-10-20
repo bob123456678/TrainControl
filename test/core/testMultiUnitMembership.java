@@ -101,7 +101,7 @@ public class testMultiUnitMembership
         assertEquals(members.size(), 2, "the other member went missing: " + members);
     }
 
-    // What a reader of the consist can see while it is being rebuilt (S14-B4, raised to A by NSV).
+    // What a reader of the consist can see while it is being rebuilt (raised to A by NSV).
 
     /**
      * Rebuilding a consist does not change the map somebody is already reading.
@@ -203,7 +203,7 @@ public class testMultiUnitMembership
     }
 
     /**
-     * Applying a list in one call does not touch what another thread has staged (NSV-B2).
+     * Applying a list in one call does not touch what another thread has staged.
      *
      * `preSetLinkedLocomotives` writes an instance field and `setLinkedLocomotives()` reads it back,
      * with nothing between them.  Two threads rebuild consists - `syncWithCS2` off the event thread and
@@ -265,7 +265,7 @@ public class testMultiUnitMembership
      * *"Make the allowed function be the highest possible for the consist - so two MM2 locs mean F0-4
      * do something.  one mm2 loc and one dcc/mfx mean all functions are unlocked."*
      *
-     * **This replaces the opposite claim.** `S14-B1` found that an MM2 head passed f6 to an MFX member
+     * **This replaces the opposite claim.** It was found that an MM2 head passed f6 to an MFX member
      * and recorded it nowhere - no button, `functionsOff` could not clear it, and the next press sent ON
      * again - and fixed it by refusing anything the HEAD could not do. That fixed the real defect and
      * answered the wrong question: the point of a consist is that a member can do what the head cannot.
@@ -346,7 +346,7 @@ public class testMultiUnitMembership
     }
 
     /**
-     * `setSpeed` clamps its own argument the way it already clamps its members' (S14-B2, NSV-C4).
+     * `setSpeed` clamps its own argument the way it already clamps its members'.
      *
      * `_setSpeed` is wrapped in `if (speed >= 0 && speed <= 100)` with no `else`, so an out-of-range
      * value is DISCARDED and `getSpeed()` still reports whatever it was - and the head then
@@ -356,8 +356,7 @@ public class testMultiUnitMembership
      * fixed.
      *
      * The member clamp was also one-sided: a negative argument scaled by a multiplier stays negative,
-     * `_setSpeed` ignores it for the same reason, and the member re-transmits its old speed too
-     * (NSV-C4).
+     * `_setSpeed` ignores it for the same reason, and the member re-transmits its old speed too.
      *
      * `setSpeed` is public and is reached from a route, from autonomy and from the throttle, so this is
      * worth having even with the command's own clamp in place - "ignored, and the previous speed re-sent"
@@ -417,7 +416,7 @@ public class testMultiUnitMembership
      * propagate a F6 command to all the consist's locomotives as per normal.  The CS will figure out
      * whether that means anything."*  And, asked whether the range stays: **"Send to all, keep the cap."**
      *
-     * The first repair of S14-B1 passed the number to each member through the member's own `setF`, whose
+     * The first repair passed the number to each member through the member's own `setF`, whose
      * `validF` refused anything its own decoder does not list - so an MM2 member of an MFX-headed consist
      * never heard f6, and neither did the MM2 head of an MFX member.  Whether a decoder does something
      * with f6 is the station's business, not a guess made from a function count.

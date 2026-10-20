@@ -52,7 +52,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
         // A configuration to import INTO, as every other import test has and as the menu path does.
         // The operational settings - priority, speed multiplier, exclusions, the station's own length
         // limit - are stored per configuration, so without one they are silently skipped and this
-        // method would have asked nothing about them (IPR-A1).
+        // method would have asked nothing about them.
         session.getStore().createConfiguration("Legacy", null);
         session.getStore().setActiveConfiguration("Legacy");
 
@@ -84,7 +84,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
 
         assertTrue(session.getStore().isStation(tile), "the station flag did not come across");
 
-        // A STATION'S CAPACITY, NOT A TRACK LENGTH (IPR-A1).
+        // A STATION'S CAPACITY, NOT A TRACK LENGTH.
         //
         // This asserted `getTileLength(tile) == 240` until 2026-08-31, which is the confusion the
         // import itself was making: `points[].maxTrainLength` is the longest train the STATION can
@@ -110,7 +110,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
     }
 
     /**
-     * An imported legacy file brings its settings, not only its points (RGN-A1).
+     * An imported legacy file brings its settings, not only its points.
      *
      * A 2.7.4c `autonomy.json` is one object: the points and edges, and above them the whole settings
      * panel - pace, default speed, how many trains may run, whether routes are fired, and the
@@ -509,7 +509,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
         assertEquals(session.getPointProperty(tile, "speedMultiplier"), 0.75,
             "the speed multiplier did not come across");
 
-        // A SWITCHED-OFF STATION ARRIVES ON, AND NOT ONE AUTONOMY CHOOSES (REG-B1, Adam 2026-09-24: "translate as on but
+        // A SWITCHED-OFF STATION ARRIVES ON, AND NOT ONE AUTONOMY CHOOSES (Adam 2026-09-24: "translate as on but
         // not auto destination").  At v2.8.1 it kept autonomy out and still took a train sent by hand; carried as
         // `active: false` it became a square nothing may pass through or end on.
         assertEquals(session.getPointProperty(tile, "active"), null,
@@ -809,7 +809,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
      * has to honour.
      *
      * This comment used to end "if a second call site ever appears, this is the test whose comment
-     * explains why it must not". It appeared, it was argued over as TST-B15, and it stays.
+     * explains why it must not". It appeared, it was argued over, and it stays.
      */
     @Test
     public void testRunningAgainOverASettledSetupChangesNothing() throws Exception
@@ -846,7 +846,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
      * runs - it is the number of places the behaviour is wanted, and a third would still be one nobody
      * has argued for.
      *
-     * The second was raised as TST-B15 on the reading that it silently re-excludes a page the user had
+     * The second was raised on the reading that it silently re-excludes a page the user had
      * switched back on. Adam ruled twice, and the two rulings are about different things: on
      * 2026-08-29 that the import "may override" pages he had chosen to keep - a page whose sensors
      * repeat another's is not a preference - and on 2026-09-11 that a page he had deliberately turned
@@ -929,7 +929,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
      * record of a page having been deliberately turned back on, so re-running it after that happens
      * treats the page exactly like one that was never looked at, and re-excludes it.
      *
-     * CLOSED, AND ENABLED (TST-B15, Adam 2026-09-11). Asked which way it should go, he took the first:
+     * CLOSED, AND ENABLED (Adam 2026-09-11). Asked which way it should go, he took the first:
      * a page the operator turned back on stays on. `AutonomyCompanionStore` now remembers a deliberate
      * re-enable - `getPagesKeptDespiteRepeats`, written when a page that really was excluded is
      * switched off again - and `excludeRepeatedSensorPages` skips those pages.
@@ -1258,7 +1258,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
      * A legacy file naming two homes for one locomotive imports one of them.
      *
      * OB-075. `setHome` sweeps duplicates, and its comment names the reason - "a rule enforced at one
-     * door of two is the shape this defect came from" (TD-8). The import is the second door: it writes
+     * door of two is the shape this defect came from". The import is the second door: it writes
      * "home" straight into the configuration, so it went round setHome and its sweep entirely.
      *
      * A pre-rule autonomy.json can legitimately hold two, because the rule did not exist when it was
@@ -1379,8 +1379,8 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
      * it is (OB-304).
      *
      * Where the old file cannot say which way a placed train faces, the facing the square last recorded was kept as it
-     * stood (RLA2-B3) - unchecked against the ways trains may arrive, though the guess made in its place prefers one of
-     * those (REG3-C1), and uncounted, so the log said no facing was guessed.  Here the middle square of a line, with
+     * stood - unchecked against the ways trains may arrive, though the guess made in its place prefers one of
+     * those, and uncounted, so the log said no facing was guessed.  Here the middle square of a line, with
      * arrivals from the east barred, records the barred way; the file places a train there with no edges to say.  Then,
      * the bar lifted, the same way is one trains may arrive in, and is kept - and counted.
      *
@@ -1398,7 +1398,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
 
         TileKey middle = new TileKey("main", 3, 1);
 
-        // A STATION, whose barred sides are read - a square that is not one has them ignored (GSE-C4)
+        // A STATION, whose barred sides are read - a square that is not one has them ignored
         session.setStation(middle, true);
         session.setBarredArrivals(middle, java.util.EnumSet.of(Side.E));
         session.rebuild();
@@ -1494,7 +1494,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
         }
     }
     /**
-     * The import NAMES the signals it will no longer drive, rather than counting them (RG4-B1).
+     * The import NAMES the signals it will no longer drive, rather than counting them.
      *
      * **An aggregate that cannot say the thing the operator needs.** A legacy file's edge commands
      * are mostly switch positions, which the derivation reproduces from the track diagram and which
@@ -1559,7 +1559,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
 
         // TWO, not three: Signal 116 is authored on both edges and is one signal to pair.
         //
-        // Asserted as the RENDERED COUNT rather than `line.contains("2")` (VLD-C5).  The addresses
+        // Asserted as the RENDERED COUNT rather than `line.contains("2")`.  The addresses
         // are in the same sentence, so a substring check passes on a wrong count of 3 as soon as any
         // address in the list contains a digit 2 - which is the ordinary case for a real file.
         assertTrue(line.startsWith("2 "),
@@ -1573,7 +1573,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
     }
 
     /**
-     * The signal-name parser takes signals and leaves everything else alone (RG4-B1).
+     * The signal-name parser takes signals and leaves everything else alone.
      *
      * A legacy command names its accessory as a display string, so this is string work on data the
      * user could have typed. Each row below is a way that has gone wrong somewhere in this tree: a
@@ -1597,7 +1597,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
             "a user-named accessory that merely begins with the word is not a signal");
 
         // THE NAME THIS PROGRAM ACTUALLY GENERATES for anything that is not the implicit protocol
-        // (VLD-B1).  `Accessory.getNameWithProtocol` appends the decoder, so a DCC railway writes
+        //.  `Accessory.getNameWithProtocol` appends the decoder, so a DCC railway writes
         // "Signal 116 DCC" - and parsing the whole remainder as a number returned null for every one
         // of them.  The address set stayed empty and the report written to stop a signal being
         // silently left out was silent about an entire protocol.
@@ -1613,7 +1613,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
         assertNull(org.traincontrol.automationui.AutonomySession.legacySignalAddress("Signal east"),
             "a report that throws on a malformed old file is worse than one that leaves a line out");
 
-        // NOT AN ADDRESS, though Integer.valueOf takes both (VLD-C5).  Rendering "-5" into the
+        // NOT AN ADDRESS, though Integer.valueOf takes both.  Rendering "-5" into the
         // operator's work list sends them looking for a signal that cannot exist.
         assertNull(org.traincontrol.automationui.AutonomySession.legacySignalAddress("Signal -5"),
             "a negative number is not an accessory address");
@@ -1628,7 +1628,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
             "a command with no acc at all");
     }
     /**
-     * A legacy import says it is leaving hand-written locks behind (ACC-B1).
+     * A legacy import says it is leaving hand-written locks behind.
      *
      * A 2.8.1 edge could carry `lockedges` - *"when this edge is taken, these others are locked
      * too"* - and the diagram model derives locks from geometry instead: `GraphReducer.deriveLocks`
@@ -1690,8 +1690,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
             + "is for: " + with);
     }
     /**
-     * A modern export coming back through the legacy door is spotted by each of its three keys
-     * (ACC-C7, and the test OPV-C1 says should have existed).
+     * A modern export coming back through the legacy door is spotted by each of its three keys.
      *
      * `detectImportFormat` calls any file whose `points` is an ARRAY a legacy graph, and a
      * configuration serialised by `Layout.toJSON` is one of those - so a modern setup exported and
@@ -1700,7 +1699,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
      * **The first version of this check asked for `blocks` and the key is `block`**, singular, as
      * `Layout:7533` reads it and `AutonomyBuilder:844` writes it. The detector therefore missed every
      * file whose only modern key was that one, and nothing caught it because the fix shipped with no
-     * test at all. That is the whole of `OPV-B1` in one line.
+     * test at all.
      *
      * Each key is asserted separately for that reason: a test that checked only `autoDestination`
      * would have passed against the broken one.

@@ -554,7 +554,7 @@ public class testAutonomyDiagramPorts
     /**
      * The whole port table, every tile type at once.
      *
-     * This is `portmap-verification.py` (git history, e5f77c9c^) brought into the suite (DD-C10). That script held
+     * This is `portmap-verification.py` (git history, e5f77c9c^) brought into the suite. That script held
      * the only complete statement of the port map anywhere - all twenty-eight tile types, their routes
      * and their branches - and drew a picture of it for a person to check against the artwork. The
      * trouble was how it stayed true: `TilePorts`'s javadoc instructed the reader to keep the Python
@@ -661,7 +661,7 @@ public class testAutonomyDiagramPorts
      * offerable and never passable.  The question about whether a train MOVES is `isPassable`, and
      * `core.testTheDiagramDrawsWhatTrainsMayDo.testAShutRouteDrawsNoArrow` is what holds that one.
      *
-     * **THE PORT MAP'S SHAPE IS ASSERTED, NOT ASSUMED (VD18-T2).**  An earlier draft derived the toe
+     * **THE PORT MAP'S SHAPE IS ASSERTED, NOT ASSUMED.**  An earlier draft derived the toe
      * and then compared it with `getA()` in a ternary whose true branch is dead - `into(toward, from)`
      * builds `Route(from, toward, toward)`, so the toe is always `getB()` and rotation preserves the
      * roles.  It could not have noticed `deriveToe` breaking, because it never used the answer.  The
@@ -670,7 +670,7 @@ public class testAutonomyDiagramPorts
      * MUTATION: make `directionIsPossible` answer true for everything and the fork and both-ways
      * claims fail at every orientation of every type.  (Dropping its `NONE` case catches nothing, and
      * an earlier draft of this paragraph said it would: `NONE` then falls through to the `TOWARD_B`
-     * arm, which is true for every one of these routes and for plain track - VD18-T1.)
+     * arm, which is true for every one of these routes and for plain track.)
      */
     @Test
     public void testOnlyThePossibleDirectionsAreOffered()
@@ -721,7 +721,7 @@ public class testAutonomyDiagramPorts
             }
         }
 
-        // THE LOOPS RAN (VD18-T3).  Four types at four orientations: two roads each, except the
+        // THE LOOPS RAN.  Four types at four orientations: two roads each, except the
         // three-way, which trails in from three.  An empty port map would otherwise take every
         // assertion above with it and still read green.
         assertEquals(asked, 4 * (2 + 2 + 2 + 3),

@@ -233,7 +233,7 @@ public class testNetworkProxy
 
         assertFalse(socketOf(proxy).isClosed(), "A8: the socket should have been reopened");
 
-        // AND SOMETHING IS LISTENING ON IT AGAIN (W21-B2).
+        // AND SOMETHING IS LISTENING ON IT AGAIN.
         //
         // This test asserted that transmission came back and stopped there - while the test above it
         // had just proved the reader count was ZERO, with the helper for asking sitting in this same

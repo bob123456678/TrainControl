@@ -77,7 +77,7 @@ public class testLayoutRenameKeys
             if (model != null) model.deleteLoc(name);
         }
 
-        // TST-B20: attach() installs a hand-built Layout into the shared model by reflection, and
+        // attach() installs a hand-built Layout into the shared model by reflection, and
         // nothing put back what was there before - so whatever this class ran last stayed installed as
         // model.getAutoLayout() for every class that shares this JVM after it.
         attach(hadAutoLayout);

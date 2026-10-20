@@ -26,10 +26,10 @@ import org.traincontrol.marklin.MarklinControlStation;
 
 /**
  * The facing an import of a 2.8.1 file gives a train is the way the file ran it, and where the file cannot say, a
- * guess trains may arrive in over the finished setup (REG3-C1, TDY3-B1, REG4-A1, REG4-C1).
+ * guess trains may arrive in over the finished setup.
  *
  * A 2.8.1 graph states direction as one-way edges: a train on a point goes only along the edges that start there, so
- * where they all leave the square by one side, that is the way the train drives (REG4-A1).  The import read none of
+ * where they all leave the square by one side, that is the way the train drives.  The import read none of
  * them and guessed, and a guess the wrong way round sends a train along a path locked one way while its decoder drives
  * it the other.
  *
@@ -146,7 +146,7 @@ public class testAnImportedFacingGuessCanStart
 
         assertTrue(placed, "precondition: the legacy file has no BottomMainA point");
 
-        // THE FILE CANNOT SAY: BottomMainA's own edges taken out, so the import has to guess (REG4-A1).
+        // THE FILE CANNOT SAY: BottomMainA's own edges taken out, so the import has to guess.
         withoutTheEdgesOf(legacy, "BottomMainA");
 
         AutonomySession.LegacyImport imported = session.importLegacy(legacy);
@@ -165,8 +165,7 @@ public class testAnImportedFacingGuessCanStart
     }
 
     /**
-     * The guess is made over the setup the import leaves, after it has marked the squares trains turn round at
-     * (REG4-C1).
+     * The guess is made over the setup the import leaves, after it has marked the squares trains turn round at.
      *
      * A legacy terminus or reversing point is written as "must turn round" further down the same point's import, and a
      * square trains must turn at has only turning copies, which face the other way from its plain ones.  Guessed
@@ -221,7 +220,7 @@ public class testAnImportedFacingGuessCanStart
     }
 
     /**
-     * A 2.8.1 file's edges say which way each train it places runs, and the import stands it that way round (REG4-A1).
+     * A 2.8.1 file's edges say which way each train it places runs, and the import stands it that way round.
      *
      * A fresh upgrade: the frozen railway with the diagram's directions and the barred arrivals taken out, which is how a
      * 2.8.1 user meets the diagram - plain track both ways, a switch by default out of its toe only.  TopMainR1's one

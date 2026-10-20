@@ -305,7 +305,7 @@ public class testAutonomyDiagramMonitor
      * and nothing is published until something asks.
      *
      * Built with a real claimed path, the way testATrainOnAClaimedPathIsPublishedAndFollowedAsItMoves is, so there
-     * is an actual picture that markDirty() must NOT have published before refreshIfDirty() is asked (TA-B9).  A
+     * is an actual picture that markDirty() must NOT have published before refreshIfDirty() is asked.  A
      * null LayoutSource would make compute() return at its null-layout check, and "published stays empty" would
      * hold whatever markDirty() did.
      */
@@ -517,7 +517,7 @@ public class testAutonomyDiagramMonitor
      *
      * The tests above hand the monitor a `LayoutSource` whose `get()` returns null, and `compute()` returns at its
      * null-layout check, so the milestone rule, the run concatenation, the location fallback and the lock wash
-     * (the 128 lines the operator is actually watching) need a test of their own (TA-B9).
+     * (the 128 lines the operator is actually watching) need a test of their own.
      * The railway here is real rather than mocked: two sensors with three plain squares between them,
      * reduced by the real GraphReducer into one edge each way, which is what gives the edge a genuine
      * list of squares to light.  Only the running Layout is a stand-in, because a real one needs
@@ -663,7 +663,7 @@ public class testAutonomyDiagramMonitor
     /**
      * Track held clear for somebody else's path is washed, and it is a different wash from the path.
      *
-     * The other half of `compute` (TA-B9).  Two separate lines of track: a train claims
+     * The other half of `compute`.  Two separate lines of track: a train claims
      * the first, and the second is on its path's lock list - which on a real layout is the track a
      * conflicting move would use.  The operator has to be able to tell "my train is going here" from
      * "this is being held clear so it can".
@@ -763,7 +763,7 @@ public class testAutonomyDiagramMonitor
      * are white, to read on both.
      *
      * MUTATION: draw the path ahead in its old red, driven track in its old green, the arrowheads black, or white with
-     * no dark edge (RSA25-C4), and this fails.
+     * no dark edge, and this fails.
      */
     @Test
     public void testTheRunIsDrawnInTheDiagramsColours()
@@ -877,7 +877,7 @@ public class testAutonomyDiagramMonitor
      * is given back as its tail clears it, and the driven line goes with it.  Under atomic routes nothing is given
      * back until the run ends, and the line stays.
      *
-     * And the pale wash of what a given-back edge held clear goes with it (RSA25-C2): the railway released those claims
+     * And the pale wash of what a given-back edge held clear goes with it: the railway released those claims
      * with the edge.
      *
      * MUTATION: draw every driven edge, given back or not, or wash what every edge held clear, and this fails.
@@ -894,7 +894,7 @@ public class testAutonomyDiagramMonitor
         straight(page, 4, 1);
         feedback(page, 5, 1, 24);
 
-        // AND A TRACK BESIDE IT THAT THE FIRST EDGE HOLDS CLEAR (RSA25-C2)
+        // AND A TRACK BESIDE IT THAT THE FIRST EDGE HOLDS CLEAR
         feedback(page, 1, 3, 25);
         straight(page, 2, 3);
         feedback(page, 3, 3, 26);
@@ -1310,7 +1310,7 @@ public class testAutonomyDiagramMonitor
     }
 
     /**
-     * What the square's annotation says (RSA23-C1): with the restriction arrows shown, every road and the station's
+     * What the square's annotation says: with the restriction arrows shown, every road and the station's
      * badge; with them off, nothing at all on a sensor that is no station, and a station's badge on its first road alone.
      * The road the icon sits on is the square's own either way.
      */
@@ -1580,7 +1580,7 @@ public class testAutonomyDiagramMonitor
                     + " only " + dirty + ", not the neighbours its icon reaches onto (MT-642)");
             }
 
-            // AND THE ANNOTATION CHANGED UNDER A TRAIN STANDING THERE (RSA23-C1): the restriction arrows turned off, then on
+            // AND THE ANNOTATION CHANGED UNDER A TRAIN STANDING THERE: the restriction arrows turned off, then on
             tile.setAutonomyOverlay(TileOverlay.parked(Side.E));
 
             for (TileAnnotation changed : new TileAnnotation[] {null, new TileAnnotation(Arrays.asList(
@@ -1656,7 +1656,7 @@ public class testAutonomyDiagramMonitor
      *
      * The two tests above hand the answer in - `paint(g, size, size, new int[] {45, 15})` - so they pin the
      * drawing and say nothing about the call that works out those numbers, which is `LayoutLabel`'s
-     * `annotation.trackCentre(getWidth(), getHeight())` (NR-9).
+     * `annotation.trackCentre(getWidth(), getHeight())`.
      *
      * `trackCentre` is the join. Given the badge's own two sides it returns their midpoint - the corner
      * the rails bend around on a curve - and falls back to the middle of the square when it has nothing
@@ -1733,7 +1733,7 @@ public class testAutonomyDiagramMonitor
         assertEquals(greyOf(badgeAt(true, true, true, size)) + greyOf(badgeAt(false, true, true, size)), 0,
             "a square out of service still draws a grey block");
 
-        // AND PARKING IS NOT SHUT (TCX-B6).  The two flags have to be told apart, or `isImpassable()` returning
+        // AND PARKING IS NOT SHUT.  The two flags have to be told apart, or `isImpassable()` returning
         // `parking` would pass every assertion above.  They share a colour and mean opposite things - a parking berth
         // is somewhere autonomy leaves alone and the operator uses freely; a shut square is one nothing may enter at
         // all.
@@ -3295,7 +3295,7 @@ public class testAutonomyDiagramMonitor
     }
 
     /**
-     * A square the editor shades spills nothing (RSA63-C4): while a protecting signal is picked every square but the
+     * A square the editor shades spills nothing: while a protecting signal is picked every square but the
      * signals is shaded, and a shaded curve station draws no icon, so its two ends must not be drawn on the squares
      * beside it.
      *
@@ -4070,7 +4070,7 @@ public class testAutonomyDiagramMonitor
     }
 
     /**
-     * The same, with parking said separately from shut (TCX-B6).
+     * The same, with parking said separately from shut.
      *
      * They are separate arguments because the two tests that vary only `shut` would otherwise pass just as well
      * against `isImpassable() { return parking; }`: a fixture with the two equal cannot tell them apart.
@@ -4168,7 +4168,7 @@ public class testAutonomyDiagramMonitor
      * OB-026 stops the end of a run on the rail in `TileOverlay.paintRun`, with `trackCentre`, whose javadoc claims
      * "the run line and the badge now agree about where the track is."  `paintTraces`, in the same class, must start
      * from it too, not from `{width / 2, height / 2}`: the editor's yellow trace is drawn on the same squares to
-     * answer the same question (TD-4).  Null ends are not hypothetical: the editor builds them deliberately, "null
+     * answer the same question.  Null ends are not hypothetical: the editor builds them deliberately, "null
      * at the ends of the run, where the line stops in the middle of the square", which is exactly the first and last
      * square of a traced path.
      *
@@ -4670,7 +4670,7 @@ public class testAutonomyDiagramMonitor
 
     /**
      * A train setting its route up - every Point of it reserved, the train not yet under way - is not drawn parked on
-     * each of them (RSA17-B2): during a run the diagram showed locomotives on sensors no train stood on, for the seconds
+     * each of them: during a run the diagram showed locomotives on sensors no train stood on, for the seconds
      * the accessories take.
      *
      * MUTATION: mark a train that holds a path as parked, and this fails.
@@ -4718,9 +4718,9 @@ public class testAutonomyDiagramMonitor
         Map<TileKey, TileOverlay> picture = published.isEmpty() ? new LinkedHashMap<TileKey, TileOverlay>()
             : published.get(published.size() - 1);
 
-        // NOT ON THE FAR POINT OF THE ROUTE IT HAS RESERVED (RSA17-B2) - asserted below, with the far tile drawn nothing
+        // NOT ON THE FAR POINT OF THE ROUTE IT HAS RESERVED - asserted below, with the far tile drawn nothing
 
-        // AND DRAWN ONCE, WHERE IT STANDS (RSA18-C2): as the locomotive standing there, not the dot (OB-317)
+        // AND DRAWN ONCE, WHERE IT STANDS: as the locomotive standing there, not the dot (OB-317)
         TileOverlay where = picture.get(key("main", 1, 1));
 
         assertTrue(where != null && where.hasTrain() && where.isParked() && !where.isMoving(), "a train setting its route"
@@ -4733,7 +4733,7 @@ public class testAutonomyDiagramMonitor
     }
 
     /**
-     * A train the setup records where the railway stands it on no Point is drawn parked there, facing its way (RSA17-C2):
+     * A train the setup records where the railway stands it on no Point is drawn parked there, facing its way:
      * the error about it says it stands there, and a diagram that drew nothing read the square free.
      *
      * MUTATION: leave the trains on no Point out of the picture, and this fails.
@@ -4922,7 +4922,7 @@ public class testAutonomyDiagramMonitor
     }
 
     /**
-     * A paused train the railway stands on no Point is drawn grey there, as every other paused train is (RSA60-C5).
+     * A paused train the railway stands on no Point is drawn grey there, as every other paused train is.
      *
      * MUTATION: draw the trains on no Point without asking whether they are paused, and this fails.
      */

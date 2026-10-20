@@ -128,7 +128,7 @@ public class testParseWebServer
         }
         finally
         {
-            // IN A FINALLY, so an assertion above does not leak the server (VD9-C14).
+            // IN A FINALLY, so an assertion above does not leak the server.
             //
             // This was the last statement of the method, which stops it only when the test
             // passes.  A failure left an HttpServer bound for the life of the JVM - and every

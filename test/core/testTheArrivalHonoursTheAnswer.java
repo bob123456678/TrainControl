@@ -131,7 +131,7 @@ public class testTheArrivalHonoursTheAnswer
         layout.getPoint("MT368_MAY").setTerminus(true);
         layout.getPoint("MT368_TERMINUS").setTerminus(true);
 
-        // A SQUARE AS THE BUILDER REALLY EMITS ONE: both copies, tied by a block (PRW-A1).
+        // A SQUARE AS THE BUILDER REALLY EMITS ONE: both copies, tied by a block.
         //
         // The claims above ask the DECISION and the fixture above is enough for that.  What they
         // cannot see is where the train is left standing afterwards, and that needs the other copy to
@@ -164,10 +164,10 @@ public class testTheArrivalHonoursTheAnswer
 
         // AND THE PLAIN COPY IS REACHED BY THE SAME APPROACH, which is how the builder emits them:
         // both copies of one arrival side hang off the same edge, and which of the two a path ends on
-        // is what PRW-A1 is about.
+        // is what matters here.
         layout.createEdge("MT368_ARRIVE", "MT368_PLAINCOPY");
 
-        // AND A SECOND PLAIN COPY, FOR THE OTHER ARRIVAL SIDE (PRV-C4).
+        // AND A SECOND PLAIN COPY, FOR THE OTHER ARRIVAL SIDE.
         //
         // A split square has a plain copy per arrival SIDE - four Points on Adam's biggest squares -
         // and only one of them is the copy THIS train could have driven onto.  With one plain copy in
@@ -231,7 +231,7 @@ public class testTheArrivalHonoursTheAnswer
     /**
      * A train that declines the turn is not left standing on the copy that expected it to turn.
      *
-     * **The consequence the boolean claim above cannot see** (PRW-A1).  Answering the question is half
+     * **The consequence the boolean claim above cannot see**.  Answering the question is half
      * the job; the other half is that the graph agrees with the train afterwards.
      *
      * A may-turn square is two Points per arrival side - the plain copy, facing the way a train that
@@ -350,7 +350,7 @@ public class testTheArrivalHonoursTheAnswer
     /**
      * It is stood on the copy ITS OWN approach reaches, not merely on one that is not a turning copy.
      *
-     * **PRV-C4: without this the rule and an accident of the fixture are indistinguishable.**  A split
+     * **Without this the rule and an accident of the fixture are indistinguishable.**  A split
      * square has a plain copy per arrival side, and only the one reachable from where the train came
      * is the copy it could have driven onto.  Picking by "not a turning copy" alone would put an
      * eastbound train on the westbound copy half the time - the same defect facing the other way -
@@ -382,7 +382,7 @@ public class testTheArrivalHonoursTheAnswer
     /**
      * And its tail comes with it, so the track behind it is still blocked.
      *
-     * **PRV-C3: deleting `setArrivedFrom` passed every claim**, and the tail walk then silently stops
+     * **Deleting `setArrivedFrom` passed every claim**, and the tail walk then silently stops
      * blocking the track behind the train - a switch this train is lying across offered to the next
      * route.
      *
@@ -409,7 +409,7 @@ public class testTheArrivalHonoursTheAnswer
     }
 
     /**
-     * And the route it drove comes with it, not only the side (TDR-B1).
+     * And the route it drove comes with it, not only the side.
      *
      * A train that was DRIVEN somewhere remembers the route it arrived along, and past a junction its tail
      * follows that route rather than stopping at the fork (Adam, MT-333/MT-335, 2026-09-13: *"Follow its
@@ -477,7 +477,7 @@ public class testTheArrivalHonoursTheAnswer
                 "the same train was turned because a POLICY said to. It cannot run backwards; that is"
                 + " not a preference anybody may overrule at a square it can simply drive through.");
 
-            // AND A PLAN IS NOT AN OPERATOR (SEV-B2).
+            // AND A PLAN IS NOT AN OPERATOR.
             //
             // `ALWAYS_REVERSE` is what `executePath`'s four-argument form hands in, which is autonomy
             // and the staging planner. A plan that routed this train to a turning copy searched the
@@ -489,7 +489,7 @@ public class testTheArrivalHonoursTheAnswer
                 + " rule is for the hand-driven doors: ALWAYS_REVERSE is a plan speaking, and it has"
                 + " already routed the next leg from the copy it expects the train to be on.");
 
-            // AND NO POLICY AT ALL IS READ AS THE RAILWAY DECIDING, NOT AS A DOOR ASKING (SVX-C3).
+            // AND NO POLICY AT ALL IS READ AS THE RAILWAY DECIDING, NOT AS A DOOR ASKING.
             //
             // The fence reads `reversals != null && reversals != ALWAYS_REVERSE`, and the null half
             // was unpinned: every caller under `test/` handing in null used a REVERSIBLE train, so
@@ -625,7 +625,7 @@ public class testTheArrivalHonoursTheAnswer
     }
 
     /**
-     * A train arriving on a railway retired on its way is not turned (RLV12-C5).  The milestones' check stops a train
+     * A train arriving on a railway retired on its way is not turned.  The milestones' check stops a train
      * whose railway was retired - Unload, a reload - and the arrival after the last of them went on to turn the locomotive
      * at a terminus, on a railway nothing reads any more, after the pause before the turn in which Unload could come.
      * The fold at Unload wrote the train as it was; turned afterwards, it faces the other way from that record.
@@ -740,7 +740,7 @@ public class testTheArrivalHonoursTheAnswer
     }
 
     /**
-     * A train that kept its direction is stood on the plain copy without the square ever reading empty (RSA-C3).  The
+     * A train that kept its direction is stood on the plain copy without the square ever reading empty.  The
      * re-stand after a declined turn took the train off the turning copy and then put it on the plain one, so for a moment
      * the square held nobody and the train was nowhere - and the platform's exit-guard signal, which follows the square,
      * was commanded GREEN and then RED again over the standing train.  It is put on the plain copy, with the side and the
@@ -1059,14 +1059,14 @@ public class testTheArrivalHonoursTheAnswer
 
     /**
      * A train told to keep its direction at a square it may turn at is turned all the same where no copy of that square
-     * faces on from the way it came (RSA49-A1): the end of a line marked "Trains May Change Direction Here", or a may-turn
+     * faces on from the way it came: the end of a line marked "Trains May Change Direction Here", or a may-turn
      * square one of whose ways in has no way on.
      *
      * Kept, the train stood on the turning copy - the only copy the build makes for that approach, facing back out - with
      * its decoder still driving it forward: its next journey set the route back the way it came and drove it into the end
-     * of the line, over track nothing held.  REG6-A1 took the question away from squares marked "must"; a square marked
+     * of the line, over track nothing held.  The question was taken away from squares marked "must"; a square marked
      * "may" where nothing faces on is a compulsory turn in all but its flag.  So is it for a train that cannot reverse,
-     * which a dead end turns already (SVV-C2, Adam's MT-245 ruling): the model and the decoder agree, which is what keeps
+     * which a dead end turns already (Adam's MT-245 ruling): the model and the decoder agree, which is what keeps
      * the next journey on its path.
      *
      * Two shapes - no other copy at all, and a plain copy the train's approach cannot reach - each sent with the answer
@@ -1186,7 +1186,7 @@ public class testTheArrivalHonoursTheAnswer
 
     /**
      * The operator is not asked about a destination where no copy faces on from the train's approach, since the answer
-     * could not be honoured there (RSA49-A1) - and still is where one does.
+     * could not be honoured there - and still is where one does.
      *
      * Asked of `ManualReversalPrompt.destinationAskedAbout`, the part of the question that decides whether to ask, because
      * asking puts a modal dialog up.
@@ -1249,7 +1249,7 @@ public class testTheArrivalHonoursTheAnswer
     }
 
     /**
-     * A timetable recorded by hand through a square trains may turn at plays back what was decided there (RSA49-B1).
+     * A timetable recorded by hand through a square trains may turn at plays back what was decided there.
      *
      * The operator kept the direction, the hand path ended on the square's turning copy, and the train was stood on the
      * plain copy; the next entry was recorded from there.  Playback ran every entry as autonomy does, turning wherever the
@@ -1274,7 +1274,7 @@ public class testTheArrivalHonoursTheAnswer
 
         final Integer lengthWas = x.getTrainLength();
 
-        // Playback drives an entry at the train's preferred speed, and one with none is skipped (SG-A5)
+        // Playback drives an entry at the train's preferred speed, and one with none is skipped
         final int speedWas = x.getPreferredSpeed();
 
         final Layout rail = new Layout(model);
@@ -1422,7 +1422,7 @@ public class testTheArrivalHonoursTheAnswer
 
     /**
      * A train that cannot reverse is not offered by hand the turning copy of a may-turn square when no way into that copy
-     * has a copy facing on (RSA49-A1): it would be turned there and leave backwards, which is what Adam's MT-367 ruling
+     * has a copy facing on: it would be turned there and leave backwards, which is what Adam's MT-367 ruling
      * keeps it from being sent to - the rule asked of the copy's ways in, where it was asked of the square alone, and the
      * square has a way through for trains from the other side.
      *

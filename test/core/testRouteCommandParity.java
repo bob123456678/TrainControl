@@ -127,7 +127,7 @@ public class testRouteCommandParity
     {
         // The dispatch only, so a mention in a comment or in the s88 TRIGGER machinery - which is a
         // different thing entirely and does use feedback - cannot be read as a branch.
-        // TO THE END OF THE METHOD, not to the end of the file (TSX-C12).
+        // TO THE END OF THE METHOD, not to the end of the file.
         //
         // `substring(from)` took `execRoute` and the 363 lines after it, and one of the predicates the
         // table below asks about already lives out there - `if (r.isAccessory())`, inside `toCSV`.

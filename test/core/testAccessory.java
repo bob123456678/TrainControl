@@ -29,7 +29,7 @@ public class testAccessory
     }
 
     /**
-     * An edge releases its accessories before it throws any (TCX-B4).
+     * An edge releases its accessories before it throws any.
      *
      * **A three-way turnout is two drives on consecutive addresses.** Commanding the diverging one
      * before the other has been released puts the ironwork into a combination that routes nowhere -
@@ -68,7 +68,7 @@ public class testAccessory
     }
 
     /**
-     * And `configureEdge` actually uses it (TCX-B4).
+     * And `configureEdge` actually uses it.
      *
      * The test above pins the rule. Naming a rule moves the defect to the call site, which is this
      * repository's recurring shape and cost it two defects in one method earlier this year - so the
@@ -591,7 +591,7 @@ public class testAccessory
         }
     }
     /**
-     * The top address of each protocol is one the protocol has (S14-C1, REG9-C2).
+     * The top address of each protocol is one the protocol has.
      *
      * `MAX_MM2_ADDRESS` and `MAX_DCC_ADDRESS` are RAW - they count from zero, and the constant says so
      * - while the number an operator types counts from one. Two callers disagreed about that: the

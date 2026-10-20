@@ -477,7 +477,7 @@ abstract class AutonomySessionFixture
 
     /**
      * Answers the station menu over a square as the operator does - Yes, or No - Trains Can Only Pass Through - through
-     * the editor's own `setUsage`, on the event thread (GSE-C4).
+     * the editor's own `setUsage`, on the event thread.
      *
      * @param panel the editor
      * @param square the square

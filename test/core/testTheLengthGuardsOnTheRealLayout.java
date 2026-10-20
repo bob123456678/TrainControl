@@ -987,7 +987,7 @@ public class testTheLengthGuardsOnTheRealLayout
         session.setTileLength(new TileKey(MAIN, 19, 12), 1);
         session.setTileLength(new TileKey(MAIN, 22, 7), 1);
 
-        // AND THEY ARE ON TRACK THE GUARD COUNTS (E8V-C1).
+        // AND THEY ARE ON TRACK THE GUARD COUNTS.
         //
         // Two named tiles are a measurement only while they lie on a stretch the room walk reaches,
         // and this file records what it costs when they do not: the RampDown claim's own note (it was
@@ -999,8 +999,8 @@ public class testTheLengthGuardsOnTheRealLayout
         // counts with, so a small answer on the route to this berth is the two lengths above landing
         // where they were meant to - and a large one, or none, says they did not.
         //
-        // This is the invariant `roomOf` carried until it was deleted as unreachable (E8-C9), and
-        // which was then asserted nowhere at all (E8V-C1).
+        // This is the invariant `roomOf` carried until it was deleted as unreachable, and
+        // which was then asserted nowhere at all.
 
         Locomotive train = model.getLocByName("75 407 DB");
 
@@ -1021,7 +1021,7 @@ public class testTheLengthGuardsOnTheRealLayout
         {
             train.setTrainLength(4);
 
-            // THE FLOOR (E8-B4).  `offers` answers false when the railway offers this train nothing
+            // THE FLOOR.  `offers` answers false when the railway offers this train nothing
             // at all - an unplaced locomotive, a configuration that drops its Point - so without this
             // the refusal below is satisfied by a railway that has closed down entirely.
             assertFalse(offeredDestinations(train).isEmpty(),
@@ -1033,7 +1033,7 @@ public class testTheLengthGuardsOnTheRealLayout
                 + " TunnelLongPark - so the guard is wrong and the stale lengths were not the cause");
 
             // AND THE LENGTH IS WHAT REFUSES IT, which is the claim this test's NAME makes and which
-            // it did not make until 2026-09-10 (E8-B4).
+            // it did not make until 2026-09-10.
             //
             // `testTunnelLongParkIsRefusedForReasonsOtherThanLength` already asserts that this berth
             // refuses this locomotive with every tile measured at eight - so something other than

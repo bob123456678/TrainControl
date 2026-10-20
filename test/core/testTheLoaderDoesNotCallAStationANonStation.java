@@ -20,11 +20,11 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 
 /**
- * Loading a configuration does not call a station a non-station (GUI4-C5).
+ * Loading a configuration does not call a station a non-station.
  *
  * Since `8370abb1` a train can stand on a copy of a station square that trains may not arrive at - reversed on the
  * throttle at BottomMainA, arrivals from the east barred - and the build records it there.  The loader then logged
- * *"placed on a non-station and will not be run automatically"* for it on every load: the noun GUI3-C1 took out of the
+ * *"placed on a non-station and will not be run automatically"* for it on every load: the noun taken out of the
  * other two sentences, because the square IS a station and Why not Moving? says what is wrong.  It could not tell the
  * two apart, because it wrote the warning while reading the points, before the square's other copies were read.
  *

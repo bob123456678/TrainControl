@@ -18,8 +18,7 @@ import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * The own-tail rule's arithmetic, on routes built by hand (OB-294; TDA-B1, TDA-C1, TDD-B1, TDD-C3; TDA2-C1, TDA2-C3,
- * TDD3-C1).
+ * The own-tail rule's arithmetic, on routes built by hand (OB-294).
  *
  * `Layout.whyItWouldMeetItsOwnTail` asked with a body and a route written out square by square, so each claim is about
  * the arithmetic alone.  The body lies behind the head on X (the standing square), A and B, measured 1, 2 and 1: A
@@ -141,7 +140,7 @@ public class testTheOwnTailArithmetic
     /**
      * A route that comes back over its own earlier track - a reversing loop, out and back through one switch - is judged
      * like a return to the body: the head may come back to a place the route ran over only once the tail has left it
-     * (TDA2-C3, TDD2-C2).  With no body at all, so nothing but the route's own timing can refuse it.
+     *.  With no body at all, so nothing but the route's own timing can refuse it.
      *
      * Out over Q (2) and the switch, round the loop - L1 (3), L2 (3) - and back through the switch to Q: six units from
      * leaving the switch to coming back to it.
@@ -169,7 +168,7 @@ public class testTheOwnTailArithmetic
     }
 
     /**
-     * A place the route ran over is free once the tail passes its FAR end, the end the head left by (TDD3-C1): timed from
+     * A place the route ran over is free once the tail passes its FAR end, the end the head left by: timed from
      * the near end, a return to a measured square was allowed that square's length more than there is.  One edge over Q
      * (1), D (2), E (3) and back to D, nothing behind the head: from leaving D to coming back to it the head runs E's 3.
      *
@@ -198,7 +197,7 @@ public class testTheOwnTailArithmetic
 
     /**
      * The note counts what Mass Assign Lengths would ask for on the way round - the pieces the build marks on each edge's
-     * places - once each, and nothing where it would ask for nothing (OB-297, ADA-C1).
+     * places - once each, and nothing where it would ask for nothing (OB-297).
      *
      * Out over X, the switch (3) and Y, and back onto the body at B.  With X and Y in two pieces still to measure, the note
      * says two; in one piece, one; with nothing to measure, nothing - whatever the places themselves measure.
@@ -258,7 +257,7 @@ public class testTheOwnTailArithmetic
     }
 
     /**
-     * The stretch the train comes back in counts among those with no length (TDA2-C1, TDD2-C3): the note named only the
+     * The stretch the train comes back in counts among those with no length: the note named only the
      * stretches wholly between leaving and coming back, and a way round whose last stretch had nothing measured said
      * nothing of it.
      *
@@ -302,7 +301,7 @@ public class testTheOwnTailArithmetic
 
     /**
      * A way round with no measured square on it is not judged - *"only apply if lengths are specified"* - however much
-     * of the body in front of the place it comes back to is measured (TDA-B1, TDD-B1).
+     * of the body in front of the place it comes back to is measured.
      *
      * @throws Exception from the rule
      */
@@ -321,7 +320,7 @@ public class testTheOwnTailArithmetic
     }
 
     /**
-     * The figure named is the tightest return on the route, so the remedy it gives is true (TDA-C1, TDD-C3).
+     * The figure named is the tightest return on the route, so the remedy it gives is true.
      *
      * The route comes up behind the body: to B after 5 measured units - 8 from where B begins to be left - and then to
      * A, whose way round is 6.
@@ -351,7 +350,7 @@ public class testTheOwnTailArithmetic
      *
      * The grain is the edge, sensor to sensor: on a fully measured railway many squares carry no length of their own, a
      * short piece drawn over several squares having fewer units than squares, and counting squares told Adam's that 21
-     * of its squares on the way round had none.  Coarser than the pieces lengths are given in (TDA2-C1): an edge
+     * of its squares on the way round had none.  Coarser than the pieces lengths are given in: an edge
      * measured only at its switch is not counted.
      *
      * @throws Exception from the rule

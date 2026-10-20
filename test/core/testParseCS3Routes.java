@@ -118,7 +118,7 @@ public class testParseCS3Routes
                     System.out.println("Should be:");
                     System.out.println(otherRoute.toVerboseString());
 
-                    // TST-B20: Route.getRoute() returns the LIVE list, not a copy - removeAll() on it
+                    // Route.getRoute() returns the LIVE list, not a copy - removeAll() on it
                     // directly emptied the route it was diagnosing, corrupting routesTC (shared, and
                     // read by whatever runs after this in the same JVM) on the failure path this
                     // diagnostic exists for.  Copied here so the diff below is read-only towards

@@ -479,7 +479,7 @@ public class testLocomotiveExclusions
 
     /**
      * A station whose arrival from one side is barred still lets the trains its list keeps out drive through it that way
-     * (RSA65-B1).  The copy the builder makes for the barred side is no destination - "A station, unless a train arriving
+     *.  The copy the builder makes for the barred side is no destination - "A station, unless a train arriving
      * THIS way is not allowed to stop" - and read as "not a station", its list stopped them passing: with an allow-only
      * list, every train it does not name.  A station's list says who may not STOP there (`514071ee`), so it is asked of
      * the square, not of the copy.  The control: on a plain sensor the list is still a wall.
@@ -556,7 +556,7 @@ public class testLocomotiveExclusions
 
     /**
      * An old autonomy.json imported into a configuration leaves the list of a square that allows only the chosen
-     * locomotives as it is (RSA65-C1).  The file's list says who is kept OUT; gap-filled into an allow-only square with
+     * locomotives as it is.  The file's list says who is kept OUT; gap-filled into an allow-only square with
      * none chosen, it read as the only locomotives let in - the file's meaning turned round.  The control: a square with
      * no mode still takes the file's list.
      *

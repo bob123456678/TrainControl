@@ -253,7 +253,7 @@ public class testACopiedCustomizationBringsTheIcons
 
         Locomotive.Customizations was = target.captureCustomizations();
 
-        // THE SNAPSHOT'S CLAIM IS MADE FIRST, BEFORE ANYTHING REPLACES THE MAP (VD12-T4).
+        // THE SNAPSHOT'S CLAIM IS MADE FIRST, BEFORE ANYTHING REPLACES THE MAP.
         //
         // `copyCustomizationsFrom` gives the target a fresh map, so an icon written to the target after
         // the copy lands somewhere the snapshot could never have held whatever `captureCustomizations`

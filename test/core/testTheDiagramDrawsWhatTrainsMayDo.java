@@ -278,7 +278,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
 
     /**
      * Track laid on a blank square beside a one-way run takes the run's direction and is saved with the edit, so the next
-     * open has nothing to correct (RSA75-C1).  The store held nothing about the blank square, so the edit's answer said
+     * open has nothing to correct.  The store held nothing about the blank square, so the edit's answer said
      * nothing was forgotten, the editor did not save, and the next open logged the run as a setup that "did not say the
      * same on every square" - about track just laid.  The drop is done as the track diagram editor does it: the tile
      * placed, then `forgetTiles` on its square, and a save when that says something changed.
@@ -938,7 +938,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     /**
      * A turnout with no address is opened only as far as its blades let a train through (FR-108).  At its default, or set
      * to run the one way its blades do, it is not counted - it refuses nothing a train could do, though its red arrow
-     * still shows the one way its blades run (RSA37-C2); closed, it is counted; opened, it runs the one way the hardware
+     * still shows the one way its blades run; closed, it is counted; opened, it runs the one way the hardware
      * does, into its toe.
      *
      * MUTATION: count a road only the hardware restricts, or leave a closed one out, and this fails.
@@ -1039,7 +1039,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
 
     /**
      * A plain square marked out of service draws its cross while trains are running, not only while
-     * the setup is being edited (SVN-B6, D24-C9).
+     * the setup is being edited.
      *
      * The running diagram badges a square only when it is worth badging, and the list of what that
      * means is written six lines above the expression: *"this is a station, trains turn round here,
@@ -1092,7 +1092,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * And the running graph is told, so trains do not simply drive through it (D24-B5).
+     * And the running graph is told, so trains do not simply drive through it.
      *
      * The editor offers **Out of service** on every square, station or not, and its handler writes
      * `active` and touches nothing else - no direction, no arrow.  The builder used to drop that
@@ -1119,7 +1119,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
 
         session.rebuild();
 
-        // THE CONTROL, ASKED OF THE COPIES (TS3-B1).
+        // THE CONTROL, ASKED OF THE COPIES.
         //
         // It used to compare `pointNameForTile` - a BASE name - against the names in the built
         // configuration, which are the emitted COPY names.  This square splits into two copies, so the
@@ -1151,9 +1151,9 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
         // is half switched off - which is not a state the menu can express or the cross can mean.
         java.util.List<String> copies = session.pointNamesFor(name);
 
-        // TWO, not one (TS3-C1).  The comment above is about a square that became SEVERAL Points, so a
+        // TWO, not one.  The comment above is about a square that became SEVERAL Points, so a
         // fixture that emits one satisfies the loop below while testing nothing it is written for -
-        // and this is the sibling of the floor `TCX-B9` put on the same shape 2,800 lines down.
+        // and this is the sibling of the floor put on the same shape 2,800 lines down.
         assertTrue(copies.size() >= 2,
             "precondition: this needs a square that became several Points, and it got " + copies.size()
             + " - " + copies);
@@ -1197,7 +1197,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
      * Two sensors with two plain tiles between them.
      */
     /**
-     * A ROAD THE OPERATOR HAS SHUT DRAWS NO ARROW, EVEN WHERE THE BLADES WOULD HAVE ONE (VD18-B1).
+     * A ROAD THE OPERATOR HAS SHUT DRAWS NO ARROW, EVEN WHERE THE BLADES WOULD HAVE ONE.
      *
      * `directionMarks` is what the diagram draws.  It used to override the authored answer whenever
      * it was not `NONE`, on the reasoning that a route the hardware restricts is one-way whatever the
@@ -1296,7 +1296,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * THE TWO ARCS OF A DOUBLE CURVE ARE TWO PIECES OF METAL (Adam, 2026-09-22, on OB-238 / IND9X-C9).
+     * THE TWO ARCS OF A DOUBLE CURVE ARE TWO PIECES OF METAL (Adam, 2026-09-22, on OB-238).
      *
      * *"It is two pieces of metal.  Imagine two parallel tracks simple appearing on one tile for visual
      * convenience.  Two distinct, not connected paths."*
@@ -1305,7 +1305,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
      * the builder groups those copies under a `block` - two trains cannot stand on one square.  That
      * grouping was keyed by the TILE alone, so a train on one arc of a double curve made the other arc
      * read occupied and `isPathClear` refused track that is physically free.  The reduction has keyed
-     * these tiles per ROAD since AUR-B1; this is the same rule at the occupancy door.
+     * these tiles per ROAD; this is the same rule at the occupancy door.
      *
      * MUTATION: key `blockFor` by the tile alone and this finds one name where it wants two.
      *
@@ -1945,7 +1945,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
 
     /**
      * Show Trains off hides the train mark the editor's own annotation draws where the setup puts a train, as well as the
-     * trains' icons and tails (RSA63-C3): under the icon while the trains show, it appeared when they were switched off.
+     * trains' icons and tails: under the icon while the trains show, it appeared when they were switched off.
      *
      * MUTATION: mark the setup's train whatever the switch says, and this fails.
      *
@@ -1996,7 +1996,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * Show Trains redraws every square in its window, not only the squares whose annotation it changes (RSA64-C1).  The
+     * Show Trains redraws every square in its window, not only the squares whose annotation it changes.  The
      * trains' icons are drawn from the railway, by squares that ask the switch as they paint; where the railway has a train
      * and the setup places none - the setup unable to build, the last valid railway kept - the switch changes no
      * annotation, and redrawing only the changed squares left that train drawn with the trains switched off.
@@ -2155,7 +2155,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * A square out of service offers no direction click in the editor (RSA63-C5): it draws no arrows (round 127), and its
+     * A square out of service offers no direction click in the editor: it draws no arrows (round 127), and its
      * click went on cycling the hidden setting under the hand pointer, the square looking the same afterwards.
      *
      * MUTATION: let the click change a square out of service again, and this fails.

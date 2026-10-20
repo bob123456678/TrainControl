@@ -253,7 +253,7 @@ public class testControlStationFaults
     }
 
     /**
-     * A database file that reads, and holds something other than a locomotive list, is unreadable too (GSP-C1).
+     * A database file that reads, and holds something other than a locomotive list, is unreadable too.
      *
      * `restoreState` took the list when the file held one and logged success either way, so a file that deserialized
      * to anything else - written by another program, or swapped in by hand - left the mark that guards the exit save
@@ -314,8 +314,8 @@ public class testControlStationFaults
      * right until it runs.
      *
      * A fold no longer writes a plan: while one has the timetable, the owner's is written, with no flag
-     * (RLV9-B1).  What this keeps working is a file a fold wrote before that, with a plan as its
-     * timetable and the flag set - stated here by hand, as the file states it (RLV10-C4).
+     *.  What this keeps working is a file a fold wrote before that, with a plan as its
+     * timetable and the flag set - stated here by hand, as the file states it.
      */
     @Test
     public void testAStagingPlanIsStillSequentialAfterASaveAndLoad() throws Exception
@@ -485,7 +485,7 @@ public class testControlStationFaults
      * The save cleared its "unreadable" mark first and then tried the copy.  When the copy failed, the failure was logged
      * and the save went on to replace the unreadable file - the copy the mark was there to guarantee was never made, and
      * the file was gone.  The mark is now cleared only once the copy is known to exist, and until then the file is left
-     * as it is; the next save tries again (BPV-C7, fixed for 2.8.2 on master and brought here as RLD-B1).
+     * as it is; the next save tries again (fixed for 2.8.2 on master and brought here).
      *
      * The copy alone is made to fail by a folder, with something in it, standing at every name the copy could be given
      * in the next minute.  It writes the database file, so it runs only where the run has its own copy of the data
@@ -560,7 +560,7 @@ public class testControlStationFaults
      * A UI state file that will not read is not saved over while its copy cannot be kept.
      *
      * The window's save had the same order as the database's: the mark cleared, the copy tried, a failed copy logged,
-     * and the file replaced - every key mapping and page name gone, with no copy anywhere (BPV-C7, RLD-B1).  The copy is
+     * and the file replaced - every key mapping and page name gone, with no copy anywhere.  The copy is
      * made to fail as above.  The window is one allocated without its constructor, holding only what its save reads,
      * over a model that answers nothing.
      *
@@ -1064,7 +1064,7 @@ public class testControlStationFaults
     }
 
     /**
-     * Exit forgets the saved address, then ends the application, once each (OB-338, RSA67-C3).
+     * Exit forgets the saved address, then ends the application, once each (OB-338).
      *
      * The owner's rule is that Exit forgets the saved Central Station address, as a start that does not connect always
      * has.  The claims above run the loop with an exit of their own and read only that the constructor names the
@@ -1152,7 +1152,7 @@ public class testControlStationFaults
     }
 
     /**
-     * The Exit the dialog reaches is the one that forgets the real address and ends with code 1 (OB-338, RSA67-C3).
+     * The Exit the dialog reaches is the one that forgets the real address and ends with code 1 (OB-338).
      *
      * The claim above runs the halves on a node of its own.  What makes them Exit's is the constructor naming the
      * no-argument method and that method passing the operator's preferences and `System.exit(1)` - the exit code the

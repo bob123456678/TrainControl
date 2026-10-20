@@ -93,7 +93,7 @@ public class testTheRoomRuleCensusOnTheRealLayout
      * `isPathClear` of every route both searches could yield: none of the 494 was drivable, and 153 pairs the old search
      * never found became drivable.  A fact about the search this census walks, not a railway that came apart.
      */
-    // 1301 SINCE AMR-B1 (2026-09-15, Adam: *"We need to refuse both.  A copy makes a cycle"*): the 53 pairs whose only
+    // 1301 SINCE 2026-09-15 (Adam: *"We need to refuse both.  A copy makes a cycle"*): the 53 pairs whose only
     // routes doubled back through another copy of the square the journey starts or ends at are no longer walked.  Every
     // one of them was a lap through the train's own platform, which is what he ruled out; measured separately on the
     // same railway, 14 station pairs lose their last route and all 14 are from `BottomMainPost`.
@@ -375,7 +375,7 @@ public class testTheRoomRuleCensusOnTheRealLayout
      * doubling its reach, or being quietly taken out, moves the number by hundreds.  The exact figure
      * is printed on every run.
      */
-    // 0 UNTIL OB-229, THEN ABOUT 60, AND 0 AGAIN SINCE AMR-B1 (2026-09-15) - and the two zeroes mean opposite things.
+    // 0 UNTIL OB-229, THEN ABOUT 60, AND 0 AGAIN SINCE 2026-09-15 - and the two zeroes mean opposite things.
     //
     // A journey counts here when its berth has room and every route to it is refused BEFORE the berth, which since
     // MT-333 means at a square the train turns at.  The first zero was hiding the ruling: the census walked routes
@@ -387,7 +387,7 @@ public class testTheRoomRuleCensusOnTheRealLayout
     // through the train's own platform - and Adam ruled those out on the same day: *"We need to refuse both.  A copy
     // makes a cycle."*  They are not walked now, so the pass-through rule has nothing left to refuse here.
     //
-    // WHAT STILL CATCHES THE RULING BEING TAKEN OUT, now that the floor cannot - and it is NOT this class (AMW-C2).
+    // WHAT STILL CATCHES THE RULING BEING TAKEN OUT, now that the floor cannot - and it is NOT this class.
     // `refusedAtATurn` was nominated here and cannot do it: it is counted by this class's own replica of the rule, as
     // two other comments in this file say outright ("taking `comesToRest` out of production leaves this number exactly
     // where it is"), so removing the production rule leaves every number here where it is.  What holds it is
@@ -427,7 +427,7 @@ public class testTheRoomRuleCensusOnTheRealLayout
      */
     // 155 SINCE OB-229 (2026-09-15): the routes this census walks no longer include the ones through a terminus, which
     // were most of the long routes past a reversing point - and every one of them refused by the route check anyway.
-    // AND 15 SINCE AMR-B1 (2026-09-15), which is the same story one step further on.  A route refused at a square the
+    // AND 15 SINCE 2026-09-15, which is the same story one step further on.  A route refused at a square the
     // train turns at is a LONG route - it goes somewhere, turns, and comes back - and on this railway most of what was
     // left after OB-229 were laps through another copy of the journey's own start or end.  Adam ruled those out
     // ("a copy makes a cycle"), so they are no longer walked and what remains is the handful of genuine turn-backs.
@@ -458,7 +458,7 @@ public class testTheRoomRuleCensusOnTheRealLayout
     private static final int REFUSED_AT_THE_BERTH = 850;
 
     /**
-     * The squares that refuse on the way: NONE since AMR-B1 (2026-09-15), so the list is empty and any square at all
+     * The squares that refuse on the way: NONE since 2026-09-15, so the list is empty and any square at all
      * appearing here is the rule refusing somewhere Adam was not looking.  It held one entry for the few hours between
      * OB-229 and his copy ruling - `BottomMainB (westbound, reverse)`, a turn copy of one of the four berths below -
      * and every journey that square refused was over a route that doubled back through another copy of its own start or
@@ -715,7 +715,7 @@ public class testTheRoomRuleCensusOnTheRealLayout
             + " 22,7, measuring BottomMainPost - and every square it costs on his railway is one he"
             + " has measured at a unit or three");
 
-        // THE LIST AND THE COUNT SAY THE SAME THING, WHICHEVER WAY ROUND THEY ARE (PTR-C2, corrected by AMW-C2).
+        // THE LIST AND THE COUNT SAY THE SAME THING, WHICHEVER WAY ROUND THEY ARE.
         //
         // `ON_THE_WAY.length == 0 || !squares.isEmpty()` was vacuous the moment the list emptied, which it did within
         // hours: an empty list and a zero count are the expected state, so nothing failed either way.  What can still

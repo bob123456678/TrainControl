@@ -175,7 +175,7 @@ public class testAdvancedRoutes
     // The autoloc condition driving a function command
 
     /**
-     * A route command parses whatever case it is typed in (WP-C19d).
+     * A route command parses whatever case it is typed in.
      *
      * `Feedback` was matched through `toLowerCase()` and every other command name with `equals`, so
      * "feedback 12,1" parsed and "emergency stop" did not - in the same file, in the same list, typed
@@ -183,7 +183,7 @@ public class testAdvancedRoutes
      * nobody can learn.
      *
      * That asymmetry sat unadjudicated for three weeks inside a bundle the sweep document declared
-     * closed: `WP-C19` filed six sub-defects and four were dispositioned (MON-C9).
+     * closed: one finding filed six sub-defects and four were dispositioned.
      *
      * **The canonical casing is what this program writes**, so no existing route changes meaning - the
      * lower-case forms below are ones that used to fail with "unrecognised" and now work.
@@ -777,7 +777,7 @@ public class testAdvancedRoutes
     }
 
     /**
-     * A name with a bracket is allowed, and survives the way routes are actually stored (RGN-C3).
+     * A name with a bracket is allowed, and survives the way routes are actually stored.
      *
      * **This test asserted the opposite until 2026-09-04**, and its own closing sentence said what
      * would change it: *"would mean this name could simply be allowed"*. Adam ruled exactly that -
@@ -884,7 +884,7 @@ public class testAdvancedRoutes
     }
 
     /**
-     * A route started again while it runs says so in the log (GSR-C4).  The sensor that triggers a route can fire again
+     * A route started again while it runs says so in the log.  The sensor that triggers a route can fire again
      * before the route has finished; the second start is dropped, as it always was, and said nothing - the window's own
      * doors say a route is already running (`route.ui.infoAlreadyRunning`), and this door, the one a sensor uses, did not.
      *
@@ -960,7 +960,7 @@ public class testAdvancedRoutes
     }
 
     /**
-     * A route finishes its commands even if the locomotive it names is deleted while it runs (CS3-B1).
+     * A route finishes its commands even if the locomotive it names is deleted while it runs.
      *
      * `deleteLoc` takes every command that drives that locomotive out of every route, through `Iterator.remove()`,
      * from the event thread - while `execRoute` is part-way along the same list on its own thread with 200 ms between
@@ -1016,7 +1016,7 @@ public class testAdvancedRoutes
             assertTrue(model.getRoute(routeName).isExecuting(), "precondition: the route never started");
 
             // PART-WAY ALONG, which is where the hazard is: waited for rather than slept for, because a loaded
-            // machine can leave the route thread with nothing sent after any fixed sleep (SVT-B3).  The upper bound
+            // machine can leave the route thread with nothing sent after any fixed sleep.  The upper bound
             // needs no waiting: the route pauses at least 200 ms between commands, so eight cannot be out yet.
             long started = System.currentTimeMillis() + 10000;
 
@@ -1157,7 +1157,7 @@ public class testAdvancedRoutes
     }
 
     /**
-     * A route is not edited while it runs, so afterwards it is still running and still drives what it drove (GSR-B3).
+     * A route is not edited while it runs, so afterwards it is still running and still drives what it drove.
      *
      * `editRoute` edits by deleting the route and adding a new object under the same id.  It carries across whether
      * autonomy selected the route and whether it is locked, and not whether it is EXECUTING, which lives on the object:
@@ -1217,7 +1217,7 @@ public class testAdvancedRoutes
 
     /**
      * A Central Station sync does not replace a route while it runs, so afterwards it is still running and still
-     * drives what it drove (GSR-B3, in the sync).
+     * drives what it drove (in the sync).
      *
      * Where the station's definition of a route differs from the one held, the sync deletes the held route and adds
      * the station's as a new object under the same id - the delete-and-add `editRoute` does, which round 115 made
@@ -1286,7 +1286,7 @@ public class testAdvancedRoutes
     }
 
     /**
-     * Nor where the station has a route of the same NAME under another id (GSR-B3, in the sync): the held route is
+     * Nor where the station has a route of the same NAME under another id (in the sync): the held route is
      * deleted to make room for it, and a running one is not - the station's waits for the next sync.
      *
      * The sync's other replacing branch.  The station's route cannot be added beside the running one under the same
@@ -1346,8 +1346,7 @@ public class testAdvancedRoutes
     }
 
     /**
-     * Deleting a route takes it out of every route that runs it, so a new route of that name is not run by them
-     * (GSR-B4).
+     * Deleting a route takes it out of every route that runs it, so a new route of that name is not run by them.
      *
      * Adam's ruling of 2026-10-10: deleting a route removes the other routes' commands that run it, and the delete's
      * question says how many routes call it - as deleting a locomotive removes the commands that drive it.  Left behind,
@@ -1416,7 +1415,7 @@ public class testAdvancedRoutes
     }
 
     /**
-     * A route whose name carries a leading or trailing space can still be found and deleted (CS3-C1).
+     * A route whose name carries a leading or trailing space can still be found and deleted.
      *
      * The two file parsers build a `MarklinRoute` with the name exactly as the file has it; `newRoute` then indexed
      * it under the trimmed name while `deleteRoute` deleted by the route's own - so such a route could be neither
@@ -1450,7 +1449,7 @@ public class testAdvancedRoutes
     }
 
     /**
-     * A route tile on the diagram runs the route the database holds now, not the one it was wired to (MKR-B1).
+     * A route tile on the diagram runs the route the database holds now, not the one it was wired to.
      *
      * `wireComponents` hands the tile the route OBJECT, and `LayoutDiagramComponent.execSwitching` runs whatever it
      * was handed.  Every door that changes a route replaces that object - `editRoute` deletes and re-adds, the sync
@@ -1520,7 +1519,7 @@ public class testAdvancedRoutes
         {
             try { model.deleteRoute(name); } catch (Exception ignored) { }
 
-            // AND THE PAGE COMES OUT AGAIN (OP2-C10).  It was put into the model's own page database by
+            // AND THE PAGE COMES OUT AGAIN.  It was put into the model's own page database by
             // reflection a few statements up, and left there - so every class that ran after this one in
             // the same JVM saw a page the layout never had, and anything that counts pages or walks them
             // counted it.
@@ -1641,7 +1640,7 @@ public class testAdvancedRoutes
      * A route's direction and speed commands drive the locomotive, and a speed of -1 stops it at once.
      *
      * "At once" is the station's train-stop command for this locomotive: an ordinary speed of 0 stops it too, at the
-     * decoder's own deceleration, and sends no such command (RSA57-C2).
+     * decoder's own deceleration, and sends no such command.
      *
      * MUTATION: hand the -1 to an ordinary stop (`setSpeed(0)`) and this fails.
      *

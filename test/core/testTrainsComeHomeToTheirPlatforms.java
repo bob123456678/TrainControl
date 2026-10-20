@@ -45,8 +45,8 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  *
  * **It is registered in build.xml, and it was written RED until Return Home staged this.**  Adam, on
  * being told the outcome was NO_PLAN_FOUND: "ok, so that test should then be red."  It has been green
- * since Return Home learned to stage the arrangement (PRW-B2 bisected the change; AMH-C3 found this
- * still saying red).  A test for something that does not work belongs in the battery being red rather
+ * since Return Home learned to stage the arrangement.
+ * A test for something that does not work belongs in the battery being red rather
  * than in an exclusion table being quiet.
  *
  * **IT RUNS AGAINST A FROZEN COPY, not against his railway (Adam, 2026-09-01: "let's get the current
@@ -234,7 +234,7 @@ public class testTrainsComeHomeToTheirPlatforms
 
             if (!plan.isPossible()) System.out.println(reachability());
 
-            // NO BRANCH HERE, and the attempt at one is worth recording (V36-A1).
+            // NO BRANCH HERE, and the attempt at one is worth recording.
             //
             // The battery caught this failing on an arrangement its premise does not cover, and the
             // first answer was to ask `canReachAnyDestination` about each train and assert that no

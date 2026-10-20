@@ -198,7 +198,7 @@ public class testInvalidInput
             + " went silent for as long as that release was the latest (C5)");
 
         // AND A NUMBER BEFORE THE "v", which the first fix for this got wrong in the other direction
-        // (IND9-C2). Anchoring on the first digits rather than on the "v" swapped one silent failure
+        //. Anchoring on the first digits rather than on the "v" swapped one silent failure
         // for two: "2026" compares NEWER than anything, so the menu offers an update that is not
         // there, and "1" compares older, which hides a release exactly the way the original bug did.
         assertEquals(Util.parseReleaseVersion(release("TrainControl 2026 Edition v3.0.0")), "3.0.0",
@@ -216,7 +216,7 @@ public class testInvalidInput
         assertEquals(Util.parseReleaseVersion(release("v3.0")), "3.0",
             "a two-part version is a version");
 
-        // AND THE TWO THE FIRST TWO ATTEMPTS BOTH MISSED (VAL9-B3). A "v" has to be the tag marker
+        // AND THE TWO THE FIRST TWO ATTEMPTS BOTH MISSED. A "v" has to be the tag marker
         // rather than the last letter of a word, and among several tagged numbers the longest wins -
         // otherwise a version mentioned in passing beats the one being released.
         assertEquals(Util.parseReleaseVersion(
@@ -343,7 +343,7 @@ public class testInvalidInput
      * refused whole.
      *
      * **A locomotive the database does not have is NOT in this list any more.**  This claim used to require that
-     * too, and Adam overruled it on 2026-09-16 (AMR-C3): *"drop the train and keep the rest."*  What a rename or a
+     * too, and Adam overruled it on 2026-09-16: *"drop the train and keep the rest."*  What a rename or a
      * deletion leaves behind is a file that has outlived its fleet, not a broken one, so the placement is dropped
      * with a log line and the configuration loads - asserted below as the opposite of what stood here, and in full
      * by `core.testHomeStaging.testAPlacementForALocomotiveNotInTheDatabaseDropsOnlyThePlacement`.  Changed because

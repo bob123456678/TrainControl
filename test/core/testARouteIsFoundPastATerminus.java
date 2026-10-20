@@ -100,7 +100,7 @@ public class testARouteIsFoundPastATerminus
 
         String why = layout.explainDestinations(loc).get("RU9_E");
 
-        // AND IT SAYS WHY (PTR-B1).  The track does connect, through the terminus, so "No track route leads there" would
+        // AND IT SAYS WHY.  The track does connect, through the terminus, so "No track route leads there" would
         // send the operator looking for rails that are there.  The reason is the route check's own sentence.
         assertEquals(why, org.traincontrol.util.I18n.t("autolayout.errorIntermediateTerminusStation"),
             "Why Not Moving? says '" + why + "' of RU9_E, whose only route runs through the terminus RU9_T - the track"
@@ -271,10 +271,10 @@ public class testARouteIsFoundPastATerminus
     }
 
     /**
-     * And Why Not Moving? says a lap is the only way, rather than blaming the track or a terminus (AMR-B1).
+     * And Why Not Moving? says a lap is the only way, rather than blaming the track or a terminus.
      *
      * Since the copy rule the search finds nothing for such a square, and "No track route leads there" sends the
-     * operator looking for rails that are there - the same defect PTR-B1 fixed for a terminus in the way.  Worse, the
+     * operator looking for rails that are there - the same defect as for a terminus in the way.  Worse, the
      * question the fallback puts to the TRACK may walk a lap, so a route round one would have been reported as a
      * terminus in the way when no terminus is involved.
      *

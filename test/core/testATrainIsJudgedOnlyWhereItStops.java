@@ -54,7 +54,7 @@ import org.traincontrol.marklin.MarklinLocomotive;
  * iteration of the loop rather than a separate rule.
  *
  * **With one condition, as it then was (removed 2026-09-14 with the pass-through check itself, and its claim
- * with it - WK7-C3).**  A square the train passes THROUGH was judged only where a switch bounds it.  The walk has a second
+ * with it).**  A square the train passes THROUGH was judged only where a switch bounds it.  The walk has a second
  * stopping condition - the start of the path - and at the destination that is harmless, because the
  * train comes to rest there and lies back over the route.  At a pass-through square it measures
  * nothing: a two-edge prefix answers "two edges of room" when the honest answer is that the track
@@ -72,7 +72,7 @@ import org.traincontrol.marklin.MarklinLocomotive;
  * it, and ten units of berth beyond that.  Going the other way there is no switch behind Approach at
  * all, so nothing bounds it and nothing should be refused - which was a claim in its own right,
  * `testASquareWithNoSwitchBehindItIsNotJudged`, until no passed square was judged at all and it could no longer
- * fail (WK7-C3).
+ * fail.
  *
  * `core.testTheLengthGuardsOnTheRealLayout.testRampDownIsOfferedPastTheOneUnitItOnlyPasses` - until 2026-09-14
  * `testWhyRampDownIsRefused` - is the same ruling measured on Adam's own layout, and it is the test this

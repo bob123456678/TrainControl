@@ -107,7 +107,7 @@ public class testARefusalNamesTheSquare
     }
 
     /**
-     * A station too short for the train is named by its square too (TDR-C5, the length refusals).
+     * A station too short for the train is named by its square too (the length refusals).
      *
      * @throws Exception from the railway
      */
@@ -143,7 +143,7 @@ public class testARefusalNamesTheSquare
     }
 
     /**
-     * The same track held the other way names squares too (TDR-C5, the opposite-direction refusal).
+     * The same track held the other way names squares too (the opposite-direction refusal).
      *
      * @throws Exception from the railway
      */
@@ -169,7 +169,7 @@ public class testARefusalNamesTheSquare
     }
 
     /**
-     * Track between two copies of ONE square is named as that square, once (TDR-C5).
+     * Track between two copies of ONE square is named as that square, once.
      *
      * @throws Exception from the railway
      */

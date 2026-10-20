@@ -153,7 +153,7 @@ public class testAnAnsweredZeroIsNotMissing
     }
 
     /**
-     * On his railway the build marks exactly the places Mass Assign Lengths would ask a length for (OB-297, ADA-C1).
+     * On his railway the build marks exactly the places Mass Assign Lengths would ask a length for (OB-297).
      *
      * MUTATION: mark nothing, mark every place, or mark from another list, and this fails.
      *
@@ -187,7 +187,7 @@ public class testAnAnsweredZeroIsNotMissing
     }
 
     /**
-     * The refusing figures on his frozen railway are the railway's own refusals (TDA-C10, ADA-C4, ADD2-C8): MT-583's
+     * The refusing figures on his frozen railway are the railway's own refusals: MT-583's
      * five, each asked.
      *
      * - TopMainR1Inter gives 3, and LowerFront 4: on a route in from TopR1ParkShort, and from ParkingTrack12, measuring

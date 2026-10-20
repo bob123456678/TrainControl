@@ -14,7 +14,7 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 /**
  * A station switched out of service is one autonomy will not choose, and the editor has to say so.
  *
- * **E8-B1.** `AutonomySession.stationsAutonomyWillNotChoose` is the editor's statement of the runtime's
+ * `AutonomySession.stationsAutonomyWillNotChoose` is the editor's statement of the runtime's
  * rule, and the runtime is `Layout.isSendableDestination`:
  *
  *     isDestination() && isActive() && isAutoDestination() && !isReversing()

@@ -34,7 +34,7 @@ import org.traincontrol.marklin.MarklinControlStation;
  * southbound copy with its tail to the south, and is sent back south towards BottomMainAPre.  A three-unit train in
  * TunnelRightPark lies back across the points at column 7, which that way out runs over.
  *
- * Return Home's planner mirrored the same exit on purpose (AUT2-C2: never refuse a move the railway would make), so the
+ * Return Home's planner mirrored the same exit on purpose (never refuse a move the railway would make), so the
  * two change together, and both are claimed here.
  *
  * MUTATION: stop at the moving train's own tail again, in either, and the matching claim fails.

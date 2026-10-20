@@ -27,7 +27,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
 {
 
     /**
-     * A station renamed keeps its timetable (RSA3-B1): every leg through it is carried to the new name, so the next load
+     * A station renamed keeps its timetable: every leg through it is carried to the new name, so the next load
      * reads it and the next capture keeps it.
      *
      * A captured timetable names Points, and a station's Points are named after it.  Renamed, every leg through it named
@@ -85,7 +85,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
 
     /**
      * A square round 18 split by its ways out keeps a timetable leg that set out from it under its old, whole name
-     * (RSA3-B1): carried to the copy that leg leaves by - read as the next start of TrainControl reads it, by a session
+     *: carried to the copy that leg leaves by - read as the next start of TrainControl reads it, by a session
      * that has built nothing yet, as the first start after the upgrade does.
      *
      * MUTATION: carry nothing a build of this session did not name, and this fails.
@@ -113,7 +113,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     }
 
     /**
-     * A station renamed keeps every configuration's timetable, not only the one in use (RSA4-B1): the next start of
+     * A station renamed keeps every configuration's timetable, not only the one in use: the next start of
      * TrainControl, with another configuration made the one in use, still reads its legs through the renamed station.
      *
      * The carry reached the configuration in use; another configuration's legs kept the old names, and a session that
@@ -160,7 +160,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     }
 
     /**
-     * A station renamed carries the road a standing train came in on (RSA4-C4): the road is stored as Point names, and
+     * A station renamed carries the road a standing train came in on: the road is stored as Point names, and
      * one naming a Point no longer built is dropped whole, so the tail fell back to stopping at the first fork.
      *
      * MUTATION: carry the timetable and not the roads, and this fails.
@@ -200,7 +200,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     }
 
     /**
-     * A station renamed keeps a timetable leg only another configuration's build names (RSA4-B1): a copy that
+     * A station renamed keeps a timetable leg only another configuration's build names: a copy that
      * configuration alone has - Beta marked, in it alone, as somewhere trains may turn round - is remembered by the square
      * its name begins with when the session is opened, so a rename made with another configuration in use carries it.
      *
@@ -266,7 +266,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     }
 
     /**
-     * A station renamed to the name another station has keeps the timetable legs out of that other station (RSA5-A1):
+     * A station renamed to the name another station has keeps the timetable legs out of that other station:
      * the name moves to the renamed square, and a leg that named the other square is carried to what it is called now.
      *
      * The carry left alone a name the rebuild still gives, and the rebuild gives it to the renamed square: the leg then
@@ -317,7 +317,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     }
 
     /**
-     * A page renamed keeps the timetable legs and the roads through its squares with no name of their own (RSA5-B2):
+     * A page renamed keeps the timetable legs and the roads through its squares with no name of their own:
      * such a square is named after its page, so a rename renamed its Points, and nothing carried the names stored.
      *
      * MUTATION: rename the page in the setup's keys alone, and this fails.
@@ -379,7 +379,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     }
 
     /**
-     * A page renamed while an edit waits keeps the setup's renamed timetable (RSA22-C1): the fold behind the reset, what
+     * A page renamed while an edit waits keeps the setup's renamed timetable: the fold behind the reset, what
      * the railway owns, wrote the railway's timetable - in the Point names the rename had just replaced - over it, so
      * after the link was paired again most entries named Points that no longer exist.
      *
@@ -424,7 +424,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
 
     /**
      * An edit session's Cancel keeps the timetable the railway changed alone across a station's rename, naming the station
-     * as the restored setup names it (OB-343; the rename's own carry is RSA3-B1): a station is renamed in the editor, the
+     * as the restored setup names it (OB-343): a station is renamed in the editor, the
      * railway is rebuilt with the new name, and the Auto tab changes the timetable - legs naming the new name - which a fold
      * takes into the setup.  Cancel puts back the setup that has the old name, and the legs naming the new one were
      * dropped by the next load, the capture after it writing the shorter timetable over the configuration (a lost timetable).
@@ -638,7 +638,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     }
 
     /**
-     * Squares moved while an edit waits keep the setup's moved timetable (RSA23-C3, RSA22-C1's sibling): the fold behind
+     * Squares moved while an edit waits keep the setup's moved timetable: the fold behind
      * the editor's Save, what the railway owns, wrote the railway's timetable - in the Point names the move had just
      * replaced - over it.
      *
@@ -686,7 +686,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     }
 
     /**
-     * A page deleted is not folded back (RSA22-C2): the fold behind the reset worked its keys out from the session's
+     * A page deleted is not folded back: the fold behind the reset worked its keys out from the session's
      * pages, the deleted one among them, and wrote its trains and its stations' settings straight back under its name -
      * with an edit waiting or not.
      *
@@ -733,7 +733,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     }
 
     /**
-     * A square with no name of its own moved on its page takes its stored names with it (RSA5-B2): it is named after
+     * A square with no name of its own moved on its page takes its stored names with it: it is named after
      * where it is, so a move renamed its Points, and the timetable went on naming where it had been.
      *
      * MUTATION: move the setup's keys alone, and this fails.
@@ -788,7 +788,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
 
     /**
      * A station renamed to the name another has keeps another configuration's legs out of that other station too
-     * (RSA5-A1): every other configuration is carried across a rename, and a name the build now gives another square is
+     *: every other configuration is carried across a rename, and a name the build now gives another square is
      * traced from the square it named there as well.
      *
      * MUTATION: leave alone a name the build still gives in another configuration, and this fails.
@@ -847,7 +847,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     }
 
     /**
-     * A page ticked out and back in from the Autonomy menu keeps its timetable entries, once each (RSA6-B1): the menu's
+     * A page ticked out and back in from the Autonomy menu keeps its timetable entries, once each: the menu's
      * tick sets the page, saves, and reloads with a fold of the railway still running - which the page ticked out still
      * has, and the page ticked in does not.
      *
@@ -892,7 +892,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     }
 
     /**
-     * A page ticked out after a run keeps where the run left the trains on it (RSA6-A2): the fold reads each running
+     * A page ticked out after a run keeps where the run left the trains on it: the fold reads each running
      * Point by the square it says it is a copy of, not by its name through the naming the tick has already changed.
      *
      * MUTATION: fold the running layout by its Points' names alone, and this fails.
@@ -936,8 +936,8 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     }
 
     /**
-     * A square moved in the track editor is not folded over at its Save by the railway built before the move (RSA6-B2,
-     * RSA6-A2): that railway names and places what it knows by the squares as they were, so the Save's fold wrote the
+     * A square moved in the track editor is not folded over at its Save by the railway built before the move:
+     * that railway names and places what it knows by the squares as they were, so the Save's fold wrote the
      * old names back over the ones the move carried - and, where a move reordered two stations of one name, each train
      * onto the other's.  Opening the editor folded already, and nothing runs while it is open.
      *
@@ -976,7 +976,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     }
 
     /**
-     * A station name two pages share keeps its timetable entries through a page ticked out and back in (RSA6-C1): the
+     * A station name two pages share keeps its timetable entries through a page ticked out and back in: the
      * plain name and its suffix are settled over the squares of every page, those out of autonomy too, so neither moves
      * while one page is out - and the carry has nothing to send across.
      *
@@ -1057,7 +1057,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     }
 
     /**
-     * A page ticked out keeps its timetable entries across a restart of TrainControl (RSA6-B1): the session after the
+     * A page ticked out keeps its timetable entries across a restart of TrainControl: the session after the
      * restart has built none of the page's Points, so it finds the squares its entries name by the names of the squares
      * on that page - the page's own squares, which the graph leaves out with the page.
      *
@@ -1134,7 +1134,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     }
 
     /**
-     * A square deleted in the track editor, and the edit cancelled, keeps its train and its settings (RSA7-A1): Cancel
+     * A square deleted in the track editor, and the edit cancelled, keeps its train and its settings: Cancel
      * puts the setup back as the editor opened it, and the reset's fold after it judged "a square whose tile is gone"
      * against the page the editor had emptied - so it erased what Cancel had just put back.  No fold follows a square
      * removed until the setup is opened again, as none follows a move: opening the editor folded already.
@@ -1187,7 +1187,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
 
     /**
      * An entry deleted from the railway's timetable, its page then ticked out before any fold, stays deleted when the page
-     * comes back (RSA8-C2): the Auto tab's delete reaches the railway alone, and the tick's findings check set aside the
+     * comes back: the Auto tab's delete reaches the railway alone, and the tick's findings check set aside the
      * stored copy the next fold was about to drop.
      *
      * MUTATION: let a build for inspection keep what it settled, and this fails.
@@ -1261,7 +1261,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     }
 
     /**
-     * An undo puts each standing train's road back on its own train (RSA9-C1): the undo point held every stored leg by
+     * An undo puts each standing train's road back on its own train: the undo point held every stored leg by
      * position, and the page's points put back first are a new map, whose keys can iterate in another order - two roads
      * whose squares share a bucket were written into each other.  The legs are held by where each is: its entry and leg,
      * or its square and step.

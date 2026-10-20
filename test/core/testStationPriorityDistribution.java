@@ -210,7 +210,7 @@ public class testStationPriorityDistribution
             for (String station : expected)
             {
                 // A TENTH, which is what this class's own javadoc promises and what its sibling
-                // asserts (TSX-C10).  One sample in four hundred satisfied "> 0", and a 399-to-1
+                // asserts.  One sample in four hundred satisfied "> 0", and a 399-to-1
                 // split is exactly the fixed order this message says it is ruling out.
                 assertTrue(seen.getOrDefault(station, 0) >= SAMPLES / 10,
                     station + " shares the highest priority and was chosen "
