@@ -706,6 +706,135 @@ public class testNoSelfRecursiveWrappers
     }
 
     /**
+     * The autonomy editor panel and its five helpers (FR-136): the only classes that may reach `session`, `promptName(` or
+     * `applyLength(` through a panel.
+     */
+    private static final String[] EDITOR_FILES = {
+        "AutonomyEditorPanel", "EditorTileMenus", "EditorPrompts", "EditorSignals", "EditorMassAssign", "EditorWhy" };
+
+    /**
+     * What a file reaches into an AutonomyEditorPanel for: each `session`, `promptName(` or `applyLength(` taken from an
+     * expression of that type.
+     *
+     * The expressions are the names the file declares with the type (`AutonomyEditorPanel autonomyPanel;`, a parameter, a
+     * local), a call of `getAutonomyPanel()` or `liveSetupPanel()`, and a cast to the type.  `promptNameFor(` and
+     * `applyLengthAnswer(` are other names and do not match.
+     *
+     * @param code a file's text without comments
+     * @return one entry per hit, "member: the text around it"
+     */
+    private static List<String> reachesIntoThePanel(String code)
+    {
+        StringBuilder expressions = new StringBuilder(
+            "getAutonomyPanel\\s*\\(\\s*\\)|liveSetupPanel\\s*\\(\\s*\\)|\\(\\s*AutonomyEditorPanel\\s*\\)\\s*\\w+\\s*\\)");
+
+        for (String name : panelNames(code)) expressions.append("|(?<!\\w)").append(java.util.regex.Pattern.quote(name));
+
+        java.util.regex.Matcher found = java.util.regex.Pattern.compile(
+            "(?:" + expressions + ")\\s*\\.\\s*(session\\b|promptName\\s*\\(|applyLength\\s*\\()").matcher(code);
+
+        List<String> hits = new ArrayList<>();
+
+        while (found.find())
+        {
+            hits.add(found.group(1).replaceAll("\\W", "") + ": " + code.substring(Math.max(0, found.start() - 30),
+                Math.min(code.length(), found.end() + 30)).replaceAll("\\s+", " "));
+        }
+
+        return hits;
+    }
+
+    /**
+     * The names a file declares with the type AutonomyEditorPanel: a field, a parameter or a local.
+     */
+    private static java.util.Set<String> panelNames(String code)
+    {
+        java.util.Set<String> names = new java.util.LinkedHashSet<>();
+
+        java.util.regex.Matcher declared = java.util.regex.Pattern.compile(
+            "\\bAutonomyEditorPanel\\s+(\\w+)\\s*[;=,)]").matcher(code);
+
+        while (declared.find()) names.add(declared.group(1));
+
+        return names;
+    }
+
+    /**
+     * Nothing outside the autonomy editor and its helpers reaches the panel's `promptName`, `applyLength` or `session`
+     * (FR-136).
+     *
+     * They are package-private so that `EditorTileMenus`, `EditorPrompts`, `EditorSignals`, `EditorMassAssign` and
+     * `EditorWhy` can reach them.  That leaves them open to the rest of `org.traincontrol.gui`, and each of the three has a
+     * door that decides something first: `promptNameFor` and `promptLengthFor` decide who may ask (`heldByARun`,
+     * `cancelPendingGesture`, `canBeNamed`, `offersALength`), and a write to the setup goes through the panel so that
+     * `setupChanged()` follows.  A caller that went round them would skip that.
+     *
+     * The control is the helpers themselves: the same reading must find `editor.session`, `editor.promptName(` and
+     * `editor.applyLength(` in them, and `autonomyPanel` as a declared name in LayoutEditor, or it is reading nothing.
+     *
+     * MUTATION: in LayoutEditor, add `autonomyPanel.session.getStore();` or `autonomyPanel.promptName(over);` and this
+     * fails.
+     *
+     * @throws Exception if the source cannot be read
+     */
+    @Test
+    public void testOnlyTheEditorsHelpersReachIntoThePanel() throws Exception
+    {
+        java.util.Set<String> inside = new java.util.HashSet<>(java.util.Arrays.asList(EDITOR_FILES));
+
+        java.util.Set<String> seen = new java.util.HashSet<>();
+
+        for (String name : EDITOR_FILES)
+        {
+            if ("AutonomyEditorPanel".equals(name)) continue;
+
+            File helper = new File("src/org/traincontrol/gui/" + name + ".java");
+
+            assertTrue(helper.isFile(), "cannot find " + helper.getAbsolutePath());
+
+            String code = support.SourceOf.withoutComments(new String(Files.readAllBytes(helper.toPath()),
+                StandardCharsets.UTF_8));
+
+            assertTrue(panelNames(code).contains("editor"), name + " no longer declares its AutonomyEditorPanel as `editor`");
+
+            for (String hit : reachesIntoThePanel(code)) seen.add(hit.substring(0, hit.indexOf(':')));
+        }
+
+        assertEquals(seen, new java.util.HashSet<>(java.util.Arrays.asList("session", "promptName", "applyLength")),
+            "the helpers are expected to reach all three through `editor`, which is what shows the pattern matches");
+
+        List<File> files = new ArrayList<>();
+
+        try (java.util.stream.Stream<java.nio.file.Path> walked = Files.walk(new File("src/org/traincontrol/gui").toPath()))
+        {
+            walked.filter(path -> path.toString().endsWith(".java")).forEach(path -> files.add(path.toFile()));
+        }
+
+        int outside = 0;
+        boolean layoutEditorKnown = false;
+
+        for (File file : files)
+        {
+            if (inside.contains(file.getName().replace(".java", ""))) continue;
+
+            String code = support.SourceOf.withoutComments(new String(Files.readAllBytes(file.toPath()),
+                StandardCharsets.UTF_8));
+
+            outside++;
+
+            if (file.getName().equals("LayoutEditor.java")) layoutEditorKnown = panelNames(code).contains("autonomyPanel");
+
+            List<String> hits = reachesIntoThePanel(code);
+
+            assertTrue(hits.isEmpty(), file.getName() + " reaches into AutonomyEditorPanel past its doors "
+                + "(`promptNameFor`, `promptLengthFor`, and writes through the panel): " + hits);
+        }
+
+        assertTrue(outside > 20, "only " + outside + " files outside the editor were read, so this checked almost nothing");
+        assertTrue(layoutEditorKnown, "LayoutEditor no longer declares `autonomyPanel`, so the names read are not the ones used");
+    }
+
+    /**
      * Whether a line calls the wrapper's own name from inside its own body - qualified or not.
      *
      * The bug this file was written for was `this.syncWithCS2()`, and `this.` + name + `(` is what
