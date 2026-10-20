@@ -632,8 +632,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     /**
      * Wires one parsed page to the accessories, feedbacks and routes its tiles name.
      *
-     * Wires one parsed page to the accessories, feedbacks and routes its tiles name.
-     *
      * **Parsing does not do this, and that is not obvious.** `CS2File.parseLayout` reads the files and
      * builds the components; what attaches a component to a live `Accessory` - creating one from the
      * tile's own address when this station has none - is this loop. A caller that parses the same files
