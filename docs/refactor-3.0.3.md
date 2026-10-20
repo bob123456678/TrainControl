@@ -446,3 +446,44 @@ later"; then "Sooner sounds better.  Don't limit this to UI interactions, it can
 7. An MT smoke checklist, or battery plus mutations?  **"make MTs for validation"**: see §5, item 7.
 8. behaviour.md one file, and released MTs archived out of tests.md?  **"yes to both"**.
 9. New helper classes in gui/ and automationui/, or a subpackage?  **"keep them in the current packages"**: the monitor guard's `SURFACES` stays as it is.
+
+## 8. Next steps, after 3.0.3
+
+Adam (2026-10-20): "Defer remaining optimization/comment trimming items to next steps under the plan."  3.0.3 stops
+at Phase 4, Phase 6, the comment trims and the Layout pilot; what follows is the queue for the next release.
+
+**Code**
+- **Phase 5** (TrainControlUI Tier 3, the `SettledQuestion` base class), deferred on Adam's word of 2026-10-19.
+- **FR-138**, the API examples.
+
+**Comments, to the strict rule** (CLAUDE.md, "Comments stay lean")
+- The pilot on Layout.java (`88856f02`..`d5bd4235`): 11,876 lines to 9,897, comment lines 4,519 to 2,542 (44%), its
+  434 review ids gone, bytecode identical.  Next, one file per worker in this order: AutonomySession,
+  AutonomyEditorPanel, TrainControlUI, then LayoutEditor (which also holds the last 100 review ids not on Adam's
+  lines).
+- Four questions for Adam before those passes:
+  - May a lock-order or thread note run to about 5 lines?  The pilot kept four such private javadocs at 4-5 lines.
+  - Seven of Adam's commits carry no Claude trailer but read as Claude-written (`902c647c`, `47147436`, `28ef127a`
+    and others).  The rule leaves their comments alone; Adam can name the ones that are really Claude's.
+  - The 67 review ids on Adam's own lines (ManualReversalPrompt 10, AutonomySession 5 and 21 test files) stay
+    pinned unless he says they may go.
+  - Commit the pilot's guarded edit helper (`lean.py`: edits only comment lines, refuses code and Adam-owned lines)
+    to `docs/tools/`, so every worker uses it.
+- Every pass that drops a dead id lowers `DEAD_CITATIONS` and takes the id off the roll (`triagedb.load_dead`, then
+  `render_findings`).  Once LayoutEditor is cleared, check `testEveryCitationResolves`'s `cited.size() > 300`, a
+  staleness floor that counts ids in code and strings as well as comments; lower it to what remains.
+
+**Ratchets as they stand at 3.0.3** (each may only go down)
+- `testCommentsStayLean`: history 336, long blocks 54, review ids 168.
+- `testJavadocsAreAttached`: 26.
+- `testEveryCitationResolves`: 20 dead citations.
+
+**The next test pass** (`docs/refactor-3.0.3-for-adam.md`, issues 25 and 27-30)
+- 25: the Bulk Enable claim's NullPointerException under a deliberate delay.
+- 27-29: three test javadocs that say the opposite of what their tests assert.
+- 30: three classes red in the main checkout and green in a worktree; pin what they read from the folder.
+
+**Measurement**
+- A JaCoCo rerun (stopped on Adam's word of 2026-10-20), outside the repository as before; the 2026-10-19 run gave
+  81.5% of lines.
+
