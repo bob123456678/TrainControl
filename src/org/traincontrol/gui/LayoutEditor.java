@@ -5093,14 +5093,14 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
-     * Which editor, as a pair of tabs.
+     * Which editor, as a pair of radio buttons.
      *
-     * Same rule as the pages: the control type is confined to this method, because which control this
-     * ought to be is exactly the sort of thing that gets decided again after somebody has used it.
+     * Same rule as the pages: the control type is confined to this method, because which control this ought to be is the
+     * sort of thing that gets decided again after somebody has used it.
      *
-     * The setup half is disabled rather than hidden when there is nothing to set up.  Hidden, the
-     * window would look different for a reason the user cannot see; disabled with a tooltip says what
-     * is missing, and the missing thing - a configuration - is something they can go and load.
+     * The setup half is disabled rather than hidden when there is nothing to set up: hidden, the window would look
+     * different for a reason the user cannot see; disabled with a tooltip says what is missing, and the missing thing (a
+     * configuration) is something they can go and load.
      */
     private javax.swing.JComponent buildModeControl()
     {
@@ -5136,15 +5136,12 @@ public class LayoutEditor extends PositionAwareJFrame
 
     private javax.swing.JToggleButton modeTab(String text, final boolean autonomy)
     {
-        // A radio button since OB-004, which is what this pair always meant: two mutually exclusive
-        // views of one diagram.  A JRadioButton IS a JToggleButton, so the group, the fields and
-        // syncSidebar are all unchanged - only what it looks like.
+        // A radio button (OB-004): two mutually exclusive views of one diagram.  A JRadioButton IS a JToggleButton, so the
+        // group, the fields and syncSidebar need no change.
         javax.swing.JToggleButton tab = new javax.swing.JRadioButton(text);
 
-        // docs/UI-standards.md: regular text is Segoe UI Plain 14, black.
-        //
-        // Bold 12 until OB-015, which was the button rule applied to something that had stopped being
-        // a button: a radio button's label is a choice written out, and the standard reads it as text.
+        // docs/UI-standards.md: regular text is Segoe UI Plain 14, black (OB-015): a radio button's label is a choice written
+        // out, and the standard reads it as text, not as a button.
         tab.setFont(new java.awt.Font("Segoe UI", 0, 14));
         tab.setForeground(java.awt.Color.BLACK);
 
@@ -5169,11 +5166,10 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
-     * The page tabs, scrolling when there are more of them than the strip can show.
+     * The page list, scrolling when there are more of them than the strip can show.
      *
-     * A railway of twenty pages is a railway of twenty pages; without this the strip simply grows past
-     * the bottom of the window and the last few cannot be reached at all.  No border and no horizontal
-     * bar: it should look like the column it replaces until it needs to scroll.
+     * Without this the strip would grow past the bottom of the window and the last few pages could not be reached at all.
+     * No border and no horizontal bar: it should look like the column it replaces until it needs to scroll.
      */
     private javax.swing.JComponent scrollable(javax.swing.JComponent column, int pages)
     {
@@ -5219,37 +5215,29 @@ public class LayoutEditor extends PositionAwareJFrame
     private static final int SIDEBAR_WIDTH = 150;
 
     /**
-     * One remembered position and size for the editor, whatever page it is showing (MT-095).
-     *
-     * It used to be the page name and the tile size, which gave every page its own entry. That was
-     * defensible while a page change meant a new window; once the window stopped closing, switching
-     * tabs picked the window up and put it somewhere else, because the arriving page remembered
-     * somewhere else.
+     * One remembered position and size for the editor, whatever page it is showing (MT-095): per-page entries would make
+     * switching tabs pick the window up and put it somewhere else, because the arriving page remembered somewhere else.
      */
     private static final String EDITOR_WINDOW_KEY = "editor";
 
     /**
      * How many pages the strip shows before it starts scrolling.
      *
-     * Eight when the pages were toggle BUTTONS, each 26px tall with its own border. They are rows of a
-     * list now at 24px, and the strip runs the height of the window - so eight was leaving most of the
-     * column empty and scrolling a railway of twelve pages for no reason (MT-056).
+     * The pages are rows of a list at 24px and the strip runs the height of the window, so a small number would leave
+     * most of the column empty and scroll a railway of twelve pages for no reason (MT-056).
      */
     private static final int SIDEBAR_TABS_BEFORE_SCROLLING = 20;
 
     /**
-     * The air under a blue heading.
-     *
-     * One number because Adam noticed two were different: the form leaves this much under its own
-     * headings, and everything added by hand beside them has to leave the same or the column reads as
-     * two columns that happen to be touching.
+     * The air under a blue heading: the form leaves this much under its own headings, and everything added by hand beside
+     * them has to leave the same or the column reads as two columns that happen to be touching.
      */
     static final int HEADING_GAP = 6;
 
     /**
-     * The air between one checkbox and the next under Visible Elements: what the form leaves between its own two (OB-312;
-     * Adam, 2026-10-03: "check spacing between visible elements checkboxes" - the columns added beside them left the
-     * heading's gap, so they were 6, 4 and 6 apart).
+     * The air between one checkbox and the next under Visible Elements: what the form leaves between its own two (OB-312).
+     * The columns added beside them left the heading's gap instead, so they were 6, 4 and 6 apart (Adam: "check spacing
+     * between visible elements checkboxes").
      */
     static final int CHECKBOX_GAP = 4;
 
@@ -5295,18 +5283,14 @@ public class LayoutEditor extends PositionAwareJFrame
     /**
      * Set while a page or mode switch has been ASKED FOR and has not yet arrived.
      *
-     * `switching` above cannot answer this and never could: it is true only inside `syncSidebar`,
-     * synchronously, so it is false at every moment a second switch could be started. A validator
-     * found that, and the test that was supposed to guard it asserted the word rather than the
-     * property.
+     * `switching` above cannot answer this: it is true only inside `syncSidebar`, synchronously, so it is false at every
+     * moment a second switch could be started.  The gap is real: `leaveFor` answers the unsaved-work question, posts the
+     * rest of the work and returns, so the page has not changed when it does, and anything reading `layout.getName()` in
+     * the meantime gets the page being left.  Holding + would queue one full teardown per auto-repeat, all to the same
+     * destination, each re-reading the diagram from disk.
      *
-     * The gap this covers is real. `leaveFor` answers the unsaved-work question, posts the rest of
-     * the work and returns, so the page has not changed when it does - and anything reading
-     * `layout.getName()` in the meantime gets the page being left. Holding + therefore queued one full
-     * teardown per auto-repeat, all to the same destination, each re-reading the diagram from disk.
-     *
-     * Set after the question is answered, so cancelling never sets it, and cleared in `arriveAt`,
-     * where both branches end up once the new page is in place.
+     * Set after the question is answered, so cancelling never sets it, and cleared in `arriveAt`, where both branches end
+     * up once the new page is in place.
      */
     private boolean changingPage;
 
