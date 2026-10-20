@@ -30516,7 +30516,7 @@ ordinal: 773
 anchor: mt-774
 date: 2026-10-19
 title: FR-136: Help > Download Update still downloads and still asks first
-disposition: needs test
+disposition: fixed validated
 from: FR-136
 written: 2026-10-19
 reopened: no
@@ -30524,7 +30524,7 @@ body:
 | <a id="mt-774"></a>
 | ### MT-774 - 2026-10-19 - FR-136: Help > Download Update still downloads and still asks first
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** FR-136
 |
 | **Written:** 2026-10-19
@@ -30700,7 +30700,7 @@ ordinal: 778
 anchor: mt-779
 date: 2026-10-19
 title: FR-136: importing an older autonomy.json or an exported configuration into the autonomy setup works as before
-disposition: needs test
+disposition: fixed validated
 from: FR-136
 written: 2026-10-19
 reopened: no
@@ -30708,7 +30708,7 @@ body:
 | <a id="mt-779"></a>
 | ### MT-779 - 2026-10-19 - FR-136: importing an older autonomy.json or an exported configuration into the autonomy setup works as before
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** FR-136
 |
 | **Written:** 2026-10-19
@@ -31459,6 +31459,118 @@ body:
 | - Step 5: the tool lets go and nothing you did is kept.
 |
 | *What this is:* FR-136 Phase 4 moved this feature's code out of `AutonomyEditorPanel` into `EditorWhy` without changing what it does (3f1a41da).  The battery and the user-level claims in `regression.testTheEditorSaysWhatItsToolsDo` and `regression.testPathTypeRedrawsTheTestInTheEditor` pass on the new code; this checks it on your own railway.  Any difference from before is a defect of the move.
+|
+tail:
+| ---
+|
+
+[test MT-798]
+ordinal: 797
+anchor: mt-798
+date: 2026-10-20
+title: OB-363: opening another railway leaves none of the old railway's trains in memory; the locomotives stay
+disposition: needs test
+from: OB-363
+written: 2026-10-20
+reopened: no
+body:
+| <a id="mt-798"></a>
+| ### MT-798 - 2026-10-20 - OB-363: opening another railway leaves none of the old railway's trains in memory; the locomotives stay
+|
+| **Disposition:** needs test
+| **From:** OB-363
+|
+| **Written:** 2026-10-20
+|
+| **Steps**
+|
+| 1. Open your railway, load its autonomy setup, and check that trains stand on the diagram.
+| 2. File > Open Layout..., and pick the same folder.  Load the setup again if it asks.
+| 3. File > Open Layout..., and pick another railway's folder (for instance a copy of your folder made beforehand, or an empty new layout).
+| 4. Open the locomotive list.
+| 5. Open your own railway again and load its setup.
+|
+| **Expected**
+|
+| - Step 2: the trains still stand where they were.
+| - Step 3: no train, no orange covered track and no old caption appears on the new railway, and the Auto tab is greyed until a setup of the new railway is loaded.
+| - Step 4: every locomotive from your railway is still there, with the same address, length and picture.
+| - Step 5: the trains stand where the setup file has them.
+|
+| *What this is:* OB-363 (`0e8437bf`): a switch to another railway takes the old railway's autonomy layout out of memory, as Unload does, so none of its trains stands or claims track under the new railway's pages; the locomotives stay in the database.  Choosing the same railway again keeps its trains.  Create New Layout and the Central Station's layout go through the same switch.  `ui.testOpenLayoutLeavesTheOldTrainsBehind` checks all three.
+|
+tail:
+| ---
+|
+
+[test MT-799]
+ordinal: 798
+anchor: mt-799
+date: 2026-10-20
+title: OB-365: pasting a train on a square that is not a station says so and asks nothing
+disposition: needs test
+from: OB-365
+written: 2026-10-20
+reopened: no
+body:
+| <a id="mt-799"></a>
+| ### MT-799 - 2026-10-20 - OB-365: pasting a train on a square that is not a station says so and asks nothing
+|
+| **Disposition:** needs test
+| **From:** OB-365
+|
+| **Written:** 2026-10-20
+|
+| **Steps**
+|
+| 1. On the track diagram, point at a station with a train on it and press Control+X.
+| 2. Point at a plain square that is not a station (a piece of track, or a square where trains may reverse) and press Control+V.
+| 3. Point at a station and press Control+V.
+|
+| **Expected**
+|
+| - Step 2: a message says "A train can only be placed at a station."  No question about which way the train faces or where its tail lies, and no train appears.
+| - Step 3: the facing and tail questions are asked as before and the train is placed: it was still waiting to be put down.
+|
+| *What this is:* OB-365 (`ae061de1`, `83d28e62`): a paste checks for a station before asking anything.  `ui.testAPastedTrainFacesTheWayTheOperatorChose` checks it.
+|
+tail:
+| ---
+|
+
+[test MT-800]
+ordinal: 799
+anchor: mt-800
+date: 2026-10-20
+title: FR-142: the locomotive icon chooser can clear the icon
+disposition: needs test
+from: FR-142
+written: 2026-10-20
+reopened: no
+body:
+| <a id="mt-800"></a>
+| ### MT-800 - 2026-10-20 - FR-142: the locomotive icon chooser can clear the icon
+|
+| **Disposition:** needs test
+| **From:** FR-142
+|
+| **Written:** 2026-10-20
+|
+| **Steps**
+|
+| 1. With the power off, point at a locomotive button whose locomotive has a picture of its own, and click its wrench to choose a picture.
+| 2. In the file chooser, press "Clear Local Locomotive Icon".
+| 3. Open the chooser the same way on a locomotive with no picture of its own.
+| 4. Open it again on any locomotive and press Cancel; then choose a picture normally, with Crop ticked.
+|
+| **Expected**
+|
+| - Step 1: the chooser shows "Clear Local Locomotive Icon" beside the Crop tick box, ready to press.
+| - Step 2: the chooser closes, the button shows the Central Station's picture (or the plain one), and the cropped copy is no longer used.  The photo you first picked is untouched.
+| - Step 3: the button is there but greyed.
+| - Step 4: Cancel changes nothing, and choosing a picture still works as before.
+|
+| *What this is:* FR-142 (`a38b52b7`): the chooser's button uses the same clear as the right-click menu's item.  `ui.testLocIconCrop.testTheIconChooserCanClearTheIcon` checks it.
 |
 tail:
 | ---

@@ -28597,6 +28597,17 @@ text:
 | *Run against commit 2cac0137, in English - build\classes, compiled 19 Oct 22:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 |
 
+[comment MT-774 1]
+who: Claude
+date: 2026-10-20
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-20.**
+|
+| No longer needs your machine: every expected result is checked by ui.testDownloadUpdateFetchesTheNewVersion against a stand-in for the release on this computer (`11f957b5`), and Download & Update by ui.testDownloadAndUpdateFromAJar.  Only GitHub's own update check, which makes the item appear, is not reached offline.
+|
+
 [comment MT-775 0]
 who: Adam
 date: 2026-10-19
@@ -28700,6 +28711,17 @@ text:
 | don't have the files for this, test offline
 |
 | *Run against commit 2cac0137, in English - build\classes, compiled 19 Oct 22:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-779 1]
+who: Claude
+date: 2026-10-20
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-20.**
+|
+| No longer needs your files: every step and expected result is checked by regression.testTheImportDoorReadsAnOldFile through the real Autonomy menu items, with the 2.7.4c file copied into a sandbox (`30704692`).
 |
 
 [comment MT-780 0]

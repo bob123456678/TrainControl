@@ -3930,3 +3930,27 @@ kind: feature request
 what: The autonomy locomotive icon is drawn ten per cent clear, so a label under it faintly shows (`ec7925d4`).
 state: -
 became: MT-772
+
+[receipt OB-363]
+seq: 491
+filed: 2026-10-19
+kind: bug
+what: A switch to another railway takes the old railway's trains and claims out of memory; the locomotives stay in the database (`0e8437bf`).
+state: -
+became: MT-798
+
+[receipt OB-365]
+seq: 492
+filed: 2026-10-19
+kind: bug
+what: A paste on a square that is not a station says a train can only be placed at a station, and asks nothing (`ae061de1`).
+state: -
+became: MT-799
+
+[receipt FR-142]
+seq: 493
+filed: 2026-10-19
+kind: feature request
+what: The locomotive icon chooser has a Clear Local Locomotive Icon button (`a38b52b7`).
+state: -
+became: MT-800

@@ -519,7 +519,7 @@ text:
 
 [issue FR-142]
 ordinal: 33
-inbox: yes
+inbox: no
 kind: feature request
 title: clear locomotive icon from main UI
 filed: 2026-10-19
@@ -681,7 +681,7 @@ text:
 
 [issue OB-363]
 ordinal: 30
-inbox: yes
+inbox: no
 kind: bug
 title: File > Open Layout leaves the old railway's trains and claims in the model (needs a ruling: intended or not)
 filed: 2026-10-19
@@ -740,7 +740,7 @@ text:
 
 [issue OB-365]
 ordinal: 32
-inbox: yes
+inbox: no
 kind: bug
 title: pasting autonomy locomotives in the track viewer
 filed: 2026-10-19
