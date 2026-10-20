@@ -74,6 +74,26 @@ time taken before 3.0.3 ... FR-130, ... which we would then release concurrently
   `testTheIconRunsAlongEveryCurveAndDoubleCurveOnItsOwnRoad` (MT-642) went red. The icon, drawn as one upright picture
   and then turned, came out 86% like the drawing it is held to, against a 98% bar. The worker ran only
   `ui.testDiagramLooksRight`; the Monitor class also reads `TileOverlay`.
+- **After, measured 2026-10-19** (dev `bcb78603` with FR-130 taken out, Sonnet, the same brief and prompt; branch
+  `fr130after2`, commit `6354e3ee`, never merged): 311 s of agent time, 39 tool calls, 116,364 tokens, no wait for the
+  test lock.  Two files changed (`TileOverlay`, `core.testAutonomyDiagramMonitor`); no glow.
+  - **A first after-run does not count.** It ran on a branch where FR-130 had been reverted, and the revert commits'
+    messages quote the original title, which names the design ("halo and all as one picture"); its commit message
+    repeated that title word for word.  The counted run used a separate clone whose history is one squashed commit on
+    `acaaf3fc`, with no remote, and with MT-772 and FR-130's receipt removed from its copy of the tracker.
+  - **Cost, before and after:** agent time 372 s and 311 s (17% less); tool calls 32 and 39; tokens 107,349 and 116,364
+    (8% more).  One run each, so within the noise.  FR-130 changes `TileOverlay` only, which no phase split or trimmed,
+    so this task barely touches what the refactor changed; it cannot show the refactor's main gain.
+  - **Quality, before and after:**
+    - Regressions: the before build broke the curve claim (MT-642); the after build broke nothing (all 12 test classes
+      that read `TileOverlay` green: 220 tests).
+    - Each build's claim fails without its change.  The after build also passes the before build's claim.
+    - A blind Opus review (X and Y in a random order) found no A in either, three B and two C in the before build, two
+      B and two C in the after build, and would ship the after build: one scale-and-rotate draw as before, the halo
+      made hollow under the icon once in its cache, and nothing new allocated per repaint.  Its doubt that the before
+      build's claim could fail on unchanged code was checked and is wrong: that claim fails without FR-130.
+    - The after build leaves the halo opaque around the icon and draws only the icon at 90%; the before build drew the
+      two as one picture at 90%.  Neither added a glow.
 
 ## Summary
 
