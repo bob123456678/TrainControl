@@ -814,10 +814,6 @@ public class TileAnnotation
     }
 
     /**
-     * Whether this would paint anything at all.
-     * @return
-     */
-    /**
      * Whether there is nothing here worth drawing.
      *
      * paint() opens with this, so anything missing from the list below is never painted when it is the ONLY
@@ -1243,12 +1239,6 @@ public class TileAnnotation
         }
     }
 
-    /**
-     * Draws one route as a path from one side to the other through the middle of the tile.
-     *
-     * Through the middle rather than straight across, so a curve is drawn as a curve: a straight line
-     * between the two sides of a curve tile would cut the corner and sit off the track it describes.
-     */
     /**
      * Draws one arrow per SIDE of the tile, rather than two per route.
      *
@@ -2203,15 +2193,12 @@ public class TileAnnotation
 
         double scale = 1;
 
-        // ON A BEND, ITS FULL SIZE ON ITS RAILS, SPILLING ONTO THE SQUARES BESIDE IT (Adam, 2026-10-10: "can we instead
-        // make the stations spill over onto adjacent tiles?  This would look much better than trying to reduce the
-        // size.").  A curve's chord runs across a corner, so an icon its full size on the middle of it reaches past two
-        // edges, and a square's paint is cut off at its edges - the ends were lost (MT-710).  Round 112 moved it in off its
-        // rails; round 118 made it smaller.  Now the square draws what falls inside it, cut off cleanly at its edges, and
-        // `paintSpill`, asked by the diagram once every square is drawn, draws the rest over the squares beside it.
+        // ON A BEND, ITS FULL SIZE ON ITS RAILS, SPILLING ONTO THE SQUARES BESIDE IT (MT-710).  A curve's chord runs
+        // across a corner, so an icon its full size on the middle of it reaches past two edges, and a square's paint is
+        // cut off at its edges.  The square draws what falls inside it, cut off cleanly at its edges, and `paintSpill`,
+        // asked by the diagram once every square is drawn, draws the rest over the squares beside it.
         //
-        // IN THE EDITOR TOO (Adam, 2026-10-10: "Let's make all of the icons white with a blue border in the editor.  That way, arrows can be seen clearly."): it stood in the square's corner, off the
-        // rails and smaller, to keep the arrows at the sides clear of it; white, they read over it.
+        // IN THE EDITOR TOO, white with its colour round it so the arrows at the sides read over it.
         boolean spills = known && bends;
 
         // AND ANYWHERE ELSE WHOLLY INSIDE ITS SQUARE (MT-710): moved in towards the middle of the square as far as it
@@ -2224,10 +2211,9 @@ public class TileAnnotation
         badgeDrawnAt = new int[] {(int) Math.round(at[0]), (int) Math.round(at[1])};
 
         // WHAT IT COVERS, where it is drawn - for the diagram, which draws what lies over a spill again over it (RSA61-C2):
-        // the icon's body and its outline, a pixel round for the soft edge, less the square (RSA62-C1: it was the outline's
-        // stroke alone, a ring, and the body inside it was drawn in front of the captions).  Built once for a size and kept
-        // (RSA62-B1): it was built on every paint, as a stroke of that stroke, and on Adam's main page two curve stations
-        // took 0.36 s each - the window stalled.  The annotation is replaced whenever what it draws changes.
+        // the icon's body and its outline, a pixel round for the soft edge, less the square (RSA62-C1).  Built once for a
+        // size and kept (RSA62-B1), as building it on every paint stalled the window; the annotation is replaced whenever
+        // what it draws changes.
         if (spills && (spillFor == null || spillFor[0] != width || spillFor[1] != height))
         {
             java.awt.geom.AffineTransform placed = java.awt.geom.AffineTransform.getTranslateInstance(at[0], at[1]);
@@ -2281,7 +2267,7 @@ public class TileAnnotation
 
             // PURE, as the page drew them: the default stroke control moves an outline by up to half a pixel to sit it
             // on whole pixels, and at 60 pixels the must-turn's outlines then met across the gap and hid the track's
-            // black line in it - the line Adam asked to have back
+            // black line in it
             s.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
             s.translate(at[0], at[1]);
             s.rotate(angle);
@@ -2293,14 +2279,14 @@ public class TileAnnotation
 
             if (deadEnd != null)
             {
-                // flat against the buffer, its bar there; more pointed at 30 pixels, where it stayed as Adam last saw it
+                // flat against the buffer, its bar there; more pointed at 30 pixels
                 body(s, outline, fill, line);
 
                 bar(s, -terminus / 2.0 + h * 0.3, h * 0.62, Math.max(2, Math.round(tile / 12f)), line);
             }
             else if (turns && badge.isOptional())
             {
-                // the same shape at 30 pixels as at 60 (Adam: "matching the 60px hexagon's shape as closely as possible")
+                // the same shape at 30 pixels as at 60
                 body(s, outline, fill, line);
             }
             else if (turns)
@@ -2320,9 +2306,8 @@ public class TileAnnotation
 
     /**
      * Whether this square's station icon reaches past the square onto the ones beside it - a station on a curve, on the
-     * diagram, where it is drawn its full size on the middle of its rails (Adam, 2026-10-10: *"can we instead make the
-     * stations spill over onto adjacent tiles?"*).  The square draws what falls inside it and `paintSpill`, asked by the
-     * diagram once every square is drawn, the rest.
+     * diagram, where it is drawn its full size on the middle of its rails.  The square draws what falls inside it and
+     * `paintSpill`, asked by the diagram once every square is drawn, the rest.
      *
      * @return true where the icon spills
      */
@@ -2392,8 +2377,7 @@ public class TileAnnotation
     }
 
     /**
-     * This square's arrows and barred-arrival marks again, over a neighbour's station that spilled onto it (Adam,
-     * 2026-10-10: *"make sure that the optional ingress/egress arrows remain visible, especially on curves"*): they sit at
+     * This square's arrows and barred-arrival marks again, over a neighbour's station that spilled onto it: they sit at
      * the middle of the square's edges, which is where a curve's station reaches it.  As `paint` draws them; nothing on a
      * square autonomy takes no notice of, where `paint` draws none.
      *
@@ -2431,10 +2415,9 @@ public class TileAnnotation
     }
 
     /**
-     * The sensor's contact covered, under a station's icon on straight track (FR-118; Adam: *"make sure the white would
-     * cover an s88 circle"*).  The contact is 14 pixels across at 30 and 26 at 60: white a pixel wider all round, and the
-     * track's black band, `tile` * 8 / 30 across, drawn back over it.  The icons are no taller than the contact, so they
-     * alone would leave its edges showing.
+     * The sensor's contact covered, under a station's icon on straight track (FR-118).  The contact is 14 pixels across
+     * at 30 and 26 at 60: white a pixel wider all round, and the track's black band, `tile` * 8 / 30 across, drawn back
+     * over it.  The icons are no taller than the contact, so they alone would leave its edges showing.
      *
      * @param g graphics at the icon's centre, turned along the track
      * @param tile the tile's edge
@@ -2534,11 +2517,11 @@ public class TileAnnotation
 
     /**
      * Where trains must turn: two terminus shapes back to back, flat ends towards each other across a 4-pixel gap the
-     * track's black line shows through, pointing away from each other, each with its bar (Adam, 2026-10-09).  The pair is
-     * `total` long, no longer than the may-turn hexagon (MT-710) - each half 10 pixels at 30, 21 at 60.
+     * track's black line shows through, pointing away from each other, each with its bar.  The pair is `total` long, no
+     * longer than the may-turn hexagon (MT-710) - each half 10 pixels at 30, 21 at 60.
      *
-     * The bar at 30 is a pixel wide and set on whole pixels (*"should be white, not gray"*): drawn in its half's own
-     * frame, which can sit on a half pixel, it spread over two columns and showed grey.
+     * The bar at 30 is a pixel wide and set on whole pixels: drawn in its half's own frame, which can sit on a half
+     * pixel, it would spread over two columns and show grey.
      */
     private static void mustTurn(Graphics2D g, int tile, int h, int total, Color fill, Color line)
     {
@@ -2632,20 +2615,16 @@ public class TileAnnotation
     /**
      * A square out of service - nothing may pass or stop there - whatever it otherwise is, a station of any kind or a plain
      * sensor, on the track diagram and in the editor: a white circle, an orange ring, an orange X in it, a no-stopping sign
-     * in orange (Adam, 2026-10-10: *"For simplicity, could an out of service station be made a round white circle with an
-     * orange border and X inside of it, regardless of the type of station or point it otherwise is?"*).  It replaced the X
-     * over a grey block (FR-118) and the bare X on a plain sensor (OB-167).
+     * in orange.
      *
      * On the middle of its track, where the sensor's contact is, and filled white across all of it so the contact does not
-     * show; no wider than the space inside the red arrows the sensor's art draws round its contact while it reads occupied
-     * (*"small enough that you can still see the sensor activation arrows, but big enough to be prominent and easy for the
-     * user to discern"*): 14 pixels across at 30 and 28 at 60 - the contact's own width and a little more - where the
-     * arrows' nearest pixels are 8 and 15.5 from the middle.  Its ring and its X grow heavier with the square, as the cross did (Adam, 2026-09-01: *"make the X a little
-     * thicker, close to what we had in the old reversing points"*).  Round, so it is the same on a curve, and inside its
-     * square, so it spills nothing.
+     * show; no wider than the space inside the red arrows the sensor's art draws round its contact while it reads occupied:
+     * 14 pixels across at 30 and 28 at 60 - the contact's own width and a little more - where the arrows' nearest pixels
+     * are 8 and 15.5 from the middle.  Its ring and its X grow heavier with the square.  Round, so it is the same on a
+     * curve, and inside its square, so it spills nothing.
      *
-     * That is the sign with FR-118's icons.  With the classic ones (round 131) a station's is its mark's size and solid
-     * orange with a white X, and a plain sensor's the white circle ringed in orange, a pixel more all round than its mark.
+     * That is the sign with FR-118's icons.  With the classic ones a station's is its mark's size and solid orange with a
+     * white X, and a plain sensor's the white circle ringed in orange, a pixel more all round than its mark.
      *
      * @param g the tile's graphics
      * @param width the tile's width
@@ -2661,13 +2640,12 @@ public class TileAnnotation
         boolean shapes = stationIcons() == StationIcons.SHAPES;
 
         // FR-118's size for every square with its icons.  With the classic ones a station's mark's size, and a sensor's a
-        // pixel more all round than its mark (Adam, 2026-10-11: "1px more radius on the non station out of service")
+        // pixel more all round than its mark
         double across = shapes ? Math.round(tile * 0.47f)
             : classicBox(tile, badge.isStation()) + (badge.isStation() ? 0 : Math.round(tile / 15f));
 
-        // A CLASSIC STATION'S IS SOLID ORANGE WITH A WHITE X (Adam, 2026-10-11: "give the station out of service a solid
-        // orange fill, with a white X inside instead") - filled, as a named station's mark is, where a sensor's stays the
-        // white circle ringed in orange
+        // A CLASSIC STATION'S IS SOLID ORANGE WITH A WHITE X - filled, as a named station's mark is, where a sensor's
+        // stays the white circle ringed in orange
         boolean filled = !shapes && badge.isStation();
 
         // lighter strokes on a classic sensor's small sign, so its X still reads as an X
@@ -2743,9 +2721,9 @@ public class TileAnnotation
      * The midpoint of this tile's own two track sides - the tile centre for a straight, and on the
      * rails for anything else.
      *
-     * Public because the running overlay needs it too: the end of a run has one side and a null, and
-     * without this it stopped in the middle of the square (OB-026).  The badges have been placed by it
-     * since MT-057, so the run line and the badge now agree about where the track is.
+     * Public because the running overlay needs it too: the end of a run has one side and a null, and without this it
+     * would stop in the middle of the square (OB-026).  The badges are placed by it (MT-057), so the run line and the
+     * badge agree about where the track is.
      *
      * @param width
      * @param height
@@ -2885,11 +2863,8 @@ public class TileAnnotation
     {
         String text = String.valueOf(length);
 
-        // A third of the tile, which is what LayoutGrid gives an address label (OB-019).
-        //
-        // It was a quarter, and the two numbers sit in opposite corners of the same square in the same
-        // colour - so the smaller one read as a footnote to the larger rather than as the same kind of
-        // fact about the tile.
+        // A third of the tile, which is what LayoutGrid gives an address label (OB-019): the two numbers sit in opposite
+        // corners of the same square in the same colour, so the smaller one would read as a footnote to the larger.
         int size = Math.max(8, Math.min(width, height) / 3);
 
         g.setFont(g.getFont().deriveFont(java.awt.Font.BOLD, (float) size));
@@ -2922,9 +2897,9 @@ public class TileAnnotation
     /**
      * Where a side meets the edge of the tile.
      *
-     * Public since MT-309: the diagram's own train mark is a line along the rail, drawn by
-     * `LayoutLabel` rather than by anything here, and where a rail meets the edge of a square is one
-     * rule rather than two - the run line, the tested path and the train all have to agree about it.
+     * Public because the diagram's own train mark is a line along the rail, drawn by `LayoutLabel` rather than by
+     * anything here (MT-309), and where a rail meets the edge of a square is one rule rather than two: the run line, the
+     * tested path and the train all have to agree about it.
      *
      * @param side the side
      * @param width the tile's width
@@ -2953,14 +2928,9 @@ public class TileAnnotation
 
         TileAnnotation other = (TileAnnotation) o;
 
-        // `editing` is in here because it changes the PICTURE - it decides whether a named point's icon
-        // is filled with its colour or white - and equals is what LayoutLabel asks to decide whether a
-        // redraw is needed.  Two annotations differing only in it were indistinguishable to that
-        // question (TD-11).
-        //
-        // The two populations of labels happen to be segregated today, so no live path reached it. It
-        // is left as a trap otherwise, twelve lines below a comment recording the same omission being
-        // made once before.
+        // `editing` is in here because it changes the PICTURE (whether a named point's icon is filled with its colour or
+        // white) and equals is what LayoutLabel asks to decide whether a redraw is needed (TD-11).  The two populations
+        // of labels happen to be segregated today, so no live path reaches it; leaving it out would be a trap.
         return length == other.length && selected == other.selected
             && (badge == null ? other.badge == null : badge.equals(other.badge))
             && ignored == other.ignored && stationless == other.stationless && curved == other.curved
