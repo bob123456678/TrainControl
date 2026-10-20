@@ -953,43 +953,34 @@ public final class LayoutLabel extends JLabel
                             img
                         );
 
-                        // A FLASH THAT IS UP IS GIVEN UP WHENEVER THE PICTURE IS REPLACED (UIX-B2, corrected by
-                        // SVB-B1).  The flash's timer holds the icon it captured when it started, and setting it
-                        // back later draws the tile as it WAS - a switch in the position it was thrown out of, or a
-                        // sensor drawn clear while a train stands on it.  This ran only inside the accessory
-                        // highlight below it, which two ordinary cases skip: a switch thrown by clicking its own
-                        // flashed tile (the click exclusion), and any square the route editor flashes that is not a
-                        // switch or signal at all - an s88 named by a condition.  What is drawn now is the truth, so
-                        // the flash is dropped here, where every replacement passes.
+                        // A FLASH THAT IS UP IS GIVEN UP WHENEVER THE PICTURE IS REPLACED (UIX-B2, SVB-B1).  The
+                        // flash's timer holds the icon it captured when it started, and setting it back later would
+                        // draw the tile as it WAS: a switch in the position it was thrown out of, or a sensor drawn
+                        // clear while a train stands on it.  What is drawn now is the truth, so the flash is dropped
+                        // here, where every replacement passes.  (The accessory highlight below skips two ordinary
+                        // cases: a switch thrown by clicking its own flashed tile, and any square the route editor
+                        // flashes that is not a switch or signal at all, such as an s88 named by a condition.)
                         discardFlash();
 
                         this.setIcon(lastIcon);
 
-                        // NEITHER MARK IS AN ICON (MT-309).
-                        //
-                        // A grey wash used to be laid over this icon here.  There are two marks again
-                        // since 2026-09-09 - the orange line where a train IS, and the grey wash over
-                        // the track its presence has BLOCKED - and neither of them is part of the
-                        // icon.  Both are painted in `paintCoveredMark`, over whatever the icon
-                        // happens to be.
-                        //
-                        // Which is why three places that swapped the icon for a greyed copy stay gone:
-                        // this one, the restore at the end of the transient highlight, and
-                        // `refreshCoveredMark`.  A tile flashing yellow for an accessory change still
-                        // shows both marks, which is the hazard the old restore needed a paragraph to
-                        // handle.
+                        // NEITHER MARK IS AN ICON (MT-309).  There are two marks, the orange line where a train IS
+                        // and the grey wash over the track its presence has BLOCKED, and both are painted in
+                        // `paintCoveredMark` over whatever the icon happens to be.  So nothing swaps the icon for a
+                        // greyed copy: not here, not at the restore at the end of the transient highlight, not in
+                        // `refreshCoveredMark`.  A tile flashing yellow for an accessory change still shows both
+                        // marks.
                         
                         // Temporarily highlight changes when they happen from a route/CS/keyboard command
                         if (!edit && (this.component.isSignal() || this.component.isSwitch()) && hadIcon && (System.currentTimeMillis() - lastClicked) > CLICK_TIMEOUT)
                         {
-                            // THE ONE BEFORE IT IS STOPPED FIRST (VC2-C3; OB-333, OB-334).  Nulling the field said
-                            // "no restore is armed" while the old timer was still counting down, and it fired
-                            // `setIcon(lastIcon)` over whatever was drawn by then - a three-way's second highlight,
-                            // or a flash.  And FIRST, before this highlight's yellow goes on: ending a highlight puts
-                            // the plain picture back (UIX-B2), and ended after the yellow was laid it put the plain
-                            // picture back over it - a square changed twice inside the hold, which autonomy does,
-                            // showed no yellow at all (Adam, 2026-10-11: "when autonomy is running, I don't see
-                            // yellow highlights for switches and signals on my track diagram").
+                            // THE ONE BEFORE IT IS STOPPED FIRST (VC2-C3; OB-333, OB-334).  Nulling the field would
+                            // say "no restore is armed" while the old timer was still counting down, and it would
+                            // fire `setIcon(lastIcon)` over whatever was drawn by then: a three-way's second
+                            // highlight, or a flash.  And FIRST, before this highlight's yellow goes on: ending a
+                            // highlight puts the plain picture back (UIX-B2), so ended after the yellow was laid it
+                            // would put the plain picture back over it, and a square changed twice inside the hold,
+                            // which autonomy does, would show no yellow at all.
                             endAccessoryHighlight();
 
                             // Both of these run on the EDT: this block already does, and a Swing Timer
@@ -1004,17 +995,10 @@ public final class LayoutLabel extends JLabel
                             {
                                 if ((System.currentTimeMillis() - lastClicked) > CLICK_TIMEOUT)
                                 {
-                                    // STRAIGHT BACK TO THE TILE, and the train comes back with it.
-                                    //
-                                    // This used to restore to a greyed copy when the square was
-                                    // covered - Adam, 2026-09-07: "shaded tiles get overwritten if an
-                                    // accessory change highlights the same square" - because the mark
-                                    // WAS the icon and putting the plain one back lost it.
-                                    //
-                                    // The marks are painted over the icon since MT-309, so they are
-                                    // not in the icon to lose, and the question this branch had to ask
-                                    // no longer arises: whatever the icon is, `paintCoveredMark` draws
-                                    // the wash and the train on top of it at the next paint.
+                                    // STRAIGHT BACK TO THE TILE, and the train comes back with it.  The marks are
+                                    // painted over the icon (MT-309), so they are not in the icon to lose: whatever
+                                    // the icon is, `paintCoveredMark` draws the wash and the train on top of it at
+                                    // the next paint.
                                     this.setIcon(lastIcon);
 
                                     // COUNTED, so a test can see how many restores actually fired - which is
@@ -1060,10 +1044,10 @@ public final class LayoutLabel extends JLabel
                 
                 if (update)
                 {
-                    // ITS OWN SQUARE AND THE SQUARES AROUND IT, not the whole window (speed, 2026-10-04): `parent` is the
-                    // panel the diagram sits in - the main window's tab, the editor's window - and repainting it redrew
-                    // everything on every switch, signal and sensor event of a run.  The diagram's panel draws overlapping
-                    // children together (OB-172), and the neighbourhood is redrawn as a train's icon is (MT-642).
+                    // ITS OWN SQUARE AND THE SQUARES AROUND IT, not the whole window: `parent` is the panel the
+                    // diagram sits in, and repainting it would redraw everything on every switch, signal and sensor
+                    // event of a run.  The diagram's panel draws overlapping children together (OB-172), and the
+                    // neighbourhood is redrawn as a train's icon is (MT-642).
                     java.awt.Container around = getParent();
 
                     if (around != null)
@@ -1126,18 +1110,16 @@ public final class LayoutLabel extends JLabel
      */
     public void flashHighlight(java.awt.Color wash, int holdMs)
     {
-        // An empty square carries an EmptyIcon, which is not null and not an ImageIcon - so the cast
-        // below threw where the null check passed, and it escaped mid-action because the menu's flash
-        // sits outside its own try/catch.
+        // An empty square carries an EmptyIcon, which is not null and not an ImageIcon, so the cast below would
+        // throw where a null check passed; it would escape mid-action because the menu's flash sits outside its own
+        // try/catch.
         if (!(this.getIcon() instanceof ImageIcon)) return;
 
-        // The plain icon is captured ONCE and kept until the flash ends.  Capturing it on every call
-        // meant a second flash arriving before the first had finished recorded the already-highlighted
-        // icon as the thing to restore - so the tile was put back yellow and stayed that way, which is
-        // exactly what repeated clicking on one run produced.
+        // The plain icon is captured ONCE and kept until the flash ends.  Capturing it on every call would let a
+        // second flash arriving before the first had finished record the already-highlighted icon as the thing to
+        // restore, and the tile would be put back yellow and stay that way.
         // AND AN ACCESSORY HIGHLIGHT THAT IS UP IS ENDED FIRST (UIX-B2), so what this captures to put back is the
-        // tile's own picture rather than a yellow-washed copy of it - which is what the other order produced: the
-        // flash restored the washed icon and the tile stayed yellow until that accessory changed again.
+        // tile's own picture rather than a yellow-washed copy of it.
         endAccessoryHighlight();
 
         if (flashTimer != null && flashTimer.isRunning())
@@ -1240,9 +1222,8 @@ public final class LayoutLabel extends JLabel
      * Ends a flash now, rather than when its timer runs out.
      *
      * For a walk that moves from square to square - Mass Assign Lengths and Name Everything - where the flash on the
-     * square just left would otherwise stay yellow for its full hold and look like the square being asked about.
-     * Adam, on MT-454: *"When iterating quickly on the assign lengths popup (like by clicking skip), it does not clear
-     * the prior highlights."*  Does nothing when no flash is running.
+     * square just left would otherwise stay yellow for its full hold and look like the square being asked about
+     * (MT-454).  Does nothing when no flash is running.
      */
     public void endFlash()
     {
@@ -1316,7 +1297,7 @@ public final class LayoutLabel extends JLabel
         if (effective == null ? autonomyAnnotation == null
             : effective.equals(autonomyAnnotation)) return;
 
-        // AND A STATION THAT SPILLED, which this may take away: its spill is on the squares around (Adam, 2026-10-10)
+        // AND A STATION THAT SPILLED, which this may take away: its spill is on the squares around
         boolean spilled = spills(autonomyAnnotation);
 
         autonomyAnnotation = effective;
@@ -1351,32 +1332,26 @@ public final class LayoutLabel extends JLabel
     @Override
     protected void paintComponent(java.awt.Graphics g)
     {
-        // THE SQUARE ITSELF, FAINTLY, WHERE THE RAILWAY REFUSES IT (Adam, MT-278 item 1).
+        // THE SQUARE ITSELF, FAINTLY, WHERE THE RAILWAY REFUSES IT (Adam, MT-278 item 1: "I want the shading to
+        // instead be the same tile with more transparency exactly like what happens when edges are locked in
+        // autonomy mode.").  A grey rectangle over the tile said the same thing by hiding the track; this fades the
+        // track, so a blocked curve is still legibly a curve.
         //
-        // *"I want the shading to instead be the same tile with more transparency exactly like what
-        // happens when edges are locked in autonomy mode."*  A grey rectangle over the tile said the
-        // same thing and said it by hiding the track; this says it by fading the track, so a blocked
-        // curve is still legibly a curve.
-        //
-        // On the icon rather than beside it: `super.paintComponent` is what draws the tile, so the
-        // composite has to be set before it and undone after - which is what the throwaway Graphics
-        // is for.  Everything autonomy draws on top - the arrows, the run line, the train mark - is
-        // painted at full strength afterwards, because those are about this instant and the fade is
-        // about the track underneath them.
+        // On the icon rather than beside it: `super.paintComponent` is what draws the tile, so the composite has to
+        // be set before it and undone after, which is what the throwaway Graphics is for.  Everything autonomy
+        // draws on top (the arrows, the run line, the train mark) is painted at full strength afterwards, because
+        // those are about this instant and the fade is about the track underneath them.
         boolean refused = !edit && square != null && tcUI != null && tcUI.isTrackBlocked(square);
 
         if (refused)
         {
-            // ONE ROAD OF A DOUBLE CURVE, WHERE THAT IS WHAT IS COVERED (Adam, 2026-09-12).
+            // ONE ROAD OF A DOUBLE CURVE, WHERE THAT IS WHAT IS COVERED.  Narrowing the EXTENT (OB-207) stops tiles
+            // the train never reaches being washed, but a double curve is one tile carrying two roads and the wash
+            // fades the whole square, so the other road would be grayed along with the main one.
             //
-            // *"The graying doesn't seem to work - the other track on the double curve still gets
-            // grayed along with the main one."*  Narrowing the EXTENT (OB-207) stopped tiles the train
-            // never reaches being washed; it could not help here, because this is one tile carrying two
-            // roads and the wash fades the whole square.
-            //
-            // Null everywhere else, and deliberately: on a tile with one road the square IS the road,
-            // and fading the square is simpler and is what he asked for when the wash was added -
-            // *"can we just grey out the tiles just like blocked edges"*.
+            // Null everywhere else, and deliberately: on a tile with one road the square IS the road, and fading the
+            // square is simpler and is what Adam asked for ("can we just grey out the tiles just like blocked
+            // edges").
             java.awt.Shape road = theRoadToFade();
 
             if (road != null)
