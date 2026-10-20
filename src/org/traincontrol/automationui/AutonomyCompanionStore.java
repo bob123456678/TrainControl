@@ -55,10 +55,9 @@ public class AutonomyCompanionStore
      * TrainControl and is refused rather than read partially - silently dropping fields it does not
      * recognise would lose the user's work on the next save.
      *
-     * 2 is "a station may carry several protecting signals", where stationSignals holds an array
-     * rather than a square.  Version 1 reads that field with a string accessor and throws an
-     * unchecked exception on an array - after load() has already emptied the store - so a file it
-     * cannot read has to be one it REFUSES to read.  That is what the version is for.
+     * 2 is "a station may carry several protecting signals", where stationSignals holds an array rather than a
+     * square.  Version 1 would throw on an array after load() has already emptied the store, so a file it cannot
+     * read has to be one it REFUSES to read.
      */
     public static final int VERSION = 2;
 
@@ -106,8 +105,8 @@ public class AutonomyCompanionStore
     private static final String CONFIGURATION_PREFIX = "configuration-";
 
     /**
-     * Where a build of rounds 23 and 24 kept a configuration's timetable entries of a page out of autonomy - read only to
-     * bring them back (`bringBackTheEntriesSetAside`).
+     * Where an earlier build kept a configuration's timetable entries of a page out of autonomy - read only to bring
+     * them back (`bringBackTheEntriesSetAside`).
      */
     private static final String ENTRIES_SET_ASIDE = "timetableAside";
 
@@ -122,14 +121,10 @@ public class AutonomyCompanionStore
     /**
      * Which sides a station refuses to let trains ARRIVE by, keyed by square.
      *
-     * The BARRED sides rather than the allowed ones, because the default is that a train may arrive
-     * from anywhere - so a station nobody has restricted stores nothing at all, and a side added to the
-     * diagram later is open, which is what somebody who never opened this setting would expect.  Stored
-     * the other way round, every station would need an entry and every new piece of track would arrive
-     * shut.
+     * The BARRED sides rather than the allowed ones, because the default is that a train may arrive from anywhere:
+     * a station nobody has restricted stores nothing, and a side added to the diagram later is open.
      *
-     * A comma-separated list of side names, so it reads plainly in the file and needs no schema of its
-     * own.
+     * A comma-separated list of side names, so it reads plainly in the file and needs no schema of its own.
      */
     private final Map<TileKey, String> barredArrivals = new LinkedHashMap<>();
 
@@ -157,9 +152,8 @@ public class AutonomyCompanionStore
             }
             catch (IllegalArgumentException e)
             {
-                // A side name this build does not have.  Skipped rather than refused: the rest of the
-                // setting is still good, and refusing the file would cost everything else in it over
-                // one word.
+                // A side name this build does not have.  Skipped rather than refused: the rest of the setting is
+                // still good.
             }
         }
 
@@ -220,9 +214,8 @@ public class AutonomyCompanionStore
      * Paired by hand rather than inferred.  The nearest signal on the approach is not always the
      * protecting one, and a wrong guess here throws a real signal on real hardware.
      *
-     * SEVERAL per station, because a platform reachable from two directions needs a signal on each
-     * approach.  It held one until 3.0.0, and a setup written before then has a bare string where this
-     * now has an array - both are read, and a station with one signal is still written as a string.
+     * SEVERAL per station, because a platform reachable from two directions needs a signal on each approach.  A bare
+     * string is still read as one signal, and a station with one signal is still written as a string.
      *
      * Keyed like the portals - square to square - so it survives a page rename for the same reason
      * they do, and so it is reconciled away when the station goes.
@@ -241,9 +234,7 @@ public class AutonomyCompanionStore
     /**
      * The signals thrown red when a train ARRIVES at a station as the end of its journey - its entry guard (FR-096).
      *
-     * Adam, 2026-09-23: *"file an FR for entry guard for stations.  This is a signal that turns red after arrival at
-     * the final designation.  Same UI to set it as the current linked signal exit guard, and multiple selections
-     * are possible."*  And, asked when it turns green again: *"The next route sets it green, so that is out of scope."*
+     * Nothing here turns it green again: the next route sets it green, so undoing it is out of scope.
      *
      * The same shape as `stationSignals` - several per station, keyed square to squares - and kept beside it for the
      * reasons that one gives.  A different list, because the two are thrown at different moments: the exit guard is an
@@ -291,9 +282,8 @@ public class AutonomyCompanionStore
         {
             for (TileKey blocker : blockers)
             {
-                // De-duplicated here rather than in the picker, and never the station itself: standing
-                // at a station already decides whether it is free, so watching it from itself makes a
-                // station nothing can be sent to rather than one that is restricted.
+                // De-duplicated here rather than in the picker, and never the station itself: standing at a station
+                // already decides whether it is free, so watching it from itself would leave nothing able to be sent there.
                 if (blocker != null && !blocker.equals(station) && !keys.contains(blocker))
                 {
                     keys.add(blocker);
@@ -458,11 +448,9 @@ public class AutonomyCompanionStore
         {
             // De-duplicated here, as the protecting list is, so no writer can leave one signal in it twice.
             //
-            // AND NEVER THE STATION'S OWN EXIT GUARD (AUT-C2, Adam 2026-09-24: *"make sure the entry guard can never be
-            // the same as the exit guard.  otherwise, it's up to the user to set it up right."*).  One signal on both
-            // lists is thrown red on arrival and then set by the platform's occupancy, so neither guard means what it
-            // was paired for.  Refused in both setters, whichever came first; the editor says why, and a file that
-            // carries it anyway is warned about by the checks.
+            // AND NEVER THE STATION'S OWN EXIT GUARD (AUT-C2): one signal on both lists is thrown red on arrival and
+            // then set by the platform's occupancy, so neither guard means what it was paired for.  Refused in both
+            // setters; the editor says why, and a file that carries it anyway is warned about by the checks.
             for (TileKey signal : signals)
             {
                 if (signal != null && !keys.contains(signal) && !onList(stationSignals, station, signal)) keys.add(signal);
@@ -503,15 +491,13 @@ public class AutonomyCompanionStore
     /**
      * Where each station caption is drawn, and which square it is about: caption square -> sensor square.
      *
-     * Kept here rather than in the diagram, which is what makes a caption a thing rather than a piece of
-     * text that happens to match a name.  As a label reading "Point:Bahnhof" it bound to a Point BY NAME
-     * and therefore broke in every direction: a rename had to rewrite every page showing it, a station
-     * split into several Points was called none of them, and a name that no longer existed left a label
-     * that looked live and did nothing.  Keyed by square, none of that can happen - renaming is free,
-     * because the caption never knew the name in the first place.
+     * Kept here rather than in the diagram, which makes a caption a thing rather than a piece of text that happens to
+     * match a name.  A label reading "Point:Bahnhof" bound to a Point BY NAME and broke in every direction: a rename
+     * had to rewrite every page showing it, a station split into several Points was called none of them, and a name
+     * that no longer existed left a label that looked live and did nothing.  Keyed by square, none of that can happen.
      *
-     * It also means autonomy no longer writes to the layout file at all, which is where the worst defect
-     * in this feature lived: saving regenerated the page and deleted anything the parser could not model.
+     * It also means autonomy never writes to the layout file, so saving cannot delete anything the parser could not
+     * model.
      */
     private final Map<TileKey, TileKey> captions = new LinkedHashMap<>();
     private final Map<TileKey, String> linkNames = new LinkedHashMap<>();
@@ -537,8 +523,7 @@ public class AutonomyCompanionStore
     /**
      * The pages the last `importBundle` left out because this layout does not have them (MT-380).
      *
-     * Kept so the import door can say which, which is the half of Adam's ruling that is not the
-     * dropping: *"keep only the pages, and alert the user."*
+     * Kept so the import door can say which: the import keeps only the pages the layout has, and alerts the user.
      */
     private final List<String> pagesLeftOutOfLastImport = new ArrayList<>();
 
@@ -558,37 +543,20 @@ public class AutonomyCompanionStore
     private final Map<String, String> pageIdConflicts = new LinkedHashMap<>();
 
     /**
-     * Entries for pages the index cannot resolve, kept out of memory and written back verbatim.
+     * Entries for pages the index cannot resolve, kept out of memory and written back verbatim (OB-067).
      *
-     * The one thing the boundary could not previously know (OB-067). A key is "page:x,y" and both
-     * halves of the translation are string lookups, so the page part has to be in the world its
-     * lookup expects - a NAME going out, an ID coming in. Nothing recorded which world it was in, so
-     * the code rested on "ids are numeric and names are not, and therefore never collide". They do:
-     * `validateLayoutName` allows digits, so a page may legally be called "2", and Adam ruled it must
-     * stay legal - "A page should be allowed to be named 2 - let FR-013 dissolve it."
+     * A key is "page:x,y" and both halves of the translation are string lookups, so the page part has to be in the
+     * world its lookup expects: a NAME going out, an ID coming in.  Nothing records which world it is in, and ids and
+     * names can collide: `validateLayoutName` allows digits, so a page may legally be called "2" (let FR-013 dissolve
+     * it).  The exposed path is the on-disk repair for OB-062, which loads WITHOUT numbering, so "2:x,y" would be
+     * rewritten through the page NAMED "2" and a page's settings reattached to a different page.
      *
-     * On the normal path there was never a fault: keys arrive in id form and are translated to names
-     * once, so each lookup is asked about the kind of string it holds. The exposed path is the
-     * on-disk repair added for OB-062, which loads WITHOUT numbering - every key stays in id form in
-     * memory, and writing it back then ran an id through the name map. "2:x,y" would have been
-     * rewritten through the page NAMED "2" and a page's settings reattached to a different page,
-     * which is the failure Adam has already lost data to twice.
-     *
-     * The first attempt at this made `toStored` leave such keys alone on the way out, and a test
-     * written for it showed why that is not enough. The damage does not need a save: an entry that
-     * kept the file's id as its page part is ALREADY indistinguishable, in memory, from an entry
-     * belonging to a page genuinely called that. `getPointName(new TileKey("1", 3, 3))` returned the
-     * absent page 1's station, because "1" is what both of them look like. The pun is in the
-     * representation, so no amount of care at the boundary can unmake it.
-     *
-     * Hence holding rather than resolving. Nothing whose page is unknown is put into the live
-     * collections at all; it waits here, as the exact JSON it arrived as, and is merged back on save.
-     * Every key in memory is therefore a page NAME of a page that is loaded - which is the invariant
-     * the code has always assumed and never had.
-     *
-     * When the page comes back - a OneDrive placeholder that hydrates, a file the sync client had
-     * open - its id resolves, nothing is held, and the entries load normally. Nothing is lost by
-     * being away.
+     * Guarding the boundary is not enough: an entry that kept the file's id as its page part is already
+     * indistinguishable, in memory, from one belonging to a page genuinely called that (`getPointName(new
+     * TileKey("1", 3, 3))` would return the absent page 1's station).  Hence holding rather than resolving: nothing
+     * whose page is unknown is put into the live collections; it waits here, as the exact JSON it arrived as, and is
+     * merged back on save.  Every key in memory is therefore a page NAME of a page that is loaded.  When the page
+     * comes back (a OneDrive placeholder that hydrates), its id resolves and the entries load normally.
      *
      * Field name -> the JSONObject or JSONArray of entries held for it.
      */
@@ -605,14 +573,12 @@ public class AutonomyCompanionStore
     /**
      * Tells the store which page id belongs to which page name.
      *
-     * Entries are stored against the page ID, not the page name.  A name is something a user renames on
-     * a whim, and every key here begins with one, so a rename would otherwise orphan a whole page of
-     * names, lengths, directions and pairings at once - with nothing to connect the loss to the rename.
+     * Entries are stored against the page ID, not the page name, because every key begins with a page and a rename
+     * would otherwise orphan a whole page of names, lengths, directions and pairings at once.
      *
-     * The id is NOT trusted on its own.  The Central Station orders pages by it, so reordering them
-     * there could renumber the pages - and a renumber would silently reattach a page of settings to the
-     * WRONG page, which is worse than losing them, because nothing looks wrong.  So the name each id had
-     * is recorded alongside, and a mismatch is reported at load rather than acted on.
+     * The id is NOT trusted on its own.  The Central Station orders pages by it, so reordering them there could
+     * renumber the pages and silently reattach a page of settings to the WRONG page, which is worse than losing them.
+     * So the name each id had is recorded alongside, and a mismatch is reported at load rather than acted on.
      *
      * @param nameToId from the parsed layouts, LayoutDiagram.getPageId()
      */
@@ -635,16 +601,13 @@ public class AutonomyCompanionStore
     /**
      * The highest page id this setup has ever recorded, live or absent.
      *
-     * IAR-A1.  `writeLayoutIndex` issues a new page the number above the highest one in the index
-     * FILE, which means a retired id is accounted for exactly once - by the write that drops it. The
-     * write after that reuses it, and the settings of the page it belonged to are still here, held
-     * under that number because its file was merely absent rather than deleted (OB-067). The new page
-     * collects a stranger's stations, lengths and exclusions, and nothing reports a renumber, because
-     * as far as the index is concerned nothing was renumbered.
+     * IAR-A1.  `writeLayoutIndex` issues a new page the number above the highest one in the index FILE, so a retired
+     * id would be reused while the settings of the page it belonged to are still held here under that number (OB-067):
+     * the new page would collect a stranger's stations, lengths and exclusions with nothing reporting a renumber.
      *
-     * The index cannot remember this by itself without a new field, and `gleisbild.cs2` is a file real
-     * Maerklin hardware reads. This map can: it is the setup's record of what every id was called when
-     * the file was written, and it deliberately keeps the ids of pages that are not loaded.
+     * The index cannot remember the highest id without a new field, and `gleisbild.cs2` is a file real Maerklin hardware
+     * reads.  This map can: it is the setup's record of what every id was called when the file was written, and it
+     * keeps the ids of pages that are not loaded.
      *
      * A page id is written as a decimal number; anything that is not one is skipped rather than
      * guessed at.
@@ -677,19 +640,12 @@ public class AutonomyCompanionStore
     /**
      * Whether this setup knows about a page that is not among the ones it is being shown.
      *
-     * The setup records what each page id was called when it was written.  If one of those names is
-     * missing from the pages a caller is holding, then the caller's picture of the layout is
-     * incomplete - and anything that deletes on the strength of "this square does not exist" is about
-     * to delete a page's worth of settings for a page that still exists.
-     *
-     * That is not hypothetical.  CS2File deliberately skips a page whose file will not parse or is not
-     * there, and says so; on this layout, which lives in OneDrive, an unhydrated placeholder or a file
-     * held by the sync client is enough.  readShared is relaxed about the same absence for the same
-     * reason - "Absent is fine - the page may simply not be loaded" - so the two halves agreed that a
-     * missing page is survivable, and then reconcile deleted its contents anyway.
-     *
-     * Found by review (OB-068).  The remedy is the one already written for a suspect numbering: save,
-     * but do not prune.
+     * The setup records what each page id was called when it was written.  If one of those names is missing from the
+     * pages a caller is holding, the caller's picture of the layout is incomplete, and anything that deletes on the
+     * strength of "this square does not exist" would delete a page's worth of settings for a page that still exists
+     * (OB-068).  CS2File skips a page whose file will not parse or is not there (on a OneDrive layout, an unhydrated
+     * placeholder is enough), and readShared is relaxed about the same absence.  The remedy is the one written for a
+     * suspect numbering: save, but do not prune.
      *
      * @param loaded the page names the caller actually has
      * @return the names this setup knows that are not in that set, empty when the picture is complete
@@ -706,15 +662,12 @@ public class AutonomyCompanionStore
 
             if (name == null || loaded.contains(name)) continue;
 
-            // A PAGE RENAMED OUTSIDE TRAINCONTROL IS STILL LOADED (GSE-C2).  This record is the name each id had when
-            // the setup was written, and a rename on the Central Station or in the page's file keeps the id and
-            // changes the name - the case page ids exist for.  Asked by name alone, the renamed page read as absent,
-            // so no save tidied anything while that layout was open and every save warned about a page on the screen.
-            //
-            // So the id is asked as well, by the rule `resolvePage` uses to tell a rename from a renumber: where the
-            // old name is still in the index the page IS that one, and it is not loaded; where it is not, the page the
-            // id names today is the one to look for.  Not `pageIsHere`, which answers from the index - and the index
-            // holds a stand-in for a page that would not read (FV3-A1, MT-135).
+            // A PAGE RENAMED OUTSIDE TRAINCONTROL IS STILL LOADED (GSE-C2).  This record is the name each id had when the
+            // setup was written, and a rename on the Central Station keeps the id and changes the name.  So the id is asked
+            // as well, by the rule `resolvePage` uses to tell a rename from a renumber: where the old name is still in the
+            // index the page IS that one, and it is not loaded; where it is not, the page the id names today is the one to
+            // look for.  Not `pageIsHere`, which answers from the index, and the index holds a stand-in for a page that
+            // would not read (FV3-A1, MT-135).
             String nowCalled = resolvePage(written.getKey());
 
             if (nowCalled != null && loaded.contains(nowCalled)) continue;
@@ -728,23 +681,15 @@ public class AutonomyCompanionStore
     /**
      * Drops everything being held for pages the operator has said are gone for good (FR-018).
      *
-     * The half of FR-018 that none of my three proposed options touched. Entries belonging to a page
-     * the index cannot resolve are held out of memory and written back verbatim (OB-067), which is
-     * what makes a page's absence survivable - a OneDrive placeholder hydrates, the file comes back,
-     * and nothing was lost by being away. The cost is that a page which was genuinely DELETED is held
-     * on exactly the same terms, for ever, under an id that can never attach to anything again.
+     * Entries belonging to a page the index cannot resolve are held out of memory and written back verbatim (OB-067),
+     * which makes a page's absence survivable; a page which was genuinely DELETED is held on the same terms, for ever,
+     * under an id that can never attach to anything again.  So this is only ever called with an answer from the person
+     * who knows (warn the user, then prune): never inferred, never on a timer, never from the startup path.  The
+     * application cannot tell a deleted page from an unhydrated one and must not try.
      *
-     * Adam: "if we are talking about orphaned data, why not warn the user and then prune?"
-     *
-     * So this is only ever called with an answer from the person who knows - never inferred, never on
-     * a timer, and never from the startup path. The application cannot tell a deleted page from an
-     * unhydrated one and must not try.
-     *
-     * **An entry is dropped if it names a gone page ANYWHERE, key or value, not only if it is
-     * anchored on one.** A caption on a page that is still here, pointing at a station on a page that
-     * has been deleted, is a pointer to nothing. Leaving it held would be the leak this method exists
-     * to close; releasing it into memory would be worse, because the page part of its value would then
-     * stand in the live collections as a page NAME - the id-as-name pun the hold exists to prevent.
+     * **An entry is dropped if it names a gone page ANYWHERE, key or value.**  A caption on a page that is still here,
+     * pointing at a station on a deleted page, is a pointer to nothing; releasing it into memory would put the page part
+     * of its value in the live collections as a page NAME, the id-as-name pun the hold exists to prevent.
      *
      * The recorded name is dropped with it, so `pagesNotLoaded` stops naming the page and the operator
      * is not asked about it again on the next save.
@@ -756,18 +701,11 @@ public class AutonomyCompanionStore
     {
         if (goneByName == null || goneByName.isEmpty()) return 0;
 
-        // The IDS the file recorded these pages under, and only those (store review, C1).
-        //
-        // This began as "the ids, and the names too, for a setup old enough to be keyed by name" - and
-        // the names half is both dead and dangerous. Dead, because `pageIsHere` answers true for any
-        // bare unrecognised name, so a name-keyed entry is never held in the first place and there is
-        // nothing here for it to match. Dangerous, because a page may legally be called "5" - Adam's
-        // ruling, and OB-092 is that page - so declaring the page NAMED "5" gone would delete every
-        // held entry belonging to the page with ID 5.
-        //
-        // That is the id-as-name pun the whole hold exists to prevent, reintroduced by the method that
-        // empties it. `untranslatePages` states the discriminator a screen away: "the file's own pages
-        // record is the discriminator: an id this file wrote is in it, and a name is not."
+        // The IDS the file recorded these pages under, and only those.  Not the names too: a name-keyed entry is never
+        // held (`pageIsHere` answers true for any bare unrecognised name), and a page may legally be called "5" (OB-092
+        // is that page), so declaring the page NAMED "5" gone would delete every held entry belonging to the page with
+        // ID 5 - the id-as-name pun the hold exists to prevent.  `untranslatePages` states the discriminator: the
+        // file's own pages record.
         Set<String> parts = new LinkedHashSet<>();
 
         for (Map.Entry<String, String> was : pageNamesWhenWritten.entrySet())
@@ -859,13 +797,11 @@ public class AutonomyCompanionStore
     /**
      * Whether this setup's keys can be trusted to mean the pages they name.
      *
-     * A setup is keyed by page ID, and readShared turns those ids into page NAMES using the "pages" map
-     * the file carries.  When a renumber has happened, an id no longer says for certain which page it
-     * meant.  The entries still land where they belong - `resolvePage` files an entry under the page its
-     * recorded name is on while the index has that name - but "this square does not exist" can no
-     * longer be concluded from an id, and anything that deletes on the strength of it would be deleting
-     * on a guess.  (This said every entry was name-keyed to the wrong page, which `resolvePage` does not
-     * do - VD17-C4.)
+     * A setup is keyed by page ID, and readShared turns those ids into page NAMES using the "pages" map the file
+     * carries.  When a renumber has happened an id no longer says for certain which page it meant.  The entries still
+     * land where they belong - `resolvePage` files an entry under the page its recorded name is on while the index has
+     * that name - but "this square does not exist" can no longer be concluded from an id, and anything that deletes on
+     * the strength of it would be deleting on a guess (VD17-C4).
      *
      * @return true while a renumber is outstanding and nothing has re-keyed the setup
      */
@@ -925,13 +861,9 @@ public class AutonomyCompanionStore
             return;
         }
 
-        // Read and parse BEFORE anything is thrown away.
-        //
-        // This used to clear first, so a file that could not be read - a sync lock on the folder, a
-        // truncated write, a setup written by a newer TrainControl - left the store empty and the
-        // failure reported as though nothing had happened.  The caller then had a live, blank store:
-        // every station, name and direction gone from the screen, and one press of Save away from being
-        // gone from the disk as well.  A load that fails now leaves the setup exactly as it was.
+        // Read and parse BEFORE anything is thrown away: a file that could not be read (a sync lock on the folder, a
+        // truncated write, a setup written by a newer TrainControl) must not leave a live, blank store, one press of Save
+        // from blanking the disk as well.  A load that fails leaves the setup exactly as it was.
         String contents = new String(
             Files.readAllBytes(setupFile().toPath()), StandardCharsets.UTF_8);
 
@@ -953,13 +885,10 @@ public class AutonomyCompanionStore
             throw new IOException(ERROR_VERSION + " (" + version + " > " + VERSION + ")");
         }
 
-        // The configurations are read and parsed before anything is thrown away too.
-        //
-        // The rule above was applied to setup.json and stopped there, so a locked or corrupt
-        // configuration-*.json still emptied the store and then failed part way through refilling it -
-        // the same live, half-loaded state, arrived at by the same route.  Worse for a corrupt one: a
-        // bare JSONException is unchecked and walked straight out through every catch (IOException)
-        // that guards discardEdits and open, which expect a failed load to change nothing.
+        // The configurations are read and parsed before anything is thrown away too: a locked or corrupt
+        // configuration-*.json must not empty the store and then fail part way through refilling it.  A bare
+        // JSONException is unchecked and would walk out through every catch (IOException) that guards discardEdits and
+        // open, which expect a failed load to change nothing.
         Map<String, JSONObject> loaded = new LinkedHashMap<>();
 
         File[] files = folder().listFiles();
@@ -981,9 +910,9 @@ public class AutonomyCompanionStore
                 }
                 catch (org.json.JSONException e)
                 {
-                    // Named, and as an IOException.  Which file is unreadable is the only thing that
-                    // tells the user what to do about it, and a load failure is something the callers
-                    // already know how to survive - as long as it arrives in the form they catch.
+                    // Named, and as an IOException: which file is unreadable is the only thing that tells the user what
+                    // to do about it, and callers already know how to survive a load failure that arrives in the form
+                    // they catch.
                     throw new IOException(
                         I18n.f("autosetup.ui.errorConfigurationUnreadable", name,
                             String.valueOf(e.getMessage())), e);
@@ -998,17 +927,11 @@ public class AutonomyCompanionStore
             }
         }
 
-        // What is here now, so that a failure in the READ can put it back.
-        //
-        // The promise above holds for a parse failure, which happens before this point.  It did not
-        // hold for a TYPE failure: readShared runs after clear() and uses the strict accessors
-        // throughout - getString, getInt - each of which throws part way through with the store already
-        // empty.  That is the very state the comment says was fixed, reached by a different door, and
-        // importBundle cites this method as the model for the guard it does have.
-        //
-        // The trigger is a setup.json this build did not write - hand-edited, or from another tool -
-        // since every field it writes round trips.  The guarantee is worth keeping whatever the odds:
-        // the caller is left with a live blank store, one press of Save from writing it to disk.
+        // What is here now, so that a failure in the READ can put it back.  The promise above covers a parse failure;
+        // a TYPE failure is the other door: readShared runs after clear() and uses the strict accessors throughout
+        // (getString, getInt), each of which throws part way through with the store already empty.  The trigger is a
+        // setup.json this build did not write (hand-edited, or from another tool), since every field it writes round
+        // trips.  `importBundle` cites this method as the model for the guard it has.
         JSONObject wasThere = snapshotSetup();
 
         clear();
@@ -1077,15 +1000,6 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Every square somebody has named, by its key.
-     *
-     * Needed by anything that has to find a station by NAME across the whole layout rather than across
-     * the reduction - the reduction omits excluded pages, so asking it makes a station on one of those
-     * look as though it does not exist.
-     *
-     * @return an unmodifiable view
-     */
-    /**
      * Every square that has been given a name, in the order they were named.
      *
      * For pickers that offer POINTS to choose between: a square with no name is one the operator cannot
@@ -1110,10 +1024,9 @@ public class AutonomyCompanionStore
     /**
      * Every square that has been given a name, printed.
      *
-     * Kept in the PRINTED form (FR-013). The store holds squares now, but this is a public accessor
-     * whose callers key their own maps by the same strings, and Adam's rule for this work was "string
-     * keys only matter at import/export" - a display accessor is the nearest thing to an export.
-     * Converting it would ripple into callers that have no reason to change.
+     * Kept in the PRINTED form (FR-013).  The store holds squares now, but this is a public accessor whose callers key
+     * their own maps by the same strings, and string keys only matter at import/export: a display accessor is the
+     * nearest thing to an export, and converting it would ripple into callers that have no reason to change.
      */
     public Map<String, String> getPointNames()
     {
@@ -1159,10 +1072,9 @@ public class AutonomyCompanionStore
     /**
      * Whether this layout records any track length at all.
      *
-     * Asked of what has been RECORDED rather than of the graph's points, because a length belongs to a
-     * square and most squares are not points - a run of plain track between two sensors is exactly the
-     * thing somebody measures, and it carries no point at all. Scanning the points instead answers
-     * "no" for a layout that has measured everything except its sensors (2026-09-01).
+     * Asked of what has been RECORDED rather than of the graph's points, because a length belongs to a square and most
+     * squares are not points: a run of plain track between two sensors is exactly the thing somebody measures, and it
+     * carries no point at all.
      *
      * @return true when at least one square has a length
      */
@@ -1211,9 +1123,8 @@ public class AutonomyCompanionStore
     /**
      * Forgets every length on every page (FR-069).
      *
-     * The whole map, which is the whole layout: lengths are keyed by a square that names its own page,
-     * so there is no per-page variant of this and Adam asked for none - *"clear the segment lengths
-     * across all pages"*.
+     * The whole map, which is the whole layout: lengths are keyed by a square that names its own page, so there is no
+     * per-page variant of this.
      *
      * @return how many squares had one
      */
@@ -1227,17 +1138,15 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Records that a square's length was answered 0 on purpose (Adam, 2026-09-23, OB-274).
+     * Records that a square's length was answered 0 on purpose (OB-274), for adjacent tracks: the same meaning to the
+     * model, but everything gets assigned without what looks like a skip.
      *
-     * *"we need to allow a length of 0 as a length that is set deliberately, i.e. for adjacent tracks.  same
-     * meaning to the model, but this will allow everything to get assigned without what appears to be a skip."*
-     * So the 0 is KEPT - where `setTileLength` erases one.  `getTileLength` answers 0 for it as for a square nobody
+     * The 0 is KEPT - where `setTileLength` erases one.  `getTileLength` answers 0 for it as for a square nobody
      * measured, and `isTileLengthAnswered` tells the two apart: the Mass Assign Lengths walk and the Unmeasured Track
      * display ask it, so an answered square is not offered again, and so do the reducer's places (`answeredAtZero`),
      * so `Edge.isMeasured` and every length rule but the own-tail one (OB-300) read an answered 0 as measured track of
-     * no length.  That is Adam's decision of 2026-09-25 (*"Yes, count answered 0 as 0"*; ADU-C7, ADA-A1), which
-     * superseded his answer of 2026-09-23: that a deliberate 0 is not a measurement of nothing, and a stretch whose
-     * answers are all 0 is not judged (RLA4-C9).
+     * no length (ADU-C7, ADA-A1).  A deliberate 0 is not a measurement of nothing, and a stretch whose answers are all
+     * 0 is not judged (RLA4-C9).
      *
      * A square that already has a length keeps it.
      *
@@ -1361,17 +1270,10 @@ public class AutonomyCompanionStore
 
         if (disabledPortals.contains(tile)) return true;
 
-        // The PARTNER as well, which is the same question TileGraph.portalClosed asks (TD-2).
-        //
-        // setPortalDisabled writes both ends, so on any setup saved since that fix the two agree and
-        // this second look costs nothing. It is the setups written BEFORE it that need it: those have
-        // one end switched off and the other left on, and TileGraph refuses to route through either
-        // while this answered "open" for the far one - so the far end drew as a live two-way door, with
-        // its arrows and a ticked "Use link" box, over track no train could pass.
-        //
-        // Before the fix both halves said "open" and were wrong together, which is at least
-        // consistent. Repairing only the router made them disagree, which is harder to diagnose than
-        // the defect was.
+        // The PARTNER as well, which is the same question TileGraph.portalClosed asks (TD-2).  setPortalDisabled writes
+        // both ends, but a setup written before that has one end switched off and the other left on, and TileGraph
+        // refuses to route through either, so the far end would draw as a live two-way door over track no train could
+        // pass.
         TileKey partner = getPortalPartner(tile);
 
         return partner != null && disabledPortals.contains(partner);
@@ -1380,17 +1282,14 @@ public class AutonomyCompanionStore
     /**
      * Switches a link in or out of the railway, and its partner with it.
      *
-     * OB-041, Adam: "if a linked link is turned off, its target isn't."
+     * OB-041: if a linked link is turned off, its target is too.
      *
-     * A pair of links is one doorway with an end in two places, and autonomy walks through it in both
-     * directions. A doorway shut at one end and open at the other is not half shut - it is a route that
-     * exists going one way and not the other, which nothing on the diagram says and no train can be
-     * told.
+     * A pair of links is one doorway with an end in two places, and autonomy walks through it in both directions. A
+     * doorway shut at one end and open at the other is a route that exists going one way and not the other, which
+     * nothing on the diagram says and no train can be told.
      *
-     * Here rather than in AutonomySession, where pairPortals's "both ends on" rule lives, because this
-     * is where the partner is known - and because a rule kept beside the caller is a rule the next
-     * caller does not get. (`pairPortals` above still switches both ends on explicitly; that call now
-     * does the second end twice, which costs nothing and says what it means.)
+     * Here rather than in AutonomySession because this is where the partner is known, and a rule kept beside the
+     * caller is a rule the next caller does not get.
      *
      * @param tile the link
      * @param disabled true to leave it out of the railway entirely
@@ -1448,21 +1347,14 @@ public class AutonomyCompanionStore
     /**
      * Repairs a setup that nothing has open, in place on disk.
      *
-     * A locomotive rename has to reach three places: the database, the setup in memory, and the setup
-     * on disk.  When a session is open the second and third are the same act.  When one is NOT open,
-     * the window used to do nothing at all and say why: "the file it would repair is read the next time
-     * it IS opened - by which time this rename is already in the locomotive database."
+     * A locomotive rename has to reach three places: the database, the setup in memory, and the setup on disk.  When no
+     * session is open the file is read as it stands, so the old name survives in the placement, the home and the
+     * exclusions until somebody chooses that configuration, at which point parseAuto answers a locomotive it cannot
+     * resolve by invalidating the whole layout, days later, with nothing connecting it to the rename (OB-062).
      *
-     * That is wrong, and OB-062 is the finding.  Nothing repairs locomotive names at load: the file is
-     * read as it stands, so the old name survives in the placement, the home and the exclusions until
-     * somebody chooses that configuration - at which point parseAuto answers a locomotive it cannot
-     * resolve by invalidating the whole layout, days later, with nothing connecting it to the rename.
-     *
-     * The reason the window gave for standing back was sound about the SESSION and not about the file.
-     * Building a session opens every page, runs the caption migration, can raise a dialog and then
-     * writes a setup.json - so renaming a locomotive on a layout where autonomy has never been touched
-     * would fabricate a setup out of nothing.  A bare store does none of that: it reads one file, and
-     * only if that file is already there.
+     * A bare store is used rather than a session: building a session opens every page, runs the caption migration, can
+     * raise a dialog and writes a setup.json, so renaming a locomotive on a layout where autonomy has never been
+     * touched would fabricate a setup out of nothing.  A bare store reads one file, and only if it is already there.
      *
      * @param layoutFolder the layout folder, the one holding config/autonomy
      * @param from the name as it was
@@ -1485,10 +1377,8 @@ public class AutonomyCompanionStore
     /**
      * Carries a page rename into a setup nothing has open.
      *
-     * The window renames the page in the store when a session is built.  When one is NOT built it used
-     * to call the LAZY getter, which builds a session - opening every page, running the caption
-     * migration, and then saving, which creates a setup.json.  So renaming a page on a layout where
-     * autonomy had never been touched invented one.
+     * Through a bare store, not the lazy getter that builds a session: building one opens every page, runs the caption
+     * migration and saves, which would invent a setup.json on a layout where autonomy had never been touched.
      *
      * @param layoutFolder the layout folder
      * @param from the page name as it was
@@ -1547,21 +1437,13 @@ public class AutonomyCompanionStore
 
         store.load();
 
-        // Give it back the numbering the FILE was written under, before anything is saved.
-        //
-        // Nobody calls setPageIds on a bare store - there is no session to tell it what the pages are
-        // called - so pageIdToName is empty, and sharedFields() writes "pages" from exactly that map.
-        // Saving would therefore replace the file's record of what each id was called with {}.
-        //
-        // That record is the only evidence a page renumber ever happened: readShared compares it
-        // against the current index to tell a rename from a renumber, and pageOf resolves every stored
-        // id through it. Blanking it is the same data loss this class was repaired for two commits ago,
-        // arriving by a new door - a locomotive rename would quietly disarm the detection for the whole
-        // setup.
-        //
-        // Taking it from what was just read means save() writes the file back with the same page
-        // record and the same keys it came in with. The only thing this method changes is the
-        // locomotive name.
+        // Give it back the numbering the FILE was written under, before anything is saved.  Nobody calls setPageIds on a
+        // bare store, so pageIdToName is empty, and sharedFields() writes "pages" from exactly that map: saving would
+        // replace the file's record of what each id was called with {}.  That record is the only evidence a page renumber
+        // ever happened (readShared compares it against the current index to tell a rename from a renumber, and pageOf
+        // resolves every stored id through it), so blanking it would quietly disarm the detection for the whole setup.
+        // Taking it from what was just read means save() writes the file back with the same page record and the same
+        // keys it came in with; the only thing this method changes is the locomotive name.
         Map<String, String> nameToId = new LinkedHashMap<>();
 
         for (Map.Entry<String, String> page : store.pageNamesWhenWritten.entrySet())
@@ -1571,15 +1453,11 @@ public class AutonomyCompanionStore
 
         store.setPageIds(nameToId);
 
-        // Read AGAIN, now that it knows what the pages are called.
-        //
-        // The first read had no numbering to work with, so every key came back in ID form - which is
-        // harmless for a locomotive rename, because that changes names INSIDE configurations and never
-        // touches a tile key.  It is not harmless for renamePage or deletePage: both work on page
-        // NAMES, and against id-form keys they would match nothing and silently do nothing at all.
-        //
-        // The second read costs one file. Both directions then use the same map, so the keys written
-        // back are the keys that came in - which testRepairingOnDiskChangesOnlyTheLocomotive pins.
+        // Read AGAIN, now that it knows what the pages are called.  The first read had no numbering, so every key came
+        // back in ID form: harmless for a locomotive rename, which changes names INSIDE configurations, but renamePage
+        // and deletePage work on page NAMES and against id-form keys would silently do nothing.  Both directions then
+        // use the same map, so the keys written back are the keys that came in
+        // (testRepairingOnDiskChangesOnlyTheLocomotive pins it).
         store.load();
 
         what.apply(store);
@@ -1592,18 +1470,13 @@ public class AutonomyCompanionStore
     /**
      * Follows a locomotive's new name into every configuration.
      *
-     * Three things in a configuration hold a locomotive by NAME - the placement, the home assignment
-     * and the exclusion list - and none of them was repaired when one was renamed.  The active
-     * configuration got away with it by accident: captureFromLayout launders it back from the running
-     * layout, which holds locomotives by reference.  A configuration that was not active at the time
-     * was never touched at all.
+     * Three things in a configuration hold a locomotive by NAME - the placement, the home assignment and the exclusion
+     * list.  parseAuto refuses a configuration naming a locomotive it cannot find, and answers a refusal by invalidating
+     * the WHOLE layout, so a stale name would stop the railway working weeks later, with an error naming a locomotive
+     * and nothing connecting it to the rename.
      *
-     * What that costs is not a lost placement.  parseAuto refuses a configuration naming a locomotive
-     * it cannot find, and answers a refusal by invalidating the WHOLE layout - so choosing that
-     * configuration weeks later stops the railway working, with an error naming a locomotive and
-     * nothing connecting it to the rename.
-     *
-     * EVERY configuration, including the inactive ones, which is the half that had no repair at all.
+     * EVERY configuration, including the inactive ones: captureFromLayout launders the active one back from the running
+     * layout, which holds locomotives by reference, but an inactive one is never touched otherwise.
      *
      * @param from the old name
      * @param to the new name
@@ -1661,25 +1534,16 @@ public class AutonomyCompanionStore
     /**
      * Follows a locomotive's new name into the pre-edit note on disk (SVN-B9).
      *
-     * `LayoutEditor.autonomyLocomotiveRenamed` sweeps three holders - the in-memory snapshot Cancel
-     * restores and both undo stacks - under a comment saying *"Cancel and Ctrl+Z are two ways of
-     * saying the same thing, and only one of them was covered"*. There is a fourth, and it is the one
-     * that survives the event the mechanism exists for: `config/autonomy/setup-before-edit.json`.
+     * `LayoutEditor.autonomyLocomotiveRenamed` sweeps three holders - the in-memory snapshot Cancel restores and both
+     * undo stacks.  The fourth survives the event the mechanism exists for: `config/autonomy/setup-before-edit.json`,
+     * written once when the editor opens, holding `points.*.loc/home/excludedLocs` and `globals.timetable`, all by
+     * locomotive name.  Rename a locomotive with the editor open and let the process die, and `revertUnfinishedEdit`
+     * would write the pre-rename name back, which `parseAuto` refuses by invalidating the whole layout.
      *
-     * It is written once, when the editor opens, and holds `points.*.loc/home/excludedLocs` and
-     * `globals.timetable`, all by locomotive name. Rename a locomotive with the editor open, let the
-     * process die - the exact event the disk half was built for - and `revertUnfinishedEdit` writes
-     * the pre-rename name back and saves it. A configuration naming a locomotive that is not in the
-     * database is refused by `parseAuto`, which invalidates the whole layout: the rename armed that,
-     * to go off at the next start.
+     * **Here rather than at the editor**, because this is the funnel every rename and every deletion already comes
+     * through, and the note outlives the window that wrote it.
      *
-     * **Here rather than at the editor**, because this is the funnel every rename and every deletion
-     * already comes through, and the editor is not the only door - the note outlives the window that
-     * wrote it, so a rename made after the process died and before the next start has to reach it
-     * too.
-     *
-     * A note that cannot be read is left exactly as it is. `unfinishedEdit` already refuses one it
-     * cannot trust, so rewriting it would be repairing something that is going to be thrown away.
+     * A note that cannot be read is left exactly as it is: `unfinishedEdit` already refuses one it cannot trust.
      *
      * @param from the name to look for
      * @param to the name to put in its place, or null when it was deleted
@@ -1694,32 +1558,15 @@ public class AutonomyCompanionStore
 
         repairLocomotiveInSetup(note, from, to);
 
-        // IN PLACE, NOT THROUGH rememberBeforeEdit (VD9-C9).
+        // IN PLACE, NOT THROUGH rememberBeforeEdit (VD9-C9).  That method ends in writeJson -> Files.move(REPLACE_EXISTING),
+        // and on Windows replacing a file needs the same DELETE access a OneDrive lock withholds, where a plain
+        // truncating write succeeds.  The atomic write would fail in exactly the case this repair exists for (a rename
+        // made while an edit note is open on a locked folder), and silently, as rememberBeforeEdit swallows the
+        // IOException.
         //
-        // That method ends in writeJson -> Files.move(REPLACE_EXISTING), and forgetBeforeEdit below
-        // spends fourteen lines on why that is the wrong primitive for this exact file: on Windows,
-        // replacing a file needs the same DELETE access a OneDrive lock withholds.  The asymmetry was
-        // measured, not guessed - in that lock state delete() fails and the atomic move fails, and a
-        // plain truncating write succeeds.
-        //
-        // Using the atomic write here would have failed in exactly the case this repair exists for: a
-        // rename made while an edit note is open on a locked folder, which is where the stale name
-        // does its damage.  rememberBeforeEdit swallows the IOException and returns false, and nothing
-        // read it, so the failure would have been silent as well.
-        //
-        // Torn writes are acceptable here for forgetBeforeEdit's reason: a half-written note fails
-        // unfinishedEdit's shape check, so it is refused, kept and reported - and a refused note is
-        // exactly as harmless as the repaired one this is trying to leave.
-        // SERIALISED BEFORE THE STREAM IS OPENED (VD10-B6).
-        //
-        // `new FileOutputStream` truncates at open, and `toString(2)` throws JSONException - a
-        // RuntimeException - so building the text inside the try meant a serialisation failure left a
-        // ZERO-BYTE note.  The `Files.move(REPLACE_EXISTING)` this replaced could not do that: it
-        // either replaced the note or left the old one whole.
-        //
-        // The note is the operator's pre-edit snapshot, so destroying it destroys the revert.  Doing
-        // the work that can throw before anything is opened costs one local and removes that case
-        // entirely.
+        // SERIALISED BEFORE THE STREAM IS OPENED (VD10-B6): `new FileOutputStream` truncates at open, and `toString(2)`
+        // throws JSONException (a RuntimeException), so building the text inside the try would leave a ZERO-BYTE note on
+        // a serialisation failure.  The note is the operator's pre-edit snapshot, so destroying it destroys the revert.
         byte[] bytes;
 
         try
@@ -1741,18 +1588,12 @@ public class AutonomyCompanionStore
         }
         catch (IOException | RuntimeException couldNotWrite)
         {
-            // SAID, not swallowed (VD10-B6).  `VD9-C9`'s own stated minimum was that a failed write
-            // deserves what `dispose()` gives a failed delete, and this class has no logger - so it
-            // records it the way it records a failed migration, for whoever opened the session.
+            // SAID, not swallowed (VD10-B6): this class has no logger, so a failed write is recorded the way a failed
+            // migration is, for whoever opened the session.
             //
-            // A torn write here is survivable, but NOT for `forgetBeforeEdit`'s reason, and citing
-            // that was wrong (`VD10-C7`).  Its licence is *"there is nothing to protect, because the
-            // content being overwritten is the thing being disposed of"* - which is the one thing
-            // that is not true here, where the content is a live snapshot somebody may still need.
-            //
-            // What makes it survivable is narrower: a half-written note fails `unfinishedEdit`'s
-            // shape check, so it is refused and reported rather than applied.  The revert is lost
-            // and nothing bad is done with it, which is why the failure is recorded above.
+            // A torn write is survivable, but not because nothing is lost (`VD10-C7`): the content being overwritten is a
+            // live snapshot somebody may still need.  A half-written note fails `unfinishedEdit`'s shape check, so it is
+            // refused and reported rather than applied; the revert is lost and nothing bad is done with it.
             noteRepairFailed = true;
         }
     }
@@ -1760,14 +1601,13 @@ public class AutonomyCompanionStore
     /**
      * The same repair, over a setup somebody else is holding.
      *
-     * The diagram editor takes a snapshot of the whole setup when it opens, and puts it back if the
-     * user cancels.  A rename made while that window is open repairs the LIVE store and leaves the
-     * snapshot naming the old locomotive - so cancelling wrote it back, and a configuration naming a
-     * locomotive that is not in the database is refused by parseAuto, which invalidates the whole
-     * layout.  That is the exact state this repair exists to prevent, reached by holding a copy.
+     * The diagram editor takes a snapshot of the whole setup when it opens and puts it back on Cancel.  A rename made
+     * while the window is open repairs the LIVE store, so the snapshot must be repaired too, or cancelling would write
+     * back a configuration naming a locomotive that is not in the database, which parseAuto refuses by invalidating the
+     * whole layout.
      *
-     * Public and static because the holder is in another package and there is nothing here to hold: it
-     * is a rewrite of somebody else's JSON, in the shape snapshotSetup returns.
+     * Public and static because the holder is in another package and there is nothing here to hold: it is a rewrite of
+     * somebody else's JSON, in the shape snapshotSetup returns.
      *
      * @param setup what snapshotSetup returned; changed in place
      * @param from the old locomotive name
@@ -1865,24 +1705,14 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * The fourth holder of a locomotive's name, and the one nothing reached.
+     * The fourth holder of a locomotive's name: the captured timetable, which rides in "globals" because AutonomySession
+     * copies every top-level key across and Layout.toJSON puts the timetable there.  Every entry names its locomotive,
+     * so a rename is carried across it; a stale name would cost the entry on the next load (OB-069).
      *
-     * The note above this method used to enumerate three - the placement, the home assignment and the
-     * exclusion list - and all three are inside "points". The captured timetable is not: it rides in
-     * "globals", because AutonomySession copies every top-level key across and Layout.toJSON puts the
-     * timetable there. Every entry names its locomotive.
+     * A DELETE removes the entry outright: a timetable leg for a locomotive that is gone is not a leg anybody can run.
      *
-     * Left unrepaired, a rename left an entry naming a locomotive that no longer exists. Until this
-     * commit that cost the whole timetable on the next load, because the loader took one exception as a
-     * reason to discard all of them; it now costs that entry. Either way the fix is to carry the rename
-     * across, so it costs nothing.
-     *
-     * A DELETE removes the entry outright: a timetable leg for a locomotive that is gone is not a leg
-     * anybody can run, and leaving it would be leaving the loader to drop it on every load for ever.
-     *
-     * Found by review (OB-069). The entries also name POINTS, which a station rename breaks in the same
-     * way - that half is not repaired here, and is survivable now only because the loader drops the one
-     * entry rather than the list.
+     * The entries also name POINTS, which a station rename breaks in the same way; that half is not repaired here, and
+     * is survivable only because the loader drops the one entry rather than the list.
      *
      * @param configuration the configuration to repair, modified in place
      * @param from the locomotive's name as it was
@@ -1925,15 +1755,13 @@ public class AutonomyCompanionStore
     /**
      * Follows a rename into one page snapshot - what snapshotPage returns, held by the editor's undo.
      *
-     * A third holder of the same names, and the one that reaches DISK: the diagram editor pushes a
-     * snapshot onto its undo stack for every edit, and Ctrl+Z puts it back and saves.  So a rename made
-     * while the editor is open was repaired in the live store and in the Cancel snapshot, and an undo
-     * afterwards wrote the old name back over both - which parseAuto answers by invalidating the whole
-     * layout, days later and with nothing connecting it to the rename.
+     * A third holder of the same names, and the one that reaches DISK: the diagram editor pushes a snapshot onto its undo
+     * stack for every edit, and Ctrl+Z puts it back and saves, so an undo after a rename would write the old name back
+     * over both the live store and the Cancel snapshot.
      *
-     * The shape differs from a configuration's: here each value is already the POINTS object, keyed by
-     * square, rather than a configuration with a points child.  Hence the split below - the per-point
-     * work is one method with three callers rather than three copies that can disagree.
+     * The shape differs from a configuration's: here each value is already the POINTS object, keyed by square, rather
+     * than a configuration with a points child.  Hence the split below - the per-point work is one method with three
+     * callers rather than three copies that can disagree.
      *
      * @param snapshot what snapshotPage returned; changed in place
      * @param from the old locomotive name
@@ -2019,16 +1847,13 @@ public class AutonomyCompanionStore
     /**
      * The pages the operator has deliberately turned back on (TST-B15).
      *
-     * **A decision, as opposed to the absence of one.** `excludeRepeatedSensorPages` shuts a page whose
-     * sensors repeat another's, and Adam ruled on 2026-08-29 that a legacy import may do that even to
-     * pages he had chosen to keep: *"yes, it may override"*, because a page the reduction cannot make
-     * sense of is not a preference. That stands, and it is about pages nobody has had an opinion on.
+     * **A decision, as opposed to the absence of one.** `excludeRepeatedSensorPages` shuts a page whose sensors repeat
+     * another's, and a legacy import may do that even to pages the operator had chosen to keep, because a page the
+     * reduction cannot make sense of is not a preference.  That is about pages nobody has had an opinion on.
      *
-     * A page the tool excluded and the operator then switched back ON is an opinion. Without this set
-     * the second call site could not tell the two apart - it only skips pages already in the excluded
-     * set - so re-running it treated a re-enabled page exactly like one that had never been looked at,
-     * and shut it again. Adam, 2026-09-11, asked which way to close that: the page you turned on stays
-     * on.
+     * A page the tool excluded and the operator then switched back ON is an opinion: it stays on.  Without this set the
+     * second call site could not tell the two apart, since it only skips pages already in the excluded set, and would
+     * shut it again.
      *
      * @return the page names, unmodifiable
      */
@@ -2087,10 +1912,9 @@ public class AutonomyCompanionStore
     /**
      * Everything this setup holds that is not one configuration: the decisions about the TRACK.
      *
-     * Station names, which squares are stations, lengths, directions, portals, captions, link names and
-     * the excluded pages.  Named apart from save() because two more callers need exactly this set and
-     * had no way to ask for it - which is how exporting came to carry a configuration and none of the
-     * things that configuration refers to.
+     * Station names, which squares are stations, lengths, directions, portals, captions, link names and the excluded
+     * pages.  Named apart from save() because exporting needs exactly this set too: a configuration alone would carry
+     * none of the things it refers to.
      *
      * @return
      */
@@ -2108,16 +1932,12 @@ public class AutonomyCompanionStore
             pages.put(entry.getKey(), entry.getValue());
         }
 
-        // And what the file already knew about ids that are NOT in the index right now.
+        // And what the file already knew about ids that are NOT in the index right now.  A page whose file is missing has
+        // its entries held rather than loaded (heldForAbsentPages), and this is the other half of not losing anything
+        // while it is away: one save during the absence would otherwise drop the record of what that id was called, the
+        // only evidence a renumber can be told from a rename by.
         //
-        // A page whose file is missing has its entries held rather than loaded (heldForAbsentPages),
-        // and this is the other half of not losing anything while it is away: without it, one save
-        // during the absence drops the record of what that id was called, which is the only evidence
-        // a renumber can be told from a rename by. The entries would survive and the means of
-        // recognising them would not.
-        //
-        // Never over a live one - an id the index has now is authoritative, and this map is by
-        // definition older.
+        // Never over a live one - an id the index has now is authoritative, and this map is by definition older.
         for (Map.Entry<String, String> entry : pageNamesWhenWritten.entrySet())
         {
             if (!pages.containsKey(entry.getKey())) pages.put(entry.getKey(), entry.getValue());
@@ -2125,21 +1945,13 @@ public class AutonomyCompanionStore
 
         root.put("pages", new JSONObject(pages));
 
-        // Each collection writes itself under the name it has in the FILE, which is not always the
-        // name it has in the code - `disabledPortals` goes out as `disabledLinks`, and that mismatch
-        // used to need an exemption in the textual guard because the name appeared in only one of the
-        // two places.  It is stated once now, in the registry.
-        //
-        // Every one of these is keyed by page ID.  `excludedPages` was for a long time the single
-        // exception, written raw, and it broke the rule setPageIds states: a rename orphaned it, so an
-        // excluded page silently rejoined autonomy and its old name sat in the set for ever because
-        // nothing prunes it.
+        // Each collection writes itself under the name it has in the FILE, which is not always the name it has in the
+        // code (`disabledPortals` goes out as `disabledLinks`); it is stated once, in the registry.  Every one is keyed
+        // by page ID, as setPageIds states, so a rename cannot orphan it.
         for (Kept k : kept()) k.write(root);
 
-        // Whatever was held back because its page is not loaded goes back in exactly as it came
-        // (OB-067).  Without this, one save while a page's file is missing deletes that page's whole
-        // setup - the same loss the page-id work was done for, arriving through absence rather than
-        // through a rename.
+        // Whatever was held back because its page is not loaded goes back in exactly as it came (OB-067): one save while
+        // a page's file is missing would otherwise delete that page's whole setup.
         for (String field : HELD_FIELDS.keySet())
         {
             mergeHeld(root, field);
@@ -2168,11 +1980,9 @@ public class AutonomyCompanionStore
     /**
      * A configuration together with the track decisions it refers to, ready to be written to a file.
      *
-     * Exporting used to write the configuration alone.  But a configuration is a set of placements,
-     * homes and exclusions against POINTS, and what makes a square a point, what it is called, how long
-     * it is and which way it runs all live in the shared half - so the file named things the receiving
-     * setup had never heard of.  Importing it into a fresh setup produced a configuration referring
-     * entirely to nothing, and looked exactly like having lost the names.
+     * A configuration is a set of placements, homes and exclusions against POINTS, and what makes a square a point, what
+     * it is called, how long it is and which way it runs all live in the shared half, so the file carries both: a
+     * configuration alone would refer entirely to things the receiving setup had never heard of.
      *
      * @param name
      * @return null when there is no such configuration
