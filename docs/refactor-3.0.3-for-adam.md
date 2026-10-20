@@ -95,3 +95,4 @@ pushed: `git checkout <tag>` to look, `git reset --hard <tag>` on a branch to go
 | `fr136-phase3-session` | `e2dadb68` | Phase 3: SessionImport and SessionRuns out of AutonomySession, the Tier 1 review fixes, the harness speed-ups (battery 107) |
 | `fr136-phase1b-skips-phase6` | `0054eee3` | Every skip inspected and fixed; Phase 6 coverage of the main window, routes and events, layout editor (battery 108) |
 | `fr136-phase6` | `572c31c0` | Phase 6's fourth area, autonomy, merged: 157 new user-level claims in all (battery 109, 353 classes) |
+| `fr136-phase4-layout` | `18ef631a` | Phase 4, first part: Layout and LayoutEditor extractions with their review fixes, and the testAutonomyDiagramSession split (battery 111: 361 green; its one new red, the captions claim, was the test's own and is fixed in `765b37c3`) |
