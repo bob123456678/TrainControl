@@ -1915,9 +1915,8 @@ public class LayoutEditor extends PositionAwareJFrame
                 javax.swing.JPanel stack = new javax.swing.JPanel(new BorderLayout());
                 stack.setOpaque(false);
 
-                // Guarded like the two above it.  All three reach for the form's own layout, and the
-                // form is generated - so if it is ever rebuilt with anything other than a GroupLayout,
-                // two of these would decline and the third would throw.
+                // Guarded like the two above it: all three reach for the form's own layout, and the form is generated, so if it is
+                // ever rebuilt with anything other than a GroupLayout, two of these would decline and the third would throw.
                 if (formPane.getLayout() instanceof javax.swing.GroupLayout)
                 {
                     ((javax.swing.GroupLayout) formPane.getLayout())
@@ -1932,9 +1931,8 @@ public class LayoutEditor extends PositionAwareJFrame
                 // side, and its rows are the window's own size rather than the smaller hint size.
                 list.setPreferredSize(new java.awt.Dimension(100, 190));
 
-                // The count goes UNDER the list, not above it.  In the sidebar it was a headline over a
-                // column that did not contain the things it counted; here it is a total, which is what
-                // it always was.
+                // The count goes UNDER the list, not above it: in the sidebar it was a headline over a column that did not contain
+                // the things it counted; here it is a total.
                 javax.swing.JPanel foot = new javax.swing.JPanel(new BorderLayout());
                 foot.setOpaque(false);
                 foot.add(list, BorderLayout.CENTER);
@@ -1949,26 +1947,21 @@ public class LayoutEditor extends PositionAwareJFrame
             // autonomy mode "New Components" describes something that is no longer there.
             this.jLabel1.setText(I18n.t("autosetup.ui.titleCap"));
 
-            // The window is not editing the layout in this mode, and saying so in the title bar is the
-            // cheapest way to keep somebody from wondering which of the two editors they opened.
-            //
-            // Posted, not called: render() sets the title from inside its own invokeLater and this
-            // method runs synchronously straight after it, so a direct call would be overwritten a
-            // moment later by the one it was meant to replace.
+            // The window is not editing the layout in this mode, and saying so in the title bar is the cheapest way to keep
+            // somebody from wondering which of the two editors they opened.  Posted, not called: render() sets the title from
+            // inside its own invokeLater and this method runs synchronously straight after it, so a direct call would be
+            // overwritten a moment later.
             javax.swing.SwingUtilities.invokeLater(() -> setTitle(titleFor(true)));
 
-            // Drawn again, because the first draw happened before this window knew what it was.
-            // render() builds the grid and setAutonomyMode runs after it, so the labels were rendered
-            // as the track diagram editor's - raw "Point:" text - and would have stayed that way until
-            // something else happened to rebuild them.
+            // Drawn again, because the first draw happened before this window knew what it was: render() builds the grid and
+            // setAutonomyMode runs after it, so the labels were rendered as the track diagram editor's (raw "Point:" text) until
+            // something else rebuilt them.
             javax.swing.SwingUtilities.invokeLater(() ->
             {
-                // THE REMEMBERED CAPTION MODE, now that the panel is in a window (MT-292).
-                //
-                // It applied its own mode while it was being built, and the half that reaches this
-                // diagram asks `getWindowAncestor` - which was null then.  So a remembered None came
-                // back as a word and not as an effect.  Before the redraw below, so the grid is built
-                // once with the captions the operator asked for.
+                // THE REMEMBERED CAPTION MODE, now that the panel is in a window (MT-292).  The panel applies its own mode while it
+                // is being built, and the half that reaches this diagram asks `getWindowAncestor`, which is null then, so a remembered
+                // None would come back as a word and not as an effect.  Before the redraw below, so the grid is built once with the
+                // captions the operator asked for.
                 autonomyPanel.applyRememberedCaptionMode();
 
                 refreshGrid();
@@ -1998,14 +1991,11 @@ public class LayoutEditor extends PositionAwareJFrame
     /**
      * Closes an autonomy-mode editor and puts the shared diagram back as it found it.
      *
-     * render() calls setEdit() on the LayoutDiagram the MAIN WINDOW also paints, and nothing used to
-     * clear it: the flag was only ever reset by re-parsing the pages after a diagram save, which
-     * autonomy mode never does.  So closing this window left the main diagram building its grid in edit
-     * mode - labels wired to an editor that no longer exists, station labels suppressed, and a
-     * ClassCastException on the first click anywhere.
-     *
-     * The window's always-on-top state is restored here too, for the same reason: its usual home is the
-     * diagram-save path, which autonomy mode also skips.
+     * render() calls setEdit() on the LayoutDiagram the MAIN WINDOW also paints, and the flag is otherwise only reset by
+     * re-parsing the pages after a diagram save, which autonomy mode never does.  Without this the main diagram would
+     * keep building its grid in edit mode: labels wired to an editor that no longer exists, station labels suppressed,
+     * and a ClassCastException on the first click anywhere.  The window's always-on-top state is restored here too, for
+     * the same reason: its usual home is the diagram-save path, which autonomy mode also skips.
      */
     private void closeAutonomyMode()
     {
@@ -2049,9 +2039,9 @@ public class LayoutEditor extends PositionAwareJFrame
 
         label.scrollRectToVisible(new java.awt.Rectangle(0, 0, label.getWidth(), label.getHeight()));
 
-        // ONE FLASH AT A TIME.  Every step of Mass Assign Lengths and Name Everything reveals a square, and the flash
-        // holds for over two seconds - so a walk moved on with Skip left a trail of yellow squares, each looking like
-        // the one being asked about (Adam, on MT-454).  The square revealed last has its flash ended first.
+        // ONE FLASH AT A TIME.  Every step of Mass Assign Lengths and Name Everything reveals a square, and the flash holds
+        // for over two seconds, so a walk moved on with Skip would leave a trail of yellow squares, each looking like the one
+        // being asked about (MT-454).  The square revealed last has its flash ended first.
         if (lastRevealed != null && lastRevealed != label) lastRevealed.endFlash();
 
         lastRevealed = label;
@@ -2063,11 +2053,11 @@ public class LayoutEditor extends PositionAwareJFrame
 
     /**
      * Whether a square has been clicked in this visit to the editor, after which the click's tooltip line is not said
-     * (Adam, 2026-10-05, on MT-697: *"Stop showing it after the user has clicked any square"*, and then *"have that tooltip
-     * tracking state reset after the editor is closed"*).  The window's, not the page's or the preferences': every opening
-     * builds a new window, so the next visit starts not knowing, and a page switch inside one visit keeps it.  Three doors
-     * change page by closing this window and opening another - a finding or a notice on another page, a link's other end -
-     * and the user closed nothing, so they hand it on (`carryTheClick`, RSA44-C1).
+     * (MT-697: *"Stop showing it after the user has clicked any square"*, and *"have that tooltip tracking state reset
+     * after the editor is closed"*).  The window's, not the page's or the preferences': every opening builds a new
+     * window, so the next visit starts not knowing, and a page switch inside one visit keeps it.  Three doors change page
+     * by closing this window and opening another (a finding or a notice on another page, a link's other end), and the
+     * user closed nothing, so they hand it on (`carryTheClick`, RSA44-C1).
      */
     private boolean squareClicked = false;
 
@@ -2150,19 +2140,18 @@ public class LayoutEditor extends PositionAwareJFrame
 
     public void receiveClickEvent(MouseEvent e, LayoutLabel label)
     {
-        // THE CLICK OF A BOX ESCAPE DROPPED, ignored once (RSA34-C2) - kept only by a release on its square with the pointer
-        // held still, so this is the left click that release makes (RSA35-C2, RSA36-C1).  Only the very next click is
-        // asked, and only a left click is ignored: any other click finds the record gone.
+        // THE CLICK OF A BOX ESCAPE DROPPED, ignored once (RSA34-C2): kept only by a release on its square with the pointer
+        // held still, so this is the left click that release makes (RSA35-C2, RSA36-C1).  Only the very next click is asked,
+        // and only a left click is ignored: any other click finds the record gone.
         LayoutLabel ignore = this.clickToIgnore;
 
         this.clickToIgnore = null;
 
         if (ignore != null && label == ignore && e != null && e.getButton() == MouseEvent.BUTTON1) return;
 
-        // In autonomy mode a click configures the track rather than editing it.  Routed here rather
-        // than through a second listener because LayoutLabel hard-casts its parent to this class and
-        // calls this method - so this is where a click already arrives, and adding a branch is smaller
-        // and less surprising than intercepting events before they get here.
+        // In autonomy mode a click configures the track rather than editing it.  Routed here rather than through a second
+        // listener because LayoutLabel hard-casts its parent to this class and calls this method, so this is where a click
+        // already arrives.
         if (isAutonomyMode())
         {
             // A TRAIN CLICKED IS ITS STATION, to the tools that ask for a station (OB-354; Adam: "if clicking on a
@@ -2177,9 +2166,8 @@ public class LayoutEditor extends PositionAwareJFrame
                 org.traincontrol.automationui.TileGraph.TileKey tile =
                     new org.traincontrol.automationui.TileGraph.TileKey(layout.getName(), x, y);
 
-                // Right-click opens the properties menu, the way it does on the graph.  Left-click
-                // applies the selected tool.  Without this branch a right-click ran the tool as well,
-                // which looked like a menu that failed to appear.
+                // Right-click opens the properties menu, the way it does on the graph; left-click applies the selected tool.  A
+                // right-click must not run the tool as well.
                 if (javax.swing.SwingUtilities.isRightMouseButton(e))
                 {
                     autonomyPanel.tileRightClicked(tile, layout.getComponent(x, y),
@@ -2205,11 +2193,9 @@ public class LayoutEditor extends PositionAwareJFrame
             return;
         }
 
-        // Shift-click picks a square out, or puts it back.
-        //
-        // Before anything else on a grid square, because every other branch below does something to
-        // the diagram and picking must not.  Toggling rather than adding, so one square too many is
-        // corrected by clicking it again rather than by starting over.
+        // Shift-click picks a square out, or puts it back.  Before anything else on a grid square, because every other
+        // branch below does something to the diagram and picking must not.  Toggling rather than adding, so one square too
+        // many is corrected by clicking it again.
         if (e.isShiftDown() && javax.swing.SwingUtilities.isLeftMouseButton(e))
         {
             this.selection.toggle(getX(label), getY(label));
@@ -2283,10 +2269,6 @@ public class LayoutEditor extends PositionAwareJFrame
         
     /**
      * Executes the currently active tool
-     *
-     * It had a whole-column and a whole-row mode, reached from two right-click items that multi-select replaced on
-     * 2026-08-19 (6f60b118); the modes stayed a month with no caller and were removed with DCN-C3.
-     *
      * @param label where the tool is used
      */
     synchronized public void executeTool(LayoutLabel label)
