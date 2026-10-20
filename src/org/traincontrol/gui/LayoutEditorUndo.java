@@ -167,7 +167,7 @@ final class LayoutEditorUndo
     {
         // A PENDING CUT IS NO LONGER STOOD DOWN HERE.
         //
-        // clipboardWasCut asserts that the squares the clipboard came from are EMPTY, and it used to be
+        // clipboardWasCut asserts that the squares the clipboard came from are EMPTY, and that was
         // asserted in this method because every edit that can change the diagram
         // snapshots first - so no door that could falsify it had to be listed.
         //

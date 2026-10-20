@@ -24,7 +24,7 @@ final class CoveredTrackView
      * `Layout.edgesCoveredByStandingTrains`, which is `synchronized` on the `Layout`, and a dispatch holds that monitor for the
      * whole of `configureAndLockPath` (a `CONFIGURE_SLEEP` per accessory of the path).  Worse than a stall, as `Layout.getEdges`'s
      * comment spells out: a driving thread inside that monitor commands an accessory, and `MarklinAccessory.setSwitched` called
-     * `repaintSwitch`, which used to be `synchronized` on this window, so an event thread taking the railway's monitor while
+     * `repaintSwitch`, which was `synchronized` on this window, so an event thread taking the railway's monitor while
      * holding its own was AB-BA and unrecoverable.
      *
      * So the answer is worked out on a worker (as `repaintAutoLocListLite` and `repaintAutoLocListFull` also are).  The two sets are
