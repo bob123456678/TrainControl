@@ -470,8 +470,8 @@ public class testEditorSurfaceRules
             "the signal focus is asked somewhere besides annotationFor, so the de-clutter is decided twice - and two "
             + "decisions that have to agree are the shape that produced OB-037");
 
-        assertEquals(outside("signalWindowOpen", "private boolean signalWindowOpen;",
-                "    void pairGuardSignals(Guard guard, TileKey station)",
+        assertEquals(outside("signalWindowOpen", "    boolean signalWindowOpen;",
+                "    void pairGuardSignals(AutonomyEditorPanel.Guard guard, TileKey station)",
                 "public boolean isFocusedOnSignals()"), 0,
             "the flag under the signal focus is read somewhere besides isFocusedOnSignals, so a de-clutter is decided"
             + " there without asking the one question annotationFor asks");
