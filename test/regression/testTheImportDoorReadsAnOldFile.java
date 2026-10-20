@@ -4454,8 +4454,8 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * Sends one standing train off along a path it would have been misread on (RLV7-C1): one whose destination, a
-     * station, is the point of the path the layout's own order meets last - the one the old reading kept it on.  It waits
+     * Sends one standing train off along a path it would be misread on (RLV7-C1): one whose destination, a station, is
+     * the point of the path the layout's own order meets last - the one a reading of each point's occupant keeps it on.  It waits
      * on a sensor nothing here sets, so it stays under way, holding every point of its path.
      *
      * @param notThis a train to leave standing
@@ -4536,8 +4536,8 @@ public class testTheImportDoorReadsAnOldFile
                     return;
                 }
 
-                // ASKED AGAIN AFTER THE SLEEP (RSA18-C3): told to stop during it, one more scan answered the next door's
-                // dialog - a timetable's stop - which the claim waiting for it then never saw
+                // ASKED AGAIN AFTER THE SLEEP (RSA18-C3): told to stop during it, one more scan would answer the next
+                // door's dialog - a timetable's stop - which the claim waiting for it would then never see
                 if (!going.get()) return;
 
                 for (Window window : Window.getWindows())
@@ -4665,9 +4665,9 @@ public class testTheImportDoorReadsAnOldFile
      * A train an old file places, on a square a train facing the other way stood on since, faces the way the file ran
      * it (RLA2-B3).
      *
-     * The import asked the file for a placed train's facing only where the square had none recorded, and an empty square
-     * keeps its last occupant's - so a second import into a configuration that had been run stood its train facing the
-     * way another train had stood, and autonomy would drive it off the wrong end.  A facing on an empty square is no
+     * An empty square keeps its last occupant's facing, so asking the file for a placed train's facing only where the
+     * square has none recorded would stand the train of a second import into a configuration that had been run facing
+     * the way another train had stood, and autonomy would drive it off the wrong end.  A facing on an empty square is no
      * evidence about the train the file puts there.
      *
      * MUTATION: ask the file only where the square has no facing, and this fails.
@@ -4768,9 +4768,8 @@ public class testTheImportDoorReadsAnOldFile
      * A home the configuration already has for a train is kept, and the message says the file's was not taken
      * (RLA2-C3, RLD2-C6).
      *
-     * The file gives the train it places at Tunnel a home at BottomMainB; the configuration it was imported into has since moved that home to
-     * BottomMainC; a second import leaves one home, at BottomMainC, and names the train.  The home half of RLA-B2 had no
-     * claim, and the dropped home was counted where nothing read it.
+     * The file gives the train it places at Tunnel a home at BottomMainB; the configuration it was imported into has
+     * since moved that home to BottomMainC; a second import leaves one home, at BottomMainC, and names the train.
      *
      * MUTATION: start the homes check empty again, or leave the kept homes unsaid, and this fails.
      *
@@ -5470,7 +5469,8 @@ public class testTheImportDoorReadsAnOldFile
      *
      * The door's own path, on his railway: the setup's rename, then the rebuild every setup gesture on the diagram makes
      * - which captures nothing, so where the run left the train lives on the running layout alone.  Put back by the
-     * name recorded, the train was left where the setup last had it, and the station it stands on read free.
+     * name recorded alone, the train would be left where the setup last had it, and the station it stands on would
+     * read free.
      *
      * MUTATION: put the trains back at the door by the names recorded alone, and this fails.
      *
@@ -5547,8 +5547,8 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * Clear empties the timetable the configuration keeps as well as the one running, at once (RSA5-C1): the fold keeps
-     * the entries of a page ticked out of autonomy for its return, so a Clear pressed while it was out came back with
-     * the page.  Cleared in the configuration too, nothing is kept for any page.
+     * the entries of a page ticked out of autonomy for its return, so a Clear that emptied only the running timetable
+     * would come back with the page.  Cleared in the configuration too, nothing is kept for any page.
      *
      * MUTATION: clear the running timetable alone, and this fails.
      *
@@ -5701,8 +5701,8 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * Layouts > Delete Current Page leaves nothing of the page in the file the next start reads (RSA22-C2, MT-176: "The
-     * deleted page's settings must stay gone"): the fold behind the reset after it wrote the page's trains and its
-     * stations' lengths, priorities and homes back under its name.
+     * deleted page's settings must stay gone"): the fold behind the reset after it must not write the page's trains and
+     * its stations' lengths, priorities and homes back under its name.
      *
      * MUTATION: delete the page in the store without marking the session's pages stale, and this fails.
      *
