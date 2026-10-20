@@ -201,7 +201,7 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
             + " graph walk (D3-C1, Adam 2026-09-09: \"I would rather take it off EDT\")");
 
         ALLOWED.put("AutonomySession.java#routesCoveredByStandingTrains",
-            "OFF THE EVENT THREAD: reached only from TrainControlUI.workOutCoveredTrack, on"
+            "OFF THE EVENT THREAD: reached only from CoveredTrackView.workOutCoveredTrack, on"
             + " CoveredTrackRenderer");
 
         ALLOWED.put("AutoLocomotiveStatus.java#whatTheOperatorMayChoose",
@@ -227,7 +227,7 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
         // asked once more, by `routesBlockedByStandingTrains`, on the same worker: the places it claims
         // (OB-280), where OB-208 asked for the covered edges.
         ALLOWED.put("AutonomySession.java#routesBlockedByStandingTrains",
-            "OFF THE EVENT THREAD: reached only from TrainControlUI.workOutCoveredTrack, on"
+            "OFF THE EVENT THREAD: reached only from CoveredTrackView.workOutCoveredTrack, on"
             + " CoveredTrackRenderer - the covered set's sibling, asked in the same pass");
 
         ALLOWED.put("AutonomySession.java#drawTheTrainsThatCoverNoEdge",
