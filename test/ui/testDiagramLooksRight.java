@@ -1435,26 +1435,19 @@ public class testDiagramLooksRight
     /**
      * A caption may move itself. It may not move anything else.
      *
-     * OB-115. Adam, after FR-028 went in: "check normal text label vertical alignment - it seems to
-     * have drifted post FR-028 label cutover. for example, Reset and Inner Loop have a different
-     * vertical offset from the adjacent route tile."
+     * OB-115: the vertical alignment of the normal text labels must not drift when a caption becomes a pill.
      *
      * **The mechanism is worth knowing because nothing about it is visible in the caption code.**
      * Text labels are added with `BASELINE_LEADING`, and GridBagLayout does what that says: it works
      * out a baseline for the row from every component anchored that way and lines them all up on it.
-     * A caption is one of those components, so giving it a pill and a smaller font moved the row's
-     * baseline, and every other label in that row went with it. Three pixels, on labels nobody had
-     * touched. Captions are anchored NORTHWEST now, which is both where they want to be - their
-     * position is set by their own border - and out of that ballot.
+     * A caption anchored that way would move the row's baseline when given a pill and a smaller font,
+     * and every other label in that row would go with it. Captions are anchored NORTHWEST, which is
+     * where they want to be (their position is set by their own border) and out of that ballot.
      *
-     * So the test changes the one thing a caption changes on its own - its TEXT, which goes from a
-     * dash to a locomotive's name and back as trains move - and insists that nothing else on the page
+     * So the test changes the one thing a caption changes on its own, its TEXT, which goes from a
+     * dash to a locomotive's name and back as trains move, and insists that nothing else on the page
      * has moved a pixel. That covers the baseline, the row heights, and the column widths at once, and
      * it does not need a golden file to compare against.
-     *
-     * Found with a harness that dumps every component's bounds for both builds and diffs them - see
-     * docs/tools/README-bounds.md. What it reported, once it had been made deterministic, was "0 tile
-     * placements differ, and these four named labels moved by three pixels".
      *
      * MUTATION: anchoring captions BASELINE_LEADING again fails this.
      */
@@ -1511,12 +1504,11 @@ public class testDiagramLooksRight
 
         // What happens on a running railway: the dash becomes a train and the caption gets wide.
         //
-        // And TALLER, which the text alone does not do and which is the half that actually broke.
-        // OB-115 was a caption whose HEIGHT changed - a pill instead of a two-line label, at nine
-        // tenths of the font - and with a baseline anchor a height is a vote on where the whole row
-        // sits. The first version of this test only widened the caption, and it passed with the
-        // anchor put back the way that caused the fault. That is why the font is changed here too:
-        // a mutation that survives a test is the test being wrong, not the mutation being safe.
+        // And TALLER, which the text alone does not do and which is the half that actually matters.
+        // OB-115 was a caption whose HEIGHT changed (a pill instead of a two-line label, at nine
+        // tenths of the font), and with a baseline anchor a height is a vote on where the whole row
+        // sits. Widening alone passes with the anchor put back the way that caused the fault, so the
+        // font is changed here too.
         final org.traincontrol.gui.StationCaption changing = caption;
         final java.awt.Container laid = box;
 
@@ -1559,19 +1551,19 @@ public class testDiagramLooksRight
     /**
      * Changing what trains may do at a station leaves its caption where it is (OB-310).
      *
-     * Adam, 2026-10-02: *"when changing topmainr1 from a station to no trains can pass, the label gets rotated from
-     * being vertical (correct) to being horizontal (wrong) and back again."*  On the track diagram, through its own
-     * right-click menu.
+     * On the track diagram, through its own right-click menu: a station's caption must not turn from
+     * vertical (correct) to horizontal (wrong) and back when a station is changed to "no trains can pass".
      *
-     * Each answer under Station went through `setStation(tile, true)`, which placed the station's caption - and
-     * `placeCaption` MOVES a caption the station already has, passing over the square it is on because that square is
-     * taken.  So every change sent the name to the next free square beside the platform, and the next change sent it
-     * back: below TopMainR1 on its north-south rails, drawn on end, then above it on blank space, drawn flat.  The
-     * rename had the same fault (MT-116) and has the same answer: a caption is placed only where the station has none.
+     * Each answer under Station goes through `setStation(tile, true)`, which must place the station's
+     * caption only where the station has none: `placeCaption` MOVES a caption the station already has,
+     * passing over the square it is on because that square is taken, so every change would send the name
+     * to the next free square beside the platform and the next change back (below TopMainR1 on its
+     * north-south rails, drawn on end, then above it on blank space, drawn flat).  The rename has the
+     * same rule (MT-116).
      *
-     * Every named station with a caption, both changes, through `buildAutonomyTileMenu` - the main window's door to
-     * the menu Adam used.  Then a station like his, captioned on north-south rails, drawn after "No - Nothing Can
-     * Pass": that is the state he saw flat, and after both changes the second move can have put it back.
+     * Every named station with a caption, both changes, through `buildAutonomyTileMenu`, the main
+     * window's door to that menu.  Then a station captioned on north-south rails, drawn after the answer
+     * that lets no train pass: the state in which a second move could put it back flat.
      *
      * MUTATION: dropping the "has none" test from `AutonomyEditorPanel.setStation` fails both halves.
      */
@@ -1592,7 +1584,7 @@ public class testDiagramLooksRight
 
         int stations = 0;
 
-        // A STATION LIKE HIS: captioned on a square whose rails run north-south, so drawn on end
+        // A STATION LIKE TopMainR1: captioned on a square whose rails run north-south, so drawn on end
         org.traincontrol.automationui.TileGraph.TileKey onEnd = null;
         org.traincontrol.automationui.TileGraph.TileKey onEndCaption = null;
 
@@ -1817,16 +1809,13 @@ public class testDiagramLooksRight
     /**
      * A caption sits clear of its rail at every tile size, whichever way the rail runs.
      *
-     * One rule since 2026-08-27. It used to be two, and this test used to assert the second of them -
-     * that a north-south caption lies ACROSS its rail - which is exactly what Adam asked to stop:
-     * "rotate them 90 degrees counterclockwise so they land just to the right of the tile, similar to
-     * how horizontal labels land between tracks". A caption that lies across the track it names is the
-     * one caption on the diagram that covers its own subject.
+     * One rule, the same in both directions: a caption that lies across the track it names would be the
+     * one caption on the diagram that covers its own subject, so a north-south caption lands just to the
+     * right of the tile, as a horizontal one lands between tracks.
      *
-     * So the property is now the same in both directions and stated once: the caption starts past the
-     * rail, and not so far past it that it stops reading as a label for that track. The second half is
-     * the one that matters - it is what stops the offset being increased a few pixels at a time until
-     * the captions float free of the diagram, which is a thing that has already happened twice.
+     * The property is stated once: the caption starts past the rail, and not so far past it that it
+     * stops reading as a label for that track. The second half is the one that matters: it stops the
+     * offset being increased a few pixels at a time until the captions float free of the diagram.
      *
      * Line heights are taken as three fifths of the tile, which is what the caption font comes out at.
      *
@@ -1871,15 +1860,13 @@ public class testDiagramLooksRight
     /**
      * The four arrows a caption can end in can all be drawn in the font captions are drawn in.
      *
-     * A tofu box on a diagram is the failure this exists to stop, and it is exactly the failure the
-     * first version of these arrows had - U+25B6 and U+25C0 are the obvious geometric triangles and
-     * Segoe UI cannot draw either.
+     * A tofu box on a diagram is the failure this exists to stop: U+25B6 and U+25C0 are the obvious
+     * geometric triangles and Segoe UI cannot draw either.
      *
-     * **It asks StationCaption for both halves, and that is the point.** This test used to name the
-     * font and the codepoints itself, so when OB-116 fixed the mismatched arrows by changing the FONT
-     * rather than the character, the test went on happily checking a font the captions no longer used.
-     * It even closed with an assertion arguing against making that change. A test that names its own
-     * constants is a test that watches something other than the code.
+     * **It asks StationCaption for both halves, and that is the point.** A test that names its own font
+     * and codepoints watches something other than the code: when OB-116 fixed the mismatched arrows by
+     * changing the FONT rather than the character, such a test would go on checking a font the captions
+     * no longer used.
      *
      * MUTATION: setting either arrow constant to a codepoint LABEL_FONT cannot draw fails this.
      */
@@ -1907,8 +1894,6 @@ public class testDiagramLooksRight
 
     /**
      * A rotated caption's arrow still points where the train is going.
-     *
-     * Adam, 2026-08-27: "then we just need to also apply the same logical rotation to the arrow."
      *
      * This is the assertion the rest of the rotation cannot make. Turning the drawing turns everything
      * in it, so an arrow keeps its meaning only if the GLYPH is chosen for where it will end up: a
@@ -1951,10 +1936,10 @@ public class testDiagramLooksRight
      * A rotated caption is stood on end, and takes the mouse only where it is drawn.
      *
      * Two things that have to agree with a third. Painting, sizing and hit-testing all ask
-     * `pillBounds` for one rectangle, and the reason they do is the defect that turned up when they
-     * did not: the flat pill was painted inside its insets and hit-tested over the whole component,
-     * and swallowed every click on the tile it had borrowed centring room from. A rotated caption
-     * borrows a whole ROW instead, so the same mistake would eat a click on the square above.
+     * `pillBounds` for one rectangle, because a flat pill painted inside its insets but hit-tested
+     * over the whole component swallows every click on the tile it borrowed centring room from. A
+     * rotated caption borrows a whole ROW instead, so the same mistake would eat a click on the square
+     * above.
      *
      * MUTATION: having `contains` fall back to `super.contains` fails the last assertion; returning
      * the flat preferred size when rotated fails the first.
@@ -2079,10 +2064,10 @@ public class testDiagramLooksRight
     /**
      * A caption is an oval, not a rectangle of colour.
      *
-     * FR-028: "upgrade from [---] to blue ovals with white text". The pill is painted by the label
-     * itself, which means the label has to stay TRANSPARENT - a JLabel that is opaque fills its own
-     * rectangle first, and the rounded shape would be drawn inside a square of the same colour, which
-     * is not an oval at all and is exactly what this replaced.
+     * FR-028: a caption is a blue oval with white text. The pill is painted by the label itself, which
+     * means the label has to stay TRANSPARENT: a JLabel that is opaque fills its own rectangle first,
+     * and the rounded shape would be drawn inside a square of the same colour, which is not an oval
+     * at all.
      *
      * So the corner is the assertion. Nothing painted there is the whole difference between the two.
      *
@@ -2164,7 +2149,7 @@ public class testDiagramLooksRight
 
     /**
      * A sensor's caption knows which way its rails run whatever the sensor was reporting when the layout was saved
-     * (OB-263; Adam, 2026-10-06: "Fix OB-263").
+     * (OB-263).
      *
      * A sensor tile has one state in the port table, and the state a Central Station saves for it is whether a train
      * stood on it at the time: 1 found no ports at all, so a vertical station saved occupied read as running east to
@@ -2206,11 +2191,8 @@ public class testDiagramLooksRight
     /**
      * The autonomy menu for a square opens with that square\u2019s name, disabled.
      *
-     * OB-112, and written because reading the code and looking at the screen disagreed. Adam sent a
-     * picture of the editor\u2019s menu on LowerBack with no heading on it at all; `buildTileMenu`
-     * calls `title` unconditionally as its first act, and a probe against a copy of his layout
-     * computes "LowerBack" for exactly that square. One of those two is wrong and no amount of
-     * re-reading settles which, so this asks the menu itself.
+     * OB-112: the heading is checked on the menu itself, because reading the code (`buildTileMenu` calls
+     * `title` unconditionally as its first act) and looking at the screen once disagreed on LowerBack.
      *
      * It goes through `buildAutonomyTileMenu`, which is the main window\u2019s door to the same
      * builder the editor uses - one menu, built once, so a test on this side is a test on both.
@@ -2280,10 +2262,9 @@ public class testDiagramLooksRight
 
         // And the shape tidy() is otherwise there for, which the fix for OB-112 must not undo.
         //
-        // OB-054: "a heading, a divider, nothing at all, another divider" - a menu assembled from a
-        // dozen independent blocks, each of which leaves its divider behind when it has nothing to
-        // offer for this square. The heading was the half that went wrong; these three are the half
-        // that was right, and nothing was checking them.
+        // OB-054: a menu assembled from a dozen independent blocks, each of which leaves its divider
+        // behind when it has nothing to offer for this square, reads "a heading, a divider, nothing at
+        // all, another divider".
         java.awt.Component last = menu[0].getComponent(menu[0].getComponentCount() - 1);
 
         assertFalse(menu[0].getComponent(0) instanceof javax.swing.JSeparator,
@@ -2305,24 +2286,18 @@ public class testDiagramLooksRight
     /**
      * And it is not taken away 120ms later either, which is the half OB-109 left behind (MT-273).
      *
-     * Adam, testing MT-273: **"Track diagram viewer works.  The editor and autonomy still has the
-     * flicker."**
-     *
-     * `OB-109` stopped a rebuild HIDING the page it was replacing - the test above pins that - and
-     * said nothing to the grace timer that runs 120ms later. So the page stayed up, and was then
-     * taken away and put behind a spinner anyway. The symptom moved rather than went: from an instant
-     * blink to a blink a moment later, which no longer matched the description of the bug that had
-     * been closed. That is why it survived a fix, a validation round and four review passes.
+     * `OB-109` stopped a rebuild HIDING the page it was replacing (the test above pins that), and the
+     * grace timer that runs 120ms later must not take the page away and put it behind a spinner either.
      *
      * **Why the editor and not the viewer.** The editor rebuilds the whole grid after every
      * placement, and the tile just placed is precisely the decode that keeps the outstanding count
-     * above zero. So the timer fired on the commonest action there, and almost never in the viewer.
+     * above zero. So the timer fires on the commonest action there, and almost never in the viewer.
      *
-     * **What the rule is now.** A rebuild at the SAME tile size is not an arrival: every square is a
-     * cache hit at that key, so the page is complete when it is mounted. A rebuild at a DIFFERENT
-     * size is an arrival wearing a rebuild's clothes - the size is part of the cache key, so nothing
-     * is cached and the page really does come in square by square. The second half of this test is
-     * the control that keeps that distinction alive.
+     * **The rule.** A rebuild at the SAME tile size is not an arrival: every square is a cache hit at
+     * that key, so the page is complete when it is mounted. A rebuild at a DIFFERENT size is an
+     * arrival wearing a rebuild's clothes: the size is part of the cache key, so nothing is cached
+     * and the page really does come in square by square. The second half of this test is the control
+     * that keeps that distinction alive.
      *
      * MUTATION: remove the `sameSizeRebuild` early return and the first assertion fails; make it
      * unconditional on `replacing` and the control fails instead.
