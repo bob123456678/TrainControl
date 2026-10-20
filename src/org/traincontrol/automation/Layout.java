@@ -3949,8 +3949,9 @@ public class Layout
     }
 
     /**
-     * Whether a path would turn the train round on its way somewhere else.  The rule (Adam's): in full autonomy a
-     * train is only ever reversed at a terminus.
+     * Whether a path would turn the train round on its way somewhere else.
+     *
+     * The rule (Adam's): in full autonomy a train is only ever reversed at a terminus.
      *
      * Asked where full autonomy chooses (pickPath, its probe, and the "why is it not moving" explanation), not by
      * isPathClear, so a hand-driven move and the staging planner may still use a headshunt.
