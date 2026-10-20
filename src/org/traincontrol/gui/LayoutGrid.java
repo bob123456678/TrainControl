@@ -36,19 +36,13 @@ public class LayoutGrid
     public static final boolean ALLOW_TEXT_ANYWHERE = true;
     
     /**
-     * A station with nothing standing on it.
-     *
-     * An em dash rather than "[---]" (FR-028).  The brackets were the caption's shape - "a caption is
-     * about the same width whatever is in it" - and the pill is its shape now, so what is left inside
-     * is only what the caption has to SAY, which for an empty platform is "nothing here".
+     * A station with nothing standing on it: an em dash, which says "nothing here" (FR-028).  The pill is the
+     * caption's shape, so the text only has to say what the platform holds.
      */
     public static final String LAYOUT_STATION_EMPTY = "\u2014";
     /**
-     * A train passing through a station it was not sent to.
-     *
-     * Three dots rather than "[xxx]" (FR-028): the brackets were the caption’s shape and the
-     * pill is its shape now, and three dots say "something is here, and it is not stopping"
-     * without looking like a placeholder somebody forgot to fill in.
+     * A train passing through a station it was not sent to: three dots say "something is here, and it is not
+     * stopping" without looking like a placeholder somebody forgot to fill in (FR-028).
      */
     public static final String LAYOUT_STATION_OCCUPIED = "\u2022\u2022\u2022";
     public static final int LAYOUT_STATION_MAX_LENGTH = 10;
@@ -57,37 +51,22 @@ public class LayoutGrid
     /**
      * The pill under a home locomotive that is not standing at its home (MT-261 ruling 2).
      *
-     * Adam: "labels show the home locomotive in white to indicate it's not there."  The colour that
-     * makes a name white is the one BEHIND it - `StationCaption.onPill` chooses a foreground that
-     * reads on whatever fill it is handed - so this is a dark fill rather than a white foreground,
-     * which on the pale resting pill would have been an invisible caption.
-     *
-     * Translucent to the same degree as its sibling, so the tile art still shows through it and an
-     * away-from-home platform does not become a solid block on the diagram.
+     * Adam: "labels show the home locomotive in white to indicate it's not there."  The name turns white by the
+     * colour BEHIND it (`StationCaption.onPill` picks a foreground that reads on whatever fill it is handed), so
+     * this is a dark fill rather than a white foreground.  Translucent like its sibling, so the tile art shows
+     * through.
      */
     public static final Color AWAY_FROM_HOME_FILL = new Color(60, 60, 60, LAYOUT_STATION_OPACITY);
 
     /**
      * Whether the column and row numbers are drawn at all: exactly when the grid is (OB-179).
      *
-     * Adam: **"coordinates should always be on with the grid, off without, and the menu option
-     * gone."**  The numbers are scenery for reading coordinates off a grid, so a ruler round a diagram
-     * with no grid in it is numbering nothing, and a grid whose squares cannot be named is half of
-     * what a grid is for.  They are one thing to look at and now one thing to switch.
+     * Adam: **"coordinates should always be on with the grid, off without, and the menu option gone."**  A ruler
+     * round a diagram with no grid numbers nothing, and a grid whose squares cannot be named is half a grid.
      *
-     * ONE SETTING, NOT TWO ANDED TOGETHER (which is what OB-172 left behind).  That build had the
-     * operator's own switch and the grid, and the pair could disagree: with the numbers turned off and
-     * the grid on, turning the grid off and on again changed nothing on screen, and the only way to
-     * find out why was to open a right-click menu and read a tick.  It also made "on by default" a lie
-     * for anybody who had ever turned them off, because the stored `false` outlived every later change
-     * of mind about the grid.
-     *
-     * So this holds no preference of its own.  It delegates, and it exists so that the rule has one
-     * name and one sentence: the ruler's call site asks whether coordinates are visible, which is not
-     * obviously the same question as whether a grid is drawn until this method says that it is.
-     *
-     * The retired preference key is described at `TrainControlUI`, beside the other retired ones.  Its
-     * stored value is deliberately still on the operator's machine and deliberately not read.
+     * It is one setting, not two combined: this holds no preference of its own and delegates to the grid, so the
+     * ruler's call site reads as the rule.  The retired preference key is described at `TrainControlUI`; its stored
+     * value is deliberately left on the operator's machine and not read.
      *
      * @return true when the numbers should be drawn
      */
@@ -99,32 +78,21 @@ public class LayoutGrid
     /**
      * Whether station captions are left off this diagram entirely (FR-030).
      *
-     * Adam: "in the track diagram editor, hide autonomy labels completely."  That editor is about
-     * where the rails are. A caption there is an autonomy object drawn over the thing being moved: it
-     * cannot be edited from that window, it covers the square underneath, and every one of them is in
-     * the way of the one job that window has.
+     * Adam: "in the track diagram editor, hide autonomy labels completely."  That editor is about where the rails
+     * are, and a caption there is an autonomy object drawn over the square being moved, which cannot be edited from
+     * that window.  The RUNNING diagram keeps them, and so does the autonomy editor, where they are set.
      *
-     * The RUNNING diagram keeps them - that is where they say something - and so does the autonomy
-     * editor, which is where they are set.
+     * A page left out of autonomy draws none either (B6, Adam: "hide captions"): the graph is built without that
+     * page, so a caption there would name nothing, and neither visibility switch could reach it because both walk
+     * the registry of captions, which an excluded page's caption is never in.
      *
-     * **And a page left out of autonomy draws none either** (B6, Adam: "hide captions"). There is no
-     * Point behind a caption on an excluded page - the graph is built without that page entirely - so
-     * it was a station name that named nothing, wired to nothing, and neither of the two visibility
-     * switches could reach it: both work by walking the registry of captions, and an excluded page's
-     * caption is never registered in it. So the one case where autonomy will most certainly never use
-     * a square was the one case whose label could not be turned off. That is FR-023's original
-     * complaint, surviving inside its own fix.
-     *
-     * A method rather than a line of `&&`, so the rule can be asked its truth table without building a
-     * window. What that leaves uncovered is whether the caller passes the right THREE booleans (DOC-C5:
-     * this used to say "two", from before {@code pageExcluded} was added), which is the usual price of
-     * pulling a rule out of its call site - `testEditorSurfaceRules` reads the call for exactly that
-     * reason.
+     * A method rather than a line of `&&`, so the rule can be asked its truth table without building a window.
+     * `testEditorSurfaceRules` reads the call, to check the caller passes the right THREE booleans (DOC-C5).
      *
      * @param inEditor whether this grid is inside an editor at all
      * @param autonomyMode whether that editor is the autonomy one
-     * @param pageExcluded whether this page is excluded from the active autonomy configuration - the
-     *                     argument that decides the result outright, added by {@code 453a3ef4}
+     * @param pageExcluded whether this page is excluded from the active autonomy configuration - the argument that
+     *                     decides the result outright
      * @return true when no caption should be drawn
      */
     public static boolean hidesStationCaptions(boolean inEditor, boolean autonomyMode,
@@ -136,21 +104,15 @@ public class LayoutGrid
     /**
      * Lets one station caption be dragged to another square (FR-035).
      *
-     * Adam: "in the autonomy editor ONLY, make it possible to move around station labels (only) by
-     * clicking and dragging them", and then: "have it fire on the label or the tile, so the mouse icon
-     * is more clearly shown.  Snapshot the label so users can see it is being moved."
+     * Adam: "in the autonomy editor ONLY, make it possible to move around station labels (only) by clicking and
+     * dragging them", and then: "have it fire on the label or the tile, so the mouse icon is more clearly shown.
+     * Snapshot the label so users can see it is being moved."
      *
-     * Installed TWICE per caption - once on the pill, once on the square beneath it - which is why
-     * the thing being moved and the thing the events arrive on are separate parameters. Both hands
-     * move the same label.
-     *
-     * What happens on release is `moveCaption`, which is the caption command the right-click menu
-     * already runs. So a dragged label stores nothing new and cannot fall out of step with the menu
-     * about where a name may go.
-     *
-     * A drag is told from a CLICK by distance. A caption answers a double-click and a square answers a
-     * plain one, and turning every press into a drag would take both away; a few pixels of movement is
-     * the difference between pointing at something and moving it.
+     * Installed TWICE per caption, on the pill and on the square beneath it, so the thing being moved and the thing
+     * the events arrive on are separate parameters.  What happens on release is `moveCaption`, the caption command
+     * the right-click menu already runs, so a dragged label cannot fall out of step with the menu about where a
+     * name may go.  A drag is told from a CLICK by distance, because a caption answers a double-click and a square
+     * a plain one.
      *
      * @param caption the label being moved, and the thing photographed
      * @param handle what the pointer takes hold of - the label itself, or the square under it
@@ -172,16 +134,10 @@ public class LayoutGrid
 
         java.awt.event.MouseAdapter gesture = new java.awt.event.MouseAdapter()
         {
-            // The blue outline follows the pointer onto the NAME (Adam, 2026-08-27: "make sure
-            // hovering the label triggers the cell hover effect").
-            //
-            // A caption is stacked on top of its square, so moving onto the name sends the square a
-            // mouseExited and the outline goes out - on the bigger and more obvious of the two things
-            // to point at. Forwarded to the method the tiles call rather than drawing a second
-            // outline here, so there is one appearance to keep right instead of two.
-            //
-            // Only from the caption. On the square this is already happening, and doing it again
-            // would draw the same outline twice for one movement.
+            // The blue outline follows the pointer onto the NAME (Adam: "make sure hovering the label triggers the
+            // cell hover effect").  A caption is stacked on top of its square, so moving onto the name sends the
+            // square a mouseExited and the outline goes out.  It is forwarded to the method the tiles call, so
+            // there is one appearance to keep right.  Only from the caption: on the square it already happens.
             @Override
             public void mouseEntered(MouseEvent e)
             {
@@ -194,19 +150,14 @@ public class LayoutGrid
                 if (handle != square) editor.receiveMoveEvent(e, square);
             }
 
-            // A RIGHT-CLICK belongs to the square, not to the name lying on top of it.
+            // A RIGHT-CLICK belongs to the square, not to the name lying on top of it.  The caption covers the
+            // middle of its square and takes every click there, so the autonomy menu would not open where people
+            // aim.  It is handed to `receiveClickEvent`, the method the tile's own listener calls, so the menu is
+            // the same menu.  The event is CONVERTED first: the menu opens at the coordinates it is given, and the
+            // caption's are not the square's.
             //
-            // The caption covers the middle of its square and takes every click there, so the autonomy
-            // menu - which is how everything about a square is set - simply did not open on the part
-            // of the diagram people aim at. Handed to `receiveClickEvent`, which is the method the
-            // tile's own listener calls, so the menu is the same menu rather than a second one built
-            // to match.
-            //
-            // The event is CONVERTED first: the menu opens at the coordinates it is given, and the
-            // caption's coordinates are not the square's - the popup would appear offset by however
-            // far the label sits from the corner of its tile.
-            // AND A LEFT CLICK ON A TRAIN drawn over the name, to a tool that takes it for its station (OB-354): the editor
-            // finds the train's square
+            // AND A LEFT CLICK ON A TRAIN drawn over the name, to a tool that takes it for its station (OB-354):
+            // the editor finds the train's square.
             @Override
             public void mouseClicked(MouseEvent e)
             {
@@ -221,26 +172,15 @@ public class LayoutGrid
             @Override
             public void mousePressed(MouseEvent e)
             {
-                // THE LEFT BUTTON ONLY (reviewer, 2026-08-28).
-                //
-                // Every button started a drag. Right-press a captioned square meaning to open the
-                // properties menu, let the pointer wander four pixels before letting go, and the label
-                // was picked up and dropped wherever the cursor happened to be - while `mouseClicked`
-                // never fired, so the menu did not open either. The gesture that was meant to ASK
-                // about a square silently rearranged it.
-                //
-                // The distinction was already made on the click path a few lines above, which tests
-                // `isRightMouseButton`. It was missed here. LayoutEditor carries the comment for the
-                // identical fault one level down: "without this branch a right-click ran the tool as
-                // well, which looked like a menu that failed to appear".
+                // THE LEFT BUTTON ONLY.  A right-press asks about the square: the menu opens from `mouseClicked`,
+                // which a drag would suppress, and the label must not be picked up and dropped wherever the cursor
+                // wanders.  `mouseClicked` makes the same `isRightMouseButton` distinction.
                 if (!javax.swing.SwingUtilities.isLeftMouseButton(e))
                 {
-                    // BOTH cleared, not just the start point.
-                    //
-                    // Clearing only `began` left `dragging` true, so a right-press part way through a
-                    // left-drag froze the ghost and the drop mark - `mouseDragged` returns on a null
-                    // start - while the right RELEASE still committed the move, at wherever the pointer
-                    // had got to. Pressing the other button mid-drag is what a person does to cancel.
+                    // BOTH cleared, not just the start point.  Clearing only `began` would leave `dragging` true,
+                    // so a right-press part way through a left-drag would freeze the ghost and the drop mark
+                    // (`mouseDragged` returns on a null start) while the right RELEASE still committed the move.
+                    // Pressing the other button mid-drag is how a person cancels.
                     began[0] = null;
                     dragging[0] = false;
 
@@ -283,12 +223,8 @@ public class LayoutGrid
             @Override
             public void mouseReleased(MouseEvent e)
             {
-                // The LEFT button finishes a drag; any other one cancels it.
-                //
-                // This had no button test at all: the guard went on `mousePressed` only, so a release
-                // of some other button still read `dragging` and committed the drop. Found by a
-                // reviewer, and neither of the tests written with that guard could see it - both
-                // asserted the presence of a token in `mousePressed` and neither mentioned this method.
+                // The LEFT button finishes a drag; any other one cancels it.  Without this test a release of some
+                // other button would read `dragging` and commit the drop.
                 if (!javax.swing.SwingUtilities.isLeftMouseButton(e))
                 {
                     began[0] = null;
@@ -423,18 +359,11 @@ public class LayoutGrid
         {
             if (child instanceof LayoutLabel && child.getBounds().contains(at))
             {
-                // NOT the spacers, which are not squares (reviewer, 2026-08-27).
-                //
-                // The grid ends in a dummy row and a dummy column that exist to stop long labels
-                // misaligning it, and they are LayoutLabels with real bounds like any other. A label
-                // dropped on one was accepted - the drop mark even showed GREEN, because the spacer
-                // carries no component and a square with nothing on it may hold a caption - and the
-                // caption was then stored against a square the drawing loop skips before it ever looks
-                // for one. It vanished, and the setup carried an entry nothing could show.
-                //
-                // The strip along the bottom runs the full width of the diagram, directly under the
-                // last row of track, which is exactly where somebody would drop a label for a station
-                // on that row.
+                // NOT the spacers, which are not squares.  The grid ends in a dummy row and column that exist to
+                // stop long labels misaligning it, and they are LayoutLabels with real bounds.  A label dropped on
+                // one would be accepted (the drop mark shows GREEN, the spacer carrying no component) and stored
+                // against a square the drawing loop skips, so it would vanish.  The strip along the bottom runs
+                // under the last row of track, exactly where a station on that row would be dropped.
                 if (((LayoutLabel) child).isSpacer()) continue;
 
                 return (LayoutLabel) child;
