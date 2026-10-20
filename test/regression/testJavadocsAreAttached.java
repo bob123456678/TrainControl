@@ -68,7 +68,10 @@ public class testJavadocsAreAttached
     // the member they described or deleted (getAutonomySession, updateStationLabels and setAutoTabEnabled re-attached).
     // 46 -> 45 on 2026-10-19: FR-136 Phase 3 review, the stacked "Duplicates or renames" javadoc left above combineLinkedPages moved onto
     // LayoutFileActions.duplicateOrRenameCurrentLayout, the member it describes.
-    private static final int ALLOWED = 45;
+    // 45 -> 35 on 2026-10-19: FR-136 Phase 2, the comment trim of the next six files.  Ten stacked or stale javadocs in
+    // AutonomyCompanionStore, TileAnnotation, RouteEditorFrame and MarklinControlStation merged into the member they describe
+    // or deleted, which takes those four files out of the list below.
+    private static final int ALLOWED = 35;
 
     /**
      * WHICH files carry the orphans, not just how many (VAL-C8).
@@ -83,11 +86,7 @@ public class testJavadocsAreAttached
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "automationui" + File.separator + "AutonomyChecks.java (2)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
-            + "automationui" + File.separator + "AutonomyCompanionStore.java (3)",
-        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "automationui" + File.separator + "GraphReducer.java (2)",
-        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
-            + "automationui" + File.separator + "TileAnnotation.java (3)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "automationui" + File.separator + "TileGraph.java (1)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
@@ -109,11 +108,7 @@ public class testJavadocsAreAttached
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "gui" + File.separator + "LayoutRightclickAutonomyMenu.java (2)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
-            + "gui" + File.separator + "RouteEditorFrame.java (3)",
-        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "gui" + File.separator + "TrainControlUI.java (11)",
-        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
-            + "marklin" + File.separator + "MarklinControlStation.java (1)",
     };
 
     @Test
