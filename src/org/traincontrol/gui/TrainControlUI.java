@@ -7312,7 +7312,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             // A train is only ever placed at a station (OB-365): said before the facing and tail questions, which would otherwise
             // be asked about a square the placement then refuses.  The clipboard keeps the train for the next square.
-            if (!getAutonomySession().getStore().isStation(aimed))
+            org.traincontrol.automationui.AutonomySession onto = getAutonomySession();
+
+            if (onto == null || !onto.getStore().isStation(aimed))
             {
                 JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorTrainOnlyAtStation"));
 
@@ -7321,7 +7323,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             // Asked of the square, not of one copy (SPEC-B5): on an empty square getAutonomyPointForTile hands back any copy, and
             // that one may be the dead end while another can depart.  A station no copy can leave is placed on all the same (OB-350).
-            boolean anyWayOut = getAutonomySession().canDepartFrom(this.model.getAutoLayout(), aimed);
+            boolean anyWayOut = onto.canDepartFrom(this.model.getAutoLayout(), aimed);
 
             // Where it would end up if it drove there: read before the move, because the walk starts from where the train is standing NOW
             // and `moveLocomotive` is what takes it off that copy.
