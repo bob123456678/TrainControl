@@ -3546,30 +3546,22 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         if (label != null)
         {
-            // Never the grid's padding (OB-161).
-            //
-            // The grid is one row taller and one column wider than the diagram, and that row and that
-            // column are blank labels holding the GridBagLayout together (OB-055).  getValueAt returns
-            // them for any coordinate one past the edge, so a group dragged onto the last row had its
-            // landing outline painted onto the padding below it - and clearBordersFromChildren skips
-            // spacers, being the grid's own furniture rather than squares, so nothing took it off
-            // again.  Adam: "a phantom row gets permanently highlighted in blue."
-            //
-            // Asked of what the label IS, which is how the clearing side already asks it.  A selection
-            // box released on the padding gets there by the same door, in red.
+            // Never the grid's padding (OB-161).  The grid is one row taller and one column wider than the diagram, and that row
+            // and column are blank labels holding the GridBagLayout together (OB-055).  getValueAt returns them for any
+            // coordinate one past the edge, so a group dragged onto the last row would have its landing outline painted onto the
+            // padding, and clearBordersFromChildren skips spacers (the grid's own furniture, not squares), so nothing would take
+            // it off again: a phantom row permanently highlighted in blue.  Asked of what the label IS, which is how the
+            // clearing side already asks it.
             if (label instanceof LayoutLabel && ((LayoutLabel) label).isSpacer()) return;
 
             boolean palette = this.getX((LayoutLabel) label) == -1;
 
             int width = palette ? NEW_COMPONENT_BORDER_WIDTH : COMPONENT_BORDER_WIDTH;
 
-            // Sized the same as what this square was resting in, so hovering moves nothing.
-            //
-            // Asked of the ROOM the resting border takes, not of whether there is one.  It used to test
-            // for null, which was the same question for as long as the only border that reserved
-            // nothing was no border at all - and stopped being the same question the moment the
-            // autonomy editor got a grid that paints without reserving (OB-056).  A palette tile rests
-            // in a line and keeps one; anything resting in nothing, or in an overlay, gets an overlay.
+            // Sized the same as what this square was resting in, so hovering moves nothing.  Asked of the ROOM the resting border
+            // takes, not of whether there is one (OB-056): once the autonomy editor got a grid that paints without reserving,
+            // null stopped being the same question.  A palette tile rests in a line and keeps one; anything resting in nothing,
+            // or in an overlay, gets an overlay.
             Border resting = restingBorder(palette, isAutonomyMode());
 
             boolean reservesRoom = resting != null
@@ -3586,10 +3578,9 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         if (panel != null)
         {
-            // ASKED ONCE FOR THE PASS (speed, 2026-10-04): the grid setting is a preference, and on Windows each read is
-            // a registry round trip that nothing caches - asked twice per square, this pass made thousands of them on
-            // every square the pointer entered.  The resting border is the same for every tile of one panel, and so is
-            // its key.
+            // ASKED ONCE FOR THE PASS: the grid setting is a preference, and on Windows each read is a registry round trip that
+            // nothing caches, so asked twice per square this pass made thousands of them on every square the pointer entered.
+            // The resting border is the same for every tile of one panel, and so is its key.
             final boolean palette = newComponents.equals(panel);
             final boolean autonomy = isAutonomyMode();
             final boolean grid = showGrid();
@@ -3602,18 +3593,10 @@ public class LayoutEditor extends PositionAwareJFrame
                 {
                     JLabel label = (JLabel) component;
 
-                    // Every TILE, asked of what it is rather than of whether it currently has a
-                    // border.
-                    //
-                    // This used to be "has a border, or we are in autonomy mode" - because the resting
-                    // border was null in autonomy mode, and a label already put back to nothing had to
-                    // not be skipped on the way to a highlight and back, or the first hover left a line
-                    // behind for good. Asking what a component IS rather than whether it currently has
-                    // a border keeps that working whether the resting border is a line or nothing at
-                    // all - and with the grid off it is nothing, which is what the old condition would
-                    // have quietly turned into "any label that has ever been touched".
-                    // Spacers excluded - they are the grid's own padding, not squares (OB-055).  The
-                    // constructor never gives them a border; this is the door that was putting one on.
+                    // Every TILE, asked of what it is rather than of whether it currently has a border: a label already put back to
+                    // nothing must not be skipped on the way to a highlight and back, or the first hover would leave a line behind for
+                    // good, and with the grid off the resting border is nothing.  Spacers excluded: they are the grid's own padding, not
+                    // squares (OB-055), and the constructor never gives them a border.
                     if (label instanceof LayoutLabel && !((LayoutLabel) label).isSpacer())
                     {
                         applyBorder(label, resting, restingKey);
@@ -3627,12 +3610,10 @@ public class LayoutEditor extends PositionAwareJFrame
                 this.highlightLabel(this.grid.getValueAt(lastX, lastY), COMPONENT_BORDER_COPIED_COLOR);
             }
 
-            // And the PICKED squares, which this used to wipe.
-            //
-            // Every hover of a tile clears the borders and redraws the blue one, so a selection
-            // vanished the instant the pointer moved on - while the selection itself stayed, and
-            // Delete still preferred it.  A user who could see no green anywhere and pressed Delete to
-            // remove the tile under the cursor deleted a whole invisible row instead.
+            // And the PICKED squares.  Every hover of a tile clears the borders and redraws the blue one, so a selection would
+            // vanish the instant the pointer moved on while the selection itself stayed and Delete still preferred it: a user who
+            // could see no green anywhere and pressed Delete to remove the tile under the cursor would delete a whole invisible
+            // row instead.
             if (panel == this.grid.getContainer())
             {
                 for (org.traincontrol.base.TileSelection.At at : this.selection.all())
@@ -3744,25 +3725,18 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         if (this.diagramSize == null) return;
 
-        // The heading's own text as well, which the form points at the visibility key - two headings
-        // reading "Diagram Size" and nothing saying Toggle Visibility.  Set here rather than in the
-        // form, which is generated and not mine to edit; say the word and it moves into the .form.
+        // The heading's own text as well, which the form points at the visibility key (two headings reading "Diagram Size"
+        // and nothing saying Toggle Visibility).  Set here rather than in the form, which is generated.
         this.diagramSize.setText(I18n.t("layout.ui.sectionDiagramSize"));
 
         this.diagramSize.setToolTipText(I18n.f("layout.ui.tooltipDiagramSize",
             layout.getSx() + " x " + layout.getSy()));
 
-        // AND THE TWO BUTTONS, whose tooltips were written and never attached (REG8-C5).
-        //
-        // `layout.ui.tooltipGrowDiagram` and `layout.ui.tooltipShrinkDiagram` exist in all eight
-        // bundles and were carefully reworded three days ago in answer to a review of their wording -
-        // for controls that were showing nothing. The form sets `plusButton` to the empty string and
-        // `minusButton` to nothing at all, and the form is generated and not mine to edit, so they go
-        // here beside the heading that had the same problem and the same answer.
-        //
-        // "+" and "-" say almost nothing on their own, and what they do is not reversible in the way a
-        // reader would assume: the shrink refuses if either the last column or the last row holds
-        // track, which is exactly what its tooltip says and what nothing was telling anyone.
+        // AND THE TWO BUTTONS (REG8-C5).  `layout.ui.tooltipGrowDiagram` and `layout.ui.tooltipShrinkDiagram` exist in all
+        // eight bundles, but the form sets `plusButton` to the empty string and `minusButton` to nothing at all, and the form
+        // is generated, so the tooltips go here beside the heading.  "+" and "-" say almost nothing on their own, and what
+        // they do is not reversible in the way a reader would assume: the shrink refuses if either the last column or the
+        // last row holds track, which is what its tooltip says.
         if (this.plusButton != null)
         {
             this.plusButton.setToolTipText(I18n.t("layout.ui.tooltipGrowDiagram"));
@@ -3821,14 +3795,12 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
-     * Hides the writing on the diagram, idempotently - the other half of the pair (FR-061).  The
-     * station captions stay: since OB-272 the caption dropdown draws them, whatever this switch says.
+     * Hides the writing on the diagram, idempotently: the other half of the pair (FR-061).  The station captions stay,
+     * since the caption dropdown draws them whatever this switch says (OB-272).
      *
-     * The autonomy editor calls it for an unticked Text Labels box (FR-133; under FR-061 it was None
-     * alone). Written as a twin of
-     * `showTextLabels` rather than as a call to `toggleText`, for the reason given there: a flip is the
-     * wrong verb for a caller that needs a particular state, and would turn the text back ON for
-     * somebody who already had it off.
+     * The autonomy editor calls it for an unticked Text Labels box (FR-133).  A twin of `showTextLabels` rather than a
+     * call to `toggleText`, for the reason given there: a flip is the wrong verb for a caller that needs a particular
+     * state.
      */
     public void hideTextLabels()
     {
@@ -3849,11 +3821,9 @@ public class LayoutEditor extends PositionAwareJFrame
 
             refreshGrid();
 
-            // AND THE AUTONOMY PANEL'S TEXT LABELS BOX, which is the visible state of this switch in
-            // autonomy mode (RGD-C3, FR-133).  The checkbox above is hidden there, so without this the
-            // diagram's writing changed under a box still saying the other thing.  (Control+L no longer
-            // reaches here in autonomy mode: it steps the caption dropdown instead.)
-            //
+            // AND THE AUTONOMY PANEL'S TEXT LABELS BOX, which is the visible state of this switch in autonomy mode (RGD-C3,
+            // FR-133).  The checkbox above is hidden there, so without this the diagram's writing would change under a box still
+            // saying the other thing.  (Control+L does not reach here in autonomy mode: it steps the caption dropdown instead.)
             // After the rebuild, not before.
             if (autonomyPanel != null && autonomyPanel.isVisible())
             {
@@ -3877,9 +3847,9 @@ public class LayoutEditor extends PositionAwareJFrame
             lock.lock();
             try
             {
-                // If the method is already running, set the rerun flag and return - ONLY ONCE IT HAS BEGUN
-                // (speed, 2026-10-04): a pending redraw that has not started reads the state as it then is, so a
-                // second request before it is part of it, and queueing another drew the same diagram twice.
+                // If the method is already running, set the rerun flag and return, but ONLY ONCE IT HAS BEGUN: a pending redraw that
+                // has not started reads the state as it then is, so a second request before it is part of it, and queueing another
+                // would draw the same diagram twice.
                 if (isRunning)
                 {
                     if (redrawStarted) needsRerun = true;
