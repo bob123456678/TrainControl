@@ -599,6 +599,7 @@
         <test-one-class class="testSourceOfFindsADeclarationAnywhere"/>
         <test-one-class class="testABackupHoldsTheWholeRailway"/>
         <test-one-class class="testDownloadUpdateFetchesTheNewVersion"/>
+        <test-one-class class="testDownloadAndUpdateFromAJar"/>
         <test-one-class class="testThePageMenuEditsTheLayoutFolder"/>
         <test-one-class class="testDrivingFromTheKeyboard"/>
         <test-one-class class="testMappingPagesAndLocomotiveDoors"/>
