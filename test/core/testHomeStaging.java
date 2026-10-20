@@ -334,6 +334,7 @@ public class testHomeStaging
      * The fixture is the smallest thing with that shape: a ring whose HS D is a terminus, reached over
      * an edge measured at 5, with a train 40 long homed there.  The runtime refuses that arrival; the
      * planner offers it.
+     *
      * MUTATION: taking the length off the edge, or the train length off the locomotive, makes the
      * runtime stop refusing and the audit fall back to zero - which is why both are asserted as
      * preconditions rather than assumed.
@@ -6363,14 +6364,13 @@ public class testHomeStaging
      * the live feedback for the end of every edge and refuses the path if it is set, whoever is
      * standing on it.  So the planner produced a leg the runtime will not drive.
      *
-     * The exemption looks obviously right, which is why it survived - a train must not be blocked by
-     * its own sensor.  But it is not being blocked FROM ITS OWN POINT here; isPathClear never checks
-     * the point a path starts from.  It is being blocked from a DIFFERENT point that happens to report
-     * the same sensor, and while the train is still standing on that section the sensor really is set.
+     * The exemption looks obviously right (a train must not be blocked by its own sensor), but isPathClear never
+     * checks the point a path starts from.  The train is being blocked from a DIFFERENT point that happens to report
+     * the same sensor, and while it is still standing on that section the sensor really is set.
      *
-     * Hardware-conditional, which is why nothing caught it: on pulsed feedback the sensor clears behind
-     * the train and the runtime's check never fires.  On latching occupancy detection it fires every
-     * time.  So the feedback is set here explicitly rather than left to the fixture.
+     * Hardware-conditional: on pulsed feedback the sensor clears behind the train and the runtime's check never
+     * fires; on latching occupancy detection it fires every time.  So the feedback is set here explicitly rather
+     * than left to the fixture.
      *
      * MUTATION this catches: putting the exemption back makes the planner ready a move the runtime has
      * just been asked about and refused, which is the first and last assertions together.
