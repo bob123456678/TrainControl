@@ -447,47 +447,33 @@ public final class LayoutLabel extends JLabel
                                         
                                         // AND THE PROTECTING-SIGNAL HALF (SVN-B16).
                                         //
-                                        // `getActiveAccs` walks the config commands of active edges,
-                                        // and a platform's protecting signal is usually not one of
-                                        // them - it is driven by occupancy instead.  So a route
-                                        // setting that signal green was refused and clicking the same
-                                        // signal green by hand, on this window, was not: the same
-                                        // green aspect inviting a hand-driven train into a platform
-                                        // somebody is standing at.
+                                        // `getActiveAccs` walks the config commands of active edges, and a
+                                        // platform's protecting signal is usually not one of them: it is driven by
+                                        // occupancy instead.  So a route setting that signal green is refused, and
+                                        // clicking the same signal green by hand must be too, or the same green
+                                        // aspect invites a hand-driven train into a platform somebody is standing
+                                        // at.  Asked of the layout, where the rule lives, so this and
+                                        // MarklinRoute.heldReason cannot drift apart.
                                         //
-                                        // Asked of the layout, which is where the rule lives now, so
-                                        // this and MarklinRoute.heldReason cannot drift apart.
-                                        // ONLY THE GREEN DIRECTION, as the route door asks it
-                                        // (WK3-B1, DY3-B1, D3F-C4).
+                                        // ONLY THE GREEN DIRECTION, as the route door asks it (WK3-B1, DY3-B1,
+                                        // D3F-C4).  A protecting signal's only harmful command is the one that turns
+                                        // protection OFF; setting it RED is what the protection mechanism itself
+                                        // would do, and refusing that would be "pure over-strictness" (see
+                                        // MarklinRoute.heldReason).
                                         //
-                                        // The aspect matters, and this omitted it.  A protecting
-                                        // signal's only harmful command is the one that turns
-                                        // protection OFF; setting it RED is doing exactly what the
-                                        // protection mechanism itself would do, and refusing that was
-                                        // "pure over-strictness" when the route door did it - found
-                                        // and removed by an earlier review, with the reasoning still
-                                        // written at MarklinRoute.heldReason.
-                                        //
-                                        // Which direction this click is about is decided before it
-                                        // runs, and the test is about the COMMAND rather than about
-                                        // any one method that issues it.
-                                        //
-                                        // A signal or a lamp goes through `Accessory.doSwitch()`,
-                                        // which is `isStraight() ? turn() : straight()`.  A THREE-WAY
-                                        // does not: `execSwitching` drives its two accessories
-                                        // directly, in three cases.  It reaches the same place, and
-                                        // the accounting is over all FOUR states rather than over the
-                                        // three branches (V34-C5): every drive commanded GREEN is
-                                        // either on an accessory whose `isStraight()` is false or was
-                                        // green already, and the drives commanded RED - which happen
-                                        // in two of the three branches - cannot clear protection,
-                                        // because red is the direction protection itself commands.
-                                        //
-                                        // So the tile's test has neither a false negative nor a false
-                                        // positive on a three-way.  What is true is that the method
-                                        // named here is not the method that runs for the second limb,
-                                        // and a reader checking the claim against a three-way would
-                                        // find that (V32-C3).
+                                        // Which direction this click is about is decided before it runs, and the
+                                        // test is about the COMMAND rather than about any one method that issues it.
+                                        // A signal or a lamp goes through `Accessory.doSwitch()`, which is
+                                        // `isStraight() ? turn() : straight()`.  A THREE-WAY does not: `execSwitching`
+                                        // drives its two accessories directly, in three cases.  The accounting is
+                                        // over all FOUR states rather than over the three branches (V34-C5): every
+                                        // drive commanded GREEN is either on an accessory whose `isStraight()` is
+                                        // false or was green already, and the drives commanded RED, which happen in
+                                        // two of the three branches, cannot clear protection, because red is the
+                                        // direction protection itself commands.  So the tile's test has neither a
+                                        // false negative nor a false positive on a three-way.  What is true is that
+                                        // the method named here is not the method that runs for the second limb
+                                        // (V32-C3).
                                         boolean protecting =
                                             aboutToClearProtection(tcUI, c.getAccessory())
                                             || aboutToClearProtection(tcUI, c.getAccessory2());
@@ -514,9 +500,9 @@ public final class LayoutLabel extends JLabel
                                                 options[0]
                                             );
                                             
-                                            // As above, and this one matters more: the accessory is
-                                            // part of a route that is running RIGHT NOW, with a train
-                                            // on it. Escape threw the turnout under that train.
+                                            // As above, and this one matters more: the accessory is part of a route
+                                            // that is running RIGHT NOW, with a train on it.  Escape must not throw
+                                            // the turnout under that train.
                                             switch (choice)
                                             {
                                                 case 0: // ok
@@ -532,15 +518,11 @@ public final class LayoutLabel extends JLabel
                                         }                                
                                     }
 
-                                    // And the same question for a ROUTE tile, which had none.
-                                    //
-                                    // The check above asks about the tile's OWN accessory, and a route
-                                    // tile has none - `activeAccs.contains(null)` is false - so the
-                                    // one door that looked guarded was not. A route sets several
-                                    // accessories, so the question is about those.
-                                    // getRoute() is typed as the base Route here; only a MarklinRoute
-                                    // knows about the autonomy graph, and every route this component
-                                    // can hold is one.
+                                    // And the same question for a ROUTE tile.  It has no accessory of its own, so
+                                    // `activeAccs.contains(null)` is false and the check above does not guard it;
+                                    // a route sets several accessories, so the question is about those.
+                                    // getRoute() is typed as the base Route here; only a MarklinRoute knows about
+                                    // the autonomy graph, and every route this component can hold is one.
                                     final org.traincontrol.marklin.MarklinRoute onTile =
                                         c.isRoute()
                                             && c.getRoute() instanceof org.traincontrol.marklin.MarklinRoute
@@ -571,16 +553,13 @@ public final class LayoutLabel extends JLabel
                                             {
                                                 try
                                                 {
-                                                    // Bounded, and the switching goes ahead either way.
-                                                    //
-                                                    // This wait used to have no deadline, and the power
-                                                    // state is set only by the echo from the Central
-                                                    // Station - so a station that had been switched off
-                                                    // parked this worker for ever.  It is the ONLY
-                                                    // thread in the switching pool, and the pool is
-                                                    // shared by every tile in the application: one such
-                                                    // click and no tile anywhere responded again, with
-                                                    // nothing logged and nothing shown.
+                                                    // Bounded, and the switching goes ahead either way.  The power
+                                                    // state is set only by the echo from the Central Station, so a
+                                                    // wait with no deadline would park this worker for ever when the
+                                                    // station had been switched off.  It is the ONLY thread in the
+                                                    // switching pool, and the pool is shared by every tile in the
+                                                    // application: one such click and no tile anywhere would respond
+                                                    // again, with nothing logged and nothing shown.
                                                     if (!tcUI.getModel().waitForPowerState(true,
                                                         org.traincontrol.marklin.MarklinControlStation.POWER_STATE_TIMEOUT))
                                                     {
@@ -604,42 +583,28 @@ public final class LayoutLabel extends JLabel
                                             }
                                         }
 
-                                        // The route conflict is asked HERE, not before the worker
-                                        // (LD-7).
-                                        //
-                                        // This block used to sit above, between the power-off dialog
-                                        // that sets powerOnFirst and the worker that consumes it, and
-                                        // it returned - so agreeing to "turn the power on and proceed"
-                                        // ran the route into a dead track with the power still off,
-                                        // silently. That is precisely the case this whole feature was
-                                        // built for: recovering a turnout that did not take its
-                                        // command, after an emergency stop.
-                                        //
-                                        // Asking after the power is on is also the better moment on
-                                        // its own terms - it is closer to the action, so the answer is
-                                        // less likely to have gone stale between the question and the
-                                        // command.
+                                        // The route conflict is asked HERE, not before the worker (LD-7).  Asked
+                                        // above, between the power-off dialog that sets powerOnFirst and the worker
+                                        // that consumes it, "turn the power on and proceed" would run the route into
+                                        // a dead track with the power still off, silently, which is precisely the
+                                        // case this feature exists for: recovering a turnout that did not take its
+                                        // command, after an emergency stop.  Asking after the power is on is also
+                                        // closer to the action, so the answer is less likely to have gone stale.
                                         if (onTile != null)
                                         {
                                             // Off this worker before anything can block on a person.
-                                            //
-                                            // submitSwitching has ONE thread and it is shared by
-                                            // every tile in the application. Asking the question here
-                                            // would hold it for as long as the dialog stands
-                                            // unanswered, and no tile anywhere would respond - the
-                                            // same freeze the power-state wait was given a deadline
-                                            // to avoid, forty lines above, differing only in that a
-                                            // person ends this one.
-                                            //
-                                            // The power is already on by the time this runs, which is
-                                            // the ordering the relocation was for, so the handoff
-                                            // costs nothing.
+                                            // submitSwitching has ONE thread, shared by every tile in the
+                                            // application, so asking the question here would hold it for as long as
+                                            // the dialog stands unanswered and no tile anywhere would respond: the
+                                            // same freeze the power-state wait has a deadline to avoid, differing
+                                            // only in that a person ends this one.  The power is already on by the
+                                            // time this runs, so the handoff costs nothing.
                                             new Thread(() ->
                                             {
-                                                // One question, three answers (A3).  A conflict that
-                                                // cleared between the check and the dialog used to
-                                                // come back as "override", and the route then ran with
-                                                // every guard off without anybody being asked.
+                                                // One question, three answers (A3).  A conflict that cleared
+                                                // between the check and the dialog must not come back as "override",
+                                                // which would run the route with every guard off without anybody
+                                                // being asked.
                                                 TrainControlUI.RouteConflict answer =
                                                     tcUI.askAboutRouteConflict(onTile, tcUI, null);
 
@@ -661,28 +626,22 @@ public final class LayoutLabel extends JLabel
                                             return;
                                         }
 
-                                        // AND ASK AGAIN, HERE, WHERE THE COMMAND ACTUALLY GOES
-                                        // (V32-C5).
+                                        // AND ASK AGAIN, HERE, WHERE THE COMMAND ACTUALLY GOES (V32-C5).
                                         //
-                                        // The question above was answered on the event thread; this
-                                        // runs later, on the single switching thread, after a power-on
-                                        // that waits a further second.  `Layout.refreshOneSignal` can
-                                        // drive the same accessory from an occupancy change in that
-                                        // gap.  The order that matters: the signal was green when it
-                                        // was clicked, so no dialog was shown; a train then arrived
-                                        // and protection set it red; and this command would have set
-                                        // it green again over an occupied platform, with nobody asked
-                                        // anything.
+                                        // The question above was answered on the event thread; this runs later, on
+                                        // the single switching thread, after a power-on that waits a further second,
+                                        // and `Layout.refreshOneSignal` can drive the same accessory from an
+                                        // occupancy change in that gap.  The signal was green when it was clicked, so
+                                        // no dialog was shown; a train then arrived and protection set it red; and
+                                        // this command would set it green again over an occupied platform, with
+                                        // nobody asked anything.
                                         //
-                                        // Refused rather than re-asked.  Asking from here would hold
-                                        // the one switching thread the whole application shares - the
-                                        // freeze the power-state wait was given a deadline to avoid -
-                                        // and the honest answer to "the situation changed under you"
-                                        // is to not act and say so, leaving the operator to click
-                                        // again if they still mean it.
-                                        //
-                                        // Skipped for a click the operator was already warned about
-                                        // and accepted: they were asked about this exact accessory.
+                                        // Refused rather than re-asked: asking from here would hold the one
+                                        // switching thread the whole application shares, and the honest answer to
+                                        // "the situation changed under you" is to not act and say so, leaving the
+                                        // operator to click again if they still mean it.  Skipped for a click the
+                                        // operator was already warned about and accepted: they were asked about this
+                                        // exact accessory.
                                         if (!warnedAboutProtection
                                             && (aboutToClearProtection(tcUI, c.getAccessory())
                                                 || aboutToClearProtection(tcUI, c.getAccessory2())))
@@ -721,14 +680,11 @@ public final class LayoutLabel extends JLabel
      */
     public boolean isParentVisible()
     {
-        // No parent at all counts as not visible, which is what gets the label REMOVED from the
-        // accessory or feedback that holds it.
-        //
-        // A grid built for an export is given a null master - it is painted offscreen and thrown away -
-        // and its labels are registered with the model like any others.  This method then NPEd on the
-        // message thread, inside the loop that updates every tile: the exception was swallowed by the
-        // executor's Future, and the loop abandoned every tile after it.  Exporting a picture of the
-        // diagram permanently stopped tile updates for the accessories on that page.
+        // No parent at all counts as not visible, which is what gets the label REMOVED from the accessory or
+        // feedback that holds it.  A grid built for an export is given a null master (it is painted offscreen and
+        // thrown away) and its labels are registered with the model like any others, so a null parent must not
+        // throw: the exception would be swallowed by the executor's Future and the loop that updates every tile would
+        // abandon every tile after it.
         return this.parent != null && this.parent.isVisible();
     }
 
@@ -751,36 +707,30 @@ public final class LayoutLabel extends JLabel
     /**
      * Drops the labels that a newly registered one replaces.
      *
-     * Registering a label for a square is the moment the old labels for THAT SQUARE became rubbish, so
-     * it is the moment to drop them.  Nothing else can: the prune inside updateTiles asks whether a
-     * label's parent is VISIBLE, and the main window's parent is the tab strip, which is visible for
-     * the life of the application - so on the main window that test can never be false and nothing was
-     * ever removed.  Every repaint that rebuilt the grid - a size change, an address toggle, closing
-     * the editor, switching pages with the cache cold - left a whole page of dead labels registered,
-     * and each accessory then walked an ever-longer list on every message from the Central Station.
+     * Registering a label for a square is the moment the old labels for THAT SQUARE become rubbish, and nothing else
+     * can drop them: the prune inside updateTiles asks whether a label's parent is VISIBLE, and the main window's
+     * parent is the tab strip, which is visible for the life of the application, so on the main window that test can
+     * never be false.  Without this, every rebuild of the grid left a whole page of dead labels registered, and each
+     * accessory walked an ever-longer list on every message from the Central Station.
      *
-     * Three conditions, and the first is the one this was written without.
+     * Three conditions:
      *
-     * SAME SQUARE.  DiagramTileRegistry keeps its labels in a map keyed by square, so within one of
-     * its entries "an older label of this window" can only mean "the label this one replaces" - and
-     * its own comment says so.  The three device collections are keyed by DEVICE instead, and one
-     * accessory is routinely drawn on several squares of a page: the sample layout has address 162 on
-     * four tiles of "3 - Top Parking" and five of "4 - Combined".  Lifting the rule without its
-     * precondition therefore made each arriving label evict its own siblings, because LayoutGrid
-     * registers every label in its build loop and only attaches the container afterwards, so during a
-     * build NO label is displayable yet.  Three of those four signal tiles stopped updating the moment
-     * the page was drawn - which is worse than the leak this was fixing, and quieter.
+     * SAME SQUARE.  DiagramTileRegistry keys its labels by square, but the three device collections are keyed by
+     * DEVICE, and one accessory is routinely drawn on several squares of a page (the sample layout has address 162
+     * on four tiles of "3 - Top Parking" and five of "4 - Combined").  Without this condition each arriving label
+     * would evict its own siblings, because LayoutGrid registers every label in its build loop and attaches the
+     * container only afterwards, so during a build NO label is displayable yet.
      *
-     * SAME WINDOW.  The main window caches a page's grid and re-attaches it when the user comes back,
-     * so its labels are detached - and perfectly alive - whenever another page is showing.  Judging
-     * them from a popup rebuilding the same page would throw them out while they were merely put away.
+     * SAME WINDOW.  The main window caches a page's grid and re-attaches it when the user comes back, so its labels
+     * are detached, and alive, whenever another page is showing; a popup rebuilding the same page must not throw
+     * them out while they are merely put away.
      *
-     * NOT DISPLAYABLE, rather than not visible: a label whose grid has been replaced has been removed
-     * from a realised window and has no peer, which is what "nobody can see this" actually means.  The
-     * arriving label is never judged; it may legitimately not be attached yet.
+     * NOT DISPLAYABLE, rather than not visible: a label whose grid has been replaced has been removed from a
+     * realised window and has no peer, which is what "nobody can see this" actually means.  The arriving label is
+     * never judged; it may legitimately not be attached yet.
      *
-     * Where the square cannot be established the label is KEPT.  A missed prune is a slow leak; a
-     * wrong prune is a tile that never updates again, and of the two the leak is much the better bug.
+     * Where the square cannot be established the label is KEPT.  A missed prune is a slow leak; a wrong prune is a
+     * tile that never updates again.
      *
      * @param registered the labels already registered with the device
      * @param arriving the label being registered now
@@ -826,11 +776,10 @@ public final class LayoutLabel extends JLabel
     /**
      * Which page of the diagram this square is on.
      *
-     * A label is otherwise told neither its page nor its coordinates, and asking the main window which
-     * page is showing is the wrong question in a popup: a popup shows a page of its own, so a
-     * right-click in one opened the menu belonging to whatever the MAIN window happened to have
-     * selected - offering a station the user was not pointing at, or, where the main page had no
-     * station at those coordinates, falling through and throwing the sensor instead.
+     * A label is otherwise told neither its page nor its coordinates, and asking the main window which page is
+     * showing is the wrong question in a popup: a popup shows a page of its own, so a right-click in one would open
+     * the menu belonging to whatever the MAIN window had selected, offering a station the user was not pointing at
+     * or, where the main page had no station at those coordinates, falling through and throwing the sensor.
      */
     private String autonomyPage;
 
@@ -870,13 +819,10 @@ public final class LayoutLabel extends JLabel
     {
         if (e.getButton() != MouseEvent.BUTTON3 || component == null) return false;
 
-        // A station gets the station items; every other square gets the menu without them.
-        //
-        // It used to open only over a station, and a right-click anywhere else did nothing at all -
-        // which meant the way into the autonomy setup was the menu bar, and the menu bar is not where
-        // somebody working on their railway is looking.  They are looking at the diagram.  A square
-        // that is not a station has nothing station-shaped to offer, but it can still be the place
-        // this layout's setup is reached from.
+        // A station gets the station items; every other square gets the menu without them.  A right-click anywhere
+        // must do something: the way into the autonomy setup should not be only the menu bar, when somebody working
+        // on their railway is looking at the diagram.  A square that is not a station has nothing station-shaped to
+        // offer, but it can still be the place this layout's setup is reached from.
         final org.traincontrol.automationui.TileGraph.TileKey station =
             tcUI.autonomyStationAt(autonomyPage, component.getX(), component.getY());
 
@@ -907,16 +853,15 @@ public final class LayoutLabel extends JLabel
 
             if (imageCache.get(key) == null)
             {
-                // Counted before it is submitted, so that a grid asking "are the tiles ready" cannot
-                // see zero in the window between building the labels and the pool picking the work up.
+                // Counted before it is submitted, so that a grid asking "are the tiles ready" cannot see zero in the
+                // window between building the labels and the pool picking the work up.
                 //
-                // Only a FIRST draw is counted, never an update.  A tile's image key includes its state
-                // while the diagram is not being edited, so every switch thrown and every s88 event is
-                // a fresh key, a cache miss, and another decode - and autonomy throws several per path.
-                // Counting those meant the count was almost never at rest on a running layout, so a
-                // grid built while trains were moving waited on traffic that had nothing to do with it
-                // and sat behind its spinner until the failsafe fired.  A grid only ever waits for the
-                // batch it was built from.
+                // Only a FIRST draw is counted, never an update.  A tile's image key includes its state while the
+                // diagram is not being edited, so every switch thrown and every s88 event is a fresh key, a cache
+                // miss, and another decode (autonomy throws several per path).  Counting those would keep the count
+                // from ever being at rest on a running layout, so a grid built while trains were moving would wait
+                // on traffic that had nothing to do with it and sit behind its spinner until the failsafe fired.  A
+                // grid only ever waits for the batch it was built from.
                 if (!update) this.tcUI.tileDecodeStarted();
 
                 // Decode/scale off the EDT, cache it, then run the (now cache-hit) Swing work on the EDT.
