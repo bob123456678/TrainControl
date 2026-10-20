@@ -395,10 +395,9 @@ public class Layout
     private final Map<Locomotive, List<Edge>> activeLocomotives;
 
     /**
-     * Locomotives that have locked a path but are not yet in activeLocomotives (they arrive there only once the
-     * accessories are thrown and validated, seconds later), so the cap on trains out counts them too.  Claimed inside
-     * the monitor that locks the path; given up on registration or release.  It carries the path, so getActiveAccs
-     * knows which accessories a half-configured dispatch has already thrown.
+     * Locomotives that have locked a path but are not yet in activeLocomotives (seconds, while accessories are
+     * thrown), so the cap counts them; claimed in the monitor that locks the path, and carrying it so getActiveAccs
+     * sees the accessories a half-configured dispatch has thrown.
      */
     private final Map<Locomotive, List<Edge>> takingPath;
 
@@ -421,10 +420,9 @@ public class Layout
     private final Map<Locomotive, String> locomotivePendingS88;
 
     /**
-     * The monitor for the pending-s88 bookkeeping, NOT the layout monitor: configureAndLockPath holds that for seconds,
-     * and a running train blocked in updatePendingS88 could cross the sensor it was about to wait for and drive on
-     * (waitForOccupiedFeedback tests a level).  waitForS88Reached and updatePendingS88 are the only wait/notify pair;
-     * waitForTheRunToRecord also waits here, briefly and never while it reads the feedback store.
+     * The pending-s88 monitor, not the layout's: configureAndLockPath holds that for seconds, and a train blocked in
+     * updatePendingS88 could cross the sensor it was about to wait for.  waitForS88Reached/updatePendingS88 are the
+     * wait/notify pair; waitForTheRunToRecord waits here briefly, never while reading the feedback store.
      */
     private final Object pendingS88Monitor = new Object();
     
@@ -485,10 +483,9 @@ public class Layout
         new java.util.IdentityHashMap<Locomotive, Boolean>()));
 
     /**
-     * Where each locomotive stood when this railway last turned it round at a destination, by square, so applying it
-     * twice is harmless.  Dropped when the train arrives somewhere without turning.  Recorded here because the reversal
-     * echo lands inside the run, where the window does not follow it, and nothing in this class may call the window;
-     * the window drains it when the railway next goes idle.  Concurrent: drivers write, the event thread drains.
+     * Where each locomotive stood when this railway last turned it at a destination, by square; dropped when it
+     * arrives without turning.  Kept here because nothing in this class may call the window, which drains it when the
+     * railway goes idle.  Concurrent: drivers write, the event thread drains.
      */
     private final java.util.Map<String, String> reversedOnArrival =
         new java.util.concurrent.ConcurrentHashMap<>();
@@ -3931,7 +3928,7 @@ public class Layout
                     continue;
                 }
 
-                // Never through a terminus that is not the end (OB-229), nor round onto another copy of either end (AMR-B1)
+                // Never through a terminus that is not the end (OB-229), nor round onto another copy of either end
                 if (next.getEnd().isTerminus() || next.getEnd().isSamePlaceAs(start)
                     || next.getEnd().isSamePlaceAs(end)) continue;
 
@@ -3952,15 +3949,13 @@ public class Layout
     }
 
     /**
-     * Whether a path would turn the train round on its way somewhere else: executePathInternal reverses at every
-     * reversing point it reaches, mid-journey too.
-     *
-     * The rule (Adam's): in full autonomy a train is only ever reversed at a terminus.
+     * Whether a path would turn the train round on its way somewhere else.  The rule (Adam's): in full autonomy a
+     * train is only ever reversed at a terminus.
      *
      * Asked where full autonomy chooses (pickPath, its probe, and the "why is it not moving" explanation), not by
      * isPathClear, so a hand-driven move and the staging planner may still use a headshunt.
      *
-     * The origin is exempt - a train standing on one is free to leave it - so only the END of each edge is tested.
+     * Only the end of each edge is tested: a train may leave the reversing point it stands on.
      */
     private boolean reversesAlongTheWay(List<Edge> path)
     {
