@@ -26,22 +26,17 @@ import support.SourceOf;
  * Mass Assign Lengths and the Unmeasured Track display: which squares they ask for, and how a piece's whole length is
  * shared out.
  *
- * **The definition, as ruled after review MAL (2026-09-16).**  The first version asked only for the track past the last
- * switch, on the reasoning that every length rule stops there.  Only the room rule does: the FR-087 allowance
- * (`Layout.measuredRouteIn`) adds whole legs back until a reversal, and the tail and berth walks spend the switch square
- * and the track before it.  Measured on Adam's railway, that reach is every leg - so, asked how to cover it, Adam chose
- * **"Every leg, cut at switches"**, and for the switch squares themselves **"One length for all switches"**.
+ * **The definition (review MAL).**  Every leg on the pages autonomy uses is cut into PIECES at its switches, because the
+ * FR-087 allowance (`Layout.measuredRouteIn`) adds whole legs back until a reversal, and the tail and berth walks spend
+ * the switch square and the track before it.  Adam chose **"Every leg, cut at switches"** and, for the switch squares
+ * themselves, **"One length for all switches"**:
  *
- * So:
- *
- *  - every leg on the pages autonomy uses is cut into PIECES at its switches, and each square belongs to exactly one
- *    piece - a sensor square that ends several legs is in the first of them;
+ *  - each square belongs to exactly one piece - a sensor square that ends several legs is in the first of them;
  *  - a switch square is in no piece: its share of a piece's length would, in one direction or the other, sit on the
- *    square the room rule does not count, so the room rule would come out wrong by that share.  Switches are asked for
- *    together, one turnout length per page;
+ *    square the room rule does not count.  Switches are asked for together, one turnout length per page;
  *  - a piece needs a length only while its TOTAL is 0 - Adam, 2026-09-06: *"It is only indeterminate if the entire
  *    logical segment has length 0."*  A square inside a measured piece may hold 0; the store keeps 0 and "not given" as
- *    the same thing, so a whole length of 0 is refused.
+ *    the same thing.
  *
  * Every railway here is its own, built in memory.
  *
@@ -68,14 +63,13 @@ public class testMassAssignLengths
     /**
      * How many squares of Adam's own **1 - Main** the crossing prompt really asks about (VC2-C5, SVA-C2).
      *
-     * **MT-459 says "which may be fewer" and has never said a number.**  The page has four squares SHAPED
-     * like a crossing - the crossing at 18,10 and the double curves at 20,10, 21,10 and 11,11 - and the walk
-     * asks only about the ones trains actually run over on BOTH roads.  Three validation rounds deferred
-     * measuring it, so the entry has been telling him to expect a count he cannot check.
+     * The page has four squares SHAPED like a crossing - the crossing at 18,10 and the double curves at 20,10, 21,10 and
+     * 11,11 - and the walk asks only about the ones trains actually run over on BOTH roads.  MT-459 says "which may be
+     * fewer"; this is the measured count.
      *
-     * Read off the frozen snapshot of his railway rather than a fixture, because the number is a fact about
-     * his layout and nothing else.  If the reduction ever stops seeing one of those roads, this says so in
-     * the same breath as the manual test goes stale.
+     * Read off the frozen snapshot of his railway rather than a fixture, because the number is a fact about his layout
+     * and nothing else.  If the reduction ever stops seeing one of those roads, this says so in the same breath as the
+     * manual test goes stale.
      *
      * @throws Exception from the sandbox
      */
@@ -117,11 +111,8 @@ public class testMassAssignLengths
                     if ("1 - Main".equals(square.getPage())) onMain++;
                 }
 
-                // MEASURED 2026-09-20: NONE of them, on that page.
-                //
-                // All four squares shaped like a crossing on 1 - Main are run over on one road only, so
-                // the crossing prompt has nothing to ask about there.  MT-459 said "which may be fewer";
-                // the answer is fewer by all four, and the entry now says so.
+                // NONE of them, on that page: all four squares shaped like a crossing on 1 - Main are run over on
+                // one road only, so the crossing prompt has nothing to ask about there.
                 assertEquals(onMain, 0,
                     "the crossing prompt asks about " + onMain + " squares of 1 - Main.  It asked about"
                     + " none when this was measured, and MT-459 tells him so - if it has moved, the entry"
@@ -149,9 +140,8 @@ public class testMassAssignLengths
     /**
      * Every leg is cut into pieces at its switches, each square is in one piece, and the switch is in none (MAL-B1).
      *
-     * The first half is the one the first version failed: 2,1 lies BEFORE the switch on the way into the berth, and the
-     * FR-087 allowance and the tail walk both read it.  The branch to 3,0 leads to no station at all and is still a leg a
-     * route runs along, so it is asked for too.
+     * 2,1 lies BEFORE the switch on the way into the berth, and the FR-087 allowance and the tail walk both read it.  The
+     * branch to 3,0 leads to no station at all and is still a leg a route runs along, so it is asked for too.
      */
     @Test
     public void testEveryLegIsCutIntoPiecesAtItsSwitches() throws IOException
@@ -170,9 +160,8 @@ public class testMassAssignLengths
     /**
      * Two switches back to back leave no piece between them, and both are asked for as switches.
      *
-     * Adam, 2026-09-16: *"what happens when two switches are back to back"*.  There is no track square between them, so
-     * there is nothing to measure there; the room rule stops at the nearer switch, and the legs that cross both add both
-     * switches' lengths.
+     * There is no track square between them, so there is nothing to measure there; the room rule stops at the nearer
+     * switch, and the legs that cross both add both switches' lengths.
      */
     @Test
     public void testTwoSwitchesBackToBackLeaveNoPieceBetweenThem() throws IOException
@@ -199,12 +188,11 @@ public class testMassAssignLengths
      * A leg over a permanent turnout is cut there, as at a switch, and the turnout is asked for with the switches
      * (VD18-B3).
      *
-     * The room walk stops at a permanent turnout - `GraphReducer.boundsTheRoom`, and Adam's ruling of 2026-09-22 that a
-     * permanent turnout is still the last switch (OB-233) - while Mass Assign Lengths cut its pieces at `isSwitch()`,
-     * which names the six throwable types and none of the five permanent ones.  So a piece ran over the turnout, and a
-     * length typed for it was shared onto the turnout and the track beyond it, where the room before the turnout does
-     * not count it.  Here the turnout's branch leads nowhere, so one leg runs over it and it is no shared square
-     * either - the case where nothing else cut the piece.
+     * The room walk stops at a permanent turnout (`GraphReducer.boundsTheRoom`; a permanent turnout is still the last
+     * switch, OB-233), and `isSwitch()` names the six throwable types and none of the five permanent ones.  So the pieces
+     * are cut at the turnout too: a length typed for a piece must not be shared onto the turnout and the track beyond it,
+     * where the room before the turnout does not count it.  Here the turnout's branch leads nowhere, so one leg runs over
+     * it and it is no shared square either - the case where nothing else cuts the piece.
      *
      * MUTATION: cut the pieces at `isSwitch()` alone again, and this fails.
      *
@@ -336,13 +324,12 @@ public class testMassAssignLengths
     /**
      * Fewer units than squares can be entered, and so can 0 - which answers the piece and reads as no length (OB-274).
      *
-     * Two squares, one unit: one square gets it and the other rightly holds nothing.  The first version demanded a unit
-     * per square, so a short piece drawn with several squares could not be entered at all.
+     * Two squares, one unit: one square gets it and the other rightly holds nothing, so a short piece drawn with several
+     * squares can be entered.
      *
-     * 0 was refused until 2026-09-23 - *"0 is the same as no length at all"* - which left a piece that genuinely has
-     * none offered for ever.  Adam: *"allow a length of 0 as a length that is set deliberately ... same meaning to the
-     * model, but this will allow everything to get assigned without what appears to be a skip."*  So 0 is accepted, the
-     * piece stops being asked about, and its squares still read as unmeasured to every length rule.
+     * 0 is accepted as a deliberate answer: the piece stops being asked about, and its squares still read as unmeasured
+     * to every length rule.  Adam: *"allow a length of 0 as a length that is set deliberately ... same meaning to the
+     * model, but this will allow everything to get assigned without what appears to be a skip."*
      */
     @Test
     public void testFewerUnitsThanSquaresCanBeEnteredAndZeroIsAnAnswer() throws IOException
@@ -402,8 +389,7 @@ public class testMassAssignLengths
     /**
      * One turnout length goes to every switch on the page that has none, and a switch already measured keeps its own.
      *
-     * This also refused 0 until OB-274 made a deliberate 0 an answer; `testZeroAnswersTheSwitchesAndKeepsAMeasuredOne`
-     * is where 0 is asked about now.
+     * 0 is asked about in `testZeroAnswersTheSwitchesAndKeepsAMeasuredOne`.
      */
     @Test
     public void testOneTurnoutLengthGoesToEverySwitchStillWithout() throws IOException
@@ -494,9 +480,8 @@ public class testMassAssignLengths
     /**
      * Escape stops the walk rather than writing what was typed (MAL-B4).
      *
-     * JDK 8's option pane answers Escape with `Integer.valueOf(CLOSED_OPTION)`, not null, and both dialogs checked only
-     * for null and the Cancel button - so Escape fell through to reading the field.  Asked of the one decision both
-     * dialogs now make through.
+     * JDK 8's option pane answers Escape with `Integer.valueOf(CLOSED_OPTION)`, not null, so the one decision both
+     * dialogs make through must read it as a stop and not fall through to the field.
      */
     @Test
     public void testEscapeStopsRatherThanAnswering()
@@ -515,9 +500,9 @@ public class testMassAssignLengths
     /**
      * The walk's prompt comes back where it was left, and a new round starts it afresh.
      *
-     * Adam, on MT-454, 2026-09-16: *"when the popup closes and reopens, make sure it remembers its location unless I
-     * reopen a new mass assignment round from the right click menu.  right now, every skip press re centers it, which
-     * covers some of the track diagram."*  Each prompt is a new dialog, and `JOptionPane.createDialog` centres every one.
+     * Each prompt is a new dialog and `JOptionPane.createDialog` centres every one, so the walk carries the location over
+     * from one prompt to the next.  Adam, MT-454: *"make sure it remembers its location unless I reopen a new mass
+     * assignment round from the right click menu."*
      *
      * Asked of the real walk rather than of a helper: it is started on the event thread, and this test moves the prompt,
      * presses Skip on it, and reads where the next prompt opened - so the call site is what is tested.  Then it presses
@@ -585,10 +570,10 @@ public class testMassAssignLengths
     /**
      * The number field has the keyboard focus, and Enter after typing a number submits it and moves on.
      *
-     * Adam, on MT-454, 2026-09-16: *"make sure the entry field is focused, and when I hit enter after typing the number,
-     * it submits and goes to the next one"*.  The field asked for focus when it was added to the prompt - before the
-     * dialog was on screen - and when the dialog did gain focus, `JOptionPane`'s own handler gave it to the OK button.
-     * So what he typed went nowhere, and Enter on the empty field counted as Skip.
+     * The field takes the focus once the dialog is on screen, not when it is added to the prompt: `JOptionPane`'s own
+     * handler gives the focus to the OK button when the dialog gains it, so what is typed would go nowhere and Enter on
+     * the empty field would count as Skip.  Adam, MT-454: *"make sure the entry field is focused, and when I hit enter
+     * after typing the number, it submits and goes to the next one"*.
      *
      * Asked of the real walk.  A desktop that never lets the test's window take focus cannot show either half, and says
      * so as a skip rather than passing - which is why this is the ONLY test here that presses Enter: `NotifyAction`
@@ -687,8 +672,7 @@ public class testMassAssignLengths
     /**
      * The stations Mass Assign Station Max Train Lengths asks about: those on this page with no maximum, row by row.
      *
-     * Adam, 2026-09-17: *"add a similar feature to walk stations that don't have a max length set up, so I can enter
-     * it"*.  Nothing on this railway is measured and no locomotive has a length, which is where the `NO_MAX_TRAIN_LENGTH`
+     * Nothing on this railway is measured and no locomotive has a length, which is where the `NO_MAX_TRAIN_LENGTH`
      * notice stays quiet - the walk must not, because opening it is saying lengths are being modelled.
      */
     @Test
@@ -801,9 +785,8 @@ public class testMassAssignLengths
     /**
      * Clear All Station Max Train Lengths takes every maximum off, on every page, and counts only the ones above 0.
      *
-     * Adam, 2026-09-17: *"Add a right click menu open to clear all max station train lengths (grouped with the other
-     * clear options)"*.  The second page is the half a per-page clear would fail; the 0 is the half that would count
-     * stations with nothing to lose, because the setup writes an explicit 0 on every destination.
+     * The second page is the half a per-page clear would fail; the 0 is the half that would count stations with nothing
+     * to lose, because the setup writes an explicit 0 on every destination.
      */
     @Test
     public void testClearAllMaxTrainLengthsClearsEveryPage() throws IOException
@@ -898,8 +881,7 @@ public class testMassAssignLengths
 
     /**
      * On the frozen copy of Adam's railway, Clear All Station Max Train Lengths asks first; No changes nothing, and Yes
-     * takes the maximum off every station on every page and says how many (MT-518, MT-519; Adam, 2026-09-25: automated
-     * tests supersede the MTs they answer).
+     * takes the maximum off every station on every page and says how many (MT-518, MT-519).
      *
      * Pressed from the Bulk Tools menu as the editor builds it, its confirmation answered as its buttons answer it, and
      * each station's maximum read where the steps read it: the label of the Maximum Train Length item on the Station menu
@@ -1289,7 +1271,7 @@ public class testMassAssignLengths
      * On the frozen railway, One-Way Run is greyed on 4 - Combined, which is left out of autonomy - the button, and the
      * Bulk Tools item with a tooltip saying the page is left out; and armed on 1 - Main, it is put down and greyed when
      * Exclude Page is ticked on that page and answered Yes, and the hint stops asking for the first square (MT-568, its
-     * steps as the two comments of 2026-09-24 amend them).
+     * steps as amended).
      *
      * The page is left out through the editor's own Exclude Page box and its question, as the amended step does.
      * `testTheOneWayButtonIsGreyedAndPutDownOnAPageLeftOut` holds the same on a fixture, the page left out below the box.
@@ -1804,7 +1786,7 @@ public class testMassAssignLengths
      *
      * *"a route tile should not need or accept a length.  it just implicitly connects things as if it were a
      * crossing."*  The railway here is sensor, straight, ROUTE TILE, straight, sensor: one leg, which the route
-     * tile conducts straight through.  Before the ruling the route tile was an ordinary square of the piece.
+     * tile conducts straight through.
      */
     @Test
     public void testARouteTileIsInNoPieceAndDoesNotCutIt() throws IOException
@@ -1827,8 +1809,8 @@ public class testMassAssignLengths
      * route tile.
      *
      * *"for example 3 regular tiles, 1 route, length 4 = 3 tiles have length 1.  i'd prefer one to have length 2, and
-     * two others length 1"*.  The even share is unchanged (OB-275: *"let's stick to a then"*); what changed is that the
-     * route tile is not one of the squares it is shared over.
+     * two others length 1"*.  The even share (OB-275: *"let's stick to a then"*) is over the squares other than the route
+     * tile.
      */
     @Test
     public void testALengthIsSharedAroundARouteTileAndNotOnIt() throws IOException
@@ -1870,8 +1852,7 @@ public class testMassAssignLengths
      * A berth whose approach runs over a route tile is not half measured because of it (OB-273) - with the control
      * that a plain square left unmeasured still makes it so.
      *
-     * The notice Adam saw on TopR1ParkLong and TopR1ParkShort: every square that takes a length was measured, and the
-     * squares counted as unmeasured were route tiles.
+     * Every square that takes a length is measured here, and the only squares left are route tiles, which take none.
      */
     @Test
     public void testARouteTileDoesNotMakeABerthHalfMeasured() throws IOException
@@ -2003,11 +1984,10 @@ public class testMassAssignLengths
      * The build marks, on each edge, the places Mass Assign Lengths would ask a length for - which the own-tail note
      * counts (OB-297, ADA-C1).
      *
-     * Counted by the runtime from marks of its own - a stretch cut at its switches, measured where anything on it was -
-     * the note differed from Mass Assign's list two ways.  A piece with a route tile in it read as measured, the route
-     * tile being answered.  And a short piece whose units Mass Assign put on the station's square first read as
-     * unmeasured from the edge leaving the station, which does not carry that square: the note asked for a length the
-     * editor says is there.
+     * The runtime counts from the marks the build puts on each edge, not from a reading of its own: a piece with a route
+     * tile in it would read as measured, the route tile being answered, and a short piece whose units Mass Assign put on
+     * the station's square first would read as unmeasured from the edge leaving the station, which does not carry that
+     * square - the note would ask for a length the editor says is there.
      *
      * MUTATION: mark the pieces from the runtime's own reading, or mark the route tile, and this fails.
      *
@@ -2206,9 +2186,8 @@ public class testMassAssignLengths
      *
      * A sensor square's length is the last place of every rail arriving at it and the first thing a train standing there
      * spends (OB-278), so a unit folded onto it lengthens every OTHER approach to that sensor as well - a train arriving
-     * from the far side is then judged a unit longer than the track, and its tail claimed a unit short.  The fold took
-     * "plain track" to mean anything that is not a switch, and a sensor is not a switch.  Here the route tile has a
-     * sensor on the side asked first and a straight on the other, and the straight takes the unit.
+     * from the far side is then judged a unit longer than the track, and its tail claimed a unit short.  Here the route
+     * tile has a sensor on the side asked first and a straight on the other, and the straight takes the unit.
      *
      * MUTATION: let the fold take a sensor square again and this fails.
      *
@@ -2388,10 +2367,9 @@ public class testMassAssignLengths
     /**
      * The walk asks about each train with no length in turn, writes what is typed, and leaves a skipped one alone.
      *
-     * Adam, 2026-09-23: *"add a bulk tool to the autonomy editor to set missing train lengths, similar to how the station
-     * lengths are set."*  So it is the station walk's shape - the same prompt, titled with the walk's own name, OK and
-     * Skip - over the trains the door says have no length, and a train that already has one is never asked about.
-     * OK rather than Enter, for the reason `testTheMaximumWalkWritesWhatIsTypedAndMovesOn` gives.
+     * It is the station walk's shape - the same prompt, titled with the walk's own name, OK and Skip - over the trains the
+     * door says have no length, and a train that already has one is never asked about.  OK rather than Enter, for the
+     * reason `testTheMaximumWalkWritesWhatIsTypedAndMovesOn` gives.
      *
      * @throws Exception from the event thread
      */
@@ -2501,9 +2479,8 @@ public class testMassAssignLengths
     /**
      * The Bulk Tools item is never greyed, and says in its label how many trains are missing a length (MT-533).
      *
-     * Adam, 2026-09-24: *"This option should never be greyed out completely (show the number of missing trains in
-     * parens)."*  It greyed when every train had a length, which is also why MT-533 could not be run: nothing short of a
-     * train with no length could open the walk.
+     * Adam: *"This option should never be greyed out completely (show the number of missing trains in parens)."*  MT-533
+     * needs the walk to open even when no train is missing a length.
      *
      * MUTATION: grey it again with none missing, or drop the count from its label, and this fails.
      *
@@ -2628,10 +2605,10 @@ public class testMassAssignLengths
     /**
      * In its every-train mode the walk says what is true of the trains it goes through (TDU-C7).
      *
-     * MT-533 made the item never greyed, and with no train missing a length it goes through every train with the length
-     * it has.  Two sentences written for the other mode came with it: typed 0, it said *"0 means the train has no length,
-     * which is what it has now"* of a train its own prompt had just said has one; and with no train placed at all, the
-     * item's tooltip said every locomotive has a length while a click said none is placed.
+     * With no train missing a length it goes through every train with the length it has (MT-533), so two sentences
+     * written for the other mode must not appear: typed 0, *"0 means the train has no length, which is what it has now"*
+     * of a train its own prompt has just said has one; and with no train placed at all, a tooltip saying every locomotive
+     * has a length while a click says none is placed.
      *
      * MUTATION: answer 0 in that mode with the missing-length sentence, or choose the tooltip on the missing count alone,
      * and this fails.
@@ -2723,9 +2700,9 @@ public class testMassAssignLengths
      * Train lengths and the stations' maximum train lengths are named apart (MT-533), the trains' as plain "Train
      * Lengths" (MT-567).
      *
-     * Adam, 2026-09-24: *"better disambiguate labels for 'train lengths' from 'max train lengths', since the latter deals
-     * with stations."*  And 2026-09-26, on MT-567: *"Change "Locomotive Train Lengths" to just "Train Lengths", and keep
-     * "Station Max Train Lengths" as is."*  Read from the English bundle, which is the one the sentences were about.
+     * Adam: *"better disambiguate labels for 'train lengths' from 'max train lengths', since the latter deals with
+     * stations."*  And, on MT-567: *"Change "Locomotive Train Lengths" to just "Train Lengths", and keep "Station Max Train
+     * Lengths" as is."*  Read from the English bundle.
      *
      * @throws Exception reading the bundle
      */
@@ -2756,8 +2733,7 @@ public class testMassAssignLengths
     /**
      * One-way run is greyed on a page left out of autonomy, as Mass Assign Lengths is (MT-528, OB-235).
      *
-     * Adam, 2026-09-24, on MT-528: *"works, but one-way run isn't."*  Nothing on a page autonomy takes no notice of is
-     * built, so a run closed one way there closes nothing.
+     * Nothing on a page autonomy takes no notice of is built, so a run closed one way there closes nothing.
      *
      * MUTATION: leave One-way run enabled on a page left out, and this fails.
      *
@@ -2981,14 +2957,9 @@ public class testMassAssignLengths
     /**
      * A square two roads cross is in no piece, is asked for on its own, and counts on both roads (SET-B2).
      *
-     * Adam, 2026-09-19, shown that such a square went into whichever leg was walked first and was missing from the
-     * other: *"For crossings: if its length is set, count that length once in each direction."*  The reduction
-     * already counts it on both roads - it adds every tile of every leg - so the only thing that could be wrong was
-     * the walk putting it inside one road's piece, whose whole length is then shared over its squares and counted on
-     * the other road as well.
-     *
-     * Measured before the fix, on this fixture: the crossing sat in the east-west piece, the north-south prompt
-     * covered four squares instead of five, and the north-south legs measured 9 and 10 where 7 and 8 had been typed.
+     * Adam: *"For crossings: if its length is set, count that length once in each direction."*  The reduction already
+     * counts it on both roads - it adds every tile of every leg - so the walk must not put it inside one road's piece,
+     * whose whole length is then shared over its squares and counted on the other road as well.
      */
     @Test
     public void testACrossingIsCutOutOfEveryPieceAndCountsOnBothRoads() throws IOException
@@ -3122,11 +3093,8 @@ public class testMassAssignLengths
      *
      * `promptNumber` is shared with `priority`, where a negative is meaningful, so the refusal is asked per key.  The
      * layer below does not clamp: `Layout.fromJSON` invalidates the WHOLE configuration for a maximum below 0, so a
-     * number typed here took the railway out of autonomy with only a log line - and Clear All Station Max Train Lengths, which
-     * counted only maxima above 0, greyed itself on the one setting that needed taking off.
-     *
-     * Measured before the fix, on the fixture below: `Layout.fromJSON` came back `isValid() == false` and
-     * `tilesWithAMaxTrainLength()` was empty.
+     * negative one stored takes the railway out of autonomy with only a log line, and Clear All Station Max Train
+     * Lengths must count it or it greys itself on the one setting that needs taking off.
      */
     @Test
     public void testANegativeMaximumTrainLengthIsRefused() throws IOException
@@ -3158,14 +3126,14 @@ public class testMassAssignLengths
      *
      * `behaviour.md` section 5b: *"a run of plain track has one square that speaks for it, and both doors write
      * there, so measuring a run through both does not count it twice."*  Mass Assign Lengths is a third door and it
-     * shares a piece's whole length over every square (MAL-B2), so the leader came to hold a share.  Measured before
-     * the fix on this fixture: the dialog opened on 1 for a run measured as 7, and writing 4 left the run at 6.
+     * shares a piece's whole length over every square (MAL-B2), so the leader holds only a share: the dialog must still
+     * open on what the run measures, and writing 4 must leave the run at 4.
      */
     @Test
     public void testTheSingleDoorSpeaksForTheWholeRunAfterAWalk() throws Exception
     {
         // NO DISPLAY IS NEEDED (SVA-C5): the panel is built without one here and no dialog is opened - the two
-        // public seams are asked directly.  The skip that stood here would have hidden the claim on a headless run.
+        // public seams are asked directly.
         openARunOfTwoPlainSquares();
 
         List<AutonomySession.Stretch> pieces = session.stretchesNeedingALength();
@@ -3198,8 +3166,8 @@ public class testMassAssignLengths
     /**
      * Segment Length's 0 is a deliberate 0, and Clear takes the length away (Adam, 2026-09-23).
      *
-     * Asked whether a 0 typed into Segment Length should go on clearing the length, now that a 0 answered in Mass
-     * Assign Lengths is kept as an answer (OB-274): *"no, add a clear button."*  So 0 records every square of the run
+     * A 0 answered in Mass Assign Lengths is kept as an answer (OB-274), and Adam ruled that Segment Length does the same:
+     * *"no, add a clear button."*  So 0 records every square of the run
      * as answered - Mass Assign Lengths and Unmeasured Track leave them alone, and every length rule still reads them
      * as unmeasured - and clearing is a button of its own, which also answers an empty field.
      *
@@ -3270,10 +3238,8 @@ public class testMassAssignLengths
      * A berth whose own measured squares hold its longest train is not warned about, whatever lies unmeasured behind
      * them (OB-288).
      *
-     * Adam, 2026-09-24: *"&lt;station&gt; can refuse trains that would otherwise fit shows up on all berths, even though
-     * we have measured the s88 tile to match the berth max train size.  likely an artifact from before we included the
-     * station length in the measurement."*  Since OB-278 the berth walk spends the berth's own square first, so a train
-     * the berth takes is spent there before it reaches anything unmeasured, and no refusal can come of the hole behind.
+     * The berth walk spends the berth's own square first (OB-278), so a train the berth takes is spent there before it
+     * reaches anything unmeasured, and no refusal can come of the hole behind.
      *
      * @throws IOException from the fixture
      */
@@ -3307,12 +3273,11 @@ public class testMassAssignLengths
      * A square with no length between a berth and its switch does not end the count - the berth walk passes it for
      * nothing (Adam, 2026-09-24, on MT-552).
      *
-     * *"BottomMainPost (rightmost station) is measured on both sides ... trains of length 3 can hold there"* - *"look at
-     * 22,8 and 22,9"*.  Its own square 1, 22,7 with no length, 22,8 and 22,9 1 each, then the switch at 22,10.
+     * The case of MT-552: the berth's own square 1, 22,7 with no length, 22,8 and 22,9 1 each, then the switch at 22,10.
      * `Layout.whyABerthCannotHoldIt` spends a train back from the berth and passes a square with no length for nothing,
-     * so a three-unit train is spent at 22,9, short of the switch, and nothing refuses it.  OB-288's count stopped at the
-     * first square with no length and warned about a refusal the walk never makes.  What it does stop at is the switch:
-     * the walk refuses a train whose spending reaches track another road runs over.
+     * so a three-unit train is spent at 22,9, short of the switch, and nothing refuses it - the count does not stop at a
+     * square with no length.  What it does stop at is the switch: the walk refuses a train whose spending reaches track
+     * another road runs over.
      *
      * MUTATION: stop the count at a square with no length again, or let it run on past the switch, and this fails.
      *
@@ -3409,11 +3374,10 @@ public class testMassAssignLengths
      * the switch (TDA3-C1, TDA4-C2).
      *
      * The berth rule, once anything on the approach is measured, claims the crossing's square before it spends anything
-     * on it, so with the two squares between the berth and the crossing at no length every train is refused.  The notice
-     * quoted the room walk's 4, back to the switch, and said a train of up to 4 fits; then, answered, it said 0 in a
-     * sentence written for a berth that holds something - *"that may be right"*, at the grade for nothing wrong.  Adam,
-     * 2026-09-24: *"Give it its own sentence as a warning, make it sound intuitive (the effective specified length of the
-     * track is 0)."*
+     * on it, so with the two squares between the berth and the crossing at no length every train is refused.  The run-in
+     * notice must therefore not quote the room walk's 4, back to the switch, nor say 0 in a sentence written for a berth
+     * that holds something.  Adam: *"Give it its own sentence as a warning, make it sound intuitive (the effective
+     * specified length of the track is 0)."*
      *
      * MUTATION: leave the answered berth to the run-in notice, or grade its sentence a notice, and this fails.
      *
@@ -3655,8 +3619,10 @@ public class testMassAssignLengths
 
     /**
      * A parking berth whose approach was answered 0 throughout, nothing measured anywhere on it, is warned about as one
-     * given no room (Adam, 2026-09-25: *"we can't possibly have positive lengths everywhere because the tracks just aren't that long.  We need to find a way to allow trains in atomic mode in as well if the total track lengths allow"*, and *"Build it"*): the berth rule now judges it, where it used to decline as though nothing were
-     * known, and refuses every train with a length - so the editor says so, as it does where something was measured.
+     * given no room: the berth rule judges it and refuses every train with a length, so the editor says so, as it does
+     * where something was measured.  Adam: *"we can't possibly have positive lengths everywhere because the tracks just
+     * aren't that long.  We need to find a way to allow trains in atomic mode in as well if the total track lengths
+     * allow"*.
      *
      * MUTATION: have the editor's test of a measured approach ignore answered zeros, and this fails.
      *
@@ -3805,11 +3771,11 @@ public class testMassAssignLengths
     /**
      * A parking berth's run-in notice stops where the berth rule does, at a crossing as well as at a switch (TDA2-C6).
      *
-     * `runInsShorterThanTheBerth` quoted the room back to the switch - the room rule's number - and the berth rule refuses
-     * earlier, as soon as the train it spends reaches the crossing's square, which is another road's.  With every square
-     * measured and 2 of them before the crossing, a berth set to take a train of 3 refuses that train, and neither
-     * notice said so: nothing was unmeasured, and 6 of room to the switch is not short of 3.  A platform autonomy may
-     * choose is not judged by the berth rule, and keeps the room rule's number.
+     * The berth rule refuses as soon as the train it spends reaches the crossing's square, which is another road's, so
+     * the notice must not quote the room back to the switch (the room rule's number).  With every square measured and 2
+     * of them before the crossing, a berth set to take a train of 3 refuses that train; nothing is unmeasured, and 6 of
+     * room to the switch is not short of 3.  A platform autonomy may choose is not judged by the berth rule, and keeps
+     * the room rule's number.
      *
      * MUTATION: take the room to the switch alone again, and this fails.
      *
@@ -3885,8 +3851,8 @@ public class testMassAssignLengths
     /**
      * 1,1 sensor - 2,1 - 3,1 switch - 4,1 - 5,1 crossing - 6,1 - 7,1 berth.  The crossing's other road is one a train can
      * drive (TDA3-C2): the switch's branch curves north and east at 3,0 to a sensor at 4,0, and round the curve at 5,0
-     * over the crossing to a station at 5,2.  With sensors at 5,0 and 5,2 and nothing leading onto them, the build
-     * emitted no rail over the crossing at all, and the berth rule had nothing there to refuse on.
+     * over the crossing to a station at 5,2.  Without something leading onto them, the sensors at 5,0 and 5,2 would build
+     * no rail over the crossing at all, and the berth rule would have nothing there to refuse on.
      */
     private void openBerthBehindACrossing() throws IOException
     {
@@ -4039,7 +4005,7 @@ public class testMassAssignLengths
         }
 
         // WHAT WAS ON SCREEN INSTEAD, because "no prompt appeared" is the same message whether the walk never
-        // opened one or an earlier dialog is still up in front of it (VB2 round).
+        // opened one or an earlier dialog is still up in front of it.
         StringBuilder open = new StringBuilder();
 
         for (java.awt.Window window : java.awt.Window.getWindows())
@@ -4322,8 +4288,8 @@ public class testMassAssignLengths
      *
      * *"make max train length be remembered if a station is changed to a non-station, and then restored if it is changed
      * back to a station.  don't modify the behavior of this attribute: it is still to be ignored for non-stations."*
-     * SET-C2 took it off on the way down, because the bulk clear counted every square carrying one and said "on {0}
-     * stations" about squares that are not.  It is kept now, and the count still asks about stations only.
+     * The bulk clear counts only stations, since it says "on {0} stations" (SET-C2); the maximum is kept on a square that
+     * is not one, and not counted.
      *
      * MUTATION: clear the maximum in `AutonomySession.setStation` again, or count every square that carries one, and this
      * fails.
@@ -4440,8 +4406,7 @@ public class testMassAssignLengths
      *
      * The rule counts how often a crossing is run OVER rather than how many legs run over it, because a single leg
      * that uses both of a crossing's roads reads that square twice: its own answer would then be counted twice, and
-     * that is the very error Adam's ruling is about.  Counting legs would have missed it, and nothing pinned the
-     * difference until this.
+     * that is the very error Adam's ruling is about.
      *
      * The fixture is one leg between two sensors that goes east through the crossing, round a loop, and back through
      * it southbound.
@@ -4466,12 +4431,9 @@ public class testMassAssignLengths
         page.addComponent(componentType.CURVE, 3, 0, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
         page.addComponent(componentType.STRAIGHT, 3, 1, 1, 0, 0, 0, accessoryDecoderType.MM2, null);
 
-        // THE SECOND SENSOR SITS DIRECTLY BELOW THE CROSSING (VC2-C5).
-        //
-        // With a straight between them the second crossing fell at index 10 of a 13-square leg, and the
-        // off-by-one VB2-B3 named - counting `i + 1 < leg.size() - 1`, which drops the LAST intermediate
-        // square - still counted it, so this fixture could not tell that mutation from the rule.  Putting
-        // the sensor here makes the crossing the last intermediate square on the leg.
+        // THE SECOND SENSOR SITS DIRECTLY BELOW THE CROSSING (VC2-C5), which makes the crossing the last intermediate
+        // square on the leg: only then does the off-by-one VB2-B3 named - counting `i + 1 < leg.size() - 1`, which drops
+        // the LAST intermediate square - differ from the rule.
         page.addComponent(componentType.FEEDBACK, 3, 3, 1, 0, 6, 12, accessoryDecoderType.MM2, null);
 
         page.setPageId("1");
@@ -4537,14 +4499,9 @@ public class testMassAssignLengths
 
             if (over < 2) continue;
 
-            // THE ENDPOINT TERM IS NOT ZERO HERE, which OP2-C5 supposed it was.
-            //
-            // Measured 2026-09-20 rather than reasoned about: `getTileLength(leg.getStart())` is 2 on
-            // this fixture, so the subtraction is doing work and the claim in the message can fail.
-            // The review read the leg as starting on a sensor, which is in no piece and so never
-            // measured; what a piece's length actually does is share itself over the piece's squares,
-            // and the square this leg starts on takes a share.  Recorded here so the next reader does
-            // not re-raise it.
+            // THE ENDPOINT TERM IS NOT ZERO HERE (OP2-C5): `getTileLength(leg.getStart())` is 2 on this fixture, so the
+            // subtraction is doing work and the claim in the message can fail.  A sensor is in no piece, but a piece's
+            // length is shared over the piece's squares, and the square this leg starts on takes a share.
             int expected = 4 * pieces + 3 * over - session.getStore().getTileLength(leg.getStart());
 
             assertEquals(leg.getLength(), expected,
@@ -4558,10 +4515,10 @@ public class testMassAssignLengths
      * A berth whose approach is half measured is warned about, and a whole one is not (Adam, 2026-09-19, on RTX-C2).
      *
      * *"As long as lengths are specified on the berth, it will work, right?  We want clear warnings to the user if
-     * so, then it's fine."*  It does work whole; half measured is the trap, and it is the state this very tool
-     * leaves behind between sittings - Mass Assign Lengths gives every switch a length in a step of its own, and
-     * MT-454 reaches that step by skipping pieces.  The berth then takes no train at all, because the room walk
-     * judges as soon as anything is measured and an unmeasured square is worth nothing to it.
+     * so, then it's fine."*  It does work whole; half measured is the trap: the berth then takes no train at all, because
+     * the room walk judges as soon as anything is measured and an unmeasured square is worth nothing to it.  It is the
+     * state this very tool leaves behind between sittings - Mass Assign Lengths gives every switch a length in a step of
+     * its own, and MT-454 reaches that step by skipping pieces.
      *
      * Three states, in the order an operator meets them: nothing measured (no warning, nothing is known), the
      * switch measured and the piece not (warned), everything measured (no warning).
@@ -4640,9 +4597,9 @@ public class testMassAssignLengths
      *
      * OB-278 made the square a train stands on rail the walk spends first, and `Layout.whyABerthCannotHoldIt` counts it
      * among the measured places - so a berth measured and nothing behind it is JUDGED, and refuses every train longer
-     * than it, claiming the unmeasured squares behind for nothing.  The notice walked the leg's path, which leaves out
-     * the square the leg ends on, so it never saw that state - the first one the berth rule's own advice produces
-     * ("measure the berth square first").
+     * than it, claiming the unmeasured squares behind for nothing.  The leg's path leaves out the square the leg ends on,
+     * so the notice looks at that square too: it is the state the berth rule's own advice ("measure the berth square
+     * first") produces.
      *
      * MUTATION: stop the notice looking at the leg's end and both claims fail.
      *
@@ -4675,11 +4632,10 @@ public class testMassAssignLengths
      * Segment Length opens empty on a run with no length and no answer, so pressing OK untouched records nothing
      * (GUI-B2).
      *
-     * A 0 submitted in Segment Length is an answer since 2026-09-23 (Adam: *"no, add a clear button"*) - kept, never
-     * offered again by Mass Assign Lengths, and no longer listed as missing.  The box opened showing what the run
-     * measures, which for an unmeasured run was "0", with OK the default: Enter on an unmeasured square wrote the
-     * deliberate answer nobody gave.  Mass Assign Lengths' own prompt opens empty for exactly this reason.  An answered
-     * 0 still shows as 0, and a length as itself.
+     * A 0 submitted in Segment Length is an answer (Adam: *"no, add a clear button"*) - kept, never offered again by
+     * Mass Assign Lengths, and no longer listed as missing.  So the box must not open showing "0" for an unmeasured run:
+     * with OK the default, Enter on an unmeasured square would write a deliberate answer nobody gave.  Mass Assign
+     * Lengths' own prompt opens empty for exactly this reason.  An answered 0 still shows as 0, and a length as itself.
      *
      * MUTATION: prefill the measured length whatever it is, as it was, and the first claim fails.
      *
@@ -4710,9 +4666,8 @@ public class testMassAssignLengths
      * Segment Length on a run re-derives the railway once, not once per square (AUS-C1).
      *
      * `touched()` is a full builder construction - a new graph, a new reduction, a new station index - and the
-     * single-square setter calls it every time.  Writing a run square by square paid for one of those per square,
-     * on the event thread, and then the running layout's rebuild on top.  Counted through the graph's identity,
-     * which is what a rebuild replaces.
+     * single-square setter calls it every time, on the event thread, with the running layout's rebuild on top; a run is
+     * therefore written in one call.  Counted through the graph's identity, which is what a rebuild replaces.
      *
      * @throws IOException from the fixture
      */
