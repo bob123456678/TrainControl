@@ -86,21 +86,14 @@ public class TileAnnotation
     }
 
     /**
-     * Trains may go this way.
-     *
-     * There used to be a second colour for track that runs both ways, which asked the reader to hold
-     * three meanings when there are only two: an arrow says one thing, whether or not the arrow beside
-     * it says the same.  Both ways is now simply two green arrows, one way is a green and a red, and
-     * closed is two reds - one rule, read the same way everywhere.
+     * Trains may go this way.  Both ways is two green arrows, one way is a green and a red, and closed is
+     * two reds: one rule, read the same way everywhere.
      */
     private static final Color ONE_WAY = new Color(70, 205, 90);
 
     /**
-     * The edge round a green arrow (Adam, 2026-10-04, choosing it from six drawn on the real tiles: *"F looks best.  let's
-     * see about using that in the editor too."*).  A dark green (0, 140, 60) was lost on the black rails it sits on, and
-     * the signals' green (0, 255, 0), which MT-675 asked for on the track diagram, was too bright; a light green with a
-     * dark green edge reads on both the rail and the white around it, on the track diagram and in the autonomy editor
-     * alike.
+     * The edge round a green arrow.  A light green with a dark green edge reads on both the black rail and
+     * the white around it, and is not the signals' bright green (MT-675).
      */
     private static final Color ONE_WAY_EDGE = new Color(0, 95, 40);
 
@@ -111,12 +104,8 @@ public class TileAnnotation
     private static final Color CLOSED = new Color(200, 0, 0);
 
     /**
-     * The same red the diagram writes accessory addresses in.
-     *
-     * It was a muted purple, which is a perfectly good colour and nearly invisible at the size these
-     * are drawn - a two-digit number a quarter of a tile high, over track art, in a colour with no
-     * contrast against either.  Addresses solved the same problem years ago and the answer is already
-     * on the screen; using a second one would only mean the reader learning two.
+     * The same red the diagram writes accessory addresses in, so the reader learns one colour for numbers
+     * drawn small over track art.
      */
     private static final Color LENGTH = Color.RED;
 
@@ -139,19 +128,15 @@ public class TileAnnotation
     private static final Color DIM_COLOUR = Color.WHITE;
 
     /**
-     * The colour of a square autonomy uses - the graph window's own blue, rgb(0,0,200), so somebody who has read one
-     * view can read the other - and of one it leaves alone: a medium dark grey, just darker than the grey station
-     * labels (Adam, FR-103, from MT-492: *"instead of orange, make them a medium dark gray that's just slightly darker
-     * than labels"*).  It was the graph window's orange, which the train mark still is.
+     * The colour of a square autonomy uses (the graph window's own blue, rgb(0,0,200)) and of one it leaves
+     * alone: a medium dark grey, just darker than the grey station labels (FR-103, MT-492).
      */
     private static final Color POINT_ACTIVE = DiagramColours.STATION;
     private static final Color POINT_INACTIVE = new Color(128, 130, 134);
 
     /**
-     * And a square nothing can pass - the X - in orange again (Adam, 2026-09-29: *"make the nothing can pass (X
-     * stations) be orange again"*): the orange it had before FR-103, rgb(255,102,0).  A square shut to every train reads
-     * apart from a berth autonomy merely does not choose.  It was the train line's own constant until the line went to a
-     * softer orange on 2026-10-09 (`DiagramColours.TRAIN`); the X kept the orange it was asked to be.
+     * A square nothing can pass (the X): orange, rgb(255,102,0), so a square shut to every train reads
+     * apart from a berth autonomy merely does not choose.
      */
     private static final Color POINT_IMPASSABLE = new Color(255, 102, 0);
 
@@ -165,12 +150,7 @@ public class TileAnnotation
      *     a station              big circle          big diamond         big square
      *     a passing point       small circle        small diamond       small square
      *
-     * This used to describe the vocabulary that grid replaced - "a station is a circle, a terminus a
-     * square, a reversing point a smaller square, and a plain point a small diamond" - which had grown
-     * up the other way, four shapes with no system behind them.  Two of those four claims are now the
-     * wrong way round: a plain point is a small CIRCLE, and a diamond means trains MAY turn, so a
-     * reader interpreting a screenshot by the old legend would read a may-turn station as a plain
-     * point (TD-15).  The justification is gone too: the graph window it followed was deleted.
+     * A plain point is a small CIRCLE and a diamond means trains MAY turn (TD-15).
      *
      * The five kinds the user thinks in are two questions over a station - must a train leave the way
      * it came (terminus), and does autonomy choose it on its own (parking) - which is why these are
@@ -188,10 +168,8 @@ public class TileAnnotation
         /**
          * Whether this square is switched OFF, as against merely left out of autonomy's choices.
          *
-         * Kept apart from `parking` because they are different facts that happened to share a colour.
-         * A square autonomy will not CHOOSE is still one trains pass through and stop at; a square
-         * that is switched off is neither. Nothing about the shape grid says which, so a square
-         * nothing can use gets a mark of its own (OB-167).
+         * Kept apart from `parking`: a square autonomy will not CHOOSE is still one trains pass through
+         * and stop at; a square that is switched off is neither (OB-167).
          */
         private final boolean shut;
 
@@ -309,22 +287,12 @@ public class TileAnnotation
         }
 
         /**
-         * Whether nothing can use this square at all (OB-167).
+         * Whether nothing can use this square at all (OB-167): it is switched off, whether or not it is
+         * also flagged a station.
          *
-         * SWITCHED OFF IS ENOUGH.  This also required the square not to be a station, on the reasoning
-         * that a switched-off station is still a place somebody can switch back on - and that made the
-         * cross almost impossible to see, which is what Adam reported: "I still don't reliably see X's
-         * in the nothing can pass mode."
-         *
-         * The editor settles it.  Out of service is the third of three radio buttons - stop here, pass
-         * through, neither - and its handler deliberately LEAVES the station flag as it found it, "so
-         * switching back returns it to what it was rather than to a default nobody chose".  So a
-         * square in that mode is usually still flagged a station, and a rule that excluded stations
-         * excluded nearly every square the mode is used on.
-         *
-         * What the mode means is the whole of what this asks: nothing stops here and nothing passes
-         * through.  Whether it would be a station if it were switched on is a fact about the past and
-         * the future, not about now.
+         * Out of service is the third of three radio buttons (stop here, pass through, neither) and its
+         * handler leaves the station flag as it found it, so a square in that mode is usually still
+         * flagged a station.  Whether it would be a station if switched back on says nothing about now.
          */
         public boolean isImpassable()
         {
@@ -395,28 +363,24 @@ public class TileAnnotation
      * Whether this square's track is drawn as a corner-cutting chord rather than square across the
      * tile - a curve or a double curve, and nothing else.
      *
-     * A switch has chords too, and taking its arrow angles from them was a step too far: the author
-     * asked for the tilt on curves only, and a switch reads better with its arrows square to the
-     * edges, which is also how its trunk enters.
+     * A switch has chords too, but its arrows stay square to the edges, which is also how its trunk
+     * enters.
      */
     private final boolean curved;
 
     /**
      * Whether this square is a paired link - a hole in the diagram that comes out on another page.
      *
-     * It needs saying because a link's only route is a STUB: one side, which is both how a train
-     * leaves the track into the link and how one arrives out of it.  Drawn like any other side that
-     * gets a single arrow, which is why only one of those two moves was ever visible.
+     * A link's only route is a STUB: one side, which is both how a train leaves the track into the link
+     * and how one arrives out of it, so it is drawn with a single arrow.
      */
     private final boolean portal;
 
     /**
      * Segments of a tested path running through this square, one per direction that works.
      *
-     * A path used to be shown by outlining every square it crossed, which said WHERE it went and
-     * nothing about which way, or whether the other way was possible at all - two questions the test
-     * exists to answer.  Drawn as a line through each square instead, the route reads as a route, and
-     * a direction that has no path simply has no line: the answer is the gap.
+     * Drawn as a line through each square, so the route reads as a route and a direction that has no
+     * path simply has no line: the answer is the gap.
      */
     private final List<Trace> traces;
 
@@ -500,11 +464,9 @@ public class TileAnnotation
         private final Side from;
         private final Side to;
         /**
-         * Which of the two tested directions this segment belongs to.
-         *
-         * No longer changes how it is DRAWN - both directions share one line, and the chevrons say
-         * which ways it runs - but it still decides how many chevrons a square gets, because a route
-         * that works both ways contributes a segment from each direction.
+         * Which of the two tested directions this segment belongs to.  Both directions share one line, but
+         * it decides how many chevrons a square gets, because a route that works both ways contributes a
+         * segment from each direction.
          */
         private final boolean forward;
 
@@ -653,12 +615,8 @@ public class TileAnnotation
      *
      * One thing turns on it, with FR-118's icons only (`StationIcons.SHAPES`): what colour a badge is.
      * In the editor every point's icon is white with its colour round it, named or not, because the
-     * direction arrows are drawn over the icon there and are what the editor is read for (Adam, 2026-10-10: *"Let's make all of the icons white with
-     * a blue border in the editor.  That way, arrows can be seen clearly."*).  Everywhere else - the
-     * main window, a popup, an exported image - a named point's icon is filled with its colour.
-     *
-     * Where the icon sits no longer turns on it: on a bend it lies along the rails in the editor as
-     * on a diagram (round 127), where it once moved out to the square's corner.
+     * direction arrows are drawn over the icon there and are what the editor is read for.  Everywhere else
+     * - the main window, a popup, an exported image - a named point's icon is filled with its colour.
      *
      * Set rather than passed: the constructor already takes ten arguments and this is a property of
      * the SURFACE doing the drawing rather than of the square being drawn.
@@ -715,8 +673,7 @@ public class TileAnnotation
 
     /**
      * Draws only the directions trains may run - the green arrows - and none of the shut ones: the autonomy editor's
-     * Allowed only (Adam, 2026-10-04: *"In addition to "restrictions only", add "allowed only" to the autonomy
-     * editor."*).  The wash stays, as under Show All: the open arrows are most of the ink it lifts off the tile art.
+     * Allowed only.  The wash stays, as under Show All: the open arrows are most of the ink it lifts off the tile art.
      *
      * @return this
      */
@@ -746,9 +703,8 @@ public class TileAnnotation
     /**
      * Says a train is set up to be standing on this square.
      *
-     * A builder rather than another constructor argument: there are five constructors already, all
-     * chaining into the longest, and a sixth position for a boolean is a thing to get wrong at a call
-     * site rather than a thing to read.
+     * A builder rather than another constructor argument: one more boolean position is a thing to get wrong at a
+     * call site.
      *
      * @return this
      */
@@ -764,10 +720,9 @@ public class TileAnnotation
     /**
      * Says a length rule reads this square and nobody has given it a length (the Unmeasured Track display).
      *
-     * A builder, like `withTrain`, and for its reason: five constructors already chain into the longest.  And carried
-     * through `isBlank`, `equals` and `hashCode` as well as `paint`, because OB-007 is what happens to a mark that is
-     * not: plain track has nothing else to say, so a mark missing from `isBlank` is invisible on nearly every square it
-     * is for.
+     * A builder, like `withTrain`.  Carried through `isBlank`, `equals` and `hashCode` as well as `paint`
+     * (OB-007): plain track has nothing else to say, so a mark missing from `isBlank` is invisible on nearly every
+     * square it is for.
      *
      * @return this
      */
@@ -865,27 +820,15 @@ public class TileAnnotation
     /**
      * Whether there is nothing here worth drawing.
      *
-     * paint() opens with this, so anything missing from the list below is a thing that never gets
-     * painted when it is the ONLY thing on a square.
-     *
-     * `occupied` was missing, which is OB-007: the train mark had been written and drawn for a while,
-     * and was invisible on exactly the squares the request was about - the ones with nothing else to
-     * say. A station carrying a badge was never blank, so the star appeared there and the gap looked
-     * like it did not exist.
-     *
-     * The field had been added to equals and to hashCode. It is the method that decides whether the
-     * object is worth drawing at all that tends to be missed, because it is not one anybody is looking
-     * at while adding a field.
+     * paint() opens with this, so anything missing from the list below is never painted when it is the ONLY
+     * thing on a square (OB-007).  A field added to equals and hashCode belongs here too.
      *
      * @return whether this annotation would draw nothing
      */
     public boolean isBlank()
     {
-        // `editing` is deliberately NOT here, unlike in equals and hashCode.  On its own it paints
-        // nothing - it only says what colour a badge is, and with no badge there is nothing to colour -
-        // so an annotation carrying it and nothing else is still blank.  Said out loud because the comment
-        // above is about a field being left out of this method, and the next reader should not have to
-        // work out whether this is the same mistake again.
+        // `editing` is deliberately NOT here, unlike in equals and hashCode: on its own it paints nothing (it only
+        // says what colour a badge is), so an annotation carrying it and nothing else is still blank.
         return marks.isEmpty() && length < 0 && !selected && badge == null && !ignored && !stationless
             && traces.isEmpty() && arrivals.isEmpty() && !occupied && !unmeasured;
     }
@@ -913,19 +856,13 @@ public class TileAnnotation
     }
 
     /**
-     * The same, told whether the tile underneath has already been drawn faint (Adam, OB-212).
+     * The same, told whether the tile underneath has already been drawn faint (OB-212): *"keep one level of
+     * opacity, dont stack."*
      *
-     * *"a parked (blocking in orange) train will be further shaded if an active autonomy route near it
-     * also locks that edge.  keep one level of opacity, dont stack."*
-     *
-     * **Two washes that each make sense alone.**  `LayoutLabel` draws the tile art at `BLOCKED_ALPHA`
-     * where the railway refuses the square, and this class lays one at `DIM` under its arrows so that
-     * thin arrows lift off busy tile art.  Neither knew about the other, so a square that is both
-     * blocked and annotated was faded twice and read as much further gone than either reason justifies.
-     *
-     * **This wash is the one that gives way**, because on a tile already drawn at 40% its whole purpose
-     * has been served - there is no busy art left for an arrow to compete with.  Dropping the other
-     * would lose what the fade is SAYING, which is that the railway will not use this square.
+     * `LayoutLabel` draws the tile art at `BLOCKED_ALPHA` where the railway refuses the square, and this class
+     * lays a wash at `DIM` under its arrows.  This wash is the one that gives way, because on a tile already
+     * drawn faint there is no busy art left for an arrow to compete with, and dropping the other would lose what
+     * the fade says: that the railway will not use this square.
      *
      * @param g where to draw
      * @param width the tile
@@ -941,10 +878,9 @@ public class TileAnnotation
     /**
      * The same, told exactly WHICH part of the tile is already faint (PRW-C1).
      *
-     * A square is one road almost everywhere, and there the two forms say the same thing. A double
-     * curve is two roads in one tile, and a train covers one of them - so "is this tile already
-     * faded" has no answer and the boolean form had to pick one. It picked "yes", and the road with
-     * no train on it lost the wash under its arrows.
+     * A square is one road almost everywhere, and there the two forms say the same thing.  A double curve is
+     * two roads in one tile and a train covers one of them, so "is this tile already faded" has no answer; the
+     * region form lets the road with no train keep the wash under its arrows.
      *
      * @param g the brush
      * @param width the tile's width
@@ -960,9 +896,7 @@ public class TileAnnotation
         Color oldColor = g.getColor();
         java.awt.Font oldFont = g.getFont();
 
-        // Restored with the rest.  The ignored branch sets a composite and returns, so without this the
-        // only thing keeping a half-transparent brush from leaking out is that the caller happens to
-        // hand over a scratch Graphics it then throws away.
+        // Restored with the rest: the ignored branch sets a composite and returns.
         java.awt.Composite oldComposite = g.getComposite();
 
         try
@@ -971,28 +905,18 @@ public class TileAnnotation
 
             // A square autonomy takes no notice of is greyed out and nothing else is drawn on it.
             // Nothing here is the user's to decide, so anything drawn would invite a click.
-            // Grey means one thing on this diagram: autonomy cannot use this square.  It used to mean
-            // that AND "this track follows another tile", which are unrelated, so a reader could not
-            // tell "you cannot set this" from "this is already set, over there".  Track that follows
-            // its run is now drawn plainly and simply carries no arrows of its own; the flash on the
-            // tile that changed is what points at where the answer lives.
+            // Grey means one thing on this diagram: autonomy cannot use this square.  Track that follows its
+            // run is drawn plainly and carries no arrows of its own.
             if (ignored)
             {
                 paintGreyedOut(g, width, height);
 
                 // Except the route being tested, which is drawn on top of the greying.
                 //
-                // "Ignored" means there is nothing here for the user to SET - a route button carries no
-                // track meaning of its own, so offering a length or a direction on it would invite a
-                // click that does nothing.  It never meant "no route runs over this square", and a
-                // route button threaded through a running line is exactly a square a route runs over:
-                // this layout has forty-three of them.
-                //
-                // Suppressing the line here broke it into pieces wherever it crossed one, and only in
-                // the editor - the running diagram draws the same route through a different painter
-                // that has no notion of ignored, which is why one worked and the other did not.  A
-                // drawn route is not something the user is being invited to change; it is an answer
-                // being shown to a question they asked.
+                // "Ignored" means there is nothing here for the user to SET, not that no route runs over this
+                // square; a route button threaded through a running line is exactly a square a route runs over.
+                // A drawn route is an answer being shown to a question the user asked, not something they are
+                // invited to change.  (The running diagram draws it through a painter with no notion of ignored.)
                 if (!traces.isEmpty())
                 {
                     g.setComposite(java.awt.AlphaComposite.getInstance(
@@ -1014,36 +938,19 @@ public class TileAnnotation
 
             // Knock the tile art back before drawing on it.  Thin lines over a busy icon are the same
             // contrast problem as writing on a photograph; this is the caption box behind the writing.
-            // No wash when only the shut directions are drawn.  It exists to lift thin arrows off busy
-            // tile art, and with the open ones gone there is little left to lift - so all it did was
-            // grey most of the layout to make a handful of red arrows very slightly crisper.
-            // Never on a paired link, which is the one tile where this wash says the opposite of what
-            // it means.
-            //
-            // Grey on this diagram means "autonomy takes no notice of this square".  A link that is
-            // paired and in use carries arrows, so it got the wash; a link switched off carries none,
-            // so it did not - and the result was that the link being USED looked faded and the one
-            // being ignored looked solid.  Exactly the wrong way round, and on the one tile type whose
-            // whole job is to be either connected or not.
-            //
-            // Nothing is lost by skipping it.  The wash exists to lift thin arrows off busy tile art,
-            // and a link's art is a single bold arrow in a box with room around it.
-            //
-            // NOR ON A SQUARE OUT OF SERVICE, which draws no arrows (Adam, 2026-10-10): the wash only paled its track and
-            // the red arrows its sensor shows while it reads occupied, which he asked to keep visible.
+            // No wash when only the shut directions are drawn: with the open arrows gone there is little left to
+            // lift.  Never on a paired link, whose art is a single bold arrow in a box with room around it, and
+            // where a wash on a link in use and none on a link ignored would read the wrong way round.
+            // Nor on a square out of service, which draws no arrows: the wash would only pale its track and the
+            // red arrows its sensor shows while it reads occupied, which stay visible.
             if (!marks.isEmpty() && !blockedOnly && !portal && !outOfService())
             {
                 // WHAT IS LEFT OF THE TILE, rather than all of it or none of it (PRW-C1).
                 //
-                // `alreadyFaint` is the region the caller has already drawn faint.  On an ordinary
-                // square that is the whole tile and nothing is washed here, which is Adam's ruling on
-                // MT-375 - *"keep one level of opacity, dont stack"* - unchanged.
-                //
-                // On a DOUBLE CURVE it is one road's band: two curves crossing in one tile with no
-                // connection between them, where a train covers one road and not the other. The flag
-                // this used to take was per TILE while the fade is per ROAD, so the uncovered road
-                // lost the wash under its own arrows. Clipping keeps the covered road at one level and
-                // gives the other road the wash it should have had.
+                // `alreadyFaint` is the region the caller has already drawn faint.  On an ordinary square that
+                // is the whole tile and nothing is washed here (MT-375).  On a DOUBLE CURVE it is one road's
+                // band, since a train covers one road and not the other; clipping keeps the covered road at
+                // one level and gives the other the wash.
                 java.awt.geom.Area rest = new java.awt.geom.Area(
                     new java.awt.Rectangle(0, 0, width, height));
 
@@ -1070,39 +977,25 @@ public class TileAnnotation
             // runs or what the square is.
             if (unmeasured) paintUnmeasured(g, width, height);
 
-            // THE BADGE UNDER THE ARROWS AGAIN (Adam, MT-710, 2026-10-09: "If there is a red or green arrow on a tile,
-            // the rectangular station icon now hides it.  We need to render red arrows on top of stations in the
-            // viewer"; asked, the editor too).  It was drawn over them once a badge on a bend had moved off into the
-            // corner, to keep its outline clean; FR-118's icons run along the track nearly the width of the square,
-            // where the arrows are, and an arrow says where a train may go - the thing a reader cannot get from the
-            // icon.  `paintBadgeOverRun` draws them over it again.
+            // THE BADGE UNDER THE ARROWS (MT-710): an arrow says where a train may go, which a reader cannot get
+            // from the icon, and FR-118's icons run along the track nearly the width of the square where the arrows
+            // are.  `paintBadgeOverRun` draws them over it again.
             if (badge != null) paintBadge(g, width, height);
 
             paintArrows(g, width, height);
 
             paintArrivals(g, width, height);
 
-            // And the train mark over the badge (MT-099).
-            //
-            // It was drawn before, and on a STATION that made it invisible: both are centred on the
-            // tile, and a station's badge is half the tile across while the star's arms are a sixth -
-            // so the badge covered it completely. Adam: "I can't see it - but it should overlay on top
-            // of the middle of the sensor."
-            //
-            // On top is also the right reading. The badge says what the square IS, which does not
-            // change; the star says a train is standing on it now, which does. The changing fact
-            // belongs on top of the fixed one, and the star is small enough and outlined darkly
-            // enough not to hide what it sits on.
+            // And the train mark over the badge (MT-099).  On a station both are centred on the tile and the badge
+            // is half the tile across while the star's arms are a sixth, so the star must go on top to be seen.
+            // The badge says what the square IS; the star says a train is standing on it now, and the changing
+            // fact belongs on top of the fixed one.
             if (occupied) paintTrainMark(g, width, height);
 
             if (length >= 0) paintLength(g, width, height);
 
-            // Last, and so on top of everything: the arrows, the badge, the length, the outline.
-            //
-            // It was drawn underneath, so a broad line would not cover the directions being tested
-            // against - but a tested path is a transient answer to a question just asked, and while it
-            // is up it is the thing being looked at.  Anything it covers is still there a moment later
-            // when the next click clears it.
+            // Last, and so on top of everything: the arrows, the badge, the length, the outline.  A tested path is
+            // a transient answer to a question just asked, and while it is up it is the thing being looked at.
             paintTraces(g, width, height);
 
             if (selected)
