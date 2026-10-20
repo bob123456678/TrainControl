@@ -194,7 +194,7 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
             "OFF THE EVENT THREAD: this method bounces itself onto a thread when it finds itself on the"
             + " event thread, and takes the monitor only after that");
 
-        ALLOWED.put("AutonomyEditorPanel.java#composeWhy",
+        ALLOWED.put("EditorWhy.java#composeWhy",
             "OFF THE EVENT THREAD: WhyRenderer, submitted by applyWhy - which captures the Layout and"
             + " the station index on the event thread first, because both of those BUILD, and paints"
             + " the answer in an invokeLater.  This was the last ON THE EVENT THREAD allowance for a"

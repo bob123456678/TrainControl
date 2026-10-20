@@ -4947,7 +4947,7 @@ public class testEditorSurfaceRules
     @Test
     public void testTheWhyWorkerReadsNoSetupCollection() throws Exception
     {
-        String worker = codeOf("private WhyAnswer composeWhy(");
+        String worker = codeOf("    AutonomyEditorPanel.WhyAnswer composeWhy(");
 
         for (String asked : new String[] {
             ".mandatoryTurnTiles(", ".mayTurnTiles(", ".barredArrivals(", ".shutTiles(", ".getReducer(" })

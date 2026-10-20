@@ -592,6 +592,7 @@ public class testNoSelfRecursiveWrappers
         { "prompts", "src/org/traincontrol/gui/EditorPrompts.java", "EditorPrompts" },
         { "signalPairing", "src/org/traincontrol/gui/EditorSignals.java", "EditorSignals" },
         { "massAssignment", "src/org/traincontrol/gui/EditorMassAssign.java", "EditorMassAssign" },
+        { "whyAnswers", "src/org/traincontrol/gui/EditorWhy.java", "EditorWhy" },
     };
 
     /**
