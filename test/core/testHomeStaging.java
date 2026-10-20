@@ -5908,8 +5908,8 @@ public class testHomeStaging
     /**
      * Two homes, a one-way hold, and an approach guard that shares a feedback with the other home.
      *
-     * The counterexample against the OB-085 impossibility proof, built by a review and kept because
-     * it is the case that scan is prone to getting wrong.
+     * The counterexample against the OB-085 impossibility proof, kept because it is the case that scan was
+     * prone to getting wrong.
      *
      * HS C is held back while HS D is occupied - an ordinary one-way restriction. HS D is held back
      * while its approach guard HS W2 is occupied, and HS W2 shares a feedback address with HS C, which
@@ -5967,11 +5967,11 @@ public class testHomeStaging
     /**
      * The audit's FR-001 exemption is NARROW - it does not blind the instrument (DR-B1).
      *
-     * The review named this risk when it asked for the exemption: "an exemption written too wide
-     * (skipping every FR-001 destination rather than the currently-held ones) would blind the audit to
-     * a real mis-copy of the rule." An exemption is a hole in the one tool that exists to find real
-     * divergence, and the sibling tests above - all of which assert the audit is SILENT - cannot tell a
-     * narrow hole from a total one. This is the only test in the class that asserts it still speaks.
+     * An exemption written too wide (skipping every FR-001 destination rather than the currently-held ones)
+     * would blind the audit to a real mis-copy of the rule, and an exemption is a hole in the one tool that
+     * exists to find real divergence.  The sibling tests above - all of which assert the audit is SILENT -
+     * cannot tell a narrow hole from a total one.  This is the only test in the class that asserts it still
+     * speaks.
      *
      * The divergence used as the vehicle is a real one the audit reports today and is not exempted: HS
      * B shares its feedback with HS X, where LOC_B is standing, so `canEnter`'s shared-sensor rule
@@ -5981,9 +5981,8 @@ public class testHomeStaging
      * If that traversal divergence is ever exempted in its own right, this test needs a new vehicle
      * rather than deletion - the property it pins is about the FR-001 skip, not about shared sensors.
      *
-     * MUTATION-CHECKED. Widening the exemption to `if (!p.getBlockedBy().isEmpty()) continue;` - the
-     * exact over-reach the review warned about - takes the count to 0 and fails this test and no
-     * other: 1 failure in the 65 of this class.
+     * MUTATION: widening the exemption to `if (!p.getBlockedBy().isEmpty()) continue;` - the over-reach
+     * described above - takes the count to 0 and fails this test and no other.
      */
     @Test
     public void testTheParityAuditStillReportsADivergenceOnAWatchedStation() throws Exception
@@ -6061,14 +6060,13 @@ public class testHomeStaging
      * production copies exempt the locomotive being routed, and they must: without it the one movement
      * that clears the condition is the movement it forbids.
      *
-     * The replay oracle in this class did not. It asserted the watched square's `getCurrentLocomotive`
-     * was null with no exemption at all, so a legal plan whose move IS the departing train would have
-     * failed the test that grades the other two copies - a false red in the only automated check
-     * staging plans have. It calls `Point.heldBackBy` now, which is the same call `isPathClear` makes.
+     * The replay oracle (`applyPlan`) calls `Point.heldBackBy`, the same call `isPathClear` makes, so the
+     * exemption holds there too: asserting that the watched square's `getCurrentLocomotive` is null with no
+     * exemption would fail a legal plan whose move IS the departing train, a false red in the only automated
+     * check staging plans have.
      *
-     * MUTATION-CHECKED - and by the strongest kind, since the pre-fix code is the mutation. Restoring
-     * applyPlan's hand-written loop (assertNull on `watched.getCurrentLocomotive()` for every entry in
-     * `end.getBlockedBy()`) fails this test and no other: 1 failure in the 65 of this class.
+     * MUTATION: restoring applyPlan's hand-written loop (assertNull on `watched.getCurrentLocomotive()` for
+     * every entry in `end.getBlockedBy()`) fails this test and no other.
      */
     @Test
     public void testAStationHeldBackByTheTrainThatIsLeavingItIsStillReachable() throws Exception
@@ -6101,12 +6099,10 @@ public class testHomeStaging
     /**
      * Return Home does NOT stage a train into a home FR-001 is holding back (Adam, 2026-09-10).
      *
-     * **This asserted the opposite for a day, and the inversion is the record of two rulings.**  On
-     * 2026-09-09, asked which tier should enforce the restriction, he said *"enforce only in full
-     * autonomy... the point exclusion is for modifying pathing prioritization"*, and the planner's
-     * copy was removed.  On 2026-09-10 he replaced that: **"if it's cleaner to go with consistency
-     * across the board, then let's enforce the occupancy ruling in all modes and then rely on
-     * isPathClear.  Revert the prior lax ruling."*
+     * Adam, 2026-09-10: **"if it's cleaner to go with consistency across the board, then let's enforce the
+     * occupancy ruling in all modes and then rely on isPathClear.  Revert the prior lax ruling."**  That replaced
+     * his ruling of 2026-09-09, *"enforce only in full autonomy... the point exclusion is for modifying pathing
+     * prioritization"*, under which the planner's copy of the restriction had been removed.
      *
      * So the planner reads it again, and it has to: the runtime refuses this arrival in every tier
      * now, and a plan that offers a leg the railway refuses is OB-073 - the run retries until it gives
@@ -6288,26 +6284,20 @@ public class testHomeStaging
     /**
      * A locomotive held on two points is reported, not planned for (SG-A3).
      *
-     * A locked path reserves every point along it for the one locomotive at once - that is how a
-     * junction behind the train is held against a second train reaching it another way - and a path
-     * that failed part-way through unlocking leaves those reservations standing.  Nothing in the model
-     * tells a reservation from a train: reserve() and setLocomotive() write the same field, and the
-     * only difference between them is whether the other copies are swept.
+     * A locked path reserves every point along it for the one locomotive at once - that is how a junction behind
+     * the train is held against a second train reaching it another way - and a path that failed part-way through
+     * unlocking leaves those reservations standing.  Nothing in the model tells a reservation from a train:
+     * reserve() and setLocomotive() write the same field, and the only difference between them is whether the other
+     * copies are swept.
      *
-     * So the planner had a locomotive at two places at once, and two things went wrong with it.
-     * `misplaced` counted map ENTRIES, so one train counted twice, and `apply` moved it by removing the
-     * first entry it found - which left the other behind for ever.  `misplaced == 0` was therefore
-     * unreachable, and the answer was NO_PLAN_FOUND with no moves, for a train with a clear run to an
-     * empty home.
+     * So the planner can see a locomotive at two places at once.  Counting it properly is the wrong fix: the plan
+     * would depart from whichever of the two points the map happens to yield first, so a real train is driven from
+     * a place it is not standing.  This class's own doctrine is that NO_PLAN_FOUND claims less than it could and
+     * claims nothing false; a guessed origin claims something that may be false, and the cost of being wrong is
+     * the worst outcome this project has.
      *
-     * **Counting it properly is the wrong fix.**  It makes the planner produce a plan, and the plan
-     * departs from whichever of the two points the map happens to yield first - so a real train is
-     * driven from a place it is not standing.  This class's own doctrine is that NO_PLAN_FOUND claims
-     * less than it could and claims nothing false; a guessed origin claims something that may be false,
-     * and the cost of being wrong is the worst outcome this project has.
-     *
-     * What the operator is told instead names the locomotive and the remedy - place it on the square it
-     * is actually on, which sweeps the rest - rather than sending them to look at track that is fine.
+     * What the operator is told instead names the locomotive and the remedy - place it on the square it is
+     * actually on, which sweeps the rest - rather than sending them to look at track that is fine.
      *
      * MUTATION this catches: removing the check returns NO_PLAN_FOUND, which the first assertion
      * rejects; naming nothing fails the second.
@@ -6512,9 +6502,9 @@ public class testHomeStaging
         // REFUSED, AND REFUSED FOR THE MAXIMUM (OP2-C7).
         //
         // `assertFalse(built != null && built.isValid())` passes for ANY invalidation - a typo in the
-        // fixture, a sensor clash, a graph that never parsed - so it could not tell "the negative
-        // maximum was rejected" from "this fixture stopped loading for some other reason".  The error
-        // the loader recorded is what distinguishes them.
+        // fixture, a sensor clash, a graph that never parsed - so the error the loader recorded is what
+        // distinguishes "the negative maximum was rejected" from "this fixture stopped loading for some
+        // other reason".
         assertFalse(built != null && built.isValid(),
             "a configuration with a maximum train length of -3 loaded, so the editor door's refusal is guarding"
             + " nothing - and the reason SET-B1 mattered was that it does not load");
@@ -6536,10 +6526,10 @@ public class testHomeStaging
     /**
      * A train that cannot leave where it stands is named, not searched for (OB-325, from E2E-B1).
      *
-     * The end-to-end validation stood a reversible train of 4 on BottomMainB's turning copy, from which every station
-     * reachable is shorter.  Its home was connected by track, so the pre-scan passed it, and the search could find no
-     * first move for it: Return Home searched the whole fleet for about fifteen seconds and answered "no plan found",
-     * naming nobody, so the operator could not tell which train to move.
+     * A reversible train of 4 stands on BottomMainB's turning copy, from which every station reachable is shorter.
+     * Its home is connected by track, so the pre-scan passes it, and the search can find no first move for it; without
+     * the scan Return Home searches the whole fleet for about fifteen seconds and answers "no plan found", naming
+     * nobody, so the operator cannot tell which train to move.
      *
      * Here the train stands on HS T, whose one way out is HS U - a terminus that takes 2 - and its home HS A lies beyond
      * HS U.  The track connects them; a train of 4 can never leave.  The plan is IMPOSSIBLE and names it, with the
@@ -6646,12 +6636,12 @@ public class testHomeStaging
     /**
      * A sensor reading occupied with nothing known on it is not a proof that a train can never leave (RSA58-C1).
      *
-     * Round 93 names a train with no move at all as one that can never get home.  A sensor that reads occupied which
-     * no train on the graph accounts for blocks every arrangement alike, so where one lay on a train's only way out the
-     * train was named, with a sentence about its length and where it may stop - neither of which was the cause.  What
-     * holds such a contact is a vehicle TrainControl does not know, a dirty contact, or a tail past where the walk stops,
-     * and it goes when somebody clears it: that is live state, not a fact about the railway.  So such a train is left to
-     * the search, which answers as it did before round 93 - nothing found, it may still be possible.  The control: the
+     * The first-move scan names a train with no move at all as one that can never get home.  A sensor that reads
+     * occupied which no train on the graph accounts for blocks every arrangement alike, so where one lay on a train's
+     * only way out the train would be named, with a sentence about its length and where it may stop - neither of which
+     * is the cause.  What holds such a contact is a vehicle TrainControl does not know, a dirty contact, or a tail past
+     * where the walk stops, and it goes when somebody clears it: that is live state, not a fact about the railway.  So
+     * such a train is left to the search, which answers nothing found, it may still be possible.  The control: the
      * sensor clear, the plan is ready.
      *
      * MUTATION: name the train without asking again with no sensor read, and this fails.
