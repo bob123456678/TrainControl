@@ -34,58 +34,50 @@ document exists to prevent comes from assuming they do.
 | **Return Home** | no — the planner chooses | **yes** | never |
 
 The middle column is about the **parking marking** — *Can Be Chosen in Full Autonomy* — and nothing
-else. The occupancy restriction below is not a tier question at all any more.
+else. The occupancy restriction below is not a tier question.
 
-**No tier moves trains over a setup with errors** (Adam, 2026-09-24, MT-263: *"trains can still be moved manually via
+**No tier moves trains over a setup with errors** (MT-263; Adam: *"trains can still be moved manually via
 both the track diagram viewer and the autonomy tab, which should throw an error instead"*). Start is refused while the
 setup has errors, and so are both hand doors, Execute Timetable and Return Home - one question, `autonomyHasErrors`, in
-the setup's own words. The two run doors were added on the rule's own reason (TDU-B1): they drive over the railway the
+the setup's own words. The two run doors follow the same reason (TDU-B1): they drive over the railway the
 same setup built, through the same dispatch. **The right-click Return Home item is greyed over such a setup, with the
 setup's sentence as its tooltip**, as the right-click Start beside it is; the Return Home, Execute Timetable and Start
-buttons stay live and explain on a click (Adam, 2026-09-24, TDU2-C3: *"Yes, go with your recommendation"*).
+buttons stay live and explain on a click (TDU2-C3).
 `regression.testAHandSendIsRefusedWhileTheSetupIsBroken`.
 
-**Return Home sits with Manual on the question of where a train may be sent.** This was got wrong
-once and corrected on 2026-09-06: `isAutoDestination` appears nowhere in `HomeStaging`, and Adam's
-earlier ruling stands — *"Return Home still fills it; only full autonomy leaves it alone."* The Path
+**Return Home sits with Manual on the question of where a train may be sent.** `isAutoDestination` appears
+nowhere in `HomeStaging`, and Adam: *"Return Home still fills it; only full autonomy leaves it alone."* The Path
 Type control in the editor says Manual for this reason.
 
-**Occupancy restrictions bind every tier** (Adam, 2026-09-10). A station can be marked unavailable
+**Occupancy restrictions bind every tier.** A station can be marked unavailable
 while some other named square has a train standing on it, and **autonomy, a hand-driven send and
-Return Home all obey it**. His ruling:
+Return Home all obey it**. Adam:
 
 > *"If it's cleaner to go with consistency across the board, then let's enforce the occupancy ruling
 > in all modes and then rely on isPathClear. Revert the prior lax ruling."*
 
-**It was fenced twice before, and this is the record of both.** It stood behind `isAutoRunning` until
-2026-09-09 and behind `isFullAutonomyRunning` after it, on his earlier ruling that the restriction is
-*"for modifying pathing prioritization"* while the length checks are *"our primary anti collision
-mechanism."* Both fences are gone. One rule, one answer, asked once — in `Layout.isPathClear`.
+One rule, one answer, asked once — in `Layout.isPathClear`.
 
-**Of every square a route arrives at, not only its destination** (Adam, 2026-09-24, OB-295: *"It means
+**Of every square a route arrives at, not only its destination** (OB-295; Adam: *"It means
 trains shouldn't be sent to THIS square while trains are STANDING ON or hold a lock on the other specified
 station(s)."*). The setting has two halves. The lock half - the watched square's approach held by a
-route - is built into every edge arriving at the square, so it always closed a square to routes through
-it as well. The standing half - a train standing on the watched square - was asked of the destination
-only, so a square trains only pass, which is never a destination, was shut by a route and not by a
-train standing there. Both halves now ask the same thing of every square on the route, and the notice
+route - is built into every edge arriving at the square, so it closes a square to routes through
+it as well. The standing half - a train standing on the watched square - is asked of every square on the route, not only
+the destination, so a square trains only pass is shut by a train standing there as well, and the notice
 *"{0} is unavailable while {1} is occupied"* is true of such a square. The cost is the one the setting
 names: while that train stands there, the square is shut to routes through it too. Return Home's planner
 asks it of every square a plan passes, against the occupancy the plan has reached. **And two restrictions can
-now hold each other**: where each watched train's only way out passes the square the other holds back, the
+hold each other**: where each watched train's only way out passes the square the other holds back, the
 exemption lets each leave its own watched square but not pass the other's, and neither is sent - by autonomy,
 by hand from TrainControl, or by Return Home - until one is moved without TrainControl's routing (driven on the
-throttle, or taken off the diagram) or one restriction is cleared (ADA-C3, ADD2-C4).  Before, a standing train
-closed only arrivals, so both went.
+throttle, or taken off the diagram) or one restriction is cleared (ADA-C3, ADD2-C4).
 `regression.testStationBlockedByAnotherPoint.testATrainStandingOnTheWatchedPointClosesASquareTrainsPass`,
 `core.testHomeStaging.testAHomeBeyondAHeldBackSquareIsNotStagedThroughIt`.
 
-**The planner reads it again, and has to.** `HomeStaging` stopped applying it when the fence narrowed,
-precisely so it would not offer a leg the runtime refuses; with the fence gone it would offer exactly
-that, and a plan whose first move the railway refuses is OB-073 — the run retries until it gives up
-and stops with the fleet half-staged. Its copy asks the occupancy the **plan** has reached rather than
-the live railway (`HomeStaging.plannedOccupancy`), and `auditAgainstRuntime` is what proves the two
-agree.
+**The planner reads it, and has to.** A plan whose first move the railway refuses is OB-073 — the run
+retries until it gives up and stops with the fleet half-staged. `HomeStaging`'s copy asks the occupancy the **plan**
+has reached rather than the live railway (`HomeStaging.plannedOccupancy`), and `auditAgainstRuntime` is what proves the
+two agree.
 
 **Two consequences worth knowing.**
 
@@ -93,30 +85,26 @@ agree.
   trains leaving, only departing"* — and that exemption is what keeps the rule from being a trap: a
   locomotive parked on the yard could otherwise never be sent to the platform the yard holds back,
   and while it sat there the platform would be shut to everybody else too.
-- **Two stations that hold each other back are now a real deadlock.** Whichever train arrives last
+- **Two stations that hold each other back are a real deadlock.** Whichever train arrives last
   finds its station closed by one already parked, and no order of moves avoids it. Return Home reports
-  `NO_PLAN_FOUND` — not `IMPOSSIBLE`, which names locomotives and asserts that no arrangement exists.
-  The scan that used to produce that verdict was wrong three separate times and was removed rather
-  than repaired, so the weaker true answer is the one that stands.
-  `core.testHomeStaging.testTwoHomesThatHoldEachOtherBackAreADeadlock` pins it.
+  `NO_PLAN_FOUND` — not `IMPOSSIBLE`, which names locomotives and asserts that no arrangement exists; the weaker true
+  answer is the one that stands. `core.testHomeStaging.testTwoHomesThatHoldEachOtherBackAreADeadlock` pins it.
 - **A train that cannot leave where it stands is named** (OB-325, from E2E-B1). With every other train
   taken off, a train with no move at all - a reversible train of 4 on BottomMainB's turning copy, where
   every station reachable is shorter - can never get home, and Return Home answers `IMPOSSIBLE` with its
-  name and the reason (`HomeStaging.hasAFirstMove`). It used to search the whole fleet for about fifteen
-  seconds and answer `NO_PLAN_FOUND`, naming nobody. A proof, not a guess: another train only ever takes
+  name and the reason (`HomeStaging.hasAFirstMove`). A proof, not a guess: another train only ever takes
   moves away, so a train held in only by another is still planned
   (`core.testHomeStaging.testATrainHeldInOnlyByAnotherIsPlannedNotNamed`). Nor is a train held only by a
   sensor that reads occupied with no train known on it named: that goes when somebody clears it, so the
   answer stays `NO_PLAN_FOUND` (RSA58-C1, `core.testHomeStaging.testASensorOnTheOnlyWayOutIsNotAProof`).
 
-**"Full autonomy" is still narrower than "autonomy is running", and the distinction survives this
-change.** Executing a timetable sets the same running flag, and a Return Home run *is* a timetable, so
-a rule fenced behind that flag applies to Return Home as well. `Layout.isFullAutonomyRunning` — running,
-with no timetable driving it — exists for that; nothing asks it today, and it is kept because the next
-rule that needs the distinction will need it spelled correctly.
+**"Full autonomy" is narrower than "autonomy is running".** Executing a timetable sets the same running flag, and a
+Return Home run *is* a timetable, so a rule fenced behind that flag applies to Return Home as well.
+`Layout.isFullAutonomyRunning` — running, with no timetable driving it — exists for the narrower meaning; nothing asks
+it today.
 
 **How many trains may be out at once is a cap, and it binds only while the railway is running
-itself** (Adam, 2026-09-09: it *"stays enforced only under full autonomy"* — no change asked for).
+itself** (Adam: it *"stays enforced only under full autonomy"*).
 The Autonomy tab has a slider, `Layout.maxActiveTrains`, from 0 to 20; **0 means no cap**, which is
 the default. A path is refused with `errorMaxActiveTrainsExceeded` when the number of distinct
 locomotives underway has already reached it — counted as the UNION of the registered ones and the
@@ -126,25 +114,21 @@ registered is a per-accessory wait seconds wide and two trains crossed it togeth
 - **A hand dispatch is exempt.** A train sent by hand - from the track diagram or the Auto tab - is
   marked as a hand send for its journey (`Layout.executePathByHand`), so the cap neither counts it nor
   refuses it, however many trains a run already has out; the reasons the right-click menu gives for a
-  hand send ask the same way.  Until 2026-10-04 the exemption rested on the running flag alone, so a
-  hand send made while a run was going was refused by the cap and counted against it (BCR-C1). That is the tiering above: the cap
+  hand send ask the same way (BCR-C1). That is the tiering above: the cap
   is a preference about how much railway the operator wants moving at once — what a booster will
   carry, or how much they want to watch — rather than a fact about what the track will hold. The
   anti-collision guarantees are the edge locks and the length rules of §5, which every tier obeys.
 - **The fence is `isAutoRunning`, which is wider than "full autonomy".** `executeTimetableInternal`
   sets the same flag, and a Return Home run *is* a timetable, so **a timetable and Return Home ARE
   capped**. If Adam's *"only under full autonomy"* is meant literally, the fence is the thing to
-  change, and that is a behaviour change nobody has asked for.
-
-  This bullet used to contrast the cap with the occupancy restrictions, which asked
-  `isFullAutonomyRunning`. There is nothing to contrast it with any more: those bind every tier since
-  2026-09-10, and **the cap is now the only rule in this document with a tier fence on it**.
+  change, and that is a behaviour change nobody has asked for. **The cap is the only rule in this document with a
+  tier fence on it.**
 - `core.testMaxActiveTrains` is the class, and
   `core.testMaxActiveTrains.testTheCapDoesNotBindAHandDispatch` is the one that goes red when the
   fence is removed; the other three all start by running the railway and would not notice.
 
-**One difference remains between Return Home and a manual send**, and it is deliberate (confirmed
-2026-09-07): Return Home refuses to start a train standing on an **inactive** square, where a manual
+**One difference remains between Return Home and a manual send**, and it is deliberate:
+Return Home refuses to start a train standing on an **inactive** square, where a manual
 send allows it. The exemption exists for a person who has looked at the railway and decided to move
 that train now; Return Home is a plan made for every staged locomotive at once, and quietly driving
 out of a square somebody switched off is the opposite of what switching it off meant.
@@ -161,19 +145,19 @@ Each locomotive on the run list has a loop of its own: choose a journey, drive i
 station autonomy may send a train to (`Layout.isSendableDestination`: active, a destination, choosable
 in full autonomy, not a reversing point), with nothing standing in its block, not a terminus for a
 train that cannot reverse - nor, for one that can, a terminus from which no station it fits is reachable
-again (E2E-B1: a train of 4 turned at BottomMainB's turning copy, where everything beyond is shorter, never
-moved again; `Layout.leavesForAStationItFits`, asked by the Why Not Moving? reasons too) - and not a
+again (E2E-B1: a train of 4 turned at BottomMainB's turning copy, where everything beyond is shorter, would never
+move again; `Layout.leavesForAStationItFits`, asked by the Why Not Moving? reasons too) - and not a
 station that excludes this train (`Point.excludes`: one its list names, or, where the list names the only locomotives
 allowed - FR-121, `excludedLocsMode: whitelist` - any it does not, a locomotive added later included); and a route to it
 is used only
 if it turns the train nowhere on the way and `isPathClear` passes it. No routing rule can admit a
 journey any of that refuses.
 
-**A paused train is left where it stands** (FR-117; Adam, 2026-10-09: *"in autonomy configs, track the paused/unpaused
+**A paused train is left where it stands** (FR-117; Adam: *"in autonomy configs, track the paused/unpaused
 status of locomotives, as designated on the autonomy locomotive controls tab"*, and, asked what a pause keeps a train out
 of, *"Autonomy and Return Home"*). Autonomy never chooses a journey for it (`Layout.pickPath`), and Why Not Moving? says
 it is paused; Return Home leaves it too (section 6). A hand send still takes it, and so does Execute Timetable (Adam,
-2026-10-09, asked: *"Timetable can run paused trains"*; RSA60-C4). **The pause belongs to the configuration**: it is listed with the
+asked: *"Timetable can run paused trains"*; RSA60-C4). **The pause belongs to the configuration**: it is listed with the
 configuration's settings (`pausedLocomotives`, written only while it names somebody), every train is set paused or not
 as a configuration loads - start-up, a load, an import, a rebuild - and the log names the paused ones (*"Make sure the
 log shows what locomotive are paused when the autonomy import happens"*). Three doors set it: the Auto tab's pause
@@ -198,7 +182,7 @@ config, not the UI."*).
 
 | rule | chooses, within the highest priority that has a clear route |
 |---|---|
-| **At random, respecting priority** (`RANDOM`) - the default | the first clear route found; the shuffle makes that random. The default because it is what every earlier version did |
+| **At random, respecting priority** (`RANDOM`) - the default | the first clear route found; the shuffle makes that random |
 | **Completely at random** (`RANDOM_ANY_STATION`) | the first clear route found, **with priority ignored** - a station at -5 is visited as often as one at 9 (OB-156, Adam: *"one completely random, and one that respects priority"*) |
 | **Fewest / most stations** | the route passing the fewest, or most, OTHER stations |
 | **Shortest / longest track** | the route over the least, or most, measured track - and a section with no length counts ONE, so with nothing measured it is the route over the fewest, or most, sections (Adam: *"a min length option that tries to minimize total track length, where we count each s88 as length 1 by default"*; `Layout.lengthOf`, DCN-B2) |
@@ -231,13 +215,13 @@ been asked to stop, because after a stop there is no next journey for it to spac
 
 **How many trains may be out at once is section 1's cap**, and it binds here as well as there.
 
-*(OB-265 recorded that this section did not exist. The per-rule explanations are the dropdown's tooltip, for the rule chosen (OB-163, fixed 2026-08-30).)*
+The per-rule explanations are the dropdown's tooltip, for the rule chosen (OB-163, OB-265).
 
 ---
 
 ## 2. Inactive squares
 
-> *"Inactive really means nothing can pass."* — Adam, 2026-09-06
+> *"Inactive really means nothing can pass."* - Adam
 
 An inactive square is refused as a **destination** and as an **intermediate** point, in every tier.
 
@@ -247,15 +231,15 @@ that would strand it.
 
 ### 2a. A square that stops being a station keeps what it had
 
-Adam, 2026-10-10, asked what setting a station to `No - Trains Cannot Stop Here` should do with its settings: *keep
+Adam, asked what setting a station to `No - Trains Cannot Stop Here` should do with its settings: *keep
 them, ignored while it is not a station* (GSE-C4).  A square demoted keeps its caption, the sides trains may not arrive
-by, its exit and entry guard signals and its turn setting, as it already kept its longest train (OB-291) and what blocks
+by, its exit and entry guard signals and its turn setting, as it keeps its longest train (OB-291) and what blocks
 it (AMS-B2).  While it is not a station none of them is read: no caption is drawn for it, no guard is built for it, no
-side of it is barred.  Made a station again, it has them all back.  They used to be cleared on demotion, with nothing
-said and no way back.  `core.testATrainIsPlacedOnceAndKeepsItsFacing.testADemotedStationHasItsSettingsBackWhenItIsAStationAgain`,
+side of it is barred.  Made a station again, it has them all back.
+`core.testATrainIsPlacedOnceAndKeepsItsFacing.testADemotedStationHasItsSettingsBackWhenItIsAStationAgain`,
 `testADemotedStationsSettingsAreIgnoredWhileItIsNotAStation`, `core.testACaptionStaysWithItsSquare.testOpeningKeepsTheCaptionOfASquareThatIsNotAStationNow`.
 
-**And a route deleted takes the calls to it with it** (GSR-B4; Adam, 2026-10-10, asked: remove the calls).  The
+**And a route deleted takes the calls to it with it** (GSR-B4; Adam, asked: remove the calls).  The
 question before deleting a route names the routes that run it; deleting it takes those "run this route" commands out of
 them, each logged, as deleting a locomotive takes the commands that drive it - so a new route given the old name does not
 inherit them.  At the window's door only: editing a route deletes and remakes it inside the model, and must not.
@@ -272,14 +256,13 @@ its direction**. Three kinds of square matter:
 
 - **A terminus.** The train has run out of track. It turns, and nobody is asked. A train that
   *cannot* reverse may still **back into** a terminus, when the route there turns it round
-  (Adam, MT-245).
+  (MT-245).
 - **A compulsory turn** (`mustReverse`). Every copy turns trains. Not a question in any tier: a
   turning copy's only outgoing edges leave by the side the train arrived from, so *not* turning is
   not an available outcome — it drives the train forward off its reserved path.
 - **A may-reverse square** (`canReverse` on the tile). The build splits it into a plain copy and a
   turning one. Autonomy turns only where the setup says. **A manual send asks** - but not
-  unconditionally, and this bullet read "Manual always asks" until 2026-09-08. *The question, and when
-  it is asked* below is the authority, and it has carried at least one exception since 2026-09-07: a
+  unconditionally. *The question, and when it is asked* below is the authority: a
   journey ending at a terminus is not asked about at all, and `ManualReversalPrompt.forJourney`
   returns before the dialog for one.
 
@@ -293,19 +276,13 @@ there:
 | **Compulsory turn** (`mustReverse`) | **yes, unless the square is ALSO marked one autonomy may not choose** | yes | **yes** | **independently** |
 | **May-reverse** | yes, if it is also a destination | only when chosen | independently | independently |
 
-**This row has been wrong twice, in opposite directions, and Adam settled it on 2026-09-09.**
-
-It said "not a destination" until 2026-09-08, which named the wrong one of two flags that sound alike
-(MON-C14). Measured on Adam's railway: every compulsory-turn square he has builds to `terminus=true`,
-which makes it a destination, and that is right. They are his parking berths. He sends trains to them
-by hand and homes locomotives there.
-
-It then said a compulsory turn is never somewhere **autonomy** chooses. **The code does not say that
-and was never asked to.** `AutonomyBuilder` writes `autoDestination:false` for exactly one marking -
-the parking one (`manualOnly`) - and for nothing else; a compulsory turn that stops is emitted as a
-terminus, and `Layout.isSendableDestination` (`isDestination && isActive && isAutoDestination &&
-!isReversing`) admits a terminus. So autonomy leaves Adam's parking berths alone because **he marked
-them parking**, not because they turn trains. His ruling:
+A compulsory turn is a destination (MON-C14): every compulsory-turn square on Adam's railway builds to
+`terminus=true`, which makes it a destination. They are his parking berths. He sends trains to them by hand and homes
+locomotives there. **Autonomy chooses a compulsory turn unless the square is also marked parking.**
+`AutonomyBuilder` writes `autoDestination:false` for exactly one marking - the parking one (`manualOnly`) - and for
+nothing else; a compulsory turn that stops is emitted as a terminus, and `Layout.isSendableDestination`
+(`isDestination && isActive && isAutoDestination && !isReversing`) admits a terminus. So autonomy leaves Adam's
+parking berths alone because **he marked them parking**, not because they turn trains. His ruling:
 
 > Marking a square as a compulsory turn says what happens when a train ARRIVES, not who may send one
 > there.
@@ -313,36 +290,28 @@ them parking**, not because they turn trains. His ruling:
 **Keeping the two separate is deliberate.** They answer different questions and a layout may want
 either without the other: a turning square autonomy is welcome to use is one marking, and a berth
 autonomy must leave alone is the other. Where both are wanted - which is every square on Adam's
-railway that turns trains - both markings are made, and that is why the ledger has looked as though
-one implied the other.
+railway that turns trains, except BottomMainC, a compulsory turn that autonomy may still choose - both markings are made.
 
-`isDestination` means "a place trains stop"; `isAutoDestination` means "a place autonomy may pick".
-The same two flags were confused in code one finding earlier on 2026-09-08 (MON-C5), which is a fair
-warning about how easily they read as synonyms.
+`isDestination` means "a place trains stop"; `isAutoDestination` means "a place autonomy may pick" (MON-C5): they read
+as synonyms and are not.
 
 The code enforces the terminus row in both directions: a terminus **must** be a destination, so
 `setDestination(false)` clears `isTerminus` and a copy trains may not arrive at is emitted as a plain
 reversing point rather than as a terminus.
 
-**One surface was wider than this, and OB-195 narrowed it on 2026-09-09.**
+**The editor asks the same question as the runtime** (OB-195).
 `AutonomySession.stationsAutonomyWillNotChoose` - which decides the magenta leg colour and the Auto
-tier's "reachable and never chosen" notice, both in section 7 - counted a compulsory turn as one
-autonomy will never choose whether or not it was also parking, and its own comment claimed to BE
-`isSendableDestination`. Adam ruled that the editor should narrow, and it did: the set asks
-`isStation && !isAutoDestination` and, since E8-B1, `isActive` as well - the two clauses of the runtime
-rule that a SQUARE can answer. Until 2026-09-23 the two could not disagree on his railway, because every
-compulsory turn on it was also parking, which is exactly why it went unnoticed; that day he made
-BottomMainC a compulsory turn that autonomy may still choose. The ruling is below, under *Turning
-round, and being chosen*.
-
+tier's "reachable and never chosen" notice, both in section 7 - asks `isStation && !isAutoDestination` and
+`isActive` (E8-B1): the clauses of the runtime rule that a SQUARE can answer. A compulsory turn counts as one autonomy
+will never choose only when it is also parking. The ruling is below, under *Turning round, and being chosen*.
 `testACompulsoryTurnIsAnAutoDestinationExactlyWhenItIsNotParking` asks it of the real railway, which
-now has both kinds: every compulsory-turn copy is an autonomy destination exactly when its square is
+has both kinds: every compulsory-turn copy is an autonomy destination exactly when its square is
 not marked parking, in the runtime and in the editor's set alike.
 
 **Which matters for length** (§5): the track-room rule has no terminus requirement and no
 destination requirement, so a compulsory turn a train does not physically fit into is still refused.
 The station-capacity rule gates on being a destination, and has nothing to say about a square nobody
-calls a station. Adam, 2026-09-07: *"the terminus that isn’t a destination should fail on the track
+calls a station. Adam: *"the terminus that isn’t a destination should fail on the track
 length check - the station length can safely be ignored."*
 
 **"The flag" is on the tile, not on the train.** `canReverse` is a property of the square in the
@@ -354,36 +323,21 @@ a turn at a may-reverse square, because the operator said no.
 
 **On the two copies.** Adam: *"having two copies seems like unnecessary complexity, I wonder if it can
 be done more easily by simply following the edges? Don’t implement until evaluating."* The evaluation
-is written - `docs/reference/two-copies-evaluation.md`, removed 2026-09-24 with the other finished assessments and
-in git history at 0a5dab2a - and nothing has been changed.
+is written - `docs/reference/two-copies-evaluation.md`, in git history at 0a5dab2a - and nothing has been changed.
+On the wired reduction, **25 of the 58 squares build to more than one Point and 9 of the 33 stations do**;
+`BottomMainPost` and `RampDown` are four Points each. `core.testEverySquareBuildsToTheCopiesTheSetupImplies` is the
+census and the tripwire.
 
-Its headline said *"on this railway the split does not fire"* - every named square building to exactly
-one copy - **and that was measured on a diagram whose switches had no accessories, so the railway was
-in pieces** (corrected 2026-09-08). On the wired reduction, **25 of the 58 squares build to more than
-one Point and 9 of the 33 stations do** (recounted 2026-09-23; 30 and 13 before Adam's one-way marks
-and BottomMainC's compulsory turn); `BottomMainPost` and `RampDown` are four Points each. `core.testEverySquareBuildsToTheCopiesTheSetupImplies` is the census and the
-tripwire.
-
-What survives the correction: following the edges is a real option - it moves the same state from the
-graph into the search - but it would not remove the facing property, only the specific failure of
-picking the wrong copy, and it touches everything that reads the graph. What does not survive is the
-evaluation's first reason for waiting, *"it buys nothing on your railway today"*. **Whether that
-changes the recommendation is Adam's call and nothing has been done about it.**
-
-**The tripwire was cited four times before it was written** (found 2026-09-08).
-`testEverySquareOnThisLayoutBuildsToOneCopy` was named as the guard here, twice in
-`docs/reference/two-copies-evaluation.md` (git history, 0a5dab2a), and once in
-`test/core/testTheAutoTierScopeMatchesTheRuntime.java`, and there was no such class or method anywhere
-under `test/`. `regression.testEveryCitationResolves` resolves review-finding ids and not test names,
-so nothing caught it - and the first thing the real test did when it was written was disagree with the
-number all four sentences were repeating.
+Following the edges is a real option - it moves the same state from the graph into the search - but it would not
+remove the facing property, only the specific failure of picking the wrong copy, and it touches everything that reads
+the graph. **Whether the recommendation changes is Adam's call and nothing has been done about it.**
 
 ### The question, and when it is asked
 
 > *"May reverse should always prompt in manual mode. It should be a yes/no keep direction, with no
-> meaning change, and yes being default."* — 2026-09-06
+> meaning change, and yes being default."* - Adam
 >
-> *"Make it be on departure itself, that way there is no dispatch prior to user input."* — 2026-09-06
+> *"Make it be on departure itself, that way there is no dispatch prior to user input."* - Adam
 
 - Asked **once per journey**, **before the train moves**, from both manual doors (the track diagram
   and the Locomotive commands tab).
@@ -396,41 +350,29 @@ number all four sentences were repeating.
 - Autonomy and Return Home are never asked.
 
 > *"Manual only reverses if the user explicitly said it via the popup, unless you're going to a
-> terminal."* — Adam, 2026-09-07
+> terminal."* - Adam
 
-**A manual journey that needs a turn the operator declined is refused before it starts**, naming the
-square. A manual path may route through the turning copy of a may-reverse square, and a turning copy
-leaves only by the side the train came in at — so a train that does not turn there runs on onto track
-its path does not hold. The answer is always honoured; the journey that depends on a different answer
-is not started. A terminus is exempt.
-
-**Only the destination is asked about** (Adam, 2026-09-07: *"it is unnecessary to prompt on
+**Only the destination is asked about** (Adam: *"it is unnecessary to prompt on
 intermediates - we care about the reversal if it’s the destination, since that dictates where the
 train can go, and where it is facing"*). Intermediates turn as the path requires, exactly as they do
 for autonomy.
 
-**A compulsory turn on the way turns the train, whatever the answer** (OB-283; Adam, 2026-09-24: *"if
+**A compulsory turn on the way turns the train, whatever the answer** (OB-283; Adam: *"if
 it's a compulsory turn, turn it in the forced direction."*). So *keep* and *reverse* are measured
 against the way the train **arrives** at the destination, not the way it set off: a journey that
 passes a compulsory-turn square is turned there, and "Yes - keep the current direction" then leaves it
-facing the way it came in - which is the other way round from how it left (measured 2026-09-08: keep
-ends backward, reverse ends forward). This sentence said the opposite until 2026-09-24, and the code
-never did.
+facing the way it came in - which is the other way round from how it left (keep ends backward, reverse ends forward).
 
-That ruling **dissolved** the refusal described above rather than qualifying it: with nothing asked
-about intermediates there is no declined turn for a journey to depend on, and the stranding refusal,
-its helper, both door checks and its message in all eight bundles were removed the same day.
-
-**No journey is refused on the operator’s answer any more, and none can be** — a claim to the contrary
-stood here until 2026-09-07 and described a case that cannot arise.  Declining leaves the train
+**No journey is refused on the operator’s answer, and none can be**: with nothing asked about intermediates there is no
+declined turn for a journey to depend on.  Declining leaves the train
 exactly as it drove in: at the *plain* copy no turn was needed to complete the journey, and at the
 *turning* copy the train is re-stood on the copy it did not turn on (PRV-B2).
 
 **Except where no copy faces on: there the train is turned, whatever was answered, and nobody is asked**
 (RSA49-A1, RSA50-A1).  A journey ending on a turning copy no copy of whose square faces on from the way
 the train came - the end of a line marked "may", which the build makes one turning copy, or a may-turn
-square one of whose ways in has no way on - has no copy to re-stand a kept train on: kept, it stood
-facing back out with its decoder driving it forward, and its next journey drove it into the end of the
+square one of whose ways in has no way on - has no copy to re-stand a kept train on: kept, it would stand
+facing back out with its decoder driving it forward, and its next journey would drive it into the end of the
 line over track nothing held.  So `Layout.turnsOnArrival` turns it first of all, the hand doors do not
 ask about it (`ManualReversalPrompt.destinationAskedAbout`), and a train that cannot reverse is not
 offered such a copy by hand (MT-367's rule, asked of the copy's ways in).  The setup check's NOTICE -
@@ -439,41 +381,37 @@ offered such a copy by hand (MT-367's rule, asked of the copy's ways in).  The s
 **A train the operator turned is stood at once on the copy that faces the way it came in** (RSA50-A3,
 RSA50-B1): the copy the window's idle drain chooses (`AutonomySession.copyFacing` - one trains may
 arrive at first, and of those one that does not turn trains), chosen by the arrival from the copies'
-own facings, after the path is unlocked as the declined turn's re-stand is.  The drain used to be the
-only thing that moved it, and the drain waits for the railway to be idle: until then the train stood
-on the copy for its old heading, and a hand send in between set the route ahead while the decoder
-drove it back.  The drain now finds it where it would have put it, and writes the facing.  **Not a
-train a plan turned** (RSA51-B1) - autonomy, Return Home, staging, a timetable recorded from autonomy:
+own facings, after the path is unlocked as the declined turn's re-stand is.  The drain waits for the railway
+to be idle, so without this the train would stand on the copy for its old heading and a hand send in between would
+set the route ahead while the decoder drove it back.  **Not a train a plan turned** (RSA51-B1) - autonomy, Return
+Home, staging, a timetable recorded from autonomy:
 a plan turns its train on the turning copy and plans the next leg from that copy, so the train stays
 there.  **And a train already on a copy that faces its new way, one trains may arrive at, stays on it**
 (RSA52-B1) - the arrival and the drain alike: the turning copy of the way it came in already faces back
-out, and the drain moving a plan's turned train from it onto the other side's plain copy at the next
-idle moment left a timetable recorded from the turning copy unable to start its next entry.  **And a
+out, and moving a plan's turned train from it onto the other side's plain copy at the next
+idle moment would leave a timetable recorded from the turning copy unable to start its next entry.  **And a
 timetable entry counts its train at its start on any copy of the start square facing the same way**
 (RSA53-B1), and runs from the copy it stands on, its first edge swapped for that copy's own to the same
 next Point: the setup keeps a standing train as its square and facing only, so the exit and the next
 start, Autonomy > Load and every placement door stand it on the plain copy, and the entry, recorded
-from the turning copy, was refused at a square the train already stood on facing its way.  The train
+from the turning copy, must not be refused at a square the train already stood on facing its way.  The train
 is not moved onto the start copy (RSA54-A1): a turning copy has rails on one side only, and a train
-that came in from the other side, stood there, claimed none of the track its body lay over.
+that came in from the other side, stood there, would claim none of the track its body lay over.
 
 **A timetable entry recorded by hand plays back the answer its arrival was given** (RSA49-B1).  The
 entry keeps it (`turnAtTheEnd`, saved with the timetable) and playback asks it at the destination only;
-an entry recorded from autonomy, or before this was kept, plays back as autonomy, as every entry did.
+an entry recorded from autonomy, or before this was kept, plays back as autonomy.
 Where the railway now turns every train - a square marked "must" since, or the end of a line - the
 compulsory turn above is asked first, so a recorded "keep" cannot stand a train facing the end of the
 line (RSA50-A2).  And where the square no longer turns trains - "Trains May Change Direction Here" taken off
 since - a recorded turn is not made: the train keeps its direction, and an entry that needs it the other
-way fails as any journey would (RSA52-C1; Adam, 2026-10-07: *"The path should organically fail in the
+way fails as any journey would (RSA52-C1; Adam: *"The path should organically fail in the
 direction no longer allowed."*).
 
-**Every copy of a may-reverse square is asked about, the turning one included** (UIX-C1, 2026-09-19),
+**Every copy of a may-reverse square is asked about, the turning one included** (UIX-C1),
 apart from the copies no copy faces on from, above.
-The sentence here used to say the opposite - that a journey ending on the turning copy ends at a
-terminus and a terminus is never asked about - and the code has not worked that way since PRV-B2
-made "declined on the turning copy" a coherent outcome.  The door exempts a terminus only where the
-policy does not ask about it, and the manual policy asks about every copy of a square the setup marks
-as may reverse, which is Adam's own ruling three paragraphs above: *"May reverse should always prompt
+The door exempts a terminus only where the policy does not ask about it, and the manual policy asks about every copy of
+a square the setup marks as may reverse, which is Adam's own ruling above: *"May reverse should always prompt
 in manual mode."*  `core.testNonReversibleTrains.testEveryCopyOfAMayReverseSquareIsAskedAbout` and
 `core.testTheArrivalHonoursTheAnswer.testKeepDirectionIsHonouredAtAMayTurnSquare` hold it.
 
@@ -482,33 +420,29 @@ in manual mode."*  `core.testNonReversibleTrains.testEveryCopyOfAMayReverseSquar
 `canReverse` never reaches the running layout — `AutonomyBuilder` expresses it by splitting the
 square and says so. So the door supplies the "is this square one the operator has a say over"
 question from the **setup**, and nothing in the automation layer can answer it. A policy that
-answers it from `isReversing()` cannot tell a may-reverse square from a compulsory turn, and that
-mistake has been made in both directions.
+answers it from `isReversing()` cannot tell a may-reverse square from a compulsory turn.
 
 ### Direction commands
 
 - **Changing the direction on the graph does not command the track.**
 - **A direction command from the track DOES update the graph**, if it disagrees — while nothing is
-  running. What happens to one that arrives mid-run is the next paragraph, and it is the opposite of
-  what this bullet said until 2026-09-07.
+  running. One that arrives mid-run is ignored (next paragraph).
 - A reversal at a may-reverse square emits exactly the same command a terminus does.
 
 > *"The arrival writes the graph - but if a manual command is sent, ignore it, as this is likely
-> corrective by the user."* - Adam, 2026-09-07
+> corrective by the user."* - Adam
 
 **A direction command arriving while a run is under way is ignored, not queued.** Reversals are
 counted only when nothing is running, and there is no backlog.
 
-How that is achieved is worth stating exactly, because an earlier version of this paragraph got it
-backwards. `putIfAbsent` is still there and is still right: it gives a train nobody has seen before a
+How that is achieved: `putIfAbsent` gives a train nobody has seen before a
 baseline and nothing more, so a locomotive first met mid-journey is not treated as having changed
 direction. What stops the backlog is the other half - `reconcileFacingWhenIdle` brings the baseline
 level with the live state once the railway is idle, so nothing arriving mid-run is left behind to be
 replayed. Neither half works alone: without the baseline the first echo is skipped, and without the
 levelling the first echo after the run re-follows a reversal the railway already made.
 
-> *"It should be recorded at the destination. Otherwise, it’s just the same as always."* — Adam,
-> 2026-09-07
+> *"It should be recorded at the destination. Otherwise, it’s just the same as always."* - Adam
 
 **A turn the railway itself makes at the destination is the exception, and it records itself.** It is
 not news arriving late — it is something this application did on purpose and knew about as it did it —
@@ -518,62 +452,48 @@ while it is still running, and the levelling then wipes the evidence. The physic
 reversed, the graph would say otherwise, and the next dispatch would offer paths for the wrong
 heading.
 
-**What is recorded is the SQUARE the train turned at, and what is written is the way it came in.**
-Both halves were different until 2026-09-09, and between them they are OB-190. The record was a set of
-names whose membership was a *parity* — two turns cancelling — because the window applied each one by
-**flipping** the facing the setup had stored for that square. §6a says as a rule that the stored
-facing is stale at exactly that moment: a run moves trains, and nothing writes where they ended up
-back to the setup. So the pivot was either missing, and the turn was written nowhere, or it was the
-previous occupant’s answer, and the turn was written **backwards** — with the train then stood on the
+**What is recorded is the SQUARE the train turned at, and what is written is the way it came in** (OB-190). The
+record is a set of names, and the window writes the train's own arrival side as an absolute answer rather than
+**flipping** the facing the setup had stored for that square: §6a is the rule that the stored
+facing is stale at exactly that moment, because a run moves trains and nothing writes where they ended up
+back to the setup. A flip would either have no pivot, and the turn would be written nowhere, or take the
+previous occupant’s answer, and the turn would be written **backwards** — with the train then stood on the
 copy for a facing it does not have.
 
-The answer that needs nothing to be in sync first is the train’s own arrival side. **A train that has
-just been turned round faces the way it came in** (§4), the arrival wrote that side onto that very
-`Point` before turning it, and the window now writes it as it stands rather than deriving it from a
-record. An absolute answer applied twice says the same thing twice, so there is nothing left for a
-parity to protect: a shuttle that turns at both ends is simply written from the end it is standing at.
+**A train that has just been turned round faces the way it came in** (§4): the arrival wrote that side onto that very
+`Point` before turning it, and the window writes it as it stands rather than deriving it from a
+record. An absolute answer applied twice says the same thing twice, so a shuttle that turns at both ends is simply
+written from the end it is standing at.
 
-Three consequences worth stating, because each was a defect:
+Consequences:
 
 - **Nothing is forgotten until it is written.** A turn the window could not apply — no setup open, a
   square the build has no copies for, a train the running layout no longer carries — stays owed and is
-  tried again on the next refresh. It used to be dropped either way, which made the turn unrecoverable
-  rather than merely late.
+  tried again on the next refresh.
 - **The record is dropped when that train next arrives somewhere without turning.** It means *this
   train is standing where it turned and the graph has not been told*; once it has run on, the arrival
   has already placed it on the copy its journey ended at.
 - **The running layout is moved too, and the tail goes with it** — see §4.
 - **And what is owed survives a setup rebuild** (D3-C5). The record lives on the `Layout`, and a
-  rebuild replaces that object wholesale — so before this, any right-click gesture on the diagram
-  between a turn and its successful write discarded it silently: a home, a direction, a caption.
-  That defeated the first bullet in exactly the case it was written for, because a turn that has
-  already declined to write once has nothing but its retries. `rebuildRunningLayoutFromSetup` now
-  carries the owed turns across the same way it carries placements and `arrivedFrom`, and puts them
+  rebuild replaces that object wholesale — so any right-click gesture on the diagram
+  between a turn and its successful write (a home, a direction, a caption) would otherwise discard it silently,
+  defeating the first bullet in exactly the case it is for. `rebuildRunningLayoutFromSetup` carries the owed turns
+  across the same way it carries placements and `arrivedFrom`, and puts them
   onto the new layout only where it has no newer record of its own.
 
-**"The next time the railway is idle" is a moment something has to bring about, and for two of the
-four doors nothing did.** The graph is written by `reconcileFacingWhenIdle`, which is reached only
-from a diagram refresh and deliberately refuses while anything is moving - so a run's turns wait for
-a refresh made after it has stopped. Autonomy refreshes constantly, and the two hand-driven doors
-were given a refresh when their journey returned; the timetable button and Return Home were not, and
-Return Home is the one that backs trains into their home berths and turns them. So a Return Home run
-ended with every returned train still drawn facing the way it set off, a dispatch made before any
-unrelated repaint was offered paths for the wrong heading, and exiting wrote the un-reconciled facing
-to disk. It self-healed on the next refresh that happened for some other reason, which is what made
-it intermittent.
-
-The rule now has one mechanism rather than a copy per door: **a run announces that it has finished,
-and the window's single refresh callback tells the graph when it does.** A hand dispatch announces
-when the last locomotive thread goes; a timetable announces again once its completion wait has seen
-the railway stop, because until then `running` is still set and every announcement it makes is one
-the levelling refuses.
+**"The next time the railway is idle" is a moment something has to bring about.** The graph is written by
+`reconcileFacingWhenIdle`, which is reached only from a diagram refresh and deliberately refuses while anything is
+moving - so a run's turns wait for a refresh made after it has stopped. The rule has one mechanism rather than a copy per
+door: **a run announces that it has finished, and the window's single refresh callback tells the graph when it does.**
+A hand dispatch announces when the last locomotive thread goes; a timetable (Return Home's run included, which backs
+trains into their home berths and turns them) announces again once its completion wait has seen the railway stop,
+because until then `running` is still set and every announcement it makes is one the levelling refuses.
 
 ---
 
 ### Turning round, and being chosen: two markings, two questions
 
-Adam, 2026-09-09, settling OB-195 - the editor claimed autonomy would never choose a compulsory turn,
-and the runtime chose one quite happily:
+Adam, settling OB-195:
 
 > *"narrow the notice to match the runtime - autonomy should only allow a turn at a point if the
 > 'allow in autonomy' option is checked, otherwise the train may only pass through in its current
@@ -586,7 +506,7 @@ and the runtime chose one quite happily:
 
 They are independent, and only the second decides whether autonomy picks a square:
 
-**Why the second reads as "may it stop here" (Adam, MT-348, 2026-09-13).** Full autonomy never
+**Why the second reads as "may it stop here" (MT-348).** Full autonomy never
 turns a train part-way through a run - `pickPath` refuses a route that `reversesAlongTheWay`, and
 `testFullAutonomyDoesNotDriveThroughAReversingPoint` pins it - so a may-turn square is never a place
 autonomy reverses at on its way somewhere else. What the switch decides in practice is whether a train
@@ -606,10 +526,6 @@ editor's hint says it that way.
   built as a terminus, and `Layout.isPathClear` refuses any route whose terminus is not its endpoint.
   What the sentence rules is that turning round is not part of who may be SENT somewhere - that is the
   switch, and only the switch.
-
-**The editor said otherwise until this ruling**, on the strength of a comment claiming to mirror the
-runtime. It cost nothing on Adam's railway, because every compulsory turn he has is also marked
-manual-only - which is exactly why nobody noticed.
 
 ## 4. Which way a train is pointing, and where its tail is
 
