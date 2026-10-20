@@ -5071,10 +5071,9 @@ public class testDiagramLooksRight
     }
 
     /**
-     * The main window's diagram scrolls half a square at a time on both axes, at each of the three sizes (MT-726; Adam,
-     * 2026-10-11: *"make scrolling in the track diagram viewer faster on both axes"*, and on MT-727: *"Make it half a
-     * square at a time"*): each scroll bar steps half the shown size, and a notch of the wheel moves the diagram three of
-     * those steps, where it moved three pixels.
+     * The main window's diagram scrolls half a square at a time on both axes, at each of the three sizes (MT-726,
+     * MT-727): each scroll bar steps half the shown size, and a notch of the wheel moves the diagram three of those
+     * steps.
      *
      * MUTATION: leave the main window's scroll bars at their pixel step, step a whole square, or step every size as
      * Small, and this fails.
@@ -5255,10 +5254,9 @@ public class testDiagramLooksRight
     }
 
     /**
-     * The autonomy editor's Show Trains switch hides the trains on its diagram (FR-119; Adam, 2026-10-10: *"in the autonomy
-     * editor, have a "show trains" checkbox that toggles the locomotive icons.  Independent of the viewer."*).  A square
-     * with a train standing on it, in the diagram's own container: its train drawn while the square's switch says yes,
-     * nothing while it says no - and a square no switch was given, as on the track diagram, draws it.
+     * The autonomy editor's Show Trains switch hides the trains on its diagram (FR-119), independently of the viewer.  A
+     * square with a train standing on it, in the diagram's own container: its train drawn while the square's switch says
+     * yes, nothing while it says no; and a square no switch was given, as on the track diagram, draws it.
      *
      * MUTATION: let a square draw its train whatever its switch says, and this fails.
      *
@@ -5342,13 +5340,11 @@ public class testDiagramLooksRight
     }
 
     /**
-     * And the halo is drawn round writing that shares its square with track (MT-716; Adam, 2026-10-10: *"I see this on
-     * some labels, but not others.  Many don't seem to have the halo.  Check tiles that are not just only text, but have
-     * something else on them plus text."*).
+     * And the halo is drawn round writing that shares its square with track (MT-716).
      *
-     * Writing on a square that also has track or a sensor is set as HTML - `<html><br>` and the words - to stand a line
-     * below the square; the halo was drawn from the label's text as plain words, so it skipped HTML.  Here it lies round
-     * the words where the HTML draws them: white on black, and the words' own blue inside it, a line down.
+     * Writing on a square that also has track or a sensor is set as HTML (`<html><br>` and the words) to stand a line
+     * below the square, so the halo has to be drawn from the words inside the HTML as well as from plain text.  Here it
+     * lies round the words where the HTML draws them: white on black, and the words' own blue inside it, a line down.
      *
      * MUTATION: skip HTML again, and this fails.
      */
@@ -5429,9 +5425,8 @@ public class testDiagramLooksRight
     }
 
     /**
-     * A train standing at its home is shown by a little house on the Auto tab, not by a teal badge (MT-709; Adam,
-     * 2026-10-10: *"on the autonomy commands page, instead of making home locations teal, put a little house icon below it
-     * (in the same spot as the (i))"*).
+     * A train standing at its home is shown by a little house on the Auto tab, not by a teal badge (MT-709), in the same
+     * spot as the (i).
      *
      * The card's mark beside its second line is chosen by `AutoLocomotiveStatus.markFor`: the house at home, the (i) where
      * there is a reason to hover for, both where both, nothing otherwise - and the badge is the tab's blue at home as
@@ -5530,11 +5525,8 @@ public class testDiagramLooksRight
      * The tunnel portal's wall is near white, #EEEEEE, and a pixel wider each side again at 30 and two at 60 - three
      * pixels and seven - and the arch between the walls is still the track's width, 8 and 16.
      *
-     * Adam, 2026-10-10: *"make the light gray tunnel wall on tunnel icons about 1px wider on each side in the 30px
-     * version, and correspondingly"* at 60; then 2026-10-18, *"further lighten the surround of the tunnel icons in the
-     * track diagram ... experiment with widening it slightly"* (FR-134), and of the options drawn for him, *"Go for C at +1"* -
-     * C the #EEEEEE wall, +1 a pixel more each side at 30 (two at 60).  The wall grew outward both times: the track
-     * through the arch is where it was.
+     * The lighter, wider wall is FR-134: the #EEEEEE wall, a pixel more each side at 30 (two at 60).  The wall grew
+     * outward: the track through the arch is where it was.
      *
      * Read across the portal below the arch's curve - row 12 at 30, row 25 at 60.
      *
@@ -5588,10 +5580,9 @@ public class testDiagramLooksRight
      * The link and the two signal tiles meet the straight beside them with no seam: the band's rows where the track
      * comes in are the straight's own, at both sizes (FR-135).
      *
-     * Adam, 2026-10-18, on the link drawn for him: *"G is good, but make sure you match the edges of the signal tile"*,
-     * and *"Build G and the sharpened signals now"*.  The track's band has a one-pixel edge in a dark grey - #333 at 30,
-     * #666 at 60, not one drawing scaled - and the old Large signal's top edge was #999 across the whole square, a lighter
-     * stripe between two straights; the new link's shaft is the straight's band, edges and all.
+     * The track's band has a one-pixel edge in a dark grey (#333 at 30, #666 at 60, not one drawing scaled), so an edge
+     * row of another shade on a signal would be a lighter stripe between two straights; the link's shaft is the
+     * straight's band, edges and all.
      *
      * The link is asked at its open side, the column the track comes in by; a signal along both its edge rows, end to end.
      *
@@ -5643,8 +5634,7 @@ public class testDiagramLooksRight
 
     /**
      * The link's arrow is the same drawing above and below the track, and a signal's bar is centred with both its ends
-     * alike - the drawn art is symmetric where the old was not (FR-135; the Small signal's bar was shaded differently at
-     * its two ends).
+     * alike: the drawn art is symmetric (FR-135).
      *
      * MUTATION: put the old Small link or signal art back, and this fails.
      *
