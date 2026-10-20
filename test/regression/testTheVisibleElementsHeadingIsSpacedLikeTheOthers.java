@@ -33,6 +33,8 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * And the column is all there at the window's smallest size (OB-342): the floor's height shows its last control, and a
  * status line that does not ask the window for its sentence's width keeps the column on the screen.
  *
+ * And the autonomy editor's notices sit under the diagram, three lines at most, so a notice never moves it (OB-366).
+ *
  * MUTATION: leave the gap showing when Text Labels is hidden, and the autonomy claim fails.
  *
  * @author Adam
@@ -194,6 +196,181 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
     public void testTheTrackEditorShowsEveryControlAtItsSmallestSize() throws Exception
     {
         assertNothingIsCutOffAtTheSmallestSize(false);
+    }
+
+    /**
+     * A notice appearing, growing to two lines or to four, and going away never moves the diagram, and the notices sit
+     * under it (OB-366; Adam: *"in the autonomy editor, 2-line notices shift the track down.  fix this in 3.0.3 by making
+     * notices be below the diagram, and cap the height at 3 lines with a scrollbar."*).  The diagram is its scroll pane's
+     * viewport, on screen: a strip above it that changes height moves it, and one beside it that does resizes it.
+     *
+     * MUTATION: mount the notices back above the diagram (`jScrollPane1.setColumnHeaderView(autonomyBanner)` in
+     * `LayoutEditor.setAutonomyMode`), or let the notices grow with what they say, and this fails.
+     *
+     * @throws Exception from the event thread or reflection
+     */
+    @Test
+    public void testANoticeNeverMovesTheAutonomyDiagram() throws Exception
+    {
+        final LayoutEditor editor = autonomyEditor();
+
+        try
+        {
+            final org.traincontrol.gui.AutonomyBanner notices = (org.traincontrol.gui.AutonomyBanner) field(editor,
+                "autonomyBanner");
+            final javax.swing.JScrollPane diagram = (javax.swing.JScrollPane) field(editor, "jScrollPane1");
+
+            java.awt.Rectangle before = onScreen(diagram.getViewport());
+
+            assertTrue(before.height > 0, "precondition: the diagram is not on screen: " + before);
+
+            for (String notice : new String[] { lines(2), lines(4), " " })
+            {
+                say(editor, notices, notice);
+
+                java.awt.Rectangle after = onScreen(diagram.getViewport());
+
+                assertEquals(after, before, "a notice of " + notice.split("<br>").length + " line(s) moved or resized"
+                    + " the diagram, from " + before + " to " + after + " (OB-366, \"2-line notices shift the track"
+                    + " down\")");
+
+                java.awt.Rectangle area = onScreen(notices);
+                java.awt.Rectangle whole = onScreen(diagram);
+
+                assertTrue(area.y >= whole.y + whole.height, "the notices are not below the diagram: they start at y="
+                    + area.y + " and the diagram ends at y=" + (whole.y + whole.height) + " (OB-366, \"making notices be"
+                    + " below the diagram\")");
+            }
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() -> editor.dispose());
+        }
+    }
+
+    /**
+     * A notice longer than three lines scrolls inside an area three lines tall, and a three-line notice fits whole
+     * (OB-366, *"cap the height at 3 lines with a scrollbar"*).  Lines are measured with the notice text's own font.
+     *
+     * MUTATION: raise `AutonomyBanner.MOST_LINES` to 6, and this fails.
+     *
+     * @throws Exception from the event thread or reflection
+     */
+    @Test
+    public void testALongNoticeScrollsWithinThreeLines() throws Exception
+    {
+        final LayoutEditor editor = autonomyEditor();
+
+        try
+        {
+            final org.traincontrol.gui.AutonomyBanner notices = (org.traincontrol.gui.AutonomyBanner) field(editor,
+                "autonomyBanner");
+
+            say(editor, notices, lines(6));
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                javax.swing.JScrollPane area = scrollerIn(notices);
+
+                assertNotNull(area, "the notices have nothing in them that scrolls");
+
+                java.awt.Component text = area.getViewport().getView();
+
+                int line = text.getFontMetrics(org.traincontrol.gui.AutonomyBanner.MESSAGE_FONT).getHeight();
+
+                assertTrue(area.getViewport().getHeight() <= 3 * line, "a six-line notice is shown "
+                    + area.getViewport().getHeight() + " pixels tall, more than three lines of " + line + " (OB-366)");
+
+                assertTrue(area.getVerticalScrollBar().isShowing(), "a six-line notice in an area three lines tall has"
+                    + " no scrollbar, so the rest of it cannot be reached (OB-366)");
+
+                assertFalse(area.getHorizontalScrollBar().isShowing(), "the notices scroll sideways; they wrap");
+            });
+
+            say(editor, notices, lines(3));
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                javax.swing.JScrollPane area = scrollerIn(notices);
+
+                assertFalse(area.getVerticalScrollBar().isShowing(), "a three-line notice does not fit the area: "
+                    + area.getViewport().getHeight() + " pixels for a text "
+                    + area.getViewport().getView().getPreferredSize().height + " tall (OB-366, \"3 lines\")");
+            });
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() -> editor.dispose());
+        }
+    }
+
+    /** An autonomy editor, on screen and settled. */
+    private static LayoutEditor autonomyEditor() throws Exception
+    {
+        final LayoutEditor[] built = new LayoutEditor[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            built[0] = new LayoutEditor(page, 30, ui, 0);
+            built[0].render();
+            built[0].setAutonomyMode(session);
+        });
+
+        for (int pass = 0; pass < 10; pass++) SwingUtilities.invokeAndWait(() -> { });
+
+        assertTrue(built[0].isShowing(), "precondition: the autonomy editor did not open");
+
+        return built[0];
+    }
+
+    /** Says a notice that stays, and lets the window lay out what it now holds. */
+    private static void say(final LayoutEditor editor, final org.traincontrol.gui.AutonomyBanner notices,
+        final String notice) throws Exception
+    {
+        SwingUtilities.invokeAndWait(() -> notices.showUntilChanged(notice));
+
+        for (int pass = 0; pass < 6; pass++) SwingUtilities.invokeAndWait(() -> { });
+
+        SwingUtilities.invokeAndWait(() -> editor.validate());
+
+        for (int pass = 0; pass < 6; pass++) SwingUtilities.invokeAndWait(() -> { });
+    }
+
+    /** A notice of this many short lines. */
+    private static String lines(int count)
+    {
+        StringBuilder out = new StringBuilder("Line 1 of the notice");
+
+        for (int at = 2; at <= count; at++) out.append("<br>Line ").append(at).append(" of the notice");
+
+        return out.toString();
+    }
+
+    private static java.awt.Rectangle onScreen(final Component component) throws Exception
+    {
+        final java.awt.Rectangle[] out = new java.awt.Rectangle[1];
+
+        SwingUtilities.invokeAndWait(() -> out[0] = new java.awt.Rectangle(component.getLocationOnScreen(),
+            component.getSize()));
+
+        return out[0];
+    }
+
+    private static javax.swing.JScrollPane scrollerIn(Container in)
+    {
+        for (Component child : in.getComponents())
+        {
+            if (child instanceof javax.swing.JScrollPane) return (javax.swing.JScrollPane) child;
+
+            if (child instanceof Container)
+            {
+                javax.swing.JScrollPane deeper = scrollerIn((Container) child);
+
+                if (deeper != null) return deeper;
+            }
+        }
+
+        return null;
     }
 
     /** A status sentence longer than any language's: 521 pixels is English and 655 German, and this is over 900 */

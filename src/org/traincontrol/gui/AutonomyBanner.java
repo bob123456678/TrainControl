@@ -8,13 +8,12 @@ import javax.swing.JPanel;
 import javax.swing.Timer;
 
 /**
- * A one-line message across the top of the editor window.
+ * A strip of autonomy notices: the message wrapped to the strip's width, at most three lines tall, and scrolled past
+ * that (OB-366).
  *
- * What this replaces: messages used to go into a label in the tools column, where a sentence had to
- * wrap to three lines in a 280px space - so the common case was a paragraph squeezed into a corner,
- * and the moment it wrapped it dragged the whole column out of shape.  A strip across the top has the
- * width a sentence needs, sits where the eye already goes after clicking, and cannot disturb anything
- * because it is a fixed-height row of its own.
+ * In the autonomy editor it sits under the diagram and keeps the height of three lines whatever it says, so a notice
+ * coming, growing or going never moves the diagram.  Above the main window's diagram it is a header that grows to what
+ * it says, up to the same three lines, and goes when it has nothing to offer.
  *
  * It is not a popup: a modal for "that tile is now one way" would be worse than saying nothing.
  *
@@ -118,8 +117,25 @@ public class AutonomyBanner extends JPanel
     /** Holds the offer button, and is taken out of the layout with it - see the constructor. */
     private javax.swing.JPanel right;
 
+    /** Whether the strip keeps the height of its most lines whatever it says; see the constructor. */
+    private final boolean keepsItsHeight;
+
+    /**
+     * A header that grows to what it says, up to its most lines.
+     */
     public AutonomyBanner()
     {
+        this(false);
+    }
+
+    /**
+     * @param keepsItsHeight true for the autonomy editor's notices, which are always as tall as their most lines so
+     *        that the diagram above them never moves; false for a header that grows to what it says
+     */
+    public AutonomyBanner(boolean keepsItsHeight)
+    {
+        this.keepsItsHeight = keepsItsHeight;
+
         setLayout(new BorderLayout());
 
         // Padding, and nothing else.  A light grey strip is already a distinct area; giving it a line
@@ -372,25 +388,35 @@ public class AutonomyBanner extends JPanel
     }
 
     /**
-     * A floor, not a fixed height.
-     *
-     * The floor is what stops the strip changing height as messages come and go, which is the whole
-     * reason the editor can carry one without the diagram below it moving.  Fixing the height outright
-     * was fine while the only thing in here was a line of text, and clipped the bottom off the button
-     * the moment one was added - a button is taller than a label, and the strip has insets of its own.
+     * Never taller than the most lines and the border; exactly that when the strip keeps its height, so nothing beside
+     * it moves.  A header grows from a one-line floor to fit its message or its button, whichever is taller.
      */
     @Override
     public java.awt.Dimension getPreferredSize()
     {
+        java.awt.Insets pad = getInsets();
+
+        int most = mostHeight() + pad.top + pad.bottom;
+
+        if (keepsItsHeight) return new java.awt.Dimension(10, most);
+
         java.awt.Dimension natural = super.getPreferredSize();
 
         // The message's own idea of how tall it needs to be, which the scroll pane will not report
         // - a viewport asks for whatever it was given rather than for what is inside it.
         int wanted = message.getPreferredSize().height + INSET_HEIGHT;
 
-        int height = Math.max(MINIMUM_HEIGHT, Math.min(MAXIMUM_HEIGHT, Math.max(wanted, natural.height)));
+        int height = Math.max(MINIMUM_HEIGHT, Math.min(most, Math.max(wanted, natural.height)));
 
         return new java.awt.Dimension(10, height);
+    }
+
+    /**
+     * The height of the most lines a notice is shown at, in the message's own font.
+     */
+    private int mostHeight()
+    {
+        return MOST_LINES * message.getFontMetrics(MESSAGE_FONT).getHeight();
     }
 
     /**
@@ -399,13 +425,10 @@ public class AutonomyBanner extends JPanel
     private static final int MINIMUM_HEIGHT = 26;
 
     /**
-     * And no taller than this, whatever is in it.
-     *
-     * Roughly six lines.  Past that the bar is not a bar any more, it is a panel that has eaten the
-     * top of the diagram - so the rest is scrolled to rather than shown.  The number is what the
-     * answer to "why is it not moving" usually needs without touching the scrollbar at all.
+     * The most lines of a message the strip shows; the rest is scrolled to (OB-366, Adam: "cap the height at 3 lines
+     * with a scrollbar").
      */
-    private static final int MAXIMUM_HEIGHT = 260;
+    private static final int MOST_LINES = 3;
 
     /** The border this panel draws round its message, which the height has to allow for. */
     private static final int INSET_HEIGHT = 10;
@@ -447,7 +470,7 @@ public class AutonomyBanner extends JPanel
             // which it does not have until this pass is over.  Invisible on a one-line notice is
             // tidiness; invisible on an answer that stops in the middle is a message with no way to
             // tell there is more of it, which is what Adam met asking why a train was not moving.
-            boolean more = message.getPreferredSize().height + INSET_HEIGHT > MAXIMUM_HEIGHT;
+            boolean more = message.getPreferredSize().height > mostHeight();
 
             scroller.getVerticalScrollBar().setOpaque(more);
 

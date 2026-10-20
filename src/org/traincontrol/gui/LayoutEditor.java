@@ -1609,11 +1609,8 @@ public class LayoutEditor extends PositionAwareJFrame
                 buildPalette();
             }
 
-            if (autonomyBanner != null)
-            {
-                this.jScrollPane1.setColumnHeaderView(null);
-                autonomyBanner = null;
-            }
+            // The notices leave with the stack under the diagram that holds them
+            autonomyBanner = null;
 
             // put the Addresses box back where the form had it
             if (autonomyVisibility != null && formPane.getLayout() instanceof javax.swing.GroupLayout)
@@ -1789,13 +1786,8 @@ public class LayoutEditor extends PositionAwareJFrame
             this.newComponents.setLayout(new java.awt.BorderLayout());
             this.newComponents.add(autonomyPanel, java.awt.BorderLayout.CENTER);
 
-            // A strip across the top of the diagram for messages.  Mounted as the scroll pane's column header (the same
-            // unused slot the main window's "Show autonomy" checkbox uses) because the content pane is a generated
-            // GroupLayout that would ignore a BorderLayout constraint.  Width is the point: a sentence needs the
-            // window, and the tools column is 280px.
-            autonomyBanner = new AutonomyBanner();
-
-            this.jScrollPane1.setColumnHeaderView(autonomyBanner);
+            // The notices, the diagram's width for a sentence, mounted under the diagram with the findings below
+            autonomyBanner = new AutonomyBanner(true);
 
             autonomyPanel.setBanner(autonomyBanner);
 
@@ -1914,7 +1906,7 @@ public class LayoutEditor extends PositionAwareJFrame
             // generated), so the grid's slot is taken by a panel holding the grid AND the list beneath it.  Full width
             // because these are sentences; down the side they wrapped to four words a line beside the very diagram they
             // describe.
-            if (autonomyFindings == null && autonomyPanel.getFindingsPanel() != null)
+            if (autonomyFindings == null)
             {
                 javax.swing.JPanel stack = new javax.swing.JPanel(new BorderLayout());
                 stack.setOpaque(false);
@@ -1930,17 +1922,27 @@ public class LayoutEditor extends PositionAwareJFrame
 
                 stack.add(this.jScrollPane1, BorderLayout.CENTER);
 
+                javax.swing.JPanel foot = new javax.swing.JPanel(new BorderLayout());
+                foot.setOpaque(false);
+
+                // UNDER THE DIAGRAM, THREE LINES TALL WHATEVER THEY SAY (OB-366; Adam: "making notices be below the
+                // diagram, and cap the height at 3 lines with a scrollbar").  A strip that changed height moved the
+                // diagram; this one never does, so the diagram keeps its place and its size as notices come and go.
+                foot.add(autonomyBanner, BorderLayout.NORTH);
+
                 javax.swing.JScrollPane list = autonomyPanel.getFindingsPanel();
 
-                // Taller than the panel asked for: it is across the window now rather than down the
-                // side, and its rows are the window's own size rather than the smaller hint size.
-                list.setPreferredSize(new java.awt.Dimension(100, 190));
+                if (list != null)
+                {
+                    // Taller than the panel asked for: it is across the window now rather than down the
+                    // side, and its rows are the window's own size rather than the smaller hint size.
+                    list.setPreferredSize(new java.awt.Dimension(100, 190));
+
+                    foot.add(list, BorderLayout.CENTER);
+                }
 
                 // The count goes UNDER the list, not above it: in the sidebar it was a headline over a column that did
                 // not contain the things it counted; here it is a total.
-                javax.swing.JPanel foot = new javax.swing.JPanel(new BorderLayout());
-                foot.setOpaque(false);
-                foot.add(list, BorderLayout.CENTER);
                 foot.add(autonomyPanel.getBanner(), BorderLayout.SOUTH);
 
                 stack.add(foot, BorderLayout.SOUTH);
