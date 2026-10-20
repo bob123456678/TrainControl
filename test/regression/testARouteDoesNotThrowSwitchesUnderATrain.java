@@ -390,7 +390,7 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
      * path's train leaves, and the home signal of the one it is bound for, are held accessories too, and Adam's rule
      * reaches them (2026-10-11: *"make sure the code allows switching to the correct (same) setting that autonomy is
      * using"*).  The control: a guard no path holds, over the platform the train is bound for, is still refused green.
-       * guarding two platforms - is refused too: green is a change there (C1-B).
+     * guarding two platforms - is refused too: green is a change there (C1-B).
      *
      * MUTATION: ask the protecting-signal rule whatever the path holds, or let a held green through whatever the guard
      * shows, and this fails.
@@ -1212,12 +1212,12 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
      * emergency stop is not asked about at all, so it has no OK: it fires the ordinary way (Adam, 2026-09-01: *"Emergency
      * stop should never conflict or prompt."*).
      *
-       * MT-508's route has switch A under the train, switch B elsewhere and an emergency stop (a Route command
-       * firing a stop-only route, as a route must carry a stop: `core.testAStopRouteStandsAlone`).  With the stop,
-       * the route list's question (`askAboutRouteConflict`, over `conflictingAccessoryAndReason`) answers that there
-       * is nothing to confirm, and the route runs guarded: the stop and switch B go out, and switch A, held by the
-       * train, is skipped.  Without the stop the question is asked, and OK - `execRouteOverridingConflicts`, what the
-       * route list runs on OK - throws both switches.
+     * MT-508's route has switch A under the train, switch B elsewhere and an emergency stop (a Route command
+     * firing a stop-only route, as a route must carry a stop: `core.testAStopRouteStandsAlone`).  With the stop,
+     * the route list's question (`askAboutRouteConflict`, over `conflictingAccessoryAndReason`) answers that there
+     * is nothing to confirm, and the route runs guarded: the stop and switch B go out, and switch A, held by the
+     * train, is skipped.  Without the stop the question is asked, and OK - `execRouteOverridingConflicts`, what the
+     * route list runs on OK - throws both switches.
      *
      * MUTATION: have the override skip the held switch, have a route with a stop ask, or have the guarded run throw the
      * held switch or drop the stop, and this fails.
