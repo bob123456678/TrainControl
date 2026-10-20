@@ -3611,21 +3611,20 @@ public class Layout
     /**
      * Moves a train off the turning copy of a square it declined to turn at (PRW-A1).
      *
-     * A may-turn square is emitted as a plain copy and a turning copy per arrival side, tied by a block and reached by the same
-     * edge, and they face opposite ways.  A train that arrived on the turning copy and did not turn is standing where the graph
-     * expects a train pointing the other way, so this stands it on the sibling that the same approach reaches and that is not a
-     * turning copy.
+     * A may-turn square is emitted as a plain copy and a turning copy per arrival side, tied by a block and reached by
+     * the same edge, and they face opposite ways.  A train that arrived on the turning copy and did not turn is
+     * standing where the graph expects a train pointing the other way, so this stands it on the plain sibling that the
+     * same approach reaches.  A split square has a plain copy per arrival SIDE and only one is the one this train
+     * could have driven onto, so the copy is chosen by the approach (the one with an incoming edge from the Point the
+     * last leg started at), not by the flags alone.
      *
-     * **Chosen by the approach, not by the flags alone.**  A split square has a plain copy per arrival SIDE, and only one is the one
-     * this train could have driven onto: the one with an incoming edge from the Point the last leg started at.  "Not a turning copy"
-     * alone would put an eastbound train on the westbound copy half the time.
+     * It does nothing for most arrivals (the Point is not a turning copy, it has no siblings, or none is reachable from
+     * where the train came).  A square where turning is COMPULSORY has no plain copy at all, so the train stays where
+     * it is, which is right because there is nowhere else for it to be.
      *
-     * **Does nothing unless all of it is true**, which is most arrivals: the Point is not a turning copy, or it has no siblings, or
-     * none of them is reachable from where the train came.  A square where turning is COMPULSORY has no plain copy at all, so the
-     * train stays where it is, which is right because there is nowhere else for it to be.
-     *
-     * The tail comes with it, for the reason `AutonomySession.moveOntoFacingCopy` gives: `setLocomotive` clears `arrivedFrom` on
-     * every change of occupant, and this is the same train re-stood on a sibling copy of one square, whose carriages have not moved.
+     * The tail comes with it, for the reason `AutonomySession.moveOntoFacingCopy` gives: `setLocomotive` clears
+     * `arrivedFrom` on every change of occupant, and this is the same train re-stood on a sibling copy of one square,
+     * whose carriages have not moved.
      *
      * @param arrived the Point the path ended on
      * @param loc the train that has just arrived and did not turn
@@ -4537,14 +4536,10 @@ public class Layout
      * The question `firstClearOrWhyNot` puts to the track rather than to a train: the search above refuses a route
      * through a terminus that is not its end (OB-229) and one that doubles back through another copy of its own start
      * or end (AMR-B1), so "nothing found" there covers three different answers - no rails, a terminus in the way, and
-     * only a lap.  This one walks all of them, and the caller decides which sentence to give.
-     *
-     * Also asked by `HomeStaging.auditAgainstRuntime`, to tell a destination only a lap reaches - where the planner and
-     * the menu are MEANT to disagree, since the copy rule is on the menu and autonomy alone - from a genuine planner
-     * defect.
-     *
-     * Nothing that sends a train asks this: `isPathClear` refuses a route through a terminus, and selection refuses the
-     * lap.
+     * only a lap.  This one walks all of them, and the caller decides which sentence to give.  Also asked by
+     * `HomeStaging.auditAgainstRuntime`, to tell a destination only a lap reaches (where the planner and the menu are
+     * MEANT to disagree: the copy rule is on the menu and autonomy alone) from a genuine planner defect.  Nothing that
+     * sends a train asks this: `isPathClear` refuses a route through a terminus, and selection refuses the lap.
      *
      * @param start where from
      * @param end where to
@@ -5358,20 +5353,20 @@ public class Layout
     /**
      * Whether autonomy could ever choose this point as a destination.
      *
-     * The standing bars only - inactive, reversing, not an auto destination - asked through the same `barredFromAutonomy` the "no
-     * available paths" window groups by, so there is ONE list of reasons a station is never picked (the diagram deciding which
-     * captions to draw is a third caller that would otherwise have grown its own).
+     * The standing bars only - inactive, reversing, not an auto destination - asked through the same
+     * `barredFromAutonomy` the "no available paths" window groups by, so there is ONE list of reasons a station is
+     * never picked (the diagram's captions are a third caller).
      *
-     * Asked with no locomotive, deliberately: per-locomotive exclusions are a fact about one train, and this answers a question
-     * about the SQUARE - a station excluded for one locomotive is still somewhere trains are sent, and its name still belongs on
-     * the diagram.
+     * Asked with no locomotive, deliberately: per-locomotive exclusions are a fact about one train, and this answers a
+     * question about the SQUARE - a station excluded for one locomotive is still somewhere trains are sent, and its
+     * name still belongs on the diagram.
      *
-     * **It does not ask `isDestination()`, deliberately (MON-C5).**  `isSendableDestination` has that clause and this does not,
-     * but they are different questions: this one is "will autonomy ever pick this SQUARE", asked by callers that already know they
-     * hold one (the diagram's captions walk the copies of a named station; the right-click menu asks it about the end of a path,
-     * which `getPossiblePaths` has already required to be a destination).  At the caption door adding the clause would change the
-     * wrong thing: an inactive terminus passes that flag and is exactly what Adam wanted gone.  A caller that hands this a square
-     * autonomy has no business stopping at is asking the wrong method rather than finding a gap in this one.
+     * **It does not ask `isDestination()`, deliberately (MON-C5).**  `isSendableDestination` has that clause; this
+     * one is "will autonomy ever pick this SQUARE", asked by callers that already know they hold one (the diagram's
+     * captions walk the copies of a named station; the right-click menu asks it about the end of a path, which
+     * `getPossiblePaths` has already required to be a destination).  At the caption door adding the clause would
+     * change the wrong thing: an inactive terminus passes that flag and is exactly what Adam wanted gone.  A caller
+     * that hands this a square autonomy has no business stopping at is asking the wrong method.
      *
      * @param end the candidate station
      * @return true when nothing standing bars it
@@ -5384,19 +5379,16 @@ public class Layout
     /**
      * Whether an operator should be offered this station for this train AT ALL.
      *
-     * Not the same question as `isChoosableByAutonomy`, and deliberately a much smaller one: that asks whether autonomy would ever
-     * *pick* a square; this asks whether a human may *send* a train there, and almost everything answers yes (a parking track, a
-     * reversing point, a square marked as not an automatic destination are all somewhere an operator may legitimately go by hand,
-     * offered just not among the automatic ones).
+     * Not the same question as `isChoosableByAutonomy`, and deliberately a much smaller one: that asks whether
+     * autonomy would ever *pick* a square; this asks whether a human may *send* a train there, and almost everything
+     * answers yes (a parking track, a reversing point, a square marked as not an automatic destination are all
+     * somewhere an operator may legitimately go by hand).
      *
-     * Two things are not offered:
+     * Two things are not offered, both the operator's own settings, saying this train does not belong there:
      *
-     * - A SWITCHED-OFF square (Adam: *"make the inactive stations disappear from the track diagram menu - they should only be
-     *   visible in the autonomy tab."*)
+     * - A SWITCHED-OFF square (Adam: *"make the inactive stations disappear from the track diagram menu - they should
+     *   only be visible in the autonomy tab."*)
      * - A square that EXCLUDES this locomotive (Adam: *"if it excludes the loc, don't even include it in the list."*)
-     *
-     * Both are the operator's own settings, saying this train does not belong there, so they are a third category rather than a
-     * reason to demote something into a submenu of things he may still choose.
      *
      * **A TERMINUS IS NOT ONE OF THEM**, which is the whole reason this method exists rather than a locomotive
      * argument on `isChoosableByAutonomy`: passing a locomotive brought the terminus clause with it, and a square
@@ -6727,6 +6719,7 @@ public class Layout
 
         /**
          * Whether this point is one the operator has a say over at all.
+         *
          * **It must be cheap, silent, and independent of the ANSWER.**  It runs at every point on every path, and
          * `shouldReverseAt` reads it to tell a compulsory turn from a choice: a reversing copy nobody is asked about
          * is one the railway turns every train at.  So it describes the RAILWAY - which squares anybody could have an
@@ -8829,33 +8822,30 @@ public class Layout
     /**
      * THE TRACK NON-ATOMIC MODE COULD RELEASE UNDER A TRAIN - the atomic-routes gate's question (Adam).
      *
-     * **Why this is the question and the editor's square count is not.**  Non-atomic mode is unsafe only through one escape:
-     * `tailHasProvablyPassed` returns true the moment `pathIsUnmeasured`, that is, NO EDGE ANYWHERE ON THE PATH is measured
-     * (a length, or every square answered 0; TDU-C6).  An edge's length is the sum of its squares, so a railway with one
-     * unmeasured switch square still has a length on every edge: the escape can never fire on it, and the missing square
-     * only makes `behind` under-count, so edges are held LONGER, the conservative direction.  Refusing something legal is
-     * the one thing Adam has asked not to happen.
+     * **Why this is the question and the editor's square count is not.**  Non-atomic mode is unsafe only through one
+     * escape: `tailHasProvablyPassed` returns true the moment `pathIsUnmeasured`, that is, NO EDGE ANYWHERE ON THE PATH
+     * is measured (a length, or every square answered 0; TDU-C6).  An edge's length is the sum of its squares, so a
+     * railway with one unmeasured switch square still has a length on every edge: the escape can never fire on it, and
+     * the missing square only makes `behind` under-count, so edges are held LONGER, the conservative direction.
+     * Refusing something legal is the one thing Adam has asked not to happen.
      *
-     * **BY RAIL, NOT BY EDGE**: a rail is two `Edge` objects, one per direction, so it is counted by the pair of places it
-     * joins.
+     * **By rail, not by edge**: a rail is two `Edge` objects, one per direction, so it is counted by the pair of
+     * places it joins.
      *
-     * **AND ONLY WHERE A WHOLE PATH COULD BE UNMEASURED** (VD14-C6): a path always ENDS at a destination, so an unmeasured
-     * rail with measured track between it and every destination can never be part of one.  What this returns is the rails
-     * from whose far end an ACTIVE destination can be reached over unmeasured track alone.  A path may not run through or
-     * finish on a point that is switched off, so the reachability walk never reaches one.
+     * **Only where a whole path could be unmeasured** (VD14-C6): a path always ENDS at a destination, so an
+     * unmeasured rail with measured track between it and every destination can never be part of one.  What this
+     * returns is the rails from whose far end an ACTIVE destination can be reached over unmeasured track alone (a
+     * path may not run through or finish on a point that is switched off).  The premise is enforced where a path is
+     * BUILT, not in `isPathClear` (VD15-C4, VD16-C1): `Layout.bfs` returns null unless `end.isDestination()`, and
+     * `HomeStaging.firstClearRoute`, which does not use `bfs`, gates on `canRest` (`isDestination() && isActive()`).
+     * If a path is ever allowed to finish anywhere else, this has to go back to counting every unmeasured edge.
      *
-     * **WHERE THE PREMISE IS ENFORCED**, since it is what makes the narrowing safe (VD15-C4, VD16-C1): where a path is
-     * BUILT, not in `isPathClear`.  `Layout.bfs` returns null unless `end.isDestination()`, which covers every path
-     * autonomy runs, probes or enumerates; `HomeStaging.firstClearRoute`, which does not use `bfs`, gates on `canRest`,
-     * which requires `isDestination() && isActive()`.  If a path is ever allowed to finish anywhere else, this has to go
-     * back to counting every unmeasured edge.
+     * **An answered 0 is a measure** (Adam, TDU-C6: *"0 lengths count as measures, so non-atomic should be
+     * allowed"*): track every square of which was answered 0 on purpose is not counted here; both ask
+     * `Edge.isMeasured`.  A 0 nobody answered is still no length.
      *
-     * **An answered 0 is a measure** (Adam, TDU-C6: *"0 lengths count as measures, so non-atomic should be allowed"*):
-     * track every square of which was answered 0 on purpose is not counted here, and the escape does not fire over it
-     * either; both ask `Edge.isMeasured`.  A 0 nobody answered is still no length.
-     *
-     * SORTED, because `this.edges` is a `HashMap` and "the graph's own order" is no order at all (VD15-C2): the message
-     * names only the first three, which must not change between runs of the same configuration.
+     * SORTED, because `this.edges` is a `HashMap` (VD15-C2): the message names only the first three, which must not
+     * change between runs of the same configuration.
      *
      * @return the rails, named by the two places each joins, in alphabetical order
      */
@@ -9506,27 +9496,25 @@ public class Layout
     /**
      * Why a PARKING BERTH cannot hold this train: it would lie across somebody else's road.
      *
-     * Adam's ruling, the other half of the relaxation in `whyTooLongForThisRoute`: *"make a rule that parking berths cant
-     * block any other edges, but not make that check for active stations."*  A train at a platform is passing and may stand
-     * across the points; a train at a berth is staying, and a berth is not worth a road.  (On his railway a three-unit train
-     * at TunnelLongPark lies over the only two roads to the lower level, and 90 ordered pairs of stations stop being
-     * reachable from one another while it is there; SVX-C1.)
+     * Adam's ruling, the other half of the relaxation in `whyTooLongForThisRoute`: *"make a rule that parking berths
+     * cant block any other edges, but not make that check for active stations."*  A train at a platform is passing and
+     * may stand across the points; a train at a berth is staying, and a berth is not worth a road (SVX-C1: on the
+     * author's railway a three-unit train at TunnelLongPark would lie over the only two roads to the lower level and
+     * make 90 ordered pairs of stations unreachable).
      *
-     * **Which places the train would claim is the same arithmetic the tail walk uses**: spend the train's length across the
-     * approach's places from the end it comes in by, claiming each before spending it, the berth's own square first (Adam,
-     * OB-278: *"the 2 length tile with the s88 consumes 2 units of the train"*).  The two walks are written to agree and are
-     * not one piece of code (SEV-B1 and SVX-B1 came from a change reaching one before the other), so a reader who needs
-     * them to agree should check both.
+     * **Which places the train would claim is the same arithmetic the tail walk uses**: spend the train's length
+     * across the approach's places from the end it comes in by, claiming each before spending it, the berth's own
+     * square first (OB-278: *"the 2 length tile with the s88 consumes 2 units of the train"*).  The two walks are
+     * written to agree and are not one piece of code (SEV-B1, SVX-B1), so a change to one must check the other.
      *
-     * **Its own way in and out does not count.**  Every road that starts or ends at the berth's own square is blocked by the
-     * train being there at all, whichever copy of a split square it is recorded on; `Point.isSamePlaceAs` knows that two
-     * Points are one piece of track.  **Shared metal only**, told from an FR-001 restriction by symmetry, as the covered-track
-     * sweep in `isPathClear` tells them apart: sharing a tile is mutual and the reducer records both directions, while a
-     * restriction is one-directional.
+     * **Its own way in and out does not count.**  Every road that starts or ends at the berth's own square is blocked
+     * by the train being there at all, whichever copy of a split square it is recorded on (`Point.isSamePlaceAs`).
+     * **Shared metal only**, told from an FR-001 restriction by symmetry, as the covered-track sweep in `isPathClear`
+     * tells them apart.
      *
-     * Silent on an edge the build did not describe in places (a hand-written configuration, or one written before 3.0.0), so
-     * an old file keeps the answer from the room rule alone.  Pure, like `whyTooLongForThisRoute`, so the staging planner can
-     * ask the same question.
+     * Silent on an edge the build did not describe in places (a hand-written configuration or an older one), so an
+     * old file keeps the answer from the room rule alone.  Pure, like `whyTooLongForThisRoute`, so the staging planner
+     * can ask the same question.
      *
      * @param path the route, in order
      * @param loc the train
@@ -9613,37 +9601,37 @@ public class Layout
      * Adam: *"make sure the model factors in whether the train will clear the area before it crosses over"*, and
      * *"the check should pass if the train would be gone (i.e. if that one was only length 4, for example)."*
      *
-     * **A train never blocks itself** elsewhere (behaviour.md 5c), rightly while the route leads away: its tail is behind
-     * it, and pulling forward off it is how a train leaves a berth.  A route that comes back round a loop to track the body
-     * still lies on is the case that does not hold.
+     * **A train never blocks itself** elsewhere (behaviour.md 5c), rightly while the route leads away: its tail is
+     * behind it, and pulling forward off it is how a train leaves a berth.  A route that comes back round a loop to
+     * track the body still lies on is the case that does not hold.
      *
-     * **The rule: the head may come back to a place only once the tail has left it.**  Distances are measured along the
-     * journey from where the head stands, and the tail is always the train's length behind the head.  A place the body lies
-     * on at the start is left when the tail passes the end of it nearer the head, which is `reach` behind the start; a place
-     * the route has run over is left when the tail passes the end the head went out by.  The track run between leaving a
-     * place and coming back to it is the longest train that clears it in time, so a longer train is refused and the refusal
-     * names the figure.  One exactly that long is clear as the head arrives, which is how every length rule here reads a fit.
+     * **The rule: the head may come back to a place only once the tail has left it.**  Distances are measured along
+     * the journey from where the head stands, and the tail is always the train's length behind the head.  A place the
+     * body lies on at the start is left when the tail passes the end of it nearer the head, which is `reach` behind
+     * the start; a place the route has run over is left when the tail passes the end the head went out by.  The track
+     * run between leaving a place and coming back to it is the longest train that clears it in time, so a longer train
+     * is refused and the refusal names the figure.  One exactly that long is clear as the head arrives, which is how
+     * every length rule here reads a fit.
      *
-     * **Only measured track binds**, as for every length rule here (*"only apply if lengths are specified"*): a square with
-     * no length counts nothing, and a return with nothing measured on the way round is not judged.  THE WAY ROUND is the
-     * route the head drives between leaving the place and coming back to it, not the body in front of it (TDA-B1).
-     * MEASURED as every length rule reads it: a length on it, or every place on it answered 0 on purpose (OB-300, RLA-C6),
-     * asked place by place (`measuredThroughout`) since a way round begins and ends inside a leg; a square nobody answered,
-     * a switch included, leaves it unmeasured.  Unmeasured squares within a measured way round make it shorter than it is,
-     * which refuses rather than permits, so the refusal says how many things Mass Assign Lengths would ask a length for on
-     * the way round: the pieces, switches and shared squares the build marks as still wanting one (OB-297, ADA-C1).  The
-     * note's list and the editor's are one list (TDA2-C1).
+     * **Only measured track binds**, as for every length rule here (*"only apply if lengths are specified"*): a
+     * square with no length counts nothing, and a return with nothing measured on the way round is not judged.  THE
+     * WAY ROUND is the route the head drives between leaving the place and coming back to it (TDA-B1), MEASURED as
+     * every length rule reads it: a length on it, or every place on it answered 0 on purpose (OB-300, RLA-C6), asked
+     * place by place (`measuredThroughout`) since a way round begins and ends inside a leg.  Unmeasured squares within
+     * a measured way round make it shorter than it is, which refuses rather than permits, so the refusal says how many
+     * things Mass Assign Lengths would ask a length for on the way round (OB-297, ADA-C1; the note's list and the
+     * editor's are one list, TDA2-C1).
      *
-     * **The tightest return is the one named** (TDA-C1): a route that comes up behind the body meets it more than once, and
-     * a later return can allow less than an earlier one, so every return is asked and the smallest figure is the answer.
+     * **The tightest return is the one named** (TDA-C1): a route that comes up behind the body meets it more than
+     * once, and a later return can allow less than an earlier one, so every return is asked and the smallest figure is
+     * the answer.
      *
-     * **After a turn the body is ahead of the train**, and moves with it: a train that turns, at a square it may turn at on
-     * the way or where it stands before it sets off, drives back over the track its body lies on, which is no collision.
-     * So the question starts again after every turn with nothing behind; the room rule in `whyTooLongForThisRoute` keeps a
-     * turning train on the track it came in by.
-     *
-     * By place, the relation the tail claims use: the two roads through a crossing share their square and meet here, and an
-     * overpass's two levels do not.
+     * **After a turn the body is ahead of the train**, and moves with it: a train that turns, at a square it may turn
+     * at on the way or where it stands before it sets off, drives back over the track its body lies on, which is no
+     * collision.  So the question starts again after every turn with nothing behind; the room rule in
+     * `whyTooLongForThisRoute` keeps a turning train on the track it came in by.  By place, the relation the tail
+     * claims use: the two roads through a crossing share their square and meet here, and an overpass's two levels do
+     * not.
      *
      * @param path the route, in order, starting where the train stands
      * @param loc the train
