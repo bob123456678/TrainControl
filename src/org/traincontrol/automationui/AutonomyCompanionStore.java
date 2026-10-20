@@ -4331,10 +4331,8 @@ public class AutonomyCompanionStore
     /**
      * Reads the shared half of a setup object in, over a store already emptied of it.
      *
-     * Split out of load() so that importing can put a MERGED object through exactly the same
-     * reading - the page-id translation and the renumber detection included.  An importer that
-     * parsed these fields itself would have had to repeat all of that, and would have drifted out
-     * of step with load() the first time either changed.
+     * Split out of load() so that importing can put a MERGED object through exactly the same reading - the page-id
+     * translation and the renumber detection included - rather than parse these fields itself and drift out of step.
      *
      * The active configuration is deliberately not read here: importing a configuration must not
      * change which one is running.
@@ -4345,31 +4343,20 @@ public class AutonomyCompanionStore
      */
     private void readShared(JSONObject wholeRoot)
     {
-        // FIRST, because everything below is translated out of page ids and the translation needs to
-        // know what those ids were called when this file was written.
-        //
-        // It used to be read after the tileLengths loop, which is the one collection translated inline
-        // rather than by an untranslate* call below - so lengths were resolved against an empty map
-        // while the other ten were resolved against a full one.  Harmless for as long as the
-        // translation ignored this map, and wrong the moment it stopped ignoring it.
+        // FIRST, because everything below is translated out of page ids and the translation needs to know what those ids
+        // were called when this file was written: the tileLengths loop is translated inline, so it must not run against an
+        // empty map while the other collections run against a full one.
         readStringMap(wholeRoot, "pages", pageNamesWhenWritten);
 
         // Everything naming a page that is not loaded is taken out here and held, rather than read in
         // with the file's id standing in for a page name (OB-067). See heldForAbsentPages.
         JSONObject root = withoutAbsentPages(wholeRoot);
 
-        // Read AND translated in one step, per field (FR-013).
-        //
-        // This was two passes: fill each collection with the FILE's keys, then walk eleven of them
-        // rewriting the keys in place. The order of those two lists had to agree, by eye, for ever -
-        // and the state between them was every collection holding stored keys in fields the rest of
-        // the class reads as memory keys, which is the state OB-067 was about. Neither the agreement
-        // nor the state exists now: a reader that does not translate cannot put anything into a
-        // TileKey-keyed map.
-        // Typed since FR-013 stage two, all of them: each reader translates as it reads, so there is
-        // no window in which a collection holds stored keys in a memory-keyed field - the state OB-067
-        // was about.  `excludedPages` is the exception and says why for itself: it holds page NAMES
-        // rather than squares, so it is read raw and translated in its own read().
+        // Read AND translated in one step, per field (FR-013): each reader translates as it reads, so there is no window in
+        // which a collection holds stored keys in a field the rest of the class reads as memory keys, the state OB-067 was
+        // about, and a reader that does not translate cannot put anything into a TileKey-keyed map.  `excludedPages` is
+        // the exception and says why for itself: it holds page NAMES rather than squares, so it is read raw and translated
+        // in its own read().
         for (Kept k : kept()) k.read(root);
 
         pageIdConflicts.clear();
@@ -4410,31 +4397,18 @@ public class AutonomyCompanionStore
     /**
      * One collection of settings the store keeps, and everything the bookkeeping sites need of it.
      *
-     * **What this is for.** The store keeps twelve collections, and used to repeat the same
-     * per-collection shape at every site that does bookkeeping - saving, loading, clearing, renaming a
-     * page, moving squares, forgetting squares, snapshotting and restoring a page, deleting a page.
-     * Adding one collection meant finding all of them, and the record of what that costs is not a
-     * worry but a measurement: the eleventh, `disabledPortals`, arrived wired into eight sites and the
-     * other four were each found afterwards as a bug - the rename loop, the move, the snapshot and
-     * restore pair, and forgetting a square. `renamePage` still carries what the first of those cost:
-     * "a link switched off is remembered by its square, so a rename turned every one of them back on -
-     * silently, and only on the renamed page."
+     * **What this is for.** The store keeps twelve collections, and the same per-collection shape is needed at every site
+     * that does bookkeeping: saving, loading, clearing, renaming a page, moving squares, forgetting squares, snapshotting
+     * and restoring a page, deleting a page.  Without a registry, adding one collection means finding all of them, and a
+     * site missed is a bug found afterwards (a link switched off turned back on by a rename, a signal left out of
+     * `clear()`, `captions` missing from the known-field list).  `testStoreCollectionsAreHandledEverywhere` makes an
+     * omission loud; this makes most of them impossible, because there is one place to add a collection rather than a
+     * dozen.
      *
-     * At least four more came from the same shape and are all recorded in this file: `clear()` missing
-     * `stationSignals` while `clearShared()` had it, which threw a cancelled signal on real hardware;
-     * `captions` missing from the file's known-field list, which reverted every caption edit on the
-     * next save;
-     * directions left behind by every move; captions rekeyed on one side only.
-     *
-     * `testStoreCollectionsAreHandledEverywhere` was the cheaper half of the answer and it stays: it
-     * makes an omission loud. This is the other half - it makes most of them impossible, because there
-     * is one place to add a collection rather than a dozen.
-     *
-     * **What deliberately did NOT move in here.** `reconcile` and `applyTo` are still written out by
-     * hand, per DD-D9. Both ask a question the registry cannot express: reconcile decides what a
-     * square's absence from the diagram means, one collection at a time, and applyTo populates the
-     * tile GRAPH, which models track and has nowhere to put a name or a length. A registry entry that
-     * answered "not applicable" for those two sites would be pretending they are uniform.
+     * **What deliberately did NOT move in here.** `reconcile` and `applyTo` are still written out by hand, per DD-D9. Both
+     * ask a question the registry cannot express: reconcile decides what a square's absence from the diagram means, one
+     * collection at a time, and applyTo populates the tile GRAPH, which models track and has nowhere to put a name or a
+     * length.
      */
     private abstract class Kept
     {
@@ -4466,11 +4440,9 @@ public class AutonomyCompanionStore
         /**
          * Drops everything about squares that are gone, and everything POINTING at them.
          *
-         * REPORTS WHETHER IT REMOVED ANYTHING (X8V-B2).  It used to return nothing, and the answer was
-         * manufactured one level up as "the caller handed me a non-empty list" - which is true before
-         * anything has been looked at.  Four call sites read that as "something was forgotten, so write
-         * the setup to disk", so every deleted piece of plain track rebuilt the graph over every page
-         * and wrote every file of the setup, once per square.
+         * REPORTS WHETHER IT REMOVED ANYTHING (X8V-B2): four call sites read the answer as "something was forgotten, so
+         * write the setup to disk", so it must be true only when something was, or every deleted piece of plain track would
+         * rebuild the graph over every page and write every file of the setup, once per square.
          *
          * @param squares the squares being forgotten
          * @param arriving the moves in progress, so a label being landed on by its own tile is spared
@@ -4487,9 +4459,8 @@ public class AutonomyCompanionStore
         /**
          * Adds every square on this page that this collection names - as a key OR as a value.
          *
-         * The value half matters and is easy to miss: a protecting signal, a blocker or the far end of
-         * a portal can sit on a page while having no entry of its own. Gathering by key alone left the
-         * pointer behind when the page went.
+         * The value half matters and is easy to miss: a protecting signal, a blocker or the far end of a portal can sit on a
+         * page while having no entry of its own.
          */
         abstract void squaresOn(String page, Set<TileKey> into);
     }
@@ -4568,13 +4539,8 @@ public class AutonomyCompanionStore
     /**
      * A square AND a route across it, to the way the track faces on that route.
      *
-     * The odd one out, and the one that made the rest of this worth writing rather than merely tidy:
-     * for as long as its key was a string with a `#dx,dy` suffix on the end, half the bookkeeping
-     * silently did nothing to it - a bare square never matched a suffixed key. `forgetSquares` carried
-     * a `tileDirections.remove(key)` that was dead from the day it was written, and `moveKeys` left
-     * every facing behind on the square the track had walked away from. Since FR-013 stage two the key
-     * is a type that can be asked which square it is on, so the only thing left that is special about
-     * this collection is that asking is necessary.
+     * The odd one out: its key is a square plus a route, so a bare square never matches it and the bookkeeping must ask
+     * the key which square it is on (FR-013).
      */
     private class DirectionMapKept extends Kept
     {
@@ -4634,9 +4600,8 @@ public class AutonomyCompanionStore
     /**
      * A square to another square: a portal to its far end, a caption to the station it names.
      *
-     * Both halves are squares, so both halves follow a rename and a move. Rekeying only the keys left
-     * every caption on the page pointing at a station on a page that no longer existed, and the next
-     * save deleted them for good as unreconcilable.
+     * Both halves are squares, so both halves follow a rename and a move: rekeying only the keys would leave every caption
+     * on the page pointing at a station on a page that no longer existed.
      */
     private class PairMapKept extends Kept
     {
@@ -4693,9 +4658,8 @@ public class AutonomyCompanionStore
                 any |= map.remove(key) != null;
             }
 
-            // And anything pointing AT a square that is gone.  No exception for the arriving tiles
-            // here and none is possible: a square being vacated is never in this set - moveTiles
-            // builds it by excluding them - so an entry naming one of those is not looked at.
+            // And anything pointing AT a square that is gone.  No exception for the arriving tiles here: a square being
+            // vacated is never in this set, because moveTiles builds it by excluding them.
             for (java.util.Iterator<Map.Entry<TileKey, TileKey>> pairs = map.entrySet().iterator();
                 pairs.hasNext();)
             {
@@ -4736,9 +4700,8 @@ public class AutonomyCompanionStore
     /**
      * A square to a list of squares: the signals protecting a station, the squares holding it back.
      *
-     * The value is a live list, which is what makes the snapshot here different from every other one:
-     * `forgetSquares` calls removeAll on those lists in place, so a shared snapshot was emptied by the
-     * very deletion it was taken to undo.
+     * The value is a live list, which makes the snapshot different from every other one: `forgetSquares` calls removeAll on
+     * those lists in place, so a shared snapshot would be emptied by the very deletion it was taken to undo.
      */
     private class ListMapKept extends Kept
     {
@@ -4890,14 +4853,10 @@ public class AutonomyCompanionStore
     /**
      * A set of whole PAGES rather than of squares: which pages autonomy is told to ignore.
      *
-     * The reason this is a kind of its own rather than an awkward member of the last one. Every
-     * square-level site has nothing to say about it - moving squares does not move a page, deleting
-     * them never deletes one, and a page's own exclusion is not part of its contents - so those sites
-     * do nothing here, and that is a decision rather than an omission. It is also why this collection
-     * was for a long time the one stored by NAME while the other eleven were stored by page id: a bare
-     * page name goes through the key translation unchanged, so nothing complained. A rename then
-     * orphaned it, an excluded page silently rejoined autonomy, and its old name sat in the set for
-     * ever because nothing prunes it.
+     * A kind of its own: every square-level site has nothing to say about it (moving squares does not move a page,
+     * deleting them never deletes one, and a page's own exclusion is not part of its contents), so those sites do nothing
+     * here, by decision.  It is translated by page id on write, as the squares are, so a rename carries the decision with
+     * it and no stale name sits in the set.
      */
     private class PageSetKept extends Kept
     {
@@ -4938,12 +4897,9 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Built on first use rather than in a field initializer.
-     *
-     * The collections are declared across a thousand lines of this file, and a field initializer runs
-     * in declaration order - so a list built in one would capture whichever of them happened to be
-     * above it and hold nulls for the rest. Which collection is declared where is not something this
-     * registry should be able to be broken by.
+     * Built on first use rather than in a field initializer: the collections are declared across a thousand lines of this
+     * file and an initializer runs in declaration order, so a list built in one would capture whichever of them happened
+     * to be above it and hold nulls for the rest.
      */
     private List<Kept> kept;
 
@@ -4977,8 +4933,7 @@ public class AutonomyCompanionStore
         // Beside it, and the same shape: page NAMES rather than squares, translated on write the way
         // `excludedPages` is, so a rename carries the decision with it (TST-B15).
         all.add(new PageSetKept("keptDespiteRepeats", keptDespiteRepeats));
-        // Called disabledLinks in the file and disabledPortals in the code, which is the whole reason
-        // the file's known-field list needed an exemption in the textual guard.  Named once, here.
+        // Called disabledLinks in the file and disabledPortals in the code.  Named once, here.
         all.add(new SquareSetKept("disabledLinks", disabledPortals, true));
 
         kept = all;
@@ -4988,13 +4943,9 @@ public class AutonomyCompanionStore
 
     private void clear()
     {
-        // One of the two lists this used to keep by hand, and the pair of them is the reason the
-        // registry exists.  `stationSignals` was missing here while clearShared() had it: load()
-        // empties the store and then reads the file over it, and readShared only PUTS what the file
-        // holds - so a pairing made since the last save survived a discard, and the next save wrote it
-        // to disk.  A signal somebody had cancelled was then thrown on real hardware.
-        //
-        // Two lists of the same twelve things, kept in step by eye.  Now there is one list.
+        // One list, walked by clear and clearShared alike: load() empties the store and then reads the file over it, and
+        // readShared only PUTS what the file holds, so a collection missing from a hand-kept list would let a pairing made
+        // since the last save survive a discard and be written to disk (a cancelled signal was once thrown on real hardware).
         for (Kept k : kept()) k.clear();
 
         unknownSharedFields.clear();
@@ -5023,19 +4974,15 @@ public class AutonomyCompanionStore
     /**
      * Writes down what the setup looked like before the layout editor started changing it.
      *
-     * **Why this is on disk and not in memory.** The editor already keeps a snapshot in memory and
-     * puts it back on Cancel, and that works for every ordinary ending. The case it cannot cover is
-     * the one OB-108 is about: the process dying while the editor is open. The setup has been written
-     * after every drag - deliberately, because the session is rebuilt from disk after each one - while
-     * the diagram is only written at Save. So disk is left holding a setup keyed to the moved squares
-     * and page files with the track where it was, and the next reconciling save prunes the difference
-     * as track that does not exist.
+     * **Why this is on disk and not in memory.** The editor keeps a snapshot in memory and puts it back on Cancel, which
+     * covers every ordinary ending but not the process dying while the editor is open (OB-108).  The setup is written
+     * after every drag (the session is rebuilt from disk after each one) while the diagram is only written at Save, so
+     * disk is left holding a setup keyed to the moved squares and page files with the track where it was, and the next
+     * reconciling save prunes the difference as track that does not exist.  A snapshot that lives in memory is lost by
+     * exactly the event it exists to survive.
      *
-     * A snapshot that lives in memory is lost by exactly the event it exists to survive.
-     *
-     * Adam, 2026-08-25, asked which of three remedies: "ob-108 - revert to pre save state." So the
-     * pre-edit setup is kept beside the setup itself, and put back if it is still there next time -
-     * which can only mean the last session did not finish.
+     * So the pre-edit setup is kept beside the setup itself ("revert to pre save state"), and put back if it is still
+     * there next time, which can only mean the last session did not finish.
      *
      * @param was what snapshotSetup returned when the editor opened
      * @return whether it reached the disk
@@ -5075,32 +5022,22 @@ public class AutonomyCompanionStore
 
         if (was.delete()) return true;
 
-        // The delete failed, and on this railway that is not exotic: the setup lives under OneDrive,
-        // `save()` goes through writeAtomically because the folder can be locked by a sync client, and
-        // `heldForAbsentPages` calls an unhydrated placeholder "an ordinary Tuesday".
+        // The delete failed, and on this railway that is not exotic: the setup lives under OneDrive, and `save()` goes
+        // through writeAtomically because the folder can be locked by a sync client.
         //
-        // A note that cannot be removed is a note that will be APPLIED, and applying it after a clean
-        // Save undoes the work that was just saved. So if it cannot be taken away it is made harmless
-        // instead: overwritten with the setup as it stands now, which reverts to the present and
-        // therefore changes nothing.
+        // A note that cannot be removed is a note that will be APPLIED, and applying it after a clean Save undoes the work
+        // that was just saved.  So if it cannot be taken away it is made harmless instead: overwritten with the setup as it
+        // stands now, which reverts to the present and therefore changes nothing.
         //
-        // **Written IN PLACE, not through writeAtomically, and that distinction is the whole fix.**
-        // The first version of this used writeJson, which ends in Files.move(REPLACE_EXISTING) - and
-        // on Windows replacing a file needs the same DELETE access the delete above just failed to
-        // get. So the fallback failed in exactly the case it was written for, the note kept its
-        // PRE-EDIT contents, and the next start found a well-formed current-version note and reverted
-        // a cleanly saved edit while logging that the edit had not finished. A fix that fails only in
-        // the scenario it exists for is worse than none, because it reads as covered.
+        // **Written IN PLACE, not through writeAtomically, and that distinction is the whole fix.**  writeJson ends in
+        // Files.move(REPLACE_EXISTING), and on Windows replacing a file needs the same DELETE access the delete above just
+        // failed to get: in that lock state delete() fails and the atomic move fails, but a plain truncating write
+        // succeeds.  An atomic fallback would fail in exactly the case it exists for, leaving the pre-edit contents to
+        // revert a cleanly saved edit at the next start.
         //
-        // An independent review found it and measured the asymmetry that makes it fixable: in that
-        // same lock state delete() fails and the atomic move fails, but a plain truncating write
-        // succeeds. Of the three primitives, writeAtomically picked the one that shares the delete's
-        // failure mode.
-        //
-        // Torn writes are acceptable here and nowhere else in this class: a half-written note fails
-        // unfinishedEdit's shape check, so it is refused, kept, and reported - which is the safe
-        // outcome. There is nothing to protect, because the content being overwritten is the thing
-        // being disposed of.
+        // Torn writes are acceptable here and nowhere else in this class: a half-written note fails unfinishedEdit's shape
+        // check, so it is refused, kept, and reported, which is the safe outcome.  There is nothing to protect, because
+        // the content being overwritten is the thing being disposed of.
         try (java.io.FileOutputStream out = new java.io.FileOutputStream(was))
         {
             out.write(snapshotSetup().toString(2).getBytes(StandardCharsets.UTF_8));
@@ -5157,26 +5094,17 @@ public class AutonomyCompanionStore
             return null;
         }
 
-        // And the same checks `load()` makes, which this did not carry across when the contract moved
-        // from memory to disk.
+        // And the same checks `load()` makes: `restoreSetup` was written for what `snapshotSetup` produces, so it clears
+        // the store and then reads, which is safe when the object is known to be the right shape and unsafe when it came
+        // off a disk written by another run and possibly another build.  A sidecar of `{}` would throw out of
+        // `getJSONObject("shared")` after the clear, leaving autonomy dead for the rest of the session and the note still
+        // there to do it again next time; a well-formed but empty one would empty the setup and save it; a version 99 one
+        // would be accepted where `load()` would refuse it.
         //
-        // `restoreSetup` was written for what `snapshotSetup` produces, so it clears the store and
-        // then reads - which is safe when the object is known to be the right shape and unsafe when it
-        // came off a disk written by another run and possibly another build. Review fed it four
-        // sidecars: `{}` threw out of `getJSONObject("shared")` after the clear, leaving autonomy
-        // dead for the rest of the session and the note still there to do it again next time; a
-        // well-formed but empty one emptied the setup and saved it; a version 99 one was accepted
-        // where `load()` would have refused it. Only "not JSON at all" was handled.
-        //
-        // `load()`'s own javadoc says why it has these: "a load that fails now leaves the setup
-        // exactly as it was", and silently dropping fields a newer build wrote "would lose the user's
-        // work on the next save".
-        //
-        // Refused and KEPT, not deleted. A note this build cannot read is one a DIFFERENT build wrote
-        // and can - a version 99 note belongs to the newer TrainControl that will be run next, and
-        // deleting it here would throw away that build's safety net on the way past. The cost of
-        // keeping it is that it is refused again at every start, so `hasUnfinishedEditNote` exists to
-        // let the caller say so out loud rather than leaving it silent.
+        // Refused and KEPT, not deleted.  A note this build cannot read is one a DIFFERENT build wrote and can - a version
+        // 99 note belongs to the newer TrainControl that will be run next, and deleting it here would throw away that
+        // build's safety net on the way past.  The cost of keeping it is that it is refused again at every start, so
+        // `hasUnfinishedEditNote` exists to let the caller say so out loud rather than leaving it silent.
         if (!(note.opt("shared") instanceof JSONObject)
             || !(note.opt("configurations") instanceof JSONObject)
             || note.getJSONObject("shared").optInt("version", VERSION) > VERSION)
