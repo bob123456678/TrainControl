@@ -18,12 +18,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * Renders the real diagram to a picture, so that questions about how it LOOKS can be answered by
  * looking rather than by reading the painting code.
  *
- * Written 2026-08-22 after a run of defects that were all about pixels - a caption three tiles wide, a
- * star hidden under a badge, a star swallowed by its own outline - each of which took two or three
- * rounds because they were diagnosed by reading `paint` methods and reasoning. Every one of them would
- * have been obvious in a picture.
- *
- * `DiagramExport.render` already builds one offscreen: it is what the export feature uses, it goes
+ * `DiagramExport.render` builds one offscreen: it is what the export feature uses, it goes
  * through the same LayoutGrid and the same TileAnnotation as the window, and it needs no visible frame.
  *
  * **This is a tool as much as a test.** The assertions below are deliberately weak - they check the
@@ -36,7 +31,7 @@ public class testDiagramLooksRight
 {
 
     /**
-     * The icons each claim draws (round 131): FR-118's for a claim marked `@DrawsFR118Icons`, the classic ones - what
+     * The icons each claim draws: FR-118's for a claim marked `@DrawsFR118Icons`, the classic ones - what
      * stations are drawn with - for every other.
      *
      * @param claim the claim about to run
@@ -63,9 +58,8 @@ public class testDiagramLooksRight
      * The operator’s railway is not this test’s to open (OB-111).
      *
      * Constructing the window opens whatever the saved layout preference names, which on his machine is
-     * his live layout - so this class rewrote his configuration on every battery, identical but for
-     * line endings, and left it showing as modified in git status. The sandbox points the preference
-     * at a copy of the fixture and puts it back afterwards.
+     * his live layout.  The sandbox points the preference at a copy of the fixture and puts it back
+     * afterwards.
      */
     private static support.LayoutSandbox sandbox;
 
@@ -80,11 +74,11 @@ public class testDiagramLooksRight
             throw new SkipException("rendering a diagram needs a display");
         }
 
-        // BEFORE THE MODEL, not just before the window (OB-111, corrected 2026-08-28).
+        // BEFORE THE MODEL, not just before the window (OB-111).
         //
-        // MarklinControlStation.init reads the layout preference too - it is what loads the pages -
-        // so opening the sandbox after it left the model on the operator's real railway while the
-        // window looked at the copy. The comment that used to stand here named only the window.
+        // MarklinControlStation.init reads the layout preference too (it is what loads the pages), so the
+        // sandbox must be open before it, or the model stays on the operator's real railway while the
+        // window looks at the copy.
         sandbox = support.LayoutSandbox.open();
 
         model = support.TestStationAddress.withNoStation(
@@ -102,10 +96,8 @@ public class testDiagramLooksRight
     {
         // THE WINDOW TOO (TSX-C6).
         //
-        // This class builds a `TrainControlUI` in its set-up and was the only one of its siblings that
-        // never disposed it - a real top-level window, with its listeners and its grid, alive for the
-        // rest of the JVM.  Bounded by the JVM in a battery, and not bounded at all for anybody
-        // running this class from an IDE.
+        // This class builds a `TrainControlUI` in its set-up, a real top-level window with its listeners
+        // and its grid, so it disposes it here.
         if (ui != null)
         {
             final TrainControlUI closing = ui;
@@ -121,8 +113,8 @@ public class testDiagramLooksRight
     /**
      * Every page of the sample layout, at two tile sizes, written out as PNGs.
      *
-     * Two sizes because the defects that got here twice were both size-dependent: a mark floored at a
-     * fixed stroke width looks right at 60px and vanishes at 30px, which is exactly what OB-037 was.
+     * Two sizes because some defects depend on size: a mark floored at a fixed stroke width looks right
+     * at 60px and vanishes at 30px, which is what OB-037 was.
      */
     @Test
     public void testEveryPageRendersToAPictureWorthLooking()
@@ -174,29 +166,18 @@ public class testDiagramLooksRight
     /**
      * A REAL autonomy path, ending at a curved station, drawn the way the running diagram draws it.
      *
-     * OB-026: "when arriving at a curved station the red trace draws a straight line on the tile,
-     * rather than following the shape of the station. Running through curves looks OK."
+     * OB-026: when arriving at a curved station the red trace must follow the shape of the station, not
+     * draw a straight line on the tile.
      *
-     * The first version of this laid three squares I picked myself, which was worthless: a run that
-     * does not follow real track says nothing about how real track is drawn. Adam's correction - "you
-     * need to have an autonomy locomotive heading to that curved station as a destination" - is the
-     * whole point, so the path here comes from `getPossiblePaths`, which is what the right-click menu
-     * offers and what autonomy itself chooses between.
+     * The path comes from `getPossiblePaths`, which is what the right-click menu offers and what autonomy
+     * itself chooses between, so the run follows real track to a real destination.  The sample layout has
+     * NO locomotives placed (so `getLocomotivesToRun` is empty and there is nothing to search), and it has
+     * two curved stations, `TopMainR2Inter` and `TopMainR1Inter`, both FEEDBACK_CURVE.  So a locomotive is
+     * placed on each candidate start in turn until one can reach a curved station; the only thing arranged
+     * by hand is which square it starts from.
      *
-     * The second version still found nothing, and the reason was worth the trip: the sample layout has
-     * NO locomotives placed, so `getLocomotivesToRun` is empty and there are no paths to search at all.
-     * A search that finds nothing because its input was empty looks exactly like a search that finds
-     * nothing because the thing is not there - and I had already written a skip message blaming the
-     * fixture for lacking curved stations. It has two, `TopMainR2Inter` and `TopMainR1Inter`, both
-     * FEEDBACK_CURVE, both named by Adam off the top of his head.
-     *
-     * So a locomotive is placed here, on each candidate start in turn, until one of them can reach a
-     * curved station. That is a real destination for a real train over real track; the only thing
-     * arranged by hand is which square it starts from.
-     *
-     * `DiagramMonitor.lay` is public "so the geometry can be tested without a railway", so the run is
-     * laid and published exactly as the monitor would, and rendered through the same LayoutGrid the
-     * window uses. What comes out is the picture a train on that path would produce.
+     * `DiagramMonitor.lay` is public "so the geometry can be tested without a railway", so the run is laid
+     * and published exactly as the monitor would, and rendered through the same LayoutGrid the window uses.
      */
     @Test
     public void testARealPathToACurvedStationIsDrawn() throws Exception
@@ -212,27 +193,19 @@ public class testDiagramLooksRight
     /**
      * Every pixel the run paints lands on track.
      *
-     * This is the check that would have caught OB-026, MT-124 and MT-127 without anybody looking at a
-     * screenshot, and it is the reason it is written as an INVARIANT rather than as a golden image. A
-     * golden image says "these bytes"; it breaks when a colour changes, it has to be regenerated by
-     * somebody who then has to judge whether the new picture is right, and the judging is the part that
-     * kept going wrong. This says something that is true of every correct drawing and false of every
-     * one of those three defects: **the route line is drawn ALONG the railway, so its ink is on the
-     * rails.**
+     * This is the check for OB-026, MT-124 and MT-127.  It is an INVARIANT rather than a golden image:
+     * it is true of every correct drawing and false of each of those defects, and nobody has to judge a
+     * regenerated picture.  **The route line is drawn ALONG the railway, so its ink is on the rails.**
      *
-     * How it works: render the page with nothing published, render it again with a real run laid on it,
-     * and look only at the pixels that CHANGED to a run colour. Every one of them has to be within a
-     * few pixels of dark ink in the FIRST image - which is to say, on or beside a rail that was already
-     * drawn there.
+     * Render the page with nothing published, render it again with a real run laid on it, and look only
+     * at the pixels that CHANGED to a run colour.  Each must be within a few pixels of dark ink in the
+     * FIRST image, that is on or beside a rail already drawn there.  The difference cancels the tile art,
+     * badges, captions and signal lamps (a red lamp is not mistaken for route ink), and the chevrons and
+     * the train dot are black and white, so no list of tile shapes is needed.
      *
-     * Taking the difference is what makes it robust. The tile art, the station badges, the captions and
-     * the signal lamps are identical in both renders and cancel out, so a red lamp is not mistaken for
-     * route ink; the chevrons and the train dot change but are black and white, so they are not run
-     * colours; and nothing here needs a list of which tile shapes exist.
-     *
-     * The tolerance is for the stroke, which is a seventh of a tile and centred on the rail, and for
-     * anti-aliasing at its edges. It is nowhere near wide enough to reach the middle of a curve from
-     * the rail that cuts its corner, which is exactly the distance OB-026 was wrong by.
+     * The tolerance covers the stroke, which is a seventh of a tile and centred on the rail, and its
+     * anti-aliasing.  It is nowhere near wide enough to reach the middle of a curve from the rail that
+     * cuts its corner, which is the distance OB-026 was wrong by.
      */
     @Test
     public void testEveryPixelOfARunLandsOnTrack() throws Exception
@@ -278,8 +251,7 @@ public class testDiagramLooksRight
 
             BufferedImage drawn = DiagramExport.render(page, 60, ui);
 
-            // Both pictures kept, always. This is a tool as much as a test, and when it fails the first
-            // question is "show me" - which is the question the old way of working could never answer.
+            // Both pictures kept, always: when this fails the first question is "show me".
             javax.imageio.ImageIO.write(bare, "png", new File(OUT, "run-bare.png"));
             javax.imageio.ImageIO.write(drawn, "png", new File(OUT, "run-drawn.png"));
 
@@ -331,9 +303,8 @@ public class testDiagramLooksRight
             java.util.List<String> blank = new java.util.ArrayList<>();
 
             // A STATION'S SQUARE ANYWHERE ON THE RUN, as the run's ends below: its icon is painted over the line there
-            // (MT-076), and on a curve it is its full size since round 119 (Adam, 2026-10-10: "make the stations spill
-            // over onto adjacent tiles"), covering most of a curve's short chord.  Found in the picture with no run on it,
-            // by the station blue: a square showing it carries a station's icon.
+            // (MT-076), and on a curve it is its full size, covering most of a curve's short chord.  A square showing
+            // the station blue carries a station's icon.
             java.util.Set<String> stations = new java.util.HashSet<>();
 
             for (org.traincontrol.automationui.TileGraph.TileKey tile : run)
@@ -368,10 +339,8 @@ public class testDiagramLooksRight
                 // A REAL segment's worth, not a few pixels.
                 //
                 // "Has some ink" is satisfiable by the NEIGHBOURS: a segment ends at the midpoint of the
-                // shared edge, so a handful of its pixels land on the far side of the boundary. Removing a
-                // square's overlay entirely still left it with a trace and this assertion passed, which the
-                // mutation check caught. A segment across a 60px tile is several hundred pixels; the bleed
-                // is single figures.
+                // shared edge, so a handful of its pixels land on the far side of the boundary.  A segment
+                // across a 60px tile is several hundred pixels; the bleed is single figures.
                 if (here == null || here < MINIMUM_INK_PER_SQUARE) blank.add(square + "=" + here);
             }
 
@@ -383,19 +352,19 @@ public class testDiagramLooksRight
             assertEquals(strayed, 0,
                 strayed + " pixels of route ink were painted on squares the run does not use");
 
-            // What is NOT asserted, and why - so the next reader does not mistake this for a full check.
+            // What is NOT asserted, and why, so the next reader does not mistake this for a full check.
             //
-            // "Every pixel of the line lies on track art" is the invariant I wanted, and it is not true as
-            // stated. The line is drawn as a straight chord between edge midpoints, deliberately: "a curve
-            // on this diagram is not an arc and a switch's diverging leg is not a right angle", and bending
-            // it through the tile centre was tried once and put it at forty-five degrees to the track. So
-            // on switches, crossings and scissors it legitimately cuts across the art. The rails are drawn
-            // as an OUTLINE with a pale interior, so ink in the middle of a rail is not on dark art either.
+            // "Every pixel of the line lies on track art" is not true as stated.  The line is drawn as a
+            // straight chord between edge midpoints, deliberately: "a curve on this diagram is not an arc and
+            // a switch's diverging leg is not a right angle", and bending it through the tile centre put it at
+            // forty-five degrees to the track.  So on switches, crossings and scissors it legitimately cuts
+            // across the art.  The rails are drawn as an OUTLINE with a pale interior, so ink in the middle of
+            // a rail is not on dark art either.
             //
-            // Between them those two make the measurement a matter of tolerance, and a tolerance tuned
-            // until the test goes green is a test that has stopped checking anything. So the number is
-            // REPORTED and not asserted, and it is worth looking at when this output changes: today it is
-            // a few hundred pixels out of sixteen thousand, all of them on multi-road squares.
+            // Between them those two make the measurement a matter of tolerance, and a tolerance tuned until
+            // the test goes green has stopped checking anything.  So the number is REPORTED and not asserted,
+            // and it is worth looking at when this output changes: a few hundred pixels out of sixteen
+            // thousand, all of them on multi-road squares.
             System.out.println("run ink: " + total + " pixels over " + inkPerSquare.size()
                 + " squares, " + offArt + " of them not within " + TOLERANCE + "px of tile art");
         }
@@ -502,9 +471,7 @@ public class testDiagramLooksRight
         }
 
         // The diagram's graph has to be PARSED before it is a railway. The window's session holds the
-        // reduced graph, but `getAutoLayout` stays empty until the configuration it produces is parsed
-        // - which is why the first search here found nothing and I nearly blamed the fixture: an empty
-        // list of starts and a fixture with no curved stations look identical from the outside.
+        // reduced graph, but `getAutoLayout` stays empty until the configuration it produces is parsed.
         model.parseAuto(session.buildConfiguration());
 
         org.traincontrol.automation.Layout auto = model.getAutoLayout();
@@ -541,12 +508,10 @@ public class testDiagramLooksRight
         // Every train taken off first, and put back afterwards.
         //
         // The search needs an empty railway: a start with a locomotive on it is skipped, and a
-        // destination whose block is occupied is not offered as a path at all - so whichever trains
-        // happen to be placed in the setup decide whether this test runs. It stopped running exactly
-        // that way once, after a restore put three locomotives back, and the only sign was a skip.
-        //
-        // A test that quietly stops testing because of where somebody parked a train is worse than one
-        // that fails, because nothing goes red.
+        // destination whose block is occupied is not offered as a path at all, so whichever trains
+        // happen to be placed in the setup would decide whether this test runs.  A test that quietly
+        // stops testing because of where somebody parked a train is worse than one that fails, because
+        // nothing goes red.
         java.util.Map<org.traincontrol.automation.Point, org.traincontrol.base.Locomotive> parked =
             new java.util.LinkedHashMap<>();
 
@@ -619,10 +584,10 @@ public class testDiagramLooksRight
     }
 
     /**
-     * Candidate starting squares, the ones Adam named first.
+     * Candidate starting squares, the BottomMain ones first.
      *
-     * "Place at BottomMainB or A, then route to either of the TopMainR1/2 Inter." He knows this layout;
-     * trying his squares before the other seventy saves a search and makes a failure mean something.
+     * Those are known to reach the TopMainR1/2 Inter curved stations, so trying them before the other
+     * seventy saves a search and makes a failure mean something.
      */
     private java.util.List<org.traincontrol.automation.Point> starts(
         org.traincontrol.automation.Layout auto)
@@ -668,10 +633,9 @@ public class testDiagramLooksRight
 
         // Neighbours, or the line has nothing to be drawn along.
         //
-        // This is the assertion that would have caught the first version, which mapped Points to squares
-        // and produced six unconnected marks scattered over the page. Everything else about that run
-        // looked healthy - six squares, six overlays, none of them blank - and only the picture showed
-        // it was not a path at all.
+        // A run built by mapping Points to squares gives unconnected marks scattered over the page, while
+        // everything else about it (squares, overlays, none of them blank) looks healthy; only the picture
+        // shows it is not a path at all.
         for (int i = 1; i < run.size(); i++)
         {
             org.traincontrol.automationui.TileGraph.TileKey a = run.get(i - 1), b = run.get(i);
@@ -690,7 +654,7 @@ public class testDiagramLooksRight
         }
 
         // A blank overlay is dropped by the label, so a run that lays only blanks renders a picture
-        // with nothing on it and no complaint anywhere - which is what the first version of this did.
+        // with nothing on it and no complaint anywhere.
         assertEquals(blank, 0, "the run laid " + blank + " blank overlays of " + overlays.size());
 
         assertEquals(overlays.size(), run.size(), "a square of the run was not laid");
@@ -742,11 +706,10 @@ public class testDiagramLooksRight
     /**
      * A path as the squares it runs over, in order and without repeats.
      *
-     * The first version of this mapped each Edge's two POINTS to their squares, which produced six
-     * squares scattered across the page and six unconnected stubs - because a Point is a station, and
-     * the track between two stations is everything the edge steps over on the way. A line has to know
-     * what is on either side of a square to be drawn through it, so a run of squares that are not
-     * neighbours degenerates into a mark per square, and the picture said nothing about geometry.
+     * Mapping each Edge's two POINTS to their squares would give scattered, unconnected stubs, because a
+     * Point is a station and the track between two stations is everything the edge steps over on the way.
+     * A line has to know what is on either side of a square to be drawn through it, so the squares of a
+     * run must be neighbours.
      *
      * `DiagramMonitor.append` is public and does the joining, and the reduced edges carry the steps, so
      * this walks them exactly as the monitor does: start Point, every step, end Point.
@@ -811,19 +774,16 @@ public class testDiagramLooksRight
      * Station captions are blue or light grey, whichever the operator asked for, and readable either
      * way.
      *
-     * FR-031. Adam: "add a jmenu (preferences) setting for the station labels to be blue (default) or
-     * light gray (non default).  persist as with other settings."
+     * FR-031: a preference in the menu chooses blue or light grey station labels, persisted as with the
+     * other settings.
      *
      * The colour is ASKED FOR at the moment a caption is coloured rather than read once into a
-     * constant, which is what makes the menu switch take effect without restarting the application -
-     * and that is the whole of what "persist as with other settings" has to mean for a switch sitting
-     * in a menu.
+     * constant, so the menu switch takes effect without restarting the application.
      *
      * The readability half is not decoration. The text colour is derived from the fill by perceived
-     * brightness, so a grey chosen a few shades lighter would silently take the captions from white
-     * text to black - which is correct, and worth having a test say out loud, because a grey chosen a
-     * few shades DARKER would leave black text on a dark ground and nobody would notice until they
-     * looked at a diagram.
+     * brightness, so a grey a few shades lighter takes the captions from white text to black, which is
+     * correct, while a grey a few shades DARKER would leave black text on a dark ground and nobody would
+     * notice until they looked at a diagram.
      *
      * The operator's own setting is put back at the end whatever happens. It is a real preference in a
      * real preference node, not a fixture.
@@ -837,16 +797,14 @@ public class testDiagramLooksRight
         // WHETHER IT WAS STORED, not what the accessor answers.
         //
         // Capturing the accessor captures its DEFAULT when nothing is stored, and writing that back
-        // materialises the preference on a machine that never set it. Two sibling tests were fixed for
-        // exactly this earlier today; this was the third, and nobody swept it (reviewer, 2026-08-28).
+        // materialises the preference on a machine that never set it.
         boolean had = TrainControlUI.getPrefs().get(TrainControlUI.STATION_LABELS_GREY, null) != null;
 
         boolean was = TrainControlUI.stationLabelsAreGrey();
 
         try
         {
-            // GREY WHEN NOTHING HAS BEEN CHOSEN (Adam, 2026-10-03: "let's make gray station labels default, but blue being
-            // the optional setting to change via the existing preference")
+            // GREY WHEN NOTHING HAS BEEN CHOSEN, blue being the optional setting via the existing preference
             TrainControlUI.getPrefs().remove(TrainControlUI.STATION_LABELS_GREY);
 
             assertEquals(org.traincontrol.gui.StationCaption.restingFill(),
@@ -893,14 +851,9 @@ public class testDiagramLooksRight
      *
      * The editors say "this square is a PLACEHOLDER, not an answer" with grey: an unnamed station's
      * em-dash, a yard name that is not what the autonomy editor is for. On a white label that reads
-     * exactly as intended. On a pill it did not read at all - grey is not red, so `onPill` let it fall
-     * through to `readableOn`, and `readableOn` answers by the FILL, so a placeholder and a name came
-     * back the same white on navy and the same black on grey.
-     *
-     * The comment in LayoutGrid beside the call said the opposite - "a placeholder is drawn dimmer than
-     * a station that has one" - and said it for two days. A reviewer disbelieved it, wrote a probe
-     * against the compiled tree, and got white and white. This file is full of comments that are
-     * treated as load-bearing; one of them was load-bearing and false.
+     * exactly as intended. On a pill, grey is not red, so `onPill` must not let it fall through to
+     * `readableOn`, which answers by the FILL and would give a placeholder and a name the same white on
+     * navy and the same black on grey.
      *
      * Both fills, because they are the two the operator can actually choose and the answer has to hold
      * on each: on navy the readable colour is white and dimming moves it DOWN towards the fill, on pale
@@ -911,8 +864,7 @@ public class testDiagramLooksRight
      * far enough apart to see and that the placeholder is still legible; the exact blend is a taste
      * question and pinning it here would make every future adjustment a test edit.
      *
-     * MUTATION: returning `readableOn(fill)` for grey - which is what it did - fails the first
-     * assertion on both fills.
+     * MUTATION: returning `readableOn(fill)` for grey fails the first assertion on both fills.
      */
     @Test
     public void testAPlaceholderStaysDimmerThanAName()
@@ -970,9 +922,7 @@ public class testDiagramLooksRight
      *
      * The old autonomy wrote "Point:Bahnhof" straight onto the diagram. A layout served by the Central
      * Station still carries those labels, and there is no setup there to turn them into captions, so the
-     * grid used to strip the marker and draw "Bahnhof", a name nobody typed. Adam, 2026-10-12: "stop
-     * stripping that prefix." A label is drawn as written unless autonomy has a caption for its square,
-     * and this one does not.
+     * grid draws a label as written unless autonomy has a caption for its square, and this one does not.
      *
      * The page is one square built in memory under a name no setup knows, so nothing on the operator's
      * railway or in the fixture is touched and there is nothing to restore.
@@ -1035,17 +985,13 @@ public class testDiagramLooksRight
     /**
      * The four facing arrows are rotations of each other, not two pairs of different shapes.
      *
-     * OB-116. Adam: "while the up and down arrows look good, the left and right arrows on autonomy
-     * labels are too wide for how short they are.  make them look more symmetrical and a hair taller."
+     * OB-116: the left and right arrows on autonomy labels must be as tall as the up and down ones. In
+     * Segoe UI the up arrow U+25B2 is 78.3 by 70.0 and the right arrow U+25BA is 70.0 by 35.5, half the
+     * height, and those two are the ONLY horizontal triangles Segoe UI can draw (U+25B6 and U+25C0 come
+     * out as empty boxes). So the font was the answer rather than the character.
      *
-     * That was a measurement, not an impression. In Segoe UI the up arrow U+25B2 is 78.3 by 70.0 and
-     * the right arrow U+25BA is 70.0 by 35.5 - half the height. And there was nothing better to reach
-     * for: those two are the ONLY horizontal triangles Segoe UI can draw, which is why they were
-     * chosen in the first place, U+25B6 and U+25C0 having come out as empty boxes.
-     *
-     * The font was the answer rather than the character. This asserts the property that matters - that
-     * a left or right arrow is about as tall as an up or down one - rather than pinning the code
-     * points, so the arrows can be changed again without editing a test, as long as they still match.
+     * This asserts the property that matters, that a left or right arrow is about as tall as an up or
+     * down one, rather than pinning the code points.
      *
      * SKIPPED where the matched font is not installed, which is the same condition the code uses to
      * decide whether to use it. On such a machine the squat pointers are deliberately still in use,
@@ -1143,11 +1089,10 @@ public class testDiagramLooksRight
      * A square with a train running on it stays below the station captions and the address label over it (OB-117,
      * OB-259).
      *
-     * OB-117. Adam: "on route departure from 1016 as the origin station, the locomotive icon covers the autonomy label
-     * with a blank white space."  That was the tile, lifted to the front for its train: a tile is opaque, so it painted
-     * the caption out.  The lift went in OB-259 - the diagram's panel paints every train after all of its components
-     * (OB-159), so nothing needs to move - and this holds the order a running train leaves behind it: the captions in
-     * the order they were built, the address label, and the tile behind them all.
+     * A tile is opaque, so a tile lifted to the front for its train paints the caption out and leaves a blank
+     * white space (OB-117).  Nothing needs to lift now: the diagram's panel paints every train after all of its
+     * components (OB-159).  This holds the order a running train leaves behind it: the captions in the order
+     * they were built, the address label, and the tile behind them all.
      *
      * MUTATION: lift the square of a running train again, and this fails.
      *
@@ -1200,16 +1145,10 @@ public class testDiagramLooksRight
     /**
      * An empty caption sits over the middle of its square, not at the left of it.
      *
-     * OB-118. Adam: "when a position is empty, try to better center it over the track."
-     *
-     * The placement arithmetic only ever subtracted. It took half of the caption's OVERFLOW past one
-     * tile and shifted left by that much - so a caption WIDER than its square was centred, and a
-     * caption NARROWER than its square was left exactly where its cell began, hard against the left
-     * edge. An empty station shows a dash and is narrow; the locomotive name that replaces it a moment
-     * later is wide. So the same caption was centred or not depending on whether a train was there.
-     *
-     * The two cases are one question with a difference that is negative half the time, and the fix is
-     * to stop clamping it to zero before using it.
+     * OB-118: a position that is empty is centred over the track. The placement shifts left by half of the
+     * caption's overflow past one tile, and that difference is NEGATIVE for a caption narrower than its square,
+     * so it must not be clamped to zero. An empty station shows a dash and is narrow; the locomotive name that
+     * replaces it a moment later is wide. The same caption must be centred either way.
      *
      * MUTATION: restoring `Math.max(0, (wide - tile) / 2)` and subtracting it fails the dash case
      * while leaving the long-name case passing.
@@ -1251,7 +1190,7 @@ public class testDiagramLooksRight
     /**
      * Captions are left off the track editor and nowhere else.
      *
-     * FR-030. Adam: "in the track diagram editor, hide autonomy labels completely."  Three of the four
+     * FR-030: the autonomy labels are hidden completely in the track diagram editor. Three of the four
      * combinations must keep them, and it is those three that matter: a rule that hides too much is
      * how the running diagram would stop saying where the trains are.
      *
@@ -1298,16 +1237,11 @@ public class testDiagramLooksRight
      *
      * A caption's text is decided when the grid is BUILT, so a control that changed the setting and
      * only repainted would appear to do nothing at all until something else happened to rebuild.
-     * That is the property worth pinning and it has not changed.
      *
-     * **What changed is the control** (FR-061, 2026-09-07). This drove `getShowParkedTrains()`, a tick
-     * box that is no longer mounted anywhere: what a caption says is one dropdown now, with four
-     * options that exclude each other, and the two boxes survive only as the internal representation
-     * that the drawing code reads. Clicking an unmounted box changed a field and rebuilt nothing, so
-     * this test failed - correctly, and for a reason that was about the test rather than the railway.
-     *
-     * Driving the dropdown instead is not a weakening: it is the control a person actually has, and
-     * asserting through it covers the box as well, because the box is set from it.
+     * The control is one dropdown (FR-061) with four options that exclude each other; the two tick boxes
+     * survive only as the internal representation that the drawing code reads, and are set from it.
+     * Driving the dropdown is the control a person actually has, and asserting through it covers the
+     * box as well.
      *
      * MUTATION: dropping the onDiagramChanged call from the listener fails the rebuild assertion;
      * dropping the preference write fails the last one.
@@ -1389,8 +1323,7 @@ public class testDiagramLooksRight
     /**
      * Parked Locs labels only the stations a locomotive is parked at (OB-312).
      *
-     * Adam, 2026-10-03: *"When in text labels-parked locomotive, dont show labels without a locomotive."*  A station with
-     * none drew the empty placeholder; Home Locs already draws nothing where there is no home.
+     * A station with no locomotive draws nothing, as Home Locs already does where there is no home.
      *
      * MUTATION: put the placeholder back, and this fails.
      *
