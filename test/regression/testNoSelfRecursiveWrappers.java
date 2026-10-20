@@ -85,6 +85,8 @@ public class testNoSelfRecursiveWrappers
 
     private static final String EDITOR = "src/org/traincontrol/gui/LayoutEditor.java";
 
+    private static final String AUTONOMY_EDITOR = "src/org/traincontrol/gui/AutonomyEditorPanel.java";
+
     /**
      * The collaborators (FR-136), one row each: the field of the owner that holds it, the file it is declared in, its
      * class name - for the static delegators, which reach it as `Class.method(` rather than through the field - the
@@ -119,13 +121,24 @@ public class testNoSelfRecursiveWrappers
             "TrainControlUI", "ui." },
         { "captionVisibility", "src/org/traincontrol/gui/CaptionVisibility.java", "CaptionVisibility", WINDOW,
             "TrainControlUI", "ui." },
+        { "tileMenus", "src/org/traincontrol/gui/EditorTileMenus.java", "EditorTileMenus", AUTONOMY_EDITOR,
+            "AutonomyEditorPanel", "editor." },
+        { "prompts", "src/org/traincontrol/gui/EditorPrompts.java", "EditorPrompts", AUTONOMY_EDITOR,
+            "AutonomyEditorPanel", "editor." },
+        { "signalPairing", "src/org/traincontrol/gui/EditorSignals.java", "EditorSignals", AUTONOMY_EDITOR,
+            "AutonomyEditorPanel", "editor." },
+        { "massAssignment", "src/org/traincontrol/gui/EditorMassAssign.java", "EditorMassAssign", AUTONOMY_EDITOR,
+            "AutonomyEditorPanel", "editor." },
+        { "whyAnswers", "src/org/traincontrol/gui/EditorWhy.java", "EditorWhy", AUTONOMY_EDITOR,
+            "AutonomyEditorPanel", "editor." },
     };
 
     /**
      * A delegator and the collaborator it hands to do not call each other for ever (FR-136).
      *
-     * The extractions leave a one-line delegator on the window, the session and the track editor wherever something
-     * outside a moved cluster calls it, and the moved code calls back into its owner through `ui`, `owner` or `editor`.
+     * The extractions leave a one-line delegator on the window, the session, the track editor and the autonomy editor
+     * wherever something outside a moved cluster calls it, and the moved code calls back into its owner through `ui`,
+     * `owner` or `editor`.
      * The same mechanical edit
      * that made `syncWithCS2` call itself can make a delegator call its own name instead of the collaborator's, or make
      * the moved body call the owner's delegator that leads straight back to it.  Either is a StackOverflowError the
@@ -144,7 +157,9 @@ public class testNoSelfRecursiveWrappers
      * MUTATION: in BackupAction, make `writeTheBackup` call `this.ui.backupData()`, and this fails; so does making
      * UpdateFlow's static `whenNoModalDialog` call `TrainControlUI.whenNoModalDialog(`, or SessionRuns' `runs()` return
      * `owner.runs()`, or LayoutEditorUndo's `undo()` call `editor.undo()`.  And so does making TrainControlUI's `combineLinkedPages` delegator call `this.combineLinkedPages()`
-     * (or a bare `combineLinkedPages()`) instead of `layoutFileActions.combineLinkedPages()`.
+     * (or a bare `combineLinkedPages()`) instead of `layoutFileActions.combineLinkedPages()`.  And so does making
+     * EditorTileMenus' `buildFacingMenu` begin `if (target == null) return editor.buildFacingMenu(target);`, or
+     * AutonomyEditorPanel's `buildFacingMenu` return `buildFacingMenu(target)`.
      */
     @Test
     public void testADelegatorAndItsCollaboratorDoNotCallEachOtherForEver() throws Exception
@@ -584,76 +599,37 @@ public class testNoSelfRecursiveWrappers
     }
 
     /**
-     * The autonomy editor's helpers (FR-136): the field of AutonomyEditorPanel that holds each, the file it is declared
-     * in, and its class name - for a static delegator, which reaches it as `Class.method(`.
-     */
-    private static final String[][] EDITOR_HELPERS = {
-        { "tileMenus", "src/org/traincontrol/gui/EditorTileMenus.java", "EditorTileMenus" },
-        { "prompts", "src/org/traincontrol/gui/EditorPrompts.java", "EditorPrompts" },
-        { "signalPairing", "src/org/traincontrol/gui/EditorSignals.java", "EditorSignals" },
-        { "massAssignment", "src/org/traincontrol/gui/EditorMassAssign.java", "EditorMassAssign" },
-        { "whyAnswers", "src/org/traincontrol/gui/EditorWhy.java", "EditorWhy" },
-    };
-
-    /**
-     * The autonomy editor's delegators and the helpers they hand to do not call each other for ever, and each delegator
-     * is one call to its helper (FR-136).
+     * A method of the autonomy editor panel named like one of its helpers' is one call to it (FR-136).
      *
      * AutonomyEditorPanel keeps each method that something outside a moved cluster calls as a one-line call to a
-     * package-private helper, which calls back into the panel through `editor.`, or `AutonomyEditorPanel.` for a static.
-     * Both loops are read: a delegator calling its own name instead of the helper's, and a helper's method calling back
-     * into the delegator that leads to it.  Either is a StackOverflowError the compiler accepts.  Every method of the
-     * panel named like one of a helper's is read, since a delegator rewritten that way names the helper nowhere; and each
-     * must be that one call, so a claim that reads the helper's body is reading what the panel runs.
+     * package-private helper, so a claim that reads the helper's body is reading what the panel runs.  A second statement
+     * in such a method, or a different call, is code the claims that read the helper do not see.
      *
-     * MUTATION: make EditorTileMenus.buildFacingMenu begin `if (target == null) return editor.buildFacingMenu(target);`,
-     * or make the panel's buildFacingMenu `return buildFacingMenu(target);`, and this fails.
+     * Only the panel's rows of COLLABORATORS are read.  The window, the session and the track editor keep methods named
+     * like their collaborators' that are not single calls on purpose (a delegator that guards first, a method that
+     * hands to two collaborators, an overload that does its own work), so the rule is the panel's own.
+     *
+     * MUTATION: add a statement of its own before the call in any of the panel's delegators, or make one call another
+     * helper, and this fails.
      *
      * @throws Exception if the source cannot be read
      */
     @Test
-    public void testAnEditorDelegatorAndItsHelperDoNotCallEachOtherForEver() throws Exception
+    public void testAnEditorPanelDelegatorIsOneCallToItsHelper() throws Exception
     {
-        List<String> panel = Files.readAllLines(
-            new File("src/org/traincontrol/gui/AutonomyEditorPanel.java").toPath(), StandardCharsets.UTF_8);
+        int rows = 0;
 
-        for (String[] each : EDITOR_HELPERS)
+        for (String[] each : COLLABORATORS)
         {
-            File source = new File(each[1]);
+            if (!AUTONOMY_EDITOR.equals(each[3])) continue;
 
-            assertTrue(source.isFile(), "cannot find " + source.getAbsolutePath());
+            rows++;
 
-            List<String> helper = Files.readAllLines(source.toPath(), StandardCharsets.UTF_8);
-
-            // What each side calls on the other: the panel through its field (or `Class.` for a static), the helper
-            // through `editor.` (or `AutonomyEditorPanel.` for a static)
-            java.util.Map<String, java.util.Set<String>> panelCalls = merged(
-                callsThrough(panel, each[0] + "."), callsThrough(panel, each[2] + "."));
-            java.util.Map<String, java.util.Set<String>> helperCalls = merged(
-                callsThrough(helper, "editor."), callsThrough(helper, "AutonomyEditorPanel."));
-
-            int checked = 0;
-
-            for (java.util.Map.Entry<String, java.util.Set<String>> delegator : panelCalls.entrySet())
-            {
-                for (String handedTo : delegator.getValue())
-                {
-                    checked++;
-
-                    java.util.Set<String> back = helperCalls.get(handedTo);
-
-                    assertFalse(back != null && back.contains(delegator.getKey()),
-                        "AutonomyEditorPanel." + delegator.getKey() + " hands to " + each[2] + "." + handedTo
-                        + ", which calls back into AutonomyEditorPanel." + delegator.getKey()
-                        + " - a loop the compiler accepts");
-                }
-            }
-
-            assertTrue(checked > 0, "AutonomyEditorPanel hands nothing to " + each[0] + ", so this checks nothing");
+            List<String> panel = Files.readAllLines(new File(each[3]).toPath(), StandardCharsets.UTF_8);
 
             java.util.Set<String> helperNames = new java.util.HashSet<>();
 
-            for (String line : helper)
+            for (String line : Files.readAllLines(new File(each[1]).toPath(), StandardCharsets.UTF_8))
             {
                 String name = methodDeclaredAt(line);
 
@@ -670,25 +646,10 @@ public class testNoSelfRecursiveWrappers
 
                 delegators++;
 
-                String declaration = panel.get(i).trim();
-
-                // A declaration whose parameters run onto the next lines
-                for (int k = i + 1; declaration.lastIndexOf(')') < declaration.indexOf('(') && k < panel.size(); k++)
-                {
-                    declaration += " " + panel.get(k).trim();
-                }
-
-                int arity = argumentCount(declaration.substring(declaration.indexOf('(') + 1,
-                    declaration.lastIndexOf(')')));
-
                 List<String> statements = new ArrayList<>();
 
                 for (String line : bodyOf(panel, i))
                 {
-                    assertFalse(callsItself(line.replace("this." + name + "(", name + "("), name, arity),
-                        "AutonomyEditorPanel." + name + " calls itself instead of " + each[0] + "." + name
-                        + ".  Line: " + line.trim());
-
                     String code = withoutComments(line).replace("{", "").replace("}", "").trim();
 
                     if (!code.isEmpty()) statements.add(code);
@@ -696,13 +657,15 @@ public class testNoSelfRecursiveWrappers
 
                 assertTrue(statements.size() == 1 && (statements.get(0).contains(each[0] + "." + name + "(")
                         || statements.get(0).contains(each[2] + "." + name + "(")),
-                    "AutonomyEditorPanel." + name + " is named like " + each[2] + "'s method but is not one call to it,"
-                    + " so the panel runs code the claims that read " + each[2] + " do not see: " + statements);
+                    each[4] + "." + name + " is named like " + each[2] + "'s method but is not one call to it, so the"
+                    + " panel runs code the claims that read " + each[2] + " do not see: " + statements);
             }
 
-            assertTrue(delegators > 0, "no method of AutonomyEditorPanel is named like one of " + each[2]
-                + "'s, so this checks nothing");
+            assertTrue(delegators > 0, "no method of " + each[4] + " is named like one of " + each[2] + "'s, so this"
+                + " checks nothing");
         }
+
+        assertEquals(rows, 5, "the panel is expected to hand to five helpers");
     }
 
     /**
