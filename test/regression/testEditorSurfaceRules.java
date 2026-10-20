@@ -2967,7 +2967,7 @@ public class testEditorSurfaceRules
     @Test
     public void testExcludingALocomotiveStillWarnsAboutItsHome() throws Exception
     {
-        String prompt = codeOf("    void promptLocomotives(");
+        String prompt = SourceOf.withoutComments(memberOf("final class EditorPrompts", "    void promptLocomotives("));
 
         assertTrue(prompt.contains("homeBrokenBy("),
             "the excluded-locomotives prompt no longer asks whether the exclusion breaks a home, so "
@@ -3506,7 +3506,7 @@ public class testEditorSurfaceRules
         // times each.  Gone, `SourceOf.declaration` fails: it is the only door onto blockedPoints, so if it
         // was renamed, rename it here; if it was removed, the restriction can no longer be edited at all and
         // this test should say so rather than be deleted
-        String body = codeOf("    void promptBlockingPoints(");
+        String body = SourceOf.withoutComments(memberOf("final class EditorPrompts", "    void promptBlockingPoints("));
 
         // What is stored has to be read before the offer is built, because it is what decides the
         // offer.  Read after, it can only be used to tick boxes that are already on the list.
@@ -3543,8 +3543,8 @@ public class testEditorSurfaceRules
             + "from before that was refused - and without it those entries cannot be removed by "
             + "anybody, ever (FSR-C5)");
 
-        assertTrue(body.contains("new javax.swing.JCheckBox(\n                describeTile(tile)")
-                || body.contains("new javax.swing.JCheckBox(describeTile(tile)"),
+        assertTrue(body.contains("new javax.swing.JCheckBox(\n                editor.describeTile(tile)")
+                || body.contains("new javax.swing.JCheckBox(editor.describeTile(tile)"),
             "the check boxes are labelled with something other than describeTile.  The loop above "
             + "exists to offer squares that have LOST their name, and getPointName is a plain map "
             + "lookup that returns null for exactly those - so the box drawn for one renders with no "

@@ -589,6 +589,7 @@ public class testNoSelfRecursiveWrappers
      */
     private static final String[][] EDITOR_HELPERS = {
         { "tileMenus", "src/org/traincontrol/gui/EditorTileMenus.java", "EditorTileMenus" },
+        { "prompts", "src/org/traincontrol/gui/EditorPrompts.java", "EditorPrompts" },
     };
 
     /**

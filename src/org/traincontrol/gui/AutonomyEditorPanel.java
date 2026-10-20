@@ -86,6 +86,9 @@ public class AutonomyEditorPanel extends JPanel
     /** The tile menus, built for this panel (FR-136). */
     final EditorTileMenus tileMenus = new EditorTileMenus(this);
 
+    /** The questions the tile menus and the keys ask about a square, for this panel (FR-136). */
+    final EditorPrompts prompts = new EditorPrompts(this);
+
     // Which page the editor is showing, so findings can be about the page in front of the user
     final String page;
 
@@ -152,7 +155,7 @@ public class AutonomyEditorPanel extends JPanel
      */
     static final java.awt.Font FONT_HINT = new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 12);
 
-    private static <T extends javax.swing.JComponent> T control(T component)
+    static <T extends javax.swing.JComponent> T control(T component)
     {
         component.setFont(FONT_CONTROL);
         return component;
@@ -1968,7 +1971,7 @@ public class AutonomyEditorPanel extends JPanel
      *
      * @return true where the gesture is refused
      */
-    private boolean heldByARun()
+    boolean heldByARun()
     {
         TrainControlUI window = parentWindow();
 
@@ -2779,7 +2782,7 @@ public class AutonomyEditorPanel extends JPanel
      * narrow strip down the side of the editor - so every prompt appeared over that strip, hard against
      * one edge of the window rather than in the middle of it.
      */
-    private java.awt.Component owner()
+    java.awt.Component owner()
     {
         java.awt.Window window = javax.swing.SwingUtilities.getWindowAncestor(this);
 
@@ -3273,49 +3276,11 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Asks for a number, storing nothing when it is left at the value that means "no setting".
+     * Delegates to `EditorPrompts.promptNumber`.
      */
     void promptNumber(TileKey tile, String key, String promptKey, int unset)
     {
-        Object current = session.getPointProperty(tile, key);
-
-        // I18n.f, not t: two of these prompts name the point they are about, and I18n.t does no substitution.
-        String entered = JOptionPane.showInputDialog(owner(),
-            I18n.f(promptKey, describeTile(tile)),
-            current instanceof Number ? String.valueOf(current) : String.valueOf(unset));
-
-        if (entered == null) return;
-
-        try
-        {
-            int value = Integer.parseInt(entered.trim());
-
-            // REFUSED BEFORE IT IS WRITTEN, rather than by the layer that loads it (SET-B1).  Nothing is stored,
-            // which is what the NumberFormatException arm below does and for the same reason.
-            String refused = whyNotThisNumber(key, value);
-
-            if (refused != null)
-            {
-                JOptionPane.showMessageDialog(owner(), wrapped(refused));
-
-                return;
-            }
-
-            session.setPointProperty(tile, key, value == unset ? null : value);
-        }
-        catch (NumberFormatException e)
-        {
-            // About numbers, not about lengths: this prompt is also used for a station's priority, where negatives are
-            // valid.
-            JOptionPane.showMessageDialog(owner(), I18n.f("autosetup.ui.errorNotANumber", entered));
-            // NOTHING WAS WRITTEN, so there is nothing to announce (VD10-C14): the call belongs after the last statement
-            // of the success path, and after the failure path it would save the setup and rebuild the railway having
-            // changed nothing.
-            return;
-        }
-
-        // Persisted, and the running layout told (MT-246).
-        setupChanged();
+        prompts.promptNumber(tile, key, promptKey, unset);
     }
 
 
@@ -3615,196 +3580,14 @@ public class AutonomyEditorPanel extends JPanel
      * the wheel moves.  A row and a bit, so scrolling a long list feels like reading it rather than
      * dragging it.
      */
-    private static final int BLOCKED_ROW_HEIGHT = 24;
+    static final int BLOCKED_ROW_HEIGHT = 24;
 
     /**
-     * Asks which squares hold this station back (FR-001).
-     *
-     * A checklist of the other stations, rather than a picker of one: a station may be held back by more than one place.
-     *
-     * Only NAMED points are offered: the restriction is written into the built configuration as lock edges pointing at
-     * the watched square, and a square with no name is one the operator cannot recognise in a list.
+     * Delegates to `EditorPrompts.promptBlockingPoints`.
      */
     void promptBlockingPoints(TileKey station)
     {
-        // Read FIRST, because what is already stored decides what has to be offered (FSR-C5).
-        java.util.List<TileKey> already = session.getStore().getBlockingPoints(station);
-
-        java.util.List<TileKey> choices = new java.util.ArrayList<>();
-
-        for (TileKey tile : session.getStore().getNamedTiles())
-        {
-            // STATIONS ONLY (MT-376: *"works, but exclude non-station points from the list entirely."*): a name is not a station (a
-            // caption square, an approach guard or a labelled piece of track all carry one), and this setting watches whether a place
-            // trains stop is OCCUPIED.  ...unless it is ALREADY STORED (FSR-C5): this dialog is the only way to edit `blockedPoints`,
-            // and `chosen` is built from what the list offers, so hiding a stored entry would delete it when somebody pressed OK
-            // (FBR-A2).
-            if (!session.getStore().isStation(tile) && !already.contains(tile)) continue;
-
-            // Not the station itself: standing there already decides whether it is free, so watching
-            // itself would make it a station nothing can be sent to.
-            if (tile.equals(station)) continue;
-
-            // And not a square that IS this station by another name (OB-083): a caption points AT the station and carries a name, so
-            // choosing it would hold the station back with itself.  THIS station's captions only: widening to every caption square was
-            // tried and withdrawn (FBR-C4), because a caption square is often real track (`mayCarryACaption` allows one on a feedback
-            // square, and importLegacy captions every imported station WITH ITSELF, FBR-B3).
-            // ... unless it is ALREADY stored (FSR-C5, which subsumes FBR-A2): the filters are about what may be CHOSEN, and hiding an
-            // entry chosen earlier makes it permanent.  It appears ticked, it can be unticked, and the filters still decide what may
-            // be added.
-            if (station.equals(session.getCaptionTarget(tile)) && !already.contains(tile)) continue;
-
-            choices.add(tile);
-        }
-
-        // And any stored entry the loop above never reached at all (a square that has since lost its name, or is the
-        // station itself from before that was refused): visible, and therefore removable.
-        for (TileKey held : already)
-        {
-            if (held != null && !choices.contains(held)) choices.add(held);
-        }
-
-        // ALPHABETICAL, BY WHAT IS ACTUALLY SHOWN (FR-074: *"sort unavailable while occupied list alphabetically."*), on
-        // `describeTile`, the text on the check box: an entry that has lost its name renders as its sensor or its coordinates.
-        java.util.Collections.sort(choices, new java.util.Comparator<TileKey>()
-        {
-            @Override
-            public int compare(TileKey a, TileKey b)
-            {
-                return String.CASE_INSENSITIVE_ORDER.compare(describeTile(a), describeTile(b));
-            }
-        });
-
-        // Nothing to offer, which now also means nothing is stored - the loop above puts every stored
-        // entry on the list. So returning here cannot hide anything.
-        if (choices.isEmpty())
-        {
-            // GREYED, because there is nothing a click could find (MT-376: *"if there are no stations on the diagram yet, the 'choose
-            // on diagram' button should be greyed out to match the message"*): `whyNotABlocker` refuses a square that is not a
-            // station.  Shown greyed rather than left out, so the operator learns the way in exists.
-            javax.swing.JButton pickNow = nothingToPickButton();
-
-            final javax.swing.JButton close = new javax.swing.JButton(
-                javax.swing.UIManager.getString("OptionPane.cancelButtonText"));
-
-            final JOptionPane pane = new JOptionPane(
-                wrapped(I18n.t("autosetup.ui.infoNoOtherPointsToBlockWith")),
-                JOptionPane.PLAIN_MESSAGE, JOptionPane.DEFAULT_OPTION, null,
-                new Object[] { pickNow, close }, close);
-
-            close.addActionListener(e -> pane.setValue(close));
-
-            javax.swing.JDialog dialog =
-                pane.createDialog(owner(), I18n.t("autosetup.ui.menuBlockedByPointsTitle"));
-
-            dialog.setVisible(true);
-            dialog.dispose();
-
-            return;
-        }
-
-        JPanel panel = new JPanel();
-
-        panel.setLayout(new javax.swing.BoxLayout(panel, javax.swing.BoxLayout.Y_AXIS));
-
-        // Wrapped, because the message names a station and ran off the side of a dialog sized for
-        // check boxes (OB-083).
-        panel.add(new javax.swing.JLabel(wrapped(
-            I18n.f("autosetup.ui.promptBlockedByPoints", describeTile(station)))));
-
-        panel.add(javax.swing.Box.createVerticalStrut(LayoutEditor.HEADING_GAP));
-
-        java.util.List<javax.swing.JCheckBox> boxes = new java.util.ArrayList<>();
-
-        // WHICH OF THESE AUTONOMY WOULD NEVER CHOOSE (FR-074: *"lightly grey out stations that can't be chosen in full
-        // autonomy."*).  Read once, outside the loop, because the rule walks the reduction; `stationsAutonomyWillNotChoose` is the
-        // runtime's own rule (manual-only, or switched out of service), the same the diagram's captions ask.
-        java.util.Set<TileKey> notChosen = session.stationsAutonomyWillNotChoose();
-
-        for (TileKey tile : choices)
-        {
-            // describeTile, not getPointName: a carried entry that has lost its name would render with NO TEXT AT ALL (RA-C2).
-            // describeTile falls back to the s88 where the square is a sensor, its coordinates otherwise; testEditorSurfaceRules pins
-            // the caption rule here as there.
-            javax.swing.JCheckBox box = new javax.swing.JCheckBox(
-                describeTile(tile), already.contains(tile));
-
-            box.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
-
-            // LIGHTLY (FR-074), so a foreground colour rather than a disabled box: these squares are valid to block with (a
-            // parking berth holding a platform back is the case FR-001 exists for), so the mark says what KIND of square it
-            // is, not that it cannot be picked.
-            if (notChosen.contains(tile))
-            {
-                box.setForeground(NOT_CHOSEN_BY_AUTONOMY);
-
-                box.setToolTipText(I18n.t("autosetup.ui.tooltipBlockerNotAutoDestination"));
-            }
-
-            boxes.add(box);
-            panel.add(box);
-        }
-
-        // White behind the list rather than the panel's default grey: this reads as a list of things
-        // to pick from, and every other list in the application is white (OB-083).
-        panel.setBackground(java.awt.Color.WHITE);
-        panel.setOpaque(true);
-
-        for (javax.swing.JCheckBox box : boxes)
-        {
-            box.setBackground(java.awt.Color.WHITE);
-            box.setOpaque(true);
-        }
-
-        javax.swing.JScrollPane scroll = new javax.swing.JScrollPane(panel);
-
-        scroll.getViewport().setBackground(java.awt.Color.WHITE);
-        scroll.setBackground(java.awt.Color.WHITE);
-
-        // A wheel notch moves a row and a bit rather than one pixel.
-        scroll.getVerticalScrollBar().setUnitIncrement(BLOCKED_ROW_HEIGHT);
-        scroll.getVerticalScrollBar().setBlockIncrement(BLOCKED_ROW_HEIGHT * 5);
-
-        // 460 wide: the prompt names a station, and at 320 the name wrapped into three lines.
-        scroll.setPreferredSize(new java.awt.Dimension(460,
-            Math.min(360, 80 + choices.size() * BLOCKED_ROW_HEIGHT)));
-
-        // Three answers, not two (FR-025: *"the 'unavailable when occupied' dialog should allow users to select a s88 tile by
-        // clicking, similar to the signal guard popup."*): a checklist is the faster way to answer "which of these" and stays the
-        // default button, and picking on the diagram is faster for "that one, there".  OK and Cancel take their words from the
-        // look and feel.
-        final String ok = javax.swing.UIManager.getString("OptionPane.okButtonText");
-        final String cancel = javax.swing.UIManager.getString("OptionPane.cancelButtonText");
-        final String pick = I18n.t("autosetup.ui.optionPickBlockerOnDiagram");
-
-        Object[] answers = { ok, pick, cancel };
-
-        int chose = JOptionPane.showOptionDialog(owner(), scroll,
-            I18n.t("autosetup.ui.menuBlockedByPointsTitle"),
-            JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, answers, ok);
-
-        // Anything that is not one of the two doing answers - Cancel, Escape, the close box - changes
-        // nothing, which is what Cancel has always meant here.
-        if (chose != 0 && chose != 1) return;
-
-        java.util.List<TileKey> chosen = new java.util.ArrayList<>();
-
-        // Every stored entry is on the list above, so the boxes are the whole answer (FSR-C5).
-        for (int at = 0; at < boxes.size(); at++)
-        {
-            if (boxes.get(at).isSelected()) chosen.add(choices.get(at));
-        }
-
-        session.getStore().setBlockingPoints(station, chosen);
-
-        // The restriction is built into the configuration as lock edges, so the running layout has to
-        // be regenerated for it to mean anything - the same seam every other setup edit uses.
-        placementChanged(null);
-
-        // Pick on the diagram: the ticks above are applied FIRST and then the next click is waited
-        // for.  Arming without applying would throw away whatever had just been ticked, which is a
-        // button that quietly undoes the work the operator did in the same dialog.
-        if (chose == 1) armBlockerPick(station);
+        prompts.promptBlockingPoints(station);
     }
 
     /**
@@ -3843,7 +3626,7 @@ public class AutonomyEditorPanel extends JPanel
      *
      * @param station the station being held back
      */
-    private void armBlockerPick(TileKey station)
+    void armBlockerPick(TileKey station)
     {
         // In the deep menu the diagram is not this panel's to be clicked on; needsTheGrid jumps to the page instead.
         if (needsTheGrid(station)) return;
@@ -4405,120 +4188,11 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Asks which locomotives, as a multi-select list rather than typed names - a name that does not
-     * match the roster exactly would silently do nothing.
-     *
-     * @param tile
-     * @param key the point property to store the choice under
-     * @param names the locomotives worth offering, which is not always the whole roster
+     * Delegates to `EditorPrompts.promptLocomotives`.
      */
     void promptLocomotives(TileKey tile, String key, List<String> names)
     {
-        if (names.isEmpty())
-        {
-            JOptionPane.showMessageDialog(owner(), I18n.t("error.noLocs"));
-            return;
-        }
-
-        javax.swing.DefaultListModel<String> model = new javax.swing.DefaultListModel<>();
-
-        for (String name : names) model.addElement(name);
-
-        javax.swing.JList<String> list = new javax.swing.JList<>(model);
-
-        // Tall enough to choose from without scrolling on an ordinary roster.
-        list.setVisibleRowCount(Math.max(8, Math.min(18, names.size())));
-        control(list);
-
-        Set<String> chosen = strings(tile, key);
-        List<Integer> indexes = new java.util.ArrayList<>();
-
-        for (int i = 0; i < names.size(); i++)
-        {
-            if (chosen.contains(names.get(i))) indexes.add(i);
-        }
-
-        int[] selection = new int[indexes.size()];
-
-        for (int i = 0; i < indexes.size(); i++) selection[i] = indexes.get(i);
-
-        list.setSelectedIndices(selection);
-
-        // AND THE LIST'S MODE, above it (FR-121): keep the chosen locomotives out (the default, a blacklist), or let only
-        // them in (a whitelist: every other one, a locomotive added later included, is kept out).  Adam: *"we don't want
-        // to allow new locomotives that get added later when that mode is on."*
-        boolean exclusions = "excludedLocs".equals(key);
-
-        javax.swing.JRadioButton keepOut = new javax.swing.JRadioButton(I18n.t("autosetup.ui.optionExcludeChosenLocs"));
-        javax.swing.JRadioButton letInOnly = new javax.swing.JRadioButton(I18n.t("autosetup.ui.optionAllowOnlyChosenLocs"));
-
-        javax.swing.ButtonGroup modes = new javax.swing.ButtonGroup();
-
-        modes.add(keepOut);
-        modes.add(letInOnly);
-
-        (allowsOnlyListed(tile) ? letInOnly : keepOut).setSelected(true);
-
-        javax.swing.JComponent asked = new JScrollPane(list);
-
-        if (exclusions)
-        {
-            javax.swing.JPanel choices = new javax.swing.JPanel(new java.awt.GridLayout(0, 1));
-
-            choices.add(keepOut);
-            choices.add(letInOnly);
-
-            javax.swing.JPanel both = new javax.swing.JPanel(new java.awt.BorderLayout(0, 6));
-
-            both.add(choices, java.awt.BorderLayout.NORTH);
-            both.add(asked, java.awt.BorderLayout.CENTER);
-
-            asked = both;
-        }
-
-        // The "home" arm of this is not reached: the only caller passes "excludedLocs".  Kept because the shape is right
-        // for any list-valued property, but anything that starts using it for a HOME has to go through session.setHome,
-        // which sweeps that locomotive's home off every other square (TD-8).
-        if (JOptionPane.showConfirmDialog(owner(), asked, I18n.t(key.equals("home")
-                ? "autosetup.ui.labelHomeFor" : "autosetup.ui.labelLocomotiveExclusions"),
-            JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) != JOptionPane.OK_OPTION)
-        {
-            return;
-        }
-
-        List<String> picked = list.getSelectedValuesList();
-
-        boolean allowOnly = exclusions && letInOnly.isSelected();
-
-        // Excluding a locomotive from the station that is its HOME contradicts the home (OB-022; HomeStaging.homeBrokenByExcluding):
-        // warned rather than refused, like the home warning, since an operator may mean it.
-        if ("excludedLocs".equals(key))
-        {
-            String broken = homeBrokenBy(tile, picked, allowOnly);
-
-            if (broken != null && JOptionPane.showOptionDialog(owner(),
-                I18n.f("autolayout.ui.confirmExcludingHome", broken, describeTile(tile)),
-                I18n.t("autosetup.ui.labelExcludedLocs"),
-                JOptionPane.YES_NO_OPTION, JOptionPane.PLAIN_MESSAGE, null,
-                TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) != JOptionPane.YES_OPTION)
-            {
-                return;
-            }
-        }
-
-        session.setPointProperty(tile, key,
-            picked.isEmpty() ? null : new org.json.JSONArray(picked));
-
-        if (exclusions)
-        {
-            session.setPointProperty(tile, org.traincontrol.automation.Point.EXCLUDED_LOCS_MODE,
-                allowOnly ? org.traincontrol.automation.Point.ALLOW_ONLY_LISTED : null);
-        }
-
-        refresh();
-
-        // Persisted, and the running layout told (MT-246).
-        setupChanged();
+        prompts.promptLocomotives(tile, key, names);
     }
 
     /**
@@ -4532,7 +4206,7 @@ public class AutonomyEditorPanel extends JPanel
      * @param allowOnly whether it names the only ones allowed (FR-121) rather than the ones shut out
      * @return the home that would be contradicted, or null
      */
-    private String homeBrokenBy(TileKey tile, List<String> chosen, boolean allowOnly)
+    String homeBrokenBy(TileKey tile, List<String> chosen, boolean allowOnly)
     {
         return homeBrokenBy(homeOf(tile), chosen, allowOnly);
     }
@@ -4702,24 +4376,7 @@ public class AutonomyEditorPanel extends JPanel
      */
     public void promptLengthFor(TileKey tile)
     {
-        // NOT WHILE A RUN HOLDS THE SETUP - see `heldByARun`
-        if (heldByARun()) return;
-
-        // A GESTURE IN PROGRESS IS PUT DOWN FIRST, as the right-click menu and Control+N do (MFV-C4).
-        cancelPendingGesture();
-
-        if (!offersALength(tile))
-        {
-            if (tile != null && session != null && session.getGraph() != null)
-            {
-                say(hint, isIgnored(tile) ? I18n.t("autosetup.ui.infoTileIgnored")
-                    : I18n.t("autosetup.ui.infoNothingToMeasureHere"));
-            }
-
-            return;
-        }
-
-        applyLength(squareTheLengthWouldGoOn(tile));
+        prompts.promptLengthFor(tile);
     }
 
     /**
@@ -4898,19 +4555,12 @@ public class AutonomyEditorPanel extends JPanel
         setupChanged();
     }
 
+    /**
+     * Delegates to `EditorPrompts.promptLinkName`.
+     */
     void promptLinkName(TileKey tile)
     {
-        String current = session.getStore().getLinkName(tile);
-
-        String name = JOptionPane.showInputDialog(owner(),
-            I18n.t("autosetup.ui.promptLinkName"), current == null ? "" : current);
-
-        if (name == null) return;
-
-        session.setLinkName(tile, name);
-
-        // The running layout carries link names too (VD10-B2).
-        setupChanged();
+        prompts.promptLinkName(tile);
     }
 
     /**
@@ -5713,7 +5363,7 @@ public class AutonomyEditorPanel extends JPanel
      * enough to stay legible on the white this dialog uses.  It is not `Color.GRAY`, which at 50% on white reads as
      * disabled, and these entries are not.
      */
-    private static final java.awt.Color NOT_CHOSEN_BY_AUTONOMY = new java.awt.Color(120, 120, 120);
+    static final java.awt.Color NOT_CHOSEN_BY_AUTONOMY = new java.awt.Color(120, 120, 120);
 
     /** 0 to 999: three digits is every length anybody means, and 100000 is not one (OB-048) */
     private static final int MAX_LENGTH_DIGITS = 3;
