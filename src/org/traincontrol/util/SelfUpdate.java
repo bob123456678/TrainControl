@@ -254,6 +254,25 @@ public final class SelfUpdate
     }
 
     /**
+     * TEST HOOK, with no effect unless a test sets it: the jar `runningJar` reports in place of the one the program was
+     * loaded from (FR-136 Phase 6; Adam, 2026-10-19: "OK on download update test hooks").  A test runs from a folder of
+     * classes, where there is no jar, so Download & Update could not be reached from one.  Null, as it always is outside
+     * a test, asks the code source as before.
+     */
+    private static volatile File runningJarForTests;
+
+    /**
+     * For tests: makes `runningJar` report this jar, a throwaway one in the test's own folder, so that Download & Update
+     * is offered and replaces that rather than anything real.  Reset it with null in a finally.
+     *
+     * @param jar the jar to pretend the program runs from, or null for the real answer
+     */
+    public static void runningJarForTests(File jar)
+    {
+        runningJarForTests = jar;
+    }
+
+    /**
      * The jar this class was loaded from, if it is one an update can replace.
      *
      * @param anchor a class of the application, whose code source is the jar
@@ -261,6 +280,10 @@ public final class SelfUpdate
      */
     public static File runningJar(Class<?> anchor)
     {
+        final File pretend = runningJarForTests;
+
+        if (pretend != null) return pretend;
+
         try
         {
             CodeSource source = anchor.getProtectionDomain().getCodeSource();
