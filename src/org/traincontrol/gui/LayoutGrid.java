@@ -829,13 +829,13 @@ public class LayoutGrid
                     }
                 }
 
-                // AND THE ADDRESSES OVER THE TRAINS (FR-116; Adam, 2026-10-09: "Red address labels look good, but make
-                // sure they are rendered on top of the autonomy locomotive icons").  An address is what the operator
-                // turned Show Addresses on to read, and the pass above drew every icon over it.  Since round 102 it
-                // covers only its letters and their halo, so drawn last it hides nothing of the icon but the number.
-                // ONLY THOSE IN WHAT IS BEING REPAINTED (RSA60-C1): a hover repaints three squares by three, and with Show
-                // Addresses on this pass painted every address on the page each time, clipped to nothing - about eighteen
-                // times the cost on Adam's main page.  The pass above already skips what the clip misses.
+                // AND THE ADDRESSES OVER THE TRAINS (FR-116; Adam: "Red address labels look good, but make sure they
+                // are rendered on top of the autonomy locomotive icons").  An address is what the operator turned
+                // Show Addresses on to read, and it covers only its letters and their halo, so drawn last it hides
+                // nothing of the icon but the number.
+                // ONLY THOSE IN WHAT IS BEING REPAINTED (RSA60-C1): a hover repaints three squares by three, and
+                // painting every address on the page each time would be clipped to nothing.  The pass above already
+                // skips what the clip misses.
                 java.awt.Rectangle clip = g.getClipBounds();
 
                 for (java.awt.Component child : getComponents())
@@ -859,22 +859,16 @@ public class LayoutGrid
             }
 
             /**
-             * These children DO overlap, and Swing has to be told (OB-172, third report).
+             * These children DO overlap, and Swing has to be told (OB-172).
              *
-             * Adam: *"it must be the drawing order, because minimizing and then maximizing the window
-             * fixes it."*  That is the whole diagnosis.  A full repaint goes through this container's
-             * `paint`, which redraws the ruler last and is correct.  An ordinary repaint does not:
-             * `isOptimizedDrawingEnabled` defaults to TRUE, which promises Swing that no two children
-             * overlap - so it repaints a dirty child DIRECTLY, without the parent, and a caption that
+             * A full repaint goes through this container's `paint`, which redraws the ruler last and is correct.  An
+             * ordinary repaint does not: `isOptimizedDrawingEnabled` defaults to TRUE, which promises Swing that no
+             * two children overlap, so it repaints a dirty child DIRECTLY, without the parent, and a caption that
              * reaches into the gutter paints over the numbers with nothing to put them back.
              *
-             * The promise was false here.  A `StationCaption` is 38 pixels tall and up to 55 wide
-             * against a 30-pixel cell; overlapping is what this container is for.  Saying so is not a
-             * trick - it is the flag that exists for exactly this arrangement, and it makes every
-             * repaint go through the parent, which is what the numbers need.
-             *
-             * It costs repaint area.  `testRenderingCost` is the measure of that and is part of this
-             * change's evidence.
+             * The promise is false here: a `StationCaption` is 38 pixels tall and up to 55 wide against a 30-pixel
+             * cell.  Returning false makes every repaint go through the parent, which the numbers need, at some cost
+             * in repaint area (`testRenderingCost` measures it).
              */
             @Override
             public boolean isOptimizedDrawingEnabled()
@@ -885,29 +879,19 @@ public class LayoutGrid
             /**
              * The axis numbers, drawn last of all (OB-172).
              *
-             * In `paint` rather than at the end of `paintChildren`, which was the first attempt and
-             * did not work: the override ran, the border was the ruler and the clip was the whole
-             * component, and the numbers were still rubbed out - 69 pixels of ink left of 3024.
-             * Swing gives each child its own scratch graphics inside `paintChildren`, and what that
-             * costs is not worth working out when there is a place that is unambiguously after
-             * everything.
+             * In `paint` rather than at the end of `paintChildren`: Swing gives each child its own scratch graphics
+             * inside `paintChildren`, and `paint` is the place that is unambiguously after everything.
              *
-             * **Why the numbers vanish without it.**  A `Border` is painted by `JComponent.paint`
-             * BEFORE the children, so every child reaching into the eighteen pixels the ruler reserves
-             * is drawn over the number underneath.  A `StationCaption` is 38 pixels tall and up to 55
-             * wide against a 30-pixel cell, which is why one of them takes out the numbers for two
-             * rows - and why Adam saw numbers missing on rows carrying no caption of their own.
+             * **Why the numbers vanish without it.**  A `Border` is painted by `JComponent.paint` BEFORE the
+             * children, so every child reaching into the eighteen pixels the ruler reserves is drawn over the number
+             * underneath.  A `StationCaption` is 38 pixels tall and up to 55 wide against a 30-pixel cell, so one of
+             * them takes out the numbers for two rows, including rows carrying no caption of their own.  The numbers
+             * are not skipped by `paintBorder` (every cell measures exactly 30x30 against a 14-pixel font); they are
+             * covered.
              *
-             * Measured before it was changed, because two guesses before this one were wrong: on his
-             * own `1 - Main` every cell the ruler measures is exactly 30x30 with none absent, against
-             * a 14-pixel font, so not one of `paintBorder`'s three skip clauses can fire there.  The
-             * numbers were never being skipped.  They were being covered.
-             *
-             * Painted a second time rather than moved out of the border: the border is what RESERVES
-             * the gutter, and a ruler that stopped being one would take the room away with it.
-             *
-             * `super.paint` runs the whole sequence - background, border, children - and then this
-             * puts the ruler back over the top.
+             * Painted a second time rather than moved out of the border: the border is what RESERVES the gutter, and
+             * a ruler that stopped being one would take the room away with it.  `super.paint` runs the whole
+             * sequence, and then this puts the ruler back over the top.
              */
             @Override
             public void paint(java.awt.Graphics g)
@@ -933,16 +917,11 @@ public class LayoutGrid
      */
     public LayoutGrid(LayoutDiagram layout, int size, JPanel parent, Container master, boolean popup, TrainControlUI ui)
     {
-        // Is THIS grid inside an editor - not "is an editor open somewhere".
-        //
-        // layout.getEdit() alone is the second question. It is the flag the two editors share for their
-        // mutual exclusion, so while either was open every grid on screen answered yes, the viewer
-        // included: it drew the editor's grey grid around its squares (Adam: "the BUG where the VIEWER
-        // gets a grid is still there"), greyed its captions, dropped its hand cursors and its tooltips,
-        // and attached mouse listeners that cast their parent to LayoutEditor - which the viewer is not.
-        //
-        // One line above already asked it this way, as a conjunction, and was right. Everything else in
-        // this constructor asked the short version and was wrong in the viewer.
+        // Is THIS grid inside an editor, not "is an editor open somewhere".  layout.getEdit() alone is the second
+        // question: it is the flag the two editors share for their mutual exclusion, so while either was open every
+        // grid on screen would answer yes, the viewer included, and would draw the editor's grey grid, grey its
+        // captions, drop its hand cursors and tooltips, and attach mouse listeners that cast their parent to
+        // LayoutEditor, which the viewer is not.
         final boolean inEditor = layout.getEdit() && master instanceof LayoutEditor;
 
         this.builtPage = layout.getName();
@@ -971,20 +950,13 @@ public class LayoutGrid
             if (replacing) outgoing.discard();
         }
 
-        // Which editor this is.  layout.getEdit() is true in BOTH - the autonomy editor borrows the
-        // diagram editor's edit flag for its mutual exclusion - so keying label rendering on it changed
-        // the track diagram editor as well, where the raw "Point:" text is exactly what the user needs
-        // to see and edit.
-        // No station captions at all in the TRACK diagram editor (FR-030).
+        // No station captions at all in the TRACK diagram editor (FR-030; see hidesStationCaptions).  Which editor
+        // this is must be asked of the window: layout.getEdit() is true in BOTH, because the autonomy editor
+        // borrows the diagram editor's edit flag for its mutual exclusion, and the track diagram editor needs the
+        // raw "Point:" text it can edit.
         //
-        // Adam: "in the track diagram editor, hide autonomy labels completely."  That editor is about
-        // where the rails are, and a caption there is an autonomy object drawn over the thing being
-        // moved - it cannot be edited from that window, it covers the square underneath, and every
-        // one of them is in the way of the one job that window has.
-        //
-        // Decided before `captioned` is read rather than at each of the four places that draw one:
-        // a rule enforced at the point of use is a rule with four chances to be forgotten, and this
-        // file has form.
+        // Decided before `captioned` is read rather than at each of the four places that draw one, so the rule is
+        // not enforced at the point of use, where it could be forgotten.
         final boolean hidesCaptions = hidesStationCaptions(inEditor,
             master instanceof LayoutEditor && ((LayoutEditor) master).isAutonomyMode(),
             ui != null && ui.isPageExcludedFromAutonomy(layout.getName()));
@@ -1006,15 +978,10 @@ public class LayoutGrid
         // Create layout                      
         // JPanel container; // no longer needed - included as class field for caching
         
-        // NOT EMPTIED YET - see the swap below (Adam, 2026-09-04: "less flickering").
-        //
-        // This used to empty the panel HERE, eight hundred lines before the replacement is added to
-        // it, and everything between is the build: every tile, every image decode, every caption.  So
-        // the panel stood EMPTY for the whole rebuild, and any paint landing in that window - and
-        // there are many, because decoding pumps the event queue - drew a blank page.
-        //
-        // That is the flicker on a re-render: not the diagram being redrawn, but nothing being drawn
-        // in its place first.  The old diagram stays up until the new one is ready.
+        // NOT EMPTIED YET: see the swap below (Adam: "less flickering").  Emptying the panel here would leave it
+        // blank for the whole build (every tile, image decode and caption), and any paint landing in that window,
+        // as decoding pumps the event queue, would draw a blank page.  The old diagram stays up until the new one
+        // is ready.
         
         // We need a non scaling panel for small layouts
         // if (width * size < parent.getWidth() || height * size < parent.getHeight() || popup)
@@ -1030,25 +997,12 @@ public class LayoutGrid
             
             // Things mess up without this
             //
-            // "Being edited" is a fact about the DIAGRAM and is therefore true in both windows at once
-            // - the main window shares the LayoutDiagram with the editor - and it is the wrong question
-            // for anything about THIS grid, which is what LAYOUT is: how this particular grid is
-            // arranged.
-            //
-            // This used to add "that is right for clickability below, where the viewer's tiles must
-            // stop routing clicks while an editor owns the page". It is not right any more and was not
-            // meant to be: the line it points at passes `inEditor`, so the viewer's tiles stay
-            // clickable while an editor is open, which is the whole point of asking the longer
-            // question. Corrected rather than deleted because this is the only written record of why
-            // the flag is shared at all (NR-7).
-            //
-            // MT-106: the two were the same flag, so any repaint of the viewer while an editor was
-            // open re-laid the viewer the editor's way. It went unnoticed while the viewer was only
-            // ever rebuilt after the editor closed; the editor now stays open across a page or mode
-            // switch, and the teardown that runs on each one rebuilds it.
-            //
-            // So this asks whether THIS grid is in an editor, which is the question it was always
-            // trying to ask.
+            // "Being edited" is a fact about the DIAGRAM and is true in both windows at once (the main window
+            // shares the LayoutDiagram with the editor), so it is the wrong question for anything about how THIS
+            // grid is arranged.  The flag is shared at all only for the editors' mutual exclusion (NR-7).  So this
+            // asks whether THIS grid is in an editor (MT-106): with the shared flag, any repaint of the viewer while
+            // an editor was open re-laid the viewer the editor's way.  The viewer's tiles stay clickable while an
+            // editor is open because the clickability line below passes `inEditor`.
             if (LayoutDiagram.IGNORE_PADDING || inEditor)
             {
                 parent.setLayout(new FlowLayout());
@@ -1069,70 +1023,46 @@ public class LayoutGrid
 
         // THE COLUMN AND ROW NUMBERS, in the margin the border reserves (FR-057).
         //
-        // Adam: "coordinates are referenced in issues but not visible to the user.  add a grid around
-        // the diagram."  Drawn as a border rather than as two more rows of cells - see AxisRuler for
-        // why - so the grid inside is exactly what it was and every caller that addresses it by
-        // coordinate is unaffected.
+        // Adam: "coordinates are referenced in issues but not visible to the user.  add a grid around the diagram."
+        // Drawn as a border rather than as two more rows of cells (see AxisRuler), so the grid inside is exactly
+        // what it was and every caller that addresses it by coordinate is unaffected.
         //
-        // The numbers are the DIAGRAM's, not the cell indices: `offsetX`/`offsetY` are where its
-        // left-most and top-most track actually are, which is what makes the printed number the one an
-        // issue would quote.  `width` and `height` have already been incremented for the spacer row and
-        // column, which hold nothing, so the ruler is told the real counts.
+        // The numbers are the DIAGRAM's, not the cell indices: `offsetX`/`offsetY` are where its left-most and
+        // top-most track actually are, which makes the printed number the one an issue would quote.  `width` and
+        // `height` already include the spacer row and column, which hold nothing, so the ruler is told the real
+        // counts.  Asked on every build, which makes the toggle a redraw rather than a special case.
         //
-        // Asked on every build, which is what makes the toggle a redraw rather than a special case.
-        // IN THE EDITORS, NOT IN THE VIEWER (Adam: "they are visible in the track diagram viewer when
-        // they shouldn't be").
+        // IN THE EDITORS, NOT IN THE VIEWER: Adam asked for them in both the autonomy editor and the track diagram
+        // editor, and the viewer is where trains are watched, so a ruler there is scenery over the railway.
+        // `master instanceof LayoutEditor` rather than `inEditor`, because the window test answers "is this an
+        // editor at all" instead of borrowing a flag that means "the diagram is editable" and happens to agree.
+        // The flag is set in autonomy mode too: `LayoutEditor.render()` calls `layout.setEdit()` unconditionally,
+        // after `setAutonomyMode` has run (RGD-C6).
         //
-        // The preference was asked and the window was not, so every grid drew them.  He asked for the
-        // numbers "in both autonomy editor and track diagram editor" and the viewer is neither: it is
-        // where trains are watched, and a ruler there is scenery over the railway.
-        //
-        // `master instanceof LayoutEditor` rather than `inEditor`, and NOT because the flag is unset
-        // in autonomy mode - it is set there (RGD-C6).  `LayoutEditor.render()` calls
-        // `layout.setEdit()` unconditionally and `setAutonomyMode` runs before it, so `getEdit()` is
-        // true in both editors; `setAutonomyMode`'s own javadoc says it "does not call setEdit", which
-        // is true of that method and false of the window it runs in, and that sentence is where the
-        // opposite claim that used to stand here came from.
-        //
-        // The window test is used because it is the one that answers the question actually being
-        // asked - is this an editor at all - rather than borrowing a flag that means "the diagram is
-        // editable" and happens to agree.
-        //
-        // AND ONLY WITH THE GRID ON, which is the whole of what `coordinatesVisible` now answers - see
-        // it for why the numbers stopped being a setting of their own.  Asked through that method
-        // rather than as `LayoutEditor.showGrid()` here, so there is one place to read the rule and one
-        // place to change it.
+        // AND ONLY WITH THE GRID ON, which is what `coordinatesVisible` answers; asked through it so there is one
+        // place to read the rule and one place to change it.
         if (master instanceof LayoutEditor && coordinatesVisible())
         {
-            // MEASURED, NOT MULTIPLIED (Adam: "the axis numbers drift and are out of alignment.
-            // The first few are centered, but the rest aren't").
-            //
-            // The first version worked the positions out as `column * size`, which is right only while
-            // every cell is exactly a tile wide - and with the grey grid on each square wears a line
-            // border that reserves room, so the real pitch is a pixel or two more.  The error is
-            // cumulative: the first few numbers sit over their squares and the twentieth is a whole
-            // square out, which is why it read as "off by one" at the end.
-            //
-            // These two lambdas are asked at PAINT time, when the layout has run and a square's bounds
-            // are what they really are.  `grid` is filled in below, after this line, and that is fine
-            // for the same reason.
+            // MEASURED, NOT MULTIPLIED.  Positions worked out as `column * size` are right only while every cell is
+            // exactly a tile wide, and with the grey grid on each square wears a line border that reserves room, so
+            // the real pitch is a pixel or two more.  The error is cumulative: the first few numbers sit over their
+            // squares and the twentieth is a whole square out (Adam: "the axis numbers drift and are out of
+            // alignment").  These two lambdas are asked at PAINT time, when the layout has run and a square's
+            // bounds are what they really are; `grid` is filled in below this line, which is fine for the same
+            // reason.
             final LayoutGrid drawing = this;
 
-            // MORE THAN ONE ROW TO MEASURE FROM (OB-172).
-            //
-            // This asked `getValueAt(column, 0)` and nothing else, so a column whose top square was
-            // absent - or had not been given its bounds yet, which is what an editor swap can leave
-            // behind for a moment - lost its number entirely.  The first three rows and columns are
-            // offered; they are all the same column, so any of them gives the same x.
+            // MORE THAN ONE ROW TO MEASURE FROM (OB-172): a column whose top square is absent, or has not been
+            // given its bounds yet (an editor swap can leave that for a moment), would lose its number entirely.
+            // The first few rows and columns are offered; they are all the same column, so any gives the same x.
             java.util.List<java.util.function.IntFunction<java.awt.Rectangle>> columnSources =
                 new java.util.ArrayList<>();
 
             java.util.List<java.util.function.IntFunction<java.awt.Rectangle>> rowSources =
                 new java.util.ArrayList<>();
 
-            // Six rather than three: the candidates are now compared by size rather than taken in
-            // order, so a wider sweep costs a few lambda calls at paint time and buys immunity to a
-            // run of spacers at the edge of the diagram.
+            // Six probes: the candidates are compared by size rather than taken in order, so a wider sweep costs a
+            // few lambda calls at paint time and buys immunity to a run of spacers at the edge of the diagram.
             for (int probe = 0; probe < Math.min(6, Math.max(width, height)); probe++)
             {
                 final int which = probe;
@@ -1164,30 +1094,20 @@ public class LayoutGrid
         container.setLayout(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints(); 
 
-        // AND THE ROOM THE RULER ASKED FOR, added to the panel rather than taken out of the diagram
-        // (FR-057, Adam: "I don't see the axis labels in the editor grid").
+        // AND THE ROOM THE RULER ASKED FOR, added to the panel rather than taken out of the diagram (FR-057).
         //
-        // A border paints inside the component's own bounds, so the eighteen pixels it reserves come
-        // out of whatever the component was given.  These three numbers were all `width * size` by
-        // `height * size` - the grid exactly - so the gutter was carved out of the diagram: the tiles
-        // were pushed right and down inside a panel that had not grown, and the numbers went under the
-        // edge of the scroll pane.  The border was there the whole time and could not be seen, which
-        // is a worse failure than not drawing it at all.
-        //
-        // `maxWidth` and `maxHeight` are what the EDITOR sizes its own panel from, so they have to
-        // carry the gutter too - otherwise the panel is the old size and the container overflows it.
+        // A border paints inside the component's own bounds, so the eighteen pixels it reserves come out of
+        // whatever the component was given.  Sizing the panel at exactly `width * size` by `height * size` would
+        // carve the gutter out of the diagram, pushing the tiles right and down inside a panel that had not grown
+        // and sending the numbers under the edge of the scroll pane.  `maxWidth` and `maxHeight` are what the
+        // EDITOR sizes its own panel from, so they carry the gutter too.
         java.awt.Insets gutter = container.getBorder() == null
             ? new java.awt.Insets(0, 0, 0, 0) : container.getBorder().getBorderInsets(container);
 
-        // THE SPACER IS PAID FOR, and `width`/`height` already include it.
-        //
-        // Adam asked why the numbers stop one short of the last row and column.  They do not: the ruler
-        // numbers every real square, measured on his own `1 - Main` - 23 columns and 15 rows, all of
-        // them.  What has no number is the dummy column and row GridBagLayout is given so that an
-        // overflowing text label cannot widen its neighbours, and those are not squares.
-        //
-        // Sizing the container without them was tried and reverted the same day; `LayoutLabel.markSpacer`
-        // carries what happened.
+        // THE SPACER IS PAID FOR, and `width`/`height` already include it.  The ruler numbers every real square;
+        // what has no number is the dummy column and row GridBagLayout is given so that an overflowing text label
+        // cannot widen its neighbours, and those are not squares.  Sizing the container without them is wrong; see
+        // `LayoutLabel.markSpacer`.
         int fullWidth = width * size + gutter.left + gutter.right;
         int fullHeight = height * size + gutter.top + gutter.bottom;
 
@@ -1199,9 +1119,9 @@ public class LayoutGrid
                
         grid = new LayoutLabel[width][height];
 
-        // ASKED ONCE A BUILD, AND HANDED TO EACH SQUARE (speed, 2026-10-04): the editor's grid setting is a preference, a
-        // Windows registry read of 22 microseconds that nothing caches, and every square asked it as it was made - one read
-        // per square on every redraw of the editor's diagram.
+        // ASKED ONCE A BUILD, AND HANDED TO EACH SQUARE: the editor's grid setting is a preference, a Windows
+        // registry read of 22 microseconds that nothing caches, so asking it per square would be one read per square
+        // on every redraw of the editor's diagram.
         final Boolean gridLines = inEditor ? LayoutEditor.showGrid() : null;
                        
         for(int y = 0; y < height; y++)
@@ -1213,13 +1133,9 @@ public class LayoutGrid
                 {
                     grid[x][y] = new LayoutLabel(null, master, size, ui, false);
 
-                    // Not a square, so not part of the grey grid (OB-055).
-                    //
-                    // Adam: "when grid is turned on, there is a grid on an extra row at the bottom, and
-                    // an extra half column on the right.  the half column starts halfway down and has
-                    // the same number of cells, but each is only at half height."  That is this row and
-                    // this column: they hold nothing, so GridBagLayout gives them whatever is left
-                    // rather than a square's worth, and the border made them visible.
+                    // Not a square, so not part of the grey grid (OB-055).  These hold nothing, so GridBagLayout
+                    // gives them whatever is left rather than a square's worth, and the border would make them
+                    // visible: an extra row at the bottom and an extra half column on the right.
                     grid[x][y].markSpacer();
                     gbc.gridwidth = 0;
                     gbc.gridheight = 0;
@@ -1232,12 +1148,10 @@ public class LayoutGrid
                 
                 LayoutDiagramComponent c = layout.getComponent(x + offsetX, y  + offsetY);
 
-                // The square this cell is, and the station whose caption belongs on it.
-                //
-                // A caption is no longer text drawn into the diagram - it is part of the autonomy setup,
-                // pointing at the sensor's square - so it is asked for rather than found by reading a
-                // prefix off a label.  It can therefore sit on a square carrying no component at all,
-                // which is why the text below is drawn for a caption as well as for a label.
+                // The square this cell is, and the station whose caption belongs on it.  A caption is part of the
+                // autonomy setup, pointing at the sensor's square, so it is asked for rather than found by reading a
+                // prefix off a label.  It can therefore sit on a square carrying no component at all, which is why
+                // the text below is drawn for a caption as well as for a label.
                 final org.traincontrol.automationui.TileGraph.TileKey square =
                     new org.traincontrol.automationui.TileGraph.TileKey(
                         layout.getName(), x + offsetX, y + offsetY);
