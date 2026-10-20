@@ -3805,6 +3805,417 @@ public class testTheImportDoorReadsAnOldFile
         }
     }
 
+    /**
+     * MT-779, as the user does it: through the Autonomy menu's own items and dialogs, on a sandbox copy of the railway
+     * with a copy of the old file: Export your configuration, Import that file under a new name, Import the old 2.7.4c
+     * file under another, Import it again under that name and answer Yes, choose each imported configuration, delete
+     * both under Manage, and choose your own again.
+     *
+     * Each message is read from the bundle.  Yours is unchanged throughout and stays the one in use.
+     *
+     * MUTATION: make an import switch to the configuration it brought in, drop the sentence saying which configuration
+     * the old file went into, say something else for a bundle, write an empty file at Export, or have Delete take the
+     * configuration in use instead of the one chosen, and this fails.
+     *
+     * @throws Exception from the window or the import
+     */
+    @Test
+    public void testImportingYourOwnExportAndAnOldFileThroughTheAutonomyMenu() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        assertTrue(MT491.isFile(), "precondition: the MT-491 file is not in test/autonomy_formats");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
+
+            ui[0] = openTheWindow();
+
+            // THE FILES ARE IN THE SANDBOX: the old file as the manual test hands it over, and where Export writes
+            final File folder = new File(sandbox.getFolder(), "mt779");
+
+            assertTrue(folder.mkdirs(), "precondition: " + folder + " could not be made");
+
+            final File old = new File(folder, "MT-491-autonomy-2.7.4c.json");
+            final File exported = new File(folder, "mine.json");
+
+            java.nio.file.Files.copy(new File("docs/manual-tests/files/MT-491-autonomy-2.7.4c.json").toPath(), old.toPath());
+
+            AutonomySession session = ui[0].getAutonomySession();
+
+            final String inUse = session.getStore().getActiveConfiguration();
+
+            assertNotNull(inUse, "precondition: the frozen railway has no configuration in use");
+
+            final List<String> namesBefore = new ArrayList<>(session.getStore().getConfigurationNames());
+            final String mineBefore = session.getStore().getConfiguration(inUse).toString();
+
+            final String mine = "MT-779 mine", older = "MT-779 old";
+
+            // STEP 1: EXPORT, under a new file name
+            List<String> said = clickInTheAutonomyMenu(ui[0], I18n.t("autosetup.ui.btnExportConfiguration"), exported, null);
+
+            assertEquals(said, Collections.<String>emptyList(), "Export said something, where it writes the file quietly: "
+                + said);
+
+            assertTrue(exported.isFile(), "Export wrote no file where it was told to");
+
+            assertEquals(AutonomySession.detectImportFormat(new org.json.JSONObject(new String(
+                java.nio.file.Files.readAllBytes(exported.toPath()), java.nio.charset.StandardCharsets.UTF_8))),
+                AutonomySession.ImportFormat.BUNDLE, "what Export wrote is not an exported configuration");
+
+            // STEP 2: IMPORT IT UNDER A NEW NAME - "Imported." and its count, and yours unchanged
+            said = clickInTheAutonomyMenu(ui[0], I18n.t("autosetup.ui.btnImportConfiguration"), exported, mine);
+
+            session = ui[0].getAutonomySession();
+
+            assertEquals(said.size(), 1, "importing your own export said more or less than one thing: " + said);
+
+            assertTrue(said.get(0).startsWith(before(I18n.t("autosetup.ui.infoImported"), "{0}")), "the message does not"
+                + " begin as the bundle's \"Imported.\" does: " + said);
+
+            Integer brought = numberIn(said, "autosetup.ui.infoImported", 0);
+
+            assertNotNull(brought, "the message does not say how many names, lengths and settings were brought in: " + said);
+
+            assertEquals(said.get(0), I18n.f("autosetup.ui.infoImported", brought), "the message is not the bundle's own");
+
+            assertTrue(session.getStore().getConfigurationNames().contains(mine), "importing your own export made no"
+                + " configuration of the name given: " + session.getStore().getConfigurationNames());
+
+            assertEquals(session.getStore().getActiveConfiguration(), inUse, "importing your own export switched away from "
+                + inUse);
+
+            assertEquals(session.getStore().getConfiguration(inUse).toString(), mineBefore, "importing your own export"
+                + " changed " + inUse);
+
+            // STEP 3: THE OLD FILE UNDER ANOTHER NEW NAME - "Named ...", its six counts, and where it went
+            said = clickInTheAutonomyMenu(ui[0], I18n.t("autosetup.ui.btnImportConfiguration"), old, older);
+
+            session = ui[0].getAutonomySession();
+
+            assertEquals(said.size(), 1, "importing the old file said more or less than one thing: " + said);
+
+            final String first = said.get(0);
+
+            assertTrue(first.startsWith(before(I18n.t("autosetup.ui.infoLegacyImported"), "{0}")), "the message does not"
+                + " begin \"Named\": " + first);
+
+            Object[] counts = new Object[6];
+
+            for (int which = 0; which < 6; which++)
+            {
+                counts[which] = numberIn(said, "autosetup.ui.infoLegacyImported", which);
+
+                assertNotNull(counts[which], "the message does not give the count in place " + which + " (squares named,"
+                    + " locomotives placed, turning squares, other settings, squares already named, points unmatched): "
+                    + first);
+            }
+
+            assertEquals(counts[1], Integer.valueOf(4), "the message does not say it placed his four locomotives: " + first);
+
+            assertTrue(first.startsWith(I18n.f("autosetup.ui.infoLegacyImported", counts)), "the message is not the bundle's"
+                + " own sentence with its six counts: " + first);
+
+            final String where = I18n.f("autosetup.ui.infoLegacyImportedNotInUse", older, inUse, whereChosen(inUse));
+
+            assertTrue(first.contains(where), "the message does not end by saying which configuration it went into and that "
+                + inUse + " is still the one in use: " + first);
+
+            assertEquals(session.getStore().getActiveConfiguration(), inUse, "importing the old file switched away from " + inUse);
+
+            assertEquals(session.getStore().getConfiguration(inUse).toString(), mineBefore, "importing the old file changed "
+                + inUse);
+
+            // STEP 4: THE SAME FILE AGAIN UNDER THAT NAME - asked, Yes, and said to be imported into it again
+            said = clickInTheAutonomyMenu(ui[0], I18n.t("autosetup.ui.btnImportConfiguration"), old, older);
+
+            session = ui[0].getAutonomySession();
+
+            final String question = I18n.f("autosetup.ui.confirmImportFillsGaps", older);
+
+            assertTrue(said.stream().anyMatch(message -> message.startsWith(question)), "importing the old file under a name"
+                + " already held did not ask \"" + question + "\": " + said);
+
+            assertTrue(said.stream().anyMatch(message -> message.startsWith(
+                before(I18n.t("autosetup.ui.infoLegacyImported"), "{0}")) && message.contains(where)), "after Yes, no message"
+                + " says the file went into " + older + " again, with " + inUse + " still in use: " + said);
+
+            // STEP 5: EACH IMPORTED CONFIGURATION CHOSEN from the menu, and opening without an error
+            for (String chosen : new String[] {mine, older})
+            {
+                said = clickInTheAutonomyMenu(ui[0], chosen, null, null);
+
+                assertEquals(said, Collections.<String>emptyList(), "choosing " + chosen + " said something - an error,"
+                    + " or a question it should not ask: " + said);
+
+                session = ui[0].getAutonomySession();
+
+                assertEquals(ui[0].getActiveDiagramConfiguration(), chosen, chosen + " did not become the configuration"
+                    + " in use");
+
+                assertFalse(session.hasBlockingProblems(), chosen + " opened with problems that stop autonomy building it");
+            }
+
+            // AND DELETED under Manage Configurations, each the one chosen from the list
+            for (String doomed : new String[] {mine, older})
+            {
+                said = clickInTheAutonomyMenu(ui[0], I18n.t("autosetup.ui.menuDeleteConfiguration"), null, doomed);
+
+                session = ui[0].getAutonomySession();
+
+                assertFalse(session.getStore().getConfigurationNames().contains(doomed), "Delete left " + doomed + " in the"
+                    + " list: " + said);
+            }
+
+            assertEquals(new ArrayList<>(session.getStore().getConfigurationNames()), namesBefore, "after both were deleted"
+                + " the configurations are not the ones there were");
+
+            // AND YOURS CHOSEN AGAIN, as it was
+            clickInTheAutonomyMenu(ui[0], inUse, null, null);
+
+            session = ui[0].getAutonomySession();
+
+            assertEquals(ui[0].getActiveDiagramConfiguration(), inUse, "choosing " + inUse + " again did not make it the"
+                + " one in use");
+
+            assertEquals(session.getStore().getConfiguration(inUse).toString(), mineBefore, "after all that, " + inUse
+                + " is not as it was");
+        }
+        finally
+        {
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
+     * The Import... item of the Configuration menu, opened at rest and clicked once autonomy runs, refuses and says what
+     * to do instead: nothing is asked, nothing is imported (RSA4-C5), and the menu opened again greys the submenu that
+     * holds it.
+     *
+     * MUTATION: drop the refusal from Import, or leave the Configuration submenu live while autonomy runs, and this
+     * fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testTheImportItemOpenedAtRestRefusesOnceAutonomyRuns() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        Thread driving = null;
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
+
+            ui[0] = openTheWindow();
+
+            final File old = new File(sandbox.getFolder(), "MT-491-autonomy-2.7.4c.json");
+
+            java.nio.file.Files.copy(new File("docs/manual-tests/files/MT-491-autonomy-2.7.4c.json").toPath(), old.toPath());
+
+            AutonomySession session = ui[0].getAutonomySession();
+
+            final String inUse = session.getStore().getActiveConfiguration();
+
+            final List<String> namesBefore = new ArrayList<>(session.getStore().getConfigurationNames());
+            final String before = session.getStore().getConfiguration(inUse).toString();
+
+            // THE MENU OPENED AT REST, its Import... in hand
+            final javax.swing.JMenu menu = theAutonomyMenu(ui[0]);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                for (javax.swing.event.MenuListener listener : menu.getMenuListeners()) listener.menuSelected(null);
+            });
+
+            final javax.swing.JMenuItem importItem = itemCalled(menu, I18n.t("autosetup.ui.btnImportConfiguration"));
+
+            assertNotNull(importItem, "the Autonomy menu has no Import...");
+            assertTrue(importItem.isEnabled(), "precondition: Import... is greyed at rest");
+
+            // THEN A RUN BEGINS
+            final Object[] dispatched = dispatchATrain(ui[0], null);
+
+            driving = (Thread) dispatched[3];
+
+            assertTrue(ui[0].getModel().isAutonomyRunning(), "precondition: autonomy does not read busy with "
+                + dispatched[0] + " under way");
+
+            List<String> said;
+
+            try (support.Answering answering = support.Answering.start(message -> null).choosing(old))
+            {
+                SwingUtilities.invokeLater(importItem::doClick);
+
+                assertTrue(answering.awaitAsked(1, 30000), "Import... said nothing while autonomy ran");
+
+                support.Components.settle();
+
+                said = answering.asked();
+            }
+
+            assertEquals(said, Collections.singletonList(I18n.t("autosetup.ui.errorImportWhileRunning")), "Import..., clicked"
+                + " while autonomy ran, did not refuse with the bundle's sentence and nothing else");
+
+            session = ui[0].getAutonomySession();
+
+            assertEquals(new ArrayList<>(session.getStore().getConfigurationNames()), namesBefore, "a refused import left a"
+                + " configuration behind");
+
+            assertEquals(session.getStore().getConfiguration(inUse).toString(), before, "a refused import changed " + inUse);
+
+            // AND THE MENU, opened again, greys the submenu Import... is in
+            SwingUtilities.invokeAndWait(() ->
+            {
+                for (javax.swing.event.MenuListener listener : menu.getMenuListeners()) listener.menuSelected(null);
+            });
+
+            javax.swing.JMenuItem submenu = itemCalledAmongMenus(menu, I18n.f("autosetup.ui.menuConfigurations", inUse));
+
+            assertNotNull(submenu, "the Autonomy menu has no Configuration submenu while autonomy runs");
+
+            assertFalse(submenu.isEnabled(), "the Configuration submenu, with Import... in it, is live while autonomy runs");
+        }
+        finally
+        {
+            if (driving != null) driving.interrupt();
+
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
+     * Clicks an item of the Autonomy menu as the user does - the menu opened first, so it is built as it is then - and
+     * answers what it asks: the file, the name at the prompt or the one picked from Delete's list, and the first
+     * button of anything else (Yes, or OK).
+     *
+     * @param ui the window
+     * @param text the item's text: Import..., Export..., Delete, or the name of a configuration to choose
+     * @param file the file for the chooser, or null
+     * @param name the name to type or pick, or null
+     * @return every message and question the click showed, in order
+     */
+    private static List<String> clickInTheAutonomyMenu(TrainControlUI ui, String text, File file, String name)
+        throws Exception
+    {
+        final javax.swing.JMenu menu = theAutonomyMenu(ui);
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            for (javax.swing.event.MenuListener listener : menu.getMenuListeners()) listener.menuSelected(null);
+        });
+
+        final javax.swing.JMenuItem item = itemCalled(menu, text);
+
+        assertNotNull(item, "the Autonomy menu has no \"" + text + "\"");
+        assertTrue(item.isEnabled(), "the Autonomy menu's \"" + text + "\" is greyed");
+
+        try (support.Answering answering = support.Answering.start(message ->
+            I18n.t("autosetup.ui.promptImportName").equals(message)
+                || I18n.t("autosetup.ui.promptWhichConfigurationToDelete").equals(message)
+                ? support.Answering.type(name) : null).choosing(file))
+        {
+            final CountDownLatch done = new CountDownLatch(1);
+
+            SwingUtilities.invokeLater(() ->
+            {
+                try
+                {
+                    item.doClick();
+                }
+                finally
+                {
+                    done.countDown();
+                }
+            });
+
+            assertTrue(done.await(180, TimeUnit.SECONDS), "\"" + text + "\" did not finish; showing: " + answering.asked());
+
+            for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
+
+            // What it said and asked, the prompts for a name left out: those are answered, not said
+            List<String> said = answering.asked();
+
+            said.remove(I18n.t("autosetup.ui.promptImportName"));
+            said.remove(I18n.t("autosetup.ui.promptWhichConfigurationToDelete"));
+
+            return said;
+        }
+    }
+
+    /** The menu bar's Autonomy menu. */
+    private static javax.swing.JMenu theAutonomyMenu(TrainControlUI ui)
+    {
+        javax.swing.JMenuBar bar = ui.getJMenuBar();
+
+        String heading = I18n.t("autosetup.ui.menuAutonomy");
+
+        for (int i = 0; i < bar.getMenuCount(); i++)
+        {
+            javax.swing.JMenu menu = bar.getMenu(i);
+
+            if (menu != null && heading.equals(menu.getText())) return menu;
+        }
+
+        throw new AssertionError("precondition: the menu bar has no Autonomy menu");
+    }
+
+    /** The first submenu anywhere in this menu with this text, or null. */
+    private static javax.swing.JMenu itemCalledAmongMenus(javax.swing.JMenu menu, String text)
+    {
+        for (java.awt.Component part : menu.getMenuComponents())
+        {
+            if (!(part instanceof javax.swing.JMenu)) continue;
+
+            javax.swing.JMenu sub = (javax.swing.JMenu) part;
+
+            if (text.equals(sub.getText())) return sub;
+
+            javax.swing.JMenu deeper = itemCalledAmongMenus(sub, text);
+
+            if (deeper != null) return deeper;
+        }
+
+        return null;
+    }
+
     /** The first item anywhere in this menu with this text. */
     static javax.swing.JMenuItem itemCalled(java.awt.Container menu, String text)
     {
