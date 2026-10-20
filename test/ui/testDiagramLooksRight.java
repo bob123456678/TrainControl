@@ -2387,22 +2387,22 @@ public class testDiagramLooksRight
     /**
      * A diagram that is already drawn is not taken off the screen to be rebuilt.
      *
-     * OB-109. Adam: "when placing new tiles in the track diagram editor, the diagram sometimes
-     * flickers." Every placement rebuilds the whole grid, and a new grid hid itself until its tiles
-     * had decoded - so the page was taken away and given back, and whether an empty paint landed in
-     * between depended on where the event thread was. That is the "sometimes".
+     * OB-109: every placement in the track diagram editor rebuilds the whole grid, and a new grid that
+     * hid itself until its tiles had decoded would take the page away and give it back, so that whether
+     * an empty paint landed in between depended on where the event thread was (the "sometimes" of a
+     * flicker).
      *
-     * Two rules came out of it, and this checks both, because each is what the other misses.
+     * Two rules, and this checks both, because each is what the other misses.
      *
      * **Nothing pending, nothing to hide.** On a warm cache there is no decode outstanding, so the
-     * hold-back has nothing to wait for. It still hid the diagram, and `whenTilesSettled` gave it back
-     * on the NEXT event-thread pass - a hide and a show a frame apart, which is the blink.
+     * hold-back has nothing to wait for. Hiding the diagram anyway, and having `whenTilesSettled` give
+     * it back on the NEXT event-thread pass, is a hide and a show a frame apart, which is the blink.
      *
-     * **A replacement is not an arrival.** The hold-back was written for a page arriving in two stages;
-     * a page already on the screen being rebuilt is the opposite case. Placing the first tile of a
-     * type nobody has drawn at this size is ONE decode, and one decode was taking the whole page away.
-     * A slow replacement still ends up behind the spinner, 120ms in - that is what the second half
-     * here does not check and MT-194 does.
+     * **A replacement is not an arrival.** The hold-back is for a page arriving in two stages; a page
+     * already on the screen being rebuilt is the opposite case. Placing the first tile of a type nobody
+     * has drawn at this size is ONE decode, and one decode must not take the whole page away. A slow
+     * replacement still ends up behind the spinner, 120ms in; the second half here does not check that
+     * and MT-194 does.
      *
      * Both assertions read `isVisible` inside the same event-thread block that built the grid, which is
      * what makes them deterministic: the reveal can only arrive on a later pass, so the old behaviour
@@ -2457,11 +2457,10 @@ public class testDiagramLooksRight
 
         // Two: a real wait, held open by the test.
         //
-        // The first version of this hoped that a page of images at an unused size would still be
-        // decoding a statement later. It was not - the fixture is small - and the precondition said
-        // so rather than letting the assertion pass without meaning anything. tileDecodeStarted is
-        // what a LayoutLabel calls before it submits, so holding one open puts the grid in exactly
-        // the state it asks about, for as long as this test wants rather than as long as a pool takes.
+        // tileDecodeStarted is what a LayoutLabel calls before it submits, so holding one open puts the
+        // grid in exactly the state it asks about, for as long as this test wants rather than as long as
+        // a pool takes (the fixture is small, so a page at an unused size would not still be decoding a
+        // statement later).
         ui.tileDecodeStarted();
 
         final boolean[] onFresh = {false};
@@ -2530,12 +2529,12 @@ public class testDiagramLooksRight
     /**
      * The train is drawn over the station caption, and the caption is still there beside it.
      *
-     * OB-159. Adam: "it is a z order issue.  The stations paint over the locomotives."
+     * OB-159: the stations must not paint over the locomotives.
      *
      * This is the other half of the test above, and the two cannot both be satisfied by an ORDER.
      * A station caption and the tile under it are separate components; put the caption in front and
-     * the locomotive standing on that platform is painted over, which is what he reported; put the
-     * tile in front and the NAME is painted out, because a tile is opaque, which is OB-117.
+     * the locomotive standing on that platform is painted over, put the tile in front and the NAME is
+     * painted out, because a tile is opaque (OB-117).
      *
      * So the trains are no longer a z-order at all. The container paints its children in the order it
      * always did - tiles, then captions - and then walks them once more asking each for its train, so
@@ -2608,13 +2607,13 @@ public class testDiagramLooksRight
 
         // SAMPLED WHERE THE CAPTION AND THE ICON OVERLAP (TCS-A2).
         //
-        // This used to sample the middle of the square, (60, 60) at this size - which is above the
-        // pill entirely, since the caption sits at (0, 80, 120, 30).  The caption never painted there
-        // under either arrangement, so the pixel was identical whether the train was drawn over the
-        // captions or back inside its tile, and the test passed with OB-159 put back.
+        // The middle of the square, (60, 60) at this size, is above the pill entirely, since the caption
+        // sits at (0, 80, 120, 30): the pixel would be identical whether the train was drawn over the
+        // captions or back inside its tile.
         //
-        // Three quarters of the way down is inside the pill and inside the icon, which spans 76% of
-        // the square about its centre.  It is the only place the question can be asked.
+        // The overlap of the pill and the icon, which spans 76% of the square about its centre, is the
+        // only place the question can be asked.
+        //
         // THE CONTROL FIRST, because it is what tells the two failures apart.
         //
         // If the icon file cannot be loaded the overlay draws a plain dot instead, which does not
@@ -2626,10 +2625,9 @@ public class testDiagramLooksRight
 
         // Then the overlap, which is the question OB-159 is about.
         //
-        // Two thirds of the way down rather than three quarters: the pill runs from 2/3 to 11/12 of
-        // the square, and the icon's PAINTED extent - not its bounding box, which is what a previous
-        // note here described - ends around 0.765 of the way down. At 3/4 the sample sat about a pixel
-        // inside the art at every size, which is a test one icon redraw away from a mystery.
+        // Two thirds of the way down: the pill runs from 2/3 to 11/12 of the square, and the icon's
+        // PAINTED extent, not its bounding box, ends around 0.765 of the way down. At 3/4 the sample sat
+        // about a pixel inside the art at every size, which is one icon redraw away from a mystery.
         int overlapX = size / 2;
         int overlapY = size * 17 / 24;
 
@@ -2649,11 +2647,10 @@ public class testDiagramLooksRight
         //
         // This method asks `LayoutGrid.newDiagramContainer()` itself, so the container it photographs
         // is the right one however the application builds its own.  Put a plain JPanel back at the
-        // one place that calls the factory and every pixel above is unchanged - the defect moves to
-        // the call, which is exactly what happened to testDiagramExport.
-        // The FACTORY is what matters, not what the variable is called - this named the local and
-        // would have failed a rename that broke nothing.  Called by the grid's own constructor, which is the one
-        // place the application builds its diagram: a call anywhere else is not the container shown (FR-136).
+        // one place that calls the factory and every pixel above is unchanged.  The FACTORY is what
+        // matters, not what the variable is called: it is called by the grid's own constructor, which is
+        // the one place the application builds its diagram, and a call anywhere else is not the
+        // container shown (FR-136).
         String gridBuilt = SourceOf.withoutComments(SourceOf.body("public LayoutGrid(LayoutDiagram layout, int size,"
             + " JPanel parent, Container master, boolean popup, TrainControlUI ui)"));
 
@@ -2670,9 +2667,6 @@ public class testDiagramLooksRight
 
     /**
      * The locomotive on a square is drawn ten per cent clear, so a caption under it still shows faintly (FR-130).
-     *
-     * FR-130. Adam: "the autonomy locomotive icon (steam engine, black) has no transparency.  Give it 10% transparency so
-     * that labels under it can be faintly seen still.  consider adding a glow around the black label text as needed."
      *
      * The black of the engine, over a white ground, comes out a dark grey a tenth of the way to white - never pure black.
      * Nothing here adds a glow: every label that can lie under the engine already has a light surround (a pill's fill, or
@@ -2760,14 +2754,13 @@ public class testDiagramLooksRight
     }
 
     /**
-     * A caption on a running route is in the route's colours: the blue of the path ahead until the train gets there (Adam,
-     * 2026-10-09: "Build 2,3,5,6" - the third of the diagram look proposals).  The captions had kept the red the route
-     * itself was drawn in before FR-106 moved the route to blue ahead and grey behind.
+     * A caption on a running route is in the route's colours: the blue of the path ahead until the train gets there,
+     * as the route itself has been drawn since FR-106 (blue ahead, grey behind).
      *
      * On both pills the operator can choose, because the blue has to read on each: the path's own blue on the pale grey,
      * lifted to a light blue on the blue pill, where the path's own blue would disappear.
      *
-     * MUTATION: let `onPill` answer the route's blue with plain black or white - what it did - and this fails.
+     * MUTATION: let `onPill` answer the route's blue with plain black or white, and this fails.
      */
     @Test
     public void testARouteCaptionStaysInTheRoutesBlueOnEitherPill()
@@ -2790,9 +2783,8 @@ public class testDiagramLooksRight
     }
 
     /**
-     * The blue captions, the station badges, the route and the Auto tab's station badge are one blue (the sixth look
-     * proposal).  The captions were navy, rgb(0,0,115), beside badges and a route of rgb(0,0,200): two blues a shade
-     * apart, which the caption's own note says look like a mistake rather than a family.
+     * The blue captions, the station badges, the route and the Auto tab's station badge are one blue: two blues a
+     * shade apart look like a mistake rather than a family.
      *
      * MUTATION: put the navy back and this fails.
      */
@@ -2806,9 +2798,8 @@ public class testDiagramLooksRight
     }
 
     /**
-     * A destination is ringed in a dark orange, not the route's blue (Adam, 2026-10-09: "give the pill a dark orange
-     * border instead of the blue border"); the fill says "destination" and the pill draws the ring whenever it has that
-     * fill.
+     * A destination is ringed in a dark orange, not the route's blue; the fill says "destination" and the pill
+     * draws the ring whenever it has that fill.
      *
      * MUTATION: drop the ring from the pill's painting, or draw it in the route's blue again, and this fails.
      */
@@ -2871,14 +2862,12 @@ public class testDiagramLooksRight
     }
 
     /**
-     * A pill's text sits in the middle of it, as much room at the right end as at the left (Adam, 2026-10-09: "In the
-     * station label pills, there has always been a padding issue on the right ... Fix it").
+     * A pill's text sits in the middle of it, as much room at the right end as at the left.
      *
-     * The pill was sized from the text's width as measured for layout, and the text drawn by the label's own painter,
-     * centred by that same measurement; painted at a larger scale - a display scaled to 125 or 150 per cent, or the 2x
-     * the guide's pictures are made at - the glyphs come out wider than measured, and all of the difference lands at the
-     * right end.  Painted here at 2x, the room either side of the ink is measured: with the arrow on the left, on the
-     * right, and none.
+     * The pill is sized from the text's width as measured for layout.  Painted at a larger scale (a display scaled
+     * to 125 or 150 per cent, or the 2x the guide's pictures are made at) the glyphs come out wider than measured,
+     * and the text must still sit centred, not leave all of the difference at the right end.  Painted here at 2x,
+     * the room either side of the ink is measured: with the arrow on the left, on the right, and none.
      *
      * MUTATION: draw the text where the label's layout put it again, and this fails.
      */
@@ -2972,8 +2961,7 @@ public class testDiagramLooksRight
                     + "x, has " + before + " pixels of pill before its text and " + after + " after it - the text is not in"
                     + " the middle");
 
-                // AND UP AND DOWN (Adam, 2026-10-09: "make sure the pill label padding issue on the right/lower-right is
-                // addressed").  Asked of the two names without an arrow: neither has a letter that hangs below the
+                // AND UP AND DOWN.  Asked of the two names without an arrow: neither has a letter that hangs below the
                 // line, so their ink is the capitals' height and should sit in the middle of the pill.  An arrow is a
                 // symbol from another font and sits where that font puts it.
                 int above = inkTop - pillTop, below = pillBottom - inkBottom;
@@ -2993,7 +2981,7 @@ public class testDiagramLooksRight
 
     /**
      * A caption that names a train has a faint edge, so it parts from a signal or a switch drawn under it; a placeholder
-     * dash has none, so an empty station gets no louder (D2 of the look's design pass; Adam, 2026-10-09: "Do D1 and D2").
+     * dash has none, so an empty station gets no louder (D2 of the look's design pass).
      *
      * MUTATION: drop the edge, or draw it on the dash too, and this fails.
      */
@@ -3045,15 +3033,12 @@ public class testDiagramLooksRight
     }
 
     /**
-     * The curve and switch tiles are the mirror images their shapes say they are, at both sizes (Adam, 2026-10-09:
-     * "make a pass on the curve and switch tile to make sure they are symmetrical.  It looks like there are some pixel
-     * artifacts, as they were made in raster programs"; "extend it to the others too, like the 4-way").
+     * The curve and switch tiles are the mirror images their shapes say they are, at both sizes.
      *
      * A curve between the south and east sides is its own mirror image across the diagonal; a left switch is a right
-     * switch turned over; a crossing is the same turned a quarter.  Drawn by hand, they were not: a set sensor on a curve
-     * differed from its own mirror image in 78 pixels at 30 and 230 at 60, the crossing switch from itself turned half
-     * round in 164 and 256.  They are drawn from their geometry now (`docs/tools/tile-icons.py`), and a pixel more than
-     * a shade out (12 of 255) on either side of a mirror is a pixel this counts.
+     * switch turned over; a crossing is the same turned a quarter.  The icons are drawn from their geometry
+     * (`docs/tools/tile-icons.py`), and a pixel more than a shade out (12 of 255) on either side of a mirror is a
+     * pixel this counts.
      *
      * MUTATION: put any one of the old icons back and this fails.
      *
@@ -3129,13 +3114,12 @@ public class testDiagramLooksRight
     }
 
     /**
-     * A pill's edge (D2) and a destination's ring are as thick on the right and the bottom as on the left and the top
-     * (Adam, 2026-10-09: "make sure the pill label padding issue on the right/lower-right is addressed").
+     * A pill's edge (D2) and a destination's ring are as thick on the right and the bottom as on the left and the top.
      *
-     * They were drawn as `drawRoundRect(x, y, w - 1, h - 1)` - the whole-pixel way of keeping a one-pixel outline inside
-     * a box, which with anti-aliasing puts the left and top of the outline half outside the fill and the right and
-     * bottom wholly inside it, a sliver of fill showing past them.  Painted at twice the size, where the pill's ends
-     * fall on whole pixels, the four sides of an even outline read the same from the outside in.
+     * `drawRoundRect(x, y, w - 1, h - 1)` is the whole-pixel way of keeping a one-pixel outline inside a box, and with
+     * anti-aliasing it puts the left and top of the outline half outside the fill and the right and bottom wholly
+     * inside it, a sliver of fill showing past them.  Painted at twice the size, where the pill's ends fall on whole
+     * pixels, the four sides of an even outline read the same from the outside in.
      *
      * MUTATION: draw the outline the old way and this fails.
      */
@@ -3203,8 +3187,7 @@ public class testDiagramLooksRight
     }
 
     /**
-     * A square's address is red letters with a white halo round them, and no box behind them (Adam, 2026-10-09: "Can we
-     * prettify address labels to have a white halo outline around the red text rather than a rectangle around them?").
+     * A square's address is red letters with a white halo round them, and no box behind them.
      *
      * Each address label on a page with Show Addresses on is painted alone onto black.  A box behind the text lights the
      * label's corners; a halo leaves them black and puts white only round the letters.
@@ -3320,9 +3303,8 @@ public class testDiagramLooksRight
     }
 
     /**
-     * A side trains may not arrive by is marked with the same grey chevron at the large size as at the small one (OB-326;
-     * Adam, 2026-10-09: "In 60px view, the trains can't arrive from this direction arrow's have an odd shape.  Make it
-     * consistent with the 30px, and gray.").
+     * A side trains may not arrive by is marked with the same grey chevron at the large size as at the small one
+     * (OB-326).
      *
      * The mark is painted on a 30-pixel square and on a 60-pixel one.  Every pixel it inks is grey - as much red as green
      * as blue - and the large one, shrunk to half, carries the ink the small one does: a chevron whose arms scale with
@@ -3416,15 +3398,13 @@ public class testDiagramLooksRight
 
     /**
      * A caption stood on end beside a station's vertical track clears that station's badge, and the badge of a station on
-     * the next square over (OB-327; Adam, 2026-10-09: "narrow/nudge so that pills rotated vertically don't touch adjacent
-     * stations or terminuses").
+     * the next square over (OB-327).
      *
      * The badge is MEASURED, painted as the diagram paints a station on vertical track, so this follows whatever size the
      * badge rule gives; the caption is built and placed as the grid builds and places one, at both tile sizes, empty and
      * with a train's name.  It stands to the right of its own track, so its near edge must clear its own badge and its
-     * far edge the same badge one square to the right, by a pixel - two at 60 until round 131, when Adam set the classic
-     * station's mark to 28 pixels there by eye (2026-10-11: *"same as before, just ever slightly smaller"*), which leaves
-     * one, the mark's own white rim between them.
+     * far edge the same badge one square to the right, by a pixel (at 60 the classic station's mark is 28 pixels across on
+     * vertical track, and its own white rim is the one pixel between them).
      *
      * MUTATION: place it by the flat caption's offset again, or give it the full line height, and this fails.
      */
@@ -3494,8 +3474,7 @@ public class testDiagramLooksRight
     }
 
     /**
-     * A caption stood on end is drawn at the size of one lying flat (FR-118; Adam, 2026-10-09: *"the small font on the
-     * vertical labels is really hard to read.  Add an FR to revert their size"*).  OB-327 drew it 15% smaller so that it
+     * A caption stood on end is drawn at the size of one lying flat (FR-118).  OB-327 drew it 15% smaller so that it
      * cleared the station badges either side; the new badges, no taller than the sensor's contact, leave room for it -
      * `testAPillOnEndClearsTheStationsBesideIt`.  Measured as painted: the letters across their line, flat and on end.
      *
