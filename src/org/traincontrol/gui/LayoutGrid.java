@@ -379,24 +379,20 @@ public class LayoutGrid
     /**
      * Whether the track on this square runs up and down rather than across (FR-028).
      *
-     * Asked of the geometry rather than of the tile's name or its rotation number: the same question
-     * the autonomy graph asks when it works out which ways a train may leave a square, so a caption
-     * and the path drawn through it cannot disagree about which way the rails go.
+     * Asked of the geometry rather than of the tile's name or its rotation number: the same question the autonomy
+     * graph asks when it works out which ways a train may leave a square, so a caption and the path drawn through it
+     * cannot disagree about which way the rails go.
      *
-     * False for a crossing or a curve, and false when the geometry cannot be had at all: those squares
-     * have no single direction for a caption to be placed against, and the answer for them is where
-     * captions have always been.
+     * False for a crossing or a curve, and false when the geometry cannot be had at all: those squares have no
+     * single direction for a caption to be placed against, and the answer for them is where captions have always
+     * been.
      *
-     * NOT false for a switch, which this sentence used to claim (reviewer, 2026-08-28). A switch in its
-     * straight position offers one route north to south, so it answers TRUE. Little reaches that today
-     * because `mayCarryACaption` refuses captions on switches and signals - but two identical switches
-     * saved in different states would be captioned differently, and the sentence was what a reader
-     * would have trusted.
+     * NOT false for a switch: in its straight position it offers one route north to south, so it answers TRUE.
+     * Little reaches that today because `mayCarryACaption` refuses captions on switches and signals, but two
+     * identical switches saved in different states would be captioned differently.
      *
-     * Public so the one thing worth checking about it can be checked - which way it answers for a
-     * straight rail and for the same rail turned a quarter - without building a grid and reading
-     * constraints off it. The same reason `stationCaption` above is public: where a caption goes is a
-     * question about geometry, and geometry can be asked without a window.
+     * Public so that its answer for a straight rail, and for the same rail turned a quarter, can be checked without
+     * building a grid, as `stationCaption` below can be: where a caption goes is a question about geometry.
      *
      * @param c what is drawn on the square
      * @return true when the rails run north to south and nothing else
@@ -441,20 +437,12 @@ public class LayoutGrid
     }
 
     /**
-     * How a station caption is spelled when a train is standing on it.
+     * How a station caption is spelled when a train is standing on it: a name cut to LAYOUT_STATION_MAX_LENGTH, then
+     * the facing arrow.
      *
-     * A name cut to LAYOUT_STATION_MAX_LENGTH, then the facing arrow.
-     *
-     * The brackets that used to be here were the caption's SHAPE, and the reason given for them was
-     * that "a caption is about the same width whatever is in it", so that an empty platform and an
-     * occupied one did not change the tile underneath. FR-028 gave the caption a shape of its own -
-     * a pill - and the width now belongs to that, so the brackets were two characters of a name that
-     * had already been cut to fit.
-     *
-     * Written down here because it was written down in the running diagram only, and the autonomy
-     * editor - added later, drawing the same placements - spelled it as a bare untruncated name. That
-     * label was as wide as the name, so it covered the tiles either side of it, and did not look like
-     * the diagram it was meant to match.
+     * No brackets (FR-028): the pill is the caption's shape and the width belongs to it.  Defined here so the running
+     * diagram and the autonomy editor, which draw the same placements, spell it alike; a bare untruncated name would
+     * be as wide as the name and cover the tiles either side.
      *
      * @param name the locomotive
      * @param arrow the facing arrow, already carrying its own leading space, or "" for none
@@ -466,11 +454,8 @@ public class LayoutGrid
 
         String cut = name.substring(0, Math.min(name.length(), LAYOUT_STATION_MAX_LENGTH)).trim();
 
-        // No brackets since FR-028: the pill draws the shape they were standing in for.
-        //
-        // Joined through StationCaption rather than with `+`, because which SIDE the arrow goes on
-        // depends on which way it points (Adam, 2026-08-27) and that rule has to be the same here and
-        // in the crowded caption.
+        // Joined through StationCaption rather than with `+`, because which SIDE the arrow goes on depends on which
+        // way it points (Adam), and that rule has to be the same here and in the crowded caption.
         return StationCaption.withArrow(cut, arrow);
     }
 
@@ -480,33 +465,22 @@ public class LayoutGrid
     /**
      * The spinner this grid put into the panel, and the panel it went into (VLD-C2).
      *
-     * Held so that `discard()` can take it out again.  The spinner is added by the grace timer and
-     * removed by the reveal, and discarding cancels the reveal - so a grid discarded between those two
-     * moments left its spinner mounted in a panel it no longer owns.
-     *
-     * That was survivable while the panel was emptied a statement later.  It stopped being survivable
-     * when the emptying moved to the end of the build: the outgoing spinner now sits beside the
-     * outgoing diagram for the whole rebuild, and `parent` is a FlowLayout, so it sits beside it
-     * rather than behind it.  `LayoutEditor.drawGrid`'s own comment names that artefact as the reason
-     * `discard()` exists - "a FlowLayout with an extra component in it pushes the tiles along" - so
-     * the fix belongs here rather than in a second removeAll.
+     * Held so that `discard()` can take it out again.  The spinner is added by the grace timer and removed by the
+     * reveal, and discarding cancels the reveal, so a grid discarded between those two moments would leave its
+     * spinner mounted in a panel it no longer owns.  The panel is emptied only at the end of the build, so an
+     * outgoing spinner would sit beside the outgoing diagram for the whole rebuild (`parent` is a FlowLayout, which
+     * pushes the tiles along).
      */
     private LoadingSpinner mountedSpinner;
 
     /**
      * Whether this grid's container ever reached the panel (VLD-C2).
      *
-     * The panel is emptied and the new container added at the very end of the build, so anything that
-     * throws before then leaves the panel holding the OLD container - visible, its timers stopped by
-     * `discard()`, its captions handed back.  `LayoutEditor.drawGrid` catches and logs, so the window
-     * stays up showing a diagram that looks live and is not.
-     *
-     * That is a worse failure than the one it replaced.  Emptying the panel first meant a throw left
-     * it obviously blank; this leaves it convincingly wrong, which is the fault `OB-128` was filed
-     * about - *"the grid stayed mounted, so anything that reached this tab showed the railway that
-     * had just been unloaded, looking entirely live"*.
-     *
-     * No throw is known on this path.  "Nothing known" is the same reason the reveal has a failsafe.
+     * The panel is emptied and the new container added at the very end of the build, so anything that throws before
+     * then leaves the panel holding the OLD container: visible, its timers stopped by `discard()`, its captions
+     * handed back, and looking live when it is not (the fault OB-128 was filed about).  `discard()` empties the
+     * panel when this is still false.  No throw is known on this path; "nothing known" is the same reason the
+     * reveal has a failsafe.
      */
     private boolean swapped = false;
 
@@ -515,27 +489,19 @@ public class LayoutGrid
     /**
      * Whether this grid has been replaced by another on the same panel.
      *
-     * A grid hides itself until its tiles have finished decoding, and shows a spinner in the meantime
-     * - which means two timers and a callback holding the PANEL, still due to fire after the grid
-     * that armed them has gone.  Rebuilding the diagram calls parent.removeAll(), so those three then
-     * act on somebody else's grid: the grace timer adds a spinner into the middle of it, and because
-     * the panel is a FlowLayout an extra component there pushes the tiles along and the last row comes
-     * out short.  A half-drawn row appearing after a resize is exactly that.
-     *
-     * So a replaced grid is told, and its three stragglers do nothing.
+     * A grid hides itself until its tiles have finished decoding and shows a spinner meanwhile, so two timers and a
+     * callback holding the PANEL can still be due after the grid that armed them has gone.  Rebuilding the diagram
+     * calls parent.removeAll(), so they would act on somebody else's grid: the grace timer would add a spinner into
+     * the middle of it, and because the panel is a FlowLayout the tiles are pushed along and the last row comes out
+     * short.  So a replaced grid is told, and its three stragglers do nothing.
      */
     private volatile boolean discarded = false;
 
     /**
-     * The panel this grid was built into.
+     * The panel this grid was built into, which `discard()` empties when the build never reached the swap (VLD-C2).
      *
-     * (DOC-B16: assigned once, in the constructor, and never read anywhere in this file.) This used to
-     * be how discard() found the labels to hand back - "the labels this grid owns" answered by asking
-     * which grid was built over this panel - which is the approach `registeredCaptions`'s own javadoc
-     * says was tried and was wrong: one panel serves every page, so forgetting by panel forgets every
-     * page's captions, not just the retired grid's. discard() now uses `registeredCaptions` instead.
-     * This field is a leftover of the design that lost; nothing should be reintroduced that reads it
-     * as if it still decided anything.
+     * It is not how `discard()` finds the labels to hand back.  That is `registeredCaptions`, because one panel
+     * serves every page, so forgetting by panel would forget every page's captions (DOC-B16).
      */
     private JPanel owner;
 
@@ -569,12 +535,9 @@ public class LayoutGrid
     /**
      * The caption labels THIS grid registered, so discarding it can hand back exactly those.
      *
-     * Not "everything registered against the panel", which was the first attempt and was wrong in a way
-     * the repaint code warns about three lines from where it is called: the main window has ONE panel
-     * for every page, so forgetting by panel forgot the captions of every page there is - and a page
-     * served from the grid cache registers nothing on the way back, so its captions were blank for
-     * good.  That is the defect "dropping labels wholesale on a repaint" describes, reached through a
-     * different door.
+     * Not everything registered against the panel: the main window has ONE panel for every page, so forgetting by
+     * panel would forget the captions of every page, and a page served from the grid cache registers nothing on the
+     * way back, so its captions would be blank for good.
      */
     private final java.util.List<javax.swing.JLabel> registeredCaptions = new java.util.ArrayList<>();
 
@@ -589,11 +552,10 @@ public class LayoutGrid
     public static final String CAPTIONS_REGISTERED = "TrainControl.captionsRegistered";
 
     /**
-     * Makes a diagram's window scroll half a square at a time on both axes, at the size it is drawn: each step of the
-     * mouse wheel and each press of a scroll bar's arrow moves the diagram half a square (MT-726; Adam, 2026-10-11: "make
-     * scrolling in the track diagram viewer faster on both axes", and on MT-727, where it moved a whole square: "Make it
-     * half a square at a time").  The panel a diagram sits in is not Scrollable, so its scroll bars stepped one pixel at
-     * a time - three a notch of the wheel.
+     * Makes a diagram's window scroll half a square at a time on both axes, at the size it is drawn (MT-726): each
+     * step of the mouse wheel and each press of a scroll bar's arrow moves the diagram half a square.  Adam: "make
+     * scrolling in the track diagram viewer faster on both axes", and "Make it half a square at a time".  The panel
+     * a diagram sits in is not Scrollable, so without this its scroll bars step one pixel at a time.
      *
      * @param pane the scroll pane the diagram is in
      * @param size the square's edge in pixels
@@ -627,27 +589,15 @@ public class LayoutGrid
     }
 
     /**
-     * The grid currently drawn into each panel, so that building a new one can retire the old one.
+     * The grid currently drawn into each panel, so that building a new one can retire the old one (DD-B3).
      *
-     * DD-B3: four places build a grid over an existing panel and three of them remembered to discard
-     * the outgoing one first. The fourth was found by `174178c5`, whose comment is the finding - "both
-     * other places that build a grid over an existing panel call this; this one did not" - and the
-     * symptom was a spinner dropped into the middle of the page the NEW grid had just drawn.
+     * Four places build a grid over an existing panel, and a rule remembered at three of four call sites is one that
+     * is missed at the fourth (a spinner dropped into the middle of the page the new grid had just drawn).  So the
+     * rule lives here: building a grid IS retiring the one it replaces.
      *
-     * Being remembered at three of four call sites is what a rule looks like just before it is missed
-     * at the fourth. So the rule lives here instead, where building a grid IS retiring the one it
-     * replaces and there is nothing left to remember.
-     *
-     * Weak keys: a panel that has gone away takes its entry with it, and nothing here keeps a window
-     * alive that the application has finished with.
-     */
-    /**
-     * Weakly on BOTH sides.
-     *
-     * A WeakHashMap only collects an entry when nothing else reaches the key, and a LayoutGrid reaches
-     * its own panel - it holds `container` and adds it to the parent. So a plain grid as the value kept
-     * its own key alive and no entry was ever collected: one page retained per editor, popup or export.
-     * Found in review, before it grew into anything.
+     * Weak keys, so a panel that has gone away takes its entry with it.  Weak values too: a WeakHashMap collects an
+     * entry only when nothing else reaches the key, and a LayoutGrid reaches its own panel, so a plain grid as the
+     * value would keep its key alive and no entry would ever be collected.
      */
     private static final java.util.Map<JPanel, java.lang.ref.WeakReference<LayoutGrid>> LIVE =
         java.util.Collections.synchronizedMap(
@@ -656,12 +606,10 @@ public class LayoutGrid
     /**
      * Retires whatever grid is registered against this panel, whether or not the caller ever got a reference
      * to it (FNL-C1).
-     *
      * **A constructor that throws part-way has already registered.**  `LIVE.put` is the first thing the
-     * constructor does, before a tile is built or a caption registered - so a build that fails later leaves a
-     * grid holding captions with no reference anywhere for a `finally` to discard.  The diagram export's
-     * bracket had exactly that hole: it discards `grid[0]`, and `grid[0]` is only assigned if the constructor
-     * returned.
+     * constructor does, so a build that fails later leaves a grid holding captions with no reference anywhere for a
+     * `finally` to discard.  The diagram export's bracket discards `grid[0]`, which is only assigned if the
+     * constructor returned.
      *
      * Idempotent, and safe on a panel that never had a grid.
      *
@@ -724,22 +672,16 @@ public class LayoutGrid
     {
         discarded = true;
 
-        // The caption labels this grid registered, handed back.
+        // The caption labels this grid registered, handed back.  addLayoutStation prunes LAZILY (a stale label goes
+        // only when a successor for the same square with the same owner is registered), so a CLEARED caption, or a
+        // square on a page renamed or deleted, would leave its label as a child of the retired container for good,
+        // keeping the whole previous grid reachable.  Here, because this is the one moment something knows a grid
+        // is finished with; it runs before the replacement registers anything, so it cannot take the new grid's
+        // labels with it.
         //
-        // addLayoutStation prunes LAZILY - a stale label goes only when a successor for the same square
-        // with the same owner is registered - so a caption that is CLEARED left its label in the map for
-        // good: nothing is registered for that square again, so no successor ever arrives.  The label is
-        // still a child of the retired container, which keeps the whole previous grid reachable, every
-        // tile and listener on that page with it.  The same held for every square on a page that was
-        // renamed or deleted, since the key carries the page name.
-        //
-        // Here because this is the one moment something knows a grid is finished with.  It runs before
-        // the replacement registers anything - LIVE.put and this call are the first thing the new
-        // constructor does - so it cannot take the new grid's labels with it.
-        // Its own labels, and only if this grid is really finished with - which the WINDOW decides,
-        // because it owns the page cache and this does not.  A grid whose container is cached is coming
-        // back: the cache re-attaches the container without building anything or registering anything,
-        // so labels dropped here would be gone for the session and that page's captions blank.
+        // Only if this grid is really finished with, which the WINDOW decides because it owns the page cache: a
+        // grid whose container is cached is coming back, and the cache re-attaches the container without
+        // registering anything, so labels dropped here would leave that page's captions blank.
         if (window != null) window.forgetLayoutStations(registeredCaptions, container);
 
         // Null only for a grid whose constructor did not reach the panel - it registers itself against
@@ -748,20 +690,16 @@ public class LayoutGrid
         // failure stays the failure it was rather than becoming an NPE in the recovery.
         if (container == null) return;
 
-        // Shown, whatever state the reveal had reached.  A grid is HIDDEN while its tiles decode and
-        // shown again by the reveal - which discarding cancels - so a grid discarded while it was
-        // still decoding stayed hidden for good.  It may already be in the page cache, and coming
-        // back to that page then showed an empty diagram until something rebuilt the cache.
+        // Shown, whatever state the reveal had reached.  A grid is HIDDEN while its tiles decode and shown again by
+        // the reveal, which discarding cancels, so a grid discarded mid-decode would stay hidden, and coming back
+        // to it from the page cache would show an empty diagram.
         container.setVisible(true);
 
         if (failsafe != null) failsafe.stop();
         if (grace != null) grace.stop();
 
-        // AND THE SPINNER THIS GRID MOUNTED, if the reveal never ran to take it out (VLD-C2).
-        //
-        // Stopping the timers stops a spinner being added; it does nothing about one already there.
-        // The panel is no longer emptied a statement after this call, so an outgoing spinner would
-        // otherwise stand beside the outgoing diagram for the length of a whole rebuild.
+        // AND THE SPINNER THIS GRID MOUNTED, if the reveal never ran to take it out (VLD-C2).  Stopping the timers
+        // stops a spinner being added, not one already there.
         if (mountedSpinner != null && spinnerPanel != null)
         {
             spinnerPanel.remove(mountedSpinner);
@@ -769,15 +707,11 @@ public class LayoutGrid
             mountedSpinner = null;
         }
 
-        // AND A PANEL LEFT HOLDING SOMETHING THIS GRID NEVER REPLACED (VLD-C2).
-        //
-        // Reached when a build threw before the swap: the panel still holds the container of the grid
-        // BEFORE that one, whose timers are stopped and whose captions are gone.  Emptying it here
-        // makes the failure look like a failure, which is what it was before the swap moved.
-        //
-        // At discard rather than in a catch, because there are three callers that build a grid over
-        // an existing panel and only one of them catches - and this is the one place all three go
-        // through on the way to the next attempt.
+        // AND A PANEL LEFT HOLDING SOMETHING THIS GRID NEVER REPLACED (VLD-C2).  When a build threw before the
+        // swap, the panel still holds the container of the grid BEFORE this one, its timers stopped and its captions
+        // gone; emptying it makes the failure look like one.  At discard rather than in a catch, because three
+        // callers build a grid over an existing panel and only one of them catches, and this is where all three go
+        // on the way to the next attempt.
         if (!swapped && owner != null)
         {
             owner.removeAll();
@@ -793,17 +727,14 @@ public class LayoutGrid
      *
      * Adam: "it is a z order issue.  The stations paint over the locomotives."
      *
-     * Swing paints children in one order and has no notion of layers, and the two things that want to
-     * be in front - the station caption and the locomotive standing under it - are on different
-     * components.  Whichever is given the front, one of Adam's two reports comes back: captions in
-     * front and the locomotive is painted over (OB-159); the tile in front and the NAME is painted
-     * out, because a tile is opaque (OB-117).
+     * Swing paints children in one order with no notion of layers, and the two things that want the front, the
+     * station caption and the locomotive standing under it, are on different components.  Captions in front paint
+     * over the locomotive (OB-159); the tile in front paints out the NAME, because a tile is opaque (OB-117).  So
+     * the trains are not a component's z-order at all: the children paint in their order, then every tile is asked
+     * for its train, which lands over both.
      *
-     * So the trains are not a component's z-order at all.  The children paint in the order they
-     * always did, and then every tile is asked for its train, which lands over both.
-     *
-     * Public and static so a test can build one out of plain components and look at what comes out -
-     * which is the whole of what this has to get right and needs no railway to establish.
+     * Public and static so a test can build one out of plain components and look at what comes out, with no
+     * railway.
      *
      * @return a panel that draws its tiles, then its captions, then what its curves' stations spill onto the squares
      *     beside them with those squares' arrows and the captions back over it, then its trains, then its addresses
@@ -817,11 +748,12 @@ public class LayoutGrid
             {
                 super.paintChildren(g);
 
-                // A STATION ON A CURVE SPILLS ONTO THE SQUARES BESIDE IT (Adam, 2026-10-10: "can we instead make the
-                // stations spill over onto adjacent tiles?  This would look much better than trying to reduce the size."),
-                // drawn here, once every square is drawn: its own square cuts it off at its edges, and a square painted
-                // after it would paint its white over what reached that far.  Under the captions, the trains and the
-                // addresses, as the icon on its own square is - the captions drawn again over it below (RSA61-C2).
+                // A STATION ON A CURVE SPILLS ONTO THE SQUARES BESIDE IT (Adam: "can we instead make the stations
+                // spill over onto adjacent tiles?  This would look much better than trying to reduce the size."),
+                // drawn here once every square is drawn: its own square cuts it off at its edges, and a square
+                // painted after it would paint its white over what reached that far.  Under the captions, the
+                // trains and the addresses, as the icon on its own square is; the captions are drawn again over it
+                // below (RSA61-C2).
                 java.util.Map<LayoutLabel, java.awt.Rectangle> spilt = new java.util.LinkedHashMap<>();
 
                 for (java.awt.Component child : getComponents())
@@ -832,15 +764,14 @@ public class LayoutGrid
                     }
                 }
 
-                // AND THE ARROWS OF THE SQUARES A SPILL REACHED, BACK OVER IT (Adam, 2026-10-10: "make sure that the
-                // optional ingress/egress arrows remain visible, especially on curves").  A square's arrows sit at the
-                // middle of its edges, and a curve's station reaches its neighbours at exactly those two places - so the
-                // spill drew over the arrows that say which way a train may enter or leave the square beside it.
+                // AND THE ARROWS OF THE SQUARES A SPILL REACHED, BACK OVER IT (Adam: "make sure that the optional
+                // ingress/egress arrows remain visible, especially on curves").  A square's arrows sit at the middle
+                // of its edges, exactly where a curve's station reaches its neighbours.
                 if (!spilt.isEmpty())
                 {
-                    // ONLY WHERE THE SPILL WAS DRAWN, and the captions over that again (RSA61-C2): everywhere else the
-                    // arrows and the captions are as the squares drew them - a caption in front of the tiles (OB-117) - and
-                    // drawn over the whole square, the arrows came out in front of a caption covering it.
+                    // ONLY WHERE THE SPILL WAS DRAWN, and the captions over that again (RSA61-C2): everywhere else
+                    // the arrows and captions are as the squares drew them, a caption in front of the tiles (OB-117),
+                    // and arrows drawn over the whole square would come out in front of a caption covering it.
                     java.awt.geom.Area spilled = new java.awt.geom.Area();
 
                     for (LayoutLabel label : spilt.keySet())
