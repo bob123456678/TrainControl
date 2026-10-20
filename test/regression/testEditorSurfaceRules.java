@@ -1157,16 +1157,10 @@ public class testEditorSurfaceRules
             }
         }
 
-        // THREE LITERALS AND ONE INDIRECTION since OB-126.
-        //
-        // The fourth refusal used to be a literal here. It now goes through
-        // `reasonLayoutIsNotEditable()`, because the Edit button has three causes of greyness and this
-        // door was naming the first one whatever was true - telling somebody with no layout loaded to
-        // close an editor they do not have.
-        //
-        // The count is kept as a shape check, at the shape it now is: it exists to notice a refusal
-        // being added or removed without this test being looked at, and lowering it without putting
-        // the indirection below in its place would have been the test quietly checking less.
+        // THREE LITERALS AND ONE INDIRECTION (OB-126).  The fourth refusal goes through
+        // `reasonLayoutIsNotEditable()`, because the Edit button has three causes of greyness and a literal named
+        // the first one whatever was true.  The count is kept as a shape check, at the shape it now is: it exists
+        // to notice a refusal being added or removed without this test being looked at.
         assertTrue(refusals.size() >= 3,
             "openLayoutEditor shows fewer messages than the refusals it had when this was written, "
             + "so what this test is matching against has changed shape: " + refusals);
@@ -1223,48 +1217,28 @@ public class testEditorSurfaceRules
     /**
      * The covered-track wash survives a highlight, stays out of the editors, and blocks what it draws.
      *
-     * Adam, 2026-09-07, four reports against the length work, and **every one of them had a green test
-     * over it**. That is the finding, and each has the same shape: the tests asserted the RULE and
-     * nothing asserted the DRAWING or the fixture had no switch in it.
+     * Each of these once had a green test over it, because the tests asserted the RULE and nothing asserted
+     * the DRAWING:
      *
-     * - **"Shaded tiles get overwritten if an accessory change highlights the same square."** The
-     *   restore put back `lastIcon`, the ungreyed icon. Nothing tested it because nothing tests icons:
-     *   `testATrainCoversTheTrackBehindIt` asserts which EDGES are covered, which was right the whole
-     *   time. The comment above the restore even argued for it.
-     * - **"EN57-203 is allowed to traverse a blocked/shaded switch."** Coverage is per edge for
-     *   routing and per square for drawing, and at a switch those differ. Every tail fixture in the
-     *   suite is a straight chain of two or three points with no switch and no lock edges, so no test
-     *   could tell the two apart - the same reason `VAL8-A1`'s one-way-rail gap went unseen.
-     * - **"Slightly lighter."** A colour nothing asserts.
-     * - **"Don't show shading in the autonomy or diagram editor."** The greying was written with no
-     *   `edit` guard at all, and no test builds a label in editor mode and looks at its icon.
+     * - **A highlight cannot take the mark away** (MT-309).  Both marks are PAINTED over the icon, never
+     *   tinted into it, so every repaint re-applies them; the icon-tinting helper stays deleted, because a
+     *   tinted icon is the version an accessory highlight overwrites.
+     * - **There is exactly ONE wash, and it is the painted one.**  "Train is here" also means "track is
+     *   blocked", shown as the same tile with more transparency, applied in `paintComponent` as the icon is
+     *   painted and before the train mark.
+     * - **Coverage is per edge for routing and per square for drawing**, and at a switch those differ, so a
+     *   path over track that shares metal with a covered edge is refused.  A fixture that is a straight chain
+     *   with no switch and no lock edges cannot tell the two apart (the same reason `VAL8-A1`'s one-way-rail
+     *   gap went unseen).
+     * - **Only the track diagram viewer draws it**, never the editors.
      *
-     * Source-level, because all four are about what a Swing component draws: an icon comparison needs
-     * a rendered label and a real image, and this file's convention is to assert the decision rather
-     * than the pixels.
+     * Source-level, because all of it is about what a Swing component draws: an icon comparison needs a
+     * rendered label and a real image, and this file's convention is to assert the decision rather than the
+     * pixels.
      *
-     * **Restated for MT-309**, where both marks became things PAINTED over the icon rather than a
-     * greyed copy of it. The first report is now impossible by construction and the rule is asked of
-     * the mechanism that carries it.
-     *
-     * **And restated again on 2026-09-09**, when Adam put the wash back beside the line: *"'train is
-     * here' should also mean 'track is blocked' - that is the whole point.  it's the same as greying
-     * out edges, just in a different way."*  This asked for the absence of a wash until then, which
-     * was the right rule for one day.  What it asks now is that there is exactly ONE wash and that it
-     * is the painted one: the icon-tinting helper stays deleted, because a tinted icon is the version
-     * a highlight can take away with it, which is the first report on this list.
-     *
-     * **And restated once more for MT-278 item 1**, which moved the refusal mark out of
-     * `paintCoveredMark` and into `paintComponent`: Adam asked for *"the same tile with more
-     * transparency"*, and a fade has to be applied to the icon as it is painted rather than drawn over
-     * it afterwards.  The rule is the one it always was - the mark is applied at PAINT time and never
-     * tinted into the image - and a composite satisfies it for the same reason a fill did: every
-     * repaint re-applies it, so a highlight cannot take it away.
-     *
-     * MUTATION: deleting the `paintCoveredMark` call fails the first; dropping the `edit` guard in
-     * `coveredRoads` fails the second; removing the lock sweep in isPathClear fails the fourth; fading
-     * without asking `isTrackBlocked`, or after the train mark rather than before it, fails the
-     * third.
+     * MUTATION: deleting the `paintCoveredMark` call, dropping the `edit` guard in `coveredRoads`, removing
+     * the lock sweep in isPathClear, fading without asking `isTrackBlocked`, or fading after the train mark
+     * rather than before it, each fails this.
      *
      * @throws Exception on a failure to read the source
      */
@@ -1274,18 +1248,10 @@ public class testEditorSurfaceRules
         // The program's code, so each mark is found wherever the tile's drawing goes (FR-136)
         String label = SourceOf.allCode();
 
-        // THE HIGHLIGHT CANNOT TAKE THE MARK WITH IT (MT-309 restates this rule).
-        //
-        // Adam, 2026-09-07: "shaded tiles get overwritten if an accessory change highlights the same
-        // square."  While the mark WAS the icon, the rule was "the restore must put the greyed copy
-        // back", and this asked for exactly that spelling.
-        //
-        // The mark is a line PAINTED over the icon now, so the hazard is gone by construction rather
-        // than by a branch: whatever icon the restore puts back, the next paint draws the train on
-        // top of it.  What has to hold instead is that the paint really does it - which is the two
-        // assertions below, and they are the same rule asked of the mechanism that now carries it.
-        // THE TIMER IS A FIELD SINCE UIX-B2, because a flash starting over it has to be able to end it - it was
-        // a local called `restore`, and this rule knew only that spelling.
+        // THE HIGHLIGHT CANNOT TAKE THE MARK WITH IT (MT-309).  The mark is a line PAINTED over the icon, so
+        // whatever icon the restore puts back, the next paint draws the train on top of it.  What has to hold
+        // is that the paint really does it, which is the two assertions below.
+        // THE TIMER IS A FIELD (UIX-B2), because a flash starting over it has to be able to end it.
         int timer = label.indexOf("new javax.swing.Timer(HIGHLIGHT_DURATION");
 
         assertTrue(timer >= 0,
@@ -1296,20 +1262,15 @@ public class testEditorSurfaceRules
             + " transient highlight has nothing left to overwrite because there was never anything"
             + " there (Adam, 2026-09-07 and MT-309)");
 
-        // AND THE WASH IS THE PAINTED ONE, DRAWN UNDER THE LINE (2026-09-09).
-        //
-        // Adam asked for both marks: "'train is here' should also mean 'track is blocked' ... it's the
-        // same as greying out edges, just in a different way."  Two things have to hold about the one
-        // that came back.
+        // AND THE WASH IS THE PAINTED ONE, DRAWN UNDER THE LINE.  Two things have to hold about it.
         //
         // It is FENCED, on the window's answer rather than on anything the tile works out: "can we
         // just grey out the tiles just like blocked edges WHILE AUTONOMY IS RUNNING".
         //
-        // **IN `paintComponent` SINCE MT-278 ITEM 1, and it had to move there.**  Adam: *"I want the
-        // shading to instead be the same tile with more transparency exactly like what happens when
-        // edges are locked in autonomy mode."*  A fade is applied to the icon AS IT IS PAINTED, which
-        // is a thing only the method that paints it can do - a fill drawn afterwards cannot make what
-        // is underneath more transparent.  It was a `fillRect` in `paintCoveredMark` until then.
+        // It is IN `paintComponent` (MT-278 ITEM 1).  Adam: *"I want the shading to instead be the same tile
+        // with more transparency exactly like what happens when edges are locked in autonomy mode."*  A fade
+        // is applied to the icon AS IT IS PAINTED, which only the method that paints it can do; a fill drawn
+        // afterwards cannot make what is underneath more transparent.
         String painting = SourceOf.withoutComments(memberOf("public final class LayoutLabel extends JLabel",
             "protected void paintComponent(java.awt.Graphics g)"));
 
@@ -1370,14 +1331,12 @@ public class testEditorSurfaceRules
      * - **the build** - the reduced edge’s entry side, the side the metal actually comes in by, which
      *   is what the builder splits the square on.
      *
-     * Adam met the difference twice: a paste prompt offering the wrong pair, and *"placing a train on
-     * bottommainc asks about arrival from the west or the north, whereas it should be east or west"*
-     * (OB-182).
+     * The geometry's answer is the wrong one for the doors: placing a train on bottommainc has to ask about
+     * arrival from east or west, not from the west or the north.
      *
-     * **The first attempt corrected the doors alone and had to be reverted the same day.** The labels
-     * became right, the walk went on matching the geometry, nothing matched on a curve, and the track
-     * behind a standing train was not blocked at all. A wrong label is cosmetic; a protection that
-     * silently does nothing is not.
+     * **The doors alone cannot be corrected.**  The labels would become right while the walk went on
+     * matching the geometry, nothing would match on a curve, and the track behind a standing train would
+     * not be blocked at all.  A wrong label is cosmetic; a protection that silently does nothing is not.
      *
      * So the build’s answer was given to the model: `AutonomyBuilder` writes `entrySide` into each
      * emitted edge, `parseAuto` reads it onto the runtime `Edge`, and `Layout.entrySideOf` is the one
@@ -1434,19 +1393,16 @@ public class testEditorSurfaceRules
     /**
      * One menu holds both ends of the train, headed, and the viewer gets it too.
      *
-     * Adam, 2026-09-07: *"the 'arrived from' menu option is only visible in the autonomy editor, not
-     * the track diagram viewer.  Move the setting into the '<locomotive> is facing' menu for both, with
-     * clear intro headings for each set of options."*
+     * Adam's rule: the "arrived from" setting lives in the '<locomotive> is facing' menu for both surfaces,
+     * *"with clear intro headings for each set of options."*
      *
-     * **Why no test caught it.** The two menus were both built and both correct; what was missing was
-     * one of them being ADDED on one surface. `testBothAutonomyMenusNameTheSquareTheSameWay` checks
-     * that the two menus agree about a square's name - it was written for exactly this class of fault
-     * and asks about naming rather than membership, so a menu absent from one surface is invisible to
-     * it. The viewer's route into these menus is `TrainControlUI.facingMenuFor`, which asks for the
-     * facing menu and nothing else, and nothing asserted what that menu contains.
+     * `testBothAutonomyMenusNameTheSquareTheSameWay` checks that the two menus agree about a square's
+     * name, not about membership, so a menu absent from one surface is invisible to it.  The viewer's
+     * route into these menus is `TrainControlUI.facingMenuFor`, which asks for the facing menu and
+     * nothing else, so this asserts what that menu contains.
      *
      * Folding the items in rather than nesting a submenu also removes the ability to drift: there is
-     * one menu now, so the two surfaces cannot offer different things.
+     * one menu, so the two surfaces cannot offer different things.
      *
      * MUTATION: adding the tail menu separately in the editor again fails the last assertion.
      *
@@ -1483,14 +1439,13 @@ public class testEditorSurfaceRules
     /**
      * The home picker offers the train in your hand AND the one on the platform.
      *
-     * Adam, 2026-09-07: *"in the home locomotive assignment box, 'use current' should be the train
-     * currently parked at the station.  Rename the current behavior to 'use active', and add a second
-     * button for 'use current' if a train is parked there."*
+     * Adam: *"in the home locomotive assignment box, 'use current' should be the train currently parked at
+     * the station.  Rename the current behavior to 'use active', and add a second button for 'use current'
+     * if a train is parked there."*
      *
-     * The old button said "use current" and meant the locomotive being DRIVEN - the one question the
-     * word "current" does not obviously answer in a dialog about a station. They are different trains
-     * and both are worth a shortcut: active is the one in your hand, current is the one standing in
-     * front of you, and giving that one its own home is the more common gesture.
+     * They are different trains and both are worth a shortcut: active is the locomotive being DRIVEN, the
+     * one in your hand; current is the one standing in front of you, and giving that one its own home is the
+     * more common gesture.
      *
      * **Each is offered only when its locomotive is in the list**, so neither button can pick something
      * the list itself would refuse - the property the single button already had and the one most easily
@@ -1546,16 +1501,9 @@ public class testEditorSurfaceRules
     /**
      * The station label and the facing menu answer from one place (OB-181).
      *
-     * Adam: **"moving a train in the track diagram editor from tunnelleftpark to bottommaina showed its
-     * direction as eastbound in its station label, but westbound in the right click menu."**
-     *
-     * They had different sources, and the split was deliberate - which is why it drifted rather than
-     * being caught. The label reads which COPY of a split square the train is standing on, because that
-     * IS its direction and it is true however the train got there; it was moved off the stored facing
-     * on purpose, because the stored value is written only when somebody places a train BY HAND, so the
-     * arrow appeared for a train you had placed and vanished for one autonomy had driven there. The
-     * MENU was left on the stored value. From that day the two agreed only while a hand-placed train
-     * had not moved.
+     * The label reads which COPY of a split square the train is standing on, because that IS its direction
+     * and it is true however the train got there.  The stored facing is written only when somebody places a
+     * train BY HAND, so a menu reading it would disagree with the label for every train that has moved since.
      *
      * `AutonomySession.facingOnTheRailway` is the one reading, and the stored facing is the fallback
      * rather than the source: an empty square has no train whose direction it could be.
@@ -1596,16 +1544,15 @@ public class testEditorSurfaceRules
     /**
      * A rebuild does not move the trains, and closing the editor writes the file (OB-183).
      *
-     * Adam reported it as a locomotive teleporting when a home was changed, and ruled on the fix:
-     * **"option 1"** - the railway wins - and **"on exit or editor load or editor close, save to the
-     * setup file. this is how it was in 2.8.x."**
+     * Adam's rulings: the railway wins (**"option 1"**), and **"on exit or editor load or editor close, save
+     * to the setup file. this is how it was in 2.8.x."**
      *
      * The rebuild regenerates every placement from the setup. That is safe only while the setup knows
      * where the trains are, which `openLayoutEditor` arranges by capturing on the way in - and which
-     * stops being true the moment anything moves a train afterwards. His ruling settles it: where a
-     * train IS is a fact, and where the file thinks it is is a record.
+     * stops being true the moment anything moves a train afterwards.  Where a train IS is a fact, and
+     * where the file thinks it is is a record.
      *
-     * **Placements only.** Folding the whole running layout back is what deleted a declined edit
+     * **Placements only.** Folding the whole running layout back would delete a declined edit
      * (ACC-B3), because the capture removes what the layout does not carry and the layout at that
      * moment predates the edit. Carrying the placements across carries nothing that was authored.
      *
@@ -1633,8 +1580,8 @@ public class testEditorSurfaceRules
             "the placements are read or restored on the wrong side of the reload, so the rebuild either"
             + " records what it just overwrote or is overwritten by it");
 
-        // AND THE THIRD SAVE MOMENT.  Exit and editor-open already called captureRunningLayout; close
-        // did not, so between a close and the next open the file said where the trains had started.
+        // AND THE THIRD SAVE MOMENT.  Exit, editor open and editor close all call captureRunningLayout, so
+        // the file always says where the trains are.
         String closed = codeOf("public void autonomyEditorClosed()");
 
         assertTrue(closed.contains("captureRunningLayout()"),
@@ -1649,14 +1596,11 @@ public class testEditorSurfaceRules
     /**
      * Moving an arrow redraws the arrows, not the whole diagram (OB-185).
      *
-     * Adam: **"changing any pathing arrow in the track autonomy editor makes the whole screen
-     * flicker."** There was one redraw door and it rebuilt the grid - every label destroyed and made
-     * again - which flashes even when the tile art is identical. A direction restriction changes no
-     * tile art at all: what moves is the annotation drawn over the tile.
-     *
-     * So the panel has a light door beside the heavy one. The running layout is still rebuilt, because
-     * a restriction is a real change to the graph and a diagram agreeing with a railway that has moved
-     * on is the failure the heavy door exists to prevent.
+     * A direction restriction changes no tile art at all: what moves is the annotation drawn over the
+     * tile.  So the panel has a light redraw door beside the heavy one, which rebuilds the grid (every label
+     * destroyed and made again) and flashes even when the art is identical.  The running layout is still
+     * rebuilt, because a restriction is a real change to the graph and a diagram agreeing with a railway
+     * that has moved on is the failure the heavy door exists to prevent.
      *
      * MUTATION: pointing the one-way branch back at `setupChanged()` fails this, and so does an
      * `annotationsChanged` that reaches for `onDiagramChanged`.
@@ -1853,10 +1797,9 @@ public class testEditorSurfaceRules
      * options: Station Names, Parked Locomotives, Home Locomotives, and None.  Station Names should be
      * default, with the setting remembered between open."*
      *
-     * The point is that the four options **exclude one another**, which is what finishes OB-174.
-     * Before this there was a master switch and two tick boxes that were not independent of it:
-     * ticking either while the text was off changed nothing anybody could see, so each box turned the
-     * master on for you. That coupling had to be remembered at every door that touched either box, and
+     * The point is that the four options **exclude one another**, which is what finishes OB-174.  A master
+     * switch and two tick boxes that were not independent of it (ticking either while the text was off
+     * changed nothing visible) need that coupling remembered at every door that touched either box, and
      * this codebase's way of forgetting such a thing is to fix one of a pair.
      *
      * Checked on the CONTROL rather than by opening a window: the four states, the default, and the
@@ -1948,20 +1891,16 @@ public class testEditorSurfaceRules
     }
 
     /**
-     * The tail can be set, and not un-set (Adam, 2026-09-07).
+     * The tail can be set, and not un-set.
      *
-     * Annotating the behaviour reference beside the paragraph on `arrivedFrom`: **"Given the other
-     * items above, when would we not know?  Clearing should not be possible, only setting."**
+     * Adam: **"Given the other items above, when would we not know?  Clearing should not be possible, only
+     * setting."**
      *
-     * The menu carried a "Not known" option, defended in a comment on the grounds that a mistaken
-     * answer would otherwise be permanent. It would not: the same menu lists every side the geometry
-     * offers, so correcting a wrong answer means picking the right one. What clearing actually offered
-     * was a way to turn the blocking off, which is not a fact about the railway.
-     *
-     * And the premise is now false. Autonomy writes the side on arrival; a hand placement works it out,
-     * asking where the answer is genuinely open. Every train that reaches a square has an answer, so
-     * "not known" describes only state saved before the feature existed - a transitional case, not a
-     * choice worth offering forever.
+     * A wrong answer is corrected by picking the right side, since the same menu lists every side the
+     * geometry offers; what clearing offered was a way to turn the blocking off, which is not a fact about
+     * the railway.  Autonomy writes the side on arrival and a hand placement works it out, so every train
+     * that reaches a square has an answer, and "not known" describes only state saved before the feature
+     * existed.
      *
      * The automatic clear stays: `Point.setLocomotive` drops the side when the occupant changes,
      * because the new train did not arrive the way the old one did. That is the railway retracting a
@@ -1989,22 +1928,18 @@ public class testEditorSurfaceRules
             "the menu clears the side on the running layout, so the setup and the railway now"
             + " disagree about whether clearing is possible at all");
 
-        // AND IT SHOWS WHAT IS RECORDED, even when the geometry does not offer it (RGD-C4).
-        //
-        // The sibling menu thirty lines below learned this as OB-177 and this half was not swept. The
-        // radios are a ButtonGroup ticked by equality, so a recorded side missing from the list ticks
-        // NOTHING: the section reads as "no tail recorded" while the side it does not show goes on
-        // steering the tail walk. A track edit that re-plumbs a square leaves exactly that state.
+        // AND IT SHOWS WHAT IS RECORDED, even when the geometry does not offer it (RGD-C4; the sibling menu
+        // has the same rule as OB-177).  The radios are a ButtonGroup ticked by equality, so a recorded side
+        // missing from the list ticks NOTHING: the section reads as "no tail recorded" while the side it does
+        // not show goes on steering the tail walk.  A track edit that re-plumbs a square leaves exactly that
+        // state.
         assertTrue(menu.contains("recorded != null && !sides.contains(recorded) ? recorded : null"),
             "the arrived-from menu drops a recorded side the geometry does not offer, so it opens with"
             + " every choice blank for a square that HAS a tail recorded - a value still steering the"
             + " tail walk, unseen (RGD-C4)");
 
-        // SHOWN, NOT OFFERED.  The first attempt copied the facing menu's answer - add it to the list
-        // - and Adam met it as a regression: "75 407 DB's menu now lets you select arrival from the
-        // west at BottomMainPost, which makes no sense". The tail walk matches stored sides against the
-        // geometry, so a side the geometry does not have can never match: offering it is offering a
-        // choice guaranteed to do nothing.
+        // SHOWN, NOT OFFERED.  The tail walk matches stored sides against the geometry, so a side the geometry
+        // does not have can never match: offering it is offering a choice guaranteed to do nothing.
         assertFalse(menu.contains("sides.add(recorded)"),
             "a recorded side the track does not have is offered as a choice again. It can never match"
             + " the tail walk, so setting it blocks nothing - it is a statement about the square, and"
@@ -2023,11 +1958,10 @@ public class testEditorSurfaceRules
      * or older `autonomy.json` can hold a BARE STRING, and `getLocomotiveNameAt` has always handled it:
      * *"drawing nothing on an occupied platform is the one wrong answer a label must not give."*
      *
-     * `nameOfPlacedLocomotive` was written later for the occupant-change guards and answered null for
-     * that shape. Null is "nobody here", so re-placing a train on the square it already occupies - which
-     * every door does when it writes a placement back unchanged - read as a CHANGE of occupant and threw
-     * away an arrival side that was still true. That is the exact case the guard exists to prevent, and
-     * the cost is tail blocking quietly off for that square until the next arrival.
+     * `nameOfPlacedLocomotive` (the occupant-change guards) has to read that shape too: null is "nobody
+     * here", so re-placing a train on the square it already occupies - which every door does when it
+     * writes a placement back unchanged - would read as a CHANGE of occupant and throw away an arrival
+     * side that was still true, leaving tail blocking quietly off for that square until the next arrival.
      *
      * MUTATION: restoring the `instanceof JSONObject` early return fails this.
      *
@@ -2057,17 +1991,15 @@ public class testEditorSurfaceRules
     /**
      * Dragging a locomotive puts its name on the clipboard, and cannot fail because of it (C26).
      *
-     * A review filed the clipboard write as an unwanted side effect of starting a drag. Adam,
-     * 2026-09-07: **"c26 is deliberate, that is the dragging functionality you implemented on the
-     * keyboard."** So it is pinned here rather than removed - the next reviewer will see the same
-     * unexplained write and reach the same wrong conclusion unless something says otherwise.
+     * A review filed the clipboard write as an unwanted side effect of starting a drag.  It is deliberate
+     * (Adam: **"c26 is deliberate, that is the dragging functionality you implemented on the keyboard."**),
+     * so it is pinned here rather than removed.
      *
      * The guard round it is not decoration. Windows hands the system clipboard to one process at a
      * time and `setContents` throws `IllegalStateException` while another application holds it, which
-     * is ordinary and transient. Uncaught, that came out of the mouse handler **after** a cut had
+     * is ordinary and transient. Uncaught, it would come out of the mouse handler **after** a cut had
      * emptied the source key and **before** the paste could put the locomotive down: a moment of bad
-     * luck deleted a mapping. Four of the five tests in `ui.testTheKeyboardDrag` failed on it the
-     * first time they ran, and not one of them is about the clipboard.
+     * luck would delete a mapping.
      *
      * The behaviour of the gesture itself is in that class. This asserts only the two things that are
      * textual: that the write is still there, and that it still cannot take the drag down with it.
@@ -2107,10 +2039,6 @@ public class testEditorSurfaceRules
      * the worker finishes. There is no finally: a RuntimeException out of syncWithCS2 kills the worker,
      * and **both menus stay greyed for the rest of the session** with nothing on screen saying why. The
      * only route back is to restart the application.
-     *
-     * The off-EDT half of this finding was already fixed - both setEnabled calls moved inside
-     * singlePass, commented - and the finally half was left. Half a finding fixed is how a row gets
-     * marked done while the part that strands the user survives.
      *
      * Source-level because the fault is the absence of a catch around a call that only throws when the
      * Central Station misbehaves, which a test cannot arrange.
@@ -2192,21 +2120,17 @@ public class testEditorSurfaceRules
             + " a permanent switch nobody created (C13)");
     }
     /**
-     * A dismissed arrival-side question leaves the railway exactly as it was (Adam, 2026-09-07).
+     * A dismissed arrival-side question leaves the railway exactly as it was.
      *
      * **"Simply don't place the train, leave it on the clipboard as if no paste had been done."**
      *
-     * The question was asked from `rememberPlacement`, which runs AFTER the drop: by the time the
-     * operator saw it the train had already been lifted off its old square and put down on the new
-     * one, the clipboard had been emptied, and there was nothing left for a dismissal to decline. So
-     * closing the dialog placed the train anyway and merely declined to record which way round it was
-     * - the worst of the three possible outcomes, because the railway had moved and the record of it
-     * had not.
-     *
-     * Which makes this an ORDERING rule, not a value one: the answer has to be in hand before
-     * `moveLocomotive` runs, or no answer can undo anything. Source-level for that reason - the fault
-     * is the order of two statements inside a mouse handler, and a test that drives the model sees
-     * both of them already done.
+     * This is an ORDERING rule, not a value one: the answer has to be in hand before `moveLocomotive`
+     * runs, or no answer can undo anything.  Asked after the drop (as `rememberPlacement` does), the
+     * train has already been lifted off its old square and the clipboard emptied, so closing the dialog
+     * would place the train anyway and merely decline to record which way round it was, the worst
+     * outcome because the railway moved and the record of it did not.  Source-level for that reason:
+     * the fault is the order of two statements inside a mouse handler, and a test that drives the model
+     * sees both of them already done.
      *
      * The null is also read in two different ways and the guard has to tell them apart. On a square
      * trains may turn at the question is asked, so null means dismissed; everywhere else the answer is
@@ -2248,9 +2172,8 @@ public class testEditorSurfaceRules
             "nothing between the question and the move can abandon the paste, so the answer is asked"
             + " early and then ignored - the train lands either way");
 
-        // AND IT ASKS THE PROMPT'S OWN QUESTION (IND9-B5).  `mayTurnHere` alone was not enough:
-        // forPlacement answers null in three situations and only one of them is a dismissal, so a
-        // square with no compass-resolvable side was refused every paste, silently and permanently.
+        // AND IT ASKS THE PROMPT'S OWN QUESTION (IND9-B5).  `mayTurnHere` alone is not enough: forPlacement
+        // answers null in three situations and only one of them is a dismissal.
         assertTrue(between.contains("ArrivalSidePrompt.wouldAsk("),
             "the abandon guard decides for itself whether a question was asked, instead of asking the"
             + " prompt. forPlacement returns null when it declined to ask as well as when it was"
@@ -2266,14 +2189,12 @@ public class testEditorSurfaceRules
     /**
      * Both autonomy menus head themselves with a name, and it is the same name.
      *
-     * OB-112. Adam, right-clicking LowerBack on the diagram with a setup loaded: "nothing at the top
-     * there." The editor\u2019s menu had opened with a bold, disabled name since it was built; the
-     * diagram\u2019s - which is the one people actually reach for - had none.
+     * OB-112. The diagram\u2019s menu, the one people actually reach for, opens with the same bold,
+     * disabled name the editor\u2019s does.
      *
-     * The fix that would have been wrong is three lines of naming copied into the second menu, which
-     * is this file\u2019s whole subject: one decision written twice drifts, and here the drift would be
-     * two menus calling one square different things while both are on screen. So the rule sits on the
-     * session and this asserts that neither menu has its own.
+     * The naming is not copied into the second menu, which is this file\u2019s whole subject: one decision
+     * written twice drifts, and here the drift would be two menus calling one square different things while
+     * both are on screen. So the rule sits on the session and this asserts that neither menu has its own.
      *
      * The heading is also checked to go on AFTER the emptiness test. A heading is not an item, and a
      * menu with nothing to offer must stay unshown rather than become a grey box with a station name
@@ -2361,10 +2282,9 @@ public class testEditorSurfaceRules
      * reach the finally that clears isExecuting, and throw its turnout whenever somebody eventually
      * happened past and pressed OK, against whatever was on the path by then.
      *
-     * **A test-coverage review found that deleting the `!auto` term fails nothing in 1089 tests.**
      * The model-side tests reach this code with `getGUI()` null, so the confirm branch is unreachable
-     * from them and passes for both values of `auto`. The rule with the worst consequence had no
-     * automated cover at all.
+     * from them and passes for both values of `auto`; the rule with the worst consequence has no other
+     * automated cover.
      *
      * So this reads the source, in the way this file already does for rules that are textual. It
      * checks three things, because there are three ways to lose it: the ask must be gated on `!auto`,
@@ -2383,14 +2303,11 @@ public class testEditorSurfaceRules
 
         assertTrue(asks > 0, "nothing in MarklinRoute asks the mid-route question any more");
 
-        // FOLLOW THE GUARD, NOT THE DISTANCE (DIR-C7 sweep, 2026-09-06).
+        // FOLLOW THE GUARD, NOT THE DISTANCE (DIR-C7 sweep).  A check of the 220 characters before the call
+        // reports on where the code is written rather than on what it says: `DIR-A3` gave the gate a name,
+        // `askable`, and moved it out of the window while it stayed exactly as strong.
         //
-        // This read the 220 characters before the call and looked for `!auto` in them.  That held
-        // while the gate was written inline; `DIR-A3` gave it a name - `askable` - and the gate moved
-        // out of the window while remaining exactly as strong.  A proximity check reports on where the
-        // code is written rather than on what it says.
-        //
-        // The guard is now followed by name: whatever `askable` is defined as has to contain `!auto`,
+        // The guard is followed by name: whatever `askable` is defined as has to contain `!auto`,
         // and the call has to be behind it.
         String around = route.contains("askable")
             ? route.substring(route.indexOf("askable ="),
@@ -2428,15 +2345,12 @@ public class testEditorSurfaceRules
      *   - a HEADING is followed by its own divider always, because title() writes the pair together,
      *     so for a heading the question has to be asked one component further along.
      *
-     * Those shared one variable for a day. Widening it for the heading - which is what OB-112 needed -
-     * quietly narrowed it for the divider, and two dividers in a row stopped being collapsed unless a
-     * THIRD followed. That is the empty band between two lines that OB-054 was filed for, put back by
-     * the fix for something else, in the same method, on the same day I wrote a commit message about
-     * rules being right where they are written and wrong one level out.
+     * Widening the heading's condition (which OB-112 needed) must not narrow the divider's: two dividers in
+     * a row have to collapse even when no THIRD follows, or the empty band between two lines that OB-054
+     * was filed for comes back.
      *
-     * **A reviewer then found that mutating the divider half back left the whole suite green**: no
-     * fixture menu produces two adjacent dividers, so the rule that OB-054 exists for was correct and
-     * completely uncovered. Which is how it came back the first time.
+     * **The divider half needs cases of its own**: no fixture menu produces two adjacent dividers, so the
+     * rule OB-054 exists for was correct and completely uncovered.
      *
      * MUTATION: giving the two rules one shared condition again fails the first case here.
      */
