@@ -508,35 +508,26 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                             }
                         }
 
-                        // MORE DESTINATIONS (FR-058), which is where everything valid but not
-                        // automatic lives: a reversing point, and a square marked as not an automatic
-                        // destination.  Each is somewhere the operator may legitimately send a train
-                        // by hand - "filtering at selection, never refusing at execution" - and
-                        // neither is something autonomy would pick on its own.
+                        // More Destinations (FR-058) holds everything valid but not automatic: a reversing point, and a
+                        // square marked as not an automatic destination.  Each is somewhere the operator may
+                        // legitimately send a train by hand ("filtering at selection, never refusing at execution"), and
+                        // neither is something autonomy would pick on its own.  A terminus is not here, because a
+                        // non-reversible train may back into one and it belongs in the base list; nor is an excluded
+                        // square, which is off the menu entirely rather than demoted.
                         //
-                        // NOT a terminus, which an earlier version of this comment promised and which
-                        // Adam ruled out on 2026-09-04: a non-reversible train may back into one, so
-                        // it belongs in the base list.  And not an excluded square, which is off the
-                        // menu entirely rather than demoted.
-                        //
-                        // Uncapped.  The cap on the top level is about competing with the rest of the
-                        // menu for the first screenful, which a submenu does not do - but a submenu
-                        // does compete with the height of the screen, and Swing gives an over-tall
-                        // JMenu no scroller unless one is installed (VD11-C9).
-                        //
-                        // Measured rather than argued: on the author's own configuration 20 of 71
-                        // squares are marked as not automatic destinations and 5 more can reverse, and
-                        // `withoutGoingNowhere` reduces to distinct destinations - so the ceiling here
-                        // is about twenty-five items, which fits.  If a railway ever exceeds a screen
-                        // this wants a scroller rather than a second ellipsis.
+                        // Uncapped (VD11-C9).  The cap on the top level is about competing with the rest of the menu for
+                        // the first screenful, which a submenu does not do; a submenu competes with the height of the
+                        // screen, and Swing gives an over-tall JMenu no scroller unless one is installed.  On the
+                        // author's own configuration 20 of 71 squares are marked as not automatic destinations and 5 more
+                        // can reverse, and `withoutGoingNowhere` reduces to distinct destinations, so the ceiling is
+                        // about twenty-five items, which fits.  A railway that exceeded a screen would want a scroller
+                        // rather than a second ellipsis.
                         if (!otherPaths.isEmpty())
                         {
-                            // The heading, when the top-level list did not already add it (VD11-C3).
-                            //
-                            // Both the separator and the locomotive's name are gated on the TOP-LEVEL
-                            // list being non-empty, and this sits outside that gate - so a train with
-                            // nothing automatic to offer got a bare "More Destinations" hanging off
-                            // the previous item with no separator and no name to say whose it was.
+                            // The heading, when the top-level list did not already add it (VD11-C3): both the separator
+                            // and the locomotive's name are gated on the TOP-LEVEL list being non-empty, and this sits
+                            // outside that gate, so a train with nothing automatic to offer would otherwise get a bare
+                            // "More Destinations" with no separator and no name to say whose it was.
                             if (paths.isEmpty())
                             {
                                 addSeparator();
@@ -561,83 +552,55 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
                         }
 
-                        // AND THERE IS NO SECOND WAY OUT, which is what this used to be.
-                        //
-                        // `ACC-C10` put an escape here for the case where BOTH lists are empty - every
-                        // destination filtered away, and no route to the tab that would explain why -
-                        // and `OPV-C4` and `FR3-C5` then corrected where it sat and what heading it
-                        // got.  Adam, 2026-09-12: *"I still see ... for 74 407 DB at Tunnel, even
-                        // though it has no valid paths"*.
-                        //
-                        // **His rule is the whole rule.**  The item means "there were more ordinary
-                        // destinations than fitted", and a train with none is not that - it is a train
-                        // with nowhere to go, which the menu says by having nothing under the
-                        // locomotive's name.  Keeping an escape here was my judgement and not his
-                        // instruction, and it left the reported symptom in place for the very train
-                        // that has the least to show.
-                        //
-                        // **Nothing is lost that is not said better elsewhere.**  "No available paths"
-                        // in the locomotive list names every station and the reason each was refused,
-                        // and the setup editor's *Why not Moving?* answers the same question on the
-                        // diagram.  A bare "..." said none of that.
-                        //
-                        // So the item is decided in exactly ONE place now - the loop above, through
-                        // `theListWasCutShort` - and `regression.testTheDestinationDoorsAgree` asserts
-                        // there is only one.
+                        // There is no second way out.  The "..." means "there were more ordinary destinations than
+                        // fitted" (the owner's rule; ACC-C10, OPV-C4, FR3-C5), and a train with none is not
+                        // that: it is a train with nowhere to go, which the menu says by having nothing under the
+                        // locomotive's name.  Nothing is lost that is not said better elsewhere: "No available paths" in
+                        // the locomotive list names every station and the reason each was refused, and the setup
+                        // editor's *Why not Moving?* answers the same question on the diagram.  So the item is decided in
+                        // exactly ONE place, the loop above through `theListWasCutShort`, and
+                        // `regression.testTheDestinationDoorsAgree` asserts there is only one.
                     }
 
                     addSeparator();
 
                     // Station name label
-                    // The STATION's name, not the copy's.
-                    //
-                    // A square is several Points and they are named apart - "BottomMainA
-                    // (eastbound)" - so that a running log can say which one a train is on.  That is
-                    // a name for the model's benefit: a user pointing at a platform did not create
-                    // an eastbound one and a westbound one, they created a station, and being shown
-                    // the internals of how it is modelled invites them to wonder which is the real
-                    // one.
+                    // The STATION's name, not the copy's.  A square is several Points named apart ("BottomMainA
+                    // (eastbound)") so that a running log can say which one a train is on, but that is a name for the
+                    // model's benefit: a user pointing at a platform created a station, not an eastbound one and a
+                    // westbound one.
                     menuItem = new JMenuItem(stationName(current));
                     menuItem.setEnabled(false);
                     add(menuItem);
 
                     // Place a different locomotive at this station, FACING a chosen way.
                     //
-                    // A square is several Points - one per side a train can arrive by - and they are
-                    // not interchangeable: each copy can only leave the way its own facing allows.  So
-                    // "put it here" is not a complete instruction, and this used to answer it with
-                    // whichever copy came first, which put the train on a Point whose only moves are
-                    // the ones the split exists to forbid.  Autonomy could see the locomotive and
-                    // could not route it anywhere.
-                    // Offered only on a square that is a destination, as it was.  Which copy of it the
-                    // train stands on is its heading's (below) - a copy trains may not arrive at
-                    // included (OB-284), where Why not Moving? says so.
+                    // A square is several Points, one per side a train can arrive by, and they are not interchangeable:
+                    // each copy can only leave the way its own facing allows, so "put it here" must pick the copy.  A
+                    // copy chosen carelessly is a Point whose only moves are the ones the split exists to forbid, and
+                    // autonomy could see the locomotive and not route it anywhere.
+                    // Offered only on a square that is a destination.  Which copy of it the train stands on is its
+                    // heading's (below), including a copy trains may not arrive at (OB-284), where Why not Moving? says so.
                     if (ui.getActiveLoc() != null
                         && current.isDestination()
                         && !ui.aRunHoldsTheSetup()
                         && !ui.getActiveLoc().equals(locomotive))
                     {
-                        // Chosen for them, from the ways a train could actually leave.
-                        //
-                        // Asking was tried and is the wrong question here: on the diagram a user
-                        // is pointing at a platform, not at one of the several Points that platform
-                        // became, and the sides mean nothing at that moment.  The copy is the one
-                        // facing the way the train already faces, wherever a copy facing that way has
-                        // a way out (OB-284), and otherwise the first this menu offers - never a draw (Adam,
-                        // 2026-09-24, OB-296: "Yes, keep the train's heading.").  Turning it is the
-                        // facing item below.
+                        // Chosen for them, from the ways a train could actually leave.  Asking is the wrong question
+                        // here: on the diagram a user is pointing at a platform, not at one of the several Points it
+                        // became.  The copy is the one facing the way the train already faces, wherever a copy facing
+                        // that way has a way out (OB-284), and otherwise the first this menu offers, never a draw
+                        // (OB-296: "Yes, keep the train's heading.").  Turning it is the facing item below.
                         //
                         // And where NO copy can leave, offered all the same, as the editor's Place is (OB-350):
                         // `placeSomewhereLegal` stands the train where the build would and records no facing.
                         // The setup check still warns about the square.
                         final java.util.List<String> usable = placeableCopies();
 
-                        // OFFERED ON THE ACTION'S OWN QUESTION (ADU2-C2): every copy the train could leave by,
-                        // which is what its heading is kept over - one trains may not arrive at included.
-                        // `placeableCopies` never offers one of those, so where every copy with a way out was
-                        // barred the item was greyed with "no way out" over a copy the action would have
-                        // stood the train on.  Its order still decides the copy where no heading holds, and
-                        // any other copy a train could leave by comes after it.
+                        // OFFERED ON THE ACTION'S OWN QUESTION (ADU2-C2): every copy the train could leave by, which is
+                        // what its heading is kept over, including one trains may not arrive at (`placeableCopies` never
+                        // offers one of those).  Its order still decides the copy where no heading holds, and any other
+                        // copy a train could leave by comes after it.
                         final java.util.Map<String, org.traincontrol.automationui.TilePorts.Side> departable =
                             session == null || !ui.getModel().hasAutoLayout()
                                 ? new java.util.LinkedHashMap<String, org.traincontrol.automationui.TilePorts.Side>()
@@ -661,38 +624,24 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
                     // Turn the standing train round.
                     //
-                    // Placing keeps the heading the train had, which may not be the one it has on the
-                    // railway now, and a locomotive put down by hand is pointing whichever way the setup
-                    // last recorded - so there has to be a way to say
-                    // "no, it faces the other way" without taking it off and putting it back.
-                    //
-                    // Only the copies it could actually leave from, for the same reason placing is:
-                    // turning a train to face a wall is not an orientation, it is a train that cannot
-                    // move.
+                    // Placing keeps the heading the train had, which may not be the one it has on the railway now, and a
+                    // locomotive put down by hand points whichever way the setup last recorded, so there has to be a way
+                    // to say "no, it faces the other way" without taking it off and putting it back.  Only the copies it
+                    // could actually leave from, as for placing: a train turned to face a wall cannot move.
                     // Every setup item here is left out while a route runs as well (`aRunHoldsTheSetup`).
                     if (current.getCurrentLocomotive() != null && !ui.aRunHoldsTheSetup())
                     {
-                        // A second "Facing" menu used to be built here (MT-086).
-                        //
-                        // Two facing menus on one right-click, "Facing" and "<name> Is Facing...",
-                        // which is one more than the question has answers.  The one further down is
-                        // kept: it names the train it is about, it reads as a choice rather than a
-                        // list of places, and it is the same menu the setup editor offers, so the two
-                        // surfaces cannot drift into disagreeing about the same square.
-                        //
-                        // What this one did that the other does not is choose which COPY of a split
-                        // square the train stands on. That is the same decision arrived at from the
-                        // other end - a copy IS a side to arrive from - so setting the facing reaches
-                        // it, which is why removing this loses nothing a user could not still say.
+                        // There is one "Facing" menu, the one further down (MT-086): it names the train it is about, reads
+                        // as a choice rather than a list of places, and is the same menu the setup editor offers, so the
+                        // two surfaces cannot disagree about the same square.  Choosing which COPY of a split square the
+                        // train stands on is the same decision as the facing, since a copy IS a side to arrive from.
 
                         menuItem = new JMenuItem(
                             I18n.f("layout.ui.menuRemoveLocomotive", current.getCurrentLocomotive().getName())
                         );
-                        // A METHOD RATHER THAN A LAMBDA HERE, so that this constructor asks the
-                        // railway nothing at all (D3-A1).  `moveLocomotive` is `synchronized` on the
-                        // `Layout`; written out here it is one more line of this constructor that
-                        // reaches the monitor, and the guard would have to allow the constructor as a
-                        // whole - which would then also allow the next path search somebody adds to it.
+                        // A METHOD RATHER THAN A LAMBDA HERE, so that this constructor asks the railway nothing at all
+                        // (D3-A1): `moveLocomotive` is `synchronized` on the `Layout`, and the guard would otherwise have
+                        // to allow the constructor as a whole, which would also allow the next path search somebody adds.
                         menuItem.addActionListener(event -> removeLocomotiveHere(current));
 
                         add(menuItem); 
@@ -704,10 +653,9 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                         menuItem = new JMenuItem(GraphLocAssign.menuLabelFor(current));
                         menuItem.addActionListener(event ->
                         {
-                            // NOT WHILE TRAINS RUN (Adam, 2026-09-28: *"There should be no setup edit possible during
-                            // a run"*; RLV12-C3).  Offered only at rest, and clicked after a run began it wrote the
-                            // placement, the facing and the tail into the setup and saved it.  Asked at the click and
-                            // again at OK.
+                            // NOT WHILE TRAINS RUN (RLV12-C3).  Offered only at rest, and a click after a run began would
+                            // write the placement, the facing and the tail into the setup and save it.  Asked at the
+                            // click and again at OK.
                             if (refusedWhileRunning()) return;
 
                             // THE SETUP GOES IN WITH IT (REV9-B2): the dialog offers the arrival
@@ -734,15 +682,9 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                             {
                                 if (refusedWhileRunning()) return;
 
-                                // AND INTO THE SETUP, which this door never did (REG8-B2).
-                                //
-                                // It committed to the running layout and repainted, so an assignment
-                                // made from the diagram was gone the next time a configuration was
-                                // loaded - with nothing to say so.  Its twin inside Autonomy Setup had
-                                // been taught this three times over; this one was never swept.
-                                //
-                                // Through the shared door rather than a copy of the twin’s lines: a
-                                // second copy is what put these two a week apart.
+                                // AND INTO THE SETUP (REG8-B2): an assignment made from the diagram must survive the next
+                                // load of a configuration.  Through the shared door rather than a copy of the lines inside
+                                // Autonomy Setup, so the two cannot drift apart.
                                 GraphLocAssign.commitAndRecord(edit);
 
                                 ui.updateVisiblePoints();
@@ -753,10 +695,9 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                         add(menuItem);
                     }
 
-                    // WHETHER IT RUNS (FR-117; Adam, 2026-10-09: "add an 'active' checkbox to the right click autonomy menu
-                    // (also accessible via track diagram).  Show it if there is a locomotive at that station").  Only at
-                    // rest, as he answered when asked; while trains run the Auto tab's pause button says the same.  Read off
-                    // the train, which is what autonomy and Return Home read.
+                    // WHETHER IT RUNS (FR-117): an "active" checkbox, shown if there is a locomotive at that station.  Only
+                    // at rest; while trains run the Auto tab's pause button says the same.  Read off the train, which is
+                    // what autonomy and Return Home read.
                     if (locomotive != null && !ui.aRunHoldsTheSetup())
                     {
                         final Locomotive standing = locomotive;
@@ -772,16 +713,10 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                         add(active);
                     }
 
-                    // Which locomotive belongs here used to be offered from this menu AND from inside
-                    // Autonomy Setup, so a square asked the same question twice under two labels.  It
-                    // belongs with the rest of the setup, and that is the copy that was kept.
-                    //
-                    // What went with it was the care over WHICH Point to ask: a home belongs to a
-                    // platform and the build writes it onto every copy, but the copy that speaks for a
-                    // square is the occupied one, and a train can stand on a copy that is not itself a
-                    // destination.  The setup menu works from the SQUARE rather than from a Point, so
-                    // that whole question stops arising there - which is the better reason for it to
-                    // live in one place rather than two.
+                    // Which locomotive belongs here is offered from the setup menu below, not from this one.  That menu
+                    // works from the SQUARE rather than from a Point, so the question of WHICH Point to ask (the occupied
+                    // copy speaks for a square, and a train can stand on a copy that is not itself a destination) does not
+                    // arise.
                 }
 
                 // Which way round the train is standing, beside the other things about the train
@@ -818,10 +753,8 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     /**
      * Puts the active locomotive on one named copy of this square, and remembers which way.
      *
-     * Both halves matter.  Placing on the right copy is what lets autonomy move it NOW; recording
-     * the facing is what puts it back on the same copy the next time the graph is built, which is
-     * every load.  Without the second, the placement is correct until the next reload and arbitrary
-     * afterwards.
+     * Both halves matter.  Placing on the right copy is what lets autonomy move it NOW; recording the facing is what puts
+     * it back on the same copy the next time the graph is built, which is every load.
      *
      * @param pointName the copy to place on
      * @param facing which way it is pointing, or null when the square has only one copy
@@ -829,38 +762,26 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     /**
      * The whole Autonomy menu, as a submenu, for when nothing is running.
      *
-     * Everything in it was already reachable from the menu bar, and the menu bar is not where somebody
-     * working on their railway is looking - they are looking at the diagram, and they got to it by
-     * right-clicking. This is the same menu rather than a copy of it: one place decides what autonomy
-     * offers, so the two cannot drift apart.
+     * Everything in it was already reachable from the menu bar, but somebody working on their railway is looking at the
+     * diagram.  This is the same menu rather than a copy, so one place decides what autonomy offers.
      *
-     * Its own instance, because a Swing component has one parent and the menu bar already owns the
-     * other one - adding that one here would take it out of the menu bar. It costs nothing: the menu
-     * builds its items when it is opened rather than when it is made.
+     * Its own instance, because a Swing component has one parent and the menu bar already owns the other one.  It costs
+     * nothing: the menu builds its items when it is opened rather than when it is made.
      *
-     * Under a parent entry so it stays out of the way. Most right-clicks on a diagram are about the
-     * train or the square under the pointer; the setup is the occasional errand, and an errand does
-     * not need to be in the way of the everyday thing.
-     *
-     * Only while nothing is running, as Adam asked. Half of what is in there rebuilds the layout, and
-     * the items that must not run mid-session already refuse - but offering a page of settings to
-     * somebody watching trains move invites a click that will be turned down, and a menu full of
-     * things that say no is worse than a menu that waited.
+     * Under a parent entry so it stays out of the way of the everyday right-click on the train or the square.  Only while
+     * nothing is running: half of what is in there rebuilds the layout, and a menu full of things that say no is worse
+     * than a menu that waited.
      */
     /**
      * Everything the autonomy editor offers on this square, folded into this menu.
      *
-     * The editor's menu rather than the window's Autonomy menu.  The one in the menu bar is about the
-     * setup as a whole - configurations, imports, delete everything - and none of it has anything to
-     * say about the square being pointed at.  What somebody right-clicking a platform wants is what
-     * the editor gives them when they right-click the same platform there: make this a station, face
-     * the train this way, bar that arrival, set the length.  Borrowed from the panel that builds it,
-     * so the two can never drift.
+     * The editor's menu rather than the window's Autonomy menu.  The one in the menu bar is about the setup as a whole
+     * (configurations, imports, delete everything); what somebody right-clicking a platform wants is what the editor
+     * gives them on the same platform there: make this a station, face the train this way, bar that arrival, set the
+     * length.  Borrowed from the panel that builds it, so the two can never drift.
      *
-     * Under a parent entry, because it is a long menu and most right-clicks on a running layout are
-     * about sending a train somewhere, not about changing the track it runs on.
-     *
-     * Nothing while autonomy is running: the setup describes track that trains are on right now, and
+     * Under a parent entry, because it is a long menu and most right-clicks on a running layout are about sending a
+     * train somewhere.  Nothing while autonomy is running: the setup describes track that trains are on right now, and
      * an editor open over it is already refused for the same reason.
      */
     private void addSetupMenu()
@@ -880,18 +801,11 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
             setup.add(part);
         }
 
-        // FR-026: the way out to the full editor, at the foot of the settings it is the deep end of.
-        //
-        // Adam: "to the 'autonomy setup' right click menu on the track viewer, add a shortcut to open
-        // the full editor.  deactivate when inappropriate."  Everything above this line is a single
-        // square's settings; the editor is where the diagram as a whole is worked on, and the way to
-        // it was the Edit button at the other end of the window.
-        //
-        // "Inappropriate" is not decided here.  It is asked of the window that does the opening, which
-        // hands back the reason its own refusal would give - so the item is live exactly when pressing
-        // it would work, and says why when it is not.  A menu item that offers an action and a guard
-        // that permits it have to ask one question; where they have asked two in this application, the
-        // answer has differed.
+        // FR-026: the way out to the full editor, at the foot of the settings it is the deep end of.  Everything above is
+        // a single square's settings; the editor is where the diagram as a whole is worked on.  "Inappropriate" is not
+        // decided here: it is asked of the window that does the opening, which hands back the reason its own refusal
+        // would give, so the item is live exactly when pressing it would work and says why when it is not.  A menu item
+        // that offers an action and a guard that permits it have to ask one question.
         String refusal = ui.whyAutonomyEditorCannotOpen();
 
         JMenuItem openEditor = new JMenuItem(I18n.t("autosetup.ui.menuOpenFullEditor"));
@@ -919,10 +833,9 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     /**
      * Drops the paths that end where the train already is.
      *
-     * A square is several Points, so "somewhere else" and "a different Point" stopped meaning the
-     * same thing: a train at BottomMainB was offered BottomMainB, the copy facing the other way.
-     * That is not a destination, it is the platform under its own wheels, and it appeared in the
-     * list a user picks from.
+     * A square is several Points, so "somewhere else" and "a different Point" are not the same thing: a train at
+     * BottomMainB must not be offered BottomMainB, the copy facing the other way, which is the platform under its own
+     * wheels.
      *
      * Filtered here rather than in the layout, which cannot tell: its only candidate key is the
      * sensor, and a station and its approach guard share one while being genuinely two places.  What
@@ -974,10 +887,8 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
         if (session == null || !ui.getModel().hasAutoLayout()) return out;
 
-        // `shut` - the copies barred to arrivals - is counted and not offered (TWV-C6).  Kept as a
-        // separate bucket rather than folded into "not usable", because the distinction is what the
-        // comment at the foot of this method is about and the next reader needs it to follow the
-        // reasoning.
+        // `shut` (the copies barred to arrivals) is counted and not offered (TWV-C6).  Kept as a separate bucket rather
+        // than folded into "not usable", because the reasoning at the foot of this method needs the distinction.
         java.util.List<String> shut = new java.util.ArrayList<>();
 
         // copies a train could sit on but never be dispatched from
@@ -993,19 +904,14 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
             if (away == null || away.isEmpty()) continue;
 
-            // A copy the train can actually LEAVE, in preference to one it merely sits on.
+            // A copy the train can actually LEAVE, in preference to one it merely sits on.  "Has an outgoing edge" is
+            // not the same question: a copy of a split square can have somewhere to go and nowhere to be SENT
+            // (everything it reaches is a plain point, a reversing point or parking), and a train put on such a copy
+            // never moves.  On the sample layout, Tunnel (northbound) offers routes and Tunnel (southbound) offers none.
             //
-            // "Has an outgoing edge" was the old test and it is not the same question.  A copy of a
-            // split square can have somewhere to go and nowhere to be SENT - everything it reaches is
-            // a plain point, a reversing point or parking - and this list was drawn at RANDOM, so a
-            // train was put on a dead copy about half the time and then never moved.  That is the
-            // "nothing moves" fault: on the sample layout, Tunnel (northbound) offers routes and
-            // Tunnel (southbound) offers none, and placement could not tell them apart.
-            //
-            // Barred copies are not on this list: barring an arrival side makes that copy a
-            // non-destination.  The right-click Place still stands a train on one where its heading is
-            // that way (OB-284, ADU2-C2); this list is the order a copy is taken in where no heading
-            // holds, and a barred copy comes after it.
+            // Barred copies are not on this list: barring an arrival side makes that copy a non-destination.  The
+            // right-click Place still stands a train on one where its heading is that way (OB-284, ADU2-C2); this list
+            // is the order a copy is taken in where no heading holds, and a barred copy comes after it.
             if (!ui.getModel().getAutoLayout().canReachAnyDestination(copy))
             {
                 stranded.add(name);
@@ -1025,26 +931,19 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         // different message from the "no way out" one this list produces.
         if (!out.isEmpty()) return out;
 
-        // NOT A BARRED COPY, FIRST (TWV-C6, ADU2-C2).
-        //
-        // `shut` is the copies whose `isDestination()` is explicitly false.  Until the right-click Place
-        // moved with the form of `moveLocomotive` that accepts them (ADU-C2), that form declined them,
-        // and offering them enabled an item that did nothing - the `OB-057` / `OB-090` shape.  It
-        // accepts them now, and the item is offered over every copy a train could leave by
-        // (`departableFacingsFor`); this list is only the order a copy is taken in where the train's
-        // heading holds none.
-        //
-        // Stranded copies stay, barred or not: standing a train somewhere autonomy cannot send it
-        // anywhere is a thing an operator may legitimately want to do.
+        // NOT A BARRED COPY, FIRST (TWV-C6, ADU2-C2).  `shut` is the copies whose `isDestination()` is explicitly false.
+        // The right-click Place accepts them (the form of `moveLocomotive` that does, ADU-C2) and offers the item over
+        // every copy a train could leave by (`departableFacingsFor`); this list is only the order a copy is taken in
+        // where the train's heading holds none.  Stranded copies stay, barred or not: standing a train somewhere
+        // autonomy cannot send it anywhere is a thing an operator may legitimately want to do.
         return stranded;
     }
 
     /**
      * Places the active locomotive on the copy it could leave from that faces the way it already faces (OB-296).
      *
-     * Adam, 2026-09-24: *"Yes, keep the train's heading."*  This took a copy at random, so the same train placed the same
-     * way faced either way - the one placement door OB-270, GUI-B1 and OB-284's rule had not reached.  The heading is
-     * read before the move, from the copy the train stands on (`facingOf`, CONF-B1), and the rule is the paste's.
+     * The heading is read before the move, from the copy the train stands on (`facingOf`, CONF-B1), and the rule is the
+     * paste's (OB-270, GUI-B1, OB-284), so the same train placed the same way always faces the same way.
      *
      * Where no copy can leave, the copy the build stands an unfaced train on, with no facing recorded - the editor's Place
      * (OB-350).
@@ -1085,8 +984,8 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
      * `copyFacing`, the plain one before its turning twin.  Where no heading holds, the first copy the menu offers - the
      * same answer every time.
      *
-     * Chosen over the menu's own list only, it turned a train round at every square with a barred side: the copy facing
-     * that way is no station, so it was never on the list.
+     * The menu's own list is not enough: the copy facing the heading at a square with a barred side is no station, so it
+     * is never on that list.
      *
      * @param session the setup, or null
      * @param station the square
@@ -1128,19 +1027,14 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     /**
      * Puts a named locomotive on a named copy of this square, facing a given way.
      *
-     * Takes the locomotive rather than reading the active one, because the two things this can mean
-     * are different trains.  Placing means the active locomotive - that is what the menu item says.
-     * Turning means the one already standing there, and this used to move the active one instead: with
-     * some other locomotive selected on the keyboard, "face east" picked THAT train up and put it down
-     * on this platform, in the running layout and in the saved configuration both, while the train the
-     * user was pointing at did not move.  With nothing selected it threw instead, and the menu item
-     * did nothing at all.
+     * Takes the locomotive rather than reading the active one, because the two things this can mean are different
+     * trains.  Placing means the active locomotive, as the menu item says; turning means the one already standing
+     * there.  Reading the active one for a turn would pick THAT train up and put it down on this platform when some
+     * other locomotive is selected on the keyboard, in the running layout and the saved configuration both.
      *
-     * **One caller today, not two** (TWV-C6): the turning door was retired and this javadoc was not
-     * swept with it.  The parameter stays because the reason above is about what the method is handed
-     * rather than about how many doors hand it - and the arrival-side branch below still asks whether
-     * this is a placement or a turn, which costs nothing and is what keeps the method safe if turning
-     * comes back through it.
+     * One caller today, not two (TWV-C6): the turning door was retired.  The parameter stays because the reason above
+     * is about what the method is handed, and the arrival-side branch below still asks whether this is a placement or
+     * a turn.
      */
     private void placeFacing(String locName, String pointName,
         org.traincontrol.automationui.TilePorts.Side facing)
@@ -1165,21 +1059,18 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
         if (arriving)
         {
-            // AND WHERE ITS TAIL IS (REV9-B2).  This door placed a train and worked the side out at
-            // all, so nothing behind it was blocked - while the identical placement by drag asked the
-            // question and blocked it.  `behaviour.md` section 4 recorded that as an open defect and
-            // it was one; Adam settled it on 2026-09-11: *"the missing arrival side should be set -
-            // either from the data, by the user, or randomly."*
+            // AND WHERE ITS TAIL IS (REV9-B2): the same placement by drag asks the question and blocks the track behind
+            // the train, so this door must too (`behaviour.md` section 4: the missing arrival side is set from the data,
+            // by the user, or randomly).
             //
-            // Through the same door the paste uses, with the same rule behind it: forced at a terminus,
-            // taken from behind the heading at an ordinary station, asked on a square trains may turn
-            // at.  This door has no dialog of its own to offer it in - `GraphLocAssign` does, and it
-            // uses a combo for exactly that reason - so here it is the prompt, as it is for a paste.
+            // Through the same door the paste uses, with the same rule behind it: forced at a terminus, taken from behind
+            // the heading at an ordinary station, asked on a square trains may turn at.  This door has no dialog of its
+            // own to offer it in (`GraphLocAssign` does, with a combo), so here it is the prompt, as it is for a paste.
             //
-            // BEFORE THE MOVE, so that a dismissal can leave the railway as it was.  Asked afterwards
-            // there would be nothing left to decline, which is the mistake the paste door made first.
-            // THE UNBARRED SIDES, here and in the `wouldAsk` below it (OB-204) - the two have to be
-            // handed the same list or one asks a question the other does not expect an answer to.
+            // BEFORE THE MOVE, so that a dismissal can leave the railway as it was; asked afterwards there would be
+            // nothing left to decline.
+            // THE UNBARRED SIDES, here and in the `wouldAsk` below it (OB-204): the two have to be handed the same list
+            // or one asks a question the other does not expect an answer to.
             tail = org.traincontrol.gui.ArrivalSidePrompt.forPlacement(running, landing,
                 facing == null ? null : facing.name(), mayTurnHere(), ui,
                 session == null ? null : session.unbarredArrivalSides(station));
@@ -1196,21 +1087,17 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
         // THE RAILWAY'S ANSWER DECIDES WHETHER ANY OF THIS HAPPENS (W21-B3).
         //
-        // `moveLocomotive` returns false and logs rather than throwing, in four cases: autonomy is
-        // running, the locomotive is unknown, the point is unknown, and the target is not a destination.
-        // Its answer was discarded, so the placement and the facing were written into the setup AND
-        // SAVED for a move the railway had just declined - and the setup is the half that survives a
-        // restart, so the next build emitted the train on a square it was never put on.
+        // `moveLocomotive` returns false and logs rather than throwing, in four cases: autonomy is running, the
+        // locomotive is unknown, the point is unknown, and the target is not a destination.  The placement and the
+        // facing are written into the setup AND SAVED only for a move the railway accepted, because the setup is the
+        // half that survives a restart.  A copy `moveLocomotive` declines is closed at this door: it moves with the form
+        // that accepts a copy trains may not arrive at (ADU-C2), as the paste does.
         //
-        // Two doors reached it.  The first, a copy `moveLocomotive` declines, is closed at this door: it
-        // moves with the form that accepts a copy trains may not arrive at (ADU-C2), as the paste does.
-        // The other is still open, and `behaviour.md` section 6a states it as a rule: a menu is greyed when the popup OPENS and the action
-        // fires when it is clicked, so autonomy started from another window in between leaves a live
-        // item over a running railway.  The refusal is in the method, correctly; what was missing was
-        // the caller honouring it.
+        // The remaining case is the one `behaviour.md` section 6a states as a rule: a menu is greyed when the popup
+        // OPENS and the action fires when it is clicked, so autonomy started from another window in between leaves a
+        // live item over a running railway.  The refusal is in the method, and this caller honours it.
         //
-        // The log line `moveLocomotive` already writes is the user-visible half, so nothing is added
-        // here: a second message would say the same thing twice.
+        // The log line `moveLocomotive` already writes is the user-visible half, so nothing is added here.
         // WHAT THE TRAIN HAD ON THE RAILWAY, before this door moves it (TLW-A1).
         org.traincontrol.automation.Point wasOn = null;
 
@@ -1239,11 +1126,9 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
         if (session != null)
         {
-            // The CONFIGURATION as well as the running layout.  Moving a train in the layout leaves
-            // where it was; the configuration was never told, so the locomotive kept its old placement
-            // too - and the next build emitted it at two Points, which fromJSON answers by
-            // invalidating the whole layout.  Every path was then refused as "configuration is
-            // invalid", from a placement made minutes earlier.
+            // The CONFIGURATION as well as the running layout.  Moving a train in the layout leaves where it was; without
+            // this the locomotive keeps its old placement in the configuration too, and the next build would emit it at
+            // two Points, which fromJSON answers by invalidating the whole layout.
             session.placeLocomotive(station, locName);
 
             // THE FACING, BEFORE THE TAIL QUESTION (TDU3-C1), as the locomotive dialog writes it: it was chosen before,
@@ -1261,8 +1146,8 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
                 if (landing != null) landing.setArrivedFrom(tail);
 
-                // AND HOW FAR BACK ITS TAIL REACHES, asked where the answer matters (Adam, 2026-09-14).  After the
-                // move, because moving the train clears any road the square held.
+                // AND HOW FAR BACK ITS TAIL REACHES, asked where the answer matters.  After the move, because moving the
+                // train clears any road the square held.
                 final org.traincontrol.base.Locomotive placed = landing == null ? null : landing.getCurrentLocomotive();
                 final java.util.List<org.traincontrol.automation.Edge> roadAtTheQuestion =
                     landing == null ? null : landing.getArrivedAlong();
@@ -1319,12 +1204,9 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         {
             try
             {
-                // The reconciliation the save returns is SHOWN, not dropped (DR-B10).
-                //
-                // A save reconciles the setup against the diagram and reports what it had to let go - a
-                // setting on a page that is no longer there, a pairing whose partner has gone. Thrown away,
-                // those changes happen silently and the operator finds out later from a railway that behaves
-                // differently, with nothing connecting it to the edit that caused it.
+                // The reconciliation the save returns is SHOWN, not dropped (DR-B10): a save reconciles the setup against
+                // the diagram and reports what it had to let go (a setting on a page that is no longer there, a pairing
+                // whose partner has gone), and dropped silently those changes would surprise the operator later.
                 AutonomyReport.show(ui, session.save());
             }
             catch (java.io.IOException e)
@@ -1336,10 +1218,9 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
         ui.repaintAutoLocList(false);
 
-        // And the station labels, which is where the facing is actually shown.  The arrow beside a
-        // locomotive name is drawn from the recorded facing, so changing it without rewriting the
-        // labels leaves the diagram asserting the old direction - which is the one place a reader
-        // would look to check that the change took.
+        // And the station labels, which is where the facing is actually shown: the arrow beside a locomotive name is
+        // drawn from the recorded facing, so changing it without rewriting the labels leaves the diagram asserting the
+        // old direction.
         ui.updateVisiblePoints();
     }
 
@@ -1347,10 +1228,10 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     /**
      * One "-> somewhere" item, dispatching this locomotive along this path.
      *
-     * Lifted out of the loop when `FR-058` split the list in two (`More Destinations`). Two copies of
-     * a menu item that starts a train is two places for the power check, the failure dialog and the
-     * off-thread dispatch to fall out of step - and the thread is the part that matters: this runs on
-     * the event thread, and `executePath` blocks until the train arrives.
+     * Shared by the top-level list and `More Destinations` (FR-058).  Two copies of a menu item that starts a train
+     * would be two places for the power check, the failure dialog and the off-thread dispatch to fall out of step, and
+     * the thread is the part that matters: this runs on the event thread, and `executePath` blocks until the train
+     * arrives.
      *
      * @param ui the window, for the model and for the dialogs
      * @param railway the railway the path was found on, which it is sent on (RSA-C6)
@@ -1363,12 +1244,10 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     {
         JMenuItem item = new JMenuItem("-> " + stationName(path.get(path.size() - 1).getEnd()));
 
-        // THROUGH THE ONE DOOR both hand doors send through (Adam, 2026-09-29: "can all the checks go through a single
-        // door?"): whether a train may be sent at all - the editor, which this copy did not ask at the click (RLV12-B1), the
-        // setup, the power - this path's standing rules, the reversal question, the last-moment question again, the
-        // atomic-routes gate and the dispatch.
-        // Every message there belongs to the main window, not to this menu, which has left its window by the time an item's
-        // action runs (RLU-B2).
+        // THROUGH THE ONE DOOR both hand doors send through: whether a train may be sent at all (the editor, RLV12-B1;
+        // the setup; the power; this path's standing rules; the reversal question; the last-moment question again; the
+        // atomic-routes gate) and the dispatch.  Every message there belongs to the main window, not to this menu, which
+        // has left its window by the time an item's action runs (RLU-B2).
         item.addActionListener(event -> ui.sendATrainByHand(railway, path, locomotive));
 
         return item;
@@ -1404,17 +1283,13 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         // ASKED AGAIN AT THE CLICK, as Edit Locomotive is: a route may have begun since the menu opened
         if (refusedWhileRunning()) return;
 
-        // PURGE, as the editor's own Remove does (C15).
-        //
-        // The two doors that take a train off a square passed different answers to the same question.
-        // Without the purge the locomotive stays in the list of trains to run while standing nowhere:
-        // it goes on showing in the Autonomy tab, and runLocomotives logs it as started and spawns a
-        // thread that idles for the rest of the session. Nothing stalls - it has no destination to
-        // yield to anybody - but the railway is keeping a place for a train that is not on it.
-        // THE RAILWAY'S ANSWER, AND THEN THE SAVE (TWV-B5, settling W21-D6).
-        //
-        // Discarded, a refusal left the setup saying the square is empty while the railway still has the
-        // train on it - and the next save from any other door commits that.
+        // PURGE, as the editor's own Remove does (C15): both doors that take a train off a square must pass the same
+        // answer.  Without the purge the locomotive stays in the list of trains to run while standing nowhere, goes on
+        // showing in the Autonomy tab, and runLocomotives logs it as started and spawns a thread that idles for the rest
+        // of the session; the railway would be keeping a place for a train that is not on it.
+        // THE RAILWAY'S ANSWER, AND THEN THE SAVE (TWV-B5, W21-D6): a refusal must not be discarded, or the setup would
+        // say the square is empty while the railway still has the train on it, and the next save from any other door
+        // commits that.
         if (!ui.getModel().getAutoLayout().moveLocomotive(null, current.getName(), true)) return;
 
         // The setup as well, or the next build puts the train back: the configuration still records it
@@ -1424,14 +1299,9 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         {
             session.placeLocomotive(station, null);
 
-            // AND WRITTEN.  Nothing downstream saved this: the two repaints below do not reach the
-            // autonomy panel's refresh callback, so a train removed here was back on the square at the
-            // next launch unless some unrelated door happened to save first - which made it
-            // intermittent, and intermittent is worse than consistently broken.
-            //
-            // `GraphLocAssign` states the rule this was breaking: every other door that writes the setup
-            // saves it - the paste door, the facing menu, and placeFacing beside this one on this very
-            // menu.
+            // AND WRITTEN: the two repaints below do not reach the autonomy panel's refresh callback, so without this save
+            // a train removed here is back on the square at the next launch.  `GraphLocAssign` states the rule: every door
+            // that writes the setup saves it (the paste door, the facing menu, and placeFacing beside this one).
             try
             {
                 AutonomyReport.show(ui, session.save());
