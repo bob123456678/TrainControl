@@ -1945,10 +1945,6 @@ public class AutonomySession
      *   CONFIGURATION   carries "points" as an OBJECT, keyed by square.  That is the shape a
      *                   configuration has always had, and the only other thing that uses the name.
      *
-     * The array-versus-object distinction is what makes this safe: the two formats that share a key
-     * disagree about its type, so neither can be mistaken for the other by a file that merely happens
-     * to contain the word.
-     *
      * @param file the parsed file
      * @return what it is
      */
@@ -5880,7 +5876,6 @@ public class AutonomySession
 
         org.json.JSONObject root = new org.json.JSONObject(layoutJson);
 
-        // name -> tile, through the same naming the builder used to generate the file
         Map<String, TileKey> tilesByName = new LinkedHashMap<>();
 
         AutonomyBuilder naming = builder(null);
@@ -6116,7 +6111,6 @@ public class AutonomySession
             return;
         }
 
-        // and the top of the file: pace, speeds, and the rest of the settings panel
         org.json.JSONObject globals = globalsOf(root);
 
         configuration.put("globals", globals);
