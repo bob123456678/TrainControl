@@ -1536,10 +1536,9 @@ public class LayoutEditor extends PositionAwareJFrame
             // re-arms the tool afterwards.
             if (target == null) return;
 
-            // A press and release on the SAME square is a click, not a drag.  Executing there cut the
-            // tile and dropped it straight back, which changes no diagram - but snapshotLayout runs
-            // first, so merely clicking a tile pushed an undo entry, cleared the redo stack, and left
-            // the editor asking whether to save work the user had not done.
+            // A press and release on the SAME square is a click, not a drag.  Executing there would cut the tile and drop it
+            // straight back, changing no diagram, but snapshotLayout runs first, so merely clicking a tile would push an undo
+            // entry, clear the redo stack, and leave the editor asking whether to save work the user had not done.
             if (source != null && target == source)
             {
                 resetClipboard();
@@ -1554,10 +1553,9 @@ public class LayoutEditor extends PositionAwareJFrame
     /**
      * The autonomy tools, shown in place of the component palette when autonomy mode is on.
      *
-     * Mounted into newComponents - the palette container - because that is one of the few containers in
-     * this form whose layout manager is already replaced from hand-written code, so nothing generated has
-     * to be touched.  Deliberately NOT ExtLayoutPanel, which LayoutGrid clears and re-lays out on every
-     * redraw.
+     * Mounted into newComponents (the palette container), one of the few containers in this form whose layout manager is
+     * already replaced from hand-written code, so nothing generated has to be touched.  Deliberately NOT ExtLayoutPanel,
+     * which LayoutGrid clears and re-lays out on every redraw.
      */
     private AutonomyEditorPanel autonomyPanel;
 
@@ -1580,13 +1578,10 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     public void setAutonomyMode(org.traincontrol.automationui.AutonomySession session)
     {
-        // Growing and shrinking the page is EDITING the diagram, and this mode does not edit the
-        // diagram - it decides which way trains may run over one.  So the two size buttons and the
-        // heading over them go away with the palette they sit under.
-        //
-        // Toggle Visibility stays.  Text labels and addresses are about what is DRAWN, which is a
-        // question in autonomy mode as much as any other - the addresses are half of how somebody
-        // checks that the square they are setting up is the sensor they meant.
+        // Growing and shrinking the page is EDITING the diagram, and this mode does not edit the diagram: it decides which
+        // way trains may run over one.  So the two size buttons and the heading over them go away with the palette they sit
+        // under.  Toggle Visibility stays: text labels and addresses are about what is DRAWN, and the addresses are half of
+        // how somebody checks that the square they are setting up is the sensor they meant.
         if (this.diagramSize != null) this.diagramSize.setVisible(session == null);
         if (this.plusButton != null) this.plusButton.setVisible(session == null);
         if (this.minusButton != null) this.minusButton.setVisible(session == null);
@@ -1628,21 +1623,16 @@ public class LayoutEditor extends PositionAwareJFrame
                 autonomyVisibility = null;
             }
 
-            // And the findings list comes out from under the diagram (GC-A2).
+            // And the findings list comes out from under the diagram (GC-A2).  Mounting it replaces jScrollPane1, the diagram's
+            // own scroll pane, with a stack holding the diagram above and the findings below, so putting that back has two ways to
+            // go wrong:
             //
-            // The third of these, after the palette and the visibility box, and the one that had TWO
-            // ways to go wrong. Mounting it replaces jScrollPane1 - the diagram's own scroll pane -
-            // with a stack holding the diagram above and the findings below. Nothing put that back, so:
-            //
-            //   - leaving autonomy mode left a findings list sitting under the TRACK editor's diagram,
-            //     describing a setup that window was no longer editing; and
-            //   - autonomyFindings stayed non-null, so coming BACK skipped the mount block entirely -
-            //     the new session's findings were built and orphaned, while the previous session's
-            //     frozen list stayed on screen looking current.
-            //
-            // The second is the one that would have been believed. A stale list of findings is not
-            // obviously stale: it is a plausible list about the right railway, and the only thing wrong
-            // with it is that it stopped being true when the session changed.
+            //   - leaving autonomy mode would leave a findings list under the TRACK editor's diagram, describing a setup that
+            //     window is no longer editing; and
+            //   - autonomyFindings would stay non-null, so coming BACK would skip the mount block entirely: the new session's
+            //     findings would be built and orphaned while the previous session's frozen list stayed on screen looking current.
+            //     A stale list of findings is not obviously stale: it is a plausible list about the right railway that stopped
+            //     being true when the session changed.
             if (autonomyFindings != null)
             {
                 autonomyFindings.remove(this.jScrollPane1);
@@ -1658,9 +1648,8 @@ public class LayoutEditor extends PositionAwareJFrame
         }
         else if (autonomyPanel == null)
         {
-            // The panel needs a way to the RUNNING layout for its "why is it not moving" test - the
-            // one question that is about locomotives and occupancy rather than about track, and so
-            // cannot be answered from the setup alone.
+            // The panel needs a way to the RUNNING layout for its "why is it not moving" test, the one question about
+            // locomotives and occupancy rather than track, which cannot be answered from the setup alone.
             autonomyPanel = new AutonomyEditorPanel(session, layout.getName(), new Runnable()
             {
                 @Override
@@ -1668,25 +1657,21 @@ public class LayoutEditor extends PositionAwareJFrame
                 {
                     refreshAutonomyAnnotations();
 
-                    // The main window draws the same setup on its own diagram, and it has no way to
-                    // know an edit happened in here - so it is told, after every one.
+                    // The main window draws the same setup on its own diagram and has no way to know an edit happened in here, so it is
+                    // told after every one.
                     parent.refreshStaticAutonomyLayer();
                 }
             });
 
-            // Which window is the main one.  It cannot be found from here: this panel sits in a
-            // JFrame, a JFrame has no owner, and the walk up the window tree therefore ends at the
-            // editor - which is why every menu item needing it used to open a dialog saying "null".
+            // Which window is the main one.  It cannot be found from here: this panel sits in a JFrame, a JFrame has no owner,
+            // and the walk up the window tree ends at the editor.
             autonomyPanel.setMainWindow(parent);
 
-            // WHERE THE RAILWAY IS, so the arrived-from menu can be built here too (VAL8-B1).
-            //
-            // It was supplied only from the track diagram's door, so the editor - the surface Adam
-            // named FIRST - could never show that menu at all, and `setFacingAndMove` degraded to
-            // writing the setup until somebody happened to open the diagram's menu once.  A feature
-            // that works on one of two surfaces depending on what you opened earlier is worse than
-            // one that works on neither, because nothing tells you which you are looking at.
-            // Asked, not built (RLV8-C2): each reader takes no railway as nothing to show
+            // WHERE THE RAILWAY IS, so the arrived-from menu can be built here too (VAL8-B1).  Supplied only from the track
+            // diagram's door, the editor could never show that menu, and `setFacingAndMove` would degrade to writing the setup
+            // until somebody opened the diagram's menu once: a feature that works on one of two surfaces depending on what you
+            // opened earlier is worse than one that works on neither.  Asked, not built (RLV8-C2): each reader takes no railway
+            // as nothing to show.
             autonomyPanel.setRunningLayoutSource(
                 () -> parent == null || parent.getModel() == null
                     ? null : parent.getModel().getAutoLayoutIfLoaded());
@@ -1698,9 +1683,8 @@ public class LayoutEditor extends PositionAwareJFrame
                         ? null : parent.getModel().getAutoLayoutIfLoaded());
             }
 
-            // Asked for on every use rather than held, because loading a configuration replaces the
-            // Layout wholesale and a kept reference would answer about the previous one without
-            // saying so.
+            // Asked for on every use rather than held, because loading a configuration replaces the Layout wholesale and a kept
+            // reference would answer about the previous one without saying so.
             autonomyPanel.setLayoutSource(() -> parent.getModel().getAutoLayoutIfLoaded());
 
             // Setup mode writes to a page only when a station name is put on a square.  The caption is
@@ -1739,14 +1723,11 @@ public class LayoutEditor extends PositionAwareJFrame
                 }
             });
 
-            // A finding on another page: close this window and open one showing that page, at that
-            // square.  The editor is built around a single diagram - the field is final and the grid,
-            // the annotations and the page exclusion all follow from it - so swapping pages in place
-            // would mean rebuilding most of the window, and reopening it does the same thing honestly.
-            //
-            // Nothing is lost by closing: every edit made here has already gone into the shared session,
-            // which is why "exit without saving" has to reload the store to undo them.  This path is
-            // deliberately not that one.
+            // A finding on another page: close this window and open one showing that page, at that square.  The editor is built
+            // around a single diagram (the grid, the annotations and the page exclusion all follow from it), so swapping pages in
+            // place would mean rebuilding most of the window, and reopening it does the same thing honestly.  Nothing is lost by
+            // closing: every edit made here has already gone into the shared session.  This path is deliberately not "exit
+            // without saving", which reloads the store to undo them.
             autonomyPanel.setOnJumpToPage(new java.util.function.Consumer<
                 org.traincontrol.automationui.TileGraph.TileKey>()
             {
@@ -1807,22 +1788,19 @@ public class LayoutEditor extends PositionAwareJFrame
             this.newComponents.setLayout(new java.awt.BorderLayout());
             this.newComponents.add(autonomyPanel, java.awt.BorderLayout.CENTER);
 
-            // A strip across the top of the diagram for messages.  Mounted as the scroll pane's column
-            // header - the same unused slot the main window's "Show autonomy" checkbox uses - because
-            // the content pane is a generated GroupLayout that would ignore a BorderLayout constraint.
-            //
-            // Width is the point: a sentence needs the window, and the tools column is 280px, which is
-            // how a three-line message used to pull that column apart.
+            // A strip across the top of the diagram for messages.  Mounted as the scroll pane's column header (the same unused
+            // slot the main window's "Show autonomy" checkbox uses) because the content pane is a generated GroupLayout that
+            // would ignore a BorderLayout constraint.  Width is the point: a sentence needs the window, and the tools column is
+            // 280px.
             autonomyBanner = new AutonomyBanner();
 
             this.jScrollPane1.setColumnHeaderView(autonomyBanner);
 
             autonomyPanel.setBanner(autonomyBanner);
 
-            // Put the lengths toggle directly under Addresses, inside the window's own Toggle
-            // Visibility group.  GroupLayout cannot have a component added to it after the fact, but it
-            // can REPLACE one - so the Addresses box is swapped for a small column holding both, which
-            // lands the new toggle exactly where it belongs without touching the generated form.
+            // Put the lengths toggle directly under Addresses, inside the window's own Toggle Visibility group.  GroupLayout
+            // cannot have a component added to it after the fact, but it can REPLACE one, so the Addresses box is swapped for a
+            // small column holding both, without touching the generated form.
             if (formPane.getLayout() instanceof javax.swing.GroupLayout)
             {
                 javax.swing.JPanel visibility = new javax.swing.JPanel();
@@ -1838,15 +1816,13 @@ public class LayoutEditor extends PositionAwareJFrame
 
                 visibility.add(this.showAddressCheckbox);
 
-                // The same gap the form leaves between Text Labels and Addresses.  Stacked straight
-                // into a BoxLayout these two touched, so the pair read as one control with two lines
-                // rather than as two switches of the same kind as the one above them.
+                // The same gap the form leaves between Text Labels and Addresses; stacked straight into a BoxLayout the two would
+                // touch and read as one control with two lines.
                 visibility.add(javax.swing.Box.createVerticalStrut(CHECKBOX_GAP));
 
                 visibility.add(autonomyPanel.getShowLengths());
 
-                // Directly under Track Lengths, with no gap: the two are one subject - what is measured, and what is
-                // not yet (Adam, 2026-09-16).
+                // Directly under Track Lengths, with no gap: the two are one subject, what is measured and what is not yet.
                 autonomyPanel.getShowUnmeasured().setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
                 visibility.add(autonomyPanel.getShowUnmeasured());
 
@@ -1862,18 +1838,12 @@ public class LayoutEditor extends PositionAwareJFrame
                 autonomyPanel.getShowTextLabels().setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
                 visibility.add(autonomyPanel.getShowTextLabels());
 
-                // WHAT THE CAPTIONS SAY, as one choice (FR-061).
-                //
-                // Adam: "add a Text Labels label and dropdown right above Track Directions, with the
-                // following options: Station Names, Parked Locomotives, Home Locomotives, and None."
-                //
-                // It replaces two tick boxes and the form's own Text Labels switch, which were not
-                // independent: ticking either box while the text was off changed nothing anybody could
-                // see, so each box turned the text on for you (OB-174). Options that exclude one another
-                // cannot be in a state that needs correcting, which is what "fully address it" means here.
-                //
-                // In the window's own heading style, copied off jLabel1 rather than restated, like the
-                // Track Directions heading below it.
+                // WHAT THE CAPTIONS SAY, as one choice (FR-061; Adam: "add a Text Labels label and dropdown right above Track
+                // Directions, with the following options: Station Names, Parked Locomotives, Home Locomotives, and None.").  It
+                // replaces two tick boxes and the form's own Text Labels switch, which were not independent: ticking either box while
+                // the text was off changed nothing anybody could see (OB-174).  Options that exclude one another cannot be in a state
+                // that needs correcting.  In the window's own heading style, copied off jLabel1 rather than restated, like the Track
+                // Directions heading below it.
                 javax.swing.JLabel captionsLabel =
                     new javax.swing.JLabel(I18n.t("autosetup.ui.captionsHeading"));
                 captionsLabel.setFont(this.jLabel1.getFont());
@@ -1887,20 +1857,11 @@ public class LayoutEditor extends PositionAwareJFrame
                 javax.swing.JComboBox<String> captionChoice = autonomyPanel.getCaptionChoice();
                 captionChoice.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
 
-                // PREFERRED as well as maximum, and narrower than the Track Directions box below
-                // (Adam: "reduce width by about 20px", then "still too wide by 20-30px").
-                //
-                // A maximum alone does not do it, which is why the first attempt failed: BoxLayout
-                // caps the WIDTH at the maximum but the column still takes its preferred width from
-                // its widest child. Both are set, and the option text is shortened to "Locs" so 150
-                // is a width the words fit rather than one they are cut off at - Adam: "use Locs if
-                // shorter text is needed in the dropdown".
-                // (Adam: "the dropdown has made the panel too wide - reduce width by about 20px").
-                //
-                // A maximum alone does not do it: BoxLayout caps the WIDTH at the maximum but the
-                // column still takes its preferred width from the widest child, and this combo
-                // prefers whatever "Parked Locomotives" needs plus the arrow. Setting both makes the
-                // sidebar as wide as the sidebar was.
+                // PREFERRED as well as maximum, and narrower than the Track Directions box below.  A maximum alone does not do it:
+                // BoxLayout caps the WIDTH at the maximum, but the column still takes its preferred width from its widest child, and
+                // this combo prefers whatever "Parked Locomotives" needs plus the arrow.  Both are set, and the option text is
+                // shortened to "Locs" (Adam: "use Locs if shorter text is needed in the dropdown") so 150 is a width the words fit
+                // rather than one they are cut off at.
                 captionChoice.setPreferredSize(new java.awt.Dimension(150, 24));
                 captionChoice.setMaximumSize(new java.awt.Dimension(150, 24));
 
@@ -1926,12 +1887,9 @@ public class LayoutEditor extends PositionAwareJFrame
                 autonomyVisibility = visibility;
             }
 
-            // Lengths and addresses are mutually exclusive: both print a number on the tile, and two
-            // numbers on one square is unreadable.  Wired here because the Addresses box belongs to
-            // this window, not to the panel.
-            //
-            // Applied once on opening too, because Lengths is remembered between visits now - so it
-            // can arrive already on, with Addresses also on and two numbers on every square.
+            // Lengths and addresses are mutually exclusive: both print a number on the tile, and two numbers on one square is
+            // unreadable.  Wired here because the Addresses box belongs to this window, not to the panel.  Applied once on
+            // opening too, because Lengths is remembered between visits and can arrive already on, with Addresses also on.
             if (autonomyPanel.getShowLengths().isSelected() && this.showAddressCheckbox.isSelected())
             {
                 this.showAddressCheckbox.setSelected(false);
@@ -1948,15 +1906,10 @@ public class LayoutEditor extends PositionAwareJFrame
                 }
             });
 
-            // The findings go across the bottom, under the diagram and the full width of it.
-            //
-            // GroupLayout.replace on the scroll pane that holds the grid, which is the same way the
-            // visibility box is fitted: the content pane is generated, so nothing here edits it -
-            // the grid's slot is taken by a panel holding the grid AND the list beneath it.
-            //
-            // Full width because these are sentences.  Down the side they wrapped to four words a line
-            // beside the very diagram they describe, which is where the reader has to look to act on
-            // them.
+            // The findings go across the bottom, under the diagram and the full width of it: GroupLayout.replace on the scroll
+            // pane that holds the grid, the same way the visibility box is fitted (the content pane is generated), so the grid's
+            // slot is taken by a panel holding the grid AND the list beneath it.  Full width because these are sentences; down the
+            // side they wrapped to four words a line beside the very diagram they describe.
             if (autonomyFindings == null && autonomyPanel.getFindingsPanel() != null)
             {
                 javax.swing.JPanel stack = new javax.swing.JPanel(new BorderLayout());
