@@ -287,7 +287,7 @@ public class GraphReducer
 
         /**
          * Whether this tile's 0 was answered on purpose (OB-274) - measured track of no length to every length rule but
-         * the own-tail one (OB-300, TDU-C6), and not listed as missing.
+         * the own-tail one (OB-300), and not listed as missing.
          *
          * @param tile the square
          * @return true when its length was answered 0; false by default
@@ -499,16 +499,16 @@ public class GraphReducer
     }
 
     /**
-     * The same, with squares that are CLOSED rather than merely barred (DIR-B1).
+     * The same, with squares that are CLOSED rather than merely barred.
      *
      * `reachableTiles` takes the same `closed` set, so the editor's *test a path* tool and the findings panel cannot
      * disagree about which way a train may go: a route this walk drew to a closed square would be one the runtime
      * refuses.
      *
      * A closed square is neither a way through nor a destination, in EVERY tier, manual included: `isPathClear` refuses
-     * it as an intermediate and as the final point (DIR-C10, E8V-C2), because inactive really means nothing can pass.
+     * it as an intermediate and as the final point, because inactive really means nothing can pass.
      * Only a closed START is exempt.  While autonomy runs, the railway additionally refuses any edge with a closed
-     * endpoint, and the checks' Auto-tier note tells a shut square apart from a manual-only one (E8V-B1).
+     * endpoint, and the checks' Auto-tier note tells a shut square apart from a manual-only one.
      *
      * @param from where the train is
      * @param to where it should go
@@ -686,7 +686,7 @@ public class GraphReducer
     }
 
     /**
-     * The same, with squares that are CLOSED rather than merely barred (V31-C3).
+     * The same, with squares that are CLOSED rather than merely barred.
      *
      * The two are different claims.  A barred side says "trains may pass through here but not stop", which is why the
      * loop below reaches past it (OB-120).  A square switched out of service says "nothing may pass here": the cross
@@ -1145,7 +1145,7 @@ public class GraphReducer
     /**
      * Whether the berth-room walk stops at this tile: a switch, or a turnout declared permanently set.
      *
-     * **A PERMANENT TURNOUT IS STILL THE LAST SWITCH** (OB-233 / IND9X-A2).  Topologically it is not a choice - nothing
+     * **A PERMANENT TURNOUT IS STILL THE LAST SWITCH** (OB-233).  Topologically it is not a choice - nothing
      * can throw it, and every train over it takes the same road - but it is shared metal, and a train standing across it
      * fouls the merge exactly as it would foul a throwable one.  `behaviour.md` 5a's rule is about where the train comes
      * to REST, not about what can be commanded.
@@ -1181,7 +1181,7 @@ public class GraphReducer
      * rest clear of the points; track the train would be standing on while fouling them is not room.
      *
      * "A switch" here is what `boundsTheRoom` says: a switch or a permanent turnout, and not a two-square
-     * crossing - `Edge.crossesASwitch` (VD18-C4).
+     * crossing - `Edge.crossesASwitch`.
      *
      * Walks backwards and stops at the first switch, because that is the binding one: a train that
      * fits between the last switch and the station also fits between any earlier switch and it.
@@ -1359,7 +1359,7 @@ public class GraphReducer
      * Two edges that share a tile are the same piece of railway and cannot run at once.
      *
      * The exceptions are the three tile types whose roads never meet - an overpass, where the two tracks are at
-     * different heights, and the two kinds of double curve, whose curves sit in opposite corners (AUR-B1, OP2-C3).
+     * different heights, and the two kinds of double curve, whose curves sit in opposite corners.
      * Crossing one by different routes is not a conflict, though crossing it by the same one still is.  Getting that
      * backwards is costly either way - treating it as a conflict needlessly serialises two independent routes, while
      * treating a same-route share as safe would allow a real collision.
@@ -1409,7 +1409,7 @@ public class GraphReducer
      * The location identifiers a step occupies.
      *
      * Normally the tile itself.  Three tile types are identified per route instead, so their roads are separate
-     * places: an overpass, a DOUBLE CURVE and a feedback double curve (AUR-B1).
+     * places: an overpass, a DOUBLE CURVE and a feedback double curve.
      *
      * **Two roads that never meet must not be one place.**  `TilePorts` gives a double curve `route(N, W)` and
      * `route(E, S)`: two curves in opposite corners of the square, with no rail between them.  Keyed by the tile alone
@@ -1547,7 +1547,7 @@ public class GraphReducer
     /**
      * Whether a square measures 0 because it was answered 0, which the runtime is told so as not to call it missing - or
      * because it takes no length at all, a route tile (OB-273), which nobody is ever asked about.  Unmarked, a leg answered
-     * 0 around a route tile read as unmeasured track to every rule that asks `Edge.isMeasured` (TDU-C6).
+     * 0 around a route tile read as unmeasured track to every rule that asks `Edge.isMeasured`.
      */
     private boolean answeredAtZero(TileKey tile)
     {

@@ -69,7 +69,7 @@ public class DiagramMonitor
     // Which way a train standing on each Point faces, for the icon of a parked one (Adam, 2026-10-01).
     private volatile Map<String, org.traincontrol.automationui.TilePorts.Side> facings = new LinkedHashMap<>();
 
-    // The trains the setup records where the railway stands them on no Point, and their facings (RSA17-C2).
+    // The trains the setup records where the railway stands them on no Point, and their facings.
     private volatile Map<TileKey, org.traincontrol.automationui.TilePorts.Side> onNoPoint = new LinkedHashMap<>();
 
     private final AtomicBoolean dirty = new AtomicBoolean(false);
@@ -127,7 +127,7 @@ public class DiagramMonitor
     }
 
     /**
-     * The trains the setup records on a square the railway stands them on no Point of, drawn parked there (RSA17-C2): the
+     * The trains the setup records on a square the railway stands them on no Point of, drawn parked there: the
      * error about each says it stands there, and a diagram that drew nothing read the square free.
      *
      * @param trains square to the way the train faces
@@ -135,7 +135,7 @@ public class DiagramMonitor
     public void setTrainsOnNoPoint(Map<TileKey, org.traincontrol.automationui.TilePorts.Side> trains,
         java.util.Set<TileKey> paused)
     {
-        // THE GREY BEFORE THE TRAINS IT IS DRAWN ON, and never an empty set between (OB-343; RSA60-C5).  A frame on the
+        // THE GREY BEFORE THE TRAINS IT IS DRAWN ON, and never an empty set between (OB-343).  A frame on the
         // monitor's thread reads the trains and then asks of each whether it is paused, so the frame that reads the new trains
         // finds the new set already there.  This used to write the trains through the one-argument form, which emptied the set
         // first, and a frame between the two writes drew a paused train as one that runs.
@@ -155,7 +155,7 @@ public class DiagramMonitor
         setTrainsOnNoPoint(trains, null);
     }
 
-    /** The squares among the trains on no Point whose train is paused, drawn grey (RSA60-C5). */
+    /** The squares among the trains on no Point whose train is paused, drawn grey. */
     private volatile java.util.Set<TileKey> pausedOnNoPoint = Collections.emptySet();
 
     /**
@@ -165,7 +165,7 @@ public class DiagramMonitor
      * whose picture has not changed, which is right for a burst of movement and wrong for tiles that
      * were wiped and now show nothing - to them, the same picture is news.
      *
-     * **SYNCHRONIZED, on the same monitor as `refresh()`** (W21-C4). `refresh()` holds it because the
+     * **SYNCHRONIZED, on the same monitor as `refresh()`**. `refresh()` holds it because the
      * compare-against-published is a check then a set; this is the set half of that same field, and it
      * was taking no lock at all. The threads really are different - the driver's timer thread ticks
      * `refreshIfDirty()` while `clear()` reaches here from the event thread - so a tick already inside
@@ -355,7 +355,7 @@ public class DiagramMonitor
 
             // and the locomotive itself, at the point it has most recently reached.
             //
-            // THROUGH THE ONE RULE (VD12-B1).  `getLocomotiveLocation` returns an ARBITRARY one of
+            // THROUGH THE ONE RULE.  `getLocomotiveLocation` returns an ARBITRARY one of
             // the several points a running train reserves at once - the reservation legitimately
             // holds them all - so the marker could jump to a point the train had not reached yet.
             // The milestones are in the order they were reached, so the last is where the train
@@ -384,7 +384,7 @@ public class DiagramMonitor
         // locomotive icon on top of the station in the track diagram viewer ... same icon as when a run is started."
         markTheParkedTrains(overlays, layout, active.keySet());
 
-        // everything held clear so those paths can run - and NOT what an edge the run has given back held clear (RSA25-C2):
+        // everything held clear so those paths can run - and NOT what an edge the run has given back held clear:
         // the railway released those claims with it, and the wash said the track was still spoken for
         for (Map.Entry<org.traincontrol.base.Locomotive, List<Edge>> run : active.entrySet())
         {
@@ -510,8 +510,8 @@ public class DiagramMonitor
 
             if (standing == null || pathed.contains(standing)) continue;
 
-            // NOR ONE SETTING ITS ROUTE UP (RSA17-B2): every Point it has reserved answers it, and each was drawn as a train
-            // parked there - it is marked once, waiting, where it stands (RSA18-C2), as a run marks a train holding a path
+            // NOR ONE SETTING ITS ROUTE UP: every Point it has reserved answers it, and each was drawn as a train
+            // parked there - it is marked once, waiting, where it stands, as a run marks a train holding a path
             if (layout.holdsAPath(standing))
             {
                 claiming.add(standing);
@@ -547,10 +547,10 @@ public class DiagramMonitor
             markTrain(into, at, false, willStandOn(layout, train), train);
         }
 
-        // AND THOSE ON NO POINT, where the setup says they stand (RSA17-C2)
+        // AND THOSE ON NO POINT, where the setup says they stand
         for (Map.Entry<TileKey, org.traincontrol.automationui.TilePorts.Side> train : onNoPoint.entrySet())
         {
-            // GREY WHERE IT IS PAUSED (RSA60-C5), as every other train is
+            // GREY WHERE IT IS PAUSED, as every other train is
             TileOverlay mark = TileOverlay.parked(train.getValue()).withPaused(pausedOnNoPoint.contains(train.getKey()));
 
             TileOverlay existing = into.get(train.getKey());

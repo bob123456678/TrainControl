@@ -41,7 +41,7 @@ public class AutonomySession
 
     private List<LayoutDiagram> pages = new ArrayList<>();
     TileGraph graph;
-    // VOLATILE, AND HANDED OUT ONLY ONCE REDUCED (OB-298, ADA-C2) - see `rebuild`.
+    // VOLATILE, AND HANDED OUT ONLY ONCE REDUCED (OB-298) - see `rebuild`.
     volatile GraphReducer reducer;
 
     boolean dirty = false;
@@ -101,8 +101,8 @@ public class AutonomySession
     private boolean pagesStale = false;
 
     /**
-     * Whether squares have been moved, removed or built over since the railway running was built (RSA6-B2, RSA6-A2,
-     * RSA7-A1): the fold is refused until the next `open`, as after a page rename.  That railway names and places what
+     * Whether squares have been moved, removed or built over since the railway running was built:
+     * the fold is refused until the next `open`, as after a page rename.  That railway names and places what
      * it knows by the squares as they were, so a fold would write the old names back over the moved ones, or judge the
      * squares a Cancel put back against the page the editor had emptied.  Nothing runs while the editor is open, so
      * nothing the refusal keeps out is new.
@@ -110,7 +110,7 @@ public class AutonomySession
     private boolean squaresMoved = false;
 
     /**
-     * A page renamed: the setup's squares on it, and the railway's (RSA7-B3).
+     * A page renamed: the setup's squares on it, and the railway's.
      *
      * @param from the page's name as it was
      * @param to its name now
@@ -129,7 +129,7 @@ public class AutonomySession
     }
 
     /**
-     * The squares the railway running says its Points are copies of, moved as the setup's are (RSA7-B3).
+     * The squares the railway running says its Points are copies of, moved as the setup's are.
      *
      * While an edit declined during a run waits, a load carries each train by the square the railway says it stands on,
      * so a move or a page rename must move the railway's squares too, or the carry reads each train's square as it was.
@@ -155,7 +155,7 @@ public class AutonomySession
     }
 
     /**
-     * What an edit of the track changes outside the setup of its page (RSA8-B2, RSA8-B3): what the carry remembers of
+     * What an edit of the track changes outside the setup of its page: what the carry remembers of
      * the builds it has seen, the squares the railway running says its Points are copies of, and the names in every
      * configuration's stored legs.  A page's undo point holds it, and the session holds it as it was before the first
      * move, for a Cancel; each is put back with the setup, because a move changes them in step with the squares.
@@ -184,7 +184,7 @@ public class AutonomySession
 
     /**
      * What the carry remembered, and the railway's squares, as the editor opened - or before the first move where no
-     * editor said it opened - for a Cancel (RSA8-B2, RSA9-B2).  Taken at the first move alone, a Cancel after two names
+     * editor said it opened - for a Cancel.  Taken at the first move alone, a Cancel after two names
      * were swapped would find each remembered on the other's square.
      */
     private Remembered asTheEditBegan;
@@ -225,7 +225,7 @@ public class AutonomySession
     }
 
     /**
-     * Puts back what this session remembered - and the stored legs where asked, each by where it is (RSA9-C1): a road's
+     * Puts back what this session remembered - and the stored legs where asked, each by where it is: a road's
      * by its square and step, and the timetable's by entry and leg where the timetable has as many legs as it had.  By
      * position, two roads whose squares share a bucket were written into each other, the page's points being put back
      * first as a new map.
@@ -272,10 +272,10 @@ public class AutonomySession
     }
 
     /**
-     * A page deleted: its squares forgotten in every configuration, and these pages marked stale (RSA22-C2), as a rename
+     * A page deleted: its squares forgotten in every configuration, and these pages marked stale, as a rename
      * marks them - the fold that follows the delete, behind the reset, worked its keys out from these pages, the deleted
      * one among them, and wrote its trains and its stations' settings straight back under its name.  The delete door
-     * folds first (DW-C1), so nothing the refusal keeps out is new.
+     * folds first, so nothing the refusal keeps out is new.
      *
      * @param page the page's name
      * @return how many entries were forgotten
@@ -317,7 +317,7 @@ public class AutonomySession
 
         for (LayoutDiagram page : pages)
         {
-            // A placeholder's id is NOT offered to the store (FV3-A1): `pageIsHere` answers from this map, and answering
+            // A placeholder's id is NOT offered to the store: `pageIsHere` answers from this map, and answering
             // yes about a page whose contents did not load would release the entries OB-067 holds out of memory to be
             // written back verbatim.  The placeholder keeps its id for the index writer ("which page is this"); this
             // map answers "is its track here to judge".
@@ -371,7 +371,7 @@ public class AutonomySession
 
         migrationFailures = migrateStationLabels();
 
-        // NO CAPTION IS FORGOTTEN HERE FOR NAMING A SQUARE THAT IS NOT A STATION NOW (GSE-C4): demoting keeps it, ignored
+        // NO CAPTION IS FORGOTTEN HERE FOR NAMING A SQUARE THAT IS NOT A STATION NOW: demoting keeps it, ignored
         // while not a station, and `getCaptionTarget` leaves it undrawn until the square is one again.
 
         dirty = false;
@@ -538,12 +538,12 @@ public class AutonomySession
      * Moves any length a route tile holds onto the track beside it, keeping the total.
      *
      * A route tile takes no length (OB-273: *"it just implicitly connects things as if it were a crossing"*), but the
-     * room and tail sums still add whatever it holds (`GraphReducer.sumLength` and `lengthOf` read every step, AUT-C4),
+     * room and tail sums still add whatever it holds (`GraphReducer.sumLength`, `lengthOf` read every step),
      * so a unit left there is counted without being anywhere the editor shows or asks about.  Each goes to the square
      * beside the route tile along the road it carries - plain track in preference to a switch, whose length is the
      * page's one turnout length - and the sums come out as they were.
      *
-     * **Never onto a sensor square** (AUT-C4): a sensor's length is the last place of every rail arriving at it, so a
+     * **Never onto a sensor square**: a sensor's length is the last place of every rail arriving at it, so a
      * unit put there lengthens every other approach too.
      *
      * Run as the setup is opened.  A route tile with no plain track or switch beside it keeps its length.
@@ -571,12 +571,12 @@ public class AutonomySession
             {
                 org.traincontrol.base.LayoutDiagramComponent track = graph.getTiles().get(beside);
 
-                // NEVER A SENSOR (AUT-C4): its length is every approach's last place, not a share of this piece.
+                // NEVER A SENSOR: its length is every approach's last place, not a share of this piece.
                 if (track == null || track.isFeedback()) continue;
 
                 if (into == null) into = beside;
 
-                // PLAIN TRACK FIRST: a switch's length is the page's one turnout length (MAL-B1), not a share of a piece.
+                // PLAIN TRACK FIRST: a switch's length is the page's one turnout length, not a share of a piece.
                 if (!track.isSwitch())
                 {
                     into = beside;
@@ -599,8 +599,8 @@ public class AutonomySession
     /**
      * Every caption on one page, as a snapshot something else can hold and hand back.
      *
-     * Not the editor's undo, which is `snapshotPage`/`restorePage` through the companion store (VD9-C16).  The one
-     * caller is `LayoutEditor.forgetCaptionsOutsideThePage`, the `RC-B1` cleanup that runs when a page is shrunk; it
+     * Not the editor's undo, which is `snapshotPage`/`restorePage` through the companion store.  The one
+     * caller is `LayoutEditor.forgetCaptionsOutsideThePage`, the cleanup that runs when a page is shrunk; it
      * wants the keys and not a round trip.
      *
      * @param page the page name
@@ -660,7 +660,7 @@ public class AutonomySession
     }
 
     /**
-     * The pages the caption migration DID rewrite, for the same reader (RGN-B1).
+     * The pages the caption migration DID rewrite, for the same reader.
      *
      * The migration edits files the user owns - a `Point:` label typed onto their own track diagram is taken into the
      * setup and emptied out of the `.cs2` - so the user has to be told.  `LayoutDiagram.saveChanges` keeps a `.cs2.bak`
@@ -729,7 +729,7 @@ public class AutonomySession
     public final void rebuild()
     {
         // The index is NOT nulled here: a feedback-thread reader (updateStationLabels) that saw null would derive the index
-        // itself against the reducer this method is replacing (SA-C1).  A reader mid-rebuild sees the OLD index -
+        // itself against the reducer this method is replacing.  A reader mid-rebuild sees the OLD index -
         // immutable, built from the old reducer - until the new one is published in one assignment at the end.
         graph = new TileGraph(pages, store.getExcludedPages());
 
@@ -762,10 +762,10 @@ public class AutonomySession
 
         graph.validatePortals();
 
-        // HANDED OUT ONLY ONCE REDUCED (OB-298, ADA-C2): a build asking for the reducer mid-reduce would walk lists still
+        // HANDED OUT ONLY ONCE REDUCED (OB-298): a build asking for the reducer mid-reduce would walk lists still
         // being filled.  A build takes the field once, so it holds the old railway or the whole new one.  This session's
         // own methods read the field at every use and `graph` is published first, so they rely on every rebuild running
-        // on the event thread, as every caller does (ADA2-C6).
+        // on the event thread, as every caller does.
         GraphReducer fresh = new GraphReducer(graph, store.asAuthored());
 
         fresh.reduce();
@@ -887,7 +887,7 @@ public class AutonomySession
     }
 
     /**
-     * Every Point name a build of this session has emitted, and the square it stood for (RSA3-B1) - so a timetable leg
+     * Every Point name a build of this session has emitted, and the square it stood for - so a timetable leg
      * naming one the latest build no longer has can be carried to the copy of that square it now is.
      */
     private final Map<String, TileKey> squareOfNameSeen = new java.util.HashMap<>();
@@ -895,10 +895,10 @@ public class AutonomySession
     /** And the square's own name as that build gave it, which the rest of the Point's name follows. */
     private final Map<String, String> baseOfNameSeen = new java.util.HashMap<>();
 
-    /** And which way a train standing on it faced, where that build said (RSA4-A1). */
+    /** And which way a train standing on it faced, where that build said. */
     private final Map<String, Side> facingOfNameSeen = new java.util.HashMap<>();
 
-    /** The latest build's Point names, to their squares (RSA4-A1). */
+    /** The latest build's Point names, to their squares. */
     private Map<String, TileKey> squareOfNameNow = Collections.emptyMap();
 
     /** Its squares, to their own names. */
@@ -922,8 +922,8 @@ public class AutonomySession
     private final Map<String, String> keptBases = new java.util.HashMap<>();
 
     /**
-     * The name the latest build gives a Point of the running layout (RSA4-A1), found by the square it was a copy of and
-     * the way a train on it faced (RSA5-A1): the name itself where the build still gives it to that square; otherwise the
+     * The name the latest build gives a Point of the running layout, found by the square it was a copy of and
+     * the way a train on it faced: the name itself where the build still gives it to that square; otherwise the
      * same copy under the square's name now, or, where that copy is gone, the copy of the square facing the same way, a
      * turning copy last.  A copy is its facing, so no other is offered; where none faces that way, or the square is
      * gone, there is none.  Found by the square and not the name, because a station renamed to the name another has
@@ -947,7 +947,7 @@ public class AutonomySession
 
         String own = nameOfSquareNow.get(at);
 
-        // THE SQUARE GONE: no Point to go back on - and not the name, which may be another square's now (RSA5-A1)
+        // THE SQUARE GONE: no Point to go back on - and not the name, which may be another square's now
         if (own == null) return null;
 
         // THE SAME COPY under the square's name now: what follows a square's name is its copy's heading
@@ -989,7 +989,7 @@ public class AutonomySession
         // A SQUARE OF ONE COPY THAT RECORDS NO FACING: that copy - a square of one Point is one place
         if (copies == 1 && facingOfNameNow.get(only) == null) return only;
 
-        // NO COPY FACES ITS WAY: none, rather than one facing the other way - the copy is the direction (RSA5-A2).  A
+        // NO COPY FACES ITS WAY: none, rather than one facing the other way - the copy is the direction.  A
         // direction that does this to a train of the railway's writes it into the setup where it stands, and the check
         // reports it as an error: `recordTrainsTheRailwayCannotHold`.
         return null;
@@ -1046,8 +1046,8 @@ public class AutonomySession
 
     /**
      * Carries the names every configuration stores - its captured timetable, and the road each standing train came in on
-     * (RSA4-C4) - to the names this build gives its Points (RSA3-B1): the configuration in use by its build, every other
-     * across a square renamed (RSA4-B1).
+     * - to the names this build gives its Points: the configuration in use by its build, every other
+     * across a square renamed.
      *
      * A Point is named after its square (the square's name, and a heading where the square is more than one copy), so a
      * station renamed, or a square given more copies or fewer, leaves every leg through it naming a Point no longer built,
@@ -1108,7 +1108,7 @@ public class AutonomySession
 
             facingOfNameSeen.putAll(facings);
 
-            // AND THIS BUILD'S, for the trains a rebuild puts back (RSA4-A1)
+            // AND THIS BUILD'S, for the trains a rebuild puts back
             squareOfNameNow = tiles;
             baseOfNameNow = naming.baseNames();
             nameOfSquareNow = bases;
@@ -1144,7 +1144,7 @@ public class AutonomySession
 
     /**
      * Every pair of Point names a configuration stores: its timetable's legs, and the steps of the road each standing
-     * train came in on (RSA4-C4) - which a load drops whole where one names a Point it does not build, so the tail fell
+     * train came in on - which a load drops whole where one names a Point it does not build, so the tail fell
      * back to stopping at the first fork.
      */
     private static List<NamedLeg> legsOf(org.json.JSONObject configuration)
@@ -1153,7 +1153,7 @@ public class AutonomySession
     }
 
     /**
-     * The same, each by where it is (RSA9-C1): "t" and an entry and leg of the timetable, or "r" and a square and step of
+     * The same, each by where it is: "t" and an entry and leg of the timetable, or "r" and a square and step of
      * a road.
      */
     private static Map<String, NamedLeg> keyedLegsOf(org.json.JSONObject configuration)
@@ -1238,7 +1238,7 @@ public class AutonomySession
     }
 
     /**
-     * Another configuration's names carried across a renamed square (RSA4-B1), in place: a name this build lacks, whose
+     * Another configuration's names carried across a renamed square, in place: a name this build lacks, whose
      * square is now called something else, to the same heading under the new name.  A name no build of this session gave
      * is remembered by the square whose name it begins with, so that a rename later can carry it.
      *
@@ -1257,7 +1257,7 @@ public class AutonomySession
                 TileKey square = squareOfNameSeen.get(name);
                 String base = baseOfNameSeen.get(name);
 
-                // STILL BUILT, ON THE SQUARE IT NAMED - or on one no build of this session placed it (RSA5-A1)
+                // STILL BUILT, ON THE SQUARE IT NAMED - or on one no build of this session placed it
                 if (tiles.containsKey(name) && (square == null || square.equals(tiles.get(name)))) continue;
 
                 if (square == null)
@@ -1311,7 +1311,7 @@ public class AutonomySession
                 TileKey square = squareOfNameSeen.get(name);
                 String base = baseOfNameSeen.get(name);
 
-                // STILL BUILT, ON THE SQUARE IT NAMED (RSA5-A1).  A station renamed to the name another has hands that
+                // STILL BUILT, ON THE SQUARE IT NAMED.  A station renamed to the name another has hands that
                 // name to the renamed square, and a name the build still gives was left - naming the renamed station.
                 // Seen by the build before this one, which is this carry's: the memory is written after it.
                 if (tiles.containsKey(name) && (square == null || square.equals(tiles.get(name)))) continue;
@@ -1408,9 +1408,9 @@ public class AutonomySession
     {
 
         /**
-         * How many placements had a facing chosen for them because the file did not state one (ACC-C4).
+         * How many placements had a facing chosen for them because the file did not state one.
          *
-         * The file states one where every edge from the train's point leaves the square by one side (REG4-A1).
+         * The file states one where every edge from the train's point leaves the square by one side.
          * Elsewhere a split square still needs one, so the import picks a way trains may arrive in.  It is a guess,
          * corrected in the autonomy editor and by the first real run's capture.  A facing the square already recorded,
          * kept for the train, is counted too: it is no more evidence about the train than a chosen one (OB-304).
@@ -1418,7 +1418,7 @@ public class AutonomySession
         public int facingsInvented;
 
         /**
-         * The points whose trains the file ran a way no copy of the square holds on this diagram (REG4-A1).
+         * The points whose trains the file ran a way no copy of the square holds on this diagram.
          *
          * The old file's directions are carried onto the diagram first (`carryTheOldDirections`), but never over one the
          * operator set, so a square can still have one copy, facing the way the train does NOT drive.  No facing the square cannot hold is
@@ -1446,14 +1446,14 @@ public class AutonomySession
 
         /**
          * Squares left alone because they had a name before this import - each counted once, however many old points stand
-         * on it (RSA44-C3, RSA45-C1).
+         * on it.
          */
         public int skipped = 0;
 
         /**
          * Old points whose square this import had already met from another point on the same sensor - a station and its
          * approach guard, the ordinary shape of an old file - each as a line naming the point and the name its square kept,
-         * whether this import named the square or it had its name before (RSA44-C3, RSA45-C1).  A square has one name.
+         * whether this import named the square or it had its name before.  A square has one name.
          */
         public final List<String> namesNotKept = new ArrayList<>();
 
@@ -1508,13 +1508,13 @@ public class AutonomySession
 
         /**
          * Locomotives the file places that the configuration imported into already has standing somewhere.  Not placed
-         * again: the train stays where the configuration has it (RLA-B2).
+         * again: the train stays where the configuration has it.
          */
         public final List<String> alreadyPlaced = new ArrayList<>();
 
         /**
          * Locomotives the file gives a home that the configuration imported into already has a home for.  That home is
-         * kept, and the message names them (RLA2-C3).
+         * kept, and the message names them.
          */
         public final List<String> homesKept = new ArrayList<>();
 
@@ -1532,7 +1532,7 @@ public class AutonomySession
 
         /**
          * Locomotives the file places that were not placed because the configuration imported into is the one running:
-         * where a train stands there is the railway's to say (RLD3-C1).
+         * where a train stands there is the railway's to say.
          */
         public final List<String> notPlacedInUse = new ArrayList<>();
     }
@@ -1549,14 +1549,14 @@ public class AutonomySession
      *   excludedLocs      the locomotives this station will not accept
      *   active            whether the railway may use the square at all.  Carried as given, except on a
      *                     station, where `false` arrives as "on, and not a destination autonomy chooses"
-     *                     (REG-B1, below).
+     *                     (below).
      *
      * `active` is carried unfiltered on a non-station because it is the operator's setting and the import is a
-     * migration, not an edit (D24-B5).  An `active: false` point is one no path may pass through OR END ON, manual
+     * migration, not an edit.  An `active: false` point is one no path may pass through OR END ON, manual
      * routes included.  On a station that would shut out a hand-picked route that v2.8.1 allowed - there `active: false`
      * was the old way of saying "autonomy stays out, I drive in by hand" - so (Adam: *"yes, translate as on
      * but not auto destination."*) on a station `active: false` is written as `autoDestination: false` and the switch
-     * is left on (REG-B1).
+     * is left on.
      */
     static final List<String> CARRIED_SETTINGS =
         Arrays.asList("priority", "speedMultiplier", "excludedLocs", "active", "maxTrainLength");
@@ -1572,8 +1572,8 @@ public class AutonomySession
      * overwrite somebody's work with a file's.
      *
      * Nothing is written to disk BY THIS METHOD.  Its caller, `AutonomyViewerPanel.importLegacyGraph`, reads the rest of
-     * the file and saves once it has, or puts the setup back as it was where the file fails part way (RLA-C3), so an
-     * import is committed only whole (ACC-C5).
+     * the file and saves once it has, or puts the setup back as it was where the file fails part way, so an
+     * import is committed only whole.
      *
      * @param legacy the parsed autonomy.json
      * @return what was matched, skipped and not found
@@ -1595,7 +1595,7 @@ public class AutonomySession
 
     /**
      * The same, told whether the file's placements are taken - not into the configuration running, where a train stands
-     * is the railway's to say (RLD3-C1); the rest of the file fills gaps as ever.
+     * is the railway's to say; the rest of the file fills gaps as ever.
      *
      * @param legacy the parsed autonomy.json
      * @param knownLocomotives the names the locomotive database holds, or null not to check
@@ -1608,7 +1608,7 @@ public class AutonomySession
     }
 
     /**
-     * The address in a legacy command's accessory name, when that accessory is a signal (RG4-B1).
+     * The address in a legacy command's accessory name, when that accessory is a signal.
      *
      * A 2.8.1 command names its accessory as a display string - "Signal 116", "Switch 68".  Only signals are wanted: a
      * switch position is reproduced from the track diagram, and a signal is driven only where the operator pairs it.
@@ -1631,7 +1631,7 @@ public class AutonomySession
 
         final String rest = trimmed.substring(7).trim();
 
-        // THE DIGITS, AND WHATEVER THE PROTOCOL ADDS AFTER THEM (VLD-B1): the standardized name is
+        // THE DIGITS, AND WHATEVER THE PROTOCOL ADDS AFTER THEM: the standardized name is
         // `Accessory.getNameWithProtocol`, which for any decoder but the default appends the protocol ("Signal 116 DCC"),
         // so parsing the whole remainder as a number would find no signals on a DCC railway.
         int end = 0;
@@ -1640,7 +1640,7 @@ public class AutonomySession
 
         if (end == 0) return null;
 
-        // DIGITS ONLY, so a sign is not an address (VLD-C5): `Integer.valueOf` accepts "+116" and "-5", and neither is a
+        // DIGITS ONLY, so a sign is not an address: `Integer.valueOf` accepts "+116" and "-5", and neither is a
         // real accessory.  What may follow the digits is a protocol token and nothing else - "Signal 1 2" or
         // "Signal 116red" is not a name this program writes.
         if (end < rest.length() && !Character.isWhitespace(rest.charAt(end))) return null;
@@ -1694,7 +1694,7 @@ public class AutonomySession
                 {
                     withCommands++;
 
-                    // AND THE SIGNALS BY NAME, not just inside that count (RG4-B1): most commands are switch positions, which
+                    // AND THE SIGNALS BY NAME, not just inside that count: most commands are switch positions, which
                     // the derivation reproduces, but the new model drives a SIGNAL only where it is paired with a station,
                     // a gesture the operator has to make by address.  NAMED, NOT COMPARED: deciding which are already
                     // paired needs the reduction, and this runs on a file not yet imported.  Naming a signal already paired
@@ -1715,7 +1715,7 @@ public class AutonomySession
 
                 if (e.optInt("length", 0) > 0) withLength++;
 
-                // HAND-WRITTEN LOCKS, the fifth thing this drops and the only silent one (ACC-B1): a 2.8.1 edge could carry
+                // HAND-WRITTEN LOCKS, the fifth thing this drops and the only silent one: a 2.8.1 edge could carry
                 // `lockedges`, and the new model derives locks from geometry (`GraphReducer.deriveLocks` locks two edges
                 // that occupy a shared tile).  That cannot reproduce a lock between edges sharing NO tile - parallel
                 // adjacent tracks, an electrical section - so two trains may be permitted at once where the file forbade
@@ -1735,8 +1735,8 @@ public class AutonomySession
 
         if (withLocks > 0) out.add(I18n.f("autosetup.ui.leftEdgeLocks", withLocks));
 
-        // AND THE SIGNALS BY NAME (RG4-B1), sorted by address so the operator working down the list with the Pair Signal
-        // item open does not lose their place.  Collected in the loop above, so the null and isNull guards cannot drift (VLD-C7).
+        // AND THE SIGNALS BY NAME, sorted by address so the operator working down the list with the Pair Signal
+        // item open does not lose their place.  Collected in the loop above, so the null and isNull guards cannot drift.
         if (!signalAddresses.isEmpty())
         {
             StringBuilder names = new StringBuilder();
@@ -1751,7 +1751,7 @@ public class AutonomySession
             out.add(I18n.f("autosetup.ui.leftSignalAuthors", signalAddresses.size(), names.toString()));
         }
 
-        // AND A FILE THAT IS NOT ACTUALLY A 2.8.1 ONE (ACC-C7): `detectImportFormat` calls any file whose `points` is an
+        // AND A FILE THAT IS NOT ACTUALLY A 2.8.1 ONE: `detectImportFormat` calls any file whose `points` is an
         // ARRAY a legacy graph, and a configuration serialised by `Layout.toJSON` is one too, so exporting a modern setup
         // and importing it again comes through this door.  Reported rather than refused: a key the old format never wrote
         // is evidence rather than proof, as somebody could hand-edit a legacy file.
@@ -1847,7 +1847,7 @@ public class AutonomySession
         {
             if (store.getExcludedPages().contains(page.getName())) continue;
 
-            // AND A PAGE THE OPERATOR TURNED BACK ON IS LEFT ALONE (TST-B15): this method's second caller
+            // AND A PAGE THE OPERATOR TURNED BACK ON IS LEFT ALONE: this method's second caller
             // is a legacy import into an EXISTING setup, so a page it had shut and the operator had switched back on must
             // not look like a page nobody had considered.  The "may override" ruling holds for pages nobody has had an
             // opinion about; an explicit re-enable is an opinion.
@@ -1954,7 +1954,7 @@ public class AutonomySession
     }
 
     /**
-     * Each copy of a square a train may be put down on, with the way it faces (OB-270, GUI-B1).
+     * Each copy of a square a train may be put down on, with the way it faces (OB-270).
      *
      * `facingsFor` names every copy, but a copy trains may not arrive at is built as no station, and a train stood there is
      * one autonomy will not start (`autolayout.why.startFacingBarred`).  `copyFacing` asks this first, so that among the
@@ -2019,13 +2019,13 @@ public class AutonomySession
 
     /**
      * The copy of a square a train facing this way stands on - one trains may arrive at where there is one, preferring
-     * one that does not turn it (MT-368, MT-394, GUI-B1, TDY2-A1).
+     * one that does not turn it (MT-368, MT-394).
      *
      * More than one copy can face the same way (a plain copy and its turning twin); the plain one is where a train could
      * have come to rest facing so.  A copy trains may arrive at comes first, because the first copy facing a way can be
      * one no train may arrive at (the plain copy may be no station while only the turning twin is).
      *
-     * **But where no such copy faces that way, one that faces it anyway** (TDY2-A1, GUI2-A1).  The copy IS the
+     * **But where no such copy faces that way, one that faces it anyway**.  The copy IS the
      * direction: a train reversed on the throttle, or told by the Facing menu which way it really points, stood on a copy
      * facing the other way is dispatched along a route locked one way while its decoder drives it the other.  On a copy
      * autonomy cannot start from it is refused with a sentence saying why.
@@ -2057,7 +2057,7 @@ public class AutonomySession
 
         if (turning != null) return turning;
 
-        // NONE A TRAIN MAY ARRIVE AT FACES THAT WAY: any copy that does, the plain one first (TDY2-A1).
+        // NONE A TRAIN MAY ARRIVE AT FACES THAT WAY: any copy that does, the plain one first.
         for (Map.Entry<String, Side> copy : facingsFor(square).entrySet())
         {
             if (copy.getValue() != facing) continue;
@@ -2131,7 +2131,7 @@ public class AutonomySession
     }
 
     /**
-     * Stands a locomotive on the copy of its square that faces a given way (`DIR-B3`).
+     * Stands a locomotive on the copy of its square that faces a given way.
      *
      * A square is several Points once it is split - one per facing a train can hold there - and the copy a locomotive is
      * on is what the runtime uses to decide where it can go next.  `facingsFor` maps each copy's NAME to the side its
@@ -2156,8 +2156,8 @@ public class AutonomySession
 
         org.traincontrol.base.Locomotive train = null;
 
-        // A COPY FACING THAT WAY, one trains may arrive at first (GUI-B1): the first copy facing a way can be one no train
-        // may arrive at, which autonomy will not start from.  But never a copy facing another way (TDY2-A1): where only a
+        // A COPY FACING THAT WAY, one trains may arrive at first: the first copy facing a way can be one no train
+        // may arrive at, which autonomy will not start from.  But never a copy facing another way: where only a
         // barred copy faces that way, that is where the train goes - `copyFacing` says why.
         org.traincontrol.automation.Point onto = copyFacing(tile, facing, running);
 
@@ -2185,7 +2185,7 @@ public class AutonomySession
         // Nowhere to put it, or it is not standing on this square in the running layout at all.
         if (onto == null || train == null) return;
 
-        // NOT A TRAIN UNDER WAY (RLV11-C3, RLV12-C4).  A locked path records its train on every point of it, its start
+        // NOT A TRAIN UNDER WAY.  A locked path records its train on every point of it, its start
         // among them, so a train under way reads as standing on each square it will pass - and standing it on another copy
         // sweeps it off the rest of its path while it runs.  Here, so that every caller has it: the turn written after an
         // arrival, the direction follow and the facing menu.
@@ -2193,26 +2193,26 @@ public class AutonomySession
 
         if (onto.getCurrentLocomotive() == train) return;
 
-        // ALREADY ON A COPY THAT FACES THAT WAY, AND ONE TRAINS MAY ARRIVE AT: left there (RSA52-B1).  Moved onto the other
+        // ALREADY ON A COPY THAT FACES THAT WAY, AND ONE TRAINS MAY ARRIVE AT: left there.  Moved onto the other
         // side's plain copy at the next idle moment, a train a plan turned on a may-turn station's turning copy would lose
         // its place for the next entry of a recorded timetable.  `Layout.copyAfterTheTurn` asks the same.
         if (from != null && facing == facingsFor(tile).get(from.getName()) && from.isDestination()) return;
 
-        // AND THE TAIL COMES WITH IT (REV9-B1).  `Point.setLocomotive` clears `arrivedFrom` on every change of occupant,
+        // AND THE TAIL COMES WITH IT.  `Point.setLocomotive` clears `arrivedFrom` on every change of occupant,
         // which is wrong for THIS move, the same train re-stood on a sibling copy of one square: behaviour.md 4 - *"turning
         // the train round at the platform does not move its tail: the carriages stay where they stopped"*.  Saved and put
         // back, the way `TrainControlUI.putTheTrainsBack` does, and read from the copy it was ON, because that is the one
         // the arrival wrote it to.
         final String tail = from == null ? null : from.getArrivedFrom();
 
-        // AND THE ROUTE IT DROVE, for the same reason (TDR-B2).  A train that was driven here follows that
+        // AND THE ROUTE IT DROVE, for the same reason.  A train that was driven here follows that
         // route back past a junction (Adam, MT-335: "Follow its last route"), and the clear below loses it
         // exactly as it loses the side.
         final java.util.List<org.traincontrol.automation.Edge> along =
             from == null ? null : from.getArrivedAlong();
 
         // CLEARED FIRST, so the train is never on two copies of one square at once - which is the
-        // state `DIR-C3` is about and which the checks report.
+        // state the checks report.
         for (org.traincontrol.automation.Point point : here)
         {
             if (point.getCurrentLocomotive() == train) point.setLocomotive(null);
@@ -2221,7 +2221,7 @@ public class AutonomySession
         onto.setLocomotive(train);
 
         // Put back unconditionally: `setLocomotive` just above cleared both fields on this copy, so there is never anything
-        // newer to keep (TDR-B2).
+        // newer to keep.
         if (tail != null) onto.setArrivedFrom(tail);
 
         if (along != null) onto.setArrivedAlong(along);
@@ -2233,7 +2233,7 @@ public class AutonomySession
     }
 
     /**
-     * Faces a train the way it came in, because the railway has just turned it round there (REV9-A1).
+     * Faces a train the way it came in, because the railway has just turned it round there.
      *
      * **The answer is absolute.**  `flipFacing` is relative - it writes the other choice of the facing it finds - and what
      * it finds cannot be trusted when `TrainControlUI.reconcileFacingWhenIdle` runs (behaviour.md 6a: *"a run moves trains,
@@ -2243,7 +2243,7 @@ public class AutonomySession
      * train that has just turned at its destination is its `arrivedFrom`, which the arrival wrote onto this very Point;
      * applying it a second time writes the same thing again rather than undoing it.
      *
-     * **Both records, as `flipFacing` does** (DIR-B3; Adam: *"flipFacing should also update the running
+     * **Both records, as `flipFacing` does** (Adam: *"flipFacing should also update the running
      * layout"*): which copy a train stands on IS its direction.  **Quiet where it cannot answer, by returning null** - a
      * Point that is not this square's, a square the build has no copies for, an arrival side no copy can face; the caller
      * keeps the record, so the turn is retried on the next refresh.
@@ -2267,7 +2267,7 @@ public class AutonomySession
             return null;
         }
 
-        // AND NOT UNDER WAY AGAIN (RLV11-C3).  A train's locked path records it on its start - where it turned - so one that
+        // AND NOT UNDER WAY AGAIN.  A train's locked path records it on its start - where it turned - so one that
         // turned and was sent off again read as standing there, and standing it on another copy swept it off the rest of
         // its path while it ran.  It owes nothing now: its next arrival writes the record again or clears it.
         if (running != null && running.isAlreadyUnderway(turnedAt.getCurrentLocomotive())) return null;
@@ -2290,7 +2290,7 @@ public class AutonomySession
         if (tile == null) return null;
 
         // A SIDE NO COPY OF THIS SQUARE CAN FACE is the state `OB-177` taught the menu to show and
-        // `flipFacing` gives up on in silence (DIR-C4).  Writing it would record a facing the build
+        // `flipFacing` gives up on in silence.  Writing it would record a facing the build
         // cannot hold and `moveOntoFacingCopy` would find nothing to stand the train on.
         if (!facingChoices(tile).contains(arrived)) return null;
 
@@ -2316,7 +2316,7 @@ public class AutonomySession
      * the answer is not obvious** (a locomotive that is not placed, a square where neither the railway nor the setup says
      * which way it faces, a square offering other than two facings): reported by returning null.
      *
-     * **AND THE RUNNING LAYOUT** (`DIR-B3`; Adam: *"flipFacing should also update the running layout."*):
+     * **AND THE RUNNING LAYOUT** (Adam: *"flipFacing should also update the running layout."*):
      * which copy a locomotive stands on decides where it can go next, and `captureFromLayout` derives the facing from that
      * copy, so writing only the setup left two records of one fact with no arbiter.  Both writes are here, in one method,
      * so that they cannot drift.
@@ -2329,10 +2329,10 @@ public class AutonomySession
     {
         if (locomotive == null) return null;
 
-        // WHERE THE TRAIN IS, THEN WHERE THE SETUP THINKS IT IS (REG6-A2): the setup names the square a train set off from
+        // WHERE THE TRAIN IS, THEN WHERE THE SETUP THINKS IT IS: the setup names the square a train set off from
         // until the next `captureFromLayout` writes the arrival back, and a reversal made DURING a run is deferred until
         // the run ends - by then the train is at the far end, so the running layout is asked first because it knows.
-        // The setup is still walked afterwards, and in full: DIR-C3 is the rule that a locomotive recorded on two squares
+        // The setup is still walked afterwards, and in full, because a locomotive recorded on two squares
         // gets a follow on the square that CAN be decided.
         java.util.List<TileKey> candidates = new java.util.ArrayList<>();
 
@@ -2350,9 +2350,9 @@ public class AutonomySession
             }
         }
 
-        // THE SETUP ONLY WHEN THE RAILWAY DOES NOT KNOW (REG7-A2).  Appended to the running layout's answer, the setup's
+        // THE SETUP ONLY WHEN THE RAILWAY DOES NOT KNOW.  Appended to the running layout's answer, the setup's
         // departure square (which it names until the next `captureFromLayout`) would come up after an arrival square the
-        // loop below cannot decide, and the empty platform the train left would have its facing flipped.  DIR-C3 is not
+        // loop below cannot decide, and the empty platform the train left would have its facing flipped.  The setup walk is not
         // weakened: two SETUP squares are still walked in full when the railway has no opinion.
         if (candidates.isEmpty())
         {
@@ -2366,7 +2366,7 @@ public class AutonomySession
 
         for (final TileKey tile : candidates)
         {
-            // THE WAY IT FACES ON THE RAILWAY, where it stands there (TDY3-A2, AUT3-A1): the copy it is on IS its facing.
+            // THE WAY IT FACES ON THE RAILWAY, where it stands there: the copy it is on IS its facing.
             // The setup's FACING is the heading it set off with until a capture writes the arrival back, so after a run it
             // is absent or another train's.  The setup answers only where the railway does not know.
             Side recorded = facingOfTrainOnTheRailway(tile, locomotive, running);
@@ -2375,11 +2375,11 @@ public class AutonomySession
 
             List<Side> choices = facingChoices(tile);
 
-            // CARRY ON RATHER THAN GIVE UP (DIR-C3): a locomotive recorded on TWO squares (the checks report it) must still
+            // CARRY ON RATHER THAN GIVE UP: a locomotive recorded on TWO squares (the checks report it) must still
             // get a follow on the square that can be decided.
             if (recorded == null || choices.size() != 2) continue;
 
-            // A RECORDED FACING THIS SQUARE CANNOT HOLD (DIR-C4), the state `OB-177` taught the menu to show: not flipped,
+            // A RECORDED FACING THIS SQUARE CANNOT HOLD, the state `OB-177` taught the menu to show: not flipped,
             // because "the other one" means nothing when the recorded value is neither of them, and not logged from here
             // (no control station); `facingsThatCannotBeHeld` reports it in the findings panel.
             if (!choices.contains(recorded)) continue;
@@ -2396,7 +2396,7 @@ public class AutonomySession
         return null;
     }
     /**
-     * The locomotive standing on a stored point, or null when none is (DIR-C6).
+     * The locomotive standing on a stored point, or null when none is.
      *
      * One spelling of "a locomotive is here", so the walk that finds them and the walk that reads
      * them cannot disagree about what a blank name means.
@@ -2449,7 +2449,7 @@ public class AutonomySession
     {
         Map<TileKey, String> out = new LinkedHashMap<>();
 
-        // THROUGH THE SHARED WALK `tilesWhere` (DIR-C6, WK3-C3), so a qualification added to the walk reaches every caller.
+        // THROUGH THE SHARED WALK `tilesWhere`, so a qualification added to the walk reaches every caller.
         // The excluded-page filter stays here, because it belongs to this question.
         for (TileKey tile : tilesWhere((key, point) -> namedLocomotiveOn(point) != null))
         {
@@ -2485,7 +2485,7 @@ public class AutonomySession
      * All pages, including excluded ones: exclusion says autonomy will not route over a page, not that
      * the page has stopped being drawn, and a caption there is still on the user's screen.
      *
-     * Stations only (GSE-C4): a caption kept for a square that is not a station now is not drawn, so it labels nothing.
+     * Stations only: a caption kept for a square that is not a station now is not drawn, so it labels nothing.
      *
      * @return the stations that have a caption somewhere
      */
@@ -2504,7 +2504,7 @@ public class AutonomySession
     /**
      * The station a caption on this square is about.
      *
-     * A caption kept for a square that is not a station now is none (GSE-C4).  Demoting a station keeps its caption,
+     * A caption kept for a square that is not a station now is none.  Demoting a station keeps its caption,
      * ignored while the square is not a station, and this is what the diagram and the editor draw by
      * (`TrainControlUI.autonomyCaptionAt`), so it answers null until the square is a station again.  Drawn, the label
      * is registered on a plain point, and a train reversing there lights up a station name for a place that is no longer
@@ -2521,7 +2521,7 @@ public class AutonomySession
     }
 
     /**
-     * Every caption this station has: drawn, or kept while the square is not a station (GSE-C4) - `getCaptionTarget` is
+     * Every caption this station has: drawn, or kept while the square is not a station - `getCaptionTarget` is
      * the one that says what is drawn.
      *
      * @param stationTile
@@ -2562,7 +2562,7 @@ public class AutonomySession
      * captions all the same.
      *
      * @param where the square the text sits on
-     * @return false where there is no caption, where it is kept for a square that is no station now (GSE-C4), where its page
+     * @return false where there is no caption, where it is kept for a square that is no station now, where its page
      *         is left out or gone, where its station is unnamed and out of service, and where it is a station's own and
      *         gives way to another caption on its page
      */
@@ -2602,7 +2602,7 @@ public class AutonomySession
      *
      * The autonomy editor shows the whole page, padding included, and puts the page object the session shares into edit
      * mode, where its bounds are the whole page; the running diagram draws only the part its COMPONENTS cover, and a
-     * caption is not a component.  Worked out from the components alone, as the running grid does (AD-C6).
+     * caption is not a component.  Worked out from the components alone, as the running grid does.
      *
      * @param square a square
      * @return false for a square outside that part, or on a page this session does not have
@@ -2722,7 +2722,7 @@ public class AutonomySession
         // AND NOT THE NAMES A LAST EDIT'S CANCEL KEPT, which are that edit's - see `restoreSetup`
         forgetTheNamesKept();
 
-        // AND WHAT THE CARRY REMEMBERS, as the editor's Cancel will want it (RSA9-B2) - see `asTheEditBegan`
+        // AND WHAT THE CARRY REMEMBERS, as the editor's Cancel will want it - see `asTheEditBegan`
         asTheEditBegan = remembered();
 
         // AND WHAT THE RAILWAY CHANGES ALONE FROM HERE, which Cancel keeps (OB-343) - see `takenFromTheRailway`
@@ -2869,7 +2869,7 @@ public class AutonomySession
 
     /**
      * Whether `revertUnfinishedEdit` found a pre-edit note of the right shape that still would not read - a value of the
-     * wrong type inside it - so that `unusableEditNote` says so of it, as of a note refused on its shape (GSP-C4).
+     * wrong type inside it - so that `unusableEditNote` says so of it, as of a note refused on its shape.
      */
     private boolean editNoteWouldNotRead;
 
@@ -2905,7 +2905,7 @@ public class AutonomySession
 
         if (was == null) return false;
 
-        // A NOTE OF THE RIGHT SHAPE THAT STILL WILL NOT READ is refused like one of the wrong shape (GSP-C4): kept, for the
+        // A NOTE OF THE RIGHT SHAPE THAT STILL WILL NOT READ is refused like one of the wrong shape: kept, for the
         // build that wrote it, and reported through `unusableEditNote`.  `unfinishedEdit` checks the note's top level only,
         // so a value of the wrong type inside it throws out of the read; letting that escape would reach
         // `TrainControlUI.getAutonomySession`, which builds no session, and autonomy would stay unopenable at every start.
@@ -2941,7 +2941,7 @@ public class AutonomySession
         // AND WHAT THE RAILWAY CHANGED ALONE while the edit session was open stays changed (OB-343)
         putBackWhatTheRailwayChangedAlone();
 
-        // AND WHAT THE CARRY REMEMBERED, AND THE RAILWAY'S SQUARES, as before the first move (RSA7-B3, RSA8-B2) - the legs
+        // AND WHAT THE CARRY REMEMBERED, AND THE RAILWAY'S SQUARES, as before the first move - the legs
         // are the snapshot's.
         //
         // **BUT THE NAMES THE EDIT'S LAST BUILD GAVE ARE KEPT, which the memory as it was knows nothing of (OB-343).**  A
@@ -2995,7 +2995,7 @@ public class AutonomySession
     {
         java.util.Map<String, Object> snapshot = store.snapshotPage(page);
 
-        // AND WHAT AN EDIT OF THE PAGE CHANGES OUTSIDE IT (RSA8-B2, RSA8-B3) - see `Remembered`
+        // AND WHAT AN EDIT OF THE PAGE CHANGES OUTSIDE IT - see `Remembered`
         snapshot.put(REMEMBERED, remembered());
 
         return snapshot;
@@ -3010,7 +3010,7 @@ public class AutonomySession
 
         store.restorePage(page, snapshot);
 
-        // AND WHAT THE EDIT CHANGED OUTSIDE THE PAGE (RSA8-B2, RSA8-B3) - see `Remembered`
+        // AND WHAT THE EDIT CHANGED OUTSIDE THE PAGE - see `Remembered`
         Object remembered = snapshot.get(REMEMBERED);
 
         if (remembered instanceof Remembered) putBack((Remembered) remembered, true);
@@ -3088,12 +3088,12 @@ public class AutonomySession
 
         if (!any) return false;
 
-        // WHETHER ANYTHING IN THE STORE ACTUALLY CHANGED (X8V-B2): `any` above is only "the caller gave me something to look
+        // WHETHER ANYTHING IN THE STORE ACTUALLY CHANGED: `any` above is only "the caller gave me something to look
         // at".  Callers read the answer as "something was forgotten, so write the setup to disk" (`delete` says so), and
         // `deleteSelection` asks once per picked square.
         boolean changed = store.moveTiles(moves, builtOver);
 
-        // AND NO FOLD OF THE RAILWAY BUILT BEFORE THE MOVE (RSA6-B2) - see `squaresMoved`
+        // AND NO FOLD OF THE RAILWAY BUILT BEFORE THE MOVE - see `squaresMoved`
         boolean moved = false;
 
         for (Map.Entry<TileKey, TileKey> move : moves == null ? Collections.<TileKey, TileKey>emptyMap().entrySet()
@@ -3107,10 +3107,10 @@ public class AutonomySession
 
         if (moved) squaresMoved = true;
 
-        // NOR AFTER A SQUARE REMOVED OR BUILT OVER (RSA7-A1) - see `squaresMoved`
+        // NOR AFTER A SQUARE REMOVED OR BUILT OVER - see `squaresMoved`
         if (builtOver != null && !builtOver.isEmpty()) squaresMoved = true;
 
-        // AND THE RAILWAY'S SQUARES, AND WHAT THE CARRY REMEMBERS, MOVED WITH THE SETUP'S (RSA7-B3, RSA8-B2) - as they were
+        // AND THE RAILWAY'S SQUARES, AND WHAT THE CARRY REMEMBERS, MOVED WITH THE SETUP'S - as they were
         // before the first move kept for a Cancel: see `Remembered`
         if (moved)
         {
@@ -3118,7 +3118,7 @@ public class AutonomySession
 
             moveTheRailwaysSquares(square -> moves.get(square) != null ? moves.get(square) : square);
 
-            // A NAME MADE FROM A MOVED SQUARE - "page x,y" - is the store's to rename (RSA5-B2), not the memory's to carry
+            // A NAME MADE FROM A MOVED SQUARE - "page x,y" - is the store's to rename, not the memory's to carry
             squareOfNameSeen.entrySet().removeIf(seen -> moves.get(seen.getValue()) != null
                 && GraphReducer.generatedName(seen.getValue()).equals(baseOfNameSeen.get(seen.getKey())));
 
@@ -3132,7 +3132,7 @@ public class AutonomySession
 
         // The graph is built from the squares, so it is now describing the old ones, and touched() is what rebuilds it.
         //
-        // UNCONDITIONAL, BECAUSE THE REBUILD IS OWED TO THE DIAGRAM (N8-B2): the graph is traced from the SQUARES, so
+        // UNCONDITIONAL, BECAUSE THE REBUILD IS OWED TO THE DIAGRAM: the graph is traced from the SQUARES, so
         // building over a blank square changes it though the store held nothing about that square (a paste, a fill, a
         // palette drop and a clear all reach here with empty squares).  What is expensive is WRITING the setup, and every
         // caller decides that from the return value below; a rebuild is memory.
@@ -3149,7 +3149,7 @@ public class AutonomySession
             joiningTheirRuns = Collections.emptySet();
         }
 
-        // AND WHAT THE REBUILD GAVE THEM, which the caller saves on this answer (RSA75-C1): track laid on a blank square
+        // AND WHAT THE REBUILD GAVE THEM, which the caller saves on this answer: track laid on a blank square
         // beside a one-way run takes the run's direction, and the store held nothing about that square to forget - so it
         // was in memory only, and the next open logged the run as a correction
         return changed || !graph.getNormalizedRuns().isEmpty() || !graph.getNormalizedToArms().isEmpty();
@@ -3301,7 +3301,7 @@ public class AutonomySession
             // Inside the part of the page the running diagram DRAWS, which is the box around its components rather than the
             // whole grid: getComponent answers null both for a blank square and for one off the edge, and this loop reads
             // null as "free".  Worked out from the components, not read from the page: in edit mode its bounds are the whole
-            // page (AD-C6).
+            // page.
             if (!page.isDrawnWhenRunning(at.getX(), at.getY())) continue;
 
             if (page.getComponent(at.getX(), at.getY()) != null) continue;
@@ -3471,7 +3471,7 @@ public class AutonomySession
 
         if (found.isEmpty()) return new ArrayList<>();
 
-        // How many captions each page gave up, so the total can follow the writes (VD9-C20).
+        // How many captions each page gave up, so the total can follow the writes.
         Map<LayoutDiagram, Integer> takenFrom = new LinkedHashMap<>();
 
         for (Map.Entry<LayoutDiagram, List<LayoutDiagramComponent>> entry : found.entrySet())
@@ -3496,7 +3496,7 @@ public class AutonomySession
 
                     migrated = true;
 
-                    // COUNTED PER PAGE, and added to the total only once that page has been written (VD9-C20): the count and
+                    // COUNTED PER PAGE, and added to the total only once that page has been written: the count and
                     // the page list are printed in one sentence, so a page whose write threw must be in neither.
                     Integer soFar = takenFrom.get(entry.getKey());
 
@@ -3613,13 +3613,13 @@ public class AutonomySession
         "priority", "home", "excludedLocs",
         // the list's mode with it (FR-121), or a capture writes the list back read the other way
         "excludedLocsMode",
-        // WHERE A STANDING TRAIN'S TAIL LIES, captured with the train (WK7-B1): a side and a road written by a run live only
+        // WHERE A STANDING TRAIN'S TAIL LIES, captured with the train: a side and a road written by a run live only
         // on the running layout.  Replaced like the rest, and removed where the layout no longer carries them, which is a
         // square whose train has left.
         "arrivedFrom", "arrivedAlong");
 
     /**
-     * The per-point keys that say where a train stands: the train, and its tail's side and road (RLV10-B1).  The rest of
+     * The per-point keys that say where a train stands: the train, and its tail's side and road.  The rest of
      * `POINT_OPERATIONAL_KEYS` is the setup's.
      */
     private static final List<String> PLACEMENT_KEYS = java.util.Arrays.asList("loc", "arrivedFrom", "arrivedAlong");
@@ -3634,11 +3634,11 @@ public class AutonomySession
      * `Layout.isPathClear` refuses that, but it can only refuse what it can measure, and unmeasured track is unknown
      * rather than short.
      *
-     * **What this set is** (`SVN-B1`, `VD9-B6`): `Layout.measuredRoomAtTheEndOf` walks the path's **edges** backwards and
+     * **What this set is**: `Layout.measuredRoomAtTheEndOf` walks the path's **edges** backwards and
      * **stops at the first one that crosses a switch**, so an unmeasured stretch beyond the last switch blinds nothing.
      * `GraphReducer.roomAfterTheLastSwitch` is that number for one edge: its **tiles**, walked backwards from the end to
      * the first switch, summing what is measured and treating an unmeasured tile as nothing (`-1` only when NOT ONE of them
-     * has a length, MON-C6).  `unmeasuredAfterTheLastSwitch` is the same walk returning the tiles, which is what this
+     * has a length).  `unmeasuredAfterTheLastSwitch` is the same walk returning the tiles, which is what this
      * asks for, so for the last edge the notice and the guard agree by construction.  The square's own length is the
      * first thing that stretch contains: an unmeasured berth square adds nothing, so the guard under-counts by exactly
      * that square, which is worth a notice.
@@ -3687,7 +3687,7 @@ public class AutonomySession
             // AND THE TRACK BEHIND IT, BACK TO THE SWITCH (Adam's ruling 2): the guard needs the stretch that
             // bounds the train, and a stretch with nothing measured answers "unknown".
             //
-            // **WHY IT STILL REPORTS A PARTLY MEASURED STRETCH** (MON-C6): an unmeasured tile contributes nothing and the
+            // **WHY IT STILL REPORTS A PARTLY MEASURED STRETCH**: an unmeasured tile contributes nothing and the
             // rest still counts, so a half-measured stretch makes the guard PESSIMISTIC - a train that would fit is refused
             // rather than admitted.  That is the safe direction and still worth telling somebody; whether it earns its
             // place in a list Adam has called a wall is his call (MT-305).
@@ -3698,7 +3698,7 @@ public class AutonomySession
             {
                 if (!arriving.getEnd().equals(tile)) continue;
 
-                // A SIDE NO TRAIN STOPS FROM IS STILL ASKED ABOUT (Adam, TDA-C8: *"Arrivals THAT STOP THERE
+                // A SIDE NO TRAIN STOPS FROM IS STILL ASKED ABOUT (Adam: *"Arrivals THAT STOP THERE
                 // should only be allowed from the configured side(s).  Turning shouldn't need to factor this in, since
                 // the former would govern the behavior."*).  A barred side keeps its turning copy, so a train may come in
                 // that way and turn, and the room rule judges that turn over this stretch.  The two berth checks skip a
@@ -3731,13 +3731,13 @@ public class AutonomySession
      * One piece of track to measure: the squares of a leg between two fixed points - a sensor or a switch - with neither
      * switch in it (Mass Assign Lengths).
      *
-     * **Every leg, cut at switches** - Adam's ruling on review MAL-B1.  The room rule stops at the last switch,
+     * **Every leg, cut at switches** - Adam's ruling.  The room rule stops at the last switch,
      * but the FR-087 allowance adds whole legs back until a reversal, and the tail and berth walks spend the switch square
      * and the track before it, so every leg is read.  Cutting at switches keeps every rule exact: an even share of a piece
      * never lands on the far side of a switch, where the room rule would not count it.
      *
      * **Each square is in exactly one piece.**  A sensor square that ends several legs belongs to the first piece that
-     * reaches it, so no answer can be overwritten by a later one (MAL-C2).
+     * reaches it, so no answer can be overwritten by a later one.
      */
     public static final class Stretch
     {
@@ -3786,7 +3786,7 @@ public class AutonomySession
     /**
      * Every piece of track a length rule reads, on the pages autonomy uses: every leg, cut at its switches.
      *
-     * **WHY EVERY LEG** (MAL-B1).  `Layout.measuredRouteIn` - the FR-087 allowance - adds each leg's whole length back from
+     * **WHY EVERY LEG**.  `Layout.measuredRouteIn` - the FR-087 allowance - adds each leg's whole length back from
      * a station until a reversal or a wholly unmeasured leg; `Layout.walkOneTail` and `Layout.whyABerthCannotHoldIt`
      * spend a train's length over every square of a leg, the switch included, so every leg is read and the ruling is to cut
      * them at switches.
@@ -3804,7 +3804,7 @@ public class AutonomySession
 
         java.util.Set<TileKey> placed = new java.util.HashSet<>();
 
-        // A SQUARE TWO LEGS RUN OVER IS CUT OUT, as a switch is (Adam, SET-B2).
+        // A SQUARE TWO LEGS RUN OVER IS CUT OUT, as a switch is (Adam).
         java.util.Set<TileKey> shared = sharedSquaresALengthRuleReads();
 
         for (java.util.List<TileKey> leg : legsOnce())
@@ -3828,7 +3828,7 @@ public class AutonomySession
                     if (firstIndex < 0) firstIndex = i;
 
                     // THE FIRST PIECE THAT REACHES A SQUARE KEEPS IT: a sensor square ends several legs, and if it
-                    // were in each of them the second answer would overwrite the first (MAL-C2).
+                    // were in each of them the second answer would overwrite the first.
                     if (placed.add(leg.get(i))) piece.add(leg.get(i));
 
                     continue;
@@ -3854,7 +3854,7 @@ public class AutonomySession
 
     /**
      * Every switch square on a leg autonomy uses - a switch or a permanent turnout, as `isSwitchSquare` says
-     * (VD18-B3).  A switch is in no piece - its share would sit where the room rule
+     *.  A switch is in no piece - its share would sit where the room rule
      * does not count it - so switches are asked for on their own, one turnout length for a page (Adam:
      * "One length for all switches").
      *
@@ -3965,7 +3965,7 @@ public class AutonomySession
         }
 
         // AND THE SQUARES TWO ROADS SHARE, which are in no piece and so would otherwise never be highlighted at all
-        // although a length rule reads them on both roads (SET-B2).
+        // although a length rule reads them on both roads.
         for (TileKey tile : sharedSquaresALengthRuleReads())
         {
             if (squareNeedsALength(tile)) out.add(tile);
@@ -3996,7 +3996,7 @@ public class AutonomySession
      * Only a piece that adds up to nothing is written - one that has a length is measured, by the ruling above.  The
      * whole length is shared evenly; a square may get 0 where there are fewer units than squares.
      *
-     * **ANY UNIT LEFT OVER GOES FIRST TO A SQUARE A TRAIN STANDS ON** (MAL-B2), which is where Adam puts the larger share
+     * **ANY UNIT LEFT OVER GOES FIRST TO A SQUARE A TRAIN STANDS ON**, which is where Adam puts the larger share
      * when he measures by hand - TunnelLongPark is 2 on its sensor square and 1 behind.  Every walk spends that square
      * first (OB-278), so where the unit goes decides only how many squares of THIS piece a short train's tail claims, and
      * no other road joins a piece between its switches.  Past the standing squares the rest go in the order the leg runs;
@@ -4011,8 +4011,7 @@ public class AutonomySession
         if (stretch == null || wholeLength < 0 || measuredIn(stretch) > 0) return false;
 
         // A DELIBERATE 0 IS AN ANSWER (OB-274): every square of the piece is recorded as answered, so the walk does
-        // not offer it again, and every length rule but the own-tail one (OB-300) reads it as measured track of no length
-        // (TDU-C6).
+        // not offer it again, and every length rule but the own-tail one (OB-300) reads it as measured track of no length.
         if (wholeLength == 0)
         {
             for (TileKey tile : stretch.getTiles()) store.answerTileLengthZero(tile);
@@ -4066,7 +4065,7 @@ public class AutonomySession
             if (store.getTileLength(tile) > 0) continue;
 
             // 0 ANSWERS IT (OB-274) - two switches back to back are his adjacent tracks - and every length rule but the
-            // own-tail one (OB-300) reads it as measured track of no length (TDU-C6).
+            // own-tail one (OB-300) reads it as measured track of no length.
             if (length == 0)
             {
                 if (store.isTileLengthAnswered(tile)) continue;
@@ -4193,15 +4192,15 @@ public class AutonomySession
      * reduction already does (`GraphReducer.sumLength` adds every tile of every leg, so a crossing of 3 adds 3 to each road
      * over it), and it is only right if no leg's PIECE contains it, because a piece's whole length is shared over its
      * squares and would then be counted on the other road too.  So the square is cut out of every piece and asked for on
-     * its own, as a switch is (MAL-B1).
+     * its own, as a switch is.
      *
      * **Two ROADS THAT SHARE METAL, not two legs.**  A crossing's roads cross, so one length counts on both and the square
-     * is asked for once.  A DOUBLE CURVE's curves never touch (AUR-B1); it is here only because one number the operator
-     * types measures both (OP2-C4).  What makes a square shared is its geometry (`TilePorts` gives it two separate roads)
+     * is asked for once.  A DOUBLE CURVE's curves never touch; it is here only because one number the operator
+     * types measures both.  What makes a square shared is its geometry (`TilePorts` gives it two separate roads)
      * AND legs actually running over it on more than one of them; a double curve with track on only one road stays
      * ordinary track.
      *
-     * **Intermediate occurrences only.**  A sensor square ends several legs (MAL-C2's first-piece-keeps-it rule) but is an
+     * **Intermediate occurrences only.**  A sensor square ends several legs (the first piece keeps it) but is an
      * endpoint, never track a leg runs over.  **Switches are not listed**: they have their own step and are already cut out.
      *
      * @return the squares, ordered by page, row then column
@@ -4216,7 +4215,7 @@ public class AutonomySession
 
         for (java.util.List<TileKey> leg : legsOnce())
         {
-            // EVERY CROSSING COUNTS, INCLUDING TWO BY THE SAME LEG (SVA-C2): a figure of eight runs one leg over its own
+            // EVERY CROSSING COUNTS, INCLUDING TWO BY THE SAME LEG: a figure of eight runs one leg over its own
             // crossing twice, so count occurrences rather than legs; the ends are where the leg STOPS, not track it runs over.
             for (int i = 1; i + 1 < leg.size(); i++) crossedBy.merge(leg.get(i), 1, Integer::sum);
         }
@@ -4270,7 +4269,7 @@ public class AutonomySession
     /**
      * Whether a length rule's piece is cut at this square, and the square asked for with the switches: what
      * `GraphReducer.boundsTheRoom` asks of the room walk - a switch or a permanent turnout, and not a square of a
-     * two-square crossing (VD18-B3).
+     * two-square crossing.
      *
      * **A PERMANENT TURNOUT CUTS A PIECE AS A SWITCH DOES.**  The room walk stops at one (OB-233: a permanent turnout is
      * still the last switch), so a piece that ran over it would share the operator's
@@ -4292,10 +4291,9 @@ public class AutonomySession
 
     /**
      * Whether a berth's room ends at this square: a switch or a permanent turnout, where the room walk ends
-     * (`GraphReducer.boundsTheRoom`, OB-233); or a crossing another road runs over, where the berth rule refuses
-     * (TDA-C7, TDA5-C1).
+     * (`GraphReducer.boundsTheRoom`, OB-233); or a crossing another road runs over, where the berth rule refuses.
      *
-     * **Known limit** (TDA3-C2, narrowed by TDA5-C1): a crossing whose other road runs between two sensors no train can
+     * **Known limit**: a crossing whose other road runs between two sensors no train can
      * reach is still taken for a stop.  The reduction has that road, so this finds it; the build emits no rail over it,
      * so the rule has nothing there to refuse on, and the notices warn of a refusal that does not come.  The warning
      * side, and a crossing nobody builds.
@@ -4322,7 +4320,7 @@ public class AutonomySession
     /**
      * Whether a road that neither starts nor ends at this berth runs over this square - the berth rule's own question
      * (`Layout.whyABerthCannotHoldIt` refuses on a claimed place shared with a road, and passes over a road that starts
-     * or ends at the berth, as a switch's other leg into the same berth does) (TDA5-C1).
+     * or ends at the berth, as a switch's other leg into the same berth does).
      *
      * @param tile a square
      * @param berth the berth
@@ -4426,7 +4424,7 @@ public class AutonomySession
     }
 
     /**
-     * The same, over a graph somebody has already built (D3F-C6).
+     * The same, over a graph somebody has already built.
      *
      * @param built the configuration as JSON, or null to build one here
      * @param byName the builder's own tile-name map, or null to ask for one here
@@ -4454,7 +4452,7 @@ public class AutonomySession
     }
 
     /**
-     * The same, over a graph somebody has already built (D3F-C6).
+     * The same, over a graph somebody has already built.
      *
      * @param built the configuration as JSON, or null to build one here
      * @param byName the builder's own tile-name map, or null to ask for one here
@@ -4533,7 +4531,7 @@ public class AutonomySession
     }
 
     /**
-     * Squares the build emits with an arrival that can go nowhere (DD-A7).
+     * Squares the build emits with an arrival that can go nowhere.
      *
      * A copy IS an arrival - the builder emits one Point per side a train can come in by - so a copy with no outgoing
      * edge is a train that arrived and cannot leave.
@@ -4594,13 +4592,13 @@ public class AutonomySession
 
             // AND A SQUARE THAT WAS NEVER SPLIT HAS NO ARRIVAL TO TRAP: a tile nothing arrives at by any side of the grid is
             // emitted whole, and a whole tile with no way out is a dead end in the track, not a trapped arrival (a link
-            // lands a train by a real side, AMG-C2).  Reporting such squares would tell the operator to fix something that
+            // lands a train by a real side).  Reporting such squares would tell the operator to fix something that
             // is not there.
             if (arrivalSides(tile).isEmpty()) continue;
 
             Side side = arrivals == null ? null : arrivals.get(name);
 
-            // A SIDE TRAINS MAY NOT ARRIVE BY IS NO TRAP (RSA37-B1).  Its copy is no station, so no train is sent to stop
+            // A SIDE TRAINS MAY NOT ARRIVE BY IS NO TRAP.  Its copy is no station, so no train is sent to stop
             // there, and with no way out none passes through it.  Closing arrivals from that side is one of the three ways
             // out the finding offers, so counting its copy would leave the same warning after the advice was taken.
             if (side != null && getBarredArrivals(tile).contains(side)) continue;
@@ -4678,7 +4676,7 @@ public class AutonomySession
     }
 
     /**
-     * The trapped squares whose trapped sides the arrivals menu can close (RSA37-B1).
+     * The trapped squares whose trapped sides the arrivals menu can close.
      *
      * @param trapped the squares, each to the sides its trapped arrivals come in by
      * @return those `arrivalsCanBeClosed` says yes to
@@ -4697,7 +4695,7 @@ public class AutonomySession
 
     /**
      * Whether the arrivals menu can close these sides of a square, as well as any already closed: the square is a
-     * station with more than one way in, and one stays open (RSA37-B1).
+     * station with more than one way in, and one stays open.
      *
      * The menu's own rule, asked by the menu and by the trapped-arrival finding alike, so the advice the finding gives is
      * advice the menu takes.  It offered "close arrivals from the east and west" at a station with no other way in, whose
@@ -4723,11 +4721,11 @@ public class AutonomySession
 
     /**
      * The termini a train that cannot reverse can be backed into: reached tail first, after an odd number of turns on the
-     * way.  A train rested on a terminus sets off turned - Return Home's two-step parking (AMH-B1: "That's why we started
+     * way.  A train rested on a terminus sets off turned - Return Home's two-step parking (Adam: "That's why we started
      * the 2 step process for parking, which is OK in my opinion.") - and each reversing point it passes turns it again,
      * as MT-245's S - reversing M - terminus T, which Return Home drives (HomeStaging's turn-on-the-way).  A reversing
      * point on a stub is no way in: a train turned there and sent straight back where it came from is a route no door
-     * drives (RSA66-C3).  So: counted from every square, the turns on the way, odd at a terminus not the one set off
+     * drives.  So: counted from every square, the turns on the way, odd at a terminus not the one set off
      * from; never through a terminus, never into a square out of service, never straight back from a reversing point to
      * the square before it.
      *
@@ -4874,7 +4872,7 @@ public class AutonomySession
     }
 
     /**
-     * The same, over a graph somebody has already built (D3F-C6).
+     * The same, over a graph somebody has already built.
      *
      * @param built the configuration as JSON, or null to build one here
      * @param named the builder's own tile-name map, or null to ask for one here
@@ -5041,7 +5039,7 @@ public class AutonomySession
     }
 
     /**
-     * The same over a reduction of its own - one tried, not installed (RSA5-A2).
+     * The same over a reduction of its own - one tried, not installed.
      *
      * @param reduction the reduction
      * @param globals the run-wide settings, or null when only the naming is wanted
@@ -5063,7 +5061,7 @@ public class AutonomySession
     }
 
     /**
-     * What Mass Assign Lengths would ask a length for, square by square, keyed as it asks (OB-297, ADA-C1, ADA2-C7): each
+     * What Mass Assign Lengths would ask a length for, square by square, keyed as it asks (OB-297): each
      * piece still wanting one is one answer; all of a page's switches with no length are one more, and all its crossings
      * one more.  In the order its walk asks them, so a switch two roads share is answered as a switch.
      *
@@ -5101,7 +5099,7 @@ public class AutonomySession
      */
     public TileKey getProtectingSignal(TileKey station)
     {
-        // A STATION'S (GSE-C4): a square that is not one now keeps its guards for when it is, and they guard nothing
+        // A STATION'S: a square that is not one now keeps its guards for when it is, and they guard nothing
         return store.isStation(station) ? store.getProtectingSignal(station) : null;
     }
 
@@ -5111,7 +5109,7 @@ public class AutonomySession
      */
     public List<TileKey> getProtectingSignals(TileKey station)
     {
-        // A STATION'S (GSE-C4), as `getProtectingSignal`
+        // A STATION'S, as `getProtectingSignal`
         return store.isStation(station) ? store.getProtectingSignals(station) : new ArrayList<TileKey>();
     }
 
@@ -5143,7 +5141,7 @@ public class AutonomySession
      */
     public List<TileKey> getEntrySignals(TileKey station)
     {
-        // A STATION'S (GSE-C4), as `getProtectingSignal`
+        // A STATION'S, as `getProtectingSignal`
         return store.isStation(station) ? store.getEntrySignals(station) : new ArrayList<TileKey>();
     }
 
@@ -5160,7 +5158,7 @@ public class AutonomySession
     }
 
     /**
-     * Every square switched out of service (V31-C3).
+     * Every square switched out of service.
      *
      * The same question `pointBadges` asks one square at a time - `Boolean.FALSE.equals` of the
      * `active` property - asked of the whole configuration. `FALSE.equals` rather than a negation
@@ -5237,11 +5235,11 @@ public class AutonomySession
     }
 
     /**
-     * Only the entries about squares that are stations now (GSE-C4).
+     * Only the entries about squares that are stations now.
      *
      * A station that is demoted KEEPS its station settings - its caption, the sides it bars arrivals by, its exit and
      * entry guards - and has them again when it is promoted, ignored meanwhile as its maximum train length (OB-291)
-     * and its blockers (AMS-B2) already were.  The store keeps them; the build, the checks and the editor read them
+     * and its blockers already were.  The store keeps them; the build, the checks and the editor read them
      * through this, so a square that is not a station has none of them.
      *
      * @param bySquare a store map keyed by station square
@@ -5276,7 +5274,7 @@ public class AutonomySession
      */
     public Set<Side> getBarredArrivals(TileKey tile)
     {
-        // A STATION'S (GSE-C4): a square that is not one now keeps the sides it barred, for when it is, and bars nothing
+        // A STATION'S: a square that is not one now keeps the sides it barred, for when it is, and bars nothing
         Set<Side> barred = store.isStation(tile) ? store.getBarredArrivals(tile) : new LinkedHashSet<Side>();
 
         if (barred.isEmpty()) return barred;
@@ -5406,7 +5404,7 @@ public class AutonomySession
 
         stationIndex = derived;
 
-        // AND THE NAMES THE CONFIGURATIONS STORE CARRIED TO THE NAMES THIS BUILD GIVES (RSA3-B1, RSA4-B1, RSA4-C4).  Here
+        // AND THE NAMES THE CONFIGURATIONS STORE CARRIED TO THE NAMES THIS BUILD GIVES.  Here
         // rather than in `rebuild`, because every edit that can rename a Point comes through here and not all of them
         // rebuild: a square marked as somewhere trains may turn round gains its turning copies, named, with no rebuild.
         if (naming != null) carryTheNamesAcross(naming);
@@ -5586,14 +5584,14 @@ public class AutonomySession
     }
 
     /**
-     * The stations this editor will report as ones autonomy never chooses (V36-C4, OB-195).
+     * The stations this editor will report as ones autonomy never chooses (OB-195).
      *
      * **THE RUNTIME'S RULE, in the two clauses a SQUARE can answer.**  The runtime is
      * `Layout.isSendableDestination` - `isDestination() && isActive() && isAutoDestination() && !isReversing()` - and
      * two of those four are asked here:
      *
      *   - `isAutoDestination`, the one the menu calls **Can Be Chosen in Full Autonomy**;
-     *   - `isActive` (E8-B1), which the menu writes when a square is switched out of service.
+     *   - `isActive`, which the menu writes when a square is switched out of service.
      *
      * `!isReversing()` cannot be asked of a square: it is a property of a COPY, and a may-reverse square keeps a plain
      * copy autonomy can choose, so a square-level answer would refuse squares the runtime accepts.  `isDestination` is
@@ -5624,7 +5622,7 @@ public class AutonomySession
             // compulsory turn that stops is built as a TERMINUS, whose `isReversing()` is false, so asking it would refuse
             // a square the runtime accepts.  Turning round is governed by `isAutoDestination` (see the javadoc).
             //
-            // SHUT COUNTS TOO (E8-B1).  `Layout.isSendableDestination` requires `isActive()`, a property of the SQUARE (the
+            // SHUT COUNTS TOO.  `Layout.isSendableDestination` requires `isActive()`, a property of the SQUARE (the
             // menu writes it, `shutTiles` reads it in bulk), and a station switched out of service is not one autonomy
             // will choose.
             boolean shut = Boolean.FALSE.equals(getPointProperty(tile, "active"));
@@ -5636,7 +5634,7 @@ public class AutonomySession
     }
 
     /**
-     * The stations autonomy leaves alone that a PERSON can still drive to (E8V-B1).
+     * The stations autonomy leaves alone that a PERSON can still drive to.
      *
      * `stationsAutonomyWillNotChoose` answers about two different things at once: a station marked manual-only, which is
      * a preference about what autonomy picks, and a station switched OUT OF SERVICE, which is a fact about the railway
@@ -5692,7 +5690,7 @@ public class AutonomySession
         if (Boolean.TRUE.equals(getPointProperty(tile, AutonomyBuilder.CAN_REVERSE))) return true;
 
         // a terminus was always "a station where trains turn round" - so on a square that is not a station now it turns
-        // nothing round: demoting keeps the flag for when the square is promoted again (GSE-C4)
+        // nothing round: demoting keeps the flag for when the square is promoted again
         if (store.isStation(tile) && Boolean.TRUE.equals(getPointProperty(tile, "terminus"))) return true;
 
         // a reversing point that is NOT a station was "somewhere trains turn round on the way past"
@@ -5896,7 +5894,7 @@ public class AutonomySession
             {
                 org.json.JSONObject point = (org.json.JSONObject) o;
 
-                // BY THE SQUARE THE RUNNING POINT IS A COPY OF (RSA6-A2), where it names one this diagram has - not by
+                // BY THE SQUARE THE RUNNING POINT IS A COPY OF, where it names one this diagram has - not by
                 // its name through today's naming, which a page ticked out, or a name moved to another square, has
                 // changed since the railway was built: the trains on the page were skipped, and kept where the run began.
                 TileKey tile = squareOf(point, diagram);
@@ -5925,7 +5923,7 @@ public class AutonomySession
                         continue;
                     }
 
-                    // A TAIL BELONGS TO THE COPY THE TRAIN STANDS ON (TLR-A2).  The build writes a square's side and
+                    // A TAIL BELONGS TO THE COPY THE TRAIN STANDS ON.  The build writes a square's side and
                     // road onto every copy of it, and a train leaving clears them only on its own - so read from the
                     // others, this merge put a departed train's tail back into the setup, where a restart gave it to
                     // whatever stood there next.
@@ -5935,7 +5933,7 @@ public class AutonomySession
                 }
 
                 // Which way the train ended up pointing, learned rather than asked for: the copy a locomotive is standing on says
-                // which way round it is.  The copy's own facing, where the running layout says it (RSA6-A2); else the
+                // which way round it is.  The copy's own facing, where the running layout says it; else the
                 // naming's, for a name it still gives that square.
                 TilePorts.Side facing = sideNamed(point.optString(AutonomyBuilder.COPY_FACING, null));
 
@@ -6009,10 +6007,10 @@ public class AutonomySession
                 continue;
             }
 
-            // AND THE TAIL GOES WITH THE TRAIN THAT LEFT (RGD-B1).  The loop below replaces `loc` from the running layout, so
+            // AND THE TAIL GOES WITH THE TRAIN THAT LEFT.  The loop below replaces `loc` from the running layout, so
             // a capture can hand a square to a different locomotive, and the OLD train's `arrivedFrom` and `arrivedAlong` must
             // not stay on a square whose occupant just changed.  Read before the replacement, because the replacement is
-            // what makes them differ.  (The build applies the side after placing trains, REG8-A1, so the file gets the last
+            // what makes them differ.  (The build applies the side after placing trains, so the file gets the last
             // word.)
             String occupantWas = nameOfPlacedLocomotive(before.opt("loc"));
             String occupantNow = nameOfPlacedLocomotive(captured.opt("loc"));
@@ -6076,9 +6074,9 @@ public class AutonomySession
 
         for (LayoutDiagram page : pages)
         {
-            // NOR A STAND-IN FOR A PAGE THAT WOULD NOT READ (AMS-A1).  It carries the real page's name and one text tile, so
+            // NOR A STAND-IN FOR A PAGE THAT WOULD NOT READ.  It carries the real page's name and one text tile, so
             // judged here every placement, home and priority on that page would be "no longer there" - the MT-135 loss
-            // `pagesSafeToJudge` and `save()` refuse since FV3-A1.
+            // `pagesSafeToJudge` and `save()` refuse.
             if (page.isUnreadable()) continue;
 
             if (!store.getExcludedPages().contains(page.getName())) pagesInPlay.add(page.getName());
@@ -6099,7 +6097,7 @@ public class AutonomySession
             gone.add(id);
         }
 
-        // Not where only the trains are written: a square gone is the setup's business (RLV10-B1)
+        // Not where only the trains are written: a square gone is the setup's business
         if (!placementsOnly) for (String id : gone) existing.remove(id);
 
         configuration.put("points", existing);
@@ -6143,7 +6141,7 @@ public class AutonomySession
     }
 
     /**
-     * Folds what the railway owns, and nothing the setup was given since the railway was built (RSA20-A1): where each
+     * Folds what the railway owns, and nothing the setup was given since the railway was built: where each
      * train stands - the train, its facing, the side it came in by and its road - and the settings and timetable the
      * Auto tab and a run write to the railway.  The fold made while the setup is newer than the railway: folding all of
      * it wrote the older railway's homes, lengths and priorities over the edit, and folding none of it lost where the run
@@ -6161,7 +6159,7 @@ public class AutonomySession
     }
 
     /**
-     * Folds the railway's settings and timetable alone (RSA20-B1): the Auto tab and a run write them to the railway, and a
+     * Folds the railway's settings and timetable alone: the Auto tab and a run write them to the railway, and a
      * rebuild from the setup throws away whatever had not been folded.
      *
      * **Only those the railway changed since it was built**, where it is told how it was built: a door can edit the
@@ -6212,7 +6210,7 @@ public class AutonomySession
             // UNCHANGED ON THE RAILWAY: the setup's stands, edited or not
             if (asBuilt != null && asBuilt.has(key) && sameSetting(asBuilt.get(key), now.get(key))) continue;
 
-            // NOT THE TIMETABLE WHILE THE PAGES ARE STALE (RSA22-C1), as the placements are not (`capture`): a page renamed or
+            // NOT THE TIMETABLE WHILE THE PAGES ARE STALE, as the placements are not (`capture`): a page renamed or
             // squares moved renamed the Points the timetable names in the setup, and the railway still has the old names.
             // The rename's own fold before it, and the editor's on opening, have taken the run's timetable already.
             if ((pagesStale || squaresMoved) && "timetable".equals(key)) continue;
@@ -6235,7 +6233,7 @@ public class AutonomySession
             if (asBuilt != null) asBuilt.put(key, copyOfSetting(now.get(key)));
         }
 
-        // AND ONE THE RAILWAY STOPPED WRITING (RSA21-C1): Simulate and the sequential flag are written only while on, so
+        // AND ONE THE RAILWAY STOPPED WRITING: Simulate and the sequential flag are written only while on, so
         // turning one off left no key to compare - and the setup kept it on
         if (asBuilt != null)
         {
@@ -6389,7 +6387,7 @@ public class AutonomySession
     }
 
     /**
-     * The squares with names of their own on pages out of autonomy, and those names (RSA6-C1): they take their turn in
+     * The squares with names of their own on pages out of autonomy, and those names: they take their turn in
      * the naming though they are not built, so a name shared with a page in play is settled as if they were.
      */
     private Map<TileKey, String> namesOutOfPlay()
@@ -6418,7 +6416,7 @@ public class AutonomySession
     }
 
     /**
-     * The square of the diagram a running Point says it is a copy of, where the diagram has it, or null (RSA6-A2).
+     * The square of the diagram a running Point says it is a copy of, where the diagram has it, or null.
      *
      * @param point a Point as the running layout writes it
      * @param diagram every square of the diagram
@@ -6452,7 +6450,7 @@ public class AutonomySession
     }
 
     /**
-     * Clears the timetable of the configuration in use, every entry of it (RSA5-C1).  Saved.
+     * Clears the timetable of the configuration in use, every entry of it.  Saved.
      *
      * @return whether there was a configuration to clear
      * @throws IOException if the setup cannot be written
@@ -6471,7 +6469,7 @@ public class AutonomySession
      * mid-session.  Saved immediately, because a setting the user picked from a menu and did not see written is one they
      * will pick again.
      *
-     * ANSWERS WHETHER IT STORED, because two of its three ways of doing nothing are silent (LE-B5): a caller that deletes
+     * ANSWERS WHETHER IT STORED, because two of its three ways of doing nothing are silent: a caller that deletes
      * its own copy of a setting on the strength of having called this needs to know.
      *
      * @param key the global's name, as it appears at the top level of the built configuration
@@ -6618,7 +6616,7 @@ public class AutonomySession
     }
 
     /**
-     * What the active configuration STORES for a global, or null (RC-A2).
+     * What the active configuration STORES for a global, or null.
      *
      * The counterpart setGlobal never had.  "Has the configuration already answered this?" cannot be put to the live
      * Layout, which carries whatever was last pushed into it in memory, so a migration that writes the value and asks
@@ -6736,18 +6734,18 @@ public class AutonomySession
     {
         java.util.Set<TileKey> out = new LinkedHashSet<>();
 
-        // WHERE THE RAILWAY HAS THE TRAIN, as the warning and the Facing menu ask it (RSA17-B1)
+        // WHERE THE RAILWAY HAS THE TRAIN, as the warning and the Facing menu ask it
         Map<String, Object[]> railway = railwayTrains();
 
         for (Map.Entry<TileKey, String> placed : placedLocomotives().entrySet())
         {
-            // A RECORD THE LAST RUN HAS OUTRUN is no train there (RSA17-B1): the railway has it standing on another square,
+            // A RECORD THE LAST RUN HAS OUTRUN is no train there: the railway has it standing on another square,
             // and the railway wins (OB-183) - an error about a square no train stands on stopped every send
             Object[] there = railway.get(placed.getValue());
 
             if (there != null && !placed.getKey().equals(there[0])) continue;
 
-            // AND ON THE SAME SQUARE, THE WAY THE RAILWAY HAS IT FACING (RSA18-B1): a run can turn a train and bring it back,
+            // AND ON THE SAME SQUARE, THE WAY THE RAILWAY HAS IT FACING: a run can turn a train and bring it back,
             // and the setup's facing is then the one it set off with
             Side recorded = there != null && there[1] != null ? (Side) there[1] : getFacing(placed.getKey());
 
@@ -6785,7 +6783,7 @@ public class AutonomySession
         //
         // BOTH GUARDS (FR-096): an entry-guard signal that has gone is dropped from the build the same way, and the
         // way into that station is then as unguarded as a platform whose protecting signal went.
-        // STATIONS' (GSE-C4): a square that is not one now keeps its guards, and nothing throws them
+        // STATIONS': a square that is not one now keeps its guards, and nothing throws them
         Map<TileKey, List<TileKey>> both = new LinkedHashMap<>(stationsOnly(store.getProtectingSignals()));
 
         for (Map.Entry<TileKey, List<TileKey>> entry : stationsOnly(store.getEntrySignals()).entrySet())
@@ -6800,11 +6798,11 @@ public class AutonomySession
 
         for (Map.Entry<TileKey, List<TileKey>> pair : both.entrySet())
         {
-            // NOT ABOUT A PAGE THAT IS SWITCHED OFF (SVN-C6): `getProtectingSignals()` is the raw store, and the graph does
+            // NOT ABOUT A PAGE THAT IS SWITCHED OFF: `getProtectingSignals()` is the raw store, and the graph does
             // not carry an excluded page, so a pairing whose station sits on one would report its signal as GONE.
             if (store.getExcludedPages().contains(pair.getKey().getPage())) continue;
 
-            // THE SIGNAL SIDE IS NOT FILTERED, and that asymmetry is the point (REL-B1): a pairing whose STATION is on an
+            // THE SIGNAL SIDE IS NOT FILTERED, and that asymmetry is the point: a pairing whose STATION is on an
             // excluded page is not in play, so a warning is noise.  A signal on an excluded page is dropped from the built
             // configuration (`protectingSignalNames` resolves through `graph.getTiles()`), so the platform really IS
             // unprotected; silencing that warning would be the one direction this check must never fail in.
@@ -6876,7 +6874,7 @@ public class AutonomySession
     }
 
     /**
-     * The squares of the active configuration whose stored point satisfies a test (WK3-C3).
+     * The squares of the active configuration whose stored point satisfies a test.
      *
      * **One walk for what four methods spelled out** (`homeTiles`, `tilesWithAHome`, `homesElsewhere`, `shutTiles`): they
      * have to agree, or a qualification added to one (homes on excluded pages, squares the diagram no longer draws) makes
@@ -6915,7 +6913,7 @@ public class AutonomySession
     }
 
     /**
-     * What `homeTiles()` answers, for the test that keeps the home walks in step (WK3-C3).
+     * What `homeTiles()` answers, for the test that keeps the home walks in step.
      *
      * `homeTiles()` is private and feeds `check()`; this is the same answer, named so a test can ask
      * whether it matches `tilesWithAHome()` - the two that must agree, and the two that were
@@ -6929,7 +6927,7 @@ public class AutonomySession
     }
 
     /**
-     * `homesElsewhere` under a name a test can call (WK3-C3).
+     * `homesElsewhere` under a name a test can call.
      *
      * @param tile the square being asked about
      * @param locomotive the home locomotive
@@ -6943,7 +6941,7 @@ public class AutonomySession
      * Whether a stored point records a home locomotive.
      *
      * One spelling of "carries a home" - a blank is none.  The other reads of the key either ask WHICH locomotive, or
-     * spell this answer out where they stand (DCN-C12).
+     * spell this answer out where they stand.
      *
      * @param point the stored point
      * @return true when it names one
@@ -6956,7 +6954,7 @@ public class AutonomySession
      * The squares an authored home locomotive lives at.
      *
      * The same answer `tilesWithAHome` gives, as a set, because this is what `check()` compares
-     * against.  Delegating rather than walking again is the whole of WK3-C3: when these two drifted,
+     * against.  Delegating rather than walking again is the whole point: when these two drifted,
      * the bulk clear acted on track the findings never mentioned.
      *
      * @return the squares carrying a home
@@ -7104,7 +7102,7 @@ public class AutonomySession
 
         for (TileKey tile : reducer.getPoints().keySet())
         {
-            // A STATION'S, as `isTurnAround` reads the same flag (GSE-C4)
+            // A STATION'S, as `isTurnAround` reads the same flag
             if (store.isStation(tile) && Boolean.TRUE.equals(getPointProperty(tile, "terminus"))) termini.add(tile);
         }
 
@@ -7114,7 +7112,7 @@ public class AutonomySession
         // describes.  Per ARRIVAL rather than by counting departures: two arrivals and one departure forces a turn on the
         // train that arrived by the departure side and offers a genuine choice to the other, so the setting is pointless
         // only when EVERY arrival is a forced turn.  Arrivals come from arrivalSides rather than a walk of our own,
-        // because the answer has to be the BUILD's (DR-B6/DD-A7).
+        // because the answer has to be the BUILD's.
         Set<TileKey> pointless = new LinkedHashSet<>();
 
         for (TileKey tile : reducer.getPoints().keySet())
@@ -7124,7 +7122,7 @@ public class AutonomySession
             if (everyArrivalMustTurn(graph, reducer, tile)) pointless.add(tile);
         }
 
-        // Built once, up here, because the checks below are ABOUT the build (DD-A7).  `AutonomyChecks` is a predictor, not a
+        // Built once, up here, because the checks below are ABOUT the build.  `AutonomyChecks` is a predictor, not a
         // second authority: where the build can answer, its answer is the right one and a second derivation can only
         // disagree.  The line is drawn by severity: an ERROR says the setup will not build at all, so there is no build to
         // inspect and those checks reason about the diagram; everything softer describes a railway that WILL exist, and
@@ -7153,7 +7151,7 @@ public class AutonomySession
 
         for (Map.Entry<TileKey, TileKey> caption : store.getCaptions().entrySet())
         {
-            // NOT ONE KEPT FOR A SQUARE THAT IS NOT A STATION NOW (GSE-C4): it is not drawn, so nothing covers it
+            // NOT ONE KEPT FOR A SQUARE THAT IS NOT A STATION NOW: it is not drawn, so nothing covers it
             if (caption.getValue() == null || !store.isStation(caption.getValue())) continue;
 
             LayoutDiagram page = pageOf(caption.getKey());
@@ -7169,27 +7167,26 @@ public class AutonomySession
         }
 
 
-        // The run-in notices and the berths given no room, from one walk (TDA4-C2).
+        // The run-in notices and the berths given no room, from one walk.
         java.util.Set<TileKey> givenNoRoom = new LinkedHashSet<>();
 
         java.util.Map<TileKey, int[]> runIns = runInFigures(givenNoRoom, inspected, namesForInspection);
 
         List<AutonomyChecks.Finding> found = AutonomyChecks.run(graph, reducer, termini, getLabelledStationTiles(), pointless,
-            // with the squares where closing their trapped sides is something the arrivals menu can do (RSA37-B1)
+            // with the squares where closing their trapped sides is something the arrivals menu can do
             trapped, arrivalsClosableAt(trapped), covered, placedLocomotives(), shutStations(),
             mayTurnTiles(), mandatoryTurnTiles(), homeTiles(), signalsThatAreGone(),
             stationsWithNoSignal(), facingsThatCannotBeHeld(),
             // The red arrows, so the findings walk the railway a train can actually use (OB-120).
             barredArrivals(),
             // And the squares switched out of service, which is a different claim: a barred side is
-            // passed through and not stopped at, a closed square is not passed through at all
-            // (V31-C3).
+            // passed through and not stopped at, a closed square is not passed through at all.
             shutTiles(),
             // The two halves of the length rule (FR-046), and the two of them disagreeing about one
             // platform.
             placedTrainsWithoutLength(), stationsWithoutMaxLength(), runIns, givenNoRoom,
             // AND THE HALF-MEASURED APPROACH, which closes a berth to everything until it is finished
-            // (Adam, on RTX-C2: *"we want clear warnings to the user"*).
+            // (Adam: *"we want clear warnings to the user"*).
             stationsWithAHalfMeasuredApproach(),
             // A terminus with two ways in, which is a statement that cannot be true (MT-361).
             terminiWithTwoWaysIn(),
@@ -7198,19 +7195,18 @@ public class AutonomySession
             // Squares trains reverse at that nobody has measured.
             reversalsWithoutLength(),
             // Stations autonomy will never choose, so a pocket holding only those still leads
-            // nowhere (V36-C4).
+            // nowhere.
             stationsAutonomyWillNotChoose(),
             // And the termini a route can back a train into, off the same build
             berthsATrainCanBackInto(inspected, namesForInspection),
             // Copies a train could be sent to and never leave, and copies nothing can reach at all.  Per COPY, which is
             // what every other check here cannot see.
-            // ONE BUILD FOR THE THREE OF THEM (D3F-C6): each building the configuration for itself would make one `check()`
+            // ONE BUILD FOR THE THREE OF THEM: each building the configuration for itself would make one `check()`
             // three full graph builds, on the event thread, every time somebody right-clicks a station.
             destinationCopiesWithNoWayOut(inspected, namesForInspection),
             destinationCopiesWithNoWayIn(inspected, namesForInspection),
             destinationCopiesReachingNoStation(inspected, namesForInspection),
-            // A station's two guards as one signal, and the guards the routes that command them say are misplaced (AUT-C2;
-            // RSA41-C2, -C3; RSA42-C1, -C2).
+            // A station's two guards as one signal, and the guards the routes that command them say are misplaced.
             guardsOnBothLists(), guards.entryOffTheWayIn, guards.exitOnNoRoute, guards.exitCrossed, guards.exitOnTheWayIn,
             // Every square unavailable while another is occupied, station or not.
             restrictionsToList());
@@ -7231,7 +7227,7 @@ public class AutonomySession
         // AND A SENSOR ADDRESS THAT TWO PLACES SHARE, which the build cannot tell apart (FR-139)
         found.addAll(AutonomyChecks.checkSensorAddressesShared(sensorAddressesSharedByPlaces()));
 
-        // ONE FINDING AND ONE PIECE OF ADVICE for a station at the end of a line (RSA17-C1): the warning that trains cannot
+        // ONE FINDING AND ONE PIECE OF ADVICE for a station at the end of a line: the warning that trains cannot
         // turn there said "may" where the error says "must", and "may" then drew a notice saying "must"
         found.removeIf(finding -> AutonomyChecks.isArrivalTrapped(finding.getMessageKey())
             && endsOfLines.contains(finding.getTile()));
@@ -7270,7 +7266,7 @@ public class AutonomySession
      * keeps one station to one caption (OB-256), so what this finds came in past them: a setup file edited by hand, or
      * written by an older version.
      *
-     * Stale state is not counted: a caption kept for a square that is no station now is not drawn (GSE-C4), nor is one on a
+     * Stale state is not counted: a caption kept for a square that is no station now is not drawn, nor is one on a
      * page that is gone or left out of autonomy, nor one of a station unnamed and out of service.  A station that is no
      * Point is counted, since the diagram draws its captions all the same.  In reading order, so the sentence and the list
      * do not change from one load of the file to the next.
@@ -7351,7 +7347,7 @@ public class AutonomySession
     }
 
     /**
-     * Stations whose entry guard is also their exit guard, against those signals' names (AUT-C2).
+     * Stations whose entry guard is also their exit guard, against those signals' names.
      *
      * The setters refuse it; loading a setup does not go through them, so a file written before the rule, or by hand,
      * can still carry it.
@@ -7364,7 +7360,7 @@ public class AutonomySession
 
         if (graph == null) return out;
 
-        // STATIONS' (GSE-C4), as `signalsThatAreGone`
+        // STATIONS', as `signalsThatAreGone`
         Map<TileKey, List<TileKey>> exits = stationsOnly(store.getProtectingSignals());
 
         for (Map.Entry<TileKey, List<TileKey>> entry : stationsOnly(store.getEntrySignals()).entrySet())
@@ -7384,8 +7380,7 @@ public class AutonomySession
     }
 
     /**
-     * The guard notices, station square to the names of its guards, one map per notice (AUT-C2; RSA41-C2, -C3; RSA42-C1,
-     * -C2).
+     * The guard notices, station square to the names of its guards, one map per notice.
      */
     private static final class GuardNotices
     {
@@ -7403,9 +7398,9 @@ public class AutonomySession
     }
 
     /**
-     * Which routes command each guard, read off the built railway (RSA42-C1, -C2).
+     * Which routes command each guard, read off the built railway.
      *
-     * Adam (AUT-C2): *"if the guard signal is not on a path leading to the chosen station, we can add notice to
+     * Adam: *"if the guard signal is not on a path leading to the chosen station, we can add notice to
      * the autonomy editor."*  The BUILT railway is read, not the reduction, because the reduction knows a square but not
      * which way a train faces on it: the built edges have each copy of a point and the accessories each edge commands,
      * which is what turns a guard green.  So the ways in are the built edges walked back from the station's stopping
@@ -7415,8 +7410,8 @@ public class AutonomySession
      * - An EXIT guard is red while its station is occupied, and a route over it sets it green as it sets any signal on it.
      *   Commanded only by routes out of its station, it is that station's exit signal and right.  A route INTO it - a home
      *   signal - turns it green for the arriving train, and the arrival's claim can turn it red in front of that train
-     *   (RSA42-C1): the entry guard is the signal on the way in.  Routes to other stations turn it green over a train
-     *   standing there (RSA41-C2).  And no route at all, away from the station's own track, leaves it only showing whether
+     *  : the entry guard is the signal on the way in.  Routes to other stations turn it green over a train
+     *   standing there.  And no route at all, away from the station's own track, leaves it only showing whether
      *   the station is occupied.  One notice for each, in that order.
      *
      * A station on a page left out of autonomy is not in play, and a signal whose tile has gone is `signalsThatAreGone`'s.
@@ -7473,7 +7468,7 @@ public class AutonomySession
         {
             if (store.getExcludedPages().contains(station.getPage())) continue;
 
-            // NOR ONE THAT IS NOT A STATION NOW (GSE-C4): it keeps its guards, and nothing throws them
+            // NOR ONE THAT IS NOT A STATION NOW: it keeps its guards, and nothing throws them
             if (!store.isStation(station)) continue;
 
             java.util.Set<Integer> in = waysAt(station, true, from, to, named, stops);
@@ -7538,7 +7533,7 @@ public class AutonomySession
     /**
      * The built edges on the ways into a station or out of it: walked back from its stopping copies, or on from any copy
      * of it, through every point a train passes - a plain sensor, or a copy of a station that bars it - to the first stop on
-     * each way (RSA42-C2).  A copy is a point and a facing, so a walk turns back only where the railway lets a train.
+     * each way.  A copy is a point and a facing, so a walk turns back only where the railway lets a train.
      *
      * @param station the station's square
      * @param in true for the ways in, false for the ways out
@@ -7670,7 +7665,7 @@ public class AutonomySession
     /**
      * Whether anything must be dealt with before this setup will run.
      *
-     * NOT the question the LOAD door asks, and that is deliberate (SVN-B10).  Loading a configuration
+     * NOT the question the LOAD door asks, and that is deliberate.  Loading a configuration
      * is how somebody gets at its errors in order to fix them, so refusing to load an errored setup
      * would be a guard with no way past it.  `AutonomyViewerPanel.load` asks hasBlockingProblems()
      * instead - can this be built at all - which is the right question for opening something.
@@ -7696,7 +7691,7 @@ public class AutonomySession
     }
 
     /**
-     * How many of them there are, for the doors that put the number in a sentence (DY3-C7).
+     * How many of them there are, for the doors that put the number in a sentence.
      *
      * Here rather than in a panel, because two doors say this and each must pick the singular or plural message by the
      * same count.
@@ -7789,9 +7784,9 @@ public class AutonomySession
 
     /**
      * Every train the setup records on a square the railway stands it on no Point of - no copy faces its way - and the way
-     * it faces (RSA17-C2): the diagram draws it there, where the error about it says it stands.
+     * it faces: the diagram draws it there, where the error about it says it stands.
      *
-     * ALONG ITS TRACK (V348C-C1; Adam: "it must be N/S or a N/S track, or E/W on E/W, or angled on a curved
+     * ALONG ITS TRACK (Adam: "it must be N/S or a N/S track, or E/W on E/W, or angled on a curved
      * track"): a recorded facing the track does not run - left by an edit of the track under a parked train - is drawn
      * as `facingWhereNoCopySays` draws any train no copy holds, as the caption and the Is Facing menu read it.
      *
@@ -7820,7 +7815,7 @@ public class AutonomySession
     }
 
     /**
-     * The squares of `trainsOnNoPoint` whose train this configuration pauses (RSA60-C5), for the diagram to draw grey.
+     * The squares of `trainsOnNoPoint` whose train this configuration pauses, for the diagram to draw grey.
      * The setup's list, not the train's flag: the railway does not have these trains, and the setup is what says.
      *
      * @return the squares
@@ -7845,7 +7840,7 @@ public class AutonomySession
 
     /**
      * Writes into the setup, where it stands and facing as it faces, each train of the railway's the setup as it now
-     * stands gives no copy facing its way (in place of RSA5-A2's and RSA6-A3's refusals).  The copy a
+     * stands gives no copy facing its way.  The copy a
      * train stands on is its direction, so the rebuild cannot stand it on another.  Recorded, the setup says where it is,
      * the check reports it as an error until the track or the train is put right, and the fold keeps it on its square
      * (`capture`).
@@ -7869,7 +7864,7 @@ public class AutonomySession
 
             setFacing(square, facing);
 
-            // AND ITS TAIL (RSA18-A2): the track put back stood it with none, and offered what its tail lies over
+            // AND ITS TAIL: the track put back stood it with none, and offered what its tail lies over
             if (train.getValue().length > 2 && train.getValue()[2] != null) setArrivedFrom(square, (String) train.getValue()[2]);
 
             if (train.getValue().length > 3 && train.getValue()[3] != null)
@@ -7908,7 +7903,7 @@ public class AutonomySession
 
     /**
      * The railway's trains, each to its square and the way it faces, or null: by the square and facing each running Point
-     * says (RSA6-A2), else by its name through today's naming.
+     * says, else by its name through today's naming.
      */
     private Map<String, Object[]> railwayTrains()
     {
@@ -7922,7 +7917,7 @@ public class AutonomySession
         {
             Locomotive loc = point.getCurrentLocomotive();
 
-            // BY THE SQUARE AND FACING THE RUNNING POINT SAYS (RSA6-A2), else by its name through today's naming
+            // BY THE SQUARE AND FACING THE RUNNING POINT SAYS, else by its name through today's naming
             TileKey square = point.getSquare() == null ? null : AutonomyCompanionStore.parseTileKey(point.getSquare());
             Side facing = sideNamed(point.getCopyFacing());
 
@@ -7931,7 +7926,7 @@ public class AutonomySession
 
             if (loc == null || loc.getName() == null || square == null) continue;
 
-            // AND THE SIDE IT CAME IN BY AND ITS ROAD, for a record of it (RSA18-A2)
+            // AND THE SIDE IT CAME IN BY AND ITS ROAD, for a record of it
             standing.putIfAbsent(loc.getName(), new Object[] {square, facing, point.getArrivedFrom(),
                 org.traincontrol.automation.Layout.namesOfRoad(point.getArrivedAlong())});
         }
@@ -8048,7 +8043,7 @@ public class AutonomySession
 
     /**
      * The naming of a reduction of the graph as the setup now stands, made as a rebuild makes it and not installed
-     * (RSA5-A2) - a direction recorded, or a link switched off (RSA6-A3), which the graph held may not reflect.
+     * - a direction recorded, or a link switched off, which the graph held may not reflect.
      */
     private AutonomyBuilder trialNaming()
     {
@@ -8210,7 +8205,7 @@ public class AutonomySession
     {
         store.setPortalDisabled(tile, disabled);
 
-        // NOT REFUSED UNDER A STANDING TRAIN (in place of RSA6-A3's refusal): a train that came in
+        // NOT REFUSED UNDER A STANDING TRAIN: a train that came in
         // through the link is written into the setup where it stands, and the check says so as an error
         recordTrainsTheRailwayCannotHold();
 
@@ -8224,7 +8219,7 @@ public class AutonomySession
      */
     public void setPointName(TileKey tile, String name)
     {
-        // REFUSED, not stored (TDR-C11): the doors that take a typed name ask `whyNotAPointName` first and
+        // REFUSED, not stored: the doors that take a typed name ask `whyNotAPointName` first and
         // say so; this is the guard behind them, so a new door cannot forget.  Names already in a setup, or
         // brought in by an import, go through the store and are left alone.
         String why = whyNotAPointName(name);
@@ -8261,13 +8256,13 @@ public class AutonomySession
     }
 
     /**
-     * Why a typed name may not be given to a square, or null when it may (TDR-C11).
+     * Why a typed name may not be given to a square, or null when it may.
      *
      * A name ending in the builder's own direction heading - "Main (eastbound)" - reads as another square
      * wherever a message names squares, because that heading is exactly what is stripped from a copy's name.
      * Adam: *"refuse and close, but make sure the words are uncommon"* - so only the builder's
      * form is refused, and exactly the form the stripping removes; `StationIndex.endsWithAnArrivalHeading`
-     * says what that is (FTN-C1).
+     * says what that is.
      *
      * @param name the name as typed
      * @return the sentence to show, or null
@@ -8289,7 +8284,7 @@ public class AutonomySession
         // reader here asks about stations - `tilesWithAMaxTrainLength` and `modelsAnyLength` included.
         store.setStation(tile, station);
 
-        // AND SO DOES EVERY OTHER STATION SETTING (GSE-C4): its caption, the sides it bars arrivals by, its exit guard and
+        // AND SO DOES EVERY OTHER STATION SETTING: its caption, the sides it bars arrivals by, its exit guard and
         // its entry guards - and the editor keeps the old "terminus" turn flag beside them, ignored while not a station.
         // Each is ignored where the setting is READ, since a caption left drawn would light a station name up on a plain
         // point, and a guard would be thrown red over a square nothing is sent to.  So the session's views of them
@@ -8298,7 +8293,7 @@ public class AutonomySession
         // not a station now, and the checks are handed those views.  What the store keeps comes back when the square is
         // promoted, which is the operator's own act.
 
-        // NOT being unavailable while another square is occupied (Adam, reversing AMS-B2: "do allow
+        // NOT being unavailable while another square is occupied (Adam: "do allow
         // restrictions on non-stations, and let's not clear them when the type changes").  It stays in force on a square
         // that is not a station - the build locks every route into it against the watched square - and it is taken off
         // where it was put on, under Advanced Parameters, which every sensor square has.  The findings list names it
@@ -8364,12 +8359,12 @@ public class AutonomySession
             // placed here would inherit the last one's direction without being asked.
             setPointProperty(tile, AutonomyBuilder.FACING, null);
 
-            // AND SO DID THE ARRIVAL SIDE (IND9-A1), for the same reason and more strongly: where a train's tail lies is a
+            // AND SO DID THE ARRIVAL SIDE, for the same reason and more strongly: where a train's tail lies is a
             // fact about that train and nothing else.  Left behind, parseAuto reads it back onto whatever is placed here
             // next, and the walk that blocks track behind a standing train follows it.
             setPointProperty(tile, "arrivedFrom", null);
 
-            // AND THE ROAD, which describes the same arrival (WK7-B1).
+            // AND THE ROAD, which describes the same arrival.
             setPointProperty(tile, "arrivedAlong", null);
 
             return;
@@ -8390,7 +8385,7 @@ public class AutonomySession
 
         setPointProperty(tile, "loc", loc);
 
-        // AND A NEW OCCUPANT DOES NOT INHERIT THE OLD ONE'S TAIL (IND9-A1), as `Point.setLocomotive` does on the running
+        // AND A NEW OCCUPANT DOES NOT INHERIT THE OLD ONE'S TAIL, as `Point.setLocomotive` does on the running
         // layout: a square whose occupant changed through a door that does not ask (the editor's Place/Edit Locomotive
         // item) would keep the previous train's arrival side.  Cleared rather than guessed: the doors that CAN work the
         // side out write it immediately after calling this.
@@ -8402,7 +8397,7 @@ public class AutonomySession
     }
 
     /**
-     * Takes every locomotive off the setup, re-deriving the station index once (REL-C4).
+     * Takes every locomotive off the setup, re-deriving the station index once.
      *
      * The twin of `clearEveryHome`: clearing one placement writes TWO properties (the placement and the facing that
      * described the train), so the loop that did it square by square cost 2N full builder constructions on the event
@@ -8423,7 +8418,7 @@ public class AutonomySession
             // `placeLocomotive`, which is the door this mirrors.
             writePointProperty(tile, AutonomyBuilder.FACING, null);
 
-            // And the arrival side with it, for the same reason (IND9-A1).  This loop and the single
+            // And the arrival side with it, for the same reason.  This loop and the single
             // -square door have drifted before, which is why each carries a note that they must agree.
             writePointProperty(tile, "arrivedFrom", null);
             writePointProperty(tile, "arrivedAlong", null);
@@ -8589,7 +8584,7 @@ public class AutonomySession
      * THE ONE PLACE THAT KNOWS THE SHAPE.  `getLocomotiveNameAt` is the same question asked of a square rather than of a
      * value.  A placement is an OBJECT - {"name": ..., "speed": ..., "arrivalFunc": ...} - because parseAuto resets
      * whatever a placement omits.  A BARE STRING is not a shape this program writes, but setup files get edited by hand
-     * and an older autonomy.json may hold one (RGD-C5): this method is also what the occupant-change guards ask, so
+     * and an older autonomy.json may hold one: this method is also what the occupant-change guards ask, so
      * answering null for a bare string would make re-placing a train on its own square read as a CHANGE of occupant and
      * throw away an arrival side that was still true.
      *
@@ -8667,7 +8662,7 @@ public class AutonomySession
             extras.remove("loc");
             extras.remove(AutonomyBuilder.FACING);
 
-            // AND ITS TAIL (AMS-C1), as the other two placement doors clear it (IND9-A1, WK7-B1): where a train
+            // AND ITS TAIL, as the other two placement doors clear it: where a train
             // came in is a fact about that train, and left here the next one placed on the square inherits it.
             extras.remove("arrivedFrom");
             extras.remove("arrivedAlong");
@@ -8684,13 +8679,13 @@ public class AutonomySession
      *
      * One per copy the build emits for the square, which is what a train standing there can actually be: the ONWARD side
      * of the route it came in on, not the opposite of the side it entered by.  Those two agree on a straight and differ on
-     * a curve (MT-125, NR-7) - a train entering an N-E curve by N leaves by E, and saying it faces S describes a train
+     * a curve (MT-125) - a train entering an N-E curve by N leaves by E, and saying it faces S describes a train
      * sitting across the rails.
      *
      * The sides come from arrivalSides - the same door the build splits on - not from a second walk of the reduced edges
-     * (DR-B6).  A square the door declines to split offers no facing at all, which is right: the build emits it whole.
+     *.  A square the door declines to split offers no facing at all, which is right: the build emits it whole.
      * Ordered the way the builder orders its copies.  The first answer is NOT what a placement with no recorded facing
-     * gets: that is `startableCopy`'s choice, the first copy trains may arrive at (GUI2-B1, TDY4-C1).
+     * gets: that is `startableCopy`'s choice, the first copy trains may arrive at.
      *
      * @param tile
      * @return the possible facings, empty when nothing reaches the square and a single entry - which
@@ -8698,7 +8693,7 @@ public class AutonomySession
      */
     public List<Side> facingChoices(TileKey tile)
     {
-        // ASKED OF THE BUILD (DR-B6): `facingsFor` reads `StationIndex`, which reads `builder.facingByName()`, so this is the
+        // ASKED OF THE BUILD: `facingsFor` reads `StationIndex`, which reads `builder.facingByName()`, so this is the
         // build's own list of what its copies face - which is the question the menu is asking.  A facing has to be one the
         // build can HOLD, or `placementCopy` falls back to `startableCopy` and quietly turns the train round.  That gives:
         //
@@ -8864,13 +8859,13 @@ public class AutonomySession
             // and the square a rail arrives at - a Point's, which is never a step - by the side the rail reaches it.
             Map<TileKey, Set<RouteId>> seen = new LinkedHashMap<>();
 
-            // And how far back from the platform each lies, in squares along the rail (V348B-C1)
+            // And how far back from the platform each lies, in squares along the rail
             Map<TileKey, Integer> back = new LinkedHashMap<>();
 
             List<GraphReducer.ReducedEdge> rails = railsATailLiesAlong(running, train.getKey(), claimed);
 
             // How far back is measured from the platform only on rails into it; on the every-edge fallback it is not
-            // measured at all, and nothing is cut (V348C-D1)
+            // measured at all, and nothing is cut
             boolean fromThePlatform = rails != null;
 
             for (GraphReducer.ReducedEdge edge : fromThePlatform ? rails : reducer.getEdges())
@@ -8913,7 +8908,7 @@ public class AutonomySession
                 }
             }
 
-            // NOTHING PAST THE FIRST SQUARE WHOSE ROAD IS NOT KNOWN (V348B-C1; Adam: "stop at unknown.  but if
+            // NOTHING PAST THE FIRST SQUARE WHOSE ROAD IS NOT KNOWN (Adam: "stop at unknown.  but if
             // it's not thrown and the train must pass through the thrown arm, then do draw it").  Beyond a switch the tail
             // may have come through on either leg, the train lies on one road or the other, and a line along the one the
             // railway drives would say which.  A switch every rail into the platform crosses on the same arm is not
@@ -9120,7 +9115,7 @@ public class AutonomySession
 
         if (remaining <= 0) return;
 
-        // WHERE THE TRAIN IS, not which Point holds it (VD12-B1): a locked path reserves every Point on it and
+        // WHERE THE TRAIN IS, not which Point holds it: a locked path reserves every Point on it and
         // `getLocomotiveLocation` returns the first in iteration order.  `whereTheTrainIs` is the rule `DiagramMonitor`'s
         // marker follows.
         org.traincontrol.automation.Point standing = running.whereTheTrainIs(train);
@@ -9238,7 +9233,7 @@ public class AutonomySession
      * The covered edge the walk goes on along from this square, or null where none goes on (OB-239).
      *
      * One that ENDS here first: the train came along it, and its places are where the body lies - the arriving copy
-     * `Layout.walkOneTail` takes first, for the same reason (SVZ-B1).  Then one that starts here, which is a train
+     * `Layout.walkOneTail` takes first, for the same reason.  Then one that starts here, which is a train
      * turned round on its square.  Never back to a square already walked.
      *
      * @param covered the train's covered edges
@@ -9483,7 +9478,7 @@ public class AutonomySession
     {
         if (running == null || locomotive == null) return null;
 
-        // WHERE THE TRAIN IS, NOT WHERE IT IS MERELY RESERVED (PRV-C8): a locked path puts the locomotive on EVERY point of
+        // WHERE THE TRAIN IS, NOT WHERE IT IS MERELY RESERVED: a locked path puts the locomotive on EVERY point of
         // its route, so during a run this scan could stop at a junction the train has not reached.  Nothing in the model
         // separates a reservation from a train, so the tie-break is the railway's own feedback: an occupied square has
         // something standing on it.  Where none of the matches is occupied (a stopped railway with a placed train) the
@@ -9550,7 +9545,7 @@ public class AutonomySession
 
                 away.put(next.getName(), away.get(here.getName()) + 1);
 
-                // REACHED, BUT NOT DRIVEN THROUGH (PRV-B1): a turning copy is where a train is AFTER it has turned round, so a
+                // REACHED, BUT NOT DRIVEN THROUGH: a turning copy is where a train is AFTER it has turned round, so a
                 // route through one contains a reversal, which the runtime refuses mid-path (`reversesAlongTheWay`); a
                 // distance measured through one could win the nearest-copy contest against a copy the train can really
                 // reach.  The square is still recorded above, because arriving there and stopping is a good end to the
@@ -9646,7 +9641,7 @@ public class AutonomySession
      *
      * The heading has to be read BEFORE the move, from where the train was standing, and handed in here: the landing
      * copy's own side is not the train's heading, because `StationIndex.speakerAt` says that on an empty square "any copy
-     * will do" (SPEC-A1).  Separated from the door so that it can be run; `testAPastedTrainKeepsItsDirection` asserts the
+     * will do".  Separated from the door so that it can be run; `testAPastedTrainKeepsItsDirection` asserts the
      * call site is a call site.
      *
      * @param held every copy the landing square builds to, by name, with the side each one faces
@@ -9671,7 +9666,7 @@ public class AutonomySession
         if (keep != null && held.containsValue(keep)) return keep;
 
         // Several copies, and the heading did not survive the move: nothing here knows which the operator meant, and the copy
-        // the layout picked was picked arbitrarily, so the value is cleared rather than invented (SPEC-A1) and the facing
+        // the layout picked was picked arbitrarily, so the value is cleared rather than invented and the facing
         // menu asks.
         return null;
     }
@@ -9718,7 +9713,7 @@ public class AutonomySession
 
                 if (where == null) continue;
 
-                // THE COPY IT IS STANDING ON, not the square's stored facing (PRW-B3): that is ONE value per square, and a square
+                // THE COPY IT IS STANDING ON, not the square's stored facing: that is ONE value per square, and a square
                 // is up to four Points facing two ways, so it is the setup's last word about the platform rather than about
                 // this train (after a run, the previous occupant's).  Which copy a train stands on IS its direction (the model
                 // has no train direction of its own; one-way edges are how facing is written down).
@@ -9772,7 +9767,7 @@ public class AutonomySession
      * was that `flipFacing` should also update the running layout; this is the same statement from the other end, the
      * operator choosing a direction by hand.
      *
-     * **The train the railway has here, and only then the setup's** (TDY4-C5).  After a run the setup still names each
+     * **The train the railway has here, and only then the setup's**.  After a run the setup still names each
      * square's pre-run occupant (behaviour.md 6a), so turning the setup's train would move nothing (it is found on no copy
      * of the square) while the train actually standing there stayed as it was.  The setup's record is its own train's, so
      * it is written only where the railway has that train, or none.
@@ -9800,7 +9795,7 @@ public class AutonomySession
     }
 
     /**
-     * The train standing on any copy of a square on the RAILWAY, or null (TDY4-C5).
+     * The train standing on any copy of a square on the RAILWAY, or null.
      *
      * `facingOnTheRailway`'s question about the train rather than its facing: after a run the setup's placement need not
      * be the railway's, and a door acting on the train that is there asks this.
@@ -9838,7 +9833,7 @@ public class AutonomySession
     }
 
     /**
-     * Records the road the tail of the train standing here lies along, beside its arrival side (WK7-B1).
+     * Records the road the tail of the train standing here lies along, beside its arrival side.
      *
      * Adam: *"select the farthest sensor the tail of the train recently crossed."*  The road from that
      * sensor to this square, as `Layout.namesOfRoad` writes it - the same form the running layout saves - so it
@@ -9940,9 +9935,9 @@ public class AutonomySession
 
     /**
      * Which way to draw a train no copy of its square holds a facing for (OB-348) - one whose copy records no facing and has
-     * no single way out, or one the railway stands on no Point (`trainsOnNoPoint`, V348C-C1): the
+     * no single way out, or one the railway stands on no Point (`trainsOnNoPoint`): the
      * facing the setup records, where its track runs that way - the one the caption shows - or else a guess along its
-     * track: the first facing the square offers, which is the one the Is Facing menu ticks where it offers one (V348D-C1),
+     * track: the first facing the square offers, which is the one the Is Facing menu ticks where it offers one,
      * or where it offers none its first way, which is north or south on track that runs north to south, east or west on
      * track that runs across, and along the curve on a curve.  Null where the square has no track to ask.
      *
@@ -10028,7 +10023,7 @@ public class AutonomySession
      *
      * ONE locomotive, ONE station.  The running layout enforces this (setHomeLocomotive clears the same locomotive from
      * every other Point as it assigns one), and the setup-side editor must too, or two squares could be given the same home
-     * and the next load would drop one of them by iteration order, with a log line as the only notice (TD-8).  The sweep is
+     * and the next load would drop one of them by iteration order, with a log line as the only notice.  The sweep is
      * here rather than in the menu because it is a rule about the SETUP, and a rule enforced at one door of two is the
      * shape this defect came from.
      *
@@ -10077,11 +10072,11 @@ public class AutonomySession
     }
 
     /**
-     * The same rule, written without re-deriving, for a caller about to make several (SEV-C2).
+     * The same rule, written without re-deriving, for a caller about to make several.
      *
      * `setPointProperty` re-derives the station index on every call, a full builder construction, so a bulk gesture built
      * out of `setHome` would cost one per square.  The RULE stays in one place: one locomotive, one station, swept here
-     * rather than at each caller (TD-8).  `setHome` is this method plus the re-derive, and `homeEveryPlacedTrain` is this
+     * rather than at each caller.  `setHome` is this method plus the re-derive, and `homeEveryPlacedTrain` is this
      * method in a loop plus one re-derive at the end - one writer and two schedules.
      *
      * @param tile the square to make home
@@ -10103,7 +10098,7 @@ public class AutonomySession
         writePointProperty(tile, "home", locomotive);
 
         // AND THE WAY IT IS FACING, where it is standing here (OB-282) - the facing Return Home brings it back in.  Only a
-        // facing a train may be brought home in (GUI3-C2): a train can stand facing the way trains may not arrive - reversed
+        // facing a train may be brought home in: a train can stand facing the way trains may not arrive - reversed
         // on the throttle there - and that facing is one no Return Home can reach, so it is not saved.  A home given to a
         // train standing elsewhere is the square, whichever copy.
         Side facing = knownHomeFacing(tile, locomotive);
@@ -10127,7 +10122,7 @@ public class AutonomySession
 
         for (Side each : Side.values())
         {
-            // ONLY ONE A TRAIN MAY BE BROUGHT HOME IN (GUI3-C2) - see `writeHome`.
+            // ONLY ONE A TRAIN MAY BE BROUGHT HOME IN - see `writeHome`.
             if (each.name().equals(facing)) return homeFacingsFor(tile).contains(each) ? each : null;
         }
 
@@ -10150,7 +10145,7 @@ public class AutonomySession
 
         String standing = loc instanceof org.json.JSONObject ? ((org.json.JSONObject) loc).optString("name", null) : null;
 
-        // FROM THE RAILWAY FIRST, as `facingOf` reads it (TDY-C2, after CONF-B1).  The setup names the heading a train
+        // FROM THE RAILWAY FIRST, as `facingOf` reads it.  The setup names the heading a train
         // set off with until a capture writes the arrival back, so after a run that turned the train at this square its
         // FACING is the way it no longer faces - and Adam's rule is *"Direction it is facing when home is set"*.  The copy
         // it stands on in the running layout IS its facing.
@@ -10177,7 +10172,7 @@ public class AutonomySession
             }
         }
 
-        // STANDING ELSEWHERE ON THE RAILWAY, whatever the setup still says (TDY2-C4).  The setup names this square until
+        // STANDING ELSEWHERE ON THE RAILWAY, whatever the setup still says.  The setup names this square until
         // a capture writes the move back, and its FACING is then the heading of a train that is no longer here - so
         // where the railway knows where the train is, the setup does not answer for it, and the editor asks.
         if (onTheRailway) return null;
@@ -10190,7 +10185,7 @@ public class AutonomySession
     }
 
     /**
-     * Takes the home off every square that has one, re-deriving the station index once (DY3-C5).
+     * Takes the home off every square that has one, re-deriving the station index once.
      *
      * The single-square setter re-derives the station index per call, a full builder construction on the event thread:
      * wrong for sixty-two squares ("forty tiles meaning forty full rebuilds ... for the gesture that exists precisely
@@ -10225,7 +10220,7 @@ public class AutonomySession
      * writes an explicit `maxTrainLength: 0` on every destination, and counting those would offer to clear stations
      * that have nothing to lose.  Every page, as Clear All Home Locomotives and Clear All Track Lengths beside it.
      *
-     * **A NEGATIVE COUNTS, because it is the one the operator most needs to be able to clear** (SET-B1):
+     * **A NEGATIVE COUNTS, because it is the one the operator most needs to be able to clear**:
      * `Layout.fromJSON` refuses a maximum below 0 and invalidates the whole configuration, so a clear that counted only what
      * is above 0 would say there was nothing to clear on the very setting that was stopping the railway loading.  The editor
      * door no longer writes one (`AutonomyEditorPanel.whyNotThisNumber`); this removes one already written, from an older
@@ -10241,8 +10236,8 @@ public class AutonomySession
 
             int maximum = ((Number) point.opt("maxTrainLength")).intValue();
 
-            // STATIONS ONLY (SET-C2), since a square that is no longer one keeps its maximum and ignores it (OB-291) -
-            // but a NEGATIVE ONE WHEREVER IT IS (SET-B1): `Layout.fromJSON` refuses it on any point, so a remembered one
+            // STATIONS ONLY, since a square that is no longer one keeps its maximum and ignores it (OB-291) -
+            // but a NEGATIVE ONE WHEREVER IT IS: `Layout.fromJSON` refuses it on any point, so a remembered one
             // still stops the railway loading, and this is the door that takes it off.
             TileKey tile = AutonomyCompanionStore.parseTileKey(key);
 
@@ -10272,7 +10267,7 @@ public class AutonomySession
     }
 
     /**
-     * Every placement the bulk doors will act on: square against locomotive (SEV-C3).
+     * Every placement the bulk doors will act on: square against locomotive.
      *
      * `tilesWithALocomotive()` reads the configuration's points directly and so answers for every page; this is
      * `placedLocomotives()`, which is what the bulk doors walk and which skips pages excluded from autonomy.  A menu that
@@ -10293,16 +10288,16 @@ public class AutonomySession
      *
      * **The same shape as `clearEveryHome` beside it**: `setPointProperty` rebuilds the station index on every call, a full
      * builder construction on the event thread.  It writes through `writeHome`, which is that rule without the re-derive
-     * (SEV-C2).  **ONE LOCOMOTIVE, ONE STATION still holds**: a train being homed HERE has to lose its home anywhere else,
+     *.  **ONE LOCOMOTIVE, ONE STATION still holds**: a train being homed HERE has to lose its home anywhere else,
      * and `writeHome` is where that rule lives - writing the property directly would be a second door with the sweep
-     * missing, which is how TD-8 arrived.
+     * missing, which is how duplicate homes arrived.
      *
-     * **HOW FRESH THE PLACEMENTS ARE (SEV-C4).**  This writes from the SETUP's placements, the picture the editor is
+     * **HOW FRESH THE PLACEMENTS ARE.**  This writes from the SETUP's placements, the picture the editor is
      * showing.  Autonomy cannot be running: `TrainControlUI.whyAutonomyEditorCannotOpen` refuses to open this editor while
      * `isAutonomyBusy()`, and the other windows refuse the other way round with `autolayout.errorCannotEditWhileRunning`,
      * so no run can have moved a train since the capture that opened the editor.
      *
-     * **Where the railway has a train, that is where it is homed** (RSA18-B2): Bulk Tools is on the track diagram's menu
+     * **Where the railway has a train, that is where it is homed**: Bulk Tools is on the track diagram's menu
      * too, which folds nothing before a gesture, so after a run the setup still names the squares the trains set off from.
      * In the full editor, which folds on opening, the two agree.  A train the railway does not have is homed where the
      * setup has it (`trainsWhereTheyStand`).
@@ -10317,7 +10312,7 @@ public class AutonomySession
     {
         int assigned = 0;
 
-        // WHERE THE TRAINS STAND (RSA18-B2): the railway's, then the setup's where the railway has none of them.  Bulk
+        // WHERE THE TRAINS STAND: the railway's, then the setup's where the railway has none of them.  Bulk
         // Tools is on the track diagram's menu too, which folds nothing first, and after a run the setup alone homed each
         // train where it had set off.
         for (Map.Entry<TileKey, String> placed : trainsWhereTheyStand().entrySet())
@@ -10437,7 +10432,7 @@ public class AutonomySession
      * **The facing** is the home's own where it was homed with one (`homeFacing`); where it was not, the one the caller
      * gives - the running layout's home copy, which the build chose for it - or none, on a square with one way to face.
      *
-     * **No arrival side and no road.**  A train put down with no road it came by has no tail behind it (TDU2-A1), and an
+     * **No arrival side and no road.**  A train put down with no road it came by has no tail behind it, and an
      * unknown arrival is the safe answer: nothing is held behind the train.
      *
      * **Each train's settings travel with it** - speed, arrival functions and the rest live on the placement, and the
@@ -10561,11 +10556,11 @@ public class AutonomySession
     /**
      * Every square the active configuration records a home locomotive on.
      *
-     * For the one gesture that is about all of them at once (R28-C1).  Adam: **"that option should be added
+     * For the one gesture that is about all of them at once.  Adam: **"that option should be added
      * back in to the autonomy editor, with a confirmation."**
      *
      * @return the squares, in NO PARTICULAR ORDER (a `JSONObject` is a `HashMap`: stable for a given set of keys and
-     *         unrelated to the order they were written, CD3-C4), empty when nothing is homed anywhere
+     *         unrelated to the order they were written), empty when nothing is homed anywhere
      */
     public java.util.List<TileKey> tilesWithAHome()
     {
@@ -10577,7 +10572,7 @@ public class AutonomySession
      *
      * The placement twin of `tilesWithAHome`, for the bulk action Adam asked to have back (MT-257).
      *
-     * @return the squares, in NO PARTICULAR ORDER, as `tilesWithAHome` (CD3-C4, REL-C5); empty when nothing is placed
+     * @return the squares, in NO PARTICULAR ORDER, as `tilesWithAHome`; empty when nothing is placed
      */
     public java.util.List<TileKey> tilesWithALocomotive()
     {
@@ -10633,7 +10628,7 @@ public class AutonomySession
     }
 
     /**
-     * The write on its own, for a caller that is about to make several and will re-derive once (DY3-C5).
+     * The write on its own, for a caller that is about to make several and will re-derive once.
      *
      * Deriving the station index is a full builder construction, so doing it per square would turn one press of "clear every
      * home" into sixty-two of them on the event thread; the bulk direction setter has the same shape.
@@ -10859,7 +10854,7 @@ public class AutonomySession
      *
      * What Segment Length's 0 means since *"no, add a clear button"*: a 0 typed there is the same answer a 0 in Mass Assign
      * Lengths is (OB-274) - kept, not offered again, and read by every length rule but the own-tail one (OB-300) as
-     * measured track of no length (TDU-C6).  Clearing a length is `setTileLength(tile, 0)`, which
+     * measured track of no length.  Clearing a length is `setTileLength(tile, 0)`, which
      * removes the answer as well.
      *
      * @param tiles the squares
@@ -10878,7 +10873,7 @@ public class AutonomySession
     }
 
     /**
-     * Writes several squares' lengths and re-derives once (AUS-C1).
+     * Writes several squares' lengths and re-derives once.
      *
      * `touched()` is a full builder construction - a new graph, a new reduction, a new station index - and the single
      * setter calls it per square: Segment Length on a run of four would pay for four on the event thread.
@@ -11110,7 +11105,7 @@ public class AutonomySession
             // A route the hardware restricts is one-way whatever the user chose: the graph leaves the authored direction BOTH
             // there (see defaultDirection), but a train still cannot pass against the blades.
             //
-            // **AND A SHUT ROUTE DRAWS NOTHING (VD18-B1).**  On a permanent turnout `TOWARD_A` - toward the fork - is a
+            // **AND A SHUT ROUTE DRAWS NOTHING.**  On a permanent turnout `TOWARD_A` - toward the fork - is a
             // closure rather than a direction: it permits only an entry the blades refuse.  So a road the operator had shut
             // must not be drawn with a green arrow.
             if (!TileGraph.isPassable(direction, route))
@@ -11261,7 +11256,7 @@ public class AutonomySession
         // would only repeat what the art already says.  A badge is FOR what the art cannot say: a station, trains turn round
         // here (a non-station where trains turn keeps its mark), autonomy is not using it.
         //
-        // AND THE THIRD ITEM HAD NO TERM IN THIS EXPRESSION (SVN-B6, D24-C9): a square switched off that is neither a
+        // AND THE THIRD ITEM HAD NO TERM IN THIS EXPRESSION: a square switched off that is neither a
         // station nor a turn-around must draw its cross here as the editor does, or the drawing that says "nothing may
         // pass here" would vanish while running the railway.
         boolean shut = Boolean.FALSE.equals(getPointProperty(tile, "active"));
@@ -11312,7 +11307,7 @@ public class AutonomySession
      *
      * Asked of the TRACK as drawn, not of the edges built from it: a one-way run or a barred arrival leaves trains one
      * way out of a station whose track carries on, and that station keeps its own shape.  The road is the badge's,
-     * `stationRoad` - on a double curve the curve with the contact, where it was the other (RSA63-C2).
+     * `stationRoad` - on a double curve the curve with the contact, where it was the other.
      *
      * @param tile a sensor's square
      * @return the side, or null
@@ -11501,7 +11496,7 @@ public class AutonomySession
     }
 
     /**
-     * Whether this session can safely judge what the diagram no longer has (DR-B10).
+     * Whether this session can safely judge what the diagram no longer has.
      *
      * "A page that is not loaded must not be judged" is enforced by this method, the store's held entries,
      * `captureFromLayout`'s pagesInPlay, and `forgetArrivalsThatNoLongerExist`'s station-index membership test; every
@@ -11513,7 +11508,7 @@ public class AutonomySession
      *    (`CS2File` skips a page whose file will not parse or is not there, and this layout lives in OneDrive, where an
      *    unhydrated placeholder is an ordinary Tuesday);
      *  - the numbering is suspect, meaning a renumber has happened and nothing has re-keyed the setup yet, so an id cannot be
-     *    trusted to say a square is gone (VD17-C4).
+     *    trusted to say a square is gone.
      *
      * The remedy is the one OB-068 established: save, but do not prune.
      *
@@ -11525,7 +11520,7 @@ public class AutonomySession
 
         for (LayoutDiagram page : pages)
         {
-            // A STAND-IN FOR A PAGE THAT WOULD NOT READ IS NOT A LOADED PAGE (FV3-A1).  `NSV-B3` put a blank placeholder in the
+            // A STAND-IN FOR A PAGE THAT WOULD NOT READ IS NOT A LOADED PAGE.  A blank placeholder is put in the
             // list so that a link tile after it still resolves to the right page.  It carries the missing page's NAME, and
             // this set is compared by name, so without this skip `save()` would reconcile against the placeholder's one text
             // tile and drop every station, point name, length, facing, signal pairing, caption and placement on the real page
@@ -11547,7 +11542,7 @@ public class AutonomySession
      *
      * A page that did not load, or numbering caught mid-renumber, means the diagram cannot say what it no longer has -
      * everything on the missing page looks deleted.  Nothing is pruned in that state, and the Reconciliation returned reports
-     * a decline instead (DR-B10, RC-C4).
+     * a decline instead.
      *
      * @return what reconciling found, for showing
      * @throws IOException
@@ -11586,7 +11581,7 @@ public class AutonomySession
 
         for (LayoutDiagram page : pages)
         {
-            // THE SAME SKIP AS `pagesSafeToJudge` AND `open`, AND IT HAS TO BE HERE TOO (FV3-A3): were it missing,
+            // THE SAME SKIP AS `pagesSafeToJudge` AND `open`, AND IT HAS TO BE HERE TOO: were it missing,
             // `incomplete` would come back true from pagesSafeToJudge but `absent` would come back EMPTY, because the
             // placeholder still supplies its name here, and `Reconciliation.declined(absent)` reports `wasDeclined()` as false
             // when the list is empty.  Three of the four doors that reach this save discard the report, so the refusal would
@@ -11601,14 +11596,14 @@ public class AutonomySession
         boolean incomplete = !pagesSafeToJudge();
 
         // Not logged from here: this class has no logger, deliberately - it is the model half of the setup and every message
-        // about it belongs to a window.  Callers are told through the Reconciliation (DR-B10); nothing is destroyed while the
+        // about it belongs to a window.  Callers are told through the Reconciliation; nothing is destroyed while the
         // answer is non-empty.
 
         AutonomyCompanionStore.Reconciliation report = incomplete
             ? AutonomyCompanionStore.Reconciliation.declined(absent)
             : store.reconcile(existing);
 
-        // Pruned only once the guard above has agreed the picture is complete (DR-B10): every pruner added to this class needs
+        // Pruned only once the guard above has agreed the picture is complete: every pruner added to this class needs
         // the guard, so it is inside it, not beside it.
         if (!incomplete) forgetArrivalsThatNoLongerExist();
 
@@ -11666,7 +11661,7 @@ public class AutonomySession
 
     /**
      * Who stands where: the railway's trains on the squares it has them, then the setup's placements of trains the railway
-     * does not have, on squares the railway leaves free (RSA18-B2).  After a run the setup still names each moved train's
+     * does not have, on squares the railway leaves free.  After a run the setup still names each moved train's
      * old square - the track diagram's menu folds nothing before a gesture - so a reader of the setup alone acts on
      * squares the trains have left.
      *
@@ -11699,7 +11694,7 @@ public class AutonomySession
      * Empty when no source has been installed, which is the honest answer: not knowing a length and
      * knowing it is unset are different things, and only one of them is worth a warning.
      *
-     * @return the squares and the trains standing on them, where the railway has them first (RSA18-B2, RSA19-C1)
+     * @return the squares and the trains standing on them, where the railway has them first
      */
     private Map<TileKey, String> placedTrainsWithoutLength()
     {
@@ -11707,7 +11702,7 @@ public class AutonomySession
 
         if (trainLengths == null) return out;
 
-        // WHERE THEY STAND, not where the last run set them off from (RSA18-B2)
+        // WHERE THEY STAND, not where the last run set them off from
         for (Map.Entry<TileKey, String> placed : trainsWhereTheyStand().entrySet())
         {
             if (placed.getValue() == null || placed.getValue().trim().isEmpty()) continue;
@@ -11716,7 +11711,7 @@ public class AutonomySession
 
             // Zero and unset mean the same thing here, and both mean the same to the railway: a train
             // of no length is never too long for anywhere.
-            // WITH THE TRAIN THAT STANDS THERE (RSA19-C1): the warning named the setup's
+            // WITH THE TRAIN THAT STANDS THERE: the warning named the setup's
             if (length == null || length <= 0) out.put(placed.getKey(), placed.getValue());
         }
 
@@ -11724,7 +11719,7 @@ public class AutonomySession
     }
 
     /**
-     * Whether this railway models lengths at all (REL-C2).
+     * Whether this railway models lengths at all.
      *
      * Three ways to have started: a measured tile, a station with a maximum, or a placed locomotive
      * with a train length.  Any one of them means somebody is using the length rules, and the notices
@@ -11770,7 +11765,7 @@ public class AutonomySession
      *
      * Stations only: a maximum on somewhere trains cannot stop decides nothing (FR-046).
      *
-     * **Gated on the railway modelling lengths at all** (SVN-C3, REL-C2).  Adam set that condition for
+     * **Gated on the railway modelling lengths at all**.  Adam set that condition for
      * `reversalsWithoutLength` - *"a railway that measures nothing has decided not to model lengths"* - and without it
      * every station on a layout that models no lengths would be listed.  **But not on TRACK lengths:** `maxTrainLength` is
      * compared against the locomotive's own authored length (`Point.validateTrainLength`) and no tile length enters into
@@ -11798,8 +11793,8 @@ public class AutonomySession
     }
 
     /**
-     * Whether any square of a leg that takes a length has one - what makes the berth rule judge the leg at all (PRW-B1).
-     * Asked by both berth notices (TDA4-C3).  A route tile is passed over, as it takes no length (OB-273): counting it
+     * Whether any square of a leg that takes a length has one - what makes the berth rule judge the leg at all.
+     * Asked by both berth notices.  A route tile is passed over, as it takes no length (OB-273): counting it
      * made TopR1ParkLong and TopR1ParkShort read as half measured when every square that takes a length was measured.
      *
      * @param squares the leg's squares
@@ -11828,7 +11823,7 @@ public class AutonomySession
 
     /**
      * The track a parking berth's rule spends before it stops, walking back from the berth over one arriving leg: how
-     * much of it is measured, and how many of its squares have no length and no answer (OB-288, TDA-C7, TDA2-C6).
+     * much of it is measured, and how many of its squares have no length and no answer (OB-288).
      *
      * `Layout.whyABerthCannotHoldIt` spends a train from the berth backwards, its own square first (OB-278), passes a
      * square with no length for nothing, and refuses the train once its spending reaches a square `endsTheBerthsRoom` -
@@ -11838,7 +11833,7 @@ public class AutonomySession
      * @param squares the leg's squares in order, the berth last
      * @return {measured length before the stop, squares before it with no length, how it stops}: 1 at a square the
      *         berth rule refuses on - another road runs over it - 2 at one only the room walk ends at, 0 at none
-     *         (TDA5-C1: the berth rule's figure is the berth rule's only where it refuses)
+     *         (the berth rule's figure is the berth rule's only where it refuses)
      */
     private int[] berthTrackBeforeTheStop(java.util.List<TileKey> squares)
     {
@@ -11873,11 +11868,11 @@ public class AutonomySession
     /**
      * Stations whose approach is measured in part and not in whole - the state that refuses a berth trains that fit.
      *
-     * Adam, RTX-C2: *"We want clear warnings to the user"*.  With the whole approach measured the berth works;
+     * Adam: *"We want clear warnings to the user"*.  With the whole approach measured the berth works;
      * half measured is the trap.
      *
      * **Why half measured refuses trains that fit.**  `Layout.whyABerthCannotHoldIt` declines to judge only when NOTHING is
-     * measured, the berth's own square included (PRW-B1, OB-278).  One measured square is enough to make it judge, and it
+     * measured, the berth's own square included (OB-278).  One measured square is enough to make it judge, and it
      * then walks backwards CLAIMING each place before spending the train's length on it, so an unmeasured square (worth 0)
      * is claimed for nothing, and a train whose length is not spent on the measured squares before the switch or crossing
      * is refused, quoting the road rather than the hole in the measurements.  Since the berth's own square is spent first,
@@ -11903,7 +11898,7 @@ public class AutonomySession
         {
             if (!store.isStation(square)) continue;
 
-            // THE RULE EXEMPTS A STATION AUTONOMY CHOOSES (OP2-B2): `whyABerthCannotHoldIt` returns at once for a berth that
+            // THE RULE EXEMPTS A STATION AUTONOMY CHOOSES: `whyABerthCannotHoldIt` returns at once for a berth that
             // `isAutoDestination` (Adam's ruling, and the default for a station), so a warning about ordinary platforms would
             // be about a refusal that never happens.  What is left is the parking berths.
             if (isAutoDestination(square)) continue;
@@ -11913,7 +11908,7 @@ public class AutonomySession
 
             int longest = stated instanceof Number ? ((Number) stated).intValue() : 0;
 
-            // ONE APPROACH AT A TIME (OP2-B3).  The walk judges the approach a train arrives on, so a station with
+            // ONE APPROACH AT A TIME.  The walk judges the approach a train arrives on, so a station with
             // one approach measured throughout and another with nothing measured is not half measured on either -
             // pooling them said it was, and counted squares from legs that are not in the same walk.
             int worst = 0;
@@ -11922,7 +11917,7 @@ public class AutonomySession
             {
                 if (!arriving.getEnd().equals(square)) continue;
 
-                // NOT A SIDE NO TRAIN STOPS FROM (MT-552): a train may come in that way and turn (TDA-C8), but none stops there, so
+                // NOT A SIDE NO TRAIN STOPS FROM (MT-552): a train may come in that way and turn, but none stops there, so
                 // nothing about its track can refuse one - and the walk the rule stands for never starts from it.
                 if (getBarredArrivals(square).contains(arriving.getEntrySide())) continue;
 
@@ -11930,15 +11925,15 @@ public class AutonomySession
 
                 // THE PATH AND THE BERTH ITSELF.  The path is the squares between the leg's two ends, endpoints excluded; the
                 // end - the berth - is rail the walk spends first (OB-278), which `Layout.whyABerthCannotHoldIt` counts among
-                // the measured places, so a berth measured with nothing behind it must be warned about (TDY-B2).
+                // the measured places, so a berth measured with nothing behind it must be warned about.
                 java.util.List<TileKey> squares = new java.util.ArrayList<>();
 
                 for (GraphReducer.TileStep step : arriving.getPath()) squares.add(step.getTile());
 
                 squares.add(square);
 
-                // MEASURED ANYWHERE ON THE LEG is what makes the rule judge it (PRW-B1) - beyond the stop included,
-                // and the one question the run-in notice asks too (TDA4-C3): the two notices hand a berth to each
+                // MEASURED ANYWHERE ON THE LEG is what makes the rule judge it - beyond the stop included,
+                // and the one question the run-in notice asks too: the two notices hand a berth to each
                 // other on it, so two copies that drifted would leave a berth with neither.
                 anyMeasured = anythingMeasuredOn(squares);
 
@@ -11947,14 +11942,14 @@ public class AutonomySession
                 // NOT WHERE THE BERTH'S MEASURED TRACK BEFORE THE STOP HOLDS ITS LONGEST TRAIN (OB-288, MT-552).
                 // `Layout.whyABerthCannotHoldIt` spends a train from the berth backwards, its own square first (OB-278), passes
                 // a square with no length for nothing, and refuses the train only when its spending reaches track another road
-                // runs over - a switch, a permanent turnout or a crossing (TDA-C7).  So a berth whose measured track before the
+                // runs over - a switch, a permanent turnout or a crossing.  So a berth whose measured track before the
                 // stop holds its longest train refuses none for the holes in it, and is not warned about.  Counted the walk's
                 // way, in `berthTrackBeforeTheStop`: a square that takes no length is passed over, a square with no length
                 // (answered 0 or not at all) is worth nothing and passed, and the stop ends the count (Adam, of
                 // BottomMainPost - 1 on its own square, nothing on 22,7, 1 each on 22,8 and 22,9 - *"trains of length 3 can
                 // hold there"*).  With no longest train set, any train could reach the stop.
                 //
-                // AND ONLY THE HOLES BEFORE THE STOP ARE COUNTED (TDA2-C6): the rule has refused by the time it gets past it,
+                // AND ONLY THE HOLES BEFORE THE STOP ARE COUNTED: the rule has refused by the time it gets past it,
                 // so a square beyond is one the operator would measure for nothing.
                 int[] before = berthTrackBeforeTheStop(squares);
 
@@ -11980,13 +11975,12 @@ public class AutonomySession
      * from the last switch on the arriving edge to the platform, which is what `Layout.measuredRoomAtTheEndOf` counts when
      * that edge crosses a switch.  A notice quoting a number the refusal would not quote makes the reader measure the wrong
      * stretch.  For a parking berth the number is the berth rule's where that stops first - at a switch or a crossing
-     * between the berth and the room walk's end, or on a leg with no switch at all (TDA2-C6, TDA3-C2) - and only where the
-     * rule refuses there: something on the leg is measured, and another road runs over the square (TDA5-C1).  Where nothing
+     * between the berth and the room walk's end, or on a leg with no switch at all - and only where the
+     * rule refuses there: something on the leg is measured, and another road runs over the square.  Where nothing
      * before that stop is measured and its squares were answered 0, the berth takes no train that way, which is a warning
-     * of its own (`runInFigures`, TDA4-C2); unanswered, they are the half-measured notice's to name, and this says nothing
-     * (TDA3-C1).
+     * of its own (`runInFigures`); unanswered, they are the half-measured notice's to name, and this says nothing.
      *
-     * **And at a platform, the figure a train is refused above, where there is one** (Adam, TDA-C10: *"Add the
+     * **And at a platform, the figure a train is refused above, where there is one** (Adam: *"Add the
      * refusing figure where there is one."*).  A train longer than the room stands across the switch as far as the measured
      * route in holds it (FR-087), so one longer than the shortest way in - from the station or turn nearest behind - is
      * refused (`refusingFigures`).  Given only where it is under the stated maximum.
@@ -12011,7 +12005,7 @@ public class AutonomySession
 
     /**
      * The walk behind `runInsShorterThanTheBerth`, and behind the parking berths that take no train on a way in because
-     * every square before the stop there was answered 0 on purpose (Adam, TDA4-C2: *"Give it its own sentence
+     * every square before the stop there was answered 0 on purpose (Adam: *"Give it its own sentence
      * as a warning, make it sound intuitive (the effective specified length of the track is 0)"*): a warning of its own,
      * not the run-in notice's sentence for a berth that holds something.  The findings take both from one pass.
      *
@@ -12025,7 +12019,7 @@ public class AutonomySession
     {
         java.util.Map<TileKey, int[]> out = new LinkedHashMap<>();
 
-        // The figure a train is refused above at each platform, off the railway the setup builds (TDA-C10).
+        // The figure a train is refused above at each platform, off the railway the setup builds.
         java.util.Map<TileKey, Integer> refusing = refusingFigures(built, named);
 
         if (reducer == null || store == null) return out;
@@ -12048,21 +12042,21 @@ public class AutonomySession
             {
                 if (!arriving.getEnd().equals(square)) continue;
 
-                // NOT A SIDE NO TRAIN STOPS FROM (MT-552): a train may come in that way and turn (TDA-C8), but none stops there, so
+                // NOT A SIDE NO TRAIN STOPS FROM (MT-552): a train may come in that way and turn, but none stops there, so
                 // nothing about its track can refuse one - and the walk the rule stands for never starts from it.
                 if (getBarredArrivals(square).contains(arriving.getEntrySide())) continue;
 
                 int room = arriving.getRoomAtTheEnd();
 
-                // A PARKING BERTH'S ROOM ENDS WHERE THE BERTH RULE STOPS (TDA2-C6): at a crossing as well as a switch.  The room
+                // A PARKING BERTH'S ROOM ENDS WHERE THE BERTH RULE STOPS: at a crossing as well as a switch.  The room
                 // walk runs on past a crossing (`boundsTheRoom`), so quoting it would give room the berth rule does not give.  A
                 // platform autonomy may choose is not judged by the berth rule, and keeps the room walk's number.
                 //
-                // AND WITH NOTHING SPENT BEFORE THE STOP (TDA3-C1), every train is refused there - once anything on the
-                // approach is measured, which the rule asks first (PRW-B1), and only where the stop is one the berth rule
-                // refuses on: another road runs over it (TDA5-C1) - so the room walk's figure is not quoted either.  Squares
+                // AND WITH NOTHING SPENT BEFORE THE STOP, every train is refused there - once anything on the
+                // approach is measured, which the rule asks first, and only where the stop is one the berth rule
+                // refuses on: another road runs over it - so the room walk's figure is not quoted either.  Squares
                 // nobody has answered are the half-measured notice's to name; answered 0 on purpose, they are the berth's own
-                // warning's (TDA4-C2); this notice says nothing for either.
+                // warning's; this notice says nothing for either.
                 boolean theBerthRulesFigure = false;
 
                 if (!isAutoDestination(square))
@@ -12082,7 +12076,7 @@ public class AutonomySession
                         room = before[0];
                         theBerthRulesFigure = true;
 
-                        // NOTHING BEFORE THE STOP, ANSWERED SO (TDA4-C2): the berth takes no train that comes in this
+                        // NOTHING BEFORE THE STOP, ANSWERED SO: the berth takes no train that comes in this
                         // way - a warning of its own, not this notice's "that may be right".
                         if (room == 0)
                         {
@@ -12104,21 +12098,21 @@ public class AutonomySession
 
                 // UNMEASURED IS UNKNOWN, NOT SHORT - the doctrine the guard itself follows, and `-1` is
                 // the reduction's word for "bounded, and nothing in it is measured".  Not the berth rule's 0, which is
-                // what it refuses on (TDA3-C1).
+                // what it refuses on.
                 if ((room <= 0 && !theBerthRulesFigure) || room >= max) continue;
 
                 if (worst < 0 || room < worst) worst = room;
             }
 
-            // AND AT A PLATFORM, THE SHORTEST WAY IN (TDA-C10): a train longer than that, setting off from the station or
+            // AND AT A PLATFORM, THE SHORTEST WAY IN: a train longer than that, setting off from the station or
             // turn nearest behind, is refused where the notice says it stands across the switch.
             Integer refusedAbove = isAutoDestination(square) ? refusing.get(square) : null;
 
             if (worst >= 0)
             {
-                // NEVER UNDER {3}, since both are taken over the same ways in (ADA2-C2), and given where it EQUALS {3}: the
+                // NEVER UNDER {3}, since both are taken over the same ways in, and given where it EQUALS {3}: the
                 // shortest way in holds nothing behind its switch, and there a train longer than {3} is refused instead of
-                // standing across it - TopMainR1Inter on his railway, the platform TDA-C10 was asked about.
+                // standing across it - TopMainR1Inter on his railway.
                 out.put(square, refusedAbove != null && refusedAbove > 0 && refusedAbove < max
                     ? new int[] {max, worst, refusedAbove} : new int[] {max, worst});
             }
@@ -12128,7 +12122,7 @@ public class AutonomySession
     }
 
     /**
-     * The figure a train is refused above at each platform, read off the railway the setup builds (TDA-C10): the least,
+     * The figure a train is refused above at each platform, read off the railway the setup builds: the least,
      * over the notice's own ways in, of what `Layout.whyTooLongForThisRoute` refuses above on each - the larger of the
      * room past the switch and the measured route in (`Layout.measuredRouteIn`, FR-087).
      *
@@ -12136,7 +12130,7 @@ public class AutonomySession
      * at is the build's answer: a square that is a station can have a copy heading this way that trains may not arrive at,
      * and nobody is started there.
      *
-     * **The notice's own ways in, and only where the railway refuses on them** (ADA2-C1, ADA2-C2): a leg over a switch with
+     * **The notice's own ways in, and only where the railway refuses on them**: a leg over a switch with
      * something measured past it, or a leg with a length straight from a copy trains turn at - the ways `{3}` is taken over
      * (`roomTheNoticeQuotes`), so the figure is never less than `{3}`.  A way in with nothing measured past its switch is
      * the half-measured notice's; one with no length at all is not judged by the room rule and refuses no train.
@@ -12144,7 +12138,7 @@ public class AutonomySession
      * **The route in, walked back as the railway runs it** (`routesIn`): over sensors nobody is started at, to a copy a train
      * is started at or turns at; stopped at a leg nobody measured, and on past one answered 0 throughout, adding nothing;
      * never through or into a point that is switched off, though from a station switched off round a
-     * train standing there; and never from or through another copy of the platform's own square (ADA2-C3).
+     * train standing there; and never from or through another copy of the platform's own square.
      *
      * @param built the built railway, or null
      * @param named its point names to squares, or null to ask the builder
@@ -12172,7 +12166,7 @@ public class AutonomySession
 
             String name = point.getString("name");
 
-            // SWITCHED OFF, NOTHING PASSES OR ARRIVES (ADA2-C3): `isPathClear` refuses a route through a point that is not
+            // SWITCHED OFF, NOTHING PASSES OR ARRIVES: `isPathClear` refuses a route through a point that is not
             // active, or into one - and not out of one (Adam: *"Just not inactive start points.  Inactive really
             // means nothing can pass."*).
             if (!point.optBoolean("active", true)) off.add(name);
@@ -12183,7 +12177,7 @@ public class AutonomySession
                 setsOff.add(name);
             }
 
-            // THE ROUTE IN STOPS AT A TURN (ADD2-C5): `measuredRouteIn` counts nothing behind a copy the train turned at -
+            // THE ROUTE IN STOPS AT A TURN: `measuredRouteIn` counts nothing behind a copy the train turned at -
             // on his railway a barred turning copy, which is no station, at RampDown and BottomMainPost.
             if (point.optBoolean("reversing", false)) setsOff.add(name);
 
@@ -12223,7 +12217,7 @@ public class AutonomySession
             {
                 Integer walked = routeIn.get(edge);
 
-                // No train comes in this way.  A leg with no length never gets here: it quotes no room (ADA2-C1).
+                // No train comes in this way.  A leg with no length never gets here: it quotes no room.
                 if (walked == null) continue;
 
                 out.merge(platform.getKey(), Math.max(roomTheNoticeQuotes(edge, turns), walked), Math::min);
@@ -12272,10 +12266,10 @@ public class AutonomySession
 
     /**
      * The least the route in counts for a train coming along each built leg towards this platform -
-     * `Layout.measuredRouteIn` over every way the railway can run it - for the legs a train can come along (TDA-C10).
+     * `Layout.measuredRouteIn` over every way the railway can run it - for the legs a train can come along.
      *
      * **Worked out for every leg together, and lowered until nothing changes**, so a loop of sensors is walked whole: walked
-     * one leg at a time and remembered, a leg first reached inside a loop would be stored as having no way in (ADA2-C3).
+     * one leg at a time and remembered, a leg first reached inside a loop would be stored as having no way in.
      *
      * - From a copy a train is started at or turns at, the leg alone: the route in stops there.
      * - A leg nobody measured ends the route in, so nothing behind it counts: 0.  One answered 0 throughout is measured
@@ -12283,7 +12277,7 @@ public class AutonomySession
      * - Otherwise the leg and the least way into where it starts.
      *
      * Only from where a train can be got to at all without passing the platform, and never from or through another copy
-     * of its own square: a route from a platform round to itself is no journey (ADA2-C3).
+     * of its own square: a route from a platform round to itself is no journey.
      *
      * @param platform the platform's square
      * @param byName the built railway's point names to squares
@@ -12400,7 +12394,7 @@ public class AutonomySession
      *     message names, so a side already barred must not go on being counted.
      *
      * Counted as SIDES rather than as arriving edges: two edges can reach one square by the same side.
-     * (An arrival through a portal arrives by a real side - AMG-C2.)
+     * (An arrival through a portal arrives by a real side.)
      *
      * @return the squares, mapped to how many unbarred sides reach them, empty when none do
      */
@@ -12550,7 +12544,7 @@ public class AutonomySession
                         I18n.f("autosetup.ui.duplicateSensorSubject",
                             sensor, page.getName(), seen.get(sensor)));
 
-                    // AND THE PAGE STOPS COUNTING, as `excludeRepeatedSensorPages` does (LE2-B8, MT-223): a repeating page is
+                    // AND THE PAGE STOPS COUNTING, as `excludeRepeatedSensorPages` does (MT-223): a repeating page is
                     // shut there and contributes nothing further, so a third page sharing one of its other sensors is not
                     // blamed against it - that is an ERROR, and it would refuse the whole setup over a page nothing was wrong
                     // with.  FLAGGED, NOT BROKEN OUT OF: stopping the scan would cost the rest of the page (Adam's page 3 is a

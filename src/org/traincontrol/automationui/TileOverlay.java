@@ -769,7 +769,7 @@ public class TileOverlay
 
     /**
      * The part of the square this overlay's run line lies along - for the train's own line to be drawn again over it, and
-     * nowhere else (RSA66-C5): drawn again over the whole of a square, it lay a second time over itself wherever no run
+     * nowhere else: drawn again over the whole of a square, it lay a second time over itself wherever no run
      * line was under it - the whole of a standing train's own square, whose mark has none, and the part of a run's first or
      * last square the run does not reach - and came out a second, lighter orange.
      *
@@ -865,7 +865,7 @@ public class TileOverlay
     }
 
     /**
-     * The same, told exactly WHICH part of the tile is already faint (PRW-C1).
+     * The same, told exactly WHICH part of the tile is already faint.
      *
      * A double curve is two roads in one tile with no connection between them, and a train covers one
      * of them - so "is this tile already faded" has no answer, and the boolean form had to pick one.
@@ -1181,7 +1181,7 @@ public class TileOverlay
 
         if (onlyHeld && !segments.isEmpty())
         {
-            // WHAT IS LEFT OF THE TILE (PRW-C1).  The whole of it on an ordinary square, which is
+            // WHAT IS LEFT OF THE TILE.  The whole of it on an ordinary square, which is
             // MT-375's fix unchanged; on a double curve, everything but the road already faded - so
             // the road a route is holding keeps its wash even when the other road carries a tail.
             java.awt.geom.Area rest = new java.awt.geom.Area(
@@ -1254,7 +1254,7 @@ public class TileOverlay
             g.drawLine(a[0], a[1], b[0], b[1]);
         }
 
-        // Which way, in white with a dark edge (FR-106, RSA25-C4), on the half the train is heading INTO - clear of the
+        // Which way, in white with a dark edge (FR-106), on the half the train is heading INTO - clear of the
         // centre, where two arrowheads on a square crossed twice would sit on top of each other.
         //
         // Only where there is a direction to state.  Locked track is not somewhere a train is going,
@@ -1269,7 +1269,7 @@ public class TileOverlay
         for (Segment segment : segments)
         {
             // AND A SEGMENT WITH NO COLOUR, which the line pass twenty lines above also skips
-            // (W21-C5). `colourOf` answers null for IDLE, so without this an idle segment drew a
+            //. `colourOf` answers null for IDLE, so without this an idle segment drew a
             // black arrowhead floating over track with no line under it. Nothing emits that pair
             // today - the only IDLE overlay built anywhere passes null segments - so this is a trap
             // for the next author rather than a defect on screen, which is why `isBlank()` was taught

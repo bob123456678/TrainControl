@@ -109,7 +109,7 @@ public class AutonomyChecks
         }
 
         /**
-         * The same, with a THIRD number: the figure a train is refused above at a platform (TDA-C10).
+         * The same, with a THIRD number: the figure a train is refused above at a platform.
          *
          * @param third the third number, or zero when this finding has none
          */
@@ -276,7 +276,7 @@ public class AutonomyChecks
 
     /**
      * A trapped arrival whose advice leaves out closing arrivals, because the editor cannot close them there: a
-     * station's last open way in cannot be shut (RSA37-B1).  The same finding as
+     * station's last open way in cannot be shut.  The same finding as
      * `ARRIVAL_TRAPPED` in every other respect - `isArrivalTrapped` answers for either.
      */
     public static final String ARRIVAL_TRAPPED_NO_CLOSING = "autosetup.ui.checkArrivalTrappedNoClosing";
@@ -348,13 +348,13 @@ public class AutonomyChecks
     public static final String NO_SIGNAL_PAIRED = "autosetup.ui.checkNoProtectingSignal";
 
     /**
-     * One signal as both guards of one station, which the setters refuse and a loaded file can still carry (AUT-C2).
+     * One signal as both guards of one station, which the setters refuse and a loaded file can still carry.
      * A WARNING: the setup runs, and neither guard means what it was paired for.
      */
     public static final String GUARD_IS_BOTH = "autosetup.ui.checkGuardIsBoth";
 
     /**
-     * An entry guard no route into its station commands (AUT-C2).  A NOTICE, as all four guard notices:
+     * An entry guard no route into its station commands.  A NOTICE, as all four guard notices:
      * the setup is the operator's to get right, and this is only a pointer.  `AutonomySession.guardNotices` reads all four
      * off the built railway.
      */
@@ -363,11 +363,11 @@ public class AutonomyChecks
     /** An exit guard no route commands at all: it shows only whether its station is occupied. */
     public static final String EXIT_GUARD_OFF_THE_WAY = "autosetup.ui.checkExitGuardOffTheWay";
 
-    /** An exit guard routes to other stations command, so they turn it green over a train standing there (RSA41-C2). */
+    /** An exit guard routes to other stations command, so they turn it green over a train standing there. */
     public static final String EXIT_GUARD_CROSSED = "autosetup.ui.checkExitGuardCrossed";
 
     /**
-     * An exit guard a route into its station commands - a home signal (RSA42-C1): the arriving route turns it green, and
+     * An exit guard a route into its station commands - a home signal: the arriving route turns it green, and
      * the arrival's claim can turn it red in front of that train.  The entry guard is the signal on the way in.
      */
     public static final String EXIT_GUARD_ON_THE_WAY_IN = "autosetup.ui.checkExitGuardOnTheWayIn";
@@ -413,7 +413,7 @@ public class AutonomyChecks
      *
      * **Counted as sides, not as arriving edges**, because two edges can reach one square by the same side.
      * A walk through a portal arrives by a real side; a missing one arises only in a setup `validatePortals`
-     * refuses (AMG-C2).
+     * refuses.
      */
     public static final String TERMINUS_WITH_TWO_WAYS_IN = "autosetup.ui.checkTerminusTwoWaysIn";
 
@@ -453,9 +453,9 @@ public class AutonomyChecks
      * `maxTrainLength` is a number somebody typed - what they believe the platform holds - and the
      * measured run in is what the track says, counted back from the platform to whichever of the last
      * switch and a reversal is met first.  For a parking berth the figure is the berth rule's where that stops first - at
-     * a crossing between the berth and its switch, or on a leg with no switch (TDA2-C6, TDA3-C2) - where the rule judges
-     * the leg (something on it measured) and another road runs over the square it stops at (TDA4-C3, TDA5-C1); and 0
-     * where every square before that stop was answered 0 (TDA3-C1, TDA4-C1).  Where the second is
+     * a crossing between the berth and its switch, or on a leg with no switch - where the rule judges
+     * the leg (something on it measured) and another road runs over the square it stops at; and 0
+     * where every square before that stop was answered 0.  Where the second is
      * smaller the first never binds: a train inside the stated maximum is refused on the track measurement instead, by
      * a rule that names a different number.
      *
@@ -479,7 +479,7 @@ public class AutonomyChecks
     public static final String RUN_IN_SHORTER_THAN_THE_PLATFORM = "autosetup.ui.checkRunInShorterThanThePlatform";
 
     /**
-     * The same, with the figure a train is refused above on the shortest way in, where there is one (TDA-C10).
+     * The same, with the figure a train is refused above on the shortest way in, where there is one.
      * `Layout.whyTooLongForThisRoute` admits a longer train only as far as the measured route in holds it (FR-087), so
      * a sentence without the figure is untrue of a train setting off close behind.  `{4}` is the figure.
      */
@@ -488,7 +488,7 @@ public class AutonomyChecks
 
     /**
      * A parking berth whose track before its stop - the switch, turnout or crossing behind it - was all answered 0, so it
-     * takes no train that comes in that way (TDA4-C2).  Its own sentence says the effective specified length of the
+     * takes no train that comes in that way.  Its own sentence says the effective specified length of the
      * track is 0.  A WARNING, as the half-measured berth is: trains are refused there today.
      */
     public static final String BERTH_TRACK_GIVEN_NO_LENGTH = "autosetup.ui.checkBerthTrackGivenNoLength";
@@ -516,14 +516,14 @@ public class AutonomyChecks
     public static final String DUPLICATE_SENSOR_PAGE = "autosetup.ui.checkDuplicateSensorPage";
 
     /**
-     * A berth whose approach is measured in part and not in whole (RTX-C2).
+     * A berth whose approach is measured in part and not in whole.
      *
      * A WARNING rather than a notice, because while it stands the berth can refuse a train that fits: the berth rule
      * judges as soon as anything on the approach is measured, and the squares that are not measured are worth
      * nothing to it.  The rule is right and the operator should be told - *"we want clear warnings to the user"* -
      * so the sentence says what is happening and what ends it.
      *
-     * **CAN refuse, not does** (OP2-C12).  The claim becomes a refusal only where a lock edge shares one of the
+     * **CAN refuse, not does**.  The claim becomes a refusal only where a lock edge shares one of the
      * claimed places, so a berth on a branch nothing else touches is half measured and still takes everything; and
      * `whyABerthCannotHoldIt` returns at once for a locomotive with no train length, which is admitted either way.
      * The sentence therefore does not promise more than it knows about the railway in front of the operator.
@@ -534,20 +534,20 @@ public class AutonomyChecks
     {
     }
 
-    // ONE ENTRY POINT, no convenience overloads (SVN-C7).  The only call site is `AutonomySession.check()`, and it
+    // ONE ENTRY POINT, no convenience overloads.  The only call site is `AutonomySession.check()`, and it
     // passes everything.  A default that silently drops an argument is how a defect happens twice: an empty `barred`
     // map made a check blind to barred arrivals (OB-120).  `AutonomySession`'s rule applies: "dead code that looks
     // load-bearing is worse than none".
 
     /**
-     * @param arrivalsClosable the trapped squares whose trapped sides the arrivals menu can close (RSA37-B1)
-     * @param withoutTrainLength squares whose locomotive has no length recorded, to that locomotive (FR-046, RSA19-C1)
+     * @param arrivalsClosable the trapped squares whose trapped sides the arrivals menu can close
+     * @param withoutTrainLength squares whose locomotive has no length recorded, to that locomotive (FR-046)
      * @param repeatedSensorPages included pages repeating another included page's s88 (OB-150)
      * @param withoutMaxLength station squares with no maximum train length
      * @param shortRunIns stations whose measured run in is shorter than their stated maximum, each
      *        mapped to {the stated maximum, the smallest measured room}, and at a platform the
-     *        figure a train is refused above third, where there is one (TDA-C10)
-     * @param berthsGivenNoRoom parking berths whose track before the stop was all answered 0 (TDA4-C2)
+     *        figure a train is refused above third, where there is one
+     * @param berthsGivenNoRoom parking berths whose track before the stop was all answered 0
      * @param terminiWithTwoWaysIn stations every train must turn round at that have more than one
      *        unbarred way in, mapped to how many (MT-361)
      * @param berthsBackedInto the squares a train can be backed into - reached tail first, after a rest on another
@@ -886,7 +886,7 @@ public class AutonomyChecks
      * @param mayTurn squares where a train may change direction
      * @param mustTurn squares where it must
      * @param barred arrival sides closed off, passed through to reachableTiles so a station reachable
-     *               only by a barred side is not counted as reachable (DOC-C17, OB-120)
+     *               only by a barred side is not counted as reachable (OB-120)
      * @return one finding per reversing square that leads nowhere
      */
     private static List<Finding> checkReversingGoesSomewhere(GraphReducer reducer,
@@ -900,11 +900,11 @@ public class AutonomyChecks
         reversing.addAll(mayTurn);
         reversing.addAll(mustTurn);
 
-        // SOMEWHERE AUTONOMY WOULD ACTUALLY SEND A TRAIN, not merely a station (V36-C4).
+        // SOMEWHERE AUTONOMY WOULD ACTUALLY SEND A TRAIN, not merely a station.
         //
         // `Layout.isSendableDestination` requires `isActive() && isAutoDestination() && !isReversing()`
         // before a square is a candidate at all, and the set handed in asks the first two - the ones a
-        // SQUARE can answer (E8V-B2).  A reversing point whose only reachable station is a parking berth is
+        // SQUARE can answer.  A reversing point whose only reachable station is a parking berth is
         // useless in the run: a train sent there turns round and is still nowhere.
         //
         // ONLY THE TWO SQUARE-LEVEL CLAUSES.  The runtime's other two - a terminus this train cannot
@@ -923,7 +923,7 @@ public class AutonomyChecks
 
             if (notAutoDestinations.contains(point.getTile())) continue;
 
-            // NOT ASKED AGAIN HERE (MON-C1, OB-195).  `notAutoDestinations` comes from
+            // NOT ASKED AGAIN HERE (OB-195).  `notAutoDestinations` comes from
             // `stationsAutonomyWillNotChoose`, a question about a SQUARE: may autonomy pick this station.
             // `reversing` here is may-turn and must-turn together, a question about turning, and re-applying it
             // would be the stricter rule overriding the narrower one: a reversing square whose only reachable
@@ -1045,7 +1045,7 @@ public class AutonomyChecks
     }
 
     /**
-     * One finding per station and signal (AUT-C2): the station is `{0}` and the signal's name `{1}`.
+     * One finding per station and signal: the station is `{0}` and the signal's name `{1}`.
      *
      * @param guards the stations, against the names of their signals the finding is about
      * @param key the message
@@ -1097,7 +1097,7 @@ public class AutonomyChecks
      * `isPathClear` refuses that - but only where the track has been measured, because unmeasured
      * track is unknown rather than short.
      *
-     * The squares named here are not quite exactly the ones where the guard cannot do its job (`SVN-B1`, `VD9-B7`).
+     * The squares named here are not quite exactly the ones where the guard cannot do its job.
      * The account of which way they differ, and why it is narrower than it sounds, is at
      * `AutonomySession.reversalsWithoutLength`, where the set is computed; it is written once, there.
      *
@@ -1151,7 +1151,7 @@ public class AutonomyChecks
      * passes every reachability test in this file while the copy is a trap.  A rule about copies cannot
      * be enforced by looking at squares.
      *
-     * **ALL THREE ARE WARNINGS** (D3F-C1): `errorCount() > 0` refuses to start autonomy at all, so an error here would
+     * **ALL THREE ARE WARNINGS**: `errorCount() > 0` refuses to start autonomy at all, so an error here would
      * stop a railway starting over two tunnel berths that have run for months.
      *
      * @param copies the squares, mapped to the offending copy, decided by the session
@@ -1186,7 +1186,7 @@ public class AutonomyChecks
      *
      * Such a square is emitted as turning copies only, and a turning station copy is a TERMINUS.
      *
-     * **THIS NOTICE IS THE ONLY WARNING THERE IS** (ACC-C1).  Return Home is manual operation, so staging does not
+     * **THIS NOTICE IS THE ONLY WARNING THERE IS**.  Return Home is manual operation, so staging does not
      * refuse a terminus to a locomotive that cannot reverse: the locomotive is driven into the berth NOSE FIRST and
      * has to back out to leave.
      *
@@ -1204,7 +1204,7 @@ public class AutonomyChecks
      * not chooseable by autonomy) without a way to reverse in"*).  A terminus autonomy may choose is neither chosen for
      * nor offered to a locomotive that cannot reverse, so the warning is moot there; at a parking berth a train can be
      * backed into - rested first on another terminus, or turned at a reversing point on the way, as Return Home does - it
-     * is moot too (Adam: *"Non-reversible trains can still be backed in there."*).  RSA66-C3.
+     * is moot too (Adam: *"Non-reversible trains can still be backed in there."*).
      *
      * @param homes the squares carrying an authored home
      * @param mustTurn the squares where turning round is compulsory
@@ -1252,7 +1252,7 @@ public class AutonomyChecks
      * Usually the answer is one of two things: the square IS a terminus and wants marking as one, or a
      * branch off it is shut that should be open.
      *
-     * @param closable the squares whose trapped sides the arrivals menu can close, the only ones told to (RSA37-B1)
+     * @param closable the squares whose trapped sides the arrivals menu can close, the only ones told to
      */
     private static List<Finding> checkTrappedArrivals(GraphReducer reducer, Map<TileKey, Set<TilePorts.Side>> trapped,
         Set<TileKey> closable)
@@ -1270,7 +1270,7 @@ public class AutonomyChecks
             // should say either close arrivals from <direction>, open the way ahead, or let trains change
             // direction."*) - the square is {0} wherever a finding is shown, and the side is {1}.
             //
-            // CLOSING ARRIVALS IS OFFERED ONLY WHERE THE EDITOR CAN DO IT (RSA37-B1): on a station, for sides that are not
+            // CLOSING ARRIVALS IS OFFERED ONLY WHERE THE EDITOR CAN DO IT: on a station, for sides that are not
             // its last open way in.  A station trapped from every open side would be left with no way in, which the menu
             // refuses; there the advice is the other two.
             findings.add(new Finding(Severity.WARNING,
@@ -1282,7 +1282,7 @@ public class AutonomyChecks
     }
 
     /**
-     * Whether a finding is a trapped arrival, whichever advice it gives (RSA37-B1).
+     * Whether a finding is a trapped arrival, whichever advice it gives.
      *
      * @param messageKey a finding's key
      * @return true for `ARRIVAL_TRAPPED` and `ARRIVAL_TRAPPED_NO_CLOSING`
@@ -1395,7 +1395,7 @@ public class AutonomyChecks
     {
         List<Finding> findings = new ArrayList<>();
 
-        // THE BERTH GIVEN NO ROOM (TDA4-C2): it takes no train that comes in over the track answered 0 - said first with the
+        // THE BERTH GIVEN NO ROOM: it takes no train that comes in over the track answered 0 - said first with the
         // half-measured berth, because both stop trains today.
         if (berthsGivenNoRoom != null)
         {
@@ -1426,7 +1426,7 @@ public class AutonomyChecks
         {
             // Named, because "a train has no length" sends the reader looking at seven of them. The
             // square is what the editor jumps to; the name is what says which train to go and measure -
-            // the train that stands there, which after a run is not always the one the setup records (RSA19-C1).
+            // the train that stands there, which after a run is not always the one the setup records.
             TileKey square = train.getKey();
 
             String standing = train.getValue();
@@ -1458,7 +1458,7 @@ public class AutonomyChecks
                 // REFUSED AT A BERTH, STANDING ACROSS THE SWITCH AT A PLATFORM (MT-555): the sentence says which.
                 boolean berth = notAutoDestinations != null && notAutoDestinations.contains(station.getKey());
 
-                // AND AT A PLATFORM, THE FIGURE A TRAIN IS REFUSED ABOVE, where there is one (TDA-C10).
+                // AND AT A PLATFORM, THE FIGURE A TRAIN IS REFUSED ABOVE, where there is one.
                 int refused = !berth && station.getValue().length > 2 ? station.getValue()[2] : 0;
 
                 findings.add(new Finding(Severity.NOTICE,
@@ -1718,7 +1718,7 @@ public class AutonomyChecks
             {
                 // A terminus that cannot be left is the specific case worth naming: a train sent there
                 // is stuck, and the layout will look like it simply stopped using that station.
-                // A COMPULSORY TURN IS A TERMINUS HERE (AMG-C1).  `isTerminus` reads the authored flag, which
+                // A COMPULSORY TURN IS A TERMINUS HERE.  `isTerminus` reads the authored flag, which
                 // setting a square's flags clears, and falls back to "nothing leaves it" - never true of a
                 // compulsory turn, whose turning copy departs.
                 findings.add(new Finding(Severity.WARNING,

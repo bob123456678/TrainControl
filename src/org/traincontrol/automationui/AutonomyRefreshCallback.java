@@ -53,7 +53,7 @@ public final class AutonomyRefreshCallback
      *
      * **The work is posted, never done here.** A layout fires these from the thread that is driving the
      * trains, inside `synchronized (this.activeLocomotives)` - so anything that blocks in a callback
-     * holds up the railway, and anything that takes a UI lock invites the deadlock DR-B7 produced: the
+     * holds up the railway, and anything that takes a UI lock invites a deadlock: the
      * event thread holding the window's monitor and waiting on the layout's while a layout thread does
      * the reverse. Posting means the firing thread returns immediately and takes no second lock.
      *

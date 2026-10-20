@@ -89,21 +89,21 @@ final class SessionImport
     /**
      * Which way each imported train faces: the way the file ran it, and a guess only where the file cannot say.
      *
-     * READ FROM THE FILE FIRST (REG4-A1): 2.8.1 sent a train only along the edges that start at its point, so where every
-     * one leaves the square by one side, the train drives out that way.  AFTER THE LOOP (REG4-C1): a legacy terminus or
+     * READ FROM THE FILE FIRST: 2.8.1 sent a train only along the edges that start at its point, so where every
+     * one leaves the square by one side, the train drives out that way.  AFTER THE LOOP: a legacy terminus or
      * reversing point is marked "must turn round" later in the same point's import, and a square trains must turn at has
      * only turning copies, so a facing is checked against the copies the build will make.
      *
      * THE GUESS, where the file cannot say - no edge, edges both ways, or an end this diagram does not draw: a way trains
-     * may arrive in first (REG3-C1), since the copy IS the direction; else the first copy.  Deterministic (ACC-C4), and
+     * may arrive in first, since the copy IS the direction; else the first copy.  Deterministic, and
      * counted so the log can say how many were guessed.  A facing the square already records stays, if the guess itself
-     * could make it (RLA2-B3, OB-304).
+     * could make it (OB-304).
      *
      * A facing the file states and no copy holds is not saved (Adam, OB-270: *"we shouldn't allow an impossible facing to
      * be saved"*): the train is stood the way the square allows, and named in `facingsNotHeld` rather than counted as a
      * guess, since it is known to be the other way round from how the train drives.
      *
-     * WHERE THE FILE CANNOT SAY, A FACING THE SQUARE RECORDS STAYS (RLA2-B3): the last occupant's is a guess as good as
+     * WHERE THE FILE CANNOT SAY, A FACING THE SQUARE RECORDS STAYS: the last occupant's is a guess as good as
      * the first copy's.  Only one the guess itself could make, and counted with the guesses (OB-304).
      *
      * @param facingToFind the placed trains, by square and legacy point name
@@ -131,9 +131,9 @@ final class SessionImport
 
             java.util.Set<Side> mayArrive = owner.homeFacingsFor(tile);
 
-            // A FACING THE SQUARE RECORDS STAYS where the file cannot say (RLA2-B3) - only one the guess below could make,
+            // A FACING THE SQUARE RECORDS STAYS where the file cannot say - only one the guess below could make,
             // and counted with the guesses (OB-304).  Kept unasked, a facing trains may not arrive in would stand the
-            // imported train where autonomy will not start it (REG3-C1).  Where no copy is one trains may arrive at, the
+            // imported train where autonomy will not start it.  Where no copy is one trains may arrive at, the
             // guess takes the first copy, and the recorded one is as good.
             Side recorded = ran == null ? owner.getFacing(tile) : null;
 
@@ -302,7 +302,7 @@ final class SessionImport
 
     /**
      * The one side of a square that every edge from a legacy point leaves by, or null where they leave by more than
-     * one, where there is none, or where one cannot be followed on this diagram (REG4-A1).
+     * one, where there is none, or where one cannot be followed on this diagram.
      *
      * An old edge joins a point to the next ones along the track, so the side it leaves by is the side from which its
      * end is the next square the old graph had a point on - asked of each side, not of the shortest walk, which round
@@ -362,18 +362,18 @@ final class SessionImport
         // same locomotive invalidate the layout, whichever pages they are on.
         Set<String> placedAlready = new LinkedHashSet<>();
 
-        // And one locomotive has one HOME, for the same reason (OB-075).  `setHome` sweeps duplicates (TD-8); this is the
+        // And one locomotive has one HOME, for the same reason (OB-075).  `setHome` sweeps duplicates; this is the
         // second door, as the import writes "home" straight into the configuration.  A file written before the rule can
         // name two; the first one wins, which is the file's own order and so reproducible, and the rest are counted so
         // the choice can be reported rather than made silently.
         Set<String> homedAlready = new LinkedHashSet<>();
 
-        // AND ACROSS WHAT THE CONFIGURATION ALREADY SAYS (RLA-B2): where a train already stands, and which train already has
+        // AND ACROSS WHAT THE CONFIGURATION ALREADY SAYS: where a train already stands, and which train already has
         // a home, are facts about the configuration, and gap-filling does not overrule them.  A second import could
         // otherwise put a train that has since moved on two squares, which refuses the whole configuration.
         Set<String> standingAlready = new LinkedHashSet<>();
 
-        // And the homes it already has, told apart from a home the file names twice so the message can say which (RLA2-C3)
+        // And the homes it already has, told apart from a home the file names twice so the message can say which
         Set<String> homedInConfiguration = new LinkedHashSet<>();
 
         String into = owner.store.getActiveConfiguration();
@@ -424,7 +424,7 @@ final class SessionImport
 
         for (Integer sensor : ambiguous) bySensor.remove(sensor);
 
-        // WHERE EACH POINT'S EDGES LEAD (REG4-A1).  A 2.8.1 graph states direction as one-way edges - a train on a
+        // WHERE EACH POINT'S EDGES LEAD.  A 2.8.1 graph states direction as one-way edges - a train on a
         // point goes only along the edges that start there - so they say which way a train standing there drives.
         // The squares they end on, by the same sensor match as the points; null for an end this diagram does not draw.
         Map<String, TileKey> squareOfPoint = new java.util.HashMap<>();
@@ -460,17 +460,17 @@ final class SessionImport
                 squareOfPoint.get(edge.optString("end", ""))});
         }
 
-        // Where the walks from a square stop: the squares the old graph had points on (REG4-A1).
+        // Where the walks from a square stop: the squares the old graph had points on.
         Set<TileKey> pointSquares = new LinkedHashSet<>(squareOfPoint.values());
 
         pointSquares.remove(null);
 
         // The trains this import placed and whose facing it has still to find, by square and point name.  Decided
-        // after the loop, over the finished setup (REG4-C1).
+        // after the loop, over the finished setup.
         Map<TileKey, String> facingToFind = new LinkedHashMap<>();
 
         // The squares this import has met - named here, or found named and counted once in `skipped` - so a further old point
-        // on one is said rather than counted again (RSA44-C3, RSA45-C1)
+        // on one is said rather than counted again
         Set<TileKey> metHere = new java.util.HashSet<>();
 
         for (int i = 0; i < points.length(); i++)
@@ -550,8 +550,8 @@ final class SessionImport
                             extras.put(AutonomyBuilder.LOCOMOTIVE,
                                 new org.json.JSONObject(standing.toString()));
 
-                            // And which way it is pointing - found after the loop, over the finished setup (REG4-C1): see
-                            // `findTheImportedFacings`.  ASKED OF THE FILE WHATEVER THE SQUARE RECORDS (RLA2-B3): a facing
+                            // And which way it is pointing - found after the loop, over the finished setup: see
+                            // `findTheImportedFacings`.  ASKED OF THE FILE WHATEVER THE SQUARE RECORDS: a facing
                             // on an empty square is its last occupant's, no evidence about the train the file puts there.
                             facingToFind.put(tile, name);
 
@@ -617,7 +617,7 @@ final class SessionImport
                             continue;
                         }
 
-                        // A SQUARE THAT ALLOWS ONLY THE CHOSEN LOCOMOTIVES KEEPS ITS LIST (RSA65-C1): an old file's list names
+                        // A SQUARE THAT ALLOWS ONLY THE CHOSEN LOCOMOTIVES KEEPS ITS LIST: an old file's list names
                         // the locomotives kept OUT, so filling an allow-only square from it would let in exactly those.
                         if ("excludedLocs".equals(key)
                             && org.traincontrol.automation.Point.ALLOW_ONLY_LISTED.equals(
@@ -626,7 +626,7 @@ final class SessionImport
                             continue;
                         }
 
-                        // A SWITCHED-OFF STATION ARRIVES ON, AND NOT ONE AUTONOMY CHOOSES (REG-B1): carried as `active: false`
+                        // A SWITCHED-OFF STATION ARRIVES ON, AND NOT ONE AUTONOMY CHOOSES: carried as `active: false`
                         // it would be a square nothing may pass through or end on, which v2.8.1 did not mean.  Gap-filled.
                         if ("active".equals(key) && Boolean.FALSE.equals(value) && point.optBoolean("station", false))
                         {
@@ -689,10 +689,10 @@ final class SessionImport
 
             if (existing != null && !existing.trim().isEmpty())
             {
-                // A SQUARE ALREADY MET, from another old point on the same sensor (RSA44-C3): named by this import a point
+                // A SQUARE ALREADY MET, from another old point on the same sensor: named by this import a point
                 // ago, or found named before it and counted then - this point's name is said rather than dropped, and the
                 // square is not counted again.  A square named before the import counts once in {4}, however many old
-                // points stand on it (RSA45-C1): names are shared by every configuration, so a second import, or an old
+                // points stand on it: names are shared by every configuration, so a second import, or an old
                 // file brought into a named railway, meets every square this way.
                 if (!metHere.add(tile))
                 {
@@ -720,7 +720,7 @@ final class SessionImport
 
             if (point.optBoolean("station", false)) owner.store.setStation(tile, true);
 
-            // maxTrainLength is CARRIED, not converted (IPR-A1): a station's capacity is not a track's length, and a
+            // maxTrainLength is CARRIED, not converted: a station's capacity is not a track's length, and a
             // legacy file holds both (capacity on the points, length on the edges).  It goes through CARRIED_SETTINGS.
 
             result.matched++;
@@ -731,7 +731,7 @@ final class SessionImport
 
         findTheImportedFacings(facingToFind, edgesLeadTo, pointSquares, result);
 
-        // AND THE SETTINGS ABOVE THE POINTS (RGN-A1): a 2.7.4c autonomy.json is one object, the points and edges and above
+        // AND THE SETTINGS ABOVE THE POINTS: a 2.7.4c autonomy.json is one object, the points and edges and above
         // them the whole settings panel (pace, default speed, how many trains may run, whether routes are fired) and the
         // timetable.  Everything that is not the setup itself comes across, as `captureFromLayout` does, gap-filled so
         // running it twice cannot undo a setting somebody changed.
@@ -750,7 +750,7 @@ final class SessionImport
                 // applyAutonomyRouteActivations, which walks the LIVE Central Station route database, disabling every route
                 // whose id is not in activateRouteIDs and executing the rest - accessories thrown on the real railway.  A
                 // legacy file can carry `activateRoutes: true` with an EMPTY id list, so carrying these across would
-                // disable every route, again on every parseAuto.  They are REPORTED instead (ACC-B2): see
+                // disable every route, again on every parseAuto.  They are REPORTED instead: see
                 // `whatALegacyImportLeaves` and `autosetup.ui.leftRouteActivations`.
                 if ("activateRoutes".equals(key) || "activateRouteIDs".equals(key)) continue;
 

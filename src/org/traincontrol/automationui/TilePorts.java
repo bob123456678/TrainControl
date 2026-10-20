@@ -35,7 +35,7 @@ import org.traincontrol.base.LayoutDiagramComponent.componentType;
  * Python copy of the whole port map, kept in step by hand.  It went stale, as a copy kept in step by
  * hand does: it still marked the LINK side UNCONFIRMED long after d4d5b7ba confirmed it, and a
  * verification that has to be hand-synchronised with the thing it verifies is a second opinion with the
- * same author.  The script is retired (DD-C10); its table lives in
+ * same author.  The script is retired; its table lives in
  * testAutonomyDiagramPorts.testTheWholePortTableIsWhatTheMapSaysItIs, where it is executed rather than
  * remembered, and where adding a tile type without stating its ports fails the build.
  *
@@ -584,7 +584,7 @@ public class TilePorts
      * How many distinct orientations a tile type has.
      *
      * Asks LayoutDiagramComponent rather than answering itself. It used to be a verbatim copy of that
-     * method's body (DD-C10) - and the copies agreed only for as long as nobody added a tile type with
+     * method's body - and the copies agreed only for as long as nobody added a tile type with
      * an axis of symmetry, which is a promise about the future rather than a property of the code.
      *
      * @param type

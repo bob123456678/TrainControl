@@ -65,11 +65,11 @@ public class AutonomyCompanionStore
     public static final String ERROR_NOT_LOCAL = "autosetup.ui.errorAutonomyNeedsLocalLayout";
     public static final String ERROR_NAME_IN_USE = "autosetup.ui.errorNameInUse";
 
-    /** A name refused because it would be saved in another configuration's file (VD17-C6) - see `NameSharesAFile`. */
+    /** A name refused because it would be saved in another configuration's file - see `NameSharesAFile`. */
     public static final String ERROR_NAME_SHARES_A_FILE = "autosetup.ui.errorNameSharesAFile";
 
     /**
-     * A configuration name refused because it would be saved in another configuration's file (VD17-C6).
+     * A configuration name refused because it would be saved in another configuration's file.
      *
      * A configuration's file is named after it, and the sanitising is many to one, so "Night: Yard" and "Night_ Yard" are
      * two names for one file.  Its message is a key, as every refusal of this store's is; the configuration it collides
@@ -379,7 +379,7 @@ public class AutonomyCompanionStore
             {
                 // De-duplicated here rather than in the picker, so that nothing else which writes this
                 // - an import, a restored snapshot - can leave one signal in the list twice.  And never the
-                // station's own entry guard (AUT-C2, below).
+                // station's own entry guard (below).
                 if (signal != null && !keys.contains(signal) && !onList(entrySignals, station, signal)) keys.add(signal);
             }
         }
@@ -448,7 +448,7 @@ public class AutonomyCompanionStore
         {
             // De-duplicated here, as the protecting list is, so no writer can leave one signal in it twice.
             //
-            // AND NEVER THE STATION'S OWN EXIT GUARD (AUT-C2): one signal on both lists is thrown red on arrival and
+            // AND NEVER THE STATION'S OWN EXIT GUARD: one signal on both lists is thrown red on arrival and
             // then set by the platform's occupancy, so neither guard means what it was paired for.  Refused in both
             // setters; the editor says why, and a file that carries it anyway is warned about by the checks.
             for (TileKey signal : signals)
@@ -461,7 +461,7 @@ public class AutonomyCompanionStore
         else entrySignals.put(station, keys);
     }
 
-    /** Whether a station's list in one of the two guard maps holds this signal (AUT-C2) */
+    /** Whether a station's list in one of the two guard maps holds this signal */
     private static boolean onList(Map<TileKey, List<TileKey>> guards, TileKey station, TileKey signal)
     {
         List<TileKey> listed = guards.get(station);
@@ -503,7 +503,7 @@ public class AutonomyCompanionStore
     private final Map<TileKey, String> linkNames = new LinkedHashMap<>();
     private final Set<String> excludedPages = new LinkedHashSet<>();
 
-    /** Pages the operator turned back on after the repeated-sensor rule shut them (TST-B15). */
+    /** Pages the operator turned back on after the repeated-sensor rule shut them. */
     private final Set<String> keptDespiteRepeats = new LinkedHashSet<>();
 
     private String activeConfiguration = null;
@@ -601,7 +601,7 @@ public class AutonomyCompanionStore
     /**
      * The highest page id this setup has ever recorded, live or absent.
      *
-     * IAR-A1.  `writeLayoutIndex` issues a new page the number above the highest one in the index FILE, so a retired
+     * `writeLayoutIndex` issues a new page the number above the highest one in the index FILE, so a retired
      * id would be reused while the settings of the page it belonged to are still held here under that number (OB-067):
      * the new page would collect a stranger's stations, lengths and exclusions with nothing reporting a renumber.
      *
@@ -662,12 +662,12 @@ public class AutonomyCompanionStore
 
             if (name == null || loaded.contains(name)) continue;
 
-            // A PAGE RENAMED OUTSIDE TRAINCONTROL IS STILL LOADED (GSE-C2).  This record is the name each id had when the
+            // A PAGE RENAMED OUTSIDE TRAINCONTROL IS STILL LOADED.  This record is the name each id had when the
             // setup was written, and a rename on the Central Station keeps the id and changes the name.  So the id is asked
             // as well, by the rule `resolvePage` uses to tell a rename from a renumber: where the old name is still in the
             // index the page IS that one, and it is not loaded; where it is not, the page the id names today is the one to
             // look for.  Not `pageIsHere`, which answers from the index, and the index holds a stand-in for a page that
-            // would not read (FV3-A1, MT-135).
+            // would not read (MT-135).
             String nowCalled = resolvePage(written.getKey());
 
             if (nowCalled != null && loaded.contains(nowCalled)) continue;
@@ -801,7 +801,7 @@ public class AutonomyCompanionStore
      * carries.  When a renumber has happened an id no longer says for certain which page it meant.  The entries still
      * land where they belong - `resolvePage` files an entry under the page its recorded name is on while the index has
      * that name - but "this square does not exist" can no longer be concluded from an id, and anything that deletes on
-     * the strength of it would be deleting on a guess (VD17-C4).
+     * the strength of it would be deleting on a guess.
      *
      * @return true while a renumber is outstanding and nothing has re-keyed the setup
      */
@@ -1145,8 +1145,8 @@ public class AutonomyCompanionStore
      * measured, and `isTileLengthAnswered` tells the two apart: the Mass Assign Lengths walk and the Unmeasured Track
      * display ask it, so an answered square is not offered again, and so do the reducer's places (`answeredAtZero`),
      * so `Edge.isMeasured` and every length rule but the own-tail one (OB-300) read an answered 0 as measured track of
-     * no length (ADU-C7, ADA-A1).  A deliberate 0 is not a measurement of nothing, and a stretch whose answers are all
-     * 0 is not judged (RLA4-C9).
+     * no length.  A deliberate 0 is not a measurement of nothing, and a stretch whose answers are all
+     * 0 is not judged.
      *
      * A square that already has a length keeps it.
      *
@@ -1270,7 +1270,7 @@ public class AutonomyCompanionStore
 
         if (disabledPortals.contains(tile)) return true;
 
-        // The PARTNER as well, which is the same question TileGraph.portalClosed asks (TD-2).  setPortalDisabled writes
+        // The PARTNER as well, which is the same question TileGraph.portalClosed asks.  setPortalDisabled writes
         // both ends, but a setup written before that has one end switched off and the other left on, and TileGraph
         // refuses to route through either, so the far end would draw as a live two-way door over track no train could
         // pass.
@@ -1518,7 +1518,7 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Whether the last rename or deletion failed to reach the pre-edit note (VD10-B6).
+     * Whether the last rename or deletion failed to reach the pre-edit note.
      *
      * The note is a recovery aid rather than the setup, so a failure here is not fatal - but it means
      * the revert on the next start would put a locomotive name back that the database no longer has,
@@ -1532,7 +1532,7 @@ public class AutonomyCompanionStore
         return noteRepairFailed;
     }
     /**
-     * Follows a locomotive's new name into the pre-edit note on disk (SVN-B9).
+     * Follows a locomotive's new name into the pre-edit note on disk.
      *
      * `LayoutEditor.autonomyLocomotiveRenamed` sweeps three holders - the in-memory snapshot Cancel restores and both
      * undo stacks.  The fourth survives the event the mechanism exists for: `config/autonomy/setup-before-edit.json`,
@@ -1558,13 +1558,13 @@ public class AutonomyCompanionStore
 
         repairLocomotiveInSetup(note, from, to);
 
-        // IN PLACE, NOT THROUGH rememberBeforeEdit (VD9-C9).  That method ends in writeJson -> Files.move(REPLACE_EXISTING),
+        // IN PLACE, NOT THROUGH rememberBeforeEdit.  That method ends in writeJson -> Files.move(REPLACE_EXISTING),
         // and on Windows replacing a file needs the same DELETE access a OneDrive lock withholds, where a plain
         // truncating write succeeds.  The atomic write would fail in exactly the case this repair exists for (a rename
         // made while an edit note is open on a locked folder), and silently, as rememberBeforeEdit swallows the
         // IOException.
         //
-        // SERIALISED BEFORE THE STREAM IS OPENED (VD10-B6): `new FileOutputStream` truncates at open, and `toString(2)`
+        // SERIALISED BEFORE THE STREAM IS OPENED: `new FileOutputStream` truncates at open, and `toString(2)`
         // throws JSONException (a RuntimeException), so building the text inside the try would leave a ZERO-BYTE note on
         // a serialisation failure.  The note is the operator's pre-edit snapshot, so destroying it destroys the revert.
         byte[] bytes;
@@ -1588,10 +1588,10 @@ public class AutonomyCompanionStore
         }
         catch (IOException | RuntimeException couldNotWrite)
         {
-            // SAID, not swallowed (VD10-B6): this class has no logger, so a failed write is recorded the way a failed
+            // SAID, not swallowed: this class has no logger, so a failed write is recorded the way a failed
             // migration is, for whoever opened the session.
             //
-            // A torn write is survivable, but not because nothing is lost (`VD10-C7`): the content being overwritten is a
+            // A torn write is survivable, but not because nothing is lost: the content being overwritten is a
             // live snapshot somebody may still need.  A half-written note fails `unfinishedEdit`'s shape check, so it is
             // refused and reported rather than applied; the revert is lost and nothing bad is done with it.
             noteRepairFailed = true;
@@ -1651,7 +1651,7 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * The fifth holder of a locomotive's name: the configuration's list of paused trains (FR-117; RSA60-C2), in "globals"
+     * The fifth holder of a locomotive's name: the configuration's list of paused trains (FR-117), in "globals"
      * with the timetable.  A rename carries across it, and a deletion takes the train off it - a name left there would
      * start a new train given it paused.  Written back sorted, and not at all once it names nobody, as the railway writes
      * it.
@@ -1845,7 +1845,7 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * The pages the operator has deliberately turned back on (TST-B15).
+     * The pages the operator has deliberately turned back on.
      *
      * **A decision, as opposed to the absence of one.** `excludeRepeatedSensorPages` shuts a page whose sensors repeat
      * another's, and a legacy import may do that even to pages the operator had chosen to keep, because a page the
@@ -1875,7 +1875,7 @@ public class AutonomyCompanionStore
         }
         else
         {
-            // TURNED BACK ON, and only when it really was off (TST-B15).  Un-ticking a box that was
+            // TURNED BACK ON, and only when it really was off.  Un-ticking a box that was
             // never ticked is not a decision about repeated sensors, and recording it as one would
             // make every page the operator so much as looked at immune to the rule.
             if (excludedPages.remove(page)) keptDespiteRepeats.add(page);
@@ -2011,7 +2011,7 @@ public class AutonomyCompanionStore
      *
      * Two things are left out on purpose.  Pages this layout does not have, which are named in
      * `getPagesLeftOutOfLastImport` for the import door to say.  And a field a NEWER build wrote, which nothing here
-     * knows the shape of and so cannot put into this layout's page numbering - left out without a word (TDR-C10).
+     * knows the shape of and so cannot put into this layout's page numbering - left out without a word.
      *
      * @param name what to call the configuration here
      * @param file the parsed export
@@ -2044,12 +2044,12 @@ public class AutonomyCompanionStore
 
         if (incoming == null) return 0;
 
-        // THEIR PAGE IDS, TRANSLATED INTO MINE BY PAGE NAME, before anything is merged (TDR-B4, TDR-A1).
+        // THEIR PAGE IDS, TRANSLATED INTO MINE BY PAGE NAME, before anything is merged.
         //
         // An export keys every square by the EXPORTER's page ids, and page ids are numbered from the same start on every
         // railway, so their id means nothing here until it is turned back into the page it names.  Adopting their page
-        // record per id would read their "Yard" as id 1 onto my "Main" as id 1 (TDR-B4), or overwrite my record that 7 is
-        // "Away", a page still downloading, so Away's held settings landed on Main (TDR-A1).
+        // record per id would read their "Yard" as id 1 onto my "Main" as id 1, or overwrite my record that 7 is
+        // "Away", a page still downloading, so Away's held settings landed on Main.
         //
         // So each of their ids maps to the id this layout uses for the same name: a loaded page's, or the id this setup
         // recorded for a page it knows and cannot load right now.  A name that is neither is a page this layout does not
@@ -2057,7 +2057,7 @@ public class AutonomyCompanionStore
         //
         // Only when both sides have a numbering at all: a file with no page record, or a store that knows no page by any
         // number, has nothing of mine to re-label.  A store with no page LOADED still knows its pages by the record it was
-        // written with (TDR-C6): a OneDrive start with every page still a placeholder has an empty index and a full record.
+        // written with: a OneDrive start with every page still a placeholder has an empty index and a full record.
         JSONObject theirPages = incoming.optJSONObject("pages");
 
         boolean iKnowMyPages = !pageIdToName.isEmpty() || !pageNamesWhenWritten.isEmpty();
@@ -2101,19 +2101,19 @@ public class AutonomyCompanionStore
         {
             if ("version".equals(key)) continue;
 
-            // Their page record is how their ids were translated, not a setting to adopt (TDR-A1).
+            // Their page record is how their ids were translated, not a setting to adopt.
             if (theirIdToMine != null && "pages".equals(key)) continue;
 
-            // AND A FIELD THIS VERSION DOES NOT MODEL is left out while translating (TDR-C7): nothing here knows its
+            // AND A FIELD THIS VERSION DOES NOT MODEL is left out while translating: nothing here knows its
             // shape, so it cannot be put into this layout's numbering, and merged as it came it would be saved in the
             // EXPORTER's ids, possibly beside mine in one object.  Every collection this build models is a held field, so
-            // nothing it models is lost here; the loss of a newer build's field is silent (TDR-C10).
+            // nothing it models is lost here; the loss of a newer build's field is silent.
             if (theirIdToMine != null && !knownShared().contains(key)) continue;
 
             Object value = intoThisLayoutsPages(key, incoming.get(key), theirIdToMine);
 
-            // THEIR PAGE RECORD, ADOPTED - reachable only for a store that knows no page by any number (TDR-A1, TDR-C6,
-            // TDR-C10).  Everywhere else their record is how their ids were translated, and was skipped above.  Here there
+            // THEIR PAGE RECORD, ADOPTED - reachable only for a store that knows no page by any number.
+            // Everywhere else their record is how their ids were translated, and was skipped above.  Here there
             // is no record of mine for it to re-label, so theirs wins per id and ids only I have are kept; it is the only
             // evidence the keys it came with can be read by, as a store given page ids later reads its held entries
             // through it.
@@ -2247,8 +2247,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * One incoming shared field, rewritten from the exporter's page ids into this layout's (TDR-A1), with
-     * only the PIECES naming a page this layout does not have taken out (TDR-B7).
+     * One incoming shared field, rewritten from the exporter's page ids into this layout's, with
+     * only the PIECES naming a page this layout does not have taken out.
      *
      * Read by the field's declared shape in `HELD_FIELDS` - the same map the hold and the merge read - so a value is
      * treated as a square only where the field says it is one (a station named "2" is not a page id, and one foreign
@@ -2261,7 +2261,7 @@ public class AutonomyCompanionStore
      *
      * A square whose page part the file's record does not name is left exactly as it is - an old file keyed
      * by name, say.  A field this store does not model never reaches here while translating: `importBundle`
-     * leaves it out first (TDR-C7, TDR-C10).
+     * leaves it out first.
      *
      * @param field the field's name in the file
      * @param value the field as the file carries it
@@ -2370,7 +2370,7 @@ public class AutonomyCompanionStore
      * square the track had been moved away from.
      *
      * Deep copies on the way out, so that the snapshot cannot be changed underneath its holder by the editing that
-     * follows (snapshotPage does the same, UR-5).
+     * follows (snapshotPage does the same).
      *
      * @return a snapshot for restoreSetup
      */
@@ -2395,7 +2395,7 @@ public class AutonomyCompanionStore
 
     /**
      * Puts back everything snapshotSetup took - or, when the snapshot will not read, leaves the setup exactly as it was
-     * and throws (GSP-C4).
+     * and throws.
      *
      * @param was a snapshot from snapshotSetup
      */
@@ -2403,7 +2403,7 @@ public class AutonomyCompanionStore
     {
         if (was == null) return;
 
-        // WHAT IS HERE NOW FIRST, so that a snapshot this build cannot read changes nothing (GSP-C4).  The read below
+        // WHAT IS HERE NOW FIRST, so that a snapshot this build cannot read changes nothing.  The read below
         // empties the store and then reads with the strict accessors, which is safe for what `snapshotSetup` hands back in
         // memory and not for a snapshot that came off a disk: the pre-edit note `AutonomySession.revertUnfinishedEdit`
         // applies is written by another run, possibly another build, and `unfinishedEdit` checks only its top-level shape.
@@ -2425,7 +2425,7 @@ public class AutonomyCompanionStore
     /**
      * Replaces the whole setup with a snapshot: the shared half, every configuration, and which one is chosen.
      *
-     * What `restoreSetup` did on its own until GSP-C4, kept apart so that it can be run a second time over what was there
+     * What `restoreSetup` did on its own, kept apart so that it can be run a second time over what was there
      * when the first run threw.  It empties before it reads, so it is only safe beside a snapshot taken first.
      *
      * @param was a snapshot from snapshotSetup
@@ -2489,7 +2489,7 @@ public class AutonomyCompanionStore
         // Same reason as renameConfiguration: duplicating onto an existing name replaced it silently.
         if (configurations.containsKey(name)) throw new IOException(ERROR_NAME_IN_USE);
 
-        // ANOTHER CONFIGURATION'S FILE, refused as that and naming it (VD17-C6)
+        // ANOTHER CONFIGURATION'S FILE, refused as that and naming it
         refuseASharedFile(name, null);
 
         JSONObject source = copyFrom == null ? null : configurations.get(copyFrom);
@@ -2547,7 +2547,7 @@ public class AutonomyCompanionStore
      * between people running the same layout.  The name comes from the caller rather than the file, so importing does not
      * silently overwrite whatever happened to share the exporter's name.
      *
-     * **AND IT ASKS WHAT THE OTHER THREE DOORS ASK (GSP-B1).**  A configuration is stored as
+     * **AND IT ASKS WHAT THE OTHER THREE DOORS ASK.**  A configuration is stored as
      * `configuration-<sanitised name>.json` and sanitising is many-to-one, so `Night: Yard` and `Night_ Yard` are two
      * names for one file.  `createConfiguration` and `renameConfiguration` both refuse that pair
      * (`testTwoNamesCannotShareOneFile` pins both), and so must this door: otherwise the next `load()`, which rebuilds
@@ -2559,7 +2559,7 @@ public class AutonomyCompanionStore
      */
     public void importConfiguration(String name, JSONObject configuration) throws IOException
     {
-        // ANOTHER CONFIGURATION'S FILE, refused as that and naming it (VD17-C6)
+        // ANOTHER CONFIGURATION'S FILE, refused as that and naming it
         refuseASharedFile(name, null);
 
         JSONObject imported = new JSONObject(configuration.toString());
@@ -2602,7 +2602,7 @@ public class AutonomyCompanionStore
             throw new IOException(ERROR_NAME_IN_USE);
         }
 
-        // ANOTHER CONFIGURATION'S FILE, refused as that and naming it (VD17-C6)
+        // ANOTHER CONFIGURATION'S FILE, refused as that and naming it
         if (!from.equals(to)) refuseASharedFile(to, from);
 
         JSONObject configuration = configurations.remove(from);
@@ -2807,7 +2807,7 @@ public class AutonomyCompanionStore
             configuration.put("points", renamedPoints);
         }
 
-        // AND THE NAMES MADE FROM THE PAGE'S NAME, where a timetable leg or a train's road stores them (RSA5-B2).  A square
+        // AND THE NAMES MADE FROM THE PAGE'S NAME, where a timetable leg or a train's road stores them.  A square
         // with no name of its own is named "page x,y", so the rename renamed its Points, and the load then dropped every
         // leg through it and every road.
         final java.util.regex.Pattern made = java.util.regex.Pattern.compile("^" + java.util.regex.Pattern.quote(from)
@@ -2826,7 +2826,7 @@ public class AutonomyCompanionStore
 
     /**
      * Every Point name a configuration stores by name - its timetable's legs, and each standing train's road - through a
-     * rename, in place (RSA5-B2).  Everything else in it is keyed by square.
+     * rename, in place.  Everything else in it is keyed by square.
      *
      * @param configuration the configuration
      * @param rename a Point name to what it is called now, or itself
@@ -2915,13 +2915,13 @@ public class AutonomyCompanionStore
         // And the record of what that page was called, the same one line forgetHeldPages ends with.
         // `pageNamesWhenWritten` is written back out as the file's "pages" map and `pagesNotLoaded` walks it, so a stale
         // entry would name a page the operator deliberately DELETED as one that merely failed to load, which makes
-        // `pagesSafeToJudge` false for the rest of the layout's life: the store would never reconcile again, and (DR-B10)
+        // `pagesSafeToJudge` false for the rest of the layout's life: the store would never reconcile again, and
         // would warn on every editor save.  FR-018 cannot clear it, as a deleted page is not in the index.
         pageNamesWhenWritten.values().remove(page);
 
         // And out of the index this store is holding, which `sharedFields` rebuilds the file's "pages" map from; removing
         // only the record above would change nothing.  Safe for the id floor: `highestPageIdSeen` reserves ids so a new
-        // page cannot inherit an absent page's settings (IAR-A1), but this page's settings have just been forgotten, so
+        // page cannot inherit an absent page's settings, but this page's settings have just been forgotten, so
         // there is nothing left for a reissued id to collect.
         String deletedId = pageNameToId.remove(page);
 
@@ -3045,7 +3045,7 @@ public class AutonomyCompanionStore
         }
 
         // Sparing the labels of the tiles that are arriving - see forgetSquares.  A platform whose name is written on the
-        // square below it, nudged down one, lands ON its own label.  The answer says WHETHER IT FOUND ANYTHING (X8V-B2),
+        // square below it, nudged down one, lands ON its own label.  The answer says WHETHER IT FOUND ANYTHING,
         // which the caller's "did this change something" is built from.
         boolean changed = forgetSquares(landing, byKey);
 
@@ -3089,7 +3089,7 @@ public class AutonomyCompanionStore
             configuration.put("points", moved);
         }
 
-        // AND THE NAMES MADE FROM WHERE A MOVED SQUARE WAS, where a timetable leg or a train's road stores them (RSA5-B2):
+        // AND THE NAMES MADE FROM WHERE A MOVED SQUARE WAS, where a timetable leg or a train's road stores them:
         // a square with no name of its own is named "page x,y", so a move renamed its Points
         for (JSONObject configuration : configurations.values())
         {
@@ -3472,7 +3472,7 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * The same, for a set whose members are PAIRED ACROSS PAGES (SVN-B8).
+     * The same, for a set whose members are PAIRED ACROSS PAGES.
      *
      * `disabledPortals` is the one set like that: `setPortalDisabled` writes both ends, and the two ends are on different
      * pages by definition.  The set kind must capture at either end, as `PairMapKept` and `ListMapKept` do, or a page
@@ -3554,7 +3554,7 @@ public class AutonomyCompanionStore
     {
         if (squares == null || squares.isEmpty()) return false;
 
-        // WHETHER ANYTHING WAS ACTUALLY REMOVED (X8V-B2): see `Kept.forget`.  Four callers treat the answer as a reason to
+        // WHETHER ANYTHING WAS ACTUALLY REMOVED: see `Kept.forget`.  Four callers treat the answer as a reason to
         // write the whole setup to disk, so it is not manufactured from the size of the list handed in.
         boolean any = false;
 
@@ -3691,7 +3691,7 @@ public class AutonomyCompanionStore
         private final List<String> declinedBecauseAbsent = new ArrayList<>();
 
         /**
-         * A reconciliation that did not happen, and the pages that stopped it (DR-B10).
+         * A reconciliation that did not happen, and the pages that stopped it.
          *
          * The no-argument constructor says "nothing was reconciled" and not why, so a caller holding one cannot tell a clean
          * layout from a layout it was refused permission to tidy: the second is the one moment somebody could put the
@@ -3871,7 +3871,7 @@ public class AutonomyCompanionStore
             else pair.setValue(kept);
         }
 
-        // linkNames and disabledPortals (DD-A1).  Both are remembered BY SQUARE, so a name and a switched-off flag for
+        // linkNames and disabledPortals.  Both are remembered BY SQUARE, so a name and a switched-off flag for
         // track that no longer exists would sit in the file indefinitely and be INHERITED by the next link drawn on that
         // square, which would arrive pre-named and already disabled.  Reported like everything else here, because a
         // diagram edit that quietly costs a link name should be visible.
@@ -4045,7 +4045,7 @@ public class AutonomyCompanionStore
             }
         }
 
-        // AND A CROSSING'S TWO HALVES AGREE (RSA37-C1): a direction stored on one square of a two-square crossing while it
+        // AND A CROSSING'S TWO HALVES AGREE: a direction stored on one square of a two-square crossing while it
         // was a permanent turnout ran its track one way on that square alone
         graph.settleCrossingHalves();
 
@@ -4075,7 +4075,7 @@ public class AutonomyCompanionStore
      * Every field name this build understands in the shared file.
      *
      * Anything else is a field a NEWER build wrote.  A LOAD keeps it verbatim and writes it back untouched; an import that
-     * translates page ids leaves it out, because nothing here knows its shape (TDR-C7, TDR-C10).
+     * translates page ids leaves it out, because nothing here knows its shape.
      *
      * That makes the list load-bearing: a collection MISSING from it is read as unknown-and-preserved AND also read into
      * its own collection, so the next save writes both and the stale copy wins.  It is derived rather than listed, so that
@@ -4118,7 +4118,7 @@ public class AutonomyCompanionStore
     /**
      * Every shared field that can be held for an absent page, and what its values are made of.
      *
-     * ONE list (DR-A1), read by both the hold and the merge, so it cannot be half-updated: a field in the merge but not
+     * ONE list, read by both the hold and the merge, so it cannot be half-updated: a field in the merge but not
      * the hold would come back into memory with a page ID standing where a page NAME belongs, the pun the whole mechanism
      * exists to remove, and a field in the hold but not the merge would be deleted from disk by one save while a page's
      * file was missing, as the FR-001 restrictions were (OB-067).
@@ -4129,7 +4129,7 @@ public class AutonomyCompanionStore
      * Which collections are held back when their page is not loaded, and in what shape.
      *
      * A METHOD rather than a static block, so that the guard which insists every kept collection is handled everywhere
-     * can address it by name (LD-11).  It is about the shape entries have in the FILE rather than about the collection,
+     * can address it by name.  It is about the shape entries have in the FILE rather than about the collection,
      * and it is static, so the OB-025 registry (`kept()`) does not cover it.
      *
      * @return the field names, by their names in the file, and how each is keyed
@@ -4337,7 +4337,7 @@ public class AutonomyCompanionStore
      *
      * @param wholeRoot the shared object as it came off disk.  The local `root` below is NOT this: it
      *     is the copy with absent pages filtered out, and the difference between the two names is
-     *     load-bearing here (FBR-C5).
+     *     load-bearing here.
      */
     private void readShared(JSONObject wholeRoot)
     {
@@ -4390,7 +4390,7 @@ public class AutonomyCompanionStore
     }
 
 
-    // The kept collections (OB-025 / DD-A1)
+    // The kept collections (OB-025)
 
     /**
      * One collection of settings the store keeps, and everything the bookkeeping sites need of it.
@@ -4403,7 +4403,7 @@ public class AutonomyCompanionStore
      * omission loud; this makes most of them impossible, because there is one place to add a collection rather than a
      * dozen.
      *
-     * **What deliberately did NOT move in here.** `reconcile` and `applyTo` are still written out by hand, per DD-D9. Both
+     * **What deliberately did NOT move in here.** `reconcile` and `applyTo` are still written out by hand. Both
      * ask a question the registry cannot express: reconcile decides what a square's absence from the diagram means, one
      * collection at a time, and applyTo populates the tile GRAPH, which models track and has nowhere to put a name or a
      * length.
@@ -4438,7 +4438,7 @@ public class AutonomyCompanionStore
         /**
          * Drops everything about squares that are gone, and everything POINTING at them.
          *
-         * REPORTS WHETHER IT REMOVED ANYTHING (X8V-B2): four call sites read the answer as "something was forgotten, so
+         * REPORTS WHETHER IT REMOVED ANYTHING: four call sites read the answer as "something was forgotten, so
          * write the setup to disk", so it must be true only when something was, or every deleted piece of plain track would
          * rebuild the graph over every page and write every file of the setup, once per square.
          *
@@ -4788,7 +4788,7 @@ public class AutonomyCompanionStore
     {
         final Set<TileKey> set;
 
-        /** Whether the members are paired across pages, which only `disabledLinks` is (SVN-B8). */
+        /** Whether the members are paired across pages, which only `disabledLinks` is. */
         final boolean paired;
 
         SquareSetKept(String json, Set<TileKey> set)
@@ -4929,7 +4929,7 @@ public class AutonomyCompanionStore
         all.add(new PageSetKept("excludedPages", excludedPages));
 
         // Beside it, and the same shape: page NAMES rather than squares, translated on write the way
-        // `excludedPages` is, so a rename carries the decision with it (TST-B15).
+        // `excludedPages` is, so a rename carries the decision with it.
         all.add(new PageSetKept("keptDespiteRepeats", keptDespiteRepeats));
         // Called disabledLinks in the file and disabledPortals in the code.  Named once, here.
         all.add(new SquareSetKept("disabledLinks", disabledPortals, true));
@@ -5148,13 +5148,12 @@ public class AutonomyCompanionStore
      * file on disk: saving would write both to it, the second over the first, and the next load, which rebuilds the list by
      * scanning the folder, would find one of them gone.
      *
-     * Checked at the three doors a name comes in by - create, import and rename (GSP-C3) - rather than at save time, so the
+     * Checked at the three doors a name comes in by - create, import and rename - rather than at save time, so the
      * answer arrives while the user is still looking at the name they typed.
      *
      * @param name the name being taken
      * @param except a name that may share the file - the one being renamed away from
      * @return the configuration that already owns that file, or null when none does - named, so the refusal can say which
-     *         (VD17-C6)
      */
     private String fileNameTaken(String name, String except)
     {
@@ -5171,7 +5170,7 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Refuses a name that would be saved in another configuration's file, naming that configuration (VD17-C6).
+     * Refuses a name that would be saved in another configuration's file, naming that configuration.
      *
      * Its own refusal rather than `ERROR_NAME_IN_USE`, which the window says as "a configuration called X already exists" -
      * and X, the name typed, is exactly the one that does not.  Asked at the three doors a name comes in by: create, import
@@ -5245,7 +5244,7 @@ public class AutonomyCompanionStore
     /**
      * The page a stored key names, or null when the index does not know it.
      *
-     * The ONE place that answers "which page is this", asked two ways by the two methods below (DR-B5), so the two cannot
+     * The ONE place that answers "which page is this", asked two ways by the two methods below, so the two cannot
      * drift out of step.  FR-018 alters what happens to a page whose file is merely absent, and both must change together.
      *
      * @param stored the page part of a stored key - an id, or a name on a file old enough
@@ -5981,7 +5980,7 @@ public class AutonomyCompanionStore
                 if (only != null) values.add(only);
             }
 
-            // An entry whose members ALL failed to parse is dropped, not stored empty (CR-C2): `"key": []` is an array, the
+            // An entry whose members ALL failed to parse is dropped, not stored empty: `"key": []` is an array, the
             // form this file only gained at version 2, so a setup stamped version 1 would go to disk carrying one, which is
             // what the version gate exists to keep from an older TrainControl.  Half a pairing is worse than none, and an
             // empty signal list is the same thing said differently.

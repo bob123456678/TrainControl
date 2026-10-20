@@ -37,7 +37,7 @@ public class TileGraph
      * FR-013 stage two. Ten of the eleven store collections are keyed by a bare {@link TileKey};
      * `tileDirections` is keyed by a square AND a route across it, because a square can carry several
      * routes and each has its own direction.  Both are typed keys and never the string
-     * "page:x,y#state,index" (DD-A1): erasure makes {@code Map<String, T>} and {@code Map<TileKey, T>}
+     * "page:x,y#state,index": erasure makes {@code Map<String, T>} and {@code Map<TileKey, T>}
      * the same signature, and a suffix built or parsed by hand is easy to get wrong.
      *
      * The self type lets the bookkeeping helpers - move a square, rename a page, drop a key whose square
@@ -485,7 +485,7 @@ public class TileGraph
      *
      * The writer makes both ends match (OB-041). This is the reading half, and it is not redundant:
      * setups saved before 2026-08-23 can hold one-ended disables and there is no migration, so asking
-     * about both ends repairs those files at no cost (TD-2).
+     * about both ends repairs those files at no cost.
      *
      * @param tile either end
      * @return whether autonomy should ignore this link
@@ -573,7 +573,7 @@ public class TileGraph
     /**
      * Every page in the layout IN THE ORDER THE WINDOW LISTS THEM, excluded ones included.
      *
-     * Which is sorted by NAME, not file order (NSV-C5).  TrainControl builds this list from
+     * Which is sorted by NAME, not file order.  TrainControl builds this list from
      * getLayoutList(), which sorts - and the distinction is the whole reason the list exists, because a
      * link tile indexes into it.
      *
@@ -958,15 +958,14 @@ public class TileGraph
     }
 
     /**
-     * Makes the two halves of each two-square crossing's tracks agree where the directions applied to them do not
-     * (RSA37-C1).
+     * Makes the two halves of each two-square crossing's tracks agree where the directions applied to them do not.
      *
      * Every door sets a crossing's track on both its squares (OB-320), so halves that disagree hold answers set while the
      * squares were permanent turnouts: in a setup saved before the change, or on a turnout given its partner since.  Each
      * was read in the crossing's terms on its own square, so the blades' own way became a one-way track, and a turnout's
      * closure a one-way track the other way.  They are read as a turnout's instead, the same on both halves: towards the
      * toe is the way the blades run, which restricted nothing, so the track runs both ways; towards a leg is how a
-     * permanent turnout was closed (VD18-B1), and closed is closed, so the track is closed if either half was.
+     * permanent turnout was closed, and closed is closed, so the track is closed if either half was.
      *
      * The graph's directions only - the setup keeps what was set, which means the same again should the squares ever be
      * turnouts again, and the first edit of the track sets both halves anew.
@@ -1000,7 +999,7 @@ public class TileGraph
 
     /**
      * Whether a direction on half of a crossing closed the road when the square was a permanent turnout: closed, or
-     * towards a leg - which, against blades that run only into the toe, let nothing through (RSA37-C1).
+     * towards a leg - which, against blades that run only into the toe, let nothing through.
      *
      * @param tile half of a crossing
      * @param routeId one of its roads
@@ -1757,7 +1756,7 @@ public class TileGraph
     /**
      * Whether any train can use this route at all, given the authored direction AND the hardware.
      *
-     * **AN ANSWER THE HARDWARE REFUSES IS A CLOSURE, NOT A NOTHING (VD18-B1).**  On a permanent
+     * **AN ANSWER THE HARDWARE REFUSES IS A CLOSURE, NOT A NOTHING.**  On a permanent
      * turnout every route is directed at the toe, so `TOWARD_A` - toward the fork - permits only an
      * entry the blades refuse: nothing can pass, which is precisely what an operator who shuts that
      * arm means.  Reading the answer as "the hardware refuses it, so it restricts nothing" would rewrite
@@ -1795,7 +1794,7 @@ public class TileGraph
     // arms (OB-351)
 
     /**
-     * The answer in force on a road: what is stored, narrowed by the hardware (VD18-B1, VD18-C2).
+     * The answer in force on a road: what is stored, narrowed by the hardware.
      *
      * A stored answer the editor does not offer on this road (`directionIsPossible`) is either the default `BOTH` on a
      * permanent turnout - whose roads are all directed at the toe, so the blades narrow it to the one way there is - or an
@@ -2501,8 +2500,8 @@ public class TileGraph
      *
      * It walks the private `neighbour` helper, the same grid arithmetic as the static `gridSideTowards` (two
      * squares whose coordinates differ by one), so the two answer identically for any pair of squares on one
-     * page (RC-C5).  They are named apart to end the collision between `sideTowards` and `sideToward`, one
-     * letter apart (DD-C9).
+     * page.  They are named apart to end the collision between `sideTowards` and `sideToward`, one
+     * letter apart.
      *
      * A portal's partner is not reachable here: the two squares are neighbours in the graph without
      * touching, so there is no side to name, and callers that care use landing() instead.
@@ -2589,7 +2588,7 @@ public class TileGraph
 
     /**
      * The first of some squares reached by leaving a square through one side, over the track as DRAWN - whichever way
-     * trains may run on it - and never past one of them (REG4-A1).
+     * trains may run on it - and never past one of them.
      *
      * An old autonomy.json joins each of its points to the next ones along the track, so this is where one of its edges
      * could lead from a square by that side.  A shortest walk to the edge's end cannot answer that: round a loop the far

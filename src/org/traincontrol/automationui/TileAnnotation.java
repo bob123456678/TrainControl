@@ -150,7 +150,7 @@ public class TileAnnotation
      *     a station              big circle          big diamond         big square
      *     a passing point       small circle        small diamond       small square
      *
-     * A plain point is a small CIRCLE and a diamond means trains MAY turn (TD-15).
+     * A plain point is a small CIRCLE and a diamond means trains MAY turn.
      *
      * The five kinds the user thinks in are two questions over a station - must a train leave the way
      * it came (terminus), and does autonomy choose it on its own (parking) - which is why these are
@@ -872,7 +872,7 @@ public class TileAnnotation
     }
 
     /**
-     * The same, told exactly WHICH part of the tile is already faint (PRW-C1).
+     * The same, told exactly WHICH part of the tile is already faint.
      *
      * A square is one road almost everywhere, and there the two forms say the same thing.  A double curve is
      * two roads in one tile and a train covers one of them, so "is this tile already faded" has no answer; the
@@ -941,7 +941,7 @@ public class TileAnnotation
             // red arrows its sensor shows while it reads occupied, which stay visible.
             if (!marks.isEmpty() && !blockedOnly && !portal && !outOfService())
             {
-                // WHAT IS LEFT OF THE TILE, rather than all of it or none of it (PRW-C1).
+                // WHAT IS LEFT OF THE TILE, rather than all of it or none of it.
                 //
                 // `alreadyFaint` is the region the caller has already drawn faint.  On an ordinary square that
                 // is the whole tile and nothing is washed here (MT-375).  On a DOUBLE CURVE it is one road's
@@ -1398,7 +1398,7 @@ public class TileAnnotation
 
         // Where a traced line stops when it has no side to leave by - the first and last square of a
         // run, which AutonomyEditorPanel builds with a null end deliberately.  The track midpoint, as OB-026 gives
-        // the RUN line and the badge, since on a bend the tile centre is nowhere near the rails (TD-4).
+        // the RUN line and the badge, since on a bend the tile centre is nowhere near the rails.
         int[] centre = trackCentre(width, height);
 
         // The route ONCE, however many directions it carries: a line per direction would draw two on the same
@@ -1571,7 +1571,7 @@ public class TileAnnotation
             }
         }
 
-        // The fallback is trackCentre rather than the geometric centre (TD-4).  It changes nothing on a
+        // The fallback is trackCentre rather than the geometric centre.  It changes nothing on a
         // straight, or where the branch above applies; it corrects a bend whose side carries no route or more
         // than one.
         int[] from = curved && through == 1 && other != null && other != side
@@ -1904,7 +1904,7 @@ public class TileAnnotation
         // and impassable is asked FIRST because every square switched off is parking as well.
         //
         // `shut` implies `parking` at both places in src/ that build a Badge, so no editor configuration lets the
-        // impassable clause alone decide the colour (FV2-C1).  It stays because the two flags are independent in
+        // impassable clause alone decide the colour.  It stays because the two flags are independent in
         // the type: a Badge built any other way, by a test or a later site, must still take the X's colour when
         // nothing can pass, and the test pins that.
         //
@@ -2210,9 +2210,9 @@ public class TileAnnotation
 
         badgeDrawnAt = new int[] {(int) Math.round(at[0]), (int) Math.round(at[1])};
 
-        // WHAT IT COVERS, where it is drawn - for the diagram, which draws what lies over a spill again over it (RSA61-C2):
-        // the icon's body and its outline, a pixel round for the soft edge, less the square (RSA62-C1).  Built once for a
-        // size and kept (RSA62-B1), as building it on every paint stalled the window; the annotation is replaced whenever
+        // WHAT IT COVERS, where it is drawn - for the diagram, which draws what lies over a spill again over it:
+        // the icon's body and its outline, a pixel round for the soft edge, less the square.  Built once for a
+        // size and kept, as building it on every paint stalled the window; the annotation is replaced whenever
         // what it draws changes.
         if (spills && (spillFor == null || spillFor[0] != width || spillFor[1] != height))
         {
@@ -2313,7 +2313,7 @@ public class TileAnnotation
      */
     public boolean spillsOverItsSquare()
     {
-        // not a square the editor shades, which draws no icon on itself (RSA63-C4); and only FR-118's icons spill - a classic
+        // not a square the editor shades, which draws no icon on itself; and only FR-118's icons spill - a classic
         // mark is kept inside its square
         return stationIcons() == StationIcons.SHAPES && badge != null && badge.isStation() && !badge.isImpassable() && !ignored && badge.getA() != null
             && badge.getB() != null && badge.getA() != badge.getB() && trackBends();
@@ -2360,8 +2360,8 @@ public class TileAnnotation
      * What this square's spill covers, in the square's own coordinates: the station's icon, body and outline, a pixel round
      * for its soft edge, less the square - null where nothing spills or the icon has not been drawn at this size yet.  The
      * diagram draws what lies over that region again over the spill - the arrows of the square it reaches, then the
-     * captions - so the spill keeps the depth the icon has on its own square, under the captions (RSA61-C2, RSA62-C1).
-     * Built once for a size (RSA62-B1).
+     * captions - so the spill keeps the depth the icon has on its own square, under the captions.
+     * Built once for a size.
      *
      * @param width the square's width
      * @param height the square's height
@@ -2400,7 +2400,7 @@ public class TileAnnotation
 
             paintArrivals(a, width, height);
 
-            // AND ITS OUTLINE, which its own paint draws over everything on it (RSA63-C4): the spill broke it
+            // AND ITS OUTLINE, which its own paint draws over everything on it: the spill broke it
             if (selected)
             {
                 a.setStroke(new BasicStroke(2f));
@@ -2779,7 +2779,7 @@ public class TileAnnotation
 
     /**
      * The same, from a square's own ports - its track type and orientation - rather than from what autonomy says about it
-     * (RSA23-C1): every square has those, where an annotation knows the roads only while the restriction arrows are
+     *: every square has those, where an annotation knows the roads only while the restriction arrows are
      * shown, and a station's first road otherwise.
      *
      * @param routes the square's roads, from `TilePorts.ports`
@@ -2929,7 +2929,7 @@ public class TileAnnotation
         TileAnnotation other = (TileAnnotation) o;
 
         // `editing` is in here because it changes the PICTURE (whether a named point's icon is filled with its colour or
-        // white) and equals is what LayoutLabel asks to decide whether a redraw is needed (TD-11).  The two populations
+        // white) and equals is what LayoutLabel asks to decide whether a redraw is needed.  The two populations
         // of labels happen to be segregated today, so no live path reaches it; leaving it out would be a trap.
         return length == other.length && selected == other.selected
             && (badge == null ? other.badge == null : badge.equals(other.badge))

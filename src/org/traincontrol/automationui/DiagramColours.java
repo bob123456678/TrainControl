@@ -6,7 +6,7 @@ import java.awt.Color;
  * The colours the track diagram draws a run and its train in, in one place (Adam, FR-106, 2026-10-02: "Make sure it is
  * easy to adjust as needed").  Change one here and every square that draws it follows: the run's line and arrowheads
  * (`TileOverlay`), the station badges (`TileAnnotation`) and the train's line along its tail (`LayoutLabel.TRAIN_MARK`).
- * The graph window's stylesheet, `graph.css`, went with that window.  NOT HERE (RSA25-C3): the station captions' navy
+ * The graph window's stylesheet, `graph.css`, went with that window.  NOT HERE: the station captions' navy
  * (`StationCaption`), a parking berth's grey, the restriction arrows and the autonomy editor's traced and tested paths
  * (`TileAnnotation`) - colours of the setup and its editor, not of a run, each kept beside what draws it.
  */
@@ -37,7 +37,7 @@ public final class DiagramColours
     public static final Color PATH_ARROW = Color.WHITE;
 
     /**
-     * The thin dark edge round each arrowhead (RSA25-C4): on a sensor the arrowhead lands on its contact, a white circle,
+     * The thin dark edge round each arrowhead: on a sensor the arrowhead lands on its contact, a white circle,
      * and all but the part over the line disappeared.
      */
     public static final Color PATH_ARROW_EDGE = new Color(40, 40, 40);
@@ -48,7 +48,7 @@ public final class DiagramColours
     public static final Color PATH_HELD = new Color(238, 238, 238);
 
     /**
-     * And the wash over the whole of a held square, which is most of what says "held" (RSA26-C2): white at 45%, paling
+     * And the wash over the whole of a held square, which is most of what says "held": white at 45%, paling
      * the tile so it recedes from the running path rather than adding a colour.
      */
     public static final Color PATH_HELD_WASH = Color.WHITE;
@@ -99,7 +99,7 @@ public final class DiagramColours
     public static final Color TRAIN_OVER_RUN = new Color(250, 138, 64, 191);
 
     /**
-     * A running train whose icon cannot be read is drawn as a dot (RSA26-C2): this fill, ringed in `TRAIN_DOT_RING`.
+     * A running train whose icon cannot be read is drawn as a dot: this fill, ringed in `TRAIN_DOT_RING`.
      */
     public static final Color TRAIN_DOT = Color.BLACK;
 
