@@ -31575,3 +31575,45 @@ body:
 tail:
 | ---
 |
+
+[test MT-801]
+ordinal: 800
+anchor: mt-801
+date: 2026-10-20
+title: OB-366: the autonomy editor's notices float over the bottom of the diagram, with an X to dismiss them
+disposition: needs test
+from: OB-366
+written: 2026-10-20
+reopened: no
+body:
+| <a id="mt-801"></a>
+| ### MT-801 - 2026-10-20 - OB-366: the autonomy editor's notices float over the bottom of the diagram, with an X to dismiss them
+|
+| **Disposition:** needs test
+| **From:** OB-366
+|
+| **Written:** 2026-10-20
+|
+| **Steps**
+|
+| 1. Open the autonomy editor on a page with trains, press Why not Moving? and click a train that cannot go anywhere (or one with many refused stations).
+| 2. If the answer is longer than three lines, scroll it with the band's own scrollbar.
+| 3. Click the small X at the band's top right.
+| 4. Ask again, even about the same train.
+| 5. Click the band's text, then click a square of the diagram above the band.
+| 6. Press Escape.  In the main window, with no setup loaded, look at the "Load it?" header.
+|
+| **Expected**
+|
+| - Step 1: the answer floats over the bottom of the diagram, just above the horizontal scrollbar; the track does not move or shrink.
+| - Step 2: the band stays at most three lines tall and never scrolls sideways.
+| - Step 3: the band goes, the track stays where it was, and the outlines Why not Moving? drew stay.
+| - Step 4: the band comes back.
+| - Step 5: clicking the band does nothing to the square under it; the square above reacts as usual.
+| - Step 6: Escape still closes the editor.  The main window's header still shows (at most three lines) and has no X.
+|
+| *What this is:* OB-366 (`1a795401`, then `07bb2e90` to your design of 2026-10-20: "I'd rather have the band float and have an x to dismiss each time it surfaces, so the user can be in control."). `regression.testTheVisibleElementsHeadingIsSpacedLikeTheOthers` checks the diagram never moves, the three-line cap, the X and the click.
+|
+tail:
+| ---
+|

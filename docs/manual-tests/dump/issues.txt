@@ -760,7 +760,7 @@ text:
 
 [issue OB-366]
 ordinal: 34
-inbox: yes
+inbox: no
 kind: bug
 title: avoid shifting the track diagram down when notices are shown
 filed: 2026-10-19

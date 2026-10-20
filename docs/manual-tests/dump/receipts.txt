@@ -3954,3 +3954,11 @@ kind: feature request
 what: The locomotive icon chooser has a Clear Local Locomotive Icon button (`a38b52b7`).
 state: -
 became: MT-800
+
+[receipt OB-366]
+seq: 494
+filed: 2026-10-19
+kind: bug
+what: The autonomy editor's notices float over the bottom of the diagram, three lines at most, with an X to dismiss each one; the diagram never moves (`07bb2e90`).
+state: -
+became: MT-801
