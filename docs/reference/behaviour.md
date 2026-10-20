@@ -1704,15 +1704,13 @@ waiting for it to arrive.  The question is only ever *has the tail passed this e
 `Layout.tailHasProvablyPassed` answers it from two facts: how far the head has travelled since the end
 of the edge, and how long the train is.
 
-**How far the head has travelled is counted to where the sensor that last answered saw it** (GS-B3; Adam,
-2026-10-10, asked: into 3.0.0 - put to him as releasing track earlier, never unsafely): the edge whose sensor answered,
-up to that sensor's own square.  A sensor answers when the head ENTERS its square, so the square is counted behind the head only when the next
-sensor answers - the safe reading for a release, where the walk that claims a running train's body takes the generous
-one (the head at the square's far end).  It was counted one sensor short, and on a path of three edges or fewer the
-first edge was held to the end of the run whatever the train's length.  A Point with no sensor - a hand-written
-configuration may have one; the builder's all carry one - is passed without waiting, so the track to it is counted only
-once the next sensor answers - and so is the track to a sensor that already read occupied when its wait began, one two
-Points in a row share or one another train stands on, whose answer came before the head did (RSA61-A1,
+**How far the head has travelled is counted to where the sensor that last answered saw it** (GS-B3): the edge whose
+sensor answered, up to that sensor's own square.  A sensor answers when the head ENTERS its square, so the square is
+counted behind the head only when the next sensor answers - the safe reading for a release, where the walk that claims
+a running train's body takes the generous one (the head at the square's far end).  A Point with no sensor - a
+hand-written configuration may have one; the builder's all carry one - is passed without waiting, so the track to it is
+counted only once the next sensor answers - and so is the track to a sensor that already read occupied when its wait
+began, one two Points in a row share or one another train stands on, whose answer came before the head did (RSA61-A1,
 `testASensorTwoPointsShareIsNotProofTheHeadReachedTheSecond`).
 `core.testTrainTailClearsEdges.testAnEdgeIsHandedBackOnceTheTailHasPassedIt`,
 `testASensorsOwnSquareIsNotCountedBehindTheHeadYet`, `testAnEdgeIsNotHandedBackBeforeTheTailHasPassedIt`.
@@ -1734,9 +1732,8 @@ or load a setting:
 
 - the **Atomic Routes checkbox** refuses the gesture and says what is unmeasured - somebody is there,
   and one gesture from fixing it;
-- the **load door** (the editor's apply; the other, Validate on the old autonomy tab, went with that tab -
-  OB-254) forces the setting back ON and writes the reason to the log, because a file has nobody at it and
-  refusing the load would make a configuration the operator already has unopenable;
+- the **load door** (the editor's apply, OB-254) forces the setting back ON and writes the reason to the log, because a
+  file has nobody at it and refusing the load would make a configuration the operator already has unopenable;
 - the **five dispatch doors** - Start, Execute Timetable, Return Home, and the two hand dispatches -
   do the same, because a TRAIN's length is written on the live layout long after any file was parsed.
 
@@ -1747,36 +1744,34 @@ at a destination and so can never be unmeasured end to end - which is enforced w
 in `Layout.bfs` and `HomeStaging.firstClearRoute`, not where they are checked.  And a rail is counted
 once, not once per direction.
 
-**Track answered 0 on purpose is measured** (Adam, 2026-09-24, TDU-C6: *"0 lengths count
+**Track answered 0 on purpose is measured** (TDU-C6; Adam: *"0 lengths count
 as measures, so non-atomic should be allowed"*). The checkbox, the load door and the dispatch doors do not count
 it, and the escape above does not fire over it - all of them ask `Edge.isMeasured`, which is true of an edge
 with a length or with every square answered 0 (a route tile counts as answered, since it takes no length). Such
 a path gets no escape, so its edges are held until the measured track after them covers the train - and to the
-end of the route where none does - the safe direction.  **Every other length rule asks the same question since
-2026-09-25** (§5b, ADU-C7): the gate and the escape have to ask one question, and so do the route in and the tail walk,
-or a platform admits a train whose tail lies past the 0 on track nothing claims - as it did for a day (ADA-A1, ADD-B1).
+end of the route where none does - the safe direction.  **Every other length rule asks the same question** (§5b,
+ADU-C7): the gate and the escape have to ask one question, and so do the route in and the tail walk, or a platform
+admits a train whose tail lies past the 0 on track nothing claims.
 
 So the Unmeasured Track display in the editor is **not** the list to work from: it answers a different
 question, about how far a tail reaches.  The refusal's own list is the one to measure, and it comes
-back in alphabetical order because the message shows only the first three of it.
+back in alphabetical order because the message shows only the first three of it. `MT-470` is the hands-on test.
 
-*(`VD12-R4`, `VD13-B1/B2/B3`, `VD14-B1/C6`, `VD16-B2`, `GS-B1`.  `MT-470` is the hands-on test.)*
-
-**A sensor is held for the train whose route runs to it until the rail to it is given back** (Adam, 2026-09-29, on
-RSA2-B1: *"it should be allowed once unlocked"*; RSA3-C3).  The first time a sensor reads occupied ends every journey
-waiting on it, so no route may end at, or pass, a sensor another train's journey is waiting on - nor one whose rail that
-journey has not yet given back.  A feedback double curve's two arcs are two pieces of metal with one contact (OB-238),
-and between the head's arrival and the release only the sensor's own reading kept a second train off the other arc: a
-gap between two axles reads clear.  The rail is given back as this section says - once the tail has passed where the
-track is measured, one sensor on where it is not, at the journey's end with Atomic Routes on.  A train still claiming its
-route holds its sensors as one under way does, and the claims are read before the journeys, since the hand-over from
-one to the other writes the journey and then takes the claim away (RSA3-C1, RSA4-C3).
+**A sensor is held for the train whose route runs to it until the rail to it is given back** (RSA2-B1; Adam: *"it
+should be allowed once unlocked"*).  The first time a sensor reads occupied ends every journey waiting on it, so no
+route may end at, or pass, a sensor another train's journey is waiting on - nor one whose rail that journey has not yet
+given back.  A feedback double curve's two arcs are two pieces of metal with one contact (OB-238), and between the
+head's arrival and the release only the sensor's own reading kept a second train off the other arc: a gap between two
+axles reads clear.  The rail is given back as this section says - once the tail has passed where the track is
+measured, one sensor on where it is not, at the journey's end with Atomic Routes on.  A train still claiming its route
+holds its sensors as one under way does, and the claims are read before the journeys, since the hand-over from one to
+the other writes the journey and then takes the claim away (RSA3-C1).
 `core.testATrainIsDispatchedOnce`.
 
 ### 5e. Permanently-set turnouts: fork to base only, and they still bound a berth
 
 > *"They are trailable, so it's about intent and documentation.  They just can't go from the base to
-> the fork since we don't know which way they will end up.  Fork to base is OK."* - Adam, 2026-09-22
+> the fork since we don't know which way they will end up.  Fork to base is OK."* - Adam
 
 A `CUSTOM_PERM_*` tile is the operator's declaration that a turnout has no address and cannot be
 thrown.  It is a supported thing to draw, not an error: the setup loads with a warning, and `TilePorts`
@@ -1795,31 +1790,32 @@ whose topology cannot be expressed per tile.  And an **undeclared** address-less
 routing over one would mean trusting it to be lying the right way, which is exactly what
 `CUSTOM_PERM_*` exists to declare and what nobody declared there.
 
-**It bounds a berth like any other switch** (Adam, 2026-09-22: *"treat them the same as regular
-switches for the purposes of the check"*, reversing half of his answer of 2026-09-15).  The room walk
-of 5a stops at a permanent turnout, so a berth beyond one is measured from the points rather than from
-wherever the run began.  The two questions are not the same question, which is why the answers differ:
+**It bounds a berth like any other switch** (IND9X-A2; Adam: *"treat them the same as regular
+switches for the purposes of the check"*).  The room walk of 5a stops at a permanent turnout, so a berth beyond one is
+measured from the points rather than from wherever the run began.  The two questions are not the same question, which
+is why the answers differ:
 
 - **routing** asks which road a train takes, and over a permanent turnout it takes the only one there
-  is - so it is not a switch for that purpose, and never was;
+  is - so it is not a switch for that purpose;
 - **the berth check** asks where a train comes to REST.  A train too long for the berth hangs back
   across the toe and blocks the other leg's merge, and it does that whichever way the blades lie.
 
-**A crossing still does not stop the walk** (his 2026-09-15 answer, unchanged).  Nothing merges at a
+**A crossing does not stop the walk.**  Nothing merges at a
 crossing, so a train standing across one fouls another route's track rather than its own road - and
 that is the tail walk's business in 5c, not the room walk's.
 
-**And the editor does not offer an arrow for the road that is not there.**  A direction the operator
+**And the editor does not offer an arrow for the road that is not there** (OB-233; Adam: *"green arrows in the
+direction that can't be chosen shouldn't be offered"*).  A direction the operator
 authors ANDs with the hardware's restriction, so on one of these tiles "toward the fork" and "both
 ways" restrict nothing - no train could take that road either way - and drawing a green arrow for it
 says something untrue about the railway.  The menu offers what `TileGraph.directionIsPossible` allows.
-  That is **not** the same question the walk asks - `directionAllows` and it disagree about `NONE`,
+That is **not** the same question the walk asks - `directionAllows` and it disagree about `NONE`,
 which is always offerable and never passable, and whether a train MOVES is `isPassable` (VD18-R4).
-  Where only one way is left,
+Where only one way is left,
 that is the one ticked, because the stored answer for these tiles is `BOTH` by default and `BOTH` is
 not on offer.  Shutting a route is always offered: that is a real answer whichever way it could run.
 
-**Since OB-351 the arrows are the whole story on every square whose roads share an end** (Adam, 2026-10-17: *"into
+**The arrows are the whole story on every square whose roads share an end** (OB-351; Adam: *"into
 spur should simply require S to be green, and out of spur should require W to be green.  Align it so that the arrows
 tell the full story.   If we need more granular control, we can just prevent movement on the track attached to s"*,
 and *"3-way switches work similarly but have 4 settings"*).  A move through a switch, three-way switch or double slip is
@@ -1829,15 +1825,14 @@ not offered there; crossings, double curves and two-square crossings keep them, 
 its own.  A setup holding a road setting its arrows cannot show is read as its arrows show, logged once and saved.
 `core.testTheArrowsTellTheWholeStory`.
 
-*(`IND9X-A2` / `OB-233`, and Adam's instruction of 2026-09-22 that *"green arrows in the direction that
-can't be chosen shouldn't be offered"*.  Held by
+Held by
 `core.testAutonomyDiagramReducer.testTheRoomWalkStopsAtASwitchAndAPermanentTurnoutButNotACrossing` and
-`core.testAutonomyDiagramPorts.testOnlyThePossibleDirectionsAreOffered`.)*
+`core.testAutonomyDiagramPorts.testOnlyThePossibleDirectionsAreOffered`.
 
 ### 5f. Two permanent turnouts drawn toe to toe are one crossing
 
 > *"Lets support two permanent Ys as a crossing, if possible, same as the current crossing by effectively rotated 45
-> degrees, just connecting differently and spread across 2 tiles."* - Adam, 2026-10-04 (OB-320)
+> degrees, just connecting differently and spread across 2 tiles."* - Adam (OB-320)
 
 The diagram has no diagonal crossing, so one is drawn as two `CUSTOM_PERM_Y` tiles whose toes face each other: the
 two Ys' four legs are the crossing's four ends, and each track runs from a leg of one square, over the toes, to the
@@ -1865,10 +1860,10 @@ treat the tracks verbatim."*
   walk is remembered by the track there as well, so a run that crosses on one track and comes back over the other is
   not taken for going in circles.
 - **One direction per track.**  A direction set on one square's half of a track is set on the other's, the same way
-  along the track, whichever door it comes through (`AutonomySession.record`).  Halves that disagree were set while
-  the squares were turnouts - a setup saved before the change, or a turnout given its partner since - and are read as a
-  turnout's, the same on both (`TileGraph.settleCrossingHalves`, RSA37-C1): towards the toe, the blades' own way, is
-  both ways; towards a leg, how a permanent turnout was closed, is closed.
+  along the track, whichever door it comes through (`AutonomySession.record`).  Halves that disagree - a setup saved
+  while the squares were turnouts, or a turnout given its partner since - are read as a turnout's, the same on both
+  (`TileGraph.settleCrossingHalves`, RSA37-C1): towards the toe, the blades' own way, is both ways; towards a leg, how
+  a permanent turnout was closed, is closed.
 - **The click** steps both tracks through both ways, each track one way with the other both ways, the four ways
   they can each run one way, and closed (Adam: *"Pretend these are two curved tracks on one tile, so we need to cycle
   through both possible directions on both (4 combos)"*; and on MT-688: *"when cycling, there is no option for red in
@@ -1878,70 +1873,55 @@ treat the tracks verbatim."*
   where another road runs over it, as at a crossing.  Locking is unchanged - both tracks run over both squares, so
   two trains cannot be on the crossing at once.
 
-*(Held by `core.testTwoYsMakeACrossing`.)*
+Held by `core.testTwoYsMakeACrossing`.
 
 ### The autonomy editor's keyboard doors
 
 Five shortcuts act on **the square the pointer is over**, and they ask one question to find it -
 `LayoutEditor.hoveredSquare()`, which answers null when the remembered label is not on the grid it is
-asked about, and forgets it while it is there. They read a field nothing cleared until 2026-09-10, so
-after stepping to another page each of them named a square on the page before (OB-198).
+asked about, and forgets it while it is there, so after stepping to another page none of them names a square on the
+page before (OB-198).
 
 | | |
 |---|---|
-| **Control+S** | Names the square — the right-click menu's **Rename**. Asks `canBeNamed`, so it does nothing on plain track (MT-313). |
+| **Control+S** | Names the square - the right-click menu's **Rename**. Asks `canBeNamed`, so it does nothing on plain track (MT-313). |
 | **Control+E** | Opens **Segment Length** on it (FR-066). Adam picked the key: *"let's do E"*, Control+D being taken twice over. |
 | **Control+B** | Opens **Maximum Train Length** on it (OB-197's free letter, picked for the berth the maximum belongs to). Asks the station menu's own question, so it does nothing on a square that is not a station. |
 | **Control+H** | Sets the home locomotive. |
 | **Control+N** | **Show a Station Name Here** on it (FR-086), asking the menu's own `offersAStationName`. |
 
-**Control+L steps through the caption options, and text labels are one of them** (Adam, 2026-09-23,
-OB-272: *"make text labels be a dedicated setting, and hide the text labels unless it is selected.  Also,
-make control+L cycle the options"*, and asked which options: *"the dropdown's 4, plus add an option to
-the dropdown that shows the labels only"*). So the dropdown is Stations, Standing Locs (Parked Locs until
-MT-657's note), Homes, None and
-Labels only, in that order, and the key moves to the next of the five. The text written on squares is shown under
-**Labels only** and nowhere else: choosing a caption no longer turns it on, which it has done since FR-061
-read *None* as the text switch turned off. Built 2026-09-23: Labels Only is appended after None so a remembered
-choice keeps its meaning, the grid draws a caption under the three caption modes and the writing under Labels
-Only, and in the track editor Control+L is still the text switch.
-`regression.testARememberedNoneOpensWithTheCaptionsOff`.
-
-**Since FR-133 the text labels are a box of their own, and Control+L steps the four caption options** (Adam,
-2026-10-17: *"move the "labels only" setting currently in the dropdown to a Text Labels checkbox below Show Trains.
-Rename the current "Text Labels" heading above the dropdown to be "Station Labels".  And change "None" in the dropdown
-to "Hide""*). The paragraph above is superseded: the dropdown, headed Station Labels, is Station Names, Standing Locs,
+**Control+L steps the four caption options, and the text labels are a box of their own** (FR-133, OB-272; Adam:
+*"make control+L cycle the options"*, and *"move the "labels only" setting currently in the dropdown to a Text Labels
+checkbox below Show Trains. Rename the current "Text Labels" heading above the dropdown to be "Station Labels".  And
+change "None" in the dropdown to "Hide""*). The dropdown, headed Station Labels, is Station Names, Standing Locs,
 Home Locs and Hide; the `Text Labels` box under Show Trains draws the writing on the diagram, and the two are
-independent. Both are remembered between opens; a remembered Labels Only opens as Station Names, the default, with the box ticked.
-The dropdown is in the same font as the Track Directions one.
-`regression.testARememberedNoneOpensWithTheCaptionsOff`.
+independent. Both are remembered between opens; a remembered Labels Only opens as Station Names, the default, with the
+box ticked. The dropdown is in the same font as the Track Directions one. In the track editor Control+L is still the
+text switch. `regression.testARememberedNoneOpensWithTheCaptionsOff`.
 
 **Control+E asks the menu's own question and writes where the menu writes.** `offersALength` is
-`buildTileMenu`'s three early returns in one place — a page the session knows, not a text label, not an
-ignored square — and the menu adds its item inside it, so the guard and the affordance are one
+`buildTileMenu`'s three early returns in one place - a page the session knows, not a text label, not an
+ignored square - and the menu adds its item inside it, so the guard and the affordance are one
 expression rather than two that agree today. The length lands on `squareTheLengthWouldGoOn`, which is
 the **run leader**: a run of plain track has one square that speaks for it, and both doors write there,
 so measuring a run through both does not count it twice.
 
-**Control plus any other letter does nothing in the main window**, since OB-197. Its key chain ended in
-an arm that took every letter whether or not Control was held, so Control+B and six others selected a
-locomotive button; `regression.testNoTwoShortcutsShareAKey` reads both windows' handlers on every run
+**Control plus any other letter does nothing in the main window** (OB-197).
+`regression.testNoTwoShortcutsShareAKey` reads both windows' handlers on every run
 and prints what is free in both.
 
 ### The main window's key map reaches the whole window
 
-Adam, 2026-09-11: *"any part of the app should respect the key mapping (locomotive selector) and all
+Adam: *"any part of the app should respect the key mapping (locomotive selector) and all
 related keyboard shortcuts."*
 
 The map is a `KeyListener`, and a listener hears only the component holding the keyboard. It is
-attached to the tabbed pane and a few panels, so the letters drove trains while one of those had the
-focus and did nothing from anywhere else - click a row in the route table or a button in the autonomy
-editor and the railway stopped answering the keyboard, with nothing on screen to say why.
+attached to the tabbed pane and a few panels, so on its own the letters would drive trains while one of those had the
+focus and do nothing from anywhere else.
 
-**Four rounds of `OB-170` answered that by moving the focus back**, and that is right when nothing in
-particular holds it: a window that has just opened, or one being alt-tabbed back to. It cannot be the
-answer when the operator is USING what holds the focus, because the fix would be to take the keyboard
-off them.
+Moving the focus back (`OB-170`) is right when nothing in particular holds it: a window that has just opened, or one
+being alt-tabbed back to. It cannot be the answer when the operator is USING what holds the focus, because the fix
+would be to take the keyboard off them.
 
 So `TrainControlUI.letTheWholeWindowDriveTrains` registers a **key event post-processor**. The focus
 manager runs those after the focused component has been offered a key, and only for keys that came
@@ -1955,7 +1935,7 @@ back unconsumed - so the precedence rule is the toolkit's rather than a list kep
 - and only in this window: a dialog's components do not descend from the frame, so its keys stay its
   own.
 
-The focus-moving of `OB-170` stays as it was. It is no longer what makes the keys work, and the two do
+The focus-moving of `OB-170` stays; it is no longer what makes the keys work, and the two do
 not fight: the post-processor only ever sees what the focus owner did not want.
 
 `regression.testTheKeyMapReachesTheWholeWindow` holds the three halves of that rule.
@@ -1968,115 +1948,110 @@ not fight: the post-processor only ever sees what the focus owner did not want.
   is where it stands, so it is home already and nothing is planned for it, the search never moves it out of another
   train's way, and the log says it is paused and stays where it stands. The check after a run counts it home, so the
   window does not report the run as stopped short. `core.testAPausedTrainStaysPaused`.
-- **Place All Trains at Their Homes** (FR-115, Bulk Tools; Adam, 2026-10-09: *"Teleports locomotives to their home stations,
+- **Place All Trains at Their Homes** (FR-115, Bulk Tools; Adam: *"Teleports locomotives to their home stations,
   facing the correct way, and clears all other locomotives from other stations (without actually moving anything)"*)
   rewrites the setup only: every train with a home is put on it facing the way it was homed (a home with no recorded
   facing takes the facing of the copy the running layout homes it on), every other train is taken off, and the running
   layout is rebuilt from that, naming every train it moved so the rebuild puts none of them back. Nothing is sent to the
   railway; a pause is kept; it is refused while trains run. `core.testPlaceAllAtTheirHomes`.
 - One locomotive has one home; assigning a home takes it away from wherever it was.
-- **A home has a facing, and Return Home brings the train back in it** (Adam, 2026-09-23, OB-282: *"yes, it should
+- **A home has a facing, and Return Home brings the train back in it** (OB-282; Adam: *"yes, it should
   accomplish the facing.  but it's also reasonable to expect that the input facings are ones realistic on the
   layout.  we shouldn't allow an impossible facing to be saved."*). The facing is **the way the train is facing
   when the home is set** (*"Direction it is facing when home is set"*); a home given to a train standing elsewhere
   **asks** which way it should face (*"prompt the user for the direction"*), offering only the facings of copies
   trains may arrive at. The setup keeps it as `homeFacing`, the build puts the home on the copy facing that way and
-  marks it, and a home set on the running diagram is held to the copy it was set on. Return Home then counts a train
-  home only on a copy FACING that way - where MT-165 counted any copy of the square, which on a square with two
-  platforms facing opposite ways brought trains home turned round. Not by arrival side: the home copy's turning twin
+  marks it, and a home set on the running diagram is held to the copy it was set on. Return Home counts a train
+  home only on a copy FACING that way (MT-165 asked for the square alone): on a square with two platforms facing
+  opposite ways, any copy would count a train turned round as home. Not by arrival side: the home copy's turning twin
   shares its arrival and points the other way, so on a square trains may turn at (BottomMainB, EN57-947's home) a
-  train left turned round there was reported already home (TDY-B1, AUT-B2);
+  train left turned round there would be reported already home (TDY-B1, AUT-B2);
   `core.testATrainComesHomeFacingTheWayItWasHomed.testATrainTurnedRoundOnItsHomeIsNotHome`. A home with no facing -
   an old setup, or a copy no train may arrive at - is still the square, either way.
   `core.testATrainComesHomeFacingTheWayItWasHomed`,
   `core.testATrainIsPlacedOnceAndKeepsItsFacing.testAHomeRemembersTheWayItsTrainWasFacing`.
 - It refuses an inactive **start** (see §1) and obeys every length rule in §5.
-- It **does** read the occupancy restrictions of §1, in both halves, since Adam's ruling of
-  2026-09-10 that they bind every tier. **Planning** asks them against the occupancy the plan has
-  reached (`HomeStaging.plannedOccupancy`), and **execution** asks them because every leg goes through
-  `Layout.isPathClear`, which has no tier fence on that rule at all.
+- It **does** read the occupancy restrictions of §1, in both halves, since they bind every tier (Adam). **Planning**
+  asks them against the occupancy the plan has reached (`HomeStaging.plannedOccupancy`), and **execution** asks them
+  because every leg goes through `Layout.isPathClear`, which has no tier fence on that rule at all.
 
-  The two have to move together: a planner that offered a leg the runtime refuses is OB-073 — the run
-  retries until it gives up and stops with the fleet half-staged — and `auditAgainstRuntime` is what
+  The two have to move together: a planner that offered a leg the runtime refuses is OB-073 - the run
+  retries until it gives up and stops with the fleet half-staged - and `auditAgainstRuntime` is what
   proves the planner offers nothing the runtime would refuse.
 
   **So two homes that hold each other back are a deadlock.** Whichever train arrives last finds its
-  station closed by one already parked, and Return Home answers `NO_PLAN_FOUND` — not `IMPOSSIBLE`,
+  station closed by one already parked, and Return Home answers `NO_PLAN_FOUND` - not `IMPOSSIBLE`,
   which names locomotives and asserts no arrangement exists. See §1.
 - It never asks the operator anything: the operator's decision was made when the homes were set.
-- **The shortest plan where it can be had, and some plan where it cannot** (OB-230, 2026-09-24). The fifteen-second
+- **The shortest plan where it can be had, and some plan where it cannot** (OB-230). The fifteen-second
   budget is shared: a third looks for the plan with the fewest moves from where the quick first pass left the trains,
   a third for the fewest from where they stand (the retry for a first pass that boxed itself in), and if both find
   nothing, the last third looks for any plan, weighing the moves still needed five times the moves made, so it may
-  return a longer plan than the shortest (halves, fewest then any, when the first pass moved nobody). Measured on Adam's measured layout: six trains, each with a way home, came
-  back `NO_PLAN_FOUND` at fifteen seconds and at a hundred and fifty with only the first kind of search; the second
-  found ten moves in under five. `core.testReturnHomeFindsAPlanOnAFullRailway`.
-- **A train that cannot reverse is turned on the way only to go home** (Adam, 2026-09-15, AMH-B1: *"this should
+  return a longer plan than the shortest (halves, fewest then any, when the first pass moved nobody). On Adam's
+  measured layout, six trains each with a way home need the second kind of search to find a plan at all.
+  `core.testReturnHomeFindsAPlanOnAFullRailway`.
+- **A train that cannot reverse is turned on the way only to go home** (AMH-B1; Adam: *"this should
   only be allowed if the train is going to reverse into its berth on the next turn"*). Every leg of a plan ends
   with the train turned round if it stops at a terminus or a reversing point, so a plan may stop such a train on one
   only when the train has a home and its next move takes it there; a train the railway already had standing on one
   moves as before. Where the only arrangement needs anything else, the answer is `NO_PLAN_FOUND`.
   `core.testHomeStaging.testATrainThatCannotReverseIsTurnedOnTheWayOnlyToGoHome`.
-- **And not turned in the middle of a move either** (Adam, 2026-09-15, AMV-B1). A route may turn a train at a
+- **And not turned in the middle of a move either** (AMV-B1). A route may turn a train at a
   reversing point on the way and carry on, which for a train that cannot reverse means running on backwards. That is
   allowed only where the move ends somewhere the turn was for: its home, a berth, or a square it comes to rest facing
   out of - which is how a train backs into a berth past a reversing point (MT-245). Adam, asked whether the ruling
   covers a turn mid-move: *"It should be the first option, but the locking mechanism will refuse it. That's why we
   started the 2 step process for parking, which is OK in my opinion."*
   `core.testHomeStaging.testATrainThatCannotReverseIsNotTurnedMidMoveAndSentOn`.
-- **It knows where the tails of the trains it moves will lie** (OB-228, Adam on MT-335, 2026-09-15: *"the path
+- **It knows where the tails of the trains it moves will lie** (OB-228; Adam: *"the path
   stayed blocked"*). A train the plan has moved stands at the end of the route the plan gave it, having come in by
   that route's last rail and along that route - what an arrival records - so its tail is walked by the runtime's own
   code (`Layout.walkOneTail`, asked through `edgesATailWouldCover`) and no later move is routed over it. A train
-  that has not moved is judged by the tail it has on the railway, as before (OB-184) - **every such train on a piece of
-  track, not the first one found** (AUT2-C2, 2026-09-24): track two tails lay across stays shut until both trains have
+  that has not moved is judged by the tail it has on the railway (OB-184) - **every such train on a piece of
+  track, not the first one found** (AUT2-C2): track two tails lay across stays shut until both trains have
   moved, as the railway, which sees the tails as they are, would keep it. Making every move it can, in
-  the order it meets the trains, can now leave a tail across the run another train needs, so when the search from
+  the order it meets the trains, can leave a tail across the run another train needs, so when the search from
   that arrangement finds nothing it searches again from the start.
   `core.testReturnHomeKeepsClearOfTheTailsItLeaves`.
 
-**Whether it is on offer is asked once, off the event thread** (OB-192, second round). "Is anything
+**Whether it is on offer is asked once, off the event thread** (OB-192). "Is anything
 away from home" is cheap but not free of a lock: it builds a `HomeStaging.snapshot`, which calls
 `Layout.getHomeStations` - `synchronized` on the `Layout`, the same monitor a dispatch holds for the
 whole of `configureAndLockPath` and a path search holds for the whole of `getPossiblePaths`. Asked
 from the event thread, as the button refresh, the diagram's right-click menu and the click handler
-each did, that is the freeze of §5c by a second door. There is one asker now, on a worker; the button
+each did, that is the freeze of §5c by a second door. There is one asker, on a worker; the button
 it paints is what every other surface reads, so no two surfaces can describe the situation
 differently and none of them can wait on the railway to find out.
 
-**THE RULE IS GENERAL, AND IT IS NOW A CENSUS RATHER THAN A HABIT** (D3-B2). The two paragraphs above
-are the same sentence about two doors, and the freeze has arrived through seven of them in two rounds
-— each time found by reading, each time one more caller than the last sweep knew about. The rule
-itself is one line:
+**THE RULE IS GENERAL, AND IT IS A CENSUS RATHER THAN A HABIT** (D3-B2):
 
 > **Nothing on the event thread may call a `synchronized` method of `Layout`.**
 
-They all take one monitor. A dispatch holds it for the whole of `configureAndLockPath` — a sleep per
-accessory of the path — and `AutoLocomotiveStatus.findPaths` holds it for a search of the whole graph
+They all take one monitor. A dispatch holds it for the whole of `configureAndLockPath` - a sleep per
+accessory of the path - and `AutoLocomotiveStatus.findPaths` holds it for a search of the whole graph
 on every panel refresh with nothing running at all. Waiting for it on the event thread is a window
 that does not repaint and controls that do not answer while the trains go on running, which is what
-Adam reported twice as OB-192.
+Adam reported as OB-192.
 
 `testNothingOnTheEventThreadTakesTheRailwaysMonitor` reads the list of `synchronized` methods out of
 `Layout.java` and requires **every** call to one of them from `gui/` or `automationui/` to be written
 down with the thread it is on. The way past is a line in that list, and it must say either
-`OFF THE EVENT THREAD:` and name the thread, or `ON THE EVENT THREAD:` and give the reason — a menu
+`OFF THE EVENT THREAD:` and name the thread, or `ON THE EVENT THREAD:` and give the reason - a menu
 item the operator has just clicked and a placement made from a modal dialog are both legitimate, and
 a guard with no way past is one people delete. What it cannot do is prove a thread, so
 `testTheDiagramRefreshDoesNotWaitOnTheRailway` still *measures* the doors that matter with the monitor
-actually held. The census says which doors exist; the measurement says two of them are shut.
+actually held. The census says which doors exist; the measurement says they are shut.
 
-The three most recent to be shut are the diagram's **right-click menu**, which gathers its path list
+Doors already shut: the diagram's **right-click menu**, which gathers its path list
 on a worker before the menu is built (D3-A1); the **station captions**, whose "can autonomy choose
-this square" answer is worked out on `CoveredTrackRenderer` and read from a field — so a page change
+this square" answer is worked out on `CoveredTrackRenderer` and read from a field - so a page change
 or a Show Inactive Labels toggle during a run costs a set lookup rather than the rest of somebody's
 departure (D3-B1); and the editor's **"why is this train not moving"** tool, which asks the railway on
 its own worker and paints the report when it lands (D3-C1).
 
 **There is no `ON THE EVENT THREAD` allowance left for a graph walk.** Every one that remains is a
 change of state the operator has just confirmed, or a read made when nothing else can be holding the
-monitor; the last search was the why tool's, and it was moved because a rule with one standing
-exception is a rule with a way in.
+monitor; a rule with one standing exception is a rule with a way in.
 
 ---
 
