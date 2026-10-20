@@ -2638,7 +2638,7 @@ public class testAutoLayout
             "an ordinary active station is not choosable, so the fixture says nothing");
 
         // One the operator has marked as not an automatic destination - valid to send a train to by
-        // hand, never picked on its own.  This is the case that used to eat a line of the cap.
+        // hand, never picked on its own.  This is the case that would eat a line of the cap.
         park.setAutoDestination(false);
 
         assertFalse(layout.isChoosableByAutonomy(park),
