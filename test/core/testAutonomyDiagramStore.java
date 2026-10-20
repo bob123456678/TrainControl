@@ -1223,11 +1223,11 @@ public class testAutonomyDiagramStore
     /**
      * A setup that cannot be read leaves the one in memory alone.
      *
-     * load() used to empty the store before opening the file, so a read that failed - a sync lock on the
-     * folder, a half-written file, a setup from a newer TrainControl - left a live, blank store behind
-     * and reported the failure as though nothing had happened.  Everything the user had set up was gone
-     * from the screen, and one press of Save away from being gone from the disk.  It is reachable from
-     * the editor's own "exit without saving", whose dialog promises the opposite.
+     * load() must not empty the store before opening the file: a read that fails (a sync lock on the
+     * folder, a half-written file, a setup from a newer TrainControl) would leave a live, blank store
+     * behind and report the failure as though nothing had happened, with everything the user had set up
+     * gone from the screen and one press of Save away from gone from the disk.  It is reachable from the
+     * editor's own "exit without saving", whose dialog promises the opposite.
      */
     @Test
     public void testAFailedLoadKeepsWhatWasAlreadyThere() throws Exception
@@ -1381,9 +1381,7 @@ public class testAutonomyDiagramStore
         //
         // The sensor stays and the square the text sat on is emptied.  The caption stays with it: a
         // caption is allowed to sit on blank space, and it is the most readable place to put one, so
-        // "no component on that square" cannot mean "no caption".  Judging it that way once deleted,
-        // on the very next save, both the captions a user had just placed and every caption the
-        // migration had just created.
+        // "no component on that square" cannot mean "no caption".
         //
         // What it IS about is the station.  A caption whose sensor has gone is text pointing at track
         // that no longer exists, and that is the case above.
@@ -1404,10 +1402,9 @@ public class testAutonomyDiagramStore
     /**
      * The last configuration may be deleted.
      *
-     * It used to be refused, on the reasoning that a setup with no configurations is a state nothing
-     * could act on - which made setting autonomy up a one-way door: a layout somebody had experimented
-     * on kept a configuration for ever, and the only way to be rid of it was to delete files by hand.
-     * With none left there is simply nothing active, which is the state every layout starts in.
+     * Refusing it would make setting autonomy up a one-way door: a layout somebody had experimented on
+     * would keep a configuration for ever, and the only way to be rid of it would be to delete files by
+     * hand.  With none left there is simply nothing active, which is the state every layout starts in.
      */
     @Test
     public void testTheLastConfigurationMayBeDeleted() throws IOException
@@ -1433,8 +1430,8 @@ public class testAutonomyDiagramStore
     /**
      * Deleting one of several still leaves a sensible active configuration.
      *
-     * The half of the old behaviour that was right: whichever one was running has gone, so something
-     * else has to be, or the next save has nowhere to put anything.
+     * Whichever one was running has gone, so something else has to be, or the next save has nowhere to
+     * put anything.
      */
     @Test
     public void testDeletingTheActiveConfigurationPromotesAnother() throws IOException
@@ -1511,11 +1508,11 @@ public class testAutonomyDiagramStore
     /**
      * An exported configuration carries the station names and station flags it refers to.
      *
-     * Exporting used to write the configuration alone.  A configuration is placements and homes against
-     * POINTS, while what makes a square a point, what it is called, how long it is and which way it
-     * runs all live in the shared half - so the file named things the receiving setup had never heard
-     * of.  Imported into a fresh setup it produced a configuration referring entirely to nothing, which
-     * from the outside is indistinguishable from having lost the names.
+     * A configuration is placements and homes against POINTS, while what makes a square a point, what it
+     * is called, how long it is and which way it runs all live in the shared half.  So an export of the
+     * configuration alone would name things the receiving setup had never heard of: imported into a
+     * fresh setup it would refer entirely to nothing, which from the outside is indistinguishable from
+     * having lost the names.
      *
      * Asserted through a real import into an empty store rather than on the keys in the file: a bundle
      * containing the right fields that the importer then ignored would pass the second and fail the
@@ -1725,21 +1722,20 @@ public class testAutonomyDiagramStore
     /**
      * A page's EXCLUSION survives a rename too, because it is stored by id like everything else.
      *
-     * UR-7, from the uninformed review. `excludedPages` was written raw - `new JSONArray(excludedPages)`
-     * - and read raw, alone among the ten shared collections, every other one of which goes through
-     * toStored/fromStored. The rule it broke is the class's own, at the top of setPageIds: "A name is
-     * something a user renames on a whim, and every key here begins with one, so a rename would
-     * otherwise orphan a whole page of names, lengths, directions and pairings at once."
+     * UR-7: `excludedPages` goes through the page-level translators like every other shared collection,
+     * which is the class's own rule at the top of setPageIds: "A name is something a user renames on a
+     * whim, and every key here begins with one, so a rename would otherwise orphan a whole page of names,
+     * lengths, directions and pairings at once."
      *
-     * So after a rename everything tile-keyed came back onto the new name and the page's exclusion did
-     * not: the page silently rejoined autonomy, and the stale name sat in the set for ever because
-     * nothing prunes it. That matters most on the layout the setting exists for - a page that redraws
-     * another page's sensors, which is `excludeRepeatedSensorPages`' case - because rejoining puts two
-     * Points on one sensor, the state that code says nothing downstream can resolve.
+     * Written raw, the exclusion would not follow a rename: the page would silently rejoin autonomy, and
+     * the stale name would sit in the set for ever because nothing prunes it. That matters most on the
+     * layout the setting exists for, a page that redraws another page's sensors (`excludeRepeatedSensorPages`'
+     * case), because rejoining puts two Points on one sensor, the state that code says nothing downstream
+     * can resolve.
      *
-     * `renamePage` has no production caller, so every real rename is an EXTERNAL one - in the Central
-     * Station, or by editing the gleisbild - which is exactly the case ids exist to survive and the one
-     * this test performs.
+     * `renamePage` has no production caller, so every real rename is an EXTERNAL one, in the Central
+     * Station or by editing the gleisbild, which is the case ids exist to survive and the one this test
+     * performs.
      *
      * The page name has no colon, so toStored and fromStored return it unchanged: they split a tile key
      * on its page, and there is nothing here to split. Hence the two page-level translators.
@@ -1803,20 +1799,15 @@ public class testAutonomyDiagramStore
     /**
      * Renaming a locomotive repairs EVERY configuration, not only the one that is running.
      *
-     * UR-9, from the uninformed review. Three places in a configuration hold a locomotive by NAME - the
-     * placement, the home assignment and the exclusion list - and neither renameLoc nor deleteLoc
-     * touched any of them. `captureFromLayout` launders the ACTIVE configuration back from the running
-     * layout, so a rename is repaired there if a capture happens; a configuration that was not active
-     * at the time is never touched at all.
+     * UR-9: three places in a configuration hold a locomotive by NAME (the placement, the home assignment
+     * and the exclusion list), so renameLoc and deleteLoc must reach all of them in every configuration.
+     * `captureFromLayout` launders the ACTIVE configuration back from the running layout, but a
+     * configuration that was not active at the time is never touched at all.
      *
      * The consequence is not a lost placement. `parseAuto` refuses a configuration naming a locomotive
-     * that is not in the database, and answers a refusal by invalidating the WHOLE layout - so
-     * switching to that configuration later stops the railway working, with an error naming a
-     * locomotive and nothing connecting it to a rename made days earlier.
-     *
-     * MarklinControlStation's own comment says which state needs this: "State held by NAME does still
-     * need repairing, and there are two such places - the routes below, and autonomy home assignments."
-     * There were three.
+     * that is not in the database, and answers a refusal by invalidating the WHOLE layout, so switching
+     * to that configuration later stops the railway working, with an error naming a locomotive and
+     * nothing connecting it to a rename made days earlier.
      */
     @Test
     public void testRenamingALocomotiveRepairsEveryConfiguration() throws IOException
@@ -1915,29 +1906,21 @@ public class testAutonomyDiagramStore
     /**
      * Importing a bundle from a layout numbered differently puts each setting on the page it names.
      *
-     * **This used to claim only that the renumber was DETECTED** (UR-10, below), and it was - while the
-     * settings it warned about went onto the wrong page regardless.  Since TDR-A1 an import translates the
-     * exporter's page ids into this layout's by page name before it merges, so there is no renumber left
-     * to warn about, and the claim is the outcome the warning existed to protect.  The history follows.
+     * Since TDR-A1 an import translates the exporter's page ids into this layout's by page name before it
+     * merges, so there is no renumber left to warn about, and the claim is the outcome the warning exists
+     * to protect (UR-10): a renumber "would silently reattach a page of settings to the WRONG page, which is
+     * worse than losing them, because nothing looks wrong."  An import from a layout numbered differently
+     * would otherwise attach their station names, lengths, one-way directions, portal pairings and captions
+     * to my pages, quietly.
      *
-     * UR-10, from the uninformed review. `exportBundle` writes the exporter's `pages` map - which id
-     * was called what when they wrote it - beside keys built from the exporter's page ids. The merge
-     * then starts from `sharedFields()`, which is MY pages map, and keeps what I already have for every
-     * inner key. So for any id both files know, the exporter's name was dropped, `readShared` read my
-     * own names into `pageNamesWhenWritten`, and the conflict loop compared them against
-     * `pageIdToName` - my own names again. The two always matched, so `pageIdConflicts` was guaranteed
-     * empty after any import.
+     * Detection alone was disabled by construction: `exportBundle` writes the exporter's `pages` map
+     * beside keys built from the exporter's page ids, the merge starts from `sharedFields()`, which is MY
+     * pages map, and the conflict loop then compared my own names with my own names, so `pageIdConflicts`
+     * was guaranteed empty after any import.
      *
-     * The detection was disabled by construction, not by an oversight in the check.
-     *
-     * What it exists to catch is described where the ids are set up: a renumber "would silently reattach
-     * a page of settings to the WRONG page, which is worse than losing them, because nothing looks
-     * wrong." An import from a layout numbered differently attaches their station names, lengths,
-     * one-way directions, portal pairings and captions to my pages, quietly.
-     *
-     * A rename is still not a conflict - the deciding question is whether the old name still exists
-     * somewhere in MY index, which is what tells "the same page, called something else" from "a
-     * different page now holds this id".
+     * A rename is still not a conflict: the deciding question is whether the old name still exists
+     * somewhere in MY index, which is what tells "the same page, called something else" from "a different
+     * page now holds this id".
      */
     @Test
     public void testImportingABundleFromARenumberedLayoutLandsOnTheRightPages() throws IOException
@@ -1967,12 +1950,11 @@ public class testAutonomyDiagramStore
 
         store.importBundle("Imported", bundle);
 
-        // WHERE THINGS LANDED, not whether a conflict was reported (TDR-A1, 2026-09-14).
+        // WHERE THINGS LANDED, not whether a conflict was reported (TDR-A1).
         //
-        // This asserted that the renumber was DETECTED - and it was, while the settings it warned about
-        // went onto the wrong page anyway: their id 2 overwrote my record of id 2, so my own Main was read
-        // back as Yard.  An import now translates their ids into mine by page name before it merges, so
-        // there is nothing left to warn about - and the claim is the outcome the warning existed to protect.
+        // An import translates their ids into mine by page name before it merges, so a renumber leaves
+        // nothing to warn about, and the claim is the outcome the warning existed to protect: their id 2
+        // must not overwrite my record of id 2, which would read my own Main back as Yard.
         assertEquals(store.getPointName(new TileKey("Main", 1, 1)), "Mine",
             "importing from a layout that calls id 2 Yard moved MY Main's settings: my id 2 was re-read"
             + " through their name for it (TDR-A1, UR-10)");
@@ -1984,14 +1966,12 @@ public class testAutonomyDiagramStore
     /**
      * An import that fails leaves nothing behind, the configuration included.
      *
-     * UR-10, second half. The shared merge is rolled back when `readShared` throws - it uses the
-     * type-strict accessors on an object assembled out of somebody else's file, and the comment there
-     * says why that matters: clearing first "emptied the shared half and then failed, and the panel's
-     * 'import unreadable' told the user nothing had happened while the store stood blank".
-     *
-     * The configuration was installed BEFORE any of that and was not rolled back with it. So an
-     * unreadable bundle left a configuration whose placements, homes and exclusions refer to points the
-     * rollback had just taken away - and it is offered in the configuration list like any other.
+     * UR-10, second half. The shared merge is rolled back when `readShared` throws (it uses the
+     * type-strict accessors on an object assembled out of somebody else's file, because clearing first
+     * would empty the shared half and then fail while the panel's 'import unreadable' told the user
+     * nothing had happened).  The configuration installed before it must be rolled back with it: an
+     * unreadable bundle must not leave a configuration whose placements, homes and exclusions refer to
+     * points the rollback has just taken away, offered in the configuration list like any other.
      */
     @Test
     public void testAFailedImportLeavesNoConfigurationBehind() throws IOException
@@ -2030,18 +2010,16 @@ public class testAutonomyDiagramStore
     /**
      * A station that was never named goes when its tile does.
      *
-     * UR-12, from the uninformed review. `stations` is pruned only as a side effect of pruning
-     * `pointNames` - the loop walks the NAMES that no longer have a square - so a square carrying a
-     * station designation and no name is never visited. There is no `dropMissingMembers(stations, keys)`
-     * to match the one written for `disabledPortals` twenty lines above.
+     * UR-12: `stations` must be pruned by square, not only as a side effect of pruning `pointNames`,
+     * whose loop walks the NAMES that no longer have a square and so never visits a square carrying a
+     * station designation and no name.  An unnamed station is an ordinary state rather than a corner
+     * case: `setStation` asks for no name, and `placeCaption` has a dedicated "not named yet" answer
+     * for exactly this.
      *
-     * An unnamed station is an ordinary state rather than a corner case: `setStation` asks for no name,
-     * and `placeCaption` has a dedicated "not named yet" answer for exactly this.
-     *
-     * What it costs: mark a sensor as a station, do not name it yet, delete the tile later. The square
-     * stays in `stations` for good, so redrawing a sensor at those coordinates - routine when a page is
-     * re-laid-out - makes it silently a station again. And `checkNames` raises UNNAMED_STATION as an
-     * ERROR, so the user gets a blocking finding they did not create, about a square they cannot see.
+     * Left alone, a sensor marked as a station and not yet named, then deleted, stays in `stations` for
+     * good, so redrawing a sensor at those coordinates (routine when a page is re-laid-out) makes it
+     * silently a station again, and `checkNames` raises UNNAMED_STATION as an ERROR, a blocking finding
+     * about a square the user cannot see.
      *
      * A NAMED station is deliberately not dropped this way: the loop above keeps one whose name a
      * configuration still refers to, so the user can find it. Nothing can refer to an unnamed one, so
@@ -2055,11 +2033,9 @@ public class testAutonomyDiagramStore
 
         // A station with no name whose tile IS still there (CR-C3).
         //
-        // Without it this test only pinned one direction. A reviewer mutated the rule to delete every
-        // unnamed station rather than only the ones whose tile has gone - which silently strips a
-        // designation off live track - and 184 tests across five classes stayed green, because no
-        // fixture anywhere had a live unnamed station in it. An unnamed station is an ordinary state:
-        // setStation asks for no name.
+        // Without it this test only pins one direction: mutating the rule to delete every unnamed
+        // station, rather than only the ones whose tile has gone, would silently strip a designation off
+        // live track and stay green. An unnamed station is an ordinary state: setStation asks for no name.
         TileKey unnamedButPresent = new TileKey("1 - Main", 5, 3);
 
         store.setStation(unnamed, true);
@@ -2094,19 +2070,18 @@ public class testAutonomyDiagramStore
     /**
      * A protecting signal goes when the SIGNAL's tile does, not only when the station's does.
      *
-     * UR-13, from the uninformed review. `dropMissing(stationSignals, keys, false)` tests the KEY - the
-     * station's square. `stationSignals` is the only square-referencing collection whose VALUE
-     * reconcile never checked: portals are checked on both ends, and captions inside reconcileCaptions.
+     * UR-13: `dropMissing(stationSignals, keys, false)` tests the KEY, the station's square.
+     * `stationSignals` is the only square-referencing collection whose VALUE reconcile never checked:
+     * portals are checked on both ends, and captions inside reconcileCaptions.
      *
-     * `forgetSquares` covers a signal square that is BUILT OVER, so what is left is the plain deletion,
-     * and the pairing then survives every save. `signalsThatAreGone()` reports it, so it is not
-     * invisible - but nothing drops it, and if any accessory-bearing tile is later drawn at those
-     * coordinates, `protectingSignalNames()` resolves it and autonomy starts throwing an accessory
-     * nobody paired. That is the same defect the neighbouring drop was written for - "INHERITED by the
-     * next link drawn on that square" - applied to the one collection that commands real hardware.
+     * `forgetSquares` covers a signal square that is BUILT OVER, so what is left is the plain deletion.
+     * `signalsThatAreGone()` reports it, but nothing would drop it, and if any accessory-bearing tile is
+     * later drawn at those coordinates, `protectingSignalNames()` resolves it and autonomy starts
+     * throwing an accessory nobody paired. That is the same defect the neighbouring drop exists for,
+     * "INHERITED by the next link drawn on that square", applied to the one collection that commands
+     * real hardware.
      *
-     * The plan this came from says the intended rule outright: dropped in reconcile when EITHER tile
-     * goes.
+     * The rule: dropped in reconcile when EITHER tile goes.
      */
     @Test
     public void testAPairingGoesWhenTheSignalsTileDoes()
@@ -2168,20 +2143,14 @@ public class testAutonomyDiagramStore
     /**
      * A load that fails on the CONTENT leaves the setup exactly as it was, like one that fails on the file.
      *
-     * UR-14, from the uninformed review. load()'s own comment promises this outright: "Read and parse
-     * BEFORE anything is thrown away ... A load that fails now leaves the setup empty" - and it is true
-     * of a parse failure, which happens before `clear()`. It was not true of a TYPE failure.
-     * `readShared` runs after `clear()` and uses the strict accessors throughout - `getString`, `getInt`
-     * - each of which throws part way through, with the store already empty.
+     * UR-14: load()'s own comment promises this outright ("Read and parse BEFORE anything is thrown
+     * away ..."), and it holds for a parse failure, which happens before `clear()`.  It must hold for a
+     * TYPE failure too: `readShared` runs after `clear()` and uses the strict accessors throughout
+     * (`getString`, `getInt`), each of which can throw part way through with the store already empty.
+     * `discardEdits` would then leave `dirty` set over an empty store, and the next save on the way out
+     * would write that over setup.json.
      *
-     * What that costs is what the comment says it costs: "The caller then had a live, blank store:
-     * every station, name and direction gone from the screen, and one press of Save away from being
-     * gone from the disk as well." `discardEdits` leaves `dirty` set over an empty store, and the next
-     * save on the way out writes that over setup.json.
-     *
-     * `importBundle` really is guarded, and its comment cites load() as the model it was following.
-     *
-     * The trigger is a setup.json that TrainControl did not write - hand-edited, or from another tool.
+     * The trigger is a setup.json that TrainControl did not write, hand-edited or from another tool.
      * Every field this build writes round-trips, so this cannot happen by itself today; the guarantee
      * is what is being tested, not the odds.
      */
@@ -2227,13 +2196,10 @@ public class testAutonomyDiagramStore
     /**
      * A failed import that was REPLACING a configuration puts the old one back.
      *
-     * UR-10, second half, and the branch the first test of this pair did not reach. Importing over an
-     * existing name replaces it - the panel says so and asks first - but that consents to being
-     * replaced by a good file, not to losing the configuration to an unreadable one.
-     *
-     * The rollback used to take the configuration back only when the import had ADDED it, reasoning
-     * that removing an existing name would take the user's own work with it. That was a false choice:
-     * the object being replaced can be kept and put back, which is what load() does with snapshotSetup.
+     * UR-10, second half, and the branch the first test of this pair did not reach: importing over an
+     * existing name replaces it (the panel says so and asks first), but that consents to being replaced
+     * by a good file, not to losing the configuration to an unreadable one.  The replaced object is
+     * kept and put back, as load() does with snapshotSetup.
      */
     @Test
     public void testAFailedImportPutsBackTheConfigurationItWasReplacing() throws IOException
@@ -2361,9 +2327,6 @@ public class testAutonomyDiagramStore
      * while the editor is open was repaired in the live store and in the Cancel snapshot, and an undo
      * afterwards wrote the old name back over both - which parseAuto answers by invalidating the whole
      * layout, days later, with nothing connecting it to the rename.
-     *
-     * Found by review, after the Cancel door had been fixed and reported as done. Two ways of saying
-     * the same thing, one of them covered - which is this codebase's recurring shape.
      */
     @Test
     public void testARenameReachesAPageSnapshotTheUndoStackHolds() throws IOException
