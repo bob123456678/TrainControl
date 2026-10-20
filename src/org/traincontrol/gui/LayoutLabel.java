@@ -34,8 +34,7 @@ public final class LayoutLabel extends JLabel
     /**
      * Which square of which page this tile is, so it can ask whether a train is lying across it.
      *
-     * Set by `LayoutGrid`, which already builds this key a few lines above where it makes the label.
-     * Null on a tile the grid did not key - the blank filler squares - and asking about null is
+     * Set by `LayoutGrid`.  Null on a tile the grid did not key (the blank filler squares), and asking about null is
      * answered "not covered" rather than guarded at every call.
      */
     private org.traincontrol.automationui.TileGraph.TileKey square;
@@ -65,9 +64,9 @@ public final class LayoutLabel extends JLabel
     /**
      * Diagram switching runs here rather than on the event thread.
      *
-     * One thread, not a pool, and not a thread per click: the event queue used to serialise these
-     * actions for free, and a three-way's two sends must not interleave with another tile's.  Daemon
-     * so that it never holds the JVM open by itself.
+     * One thread, not a pool, and not a thread per click: the actions must stay serialised, as the event queue
+     * serialised them for free, and a three-way's two sends must not interleave with another tile's.  Daemon so
+     * that it never holds the JVM open by itself.
      */
     private static final ExecutorService SWITCHING = Executors.newFixedThreadPool(1, runnable ->
     {
@@ -79,10 +78,9 @@ public final class LayoutLabel extends JLabel
     /**
      * Runs one diagram switching action off the event thread.
      *
-     * execute rather than submit: submit captures whatever the action throws into a Future, and there
-     * is no Future kept here to read it back from, so an escaping exception would disappear with no
-     * sign of it anywhere.  On the event thread it used to reach the default handler and print, and
-     * with execute it still does.
+     * execute rather than submit: submit captures whatever the action throws into a Future, and there is no Future
+     * kept here to read it back from, so an escaping exception would disappear with no sign of it anywhere.  With
+     * execute it reaches the default handler and prints, as it does on the event thread.
      *
      * Separate and public so the dispatch can be tested on its own: what has to hold is that the
      * action does not run on the event thread, that two of them never overlap, and that an exception
@@ -155,17 +153,12 @@ public final class LayoutLabel extends JLabel
         // and take off anything already put on, since the border is set in the constructor
         this.setBorder(null);
 
-        // AND IT KEEPS ITS ROOM.  Tried and reverted, 2026-09-02.
-        //
-        // Adam reported the axis numbers as "missing for the last row/col", and what has no number is
-        // this cell - a tile's width of empty grid past the last real square, which is the same thing
-        // to look at.  The obvious answer is to stop paying for it in pixels.
-        //
-        // It does not work, and the test that says so is `testACaptionNeverMovesAnythingElse`: with the
-        // spacer at zero, adding one caption moved 351 other things on the diagram by eight pixels.
-        // The dummy column is not merely present for GridBagLayout, it is the SPACE an overflowing text
-        // label is absorbed into - which is exactly what "ensure long labels don't misalign things"
-        // means, read properly.  Taking the room away puts the misalignment back.
+        // AND IT KEEPS ITS ROOM.  Taking the spacer out of the pixels does not work, and
+        // `testACaptionNeverMovesAnythingElse` says so: with the spacer at zero, adding one caption moved 351 other
+        // things on the diagram by eight pixels.  The dummy column is not merely present for GridBagLayout, it is
+        // the SPACE an overflowing text label is absorbed into, which is what "ensure long labels don't misalign
+        // things" means; taking the room away puts the misalignment back.  The axis numbers stop at the last real
+        // square because the spacer is not one.
     }
 
     /**
@@ -182,7 +175,7 @@ public final class LayoutLabel extends JLabel
     }
 
     /**
-     * A square, given the editor's grid setting by the grid that makes it, asked once a build (speed, 2026-10-04).
+     * A square, given the editor's grid setting by the grid that makes it, asked once a build.
      *
      * @param c the component on the square, or null
      * @param parent the grid's master
@@ -228,8 +221,8 @@ public final class LayoutLabel extends JLabel
                     ((LayoutEditor) parent).receiveMoveEvent(e, clicked);
                 }
 
-                // AND WHEN IT LEAVES (Adam, 2026-10-06, on RSA45's notes): a pointer can go straight off the squares onto
-                // the tools column, crossing no margin, and the square it left kept the pointer's outline
+                // AND WHEN IT LEAVES (Adam, on RSA45's notes): a pointer can go straight off the squares onto the
+                // tools column, crossing no margin, so the square it left would keep the pointer's outline
                 @Override
                 public void mouseExited(MouseEvent e)
                 {
@@ -264,27 +257,20 @@ public final class LayoutLabel extends JLabel
                 }
             });
 
-            // The grey grid, which is where it actually comes from - the editor's restingBorder puts it
-            // BACK after a hover, and this is what puts it there to begin with.
-            //
-            // Asked of the same rule, so the toggle reaches both (FR-006).  Off, it is NOTHING - tiles
-            // sit flush, as they do in the viewer - and the hover outline reserves nothing either, so
-            // the pointer no longer pushes the diagram along in front of it.
+            // The grey grid, which is where it actually comes from: the editor's restingBorder puts it BACK after a
+            // hover, and this is what puts it there to begin with.  Asked of the same rule, so the toggle reaches
+            // both (FR-006).  Off, it is NOTHING: tiles sit flush, as they do in the viewer, and the hover outline
+            // reserves nothing either, so the pointer does not push the diagram along in front of it.
             this.setBorder(LayoutEditor.restingBorder(false,
                 parent instanceof LayoutEditor && ((LayoutEditor) parent).isAutonomyMode(),
                 gridLines != null ? gridLines : LayoutEditor.showGrid()));
         }
         
-        // Every square on the MAIN window reports when the pointer is over it.
-        //
-        // The keyboard shortcuts that move a locomotive from square to square need to know which
-        // square is meant, and a diagram has no cursor and no selection - the pointer is the only
-        // thing saying where the user is looking.  The graph window did the same with its hovered
-        // node; this is that, on the surface that replaced it.
-        //
-        // On every square rather than only on sensors: a shortcut aimed at plain track has to be
-        // ignored rather than acted on at whichever station was hovered last, which is what leaving
-        // the old square set would do.
+        // Every square on the MAIN window reports when the pointer is over it.  The keyboard shortcuts that move a
+        // locomotive from square to square need to know which square is meant, and a diagram has no cursor and no
+        // selection: the pointer is the only thing saying where the user is looking.  On every square rather than
+        // only on sensors, so a shortcut aimed at plain track is ignored rather than acted on at whichever station
+        // was hovered last.
         if (!edit && tcUI != null)
         {
             LayoutLabel hovering = this;
@@ -294,13 +280,10 @@ public final class LayoutLabel extends JLabel
                 @Override
                 public void mouseEntered(MouseEvent e)
                 {
-                    // From the label's OWN square, not from whatever is drawn on it.
-                    //
-                    // It used to ask the component for its coordinates and report nothing at all when
-                    // there was no component - and a station's NAME is usually drawn on blank space
-                    // beside the platform, because that is where there is room for it.  So the one part
-                    // of a station big enough to aim at was the one part the keyboard could not see,
-                    // and Control+V over the name did nothing while Control+V over the sensor worked.
+                    // From the label's OWN square, not from whatever is drawn on it.  A station's NAME is usually
+                    // drawn on blank space beside the platform, where there is room for it, so a report that needed
+                    // a component would leave the one part of a station big enough to aim at invisible to the
+                    // keyboard.
                     tcUI.setHoveredDiagramTile(hovering.autonomyPage,
                         hovering.squareX, hovering.squareY);
                 }
@@ -315,13 +298,10 @@ public final class LayoutLabel extends JLabel
 
         if (this.component != null)
         {
-            // Every square answers a right-click, whatever is drawn on it.
-            //
-            // The kinds below have listeners because they can be operated - thrown, triggered, jumped
-            // through.  Plain track cannot be operated and so had no listener at all, which made a
-            // right-click on most of the diagram do nothing.  The autonomy menu is about the PLACE
-            // rather than about the thing standing on it, and a piece of plain track is as much a
-            // place as a turnout is.
+            // Every square answers a right-click, whatever is drawn on it.  The kinds below have listeners because
+            // they can be operated (thrown, triggered, jumped through); plain track cannot, so it needs one of its
+            // own.  The autonomy menu is about the PLACE rather than about the thing standing on it, and a piece of
+            // plain track is as much a place as a turnout is.
             if (!edit && !(this.component.isSwitch() || this.component.isSignal()
                     || this.component.isUncoupler() || this.component.isFeedback()
                     || this.component.isRoute() || this.component.isLink()))
@@ -350,23 +330,19 @@ public final class LayoutLabel extends JLabel
                             @Override
                             public void mouseClicked(MouseEvent e)  
                             {  
-                               // A sensor is what a station IS, so this is the branch that matters
-                               // most for the autonomy menu - and it was the one branch that did not
-                               // check for it.  Every station on the diagram right-clicked to nothing.
+                               // A sensor is what a station IS, so this is the branch that matters most for the
+                               // autonomy menu: right-clicking a station opens it.
                                if (openStationMenu(e)) return;
 
-                               // A right-click that opened nothing is not a request to flip the
-                               // sensor.  This branch acted on any button, which was harmless while
-                               // right-clicking a sensor did nothing - and stopped being harmless the
-                               // moment right-clicking a station became the way to work with it: with
-                               // the overlay off, or the page left out, or no configuration loaded,
-                               // the same gesture silently faked an occupancy change, which during a
-                               // run is precisely the input the layout reacts to.
+                               // A right-click that opened nothing is not a request to flip the sensor: with the
+                               // overlay off, or the page left out, or no configuration loaded, the same gesture
+                               // would silently fake an occupancy change, which during a run is precisely the
+                               // input the layout reacts to.
                                if (javax.swing.SwingUtilities.isRightMouseButton(e)) return;
 
-                               // A TAIL QUESTION WAITING ON THE DIAGRAM TAKES THE CLICK (FR-100; Adam, 2026-09-24:
-                               // "piggyback off the highlight feature and s88 click events").  Asked before the sensor
-                               // is flipped, so answering the question does not also fake an occupancy change.
+                               // A TAIL QUESTION WAITING ON THE DIAGRAM TAKES THE CLICK (FR-100).  Asked before the
+                               // sensor is flipped, so answering the question does not also fake an occupancy
+                               // change.
                                if (TailCrossedPrompt.takesTheClick(LayoutLabel.this, e.getClickCount())) return;
 
                                component.execSwitching();
@@ -437,13 +413,10 @@ public final class LayoutLabel extends JLabel
                                             options[0]
                                         );
 
-                                        // Anything that is not one of the two YESES is a no.
-                                        //
-                                        // showOptionDialog answers CLOSED_OPTION (-1) when the dialog is
-                                        // dismissed with Escape or the window's close box, and -1 fell
-                                        // through `default` to the same place as "proceed". So closing
-                                        // this dialog threw the accessory - the opposite of what closing
-                                        // a confirmation means.
+                                        // Anything that is not one of the two YESES is a no.  showOptionDialog
+                                        // answers CLOSED_OPTION (-1) when the dialog is dismissed with Escape or the
+                                        // window's close box, and that must not fall through to "proceed": closing
+                                        // a confirmation does not throw the accessory.
                                         switch (choice)
                                         {
                                             case 0: // Power on, then proceed
@@ -456,22 +429,16 @@ public final class LayoutLabel extends JLabel
                                                 return;
                                         }
                                     }
-                                    // ASKED WHETHER OR NOT THE POWER WAS ON (V35-C2).
+                                    // ASKED WHETHER OR NOT THE POWER WAS ON (V35-C2).  The power-off gesture is
+                                    // exactly the one somebody makes after an emergency stop, with trains standing
+                                    // where they stopped and autonomy still loaded, and "Turn power on and proceed"
+                                    // must not clear protection at an occupied platform without the platform being
+                                    // mentioned.  So the conflict question is not the `else` of the dialog above.
+                                    // Two dialogs in a row is the honest cost: the second only appears when
+                                    // autonomy is running AND this accessory actually conflicts.
                                     //
-                                    // This was the `else` of the dialog above, so with the power off
-                                    // the conflict question was not asked at all - and the power-off
-                                    // gesture is exactly the one somebody makes after an emergency
-                                    // stop, with trains standing where they stopped and autonomy still
-                                    // loaded.  "Turn power on and proceed" then cleared protection at
-                                    // an occupied platform without the platform being mentioned.
-                                    //
-                                    // Two dialogs in a row in that case, which is the honest cost: the
-                                    // second only appears when autonomy is running AND this accessory
-                                    // actually conflicts, and each asks about something different.
-                                    //
-                                    // Remembered, because the worker below re-asks the protection
-                                    // question and must not refuse a click the operator was already
-                                    // warned about and accepted.
+                                    // Remembered, because the worker below re-asks the protection question and must
+                                    // not refuse a click the operator was already warned about and accepted.
                                     boolean askedAboutProtection = false;
 
                                     if (tcUI.getModel().hasAutoLayout() && tcUI.getModel().isAutonomyRunning())
