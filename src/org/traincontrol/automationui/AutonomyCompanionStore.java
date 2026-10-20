@@ -2005,16 +2005,13 @@ public class AutonomyCompanionStore
     /**
      * Brings in an exported file, in either the bundled form or the bare configuration written before.
      *
-     * The shared half is merged rather than adopted: an entry the local setup already has is kept, and
-     * only the gaps are filled.  That way importing onto a fresh setup restores everything this build
-     * models on the pages this layout has, importing onto a working one cannot silently rename somebody's
-     * stations, and either way the result is the union - which is what "the same layout, somebody else's
-     * configuration" means.
+     * The shared half is merged rather than adopted: an entry the local setup already has is kept, and only the gaps are
+     * filled.  So importing onto a fresh setup restores everything this build models on the pages this layout has,
+     * importing onto a working one cannot silently rename somebody's stations, and either way the result is the union.
      *
      * Two things are left out on purpose.  Pages this layout does not have, which are named in
-     * `getPagesLeftOutOfLastImport` for the import door to say.  And a field a NEWER build wrote, which
-     * nothing here knows the shape of and so cannot put into this layout's page numbering - left out
-     * without a word, by Adam's ruling of 2026-09-14: *"no need to notify"* (TDR-C10).
+     * `getPagesLeftOutOfLastImport` for the import door to say.  And a field a NEWER build wrote, which nothing here
+     * knows the shape of and so cannot put into this layout's page numbering - left out without a word (TDR-C10).
      *
      * @param name what to call the configuration here
      * @param file the parsed export
@@ -2037,13 +2034,8 @@ public class AutonomyCompanionStore
         // taking away something of the user's rather than undoing its own work.
         boolean existed = configurations.containsKey(name);
 
-        // And a COPY of what is being replaced, when something is.
-        //
-        // The rollback below used to put back only a configuration this import had added, on the
-        // reasoning that removing an existing name would take the user's own work with it.  That was a
-        // false choice: the object being replaced can be kept and put back, which is what load() does
-        // with snapshotSetup.  Importing over a name consents to being replaced by a GOOD file, not to
-        // losing the configuration to an unreadable one.
+        // And a COPY of what is being replaced, when something is, for the rollback below: importing over a name consents
+        // to being replaced by a GOOD file, not to losing the configuration to an unreadable one.
         JSONObject replaced = existed ? new JSONObject(configurations.get(name).toString()) : null;
 
         importConfiguration(name, configuration);
@@ -2054,26 +2046,20 @@ public class AutonomyCompanionStore
 
         // THEIR PAGE IDS, TRANSLATED INTO MINE BY PAGE NAME, before anything is merged (TDR-B4, TDR-A1).
         //
-        // An export keys every square by the EXPORTER's page ids, and page ids are numbered from the same
-        // start on every railway - so their id means nothing here until it is turned back into the page it
-        // names.  The merge used to adopt their page record per id instead ("theirs wins"), and every way
-        // that goes wrong was real:
+        // An export keys every square by the EXPORTER's page ids, and page ids are numbered from the same start on every
+        // railway, so their id means nothing here until it is turned back into the page it names.  Adopting their page
+        // record per id would read their "Yard" as id 1 onto my "Main" as id 1 (TDR-B4), re-label my own id 2, or
+        // overwrite my record that 7 is "Away", a page still downloading, so Away's held settings landed on Main (TDR-A1).
         //
-        //   - their "Yard" as id 1 read onto my "Main" as id 1, and was then reported as left out (TDR-B4);
-        //   - their "Yard" as id 2 re-labelled my own id 2, so MY Main's settings were read back as Yard's;
-        //   - their "Main" as id 7 overwrote my record that 7 is "Away", a page still downloading, so Away's
-        //     held settings landed on Main and Away stopped being protected (TDR-A1).
+        // So each of their ids maps to the id this layout uses for the same name: a loaded page's, or the id this setup
+        // recorded for a page it knows and cannot load right now.  A name that is neither is a page this layout does not
+        // have ("keep only the pages, and alert the user") and maps to nothing.  Their page record is never merged: the
+        // translated keys are in MY numbering.
         //
-        // So each of their ids maps to the id this layout uses for the same name: a loaded page's, or the id
-        // this setup recorded for a page it knows and cannot load right now.  A name that is neither is a
-        // page this layout does not have - Adam, 2026-09-13: "keep only the pages, and alert the user" - and
-        // maps to nothing.  Their page record is never merged: the translated keys are in MY numbering.
-        //
-        // Only when both sides have a numbering at all.  A file with no page record is keyed however it is
-        // keyed, and so is a store that knows no page by any number - nothing of mine can be re-labelled
-        // there.  A store with no page LOADED still knows its pages by the record it was written with
-        // (TDR-C6): a OneDrive start with every page still a placeholder has an empty index and a full
-        // record, and adopting their record then re-labelled mine exactly as TDR-A1 describes.
+        // Only when both sides have a numbering at all.  A file with no page record is keyed however it is keyed, and a
+        // store that knows no page by any number has nothing of mine to re-label.  A store with no page LOADED still
+        // knows its pages by the record it was written with (TDR-C6): a OneDrive start with every page still a
+        // placeholder has an empty index and a full record.
         JSONObject theirPages = incoming.optJSONObject("pages");
 
         boolean iKnowMyPages = !pageIdToName.isEmpty() || !pageNamesWhenWritten.isEmpty();
@@ -2120,21 +2106,19 @@ public class AutonomyCompanionStore
             // Their page record is how their ids were translated, not a setting to adopt (TDR-A1).
             if (theirIdToMine != null && "pages".equals(key)) continue;
 
-            // AND A FIELD THIS VERSION DOES NOT MODEL is left out while translating (TDR-C7).  Nothing here
-            // knows its shape, so it cannot be put into this layout's numbering - and merged as it came it
-            // would be kept verbatim and saved in the EXPORTER's ids, possibly beside mine in one object.
-            // Every collection this build models is a held field, so nothing it models is lost here; and
-            // the loss of a newer build's field is silent, by Adam's ruling: "no need to notify" (TDR-C10).
+            // AND A FIELD THIS VERSION DOES NOT MODEL is left out while translating (TDR-C7): nothing here knows its
+            // shape, so it cannot be put into this layout's numbering, and merged as it came it would be saved in the
+            // EXPORTER's ids, possibly beside mine in one object.  Every collection this build models is a held field, so
+            // nothing it models is lost here; the loss of a newer build's field is silent (TDR-C10).
             if (theirIdToMine != null && !knownShared().contains(key)) continue;
 
             Object value = intoThisLayoutsPages(key, incoming.get(key), theirIdToMine);
 
-            // THEIR PAGE RECORD, ADOPTED - reachable only for a store that knows no page by any number
-            // (TDR-A1, TDR-C6, TDR-C10).  Everywhere else their record is how their ids were translated,
-            // and it was skipped above.  Here there is no record of mine for it to re-label, so theirs wins
-            // per id and ids only I have are kept.  It is kept rather than dropped because it is still the
-            // only evidence the keys it came with can be read by: a store given page ids later reads its
-            // held entries through this record.
+            // THEIR PAGE RECORD, ADOPTED - reachable only for a store that knows no page by any number (TDR-A1, TDR-C6,
+            // TDR-C10).  Everywhere else their record is how their ids were translated, and was skipped above.  Here there
+            // is no record of mine for it to re-label, so theirs wins per id and ids only I have are kept; it is the only
+            // evidence the keys it came with can be read by, as a store given page ids later reads its held entries
+            // through it.
             if ("pages".equals(key) && value instanceof JSONObject)
             {
                 JSONObject mine = merged.optJSONObject(key);
@@ -2165,12 +2149,11 @@ public class AutonomyCompanionStore
                     continue;
                 }
 
-                // ONE CAPTION PER STATION PER PAGE (OB-341; Adam, 2026-10-12: *"The duplicate caption check should be per
-                // page"*).  A square the setup has no caption on is no gap when the station it names is captioned on
-                // that square's page already, so the captions take only the stations the setup does not caption yet ON
-                // THEIR PAGE - the file's own included, taken in the order of the squares, since org.json holds keys in
-                // no order and which of a file's two would otherwise change from one run to the next.  A caption on
-                // another page is kept: it is shown beside nothing of the station's.
+                // ONE CAPTION PER STATION PER PAGE (OB-341).  A square the setup has no caption on is no gap when the
+                // station it names is captioned on that square's page already, so the captions take only the stations the
+                // setup does not caption yet ON THEIR PAGE - the file's own included, taken in the order of the squares,
+                // since org.json holds keys in no order.  A caption on another page is kept: it is shown beside nothing of
+                // the station's.
                 Set<String> captioned = null;
 
                 List<String> inners = new ArrayList<>(((JSONObject) value).keySet());
@@ -2232,17 +2215,10 @@ public class AutonomyCompanionStore
 
         if (filled > 0)
         {
-            // What the store holds now, in the shape readShared takes, so that an import which turns
-            // out to be unreadable can be put back.
-            //
-            // readShared uses the type-strict accessors and throws part way through on anything it did
-            // not expect - and the merged object is assembled straight out of somebody else's file
-            // without being checked.  Clearing first therefore emptied the shared half and then failed,
-            // and the panel's "import unreadable" told the user nothing had happened while the store
-            // stood blank, ready for the next save to write that over setup.json.
-            //
-            // load() was hardened against exactly this and says so; the import path shares readShared
-            // and was not.
+            // What the store holds now, in the shape readShared takes, so that an import which turns out to be unreadable
+            // can be put back: readShared uses the type-strict accessors and throws part way through on anything it did not
+            // expect, and the merged object is assembled out of somebody else's file without being checked.  `load()`
+            // keeps the same promise.
             JSONObject wasThere = sharedFields();
 
             try
@@ -2258,13 +2234,10 @@ public class AutonomyCompanionStore
                 clearShared();
                 readShared(wasThere);
 
-                // And the configuration, which was installed before any of this and was not being put
-                // back with it.  What that left was worse than a failed import: a configuration whose
-                // placements, homes and exclusions refer to points the rollback has just taken away,
-                // offered in the list like any other.
-                //
-                // Put back exactly as it was, whichever case this is: taken out when the import added
-                // it, and restored from the copy above when the import replaced something.
+                // And the configuration, which was installed before any of this: put back exactly as it was, taken out
+                // when the import added it and restored from the copy above when the import replaced something.  Left in,
+                // it would be offered in the list with placements, homes and exclusions referring to points the rollback
+                // has just taken away.
                 if (existed) configurations.put(name, replaced);
                 else forgetConfiguration(name);
 
@@ -2279,10 +2252,9 @@ public class AutonomyCompanionStore
      * One incoming shared field, rewritten from the exporter's page ids into this layout's (TDR-A1), with
      * only the PIECES naming a page this layout does not have taken out (TDR-B7).
      *
-     * Read by the field's declared shape in `HELD_FIELDS` - the same map the hold and the merge read - so a
-     * value is treated as a square only where the field says it is one.  `mentionsAny`, which this replaced,
-     * took any string without a colon for a page id, so a station named "2" was dropped whenever a foreign
-     * page had id 2; and it dropped a whole hold-back list for one foreign member.
+     * Read by the field's declared shape in `HELD_FIELDS` - the same map the hold and the merge read - so a value is
+     * treated as a square only where the field says it is one (a station named "2" is not a page id, and one foreign
+     * member does not drop a whole hold-back list).
      *
      *   keyed fields    an entry whose KEY is on a foreign page goes; so does one whose square value is
      *   square lists    each member is translated, and a foreign member goes on its own; an entry whose
@@ -2395,18 +2367,12 @@ public class AutonomyCompanionStore
     /**
      * Everything this store holds, as JSON, for a caller that may have to put it back.
      *
-     * The diagram editor writes the setup to disk as it goes - a moved tile has to reach the file, or
-     * a crash between the move and the save loses the lot - and its Cancel button then had nothing to
-     * undo those writes with: the DIAGRAM was re-read from disk and the setup was not, so cancelling
-     * left a station recorded on a square the track had been moved away from.
+     * The diagram editor writes the setup to disk as it goes, so its Cancel needs something to undo those writes with:
+     * the DIAGRAM is re-read from disk and the setup is not, so cancelling would otherwise leave a station recorded on a
+     * square the track had been moved away from.
      *
-     * Deep copies on the way out, so that the snapshot cannot be changed underneath its holder by the
-     * editing that follows.
-     *
-     * snapshotPage does this too now.  It did not when this was written, and the sentence saying so is
-     * what led a reviewer to UR-5 - undo restoring the edit rather than undoing it, because the
-     * snapshot shared the store's own lists and point objects.  Left as it stood it would read as a
-     * defect still open.
+     * Deep copies on the way out, so that the snapshot cannot be changed underneath its holder by the editing that
+     * follows (snapshotPage does the same, UR-5).
      *
      * @return a snapshot for restoreSetup
      */
@@ -2439,14 +2405,11 @@ public class AutonomyCompanionStore
     {
         if (was == null) return;
 
-        // WHAT IS HERE NOW FIRST, so that a snapshot this build cannot read changes nothing (GSP-C4).
-        //
-        // The read below empties the store and then reads with the strict accessors, which is safe for what
-        // `snapshotSetup` hands back in memory and not for a snapshot that came off a disk.  The pre-edit note that
-        // `AutonomySession.revertUnfinishedEdit` applies is written by another run, possibly another build, and
-        // `unfinishedEdit` checks only its top-level shape - so a value of the wrong type inside `shared` threw part way
-        // through with the store already emptied, and nothing put it back.  `load()` keeps the same promise the same way:
-        // a read that fails leaves the setup as it was, and the failure is still thrown, for the caller to say so.
+        // WHAT IS HERE NOW FIRST, so that a snapshot this build cannot read changes nothing (GSP-C4).  The read below
+        // empties the store and then reads with the strict accessors, which is safe for what `snapshotSetup` hands back in
+        // memory and not for a snapshot that came off a disk: the pre-edit note `AutonomySession.revertUnfinishedEdit`
+        // applies is written by another run, possibly another build, and `unfinishedEdit` checks only its top-level shape.
+        // `load()` keeps the same promise: a read that fails leaves the setup as it was, and the failure is still thrown.
         JSONObject wasThere = snapshotSetup();
 
         try
@@ -2515,9 +2478,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * The same, choosing whether the copy takes where the trains stand and the timetable (Adam, 2026-10-01: "One door:
-     * do it") - the two things a variant most often starts without.  Everything else comes across: each station's
-     * rules, the settings, the speeds.
+     * The same, choosing whether the copy takes where the trains stand and the timetable - the two things a variant most
+     * often starts without.  Everything else comes across: each station's rules, the settings, the speeds.
      *
      * @param name what to call it
      * @param copyFrom the configuration to copy, or null to start empty
@@ -2583,19 +2545,15 @@ public class AutonomyCompanionStore
     /**
      * Brings in a configuration from a file somebody exported, under the given name.
      *
-     * The counterpart of handing getConfiguration() to a file: the two together are what let a
-     * configuration travel between people running the same layout.  The name comes from the caller
-     * rather than the file, so importing does not silently overwrite whatever happened to share the
-     * exporter's name.
+     * The counterpart of handing getConfiguration() to a file: the two together are what let a configuration travel
+     * between people running the same layout.  The name comes from the caller rather than the file, so importing does not
+     * silently overwrite whatever happened to share the exporter's name.
      *
      * **AND IT ASKS WHAT THE OTHER THREE DOORS ASK (GSP-B1).**  A configuration is stored as
-     * `configuration-<sanitised name>.json` and sanitising is many-to-one, so `Night: Yard` and
-     * `Night_ Yard` are two names for one file.  `createConfiguration` and `renameConfiguration`
-     * both refuse that pair, and `testTwoNamesCannotShareOneFile` pins both - this door asked
-     * nothing, so an import could take a name that collided with a configuration already here, and
-     * the next `load()`, which rebuilds the list by scanning the folder, came back with only one of
-     * them: the other's placements, homes, exclusions, run list and timetable were gone, with
-     * nothing said at any point.
+     * `configuration-<sanitised name>.json` and sanitising is many-to-one, so `Night: Yard` and `Night_ Yard` are two
+     * names for one file.  `createConfiguration` and `renameConfiguration` both refuse that pair
+     * (`testTwoNamesCannotShareOneFile` pins both), and so must this door: otherwise the next `load()`, which rebuilds
+     * the list by scanning the folder, would come back with only one of them and say nothing.
      *
      * @param name what to call it here
      * @param configuration the exported object
@@ -2661,30 +2619,20 @@ public class AutonomyCompanionStore
         File old = configurationFile(from);
         File now = configurationFile(to);
 
-        // MOVED and rewritten, not deleted.
+        // MOVED and rewritten, not deleted: the new file is otherwise written only by the save that follows, so deleting
+        // the old one would leave a window in which the configuration was on disk nowhere, and load() rebuilds the list by
+        // scanning the folder.  Moving closes it: the data is under one name or the other at every instant.  The rewrite
+        // that follows is what makes the file agree with its own name, as load() takes the name from INSIDE the file.
         //
-        // The new file used to be written only by the save that follows this, so deleting the old one
-        // here left a window in which the configuration was on disk nowhere at all - and load()
-        // rebuilds the list by scanning the folder, so a save that failed for any reason (a sync
-        // client holding the folder, a full disk, the process dying) destroyed it permanently.
-        //
-        // Moving closes that window: the data is under one name or the other at every instant.  The
-        // rewrite that follows is what makes the file agree with its own name - load() takes the name
-        // from INSIDE the file, so a moved file alone would come back under the old name.
-        //
-        // A failure is raised rather than swallowed, for the reason deleteConfiguration gives: what is
-        // in memory and what is on disk have to keep saying the same thing, and only the user can
-        // decide what to do when they cannot.
+        // A failure is raised rather than swallowed, for the reason deleteConfiguration gives: what is in memory and what
+        // is on disk have to keep saying the same thing, and only the user can decide what to do when they cannot.
         if (old.isFile())
         {
             try
             {
-                // The move only when there is somewhere to move TO.  Two names can resolve to one
-                // file - sanitising is many to one, and File.equals is case-insensitive on Windows, so
-                // "Morning" to "morning" is a rename with nothing to move - but the REWRITE still has
-                // to happen, because load() takes a configuration's name from inside its file.  Skipping
-                // both left the old name in the file, so a rename that was not followed by a
-                // successful save silently undid itself.
+                // The move only when there is somewhere to move TO.  Two names can resolve to one file (sanitising is many
+                // to one, and File.equals is case-insensitive on Windows, so "Morning" to "morning" has nothing to move),
+                // but the REWRITE still has to happen, because load() takes a configuration's name from inside its file.
                 if (!old.equals(now))
                 {
                     Files.move(old.toPath(), now.toPath(), StandardCopyOption.REPLACE_EXISTING);
@@ -2730,20 +2678,15 @@ public class AutonomyCompanionStore
     {
         if (!configurations.containsKey(name)) return;
 
-        // The FILE decides, because the file is what comes back.
-        //
-        // load() rebuilds the list by scanning the folder rather than from setup.json, so a file that
-        // could not be deleted - held open by a sync client, which this project lives under - returned
-        // next session as though nothing had happened, and would even reappear inside a setup created
-        // later.  Refusing here keeps what is in memory and what is on disk saying the same thing, and
+        // The FILE decides, because the file is what comes back: load() rebuilds the list by scanning the folder, so a file
+        // that could not be deleted (held open by a sync client, which this project lives under) would return next session
+        // as though nothing had happened.  Refusing keeps what is in memory and what is on disk saying the same thing, and
         // tells the user which is which.
         File file = configurationFile(name);
 
         if (file.isFile() && !file.delete())
         {
-            // A sentence, because the caller shows this as the whole dialog.  It used to be the bare
-            // filename, so a user who could not delete a configuration was shown a window saying only
-            // "configuration-Yard.json" and left to work out both what had happened and what to do.
+            // A sentence, because the caller shows this as the whole dialog.
             throw new IOException(I18n.f("autosetup.ui.errorDeleteConfigurationFailed", name));
         }
 
@@ -2751,11 +2694,9 @@ public class AutonomyCompanionStore
 
         if (name.equals(activeConfiguration))
         {
-            // The last one may go now.  It used to be refused, on the reasoning that a setup with no
-            // configurations is a state nothing could act on - but that made setting autonomy up a
-            // one-way door: a layout somebody had experimented on kept a configuration for ever.  With
-            // none left there is simply nothing active, which is the state every layout starts in and
-            // which the rest of this class has always handled.
+        // The last one may go: a layout somebody had experimented on must not keep a configuration for ever.  With none
+        // left there is simply nothing active, which is the state every layout starts in and which the rest of this class
+        // handles.
             activeConfiguration = configurations.isEmpty()
                 ? null : configurations.keySet().iterator().next();
         }
@@ -2764,10 +2705,7 @@ public class AutonomyCompanionStore
     /**
      * Removes the whole setup: every configuration, every decision, and the files holding them.
      *
-     * Offered because until now there was no way back out of having set autonomy up.  Configurations
-     * could be deleted one at a time and the last one refused, so a layout somebody had experimented on
-     * kept a setup they could not be rid of - and the only alternative was deleting a folder by hand,
-     * which is exactly the sort of advice that ends in the wrong folder being deleted.
+     * Offered so that there is a way back out of having set autonomy up, short of deleting a folder by hand.
      *
      * The diagram is not touched.  Captions live here now, so they go with it; the track, the sensors
      * and everything the Central Station knows about are the layout’s, not autonomy’s, and this
