@@ -158,11 +158,11 @@ public class testWhatTheStationSendsIsHeard
 
         final MarklinAccessory turnout = straightTurnout(SWITCH);
 
-        armedRoute("fires", sensor, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, SWITCH, null);
+        MarklinRoute route = armedRoute("fires", sensor, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, SWITCH, null);
 
         int mark = SENT.size();
 
-        pulse(sensor, false, true);
+        pulseWhenWatched(route, sensor);
 
         assertTrue(Components.waitFor(turnout::isSwitched, HEARD_MS),
             "the station reported the route's sensor clear and then made, and the route's turnout was not thrown");
@@ -193,12 +193,12 @@ public class testWhatTheStationSendsIsHeard
         assertTrue(Components.waitFor(() -> model.isFeedbackSet(Integer.toString(condition)), HEARD_MS),
             "precondition: the condition's sensor is not known");
 
-        armedRoute("condition", sensor, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, SWITCH + 1,
+        MarklinRoute route = armedRoute("condition", sensor, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, SWITCH + 1,
             NodeExpression.fromList(new ArrayList<>(Arrays.asList(RouteCommand.RouteCommandFeedback(condition, true)))));
 
         int mark = SENT.size();
 
-        pulse(sensor, false, true);
+        pulseWhenWatched(route, sensor);
 
         assertFalse(Components.waitFor(turnout::isSwitched, Locomotive.FEEDBACK_DURATION_THRESHOLD * 5L),
             "the route fired with its condition (sensor " + condition + " made) false");
@@ -207,7 +207,8 @@ public class testWhatTheStationSendsIsHeard
 
         hear(Packets.s88(condition, true));
 
-        pulse(sensor, false, true);
+        // AND WATCHED AGAIN: the pass that found the condition false goes back round to wait for the sensor clear
+        pulseWhenWatched(route, sensor);
 
         assertTrue(Components.waitFor(turnout::isSwitched, HEARD_MS),
             "the route did not fire once the station reported its condition's sensor made");
@@ -246,7 +247,8 @@ public class testWhatTheStationSendsIsHeard
         assertTrue(model.editRoute(route.getName(), route.getName(), route.getRoute(), route.getS88(), route.getTriggerType(),
             true, route.getConditions()), "precondition: the route could not be armed again");
 
-        pulse(sensor, false, true);
+        // Armed again is a new monitor, on its way to its wait
+        pulseWhenWatched(model.getRoute(route.getName()), sensor);
 
         assertTrue(Components.waitFor(turnout::isSwitched, HEARD_MS), "the route, armed again, did not fire on its sensor");
     }
@@ -505,6 +507,22 @@ public class testWhatTheStationSendsIsHeard
         }
 
         hear(frame);
+    }
+
+    /**
+     * The sensor reported clear and then made, each held long enough to count - made only once the route's monitor is
+     * waiting for it (`support.RouteMonitor.watching`), as the route list's Enable Auto Execution claim waits (FR-136,
+     * issue 22).  Arming a route, or a pass of its monitor that did not fire, leaves the monitor still on its way to its
+     * wait, and a sensor made before it gets there is not heard.
+     */
+    private static void pulseWhenWatched(MarklinRoute route, int sensor)
+    {
+        holdThenHear(Packets.s88(sensor, false));
+
+        assertTrue(Components.waitFor(() -> RouteMonitor.watching(route), HEARD_MS),
+            "precondition: the route's monitor is not waiting for its sensor to be made");
+
+        holdThenHear(Packets.s88(sensor, true));
     }
 
     /** The sensor goes to the first state, then the second, each held long enough to count. */

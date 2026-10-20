@@ -1562,6 +1562,12 @@ public class testTheRouteListShowsWhatRuns
     /**
      * A route switching these MM2 accessories on, at once, with each accessory switched off first so the route has
      * something to change; and the power on, so that a row click asks rather than opening the editor.
+     *
+     * One of this application's own, unlocked and with a local id, so Delete Route and the route editor's Save start no
+     * sync with the station (they sync only for a route the station carried, or a new one whose id it could have
+     * issued) - checked 2026-10-19 by logging every sync over this class: only Duplicate Route's ran (FR-136, issue 22).
+     * A claim moved onto a station's route would leave that sync running into the next claim, pruning its sensors, and
+     * has to wait it out as Duplicate Route's does.
      */
     private static String aQuickRoute(String name, int... addresses) throws Exception
     {
