@@ -302,6 +302,23 @@ final class LocIconActions
             row.setBorder(BorderFactory.createEmptyBorder(0, 2, 4, 2));
             row.add(crop);
 
+            // Clear Icon (FR-142; Adam: "In the locomotive icon file chooser, we should have a button to also clear the current icon, so it's
+            // accessible via the wrench."): the menu's own clear, then the chooser closes with nothing chosen.  Disabled, not hidden, when
+            // there is no icon of this computer's to clear, so the row does not change shape from one locomotive to the next; the menu item
+            // is absent in that case for the same reason it has nothing to do.
+            final javax.swing.JButton clear = new javax.swing.JButton(I18n.t("loc.ui.menuClearLocalLocomotiveIcon"));
+
+            clear.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12));
+            clear.setEnabled(l.getLocalImageURL() != null);
+            clear.addActionListener(event ->
+            {
+                this.ui.clearLocIcon(l);
+                fc.cancelSelection();
+            });
+
+            row.add(javax.swing.Box.createHorizontalStrut(16));
+            row.add(clear);
+
             fc.add(row, java.awt.BorderLayout.SOUTH);
 
             int i = fc.showOpenDialog(source);

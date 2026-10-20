@@ -1404,6 +1404,127 @@ public class testLocIconCrop
     }
 
     /**
+     * The icon chooser the wrench opens has a Clear Icon button that clears the locomotive's icon as Clear Local Locomotive
+     * Icon does and closes the chooser, and it is disabled over a locomotive with no icon (FR-142).
+     *
+     * Adam: "In the locomotive icon file chooser, we should have a button to also clear the current icon, so it's accessible
+     * via the wrench."
+     *
+     * MUTATION: wire the button to nothing (or to `cancelSelection` alone), or leave it enabled over a locomotive with no
+     * icon, and this fails.
+     *
+     * @throws Exception from the event thread or reflection
+     */
+    @Test
+    public void testTheIconChooserCanClearTheIcon() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new org.testng.SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+        org.traincontrol.marklin.MarklinControlStation model = null;
+        TrainControlUI ui = null;
+        File ours = null;
+
+        try
+        {
+            // OPENED INSIDE THE TRY (TSX-B8, OB-111)
+            sandbox = support.LayoutSandbox.open();
+
+            model = support.TestStationAddress.withNoStation(
+                () -> org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false));
+
+            ui = windowOver(model);
+
+            settle();
+
+            final javax.swing.JLabel wrench = field(ui, "iconWrench", javax.swing.JLabel.class);
+
+            java.lang.reflect.Field active = TrainControlUI.class.getDeclaredField("activeLoc");
+
+            active.setAccessible(true);
+
+            // A name of its own in the icon folder, which is the real one (see the first claim of this class)
+            ours = org.traincontrol.util.Util.getLocIconFile("fr142_test_" + java.util.UUID.randomUUID() + ".png");
+
+            if (ours == null) throw new org.testng.SkipException("the icon folder could not be created here");
+
+            write(ours, "not really a png");
+
+            final String label = org.traincontrol.util.I18n.t("loc.ui.menuClearLocalLocomotiveIcon");
+
+            // A LOCOMOTIVE WITH AN ICON OF THIS COMPUTER'S: the button is there, enabled, and clears it
+            final org.traincontrol.marklin.MarklinLocomotive iconed = new org.traincontrol.marklin.MarklinLocomotive(model,
+                85, org.traincontrol.marklin.MarklinLocomotive.decoderType.MM2, "FR-142 with an icon");
+
+            iconed.setLocalImageURL(ours.toPath().toUri().toString());
+
+            active.set(ui, iconed);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> wrench.dispatchEvent(new java.awt.event.MouseEvent(wrench,
+                java.awt.event.MouseEvent.MOUSE_RELEASED, System.currentTimeMillis(), java.awt.event.InputEvent.BUTTON1_MASK,
+                5, 5, 1, false, java.awt.event.MouseEvent.BUTTON1)));
+
+            javax.swing.JFileChooser chooser = awaitAChooser(10000);
+
+            assertNotNull(chooser, "the wrench opened no icon chooser");
+
+            javax.swing.AbstractButton clear = support.Components.withText(chooser, label);
+
+            assertNotNull(clear, "the icon chooser has no button labelled \"" + label + "\" (FR-142)");
+
+            assertTrue(clear.isEnabled(), "the Clear Icon button is disabled over a locomotive that has an icon");
+
+            javax.swing.SwingUtilities.invokeAndWait(clear::doClick);
+
+            long giveUp = System.currentTimeMillis() + 10000;
+
+            while ((iconed.getLocalImageURL() != null || ours.exists()) && System.currentTimeMillis() < giveUp)
+            {
+                Thread.sleep(50);
+            }
+
+            assertNull(iconed.getLocalImageURL(), "the Clear Icon button did not clear the locomotive's icon (FR-142)");
+
+            assertFalse(ours.exists(), "the icon file the locomotive had was left behind, as clearing the icon does not"
+                + " (FR-142)");
+
+            assertNull(awaitAChooser(500), "the chooser was still open after Clear Icon");
+
+            // A LOCOMOTIVE WITH NO ICON: nothing to clear, so the button is disabled
+            final org.traincontrol.marklin.MarklinLocomotive bare = new org.traincontrol.marklin.MarklinLocomotive(model,
+                86, org.traincontrol.marklin.MarklinLocomotive.decoderType.MM2, "FR-142 without an icon");
+
+            active.set(ui, bare);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> wrench.dispatchEvent(new java.awt.event.MouseEvent(wrench,
+                java.awt.event.MouseEvent.MOUSE_RELEASED, System.currentTimeMillis(), java.awt.event.InputEvent.BUTTON1_MASK,
+                5, 5, 1, false, java.awt.event.MouseEvent.BUTTON1)));
+
+            chooser = awaitAChooser(10000);
+
+            assertNotNull(chooser, "the wrench opened no icon chooser over the locomotive with no icon");
+
+            clear = support.Components.withText(chooser, label);
+
+            assertNotNull(clear, "the icon chooser has no Clear Icon button over a locomotive with no icon");
+
+            assertFalse(clear.isEnabled(), "the Clear Icon button is enabled over a locomotive with no icon to clear");
+
+            javax.swing.SwingUtilities.invokeAndWait(chooser::cancelSelection);
+        }
+        finally
+        {
+            if (ours != null) ours.delete();
+
+            closeTheWindow(ui);
+
+            if (model != null) model.stop();
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
      * The revert's arrowhead is a solid head, not two thin barbs (Adam, 2026-09-29: *"make the arrow at the end of the
      * circle more prominent, right now it doesn't really look like an arrow"*): the middle of the head is ink.
      *
