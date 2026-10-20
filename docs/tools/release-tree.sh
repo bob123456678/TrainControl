@@ -4,8 +4,9 @@
 #   bash docs/tools/release-tree.sh <development commit> <file holding the commit message>
 #
 # Left on development: everything under docs/ except the test runners in docs/tools, the store's catalogue tool,
-# this script, the notes beside the guide's pictures, and the three test classes that check the tracker's records
-# (with their lines in build.xml, which testEveryTestIsInTheBattery holds to the files).
+# this script, the notes beside the guide's pictures, the builders' rules (CLAUDE.md, AGENTS.md), and the three test
+# classes that check the tracker's records (with their lines in build.xml, which testEveryTestIsInTheBattery holds to
+# the files).
 #
 # The tree is computed, not merged, so a release never conflicts: the commit's parents are master and the
 # development commit, and its tree is the development tree less those paths.  The commit goes to the local branch
@@ -24,7 +25,7 @@ while IFS= read -r path
 do
     [ "$path" = docs/tools ] || OUT+=("$path")
 done < <(git ls-tree --name-only "$DEV" docs/)
-OUT+=(docs/tools/catalog-findings.py docs/tools/release-tree.sh assets/automation/README.md)
+OUT+=(docs/tools/catalog-findings.py docs/tools/release-tree.sh assets/automation/README.md CLAUDE.md AGENTS.md)
 for test in "${RECORDS[@]}"; do OUT+=("test/regression/$test.java"); done
 
 INDEX="$(git rev-parse --absolute-git-dir)/release-tree-index"
