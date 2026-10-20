@@ -4436,14 +4436,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
         //
         // Constructing a MarklinRoute arms it: the complete constructor ends in executeAutoRoute(), which parks
         // a thread on the route's s88 and fires the route whenever it triggers.  A route built here would
-        // therefore be watching the railway before it has been offered to any database, and two things follow.
-        // A malformed entry throws out of this loop, and the routes built before it stay armed for the rest of
-        // the session, in no database and unreachable by deleteRoute, which walks routeDB.getItems().  And on
-        // an import that SUCCEEDS, the route being replaced and its replacement would watch the same sensor
-        // until the old one was deleted, and a trigger in that window fires both, throwing different commands
-        // at the same turnouts.
-        //
-        // So it is BUILT UNARMED, and the operator decides when a freshly imported file starts driving the
+        // therefore be watching the railway before it has been offered to any database.  A malformed entry
+        // throws out of this loop, and the routes built before it stay armed for the rest of the session, in no
+        // database and unreachable by deleteRoute; and on an import that SUCCEEDS, the route being replaced and
+        // its replacement would watch the same sensor until the old one was deleted, so a trigger in that
+        // window fires both.
         // railway.  The file's `auto` is overwritten with false before construction, so `executeAutoRoute`
         // starts no monitor at all: there is no thread to disarm and no moment in which one is watching
         // (REG2-C6).
