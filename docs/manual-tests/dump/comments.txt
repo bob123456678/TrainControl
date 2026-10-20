@@ -28515,3 +28515,585 @@ text:
 |
 | *Run against commit b6f3dfcb, in English - build\classes, compiled 18 Oct 21:11 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 |
+
+[comment MT-771 2]
+who: Adam
+date: 2026-10-19
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-19 (triage).** Works.
+|
+| *Run against commit 2cac0137, in English - build\classes, compiled 19 Oct 22:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-771 3]
+who: Claude
+date: 2026-10-19
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-19.**
+|
+| Validated on your *Works* of 2026-10-19.
+|
+
+[comment MT-772 0]
+who: Adam
+date: 2026-10-19
+kind: verdict
+verdict: Works, with notes
+text:
+| **Adam, 2026-10-19 (triage).** Works, with notes.
+|
+| Confirmed, but 10% is hardly visible.  We may want to change this later.
+|
+| *Run against commit 2cac0137, in English - build\classes, compiled 19 Oct 22:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-772 1]
+who: Claude
+date: 2026-10-19
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-19.**
+|
+| Validated on your *Works* of 2026-10-19.  Your note (10% is hardly visible) is filed for 3.1.0 as its own feature request.
+|
+
+[comment MT-773 0]
+who: Adam
+date: 2026-10-19
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-19 (triage).** Works.
+|
+| *Run against commit 2cac0137, in English - build\classes, compiled 19 Oct 22:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-773 1]
+who: Claude
+date: 2026-10-19
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-19.**
+|
+| Validated on your *Works* of 2026-10-19.
+|
+
+[comment MT-774 0]
+who: Adam
+date: 2026-10-19
+kind: verdict
+verdict: Could not run this
+text:
+| **Adam, 2026-10-19 (triage).** Could not run this.
+|
+| can't test because I'm on a newer version, make a hardness for this
+|
+| *Run against commit 2cac0137, in English - build\classes, compiled 19 Oct 22:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-775 0]
+who: Adam
+date: 2026-10-19
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-19 (triage).** Works.
+|
+| Works.
+|
+| Filed from this test: FR-142 (feature request - clear locomotive icon from main UI).  They are in the Inbox until they are picked up.
+|
+| *Run against commit 2cac0137, in English - build\classes, compiled 19 Oct 22:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-775 1]
+who: Claude
+date: 2026-10-19
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-19.**
+|
+| Validated on your *Works* of 2026-10-19.
+|
+
+[comment MT-776 0]
+who: Adam
+date: 2026-10-19
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-19 (triage).** Works.
+|
+| *Run against commit 2cac0137, in English - build\classes, compiled 19 Oct 22:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-776 1]
+who: Claude
+date: 2026-10-19
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-19.**
+|
+| Validated on your *Works* of 2026-10-19.
+|
+
+[comment MT-777 0]
+who: Adam
+date: 2026-10-19
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-19 (triage).** Works.
+|
+| *Run against commit 2cac0137, in English - build\classes, compiled 19 Oct 22:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-777 1]
+who: Claude
+date: 2026-10-19
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-19.**
+|
+| Validated on your *Works* of 2026-10-19.
+|
+
+[comment MT-778 0]
+who: Adam
+date: 2026-10-19
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-19 (triage).** Works.
+|
+| *Run against commit 2cac0137, in English - build\classes, compiled 19 Oct 22:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-778 1]
+who: Claude
+date: 2026-10-19
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-19.**
+|
+| Validated on your *Works* of 2026-10-19.
+|
+
+[comment MT-779 0]
+who: Adam
+date: 2026-10-19
+kind: verdict
+verdict: Could not run this
+text:
+| **Adam, 2026-10-19 (triage).** Could not run this.
+|
+| don't have the files for this, test offline
+|
+| *Run against commit 2cac0137, in English - build\classes, compiled 19 Oct 22:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-780 0]
+who: Adam
+date: 2026-10-19
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-19 (triage).** Works.
+|
+| *Run against commit 2cac0137, in English - build\classes, compiled 19 Oct 22:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-780 1]
+who: Claude
+date: 2026-10-19
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-19.**
+|
+| Validated on your *Works* of 2026-10-19.
+|
+
+[comment MT-781 0]
+who: Adam
+date: 2026-10-19
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-19 (triage).** Works.
+|
+| *Run against commit 2cac0137, in English - build\classes, compiled 19 Oct 22:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-781 1]
+who: Claude
+date: 2026-10-19
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-19.**
+|
+| Validated on your *Works* of 2026-10-19.
+|
+
+[comment MT-782 0]
+who: Adam
+date: 2026-10-19
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-19 (triage).** Works.
+|
+| *Run against commit 2cac0137, in English - build\classes, compiled 19 Oct 22:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-782 1]
+who: Claude
+date: 2026-10-19
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-19.**
+|
+| Validated on your *Works* of 2026-10-19.
+|
+
+[comment MT-783 0]
+who: Adam
+date: 2026-10-19
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-19 (triage).** Works.
+|
+| *Run against commit 2cac0137, in English - build\classes, compiled 19 Oct 22:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-783 1]
+who: Claude
+date: 2026-10-19
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-19.**
+|
+| Validated on your *Works* of 2026-10-19.
+|
+
+[comment MT-784 0]
+who: Adam
+date: 2026-10-19
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-19 (triage).** Works.
+|
+| *Run against commit 2cac0137, in English - build\classes, compiled 19 Oct 22:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-784 1]
+who: Claude
+date: 2026-10-19
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-19.**
+|
+| Validated on your *Works* of 2026-10-19.
+|
+
+[comment MT-785 0]
+who: Adam
+date: 2026-10-19
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-19 (triage).** Works.
+|
+| *Run against commit 2cac0137, in English - build\classes, compiled 19 Oct 22:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-785 1]
+who: Claude
+date: 2026-10-19
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-19.**
+|
+| Validated on your *Works* of 2026-10-19.
+|
+
+[comment MT-786 0]
+who: Adam
+date: 2026-10-19
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-19 (triage).** Works.
+|
+| *Run against commit 2cac0137, in English - build\classes, compiled 19 Oct 22:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-786 1]
+who: Claude
+date: 2026-10-19
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-19.**
+|
+| Validated on your *Works* of 2026-10-19.
+|
+
+[comment MT-787 0]
+who: Adam
+date: 2026-10-19
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-19 (triage).** Works.
+|
+| *Run against commit 2cac0137, in English - build\classes, compiled 19 Oct 22:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-787 1]
+who: Claude
+date: 2026-10-19
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-19.**
+|
+| Validated on your *Works* of 2026-10-19.
+|
+
+[comment MT-788 0]
+who: Adam
+date: 2026-10-19
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-19 (triage).** Works.
+|
+| *Run against commit 2cac0137, in English - build\classes, compiled 19 Oct 22:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-788 1]
+who: Claude
+date: 2026-10-19
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-19.**
+|
+| Validated on your *Works* of 2026-10-19.
+|
+
+[comment MT-789 0]
+who: Adam
+date: 2026-10-19
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-19 (triage).** Works.
+|
+| *Run against commit 2cac0137, in English - build\classes, compiled 19 Oct 22:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-789 1]
+who: Claude
+date: 2026-10-19
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-19.**
+|
+| Validated on your *Works* of 2026-10-19.
+|
+
+[comment MT-790 0]
+who: Adam
+date: 2026-10-19
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-19 (triage).** Works.
+|
+| *Run against commit 2cac0137, in English - build\classes, compiled 19 Oct 22:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-790 1]
+who: Claude
+date: 2026-10-19
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-19.**
+|
+| Validated on your *Works* of 2026-10-19.
+|
+
+[comment MT-791 0]
+who: Adam
+date: 2026-10-19
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-19 (triage).** Works.
+|
+| *Run against commit 2cac0137, in English - build\classes, compiled 19 Oct 22:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-791 1]
+who: Claude
+date: 2026-10-19
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-19.**
+|
+| Validated on your *Works* of 2026-10-19.
+|
+
+[comment MT-792 0]
+who: Adam
+date: 2026-10-19
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-19 (triage).** Works.
+|
+| *Run against commit 2cac0137, in English - build\classes, compiled 19 Oct 22:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-792 1]
+who: Claude
+date: 2026-10-19
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-19.**
+|
+| Validated on your *Works* of 2026-10-19.
+|
+
+[comment MT-793 0]
+who: Adam
+date: 2026-10-19
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-19 (triage).** Works.
+|
+| *Run against commit 2cac0137, in English - build\classes, compiled 19 Oct 22:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-793 1]
+who: Claude
+date: 2026-10-19
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-19.**
+|
+| Validated on your *Works* of 2026-10-19.
+|
+
+[comment MT-794 0]
+who: Adam
+date: 2026-10-19
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-19 (triage).** Works.
+|
+| *Run against commit 2cac0137, in English - build\classes, compiled 19 Oct 22:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-794 1]
+who: Claude
+date: 2026-10-19
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-19.**
+|
+| Validated on your *Works* of 2026-10-19.
+|
+
+[comment MT-795 0]
+who: Adam
+date: 2026-10-19
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-19 (triage).** Works.
+|
+| *Run against commit 2cac0137, in English - build\classes, compiled 19 Oct 22:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-795 1]
+who: Claude
+date: 2026-10-19
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-19.**
+|
+| Validated on your *Works* of 2026-10-19.
+|
+
+[comment MT-796 0]
+who: Adam
+date: 2026-10-19
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-19 (triage).** Works.
+|
+| *Run against commit 2cac0137, in English - build\classes, compiled 19 Oct 22:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-796 1]
+who: Claude
+date: 2026-10-19
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-19.**
+|
+| Validated on your *Works* of 2026-10-19.
+|
+
+[comment MT-797 0]
+who: Adam
+date: 2026-10-19
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-19 (triage).** Works.
+|
+| *Run against commit 2cac0137, in English - build\classes, compiled 19 Oct 22:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-797 1]
+who: Claude
+date: 2026-10-19
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-19.**
+|
+| Validated on your *Works* of 2026-10-19.
+|

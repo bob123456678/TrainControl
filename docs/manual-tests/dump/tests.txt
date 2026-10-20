@@ -30404,7 +30404,7 @@ ordinal: 770
 anchor: mt-771
 date: 2026-10-18
 title: Route editor: the conditions warn they are only checked with Automatically Fire on
-disposition: fixed unvalidated
+disposition: fixed validated
 from: Adam, 2026-10-18 (route conditions)
 written: 2026-10-18
 reopened: no
@@ -30412,7 +30412,7 @@ body:
 | <a id="mt-771"></a>
 | ### MT-771 - 2026-10-18 - Route editor: the conditions warn they are only checked with Automatically Fire on
 |
-| **Disposition:** fixed unvalidated
+| **Disposition:** fixed validated
 | **From:** Adam, 2026-10-18 (route conditions)
 |
 | **Written:** 2026-10-18
@@ -30443,7 +30443,7 @@ ordinal: 771
 anchor: mt-772
 date: 2026-10-18
 title: FR-130: the autonomy locomotive icon is ten per cent clear
-disposition: fixed unvalidated
+disposition: fixed validated
 from: FR-130
 written: 2026-10-18
 reopened: no
@@ -30451,7 +30451,7 @@ body:
 | <a id="mt-772"></a>
 | ### MT-772 - 2026-10-18 - FR-130: the autonomy locomotive icon is ten per cent clear
 |
-| **Disposition:** fixed unvalidated
+| **Disposition:** fixed validated
 | **From:** FR-130
 |
 | **Written:** 2026-10-18
@@ -30480,7 +30480,7 @@ ordinal: 772
 anchor: mt-773
 date: 2026-10-19
 title: FR-136: Backup TrainControl Data still makes a whole backup
-disposition: needs test
+disposition: fixed validated
 from: FR-136
 written: 2026-10-19
 reopened: no
@@ -30488,7 +30488,7 @@ body:
 | <a id="mt-773"></a>
 | ### MT-773 - 2026-10-19 - FR-136: Backup TrainControl Data still makes a whole backup
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** FR-136
 |
 | **Written:** 2026-10-19
@@ -30551,7 +30551,7 @@ ordinal: 774
 anchor: mt-775
 date: 2026-10-19
 title: FR-136: the locomotive icon - set, crop, re-crop and clear - works as before
-disposition: needs test
+disposition: fixed validated
 from: FR-136
 written: 2026-10-19
 reopened: no
@@ -30559,7 +30559,7 @@ body:
 | <a id="mt-775"></a>
 | ### MT-775 - 2026-10-19 - FR-136: the locomotive icon - set, crop, re-crop and clear - works as before
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** FR-136
 |
 | **Written:** 2026-10-19
@@ -30587,7 +30587,7 @@ ordinal: 775
 anchor: mt-776
 date: 2026-10-19
 title: FR-136: Manage Pages - duplicate, rename, add blank and combine - works as before
-disposition: needs test
+disposition: fixed validated
 from: FR-136
 written: 2026-10-19
 reopened: no
@@ -30595,7 +30595,7 @@ body:
 | <a id="mt-776"></a>
 | ### MT-776 - 2026-10-19 - FR-136: Manage Pages - duplicate, rename, add blank and combine - works as before
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** FR-136
 |
 | **Written:** 2026-10-19
@@ -30625,7 +30625,7 @@ ordinal: 776
 anchor: mt-777
 date: 2026-10-19
 title: FR-136: Create New Layout and Download Central Station Layout work as before
-disposition: needs test
+disposition: fixed validated
 from: FR-136
 written: 2026-10-19
 reopened: no
@@ -30633,7 +30633,7 @@ body:
 | <a id="mt-777"></a>
 | ### MT-777 - 2026-10-19 - FR-136: Create New Layout and Download Central Station Layout work as before
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** FR-136
 |
 | **Written:** 2026-10-19
@@ -30659,7 +30659,7 @@ ordinal: 777
 anchor: mt-778
 date: 2026-10-19
 title: FR-136: the route list - play, run, edit, duplicate, bulk and find - works as before
-disposition: needs test
+disposition: fixed validated
 from: FR-136
 written: 2026-10-19
 reopened: no
@@ -30667,7 +30667,7 @@ body:
 | <a id="mt-778"></a>
 | ### MT-778 - 2026-10-19 - FR-136: the route list - play, run, edit, duplicate, bulk and find - works as before
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** FR-136
 |
 | **Written:** 2026-10-19
@@ -30739,7 +30739,7 @@ ordinal: 779
 anchor: mt-780
 date: 2026-10-19
 title: FR-136: setting a run of track's direction in the autonomy editor, and the arrows drawn for it, work as before
-disposition: needs test
+disposition: fixed validated
 from: FR-136
 written: 2026-10-19
 reopened: no
@@ -30747,7 +30747,7 @@ body:
 | <a id="mt-780"></a>
 | ### MT-780 - 2026-10-19 - FR-136: setting a run of track's direction in the autonomy editor, and the arrows drawn for it, work as before
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** FR-136
 |
 | **Written:** 2026-10-19
@@ -30778,7 +30778,7 @@ ordinal: 780
 anchor: mt-781
 date: 2026-10-19
 title: FR-136: Why not Moving?, the Auto tab's "No available paths" and the paused reason work as before
-disposition: needs test
+disposition: fixed validated
 from: FR-136
 written: 2026-10-19
 reopened: no
@@ -30786,7 +30786,7 @@ body:
 | <a id="mt-781"></a>
 | ### MT-781 - 2026-10-19 - FR-136: Why not Moving?, the Auto tab's "No available paths" and the paused reason work as before
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** FR-136
 |
 | **Written:** 2026-10-19
@@ -30818,7 +30818,7 @@ ordinal: 781
 anchor: mt-782
 date: 2026-10-19
 title: FR-136: the track a standing train covers, its tail, and the grey on that track work as before
-disposition: needs test
+disposition: fixed validated
 from: FR-136
 written: 2026-10-19
 reopened: no
@@ -30826,7 +30826,7 @@ body:
 | <a id="mt-782"></a>
 | ### MT-782 - 2026-10-19 - FR-136: the track a standing train covers, its tail, and the grey on that track work as before
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** FR-136
 |
 | **Written:** 2026-10-19
@@ -30857,7 +30857,7 @@ ordinal: 782
 anchor: mt-783
 date: 2026-10-19
 title: FR-136: the refusals for a train too long for a route, a berth or a station, or meeting its own tail, work as before
-disposition: needs test
+disposition: fixed validated
 from: FR-136
 written: 2026-10-19
 reopened: no
@@ -30865,7 +30865,7 @@ body:
 | <a id="mt-783"></a>
 | ### MT-783 - 2026-10-19 - FR-136: the refusals for a train too long for a route, a berth or a station, or meeting its own tail, work as before
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** FR-136
 |
 | **Written:** 2026-10-19
@@ -30897,7 +30897,7 @@ ordinal: 783
 anchor: mt-784
 date: 2026-10-19
 title: FR-136: the track editor's selecting, cut, copy, paste, move and rotate work as before
-disposition: needs test
+disposition: fixed validated
 from: FR-136
 written: 2026-10-19
 reopened: no
@@ -30905,7 +30905,7 @@ body:
 | <a id="mt-784"></a>
 | ### MT-784 - 2026-10-19 - FR-136: the track editor's selecting, cut, copy, paste, move and rotate work as before
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** FR-136
 |
 | **Written:** 2026-10-19
@@ -30939,7 +30939,7 @@ ordinal: 784
 anchor: mt-785
 date: 2026-10-19
 title: FR-136: shifting, growing and shrinking a page in the track editor work as before
-disposition: needs test
+disposition: fixed validated
 from: FR-136
 written: 2026-10-19
 reopened: no
@@ -30947,7 +30947,7 @@ body:
 | <a id="mt-785"></a>
 | ### MT-785 - 2026-10-19 - FR-136: shifting, growing and shrinking a page in the track editor work as before
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** FR-136
 |
 | **Written:** 2026-10-19
@@ -30980,7 +30980,7 @@ ordinal: 785
 anchor: mt-786
 date: 2026-10-19
 title: FR-136: undo and redo in the track editor, captions included, work as before
-disposition: needs test
+disposition: fixed validated
 from: FR-136
 written: 2026-10-19
 reopened: no
@@ -30988,7 +30988,7 @@ body:
 | <a id="mt-786"></a>
 | ### MT-786 - 2026-10-19 - FR-136: undo and redo in the track editor, captions included, work as before
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** FR-136
 |
 | **Written:** 2026-10-19
@@ -31022,7 +31022,7 @@ ordinal: 786
 anchor: mt-787
 date: 2026-10-19
 title: FR-136: the Auto tab's settings, and their refusal while autonomy is busy, work as before
-disposition: needs test
+disposition: fixed validated
 from: FR-136
 written: 2026-10-19
 reopened: no
@@ -31030,7 +31030,7 @@ body:
 | <a id="mt-787"></a>
 | ### MT-787 - 2026-10-19 - FR-136: the Auto tab's settings, and their refusal while autonomy is busy, work as before
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** FR-136
 |
 | **Written:** 2026-10-19
@@ -31063,7 +31063,7 @@ ordinal: 787
 anchor: mt-788
 date: 2026-10-19
 title: FR-136: jumping to a locomotive, changing its name or address, its notes, finding similar ones and deleting one work as before
-disposition: needs test
+disposition: fixed validated
 from: FR-136
 written: 2026-10-19
 reopened: no
@@ -31071,7 +31071,7 @@ body:
 | <a id="mt-788"></a>
 | ### MT-788 - 2026-10-19 - FR-136: jumping to a locomotive, changing its name or address, its notes, finding similar ones and deleting one work as before
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** FR-136
 |
 | **Written:** 2026-10-19
@@ -31105,7 +31105,7 @@ ordinal: 788
 anchor: mt-789
 date: 2026-10-19
 title: FR-136: the timetable's list, Delete Entry, Change Delay, Restart and Clear work as before
-disposition: needs test
+disposition: fixed validated
 from: FR-136
 written: 2026-10-19
 reopened: no
@@ -31113,7 +31113,7 @@ body:
 | <a id="mt-789"></a>
 | ### MT-789 - 2026-10-19 - FR-136: the timetable's list, Delete Entry, Change Delay, Restart and Clear work as before
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** FR-136
 |
 | **Written:** 2026-10-19
@@ -31147,7 +31147,7 @@ ordinal: 789
 anchor: mt-790
 date: 2026-10-19
 title: FR-136: the orange and grey covered-track shading on the track diagram follows the trains as before
-disposition: needs test
+disposition: fixed validated
 from: FR-136
 written: 2026-10-19
 reopened: no
@@ -31155,7 +31155,7 @@ body:
 | <a id="mt-790"></a>
 | ### MT-790 - 2026-10-19 - FR-136: the orange and grey covered-track shading on the track diagram follows the trains as before
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** FR-136
 |
 | **Written:** 2026-10-19
@@ -31187,7 +31187,7 @@ ordinal: 790
 anchor: mt-791
 date: 2026-10-19
 title: FR-136: Show Inactive Labels hides and shows the captions of stations autonomy cannot choose as before
-disposition: needs test
+disposition: fixed validated
 from: FR-136
 written: 2026-10-19
 reopened: no
@@ -31195,7 +31195,7 @@ body:
 | <a id="mt-791"></a>
 | ### MT-791 - 2026-10-19 - FR-136: Show Inactive Labels hides and shows the captions of stations autonomy cannot choose as before
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** FR-136
 |
 | **Written:** 2026-10-19
@@ -31227,7 +31227,7 @@ ordinal: 791
 anchor: mt-792
 date: 2026-10-19
 title: FR-136: a square's right-click menu in the autonomy editor and on the track diagram, and Bulk Tools, work as before
-disposition: needs test
+disposition: fixed validated
 from: FR-136
 written: 2026-10-19
 reopened: no
@@ -31235,7 +31235,7 @@ body:
 | <a id="mt-792"></a>
 | ### MT-792 - 2026-10-19 - FR-136: a square's right-click menu in the autonomy editor and on the track diagram, and Bulk Tools, work as before
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** FR-136
 |
 | **Written:** 2026-10-19
@@ -31267,7 +31267,7 @@ ordinal: 792
 anchor: mt-793
 date: 2026-10-19
 title: FR-136: the "<train> Is Facing..." menu with its arrived-from and tail choices works as before
-disposition: needs test
+disposition: fixed validated
 from: FR-136
 written: 2026-10-19
 reopened: no
@@ -31275,7 +31275,7 @@ body:
 | <a id="mt-793"></a>
 | ### MT-793 - 2026-10-19 - FR-136: the "<train> Is Facing..." menu with its arrived-from and tail choices works as before
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** FR-136
 |
 | **Written:** 2026-10-19
@@ -31307,7 +31307,7 @@ ordinal: 793
 anchor: mt-794
 date: 2026-10-19
 title: FR-136: the autonomy editor's prompts for a number, locomotives, a length, a link name and blocked points work as before
-disposition: needs test
+disposition: fixed validated
 from: FR-136
 written: 2026-10-19
 reopened: no
@@ -31315,7 +31315,7 @@ body:
 | <a id="mt-794"></a>
 | ### MT-794 - 2026-10-19 - FR-136: the autonomy editor's prompts for a number, locomotives, a length, a link name and blocked points work as before
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** FR-136
 |
 | **Written:** 2026-10-19
@@ -31349,7 +31349,7 @@ ordinal: 794
 anchor: mt-795
 date: 2026-10-19
 title: FR-136: pairing a station's exit and entry guard signals, in the window, by clicking and by address, works as before
-disposition: needs test
+disposition: fixed validated
 from: FR-136
 written: 2026-10-19
 reopened: no
@@ -31357,7 +31357,7 @@ body:
 | <a id="mt-795"></a>
 | ### MT-795 - 2026-10-19 - FR-136: pairing a station's exit and entry guard signals, in the window, by clicking and by address, works as before
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** FR-136
 |
 | **Written:** 2026-10-19
@@ -31391,7 +31391,7 @@ ordinal: 795
 anchor: mt-796
 date: 2026-10-19
 title: FR-136: Bulk Tools Mass Assign for track lengths, station maximums and train lengths works as before
-disposition: needs test
+disposition: fixed validated
 from: FR-136
 written: 2026-10-19
 reopened: no
@@ -31399,7 +31399,7 @@ body:
 | <a id="mt-796"></a>
 | ### MT-796 - 2026-10-19 - FR-136: Bulk Tools Mass Assign for track lengths, station maximums and train lengths works as before
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** FR-136
 |
 | **Written:** 2026-10-19
@@ -31429,7 +31429,7 @@ ordinal: 796
 anchor: mt-797
 date: 2026-10-19
 title: FR-136: Why not Moving? in the autonomy editor, on Auto and on Manual, works as before
-disposition: needs test
+disposition: fixed validated
 from: FR-136
 written: 2026-10-19
 reopened: no
@@ -31437,7 +31437,7 @@ body:
 | <a id="mt-797"></a>
 | ### MT-797 - 2026-10-19 - FR-136: Why not Moving? in the autonomy editor, on Auto and on Manual, works as before
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** FR-136
 |
 | **Written:** 2026-10-19

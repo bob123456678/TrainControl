@@ -517,6 +517,45 @@ text:
 | From Adam's rulings on FR-136's plan (2026-10-18): the public methods on the API classes (Layout, Edge, Locomotive, MarklinControlStation) stay even where nothing in the program calls them, because *"these seem useful to an API user, and we should add examples later"*.  Write example code that shows them in use, beyond the examples the Readme and AutomationAPI.md have now.
 |
 
+[issue FR-142]
+ordinal: 33
+inbox: yes
+kind: feature request
+title: clear locomotive icon from main UI
+filed: 2026-10-19
+filed_at: 2026-10-19 23:40
+raised_from: MT-775 (FR-136: the locomotive icon - set, crop, re-crop and clear - works as before)
+build: commit 2cac0137, in English - build\classes, compiled 19 Oct 22:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+text:
+| ### FR-142 - 2026-10-19 - clear locomotive icon from main UI
+|
+| **Kind:** feature request  
+| **Raised from:** MT-775 (FR-136: the locomotive icon - set, crop, re-crop and clear - works as before)  
+| **Filed:** 2026-10-19 23:40  
+| **Build:** commit 2cac0137, in English - build\classes, compiled 19 Oct 22:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+|
+| In the locomotive icon file chooser, we should have a button to also clear the current icon, so it's accessible via the wrench.
+|
+
+[issue FR-143]
+ordinal: 35
+inbox: yes
+kind: feature request
+title: for 3.1.0: the autonomy locomotive icon could be more transparent than 10%
+filed: 2026-10-19
+filed_at: 2026-10-19 23:59
+raised_from: MT-772 (FR-130: the autonomy locomotive icon is ten per cent clear)
+build: -
+text:
+| ### FR-143 - 2026-10-19 - for 3.1.0: the autonomy locomotive icon could be more transparent than 10%
+|
+| **Kind:** feature request  
+| **Raised from:** MT-772 (FR-130: the autonomy locomotive icon is ten per cent clear)  
+| **Filed:** 2026-10-19 23:59
+|
+| From MT-772 (FR-130), Adam 2026-10-19: "Confirmed, but 10% is hardly visible.  We may want to change this later."  The icon is drawn at 90% opacity in TileOverlay.paintTrain (ICON_ALPHA); a lower opacity is a one-constant change, with ui.testDiagramLooksRight's ten-per-cent claim moved with it.
+|
+
 [issue OB-324]
 ordinal: 19
 inbox: yes
@@ -697,4 +736,44 @@ text:
 | **Why:** `showTextCheckbox.setSelected(true)` is fixed in the track editor's `initComponents`, while `LayoutDiagram.editHideText` stays true on the page object the autonomy editor shares, and nothing reloads it when that editor closes.
 |
 | The claim is written and held out of the battery: `ui.testTheTrackEditorByHand.testTheTextLabelsBoxAgreesWithThePageAfterTheAutonomyEditor` (`@Test(enabled = false)`, seen red).  Not fixed: 3.0.3 is refactor-only.
+|
+
+[issue OB-365]
+ordinal: 32
+inbox: yes
+kind: bug
+title: pasting autonomy locomotives in the track viewer
+filed: 2026-10-19
+filed_at: 2026-10-19 22:36
+raised_from: noticed while testing - not from a particular test
+build: commit 2cac0137, in English - build\classes, compiled 19 Oct 22:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+text:
+| ### OB-365 - 2026-10-19 - pasting autonomy locomotives in the track viewer
+|
+| **Kind:** bug  
+| **Raised from:** noticed while testing - not from a particular test  
+| **Filed:** 2026-10-19 22:36  
+| **Build:** commit 2cac0137, in English - build\classes, compiled 19 Oct 22:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+|
+| in the layout viewer, control+v on a non-station still asks which way the locomotive is facing and where is the tail, even though no placement happens since we can't park on a non-station.  instead of showing these prompts, pop up a notice saying that you can't place a train at a non station.
+|
+
+[issue OB-366]
+ordinal: 34
+inbox: yes
+kind: bug
+title: avoid shifting the track diagram down when notices are shown
+filed: 2026-10-19
+filed_at: 2026-10-19 23:43
+raised_from: noticed while testing - not from a particular test
+build: commit 2cac0137, in English - build\classes, compiled 19 Oct 22:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+text:
+| ### OB-366 - 2026-10-19 - avoid shifting the track diagram down when notices are shown
+|
+| **Kind:** bug  
+| **Raised from:** noticed while testing - not from a particular test  
+| **Filed:** 2026-10-19 23:43  
+| **Build:** commit 2cac0137, in English - build\classes, compiled 19 Oct 22:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+|
+| in the autonomy editor, 2-line notices shift the track down.  fix this in 3.0.3 by making notices be below the diagram, and cap the height at 3 lines with a scrollbar.
 |
