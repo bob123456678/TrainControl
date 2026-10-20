@@ -792,7 +792,12 @@ public class testACompulsoryTurnIsNotAQuestion
      * recorded from it; playback is never idle, so the train was still on the copy it turned on and the next entry could
      * not start.  It is stood there at the arrival now, in the recording and in the playback alike.
      *
-     * MUTATION: leave a turned train for the idle drain again, and this fails.
+     * MUTATION: in `Layout.playedBack`, `final boolean turn = recorded && turnsTrains;` to `final boolean turn = false;`
+     * (the recorded turn not played back) and this fails: the second entry never starts.  The older mutation, leaving a
+     * turned train for the idle drain again (`else if (restandAfterTheTurn) standOnTheCopyItFacesAfterTheTurn(...)` to
+     * `else if (false) ...` in `Layout`), is an equivalent mutant here since RSA52-B1 and leaves this green: the turn is
+     * made on the turning copy, which already faces the way the train came in, so the arrival's re-stand and the drain
+     * alike leave the train where it is.
      *
      * @throws Exception from the railway
      */
@@ -908,7 +913,13 @@ public class testACompulsoryTurnIsNotAQuestion
      * at its start check three times and the run stopped half-staged.  The re-stand at the arrival is for the turns an
      * operator answered, whose next journey nobody has planned.
      *
-     * MUTATION: stand a train a plan turned on the drain's copy again, and this fails.
+     * MUTATION: in `AutonomySession`'s re-stand onto the copy a train faces, take out the RSA52-B1 return
+     * (`if (from != null && facing == facingsFor(tile).get(from.getName()) && from.isDestination()) return;`) and this
+     * fails at the idle drain: the drain moves the train onto the other side's plain copy.  The older mutation, standing a
+     * train a plan turned on the drain's copy at the arrival again (`reversals != ALWAYS_REVERSE` dropped from
+     * `restandAfterTheTurn` in `Layout`), is an equivalent mutant since RSA52-B1 and leaves this green: a plan turns a
+     * train on a turning copy, which already faces the way it came in, and `Layout.copyAfterTheTurn` answers such a copy
+     * with itself, so the re-stand it would add moves nothing.
      *
      * @throws Exception from the railway
      */
