@@ -3476,15 +3476,11 @@ public class AutonomyCompanionStore
     /**
      * The same, for a set whose members are PAIRED ACROSS PAGES (SVN-B8).
      *
-     * `disabledPortals` is the one set like that: `setPortalDisabled` writes both ends, and the two
-     * ends are on different pages by definition - that is what a portal is. `453a3ef4` taught
-     * `PairMapKept` and `ListMapKept` to capture at either end and left the set kind alone, so a page
-     * snapshot of one end captured nothing and the undo removed one half of the pair and put nothing
-     * back.
-     *
-     * The link stayed shut - `isPortalDisabled` answers through the partner - and `disabledLinks` went
-     * to disk with one end in it, which is the shape `TileGraph.portalClosed` calls out as having no
-     * migration.
+     * `disabledPortals` is the one set like that: `setPortalDisabled` writes both ends, and the two ends are on different
+     * pages by definition.  The set kind must capture at either end, as `PairMapKept` and `ListMapKept` do, or a page
+     * snapshot of one end captures nothing and the undo removes one half of the pair and puts nothing back; the link
+     * stays shut (`isPortalDisabled` answers through the partner) but `disabledLinks` goes to disk with one end in it,
+     * the shape `TileGraph.portalClosed` calls out as having no migration.
      *
      * @param from the set
      * @param page the page being snapshotted
@@ -3543,46 +3539,33 @@ public class AutonomyCompanionStore
      * @param arriving each square that is MOVING and where it is going, so that a label about to be
      *        built over by the very thing it names can be told from one that is merely stale
      *
-     * A caption is the odd one out among everything stored per square: it is a reference to somewhere
-     * else rather than a fact about the square it sits on.  So when a square is built over, its caption
-     * normally goes with the rest - it named track that is gone.
+     * A caption is the odd one out among everything stored per square: it is a reference to somewhere else rather than a
+     * fact about the square it sits on.  So when a square is built over, its caption normally goes with the rest.
      *
-     * Except when what built over it is the very station the caption names.  A platform's name is
-     * usually written on a blank square beside it, and "beside" is often the square below - so nudging
-     * that platform down one square lands it on its own label, and the label was thrown away by the
-     * same gesture that carried the platform.  The name vanished for a move of one square in one
-     * direction and survived every other, which is exactly how Adam found it.
+     * Except when what built over it is the very station the caption names.  A platform's name is usually written on a
+     * blank square beside it, and "beside" is often the square below, so nudging that platform down one lands it on its
+     * own label, which must survive the gesture that carried the platform.  It is kept and left where it is; a caption
+     * may sit on its own station's square, so the entry that survives is repointed by the caller and ends up naming the
+     * tile it is now sitting on.
      *
-     * Kept and left where it is.  A caption may sit on its own station's square - that is how a name
-     * gets drawn over a platform rather than beside it - so the entry that survives here is repointed
-     * by the caller and ends up naming the tile it is now sitting on.
-     *
-     * The test is that the station it names is arriving on THIS square, not that it is moving at all.
-     * Those are different questions the moment more than one tile moves at once: a column move carries
-     * twenty tiles, and a label anywhere in the destination column names one of them roughly as often
-     * as not - which would spare a label that some other tile has just been built over the top of, and
-     * leave a station's name written on track it has nothing to do with.
+     * The test is that the station it names is arriving on THIS square, not that it is moving at all: with a column move
+     * carrying twenty tiles, a label anywhere in the destination column names one of them roughly as often as not, which
+     * would spare a label that some other tile has just been built over the top of.
      */
     private boolean forgetSquares(Set<TileKey> squares, Map<TileKey, TileKey> arriving)
     {
         if (squares == null || squares.isEmpty()) return false;
 
-        // WHETHER ANYTHING WAS ACTUALLY REMOVED (X8V-B2).  See `Kept.forget`: the answer used to be
-        // manufactured by `moveTiles` from the size of the list it was handed, which is not the same
-        // question, and four callers treat it as a reason to write the whole setup to disk.
+        // WHETHER ANYTHING WAS ACTUALLY REMOVED (X8V-B2): see `Kept.forget`.  Four callers treat the answer as a reason to
+        // write the whole setup to disk, so it is not manufactured from the size of the list handed in.
         boolean any = false;
 
-        // Each collection drops what it knows about these squares AND anything POINTING at them.
-        //
-        // Both halves matter and both have been got wrong here. A pointer at track that is gone -
-        // a protecting signal, a blocker, the far end of a portal, a caption naming a station -
-        // is one nothing can satisfy or clear.
-        //
-        // The captions are the one exception in the whole registry, and it is not a special case so
-        // much as a different question: a platform whose name is written on the square below it,
-        // nudged down one, lands ON its own label, and that label is not stale. It is about the tile
-        // that just arrived. That is what `arriving` is for, and it applies to the KEY half only - a
-        // square being vacated is never in this set, because moveTiles builds it by excluding them.
+        // Each collection drops what it knows about these squares AND anything POINTING at them: a pointer at track that is
+        // gone (a protecting signal, a blocker, the far end of a portal, a caption naming a station) is one nothing can
+        // satisfy or clear.  The captions are the one exception: a platform whose name is written on the square below it,
+        // nudged down one, lands ON its own label, and that label is not stale.  That is what `arriving` is for, and it
+        // applies to the KEY half only - a square being vacated is never in this set, because moveTiles builds it by
+        // excluding them.
         for (Kept k : kept()) any |= k.forget(squares, arriving);
 
         // The configurations key by square as well - facings, placements, homes, lengths
@@ -3602,16 +3585,13 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Follows squares that have been dragged to new coordinates, moved keys winning over ones that
-     * merely stayed.
+     * Follows squares that have been dragged to new coordinates, moved keys winning over ones that merely stayed.
      *
-     * The square is the part that moves; for a key that is a square plus something else, that
-     * something else identifies which of the square's entries this is and travels unchanged. That
-     * used to be a separate method operating on strings, splitting the key on a '#' - see FR-013
-     * stage two.
+     * The square is the part that moves; for a key that is a square plus something else, that something else identifies
+     * which of the square's entries this is and travels unchanged (FR-013).
      *
-     * Two passes rather than one, and the order matters: an entry moving ONTO a square another entry
-     * is moving off must not be overwritten by the one leaving.
+     * Two passes rather than one, and the order matters: an entry moving ONTO a square another entry is moving off must
+     * not be overwritten by the one leaving.
      *
      * @param <K> what the collection is keyed by
      * @param <T> what it holds
@@ -3715,10 +3695,9 @@ public class AutonomyCompanionStore
         /**
          * A reconciliation that did not happen, and the pages that stopped it (DR-B10).
          *
-         * The no-argument constructor above says "nothing was reconciled" and says nothing about why,
-         * so a caller holding one cannot tell a clean layout from a layout it was refused permission
-         * to tidy. Those are opposite situations: the first needs no message and the second is the one
-         * moment somebody could put the missing page back before its id is retired.
+         * The no-argument constructor says "nothing was reconciled" and not why, so a caller holding one cannot tell a clean
+         * layout from a layout it was refused permission to tidy: the second is the one moment somebody could put the
+         * missing page back before its id is retired.
          *
          * @param absent the pages the setup knows about that are not loaded, possibly empty when the
          *        refusal was a suspect numbering instead
@@ -3755,8 +3734,8 @@ public class AutonomyCompanionStore
         }
 
         /**
-         * Lengths and directions removed because their tile is gone.  A tile carries these, so they go
-         * with it - the author ruled a deleted tile starts over.
+         * Lengths and directions removed because their tile is gone.  A tile carries these, so they go with it: a
+         * deleted tile starts over.
          * @return
          */
         public List<String> getDroppedTileProperties()
@@ -3827,13 +3806,10 @@ public class AutonomyCompanionStore
         report.droppedTileProperties.addAll(asStrings(dropMissing(tileLengths, keys)));
         report.droppedTileProperties.addAll(asStrings(dropMissing(tileDirections, keys)));
         report.droppedTileProperties.addAll(asStrings(dropMissing(barredArrivals, keys)));
-        // dropMissing tests the KEY - the station's square.  The VALUES are squares too, and this was
-        // the one square-referencing collection whose values reconcile never looked at: portals are
-        // checked on both ends, and a caption's two ends inside reconcileCaptions.  forgetSquares covers a signal
-        // square that is BUILT OVER, so what was left was the plain deletion - and the pairing then
-        // survived every save, ready to be INHERITED by whatever is drawn at those coordinates next.
-        // That is the defect the linkNames drop below was written for, applied to the one collection
-        // that commands real hardware: autonomy would start throwing an accessory nobody paired.
+        // dropMissing tests the KEY - the station's square.  The VALUES are squares too, and reconcile must look at them:
+        // forgetSquares covers a signal square that is BUILT OVER, but a plain deletion would leave the pairing in the
+        // file, ready to be INHERITED by whatever is drawn at those coordinates next, so autonomy would start throwing an
+        // accessory nobody paired.
         report.droppedTileProperties.addAll(asStrings(dropMissing(stationSignals, keys)));
         report.droppedTileProperties.addAll(asStrings(dropMissing(blockedPoints, keys)));
         report.droppedTileProperties.addAll(asStrings(dropMissing(entrySignals, keys)));
@@ -3897,15 +3873,10 @@ public class AutonomyCompanionStore
             else pair.setValue(kept);
         }
 
-        // linkNames and disabledPortals, which were the only two of the eleven kept collections this
-        // method said nothing about (DD-A1).
-        //
-        // Not untidiness. Both are remembered BY SQUARE, so a name and a switched-off flag for track
-        // that no longer exists sat in the file indefinitely and were INHERITED by the next link drawn
-        // on that square - which arrived pre-named and already disabled, with nothing saying why.
-        //
-        // Reported like everything else here, because a diagram edit that quietly costs a link name
-        // should be visible rather than discovered later.
+        // linkNames and disabledPortals (DD-A1).  Both are remembered BY SQUARE, so a name and a switched-off flag for
+        // track that no longer exists would sit in the file indefinitely and be INHERITED by the next link drawn on that
+        // square, which would arrive pre-named and already disabled.  Reported like everything else here, because a
+        // diagram edit that quietly costs a link name should be visible.
         report.droppedTileProperties.addAll(asStrings(dropMissing(linkNames, keys)));
 
         for (TileKey key : dropMissingMembers(disabledPortals, keys))
@@ -3924,13 +3895,9 @@ public class AutonomyCompanionStore
             if (!keys.contains(key)) goneTiles.add(key);
         }
 
-        // Squares, not their printed form (FR-013).
-        //
-        // This gathered `key.toString()` and then asked `pointNames.get(aString)` and
-        // `stations.remove(aString)`. Both compile - Map.get and Set.remove take Object - and both do
-        // nothing at all, so a name whose square had gone was neither forgotten nor reported. The
-        // report is printed at the point it is written instead, which is the only place the printed
-        // form is wanted.
+        // Squares, not their printed form (FR-013): `pointNames.get(aString)` and `stations.remove(aString)` compile, as
+        // Map.get and Set.remove take Object, and do nothing at all.  The report is printed at the point it is written
+        // instead, which is the only place the printed form is wanted.
         for (TileKey key : goneTiles)
         {
             String name = pointNames.get(key);
@@ -3949,17 +3916,11 @@ public class AutonomyCompanionStore
             }
         }
 
-        // A station that was never NAMED is not covered by the loop above, which walks the names whose
-        // square has gone - so a square carrying a designation and no name was never visited, and there
-        // was no dropMissingMembers(stations, keys) to match the one written for disabledPortals.  An
-        // unnamed station is an ordinary state: setStation asks for no name, and placeCaption has a
-        // "not named yet" answer for exactly this.  Left behind, the square stays a station for good,
-        // so a sensor drawn at those coordinates later is silently one again - and checkNames raises a
-        // blocking UNNAMED_STATION about a square nobody can see.
-        //
-        // Only the unnamed ones.  A named station whose tile is gone is kept above when a configuration
-        // still refers to it, so the user can find it; nothing can refer to one with no name, so that
-        // rule has nothing to say here.
+        // A station that was never NAMED is not covered by the loop above, which walks the names whose square has gone.
+        // An unnamed station is an ordinary state (setStation asks for no name), and left behind the square would stay a
+        // station for good, so a sensor drawn at those coordinates later is silently one again, and checkNames raises a
+        // blocking UNNAMED_STATION about a square nobody can see.  Only the unnamed ones: a named station whose tile is
+        // gone is kept above when a configuration still refers to it, and nothing can refer to one with no name.
         List<TileKey> orphanStations = new ArrayList<>();
 
         for (TileKey key : stations)
@@ -4104,14 +4065,10 @@ public class AutonomyCompanionStore
     /**
      * Every shared field this version writes.
      *
-     * A field NOT listed here is treated as something a newer TrainControl wrote, kept aside on load and
-     * written back on save so an older version does not delete it.  That makes an omission from this
-     * list quietly destructive rather than merely untidy: the stale copy is written after the real one,
-     * so every edit to that field since the load is reverted the moment anything saves.
-     *
-     * "captions" was missing, and it cost exactly that - the migration recorded the captions, saved,
-     * had them overwritten with the empty copy read a moment earlier, and then stripped the labels they
-     * had been migrated from.  Anything added to save() has to be added here in the same breath.
+     * A field NOT listed here is treated as something a newer TrainControl wrote, kept aside on load and written back on
+     * save so an older version does not delete it.  That makes an omission quietly destructive: the stale copy is written
+     * after the real one, so every edit to that field since the load is reverted the moment anything saves.  Anything added
+     * to save() has to be added here in the same breath.
      */
     private static final Set<String> KNOWN_SHARED_NOT_A_COLLECTION =
         new LinkedHashSet<>(java.util.Arrays.asList("version", "activeConfiguration", "pages"));
@@ -4119,16 +4076,12 @@ public class AutonomyCompanionStore
     /**
      * Every field name this build understands in the shared file.
      *
-     * Anything else is a field a NEWER build wrote.  A LOAD keeps it verbatim and writes it back untouched;
-     * an import that translates page ids leaves it out, because nothing here knows its shape (TDR-C7,
-     * TDR-C10).
-     * That makes the list load-bearing in a direction that is easy to get backwards: a collection
-     * MISSING from it is not read as unknown-and-preserved, it is read as unknown-and-preserved AND
-     * also read into its own collection, so the next save writes both - and the stale copy wins.
-     * `captions` was missing from it once, and every caption edit was reverted on the next save.
+     * Anything else is a field a NEWER build wrote.  A LOAD keeps it verbatim and writes it back untouched; an import that
+     * translates page ids leaves it out, because nothing here knows its shape (TDR-C7, TDR-C10).
      *
-     * Derived rather than listed, now, so that cannot happen again: a collection that is in the
-     * registry is in here, because this is the registry read a different way.
+     * That makes the list load-bearing: a collection MISSING from it is read as unknown-and-preserved AND also read into
+     * its own collection, so the next save writes both and the stale copy wins.  It is derived rather than listed, so that
+     * cannot happen: a collection that is in the registry is in here, because this is the registry read a different way.
      *
      * @return the field names, by their names in the FILE
      */
@@ -4167,34 +4120,19 @@ public class AutonomyCompanionStore
     /**
      * Every shared field that can be held for an absent page, and what its values are made of.
      *
-     * ONE list (DR-A1). This was three: four shape-classified arrays inside `withoutAbsentPages` and a
-     * twelve-name array inside `sharedFields`, none of them governed by any test. A reviewer proved
-     * what that costs by removing a single string - `"blockedPoints"` from the merge array, nothing
-     * else. All three ratchets stayed green, and one save while a page's file was missing silently
-     * deleted that page's FR-001 restrictions from disk. That is the sentence OB-067 was closed with,
-     * minus one string in one array.
-     *
-     * The other direction is as quiet: a field in the merge list but not the hold list comes back into
-     * memory with a page ID standing where a page NAME belongs, which is the pun the whole mechanism
-     * exists to remove.
-     *
-     * So the hold and the merge read the same map, and it cannot be half-updated. The store's history
-     * is a list of lists that drifted - DD-A1 counted fourteen - and this is the one whose drift is
-     * invisible until somebody's page is offline.
+     * ONE list (DR-A1), read by both the hold and the merge, so it cannot be half-updated: a field in the merge but not
+     * the hold would come back into memory with a page ID standing where a page NAME belongs, the pun the whole mechanism
+     * exists to remove, and a field in the hold but not the merge would be deleted from disk by one save while a page's
+     * file was missing, as the FR-001 restrictions were (OB-067).
      */
     private static final Map<String, Held> HELD_FIELDS = heldFields();
 
     /**
      * Which collections are held back when their page is not loaded, and in what shape.
      *
-     * A METHOD rather than a static block, so that the guard which insists every kept collection is
-     * handled everywhere can address it by name (LD-11). This is the thirteenth bookkeeping site and
-     * the one the OB-025 registry does not cover - it is about the shape entries have in the FILE
-     * rather than about the collection, and it is static, so kept() is not available to it.
-     *
-     * Before the registry it was shadowed by accident: sharedFields carried a literal list of the
-     * twelve names that the same guard read, so a collection missing from here was usually missing
-     * from that list too. sharedFields is a loop now and the shadow went with it.
+     * A METHOD rather than a static block, so that the guard which insists every kept collection is handled everywhere
+     * can address it by name (LD-11).  It is about the shape entries have in the FILE rather than about the collection,
+     * and it is static, so the OB-025 registry (`kept()`) does not cover it.
      *
      * @return the field names, by their names in the file, and how each is keyed
      */
@@ -4223,10 +4161,9 @@ public class AutonomyCompanionStore
     /**
      * The shared object with every entry naming an absent page taken out of it and held.
      *
-     * Only when the numbering is known at all. A store loaded with no index - which is what the
-     * on-disk repair path does on its first read - knows nothing about any page, and holding
-     * everything would empty it. Nothing can be misresolved there either, because the name map is as
-     * empty as the id map, so the keys stay as they are and are written back as they are.
+     * Only when the numbering is known at all.  A store loaded with no index - which is what the on-disk repair path does
+     * on its first read - knows nothing about any page, and holding everything would empty it.  Nothing can be misresolved
+     * there either, because the name map is as empty as the id map, so the keys stay as they are.
      *
      * @param root the shared object as read, with "pages" already taken from it
      * @return a copy safe to read into the live collections
