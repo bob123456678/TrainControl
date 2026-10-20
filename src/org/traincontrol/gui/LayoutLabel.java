@@ -1426,24 +1426,19 @@ public final class LayoutLabel extends JLabel
 
         try
         {
-            // The static layer first, and the running one over it.
+            // The static layer first, and the running one over it.  The running state is a LINE along the track, so
+            // it covers only the rails it claims, and where the two meet the path a train is actually taking is the
+            // more urgent of the two: the arrows say what is permitted, which is worth reading while a layout is
+            // being set up rather than while it is running.
             //
-            // It used to be the other way round, when running state was a wash over the whole square
-            // and would have buried the arrows underneath.  It is a LINE along the track now, so it
-            // covers only the rails it claims - and where the two do meet, the path a train is
-            // actually taking is the more urgent of the two: the arrows say what is permitted, which
-            // is worth reading while a layout is being set up rather than while it is running.
-            // TOLD WHETHER THE TILE IS ALREADY FAINT (Adam, OB-212).
+            // TOLD WHETHER THE TILE IS ALREADY FAINT (OB-212; Adam: "keep one level of opacity, dont stack.").
+            // `refused` is what drew the art at `BLOCKED_ALPHA` above, and the annotation lays a wash of its own
+            // under its arrows, so on a square that has already been faded the two would compound.
             //
-            // `refused` is what drew the art at `BLOCKED_ALPHA` above.  The annotation lays a wash of
-            // its own under its arrows, and on a square that has already been faded the two compound -
-            // *"keep one level of opacity, dont stack."*
-            // THE REGION ALREADY FADED, not merely whether any of it was (PRW-C1).
-            //
-            // On a double curve `theRoadToFade` fades one road and leaves the other alone, so passing
-            // a tile-wide "yes" made the annotation skip the wash under BOTH roads' arrows - the
-            // uncovered road losing a mark it should have had.  The shape says which part is already
-            // faint; on every other square it is the whole tile and nothing below changes.
+            // THE REGION ALREADY FADED, not merely whether any of it was (PRW-C1).  On a double curve
+            // `theRoadToFade` fades one road and leaves the other alone, so a tile-wide "yes" would make the
+            // annotation skip the wash under BOTH roads' arrows.  The shape says which part is already faint; on
+            // every other square it is the whole tile.
             java.awt.Shape faded = !refused ? null
                 : (theRoadToFade() == null
                     ? new java.awt.Rectangle(0, 0, getWidth(), getHeight()) : theRoadToFade());
@@ -1455,24 +1450,22 @@ public final class LayoutLabel extends JLabel
             // sides this tile's route uses, and it is already what places the badges.
             if (overlay != null)
             {
-                // TOLD WHETHER THE TILE IS ALREADY FAINT (Adam, MT-375).
-                //
-                // `refused` is what drew the art at `BLOCKED_ALPHA` above.  The overlay pales out
-                // track a route is holding, and on a square that is both blocked and held the two
-                // compound - which is the tone difference Adam can see between two neighbouring
-                // squares.  His ruling on MT-373 is that one grey covers both reasons.
+                // TOLD WHETHER THE TILE IS ALREADY FAINT (MT-375).  `refused` is what drew the art at
+                // `BLOCKED_ALPHA` above.  The overlay pales out track a route is holding, and on a square that is
+                // both blocked and held the two would compound into a tone difference between neighbouring
+                // squares.  Adam ruled (MT-373) that one grey covers both reasons.
                 overlay.paint(g2, getWidth(), getHeight(),
                     annotation == null ? null : annotation.trackCentre(getWidth(), getHeight()),
                     faded);
             }
 
-            // AND THE TRAIN'S TAIL OVER THE RUN LINE (Adam, FR-106: "the train tails aren't shown.  make the tail
-            // visible at all times").  A running train's tail lies on the road it has just driven, which the run line
-            // draws as reached - so the tail, drawn first and under everything, was covered for the whole of the run.
+            // AND THE TRAIN'S TAIL OVER THE RUN LINE (FR-106; Adam: "make the tail visible at all times").  A
+            // running train's tail lies on the road it has just driven, which the run line draws as reached, so the
+            // tail drawn first and under everything would be covered for the whole of the run.
             //
-            // ONLY WHERE A RUN LINE LIES (RSA66-C5): drawn over the whole of any square with an overlay, it lay a second
-            // time over itself wherever no run line was under it - all of a standing train's own square, the part of a
-            // run's first or last square the run does not reach - and came out a second, lighter orange.
+            // ONLY WHERE A RUN LINE LIES (RSA66-C5): drawn over the whole of any square with an overlay, it would lie
+            // a second time over itself wherever no run line was under it (all of a standing train's own square, the
+            // part of a run's first or last square the run does not reach) and come out a second, lighter orange.
             java.awt.Shape run = overlay == null ? null
                 : overlay.runArea(getWidth(), getHeight(),
                     annotation == null ? null : annotation.trackCentre(getWidth(), getHeight()));
@@ -1493,16 +1486,11 @@ public final class LayoutLabel extends JLabel
                 }
             }
 
-            // And the badge back on top of the line (MT-076).
-            //
-            // The order above is about the ARROWS, and is right about them. It is wrong about the
-            // station badges: a station is where the train is GOING, and the line is how it gets
-            // there, so burying the landmark under the route loses the thing being watched. Adam,
-            // watching a run: "I like being able to see progress - keep them on top after being
-            // reached."
-            //
-            // Only where there is an overlay to have covered it, so an ordinary diagram still paints
-            // its badge exactly once.
+            // And the badge back on top of the line (MT-076).  The order above is about the ARROWS, and is right
+            // about them; it is wrong about the station badges.  A station is where the train is GOING and the line
+            // is how it gets there, so burying the landmark under the route loses the thing being watched (Adam: "I
+            // like being able to see progress - keep them on top after being reached.").  Only where there is an
+            // overlay to have covered it, so an ordinary diagram still paints its badge exactly once.
             if (overlay != null && annotation != null)
             {
                 annotation.paintBadgeOverRun(g2, getWidth(), getHeight());
@@ -1515,21 +1503,16 @@ public final class LayoutLabel extends JLabel
     }
     /**
      * Redraws this tile because the train on it has arrived or gone (OB-180).
+     * The mark is decided when a tile is PAINTED, and a tile is only painted when something asks it to.  Moving a
+     * train changes which squares its tail lies across and nothing else about any of them, so something has to ask.
      *
-     * The mark is decided when a tile is PAINTED, and a tile is only painted when something asks it
-     * to. Moving a train changes which squares its tail lies across and nothing else about any of
-     * them, so nothing asked. Adam: **"when a train is manually moved to a new station in the track
-     * diagram viewer using control+X and V, its former shaded icons are not reset."**
+     * `updateImage` cannot do this job: it repaints only when the IMAGE NAME changed, and the mark is no part of
+     * the image; forcing it with `highlight` would flash every signal and switch it touched, which is a different
+     * message to the operator entirely.
      *
-     * `updateImage` cannot do this job. It repaints only when the IMAGE NAME changed, and the mark is
-     * no part of the image; forcing it with `highlight` would flash every signal and switch it
-     * touched, which is a different message to the operator entirely.
-     *
-     * A plain repaint since MT-309, where the marks stopped being an icon and became things painted
-     * over one - so there is nothing to swap and nothing that a tile which has not drawn its picture
-     * yet would miss. `paintCoveredMark` asks the window afresh every time it runs, which is what
-     * makes this enough, and it is why the same door serves the wash that came back on 2026-09-09
-     * without a second refresh path beside it.
+     * A plain repaint is enough because the marks are painted over the icon (MT-309), so there is nothing to swap
+     * and nothing a tile that has not drawn its picture yet would miss.  `paintCoveredMark` asks the window afresh
+     * every time it runs, so the same door serves the wash and the line with no second refresh path beside it.
      */
     public void refreshCoveredMark()
     {
@@ -1542,19 +1525,18 @@ public final class LayoutLabel extends JLabel
     /**
      * The orange a train is drawn in (MT-309).
      *
-     * Adam: *"we need to draw a line (let's say in orange) to show that the train is there."*  Opaque,
-     * and the one strongly coloured line on an ordinary diagram: the greens and reds already mean
-     * "trains may run this way" and "they may not", and yellow is the transient flash for something
-     * that has just been switched. Orange is not spoken for.
+     * Adam: *"we need to draw a line (let's say in orange) to show that the train is there."*  Opaque, and the one
+     * strongly coloured line on an ordinary diagram: the greens and reds already mean "trains may run this way" and
+     * "they may not", and yellow is the transient flash for something that has just been switched.  Orange is not
+     * spoken for.
      *
-     * **The orange the diagram used for a square autonomy does not choose** (Adam, 2026-09-12: *"make
-     * the orange of the lines match the orange of inactive stations"*), which is the graph window's own
-     * inactive colour.  It was rgb(255,140,0), half a shade off, which on a diagram carrying both at once
-     * reads as two colours that were each meant to be something.  A parking berth is grey since FR-103
-     * (Adam, 2026-09-26); a square nothing can pass - the X - is this orange again (2026-09-29).
+     * It is also the orange the diagram uses for a square autonomy does not choose (Adam: *"make the orange of the
+     * lines match the orange of inactive stations"*), which is the graph window's own inactive colour, so a diagram
+     * carrying both reads them as one colour.  A parking berth is grey (FR-103); a square nothing can pass, the X,
+     * is this orange.
      *
-     * **The solid one of two since 2026-10-09** (`TailColour.SOFT`): the line is drawn in `tailColour()`, which is
-     * see-through unless set otherwise.
+     * **The solid one of two** (`TailColour.SOFT`): the line is drawn in `tailColour()`, which is see-through unless
+     * set otherwise.
      */
     public static final Color TRAIN_MARK = org.traincontrol.automationui.DiagramColours.TRAIN;
 
@@ -1574,8 +1556,8 @@ public final class LayoutLabel extends JLabel
     public static final float BLOCKED_ALPHA = 0.40f;
 
     /**
-     * One coach of a train, along one road of a square (T2 of the look's train tails; Adam, 2026-10-09: "Do T2 only if
-     * you can maintain shape continuity across curves rather than a jagged look when it straightens out").
+     * One coach of a train, along one road of a square (T2 of the look's train tails: shape continuity across
+     * curves rather than a jagged look when it straightens out).
      *
      * WHOLE COACHES, ONE TO A SQUARE.  A dash pattern laid along the line restarts at every square and leaves a stub
      * wherever a road is not a whole number of dashes long - a curve's diagonal chord is about seven-tenths of a
@@ -1636,15 +1618,15 @@ public final class LayoutLabel extends JLabel
     }
 
     /**
-     * The style trains are drawn in: the line (Adam, 2026-10-09, having seen both: "revert back to the original
-     * occupied line shape").  Coaches stay, for a preference to choose.
+     * The style trains are drawn in: the line (Adam, having seen both: "revert back to the original occupied line
+     * shape").  Coaches stay, for a preference to choose.
      */
     private static volatile TailStyle tailStyle = TailStyle.LINE;
 
     /**
-     * The style trains are drawn in, asked in ONE place so a preference can choose it later (Adam, 2026-10-09: "make it
-     * so that we can easily add an option later to switch between T2 and the current look"): read the preference here,
-     * as `TrainControlUI.stationLabelsAreGrey` reads the caption colour, and every square follows on its next paint.
+     * The style trains are drawn in, asked in ONE place so a preference can choose it later: read the preference
+     * here, as `TrainControlUI.stationLabelsAreGrey` reads the caption colour, and every square follows on its next
+     * paint.
      *
      * @return how a train's body is drawn
      */
@@ -1669,19 +1651,18 @@ public final class LayoutLabel extends JLabel
     public enum TailEnds
     {
         /**
-         * Rounded, stopped short of the square's edge so the round cap lies inside it (round 108; Adam, 2026-10-09: "Can
-         * we make the end of a train (orange line) rounded, not a straight jagged edge?").
+         * Rounded, stopped short of the square's edge so the round cap lies inside it.
          */
         ROUNDED,
 
-        /** Run to the square's edge and cut off flat there, as before round 108. */
+        /** Run to the square's edge and cut off flat there. */
         SQUARE
     }
 
     /**
-     * How a train's line ends: rounded.  `TailEnds.SQUARE` goes back to the line cut off flat on the square's edge -
-     * Adam, 2026-10-10: "make it easy to revert to the old, non rounded orange train tails" - one word here, or
-     * `setTailEnds` for a preference.
+     * How a train's line ends: rounded.  `TailEnds.SQUARE` goes back to the line cut off flat on the square's edge
+     * (Adam: "make it easy to revert to the old, non rounded orange train tails"): one word here, or `setTailEnds`
+     * for a preference.
      */
     private static volatile TailEnds tailEnds = TailEnds.ROUNDED;
 
@@ -1748,8 +1729,8 @@ public final class LayoutLabel extends JLabel
     }
 
     /**
-     * The colour trains are drawn in: see-through (Adam, 2026-10-09: "can we change to the see through tail line, and
-     * make it easy to switch to that one too?").
+     * The colour trains are drawn in: see-through by default, and easy to switch (Adam: "can we change to the see
+     * through tail line, and make it easy to switch to that one too?").
      */
     private static volatile TailColour tailColour = TailColour.SEE_THROUGH;
 
@@ -1774,38 +1755,25 @@ public final class LayoutLabel extends JLabel
     }
 
     /**
-     * Draws what a standing train has done to this square: the grey it has blocked, the orange it is
-     * lying on.
+     * Draws what a standing train has done to this square: the grey it has blocked, the orange it is lying on.
      *
-     * **BOTH MARKS, AND THEY SAY DIFFERENT THINGS** (Adam, 2026-09-09: *"'train is here' should also
-     * mean 'track is blocked' - that is the whole point.  it's the same as greying out edges, just in
-     * a different way"*).  Between 2026-09-08 and that ruling the line stood alone, and what was drawn
-     * was a strict subset of what routing refuses - so a square the railway would not let a train onto
-     * looked exactly like free track.  A square with orange on it is where a train IS; a square that
-     * is merely grey is track that train's presence has made unusable; a square with neither is free.
+     * **BOTH MARKS, AND THEY SAY DIFFERENT THINGS** (Adam: *"'train is here' should also mean 'track is blocked' -
+     * that is the whole point.  it's the same as greying out edges, just in a different way"*).  A square with
+     * orange on it is where a train IS; a square that is merely grey is track that train's presence has made
+     * unusable; a square with neither is free.  The wash is under the line, so a square that is both still reads as
+     * both: the other order would bury the train under the consequence of the train.
      *
-     * **The wash is under the line**, so a square that is both still reads as both.  The other order
-     * would bury the train under the consequence of the train.
+     * **The road, not the square** (Adam: *"graying makes it look confusing on double curve tiles"*).  A double
+     * curve carries two roads that never meet, and a wash over the whole square would say a train was on both.  The
+     * window is asked which routes of this square are covered, and one line is drawn along each of them: edge to
+     * edge in one stroke, or as whole coaches where a preference chooses them (`tailStyle`), along the rail rather
+     * than around it, as the run line is ("a curve here is not an arc and a switch's diverging leg is not a right
+     * angle", see `TileAnnotation.paintTraces`).  Where the window can name no road (a portal hop has no side on
+     * the grid) nothing is drawn: a mark in a place no rail goes is worse than none.
      *
-     * **The road, not the square** (Adam, 2026-09-08: *"graying makes it look confusing on double
-     * curve tiles"*). A double curve carries two roads that never meet, and a wash over the whole
-     * square said a train was on both. The window is asked which routes of this square are covered -
-     * an answer the reduction already had, since each step of an edge records the route it runs
-     * through - and one line is drawn along each of them.
-     *
-     * Edge to edge in one stroke - or as whole coaches, where a preference chooses them (`tailStyle`) - along the rail
-     * rather than around it, which is the same shape and
-     * the same reasoning as the run line: "a curve here is not an arc and a switch's diverging leg is
-     * not a right angle", see `TileAnnotation.paintTraces`.
-     *
-     * Where the window can name no road - a portal hop, which has no side on the grid - nothing is
-     * drawn rather than a line across the middle of the square. A mark in a place no rail goes is
-     * worse than none, and the square is still spoken for on the railway either way.
-     *
-     * THE VIEWER ONLY, not either editor (Adam, 2026-09-07: "don't show shading in the autonomy or
-     * diagram editor, only the track diagram viewer"). An editor is where the railway is arranged,
-     * and what happens to be standing on it while you arrange it is a fact about right now rather
-     * than about the drawing.
+     * THE VIEWER ONLY, not either editor (Adam: "don't show shading in the autonomy or diagram editor, only the
+     * track diagram viewer").  An editor is where the railway is arranged, and what happens to be standing on it
+     * while you arrange it is a fact about right now rather than about the drawing.
      *
      * @param g the tile's graphics
      */
@@ -1815,9 +1783,9 @@ public final class LayoutLabel extends JLabel
     }
 
     /**
-     * Draws the train's line, as `paintCoveredMark(g)` does, or over a run line: in the colour that comes out there as
-     * the line does over plain track (Adam, 2026-10-11: "brighten the color of the orange train tail while running so
-     * that it more closely matches the normal stopped color").
+     * Draws the train's line, as `paintCoveredMark(g)` does, or over a run line: in the colour that comes out there
+     * as the line does over plain track (Adam: "brighten the color of the orange train tail while running so that
+     * it more closely matches the normal stopped color").
      *
      * @param g where to draw
      * @param overTheRun whether it is drawn over the run line, not under everything
@@ -1826,15 +1794,10 @@ public final class LayoutLabel extends JLabel
     {
         if (component == null || component.isText() || !trainsShown.getAsBoolean()) return;
 
-        // THE REFUSAL IS DRAWN IN `paintComponent`, NOT HERE, since MT-278 item 1.
-        //
-        // It was a grey rectangle painted over the square at this point.  Adam asked for the square
-        // itself to be faded instead - *"the same tile with more transparency"* - and a fade has to be
-        // applied to the icon as it is painted rather than over it afterwards, which is a thing only
-        // `paintComponent` can do.  `BLOCKED_ALPHA` is the value and says why.
-        //
-        // What is left here is the train mark, which goes on at full strength: the fade says what the
-        // railway refuses, the line says where a train is, and the second is the more urgent.
+        // THE REFUSAL IS DRAWN IN `paintComponent`, NOT HERE (MT-278 item 1).  A fade has to be applied to the icon
+        // as it is painted rather than over it afterwards, which only `paintComponent` can do; `BLOCKED_ALPHA` is
+        // the value and says why.  What is left here is the train mark, which goes on at full strength: the fade
+        // says what the railway refuses, the line says where a train is, and the second is the more urgent.
         java.util.List<org.traincontrol.automationui.TilePorts.Route> roads = coveredRoads();
 
         if (roads.isEmpty()) return;
@@ -1875,13 +1838,14 @@ public final class LayoutLabel extends JLabel
             }
             else
             {
-                // ROUNDED WHERE THE TRAIN ENDS (Adam, 2026-10-09: "Can we make the end of a train (orange line) rounded,
-                // not a straight jagged edge?").  The line runs side to side and the square clips what it draws, so the
-                // round cap at the train's last side was cut off flat on the square's edge.  At a side the train goes no
-                // further than, the line stops as far short as its cap needs to lie inside the square; between squares it
-                // still runs to the edge, since two see-through caps laid over each other would show.
+                // ROUNDED WHERE THE TRAIN ENDS (Adam: "Can we make the end of a train (orange line) rounded, not a
+                // straight jagged edge?").  The line runs side to side and the square clips what it draws, so the
+                // round cap at the train's last side would be cut off flat on the square's edge.  At a side the
+                // train goes no further than, the line stops as far short as its cap needs to lie inside the
+                // square; between squares it still runs to the edge, since two see-through caps laid over each
+                // other would show.
                 //
-                // Or SQUARE, edge to edge as before, where the switch says so (`tailEnds`)
+                // Or SQUARE, edge to edge, where the switch says so (`tailEnds`)
                 boolean round = tailEnds() == TailEnds.ROUNDED;
 
                 double[] from = round ? endOf(a, b, road.getA(), width / 2) : new double[] {a[0], a[1]};
