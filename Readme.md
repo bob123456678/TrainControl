@@ -403,8 +403,14 @@ Tab icons provided by Freepik.
 ## Changelog
 
 * v3.0.3
+    - Locomotive Control
+        - The window for choosing a locomotive's icon now has a `Clear Local Locomotive Icon` button, so the icon can be cleared where it is set.
     - Track Diagram
         - The autonomy locomotive icon is now slightly see-through, so a label under it can still be made out.
+    - Autonomy Bug Fixes
+        - Opening another layout, creating a new one or loading the Central Station's layout no longer keeps the previous railway's trains standing in memory; your locomotives stay in the database, and choosing the same layout again keeps its trains.
+        - Pasting a train on the Track Diagram onto a square that is not a station now says a train can only be placed at a station, instead of asking which way it faces.
+        - Notices in the autonomy editor no longer push the diagram down: they float over its bottom edge, at most three lines with a scrollbar, and an X hides each one until the next.
 * v3.0.2 [10/18/2026]
     - Autonomy Features
         - Right-clicking Return Home now offers `Run Trains to Their Homes`, which does the same as the button, and `Place All Trains at Their Homes`, which puts each homed train on its home in the setup without moving anything, so you can then move the real trains by hand.
