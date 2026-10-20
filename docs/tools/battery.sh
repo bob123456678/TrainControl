@@ -735,6 +735,11 @@ list_classes()
         # counting happens.
         case "$cls" in support.*) continue;; esac
 
+        # An abstract class cannot be run, so it is a helper wherever it lives: core.AutonomySessionFixture holds
+        # the fixtures the testAutonomyDiagramSession split shares (FR-136 Phase 3), and battery 111 counted it
+        # among the classes that tested nothing.  Its subclasses run its set-up.
+        grep -qE '^(public )?abstract class' "$f" && continue
+
         echo "$cls"
     done
 }
