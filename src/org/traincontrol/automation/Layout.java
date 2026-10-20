@@ -9042,10 +9042,8 @@ public class Layout
 
                 if (point.has("blockedBy"))
                 {
-                    // The points whose occupancy makes this station unavailable to autonomy (FR-001).  Kept as names and
-                    // resolved after the loop, because the array is in file order, not dependency order; a name that
-                    // matches nothing then is logged and dropped, since refusing the configuration would take a whole layout
-                    // out of service for one lost pairing.
+                    // Points whose occupancy makes this station unavailable to autonomy (FR-001), resolved after the
+                    // loop; a name that matches nothing is logged and dropped rather than refusing the whole layout.
                     List<String> blockers = new ArrayList<>();
 
                     JSONArray named = point.optJSONArray("blockedBy");
@@ -9067,9 +9065,7 @@ public class Layout
 
                 if (point.has("home"))
                 {
-                    // The boundary, and the only place a home can be dangling: a file holds a name and a Point holds the
-                    // locomotive.  A name that matches nothing is reported and dropped, not refused, because invalidating a
-                    // whole layout over one assignment is worse than losing it.
+                    // The only place a home can dangle, since a file holds a name: reported and dropped, not refused.
                     String named = point.optString("home", null);
 
                     if (named != null && !named.trim().isEmpty())
@@ -9084,12 +9080,10 @@ public class Layout
 
                         Point homeAt = layout.getPoint(point.getString("name"));
 
-                        // TAKEN AS WRITTEN: the home is the square, even when the square is drawn as more than one
-                        // graph Point; dropping it here would throw away `AutonomyBuilder.homeCopy`'s choice of copy
-                        // (every copy carries a block).
+                        // Taken as written: the home is the square, on the copy AutonomyBuilder.homeCopy chose.
                         homeAt.setHomeLoc(home);
 
-                        // AND WHETHER IT WAS SET FACING THIS COPY'S WAY (OB-282).
+                        // And whether it was set facing this copy's way (OB-282).
                         if (homeAt != null && home != null)
                         {
                             homeAt.setHomeFacingFixed(point.optBoolean("homeFacingFixed", false));
@@ -9097,7 +9091,7 @@ public class Layout
                     }
                 }
 
-                // WHICH WAY A TRAIN ON THIS COPY POINTS, on a split square (OB-282, TDY-B1).
+                // Which way a train on this copy points, on a split square (OB-282).
                 if (point.has("copyFacing") && layout.getPoint(point.getString("name")) != null)
                 {
                     layout.getPoint(point.getString("name")).setCopyFacing(point.optString("copyFacing", null));
@@ -9115,10 +9109,8 @@ public class Layout
                         {
                             String locName = (String) loc;
 
-                            // Named in the log when it is dropped, like the home and blockedBy doors (DR-B9): an exclusion that
-                            // vanishes silently is a restriction the operator believes is in force.  Dropping is right, since
-                            // one bad entry must not take the layout out of service.  The load door removes the name from the
-                            // setup as well and logs it there (OB-349).
+                            // Named in the log when dropped, as the home and blockedBy are: a silently vanished
+                            // exclusion is a restriction the operator believes is in force (OB-349).
                             Locomotive excluded = control.getLocByName(locName);
 
                             if (excluded != null) excludedLocs.add(excluded);
@@ -9135,7 +9127,7 @@ public class Layout
                     layout.getPoint(point.getString("name")).setExcludedLocs(excludedLocs);
                 }
 
-                // THE LIST'S MODE (FR-121): the locomotives allowed rather than the ones kept out
+                // The list's mode (FR-121): the locomotives allowed rather than the ones kept out
                 if (point.has(Point.EXCLUDED_LOCS_MODE) && layout.getPoint(point.getString("name")) != null)
                 {
                     layout.getPoint(point.getString("name")).setAllowOnlyListed(
@@ -9353,9 +9345,8 @@ public class Layout
                                     );
                                 }
                             }
-                            // ABSENT MEANS NOT STATED (REL-A2): the diagram's capture writes a placement as {"name": X} and
-                            // nothing else, so an absent trainLength must not clear the length held in the live Locomotive.
-                            // `speed` below works the same way (MT-233).  Clearing a length is still possible: write the key as 0.
+                            // Absent means not stated: a diagram placement writes only {"name": X}, so an absent
+                            // trainLength keeps the live length (as speed does, MT-233); write 0 to clear it.
 
                             if (locInfo.has("reversible"))
                             {
@@ -9378,32 +9369,31 @@ public class Layout
                                     );
                                 }
                             }
-                            // ABSENT MEANS NOT STATED (REL-A2), as above.  A reversible EMU read back as non-reversible is
-                            // refused a terminus by `pickPath` and planned the long way round, with nothing to say why.
+                            // Absent means not stated, as above; read as false, a reversible EMU would be refused a
+                            // terminus.
 
-                            // Only throw a warning if this is not a station - after the loop, where the
-                            // square's other copies have been read (GUI4-C5).
+                            // Only warn if this is not a station, after the loop, once the square's other copies are
+                            // read.
                             if (!point.optBoolean("station", false))
                             {
                                 placedOffAStation.add(new String[] {loc, point.getString("name")});
                             }
 
-                            // De-conflict with other multi-units - before it is put down, as a placement asks (BPV-A1).
+                            // De-conflict with other multi-units, before it is put down, as a placement does.
                             layout.clearMultiUnitConflictsWith(l);
 
                             Point placeOn = layout.getPoint(point.getString("name"));
 
-                            // And with anything already standing on the same square (the second door into two trains
-                            // on one piece of track): a file written while the layout was in that state would otherwise
-                            // reinstate it on every load.  Repaired rather than refused, since a configuration that will
-                            // not load is a railway nobody can use; `clearBlockExcept` names the train it displaces.
+                            // And with anything already on the same square, or a file written in that state would
+                            // reinstate two trains on one track on every load.  Repaired, not refused; clearBlockExcept
+                            // names the train it displaces.
                             layout.clearBlockExcept(placeOn);
 
                             // Place the locomotive
                             placeOn.setLocomotive(l);
                             
-                            // NOT RESET (REL-A2): a placement from the diagram carries only a name, so a departure function
-                            // set in the locomotive window must survive a start-up.
+                            // Not reset: a placement carries only a name, so a departure function set in the locomotive
+                            // window survives.
 
                             // Set start and end callbacks
                             if (locInfo.has("speed") && locInfo.get("speed") != null)
@@ -9441,7 +9431,7 @@ public class Layout
                             // Fires functions on departure and arrival
                             layout.applyDefaultLocCallbacks(l);
 
-                            // NOT RESET (REL-A2), for the reason at `departureFunc` above.
+                            // Not reset, as for departureFunc above.
 
                             // Set arrival callback
                             if (locInfo.has("arrivalFunc") && locInfo.get("arrivalFunc") != null)
@@ -9483,11 +9473,9 @@ public class Layout
                         }
                         else
                         {
-                            // DROPPED AND NAMED, NOT REFUSED (AMR-C3; Adam: **"drop the train and keep the rest."**): one sold
-                            // or renamed locomotive must not cost the whole railway.  The placement is simply not made;
-                            // everything else about the point loads as written.  The load door removes the name from the setup
-                            // before it builds (`AutonomyViewerPanel.loadPrepared`, OB-349), so this arm is reached by a
-                            // configuration handed to parseAuto some other way.
+                            // Dropped and named, not refused (Adam: "drop the train and keep the rest."): one sold or
+                            // renamed locomotive must not cost the whole railway.  The load door usually removes it
+                            // first (OB-349).
                             control.logf("autolayout.warnPlacedLocomotiveNotInDatabase", loc,
                                 point.getString("name"));
                         }
@@ -9509,9 +9497,7 @@ public class Layout
             }
         });
 
-        // NOT FOR A COPY OF A STATION (GUI4-C5): a train can stand on a copy of a station square that trains may not
-        // arrive at (reversed on the throttle, arrivals from one side barred), and the build records it there.  The warning
-        // is raised here, after the loop, because the square's other copies are not all read inside it.
+        // Not for a barred copy of a station, where a turned train can stand; warned here, once every copy is read.
         for (String[] placed : placedOffAStation)
         {
             Point on = layout.getPoint(placed[1]);
@@ -9612,15 +9598,14 @@ public class Layout
                     e.setRoomAtTheEnd(edge.getInt("roomAtTheEnd"));
                 }
 
-                // THE SIDE THE TRACK COMES IN BY, as the builder split the square on (OB-182).  Optional: when missing the
-                // readers fall back to the geometry.
+                // The side the track comes in by, as the builder split the square (OB-182); missing, readers use the
+                // geometry.
                 if (edge.has("entrySide") && edge.get("entrySide") instanceof String)
                 {
                     e.setEntrySide(edge.getString("entrySide"));
                 }
 
-                // WHERE THIS EDGE RUNS, place by place (OB-207).  Optional; when missing the covered-track sweep uses the
-                // whole edge.
+                // Where this edge runs, place by place (OB-207); missing, the covered-track sweep uses the whole edge.
                 if (edge.has("places") && edge.get("places") instanceof JSONArray)
                 {
                     List<String> ids = new LinkedList<>();
@@ -9629,16 +9614,13 @@ public class Layout
 
                     List<String> answered = new LinkedList<>();
 
-                    // What Mass Assign asks a length for, place by place (OB-297, ADA-C1).
+                    // What Mass Assign asks a length for, place by place (OB-297).
                     java.util.Map<String, String> asked = new java.util.LinkedHashMap<>();
 
                     JSONArray places = edge.getJSONArray("places");
 
-                    // ALL OF THEM OR NONE OF THEM (SVX-C9).  These are read POSITIONALLY: the last entry is the square the
-                    // edge arrives at, where a standing train's body is spent from (`walkOneTail` and `whyABerthCannotHoldIt`
-                    // start at the last element and never check it against `getEnd()`).  Skipping a malformed entry would
-                    // shift every position, so a bad entry falls back to the whole edge, which every reader handles and which
-                    // is the refusing side.  A build never writes one: `GraphReducer.placesAlong` always appends the end place.
+                    // All of them or none: read positionally (the last is the square the edge arrives at), so a skipped
+                    // entry would shift every position.  A bad entry falls back to the whole edge, the refusing side.
                     boolean whole = true;
 
                     for (int at = 0; at < places.length(); at++)
@@ -9729,11 +9711,8 @@ public class Layout
 
                         if (layout.getEdge(lockEdge.getString("start"), lockEdge.getString("end")) == null)
                         {
-                            // DROPPED, AND SAID LOUDLY (AMR-C3; Adam: **"drop the lock edge with a loud log line too."**).
-                            // A lock is a constraint on shared metal, so the message is written for the dangerous reading: if
-                            // the named track is misspelt for track that IS there, two trains may now be let onto one piece of
-                            // metal.  It names the track that owns the lock and the name that matched nothing, and says to
-                            // check the file; the other locks in the list are still applied.
+                            // Dropped, and said loudly (Adam: "drop the lock edge with a loud log line too."): a
+                            // misspelt lock may let two trains onto one piece of metal.  The other locks still apply.
                             control.logf("autolayout.warnLockEdgeNotInGraph", start + " -> " + end,
                                 lockEdge.getString("start") + " -> " + lockEdge.getString("end"));
                         }
@@ -9762,9 +9741,8 @@ public class Layout
             
             for (Object tt : timetable)
             {
-                // Each entry on its own, so one that cannot be read costs ITSELF: an entry naming a renamed or deleted
-                // locomotive or station is a stale record, not a corrupt file, and letting the exception out would discard
-                // the whole timetable (the next capture would write the empty one back).
+                // Each entry on its own: one naming a renamed or deleted locomotive or station is stale, and letting
+                // the exception out would discard the whole timetable.
                 try
                 {
                     timetableList.add(TimetablePath.fromJSON(tt.toString(), control, layout));
@@ -9777,8 +9755,7 @@ public class Layout
             
             layout.setTimetable(timetableList);
 
-            // After setTimetable, which clears it: overlapping execution is the normal behaviour and
-            // the flag is the exception, so the load order has to put the exception last.
+            // After setTimetable, which clears it.
             layout.timetableSequential = o.optBoolean("timetableSequential", false);
         }
         catch (Exception e)
@@ -9842,17 +9819,15 @@ public class Layout
             }
             else
             {
-                // Said out loud (DR-B9). Dropping it is right; doing so in silence meant a train that
-                // simply never moved, with nothing anywhere to connect that to a rename.
+                // Said out loud: dropped in silence, the train would simply never move.
                 control.logf("autolayout.warnRunLocomotiveNotInDatabase", s);
             }
         }
 
         layout.setLocomotivesToRun(locsToRun);
 
-        // The FR-001 restrictions, now that every point exists.  A name matching no point is dropped and said out loud: it
-        // could never be resolved later and would be written back out on every save, and refusing the configuration would
-        // take a whole layout out of service for one lost pairing.
+        // The FR-001 restrictions, now that every point exists.  A name matching no point is dropped and logged, not
+        // refused.
         for (java.util.Map.Entry<String, List<String>> entry : blockersByPoint.entrySet())
         {
             Point held = layout.getPoint(entry.getKey());
@@ -9877,25 +9852,20 @@ public class Layout
             held.setBlockedBy(watching);
         }
 
-        // THE ARRIVAL SIDES, now that every train is standing where the file says (REG8-A1).  Last word to the file: it
-        // describes a state that was consistent when written, and the clear in `setLocomotive` is for a change of occupant
-        // on a LIVE railway, not a build.  A name matching no point is dropped in silence, unlike the restrictions above:
-        // a point that has gone takes its own tail with it.
+        // The arrival sides, now that every train stands where the file says: the file has the last word.  A name
+        // matching no point is dropped silently; its tail went with it.
         for (java.util.Map.Entry<String, String> entry : arrivalSideByPoint.entrySet())
         {
             Point landed = layout.getPoint(entry.getKey());
 
-            // AND ONLY ONTO A SQUARE WHOSE PLACEMENT WAS HONOURED (AUR-C1): a tail with no train on it is handed to whoever
-            // reserves the square next.
+            // Only onto a square whose placement was honoured, or the next train to reserve it inherits the tail.
             if (landed != null && landed.getCurrentLocomotive() != null)
             {
                 landed.setArrivedFrom(entry.getValue());
             }
         }
 
-        // AND THE ROADS, after the sides and for the same reason (WK7-B1): the placement pass above clears both
-        // on a change of occupant.  A road naming an edge that no longer exists is dropped whole - half a road
-        // would send the tail somewhere the train never was - and the walk then keeps the fork rule.
+        // And the roads, likewise; a road naming a missing edge is dropped whole (see roadNamed).
         for (java.util.Map.Entry<String, Object> entry : arrivalRoadByPoint.entrySet())
         {
             Point landed = layout.getPoint(entry.getKey());
@@ -9906,8 +9876,7 @@ public class Layout
             }
         }
 
-        // Applied only now: until every point exists there is no telling an assignment that will be honoured from one whose
-        // locomotive has not been read yet.  A file with no assignments reaches here with nothing to apply.
+        // Only now: until every point exists an honoured assignment cannot be told from one whose locomotive is unread.
         layout.rebuildHomeStations();
 
         return layout;
