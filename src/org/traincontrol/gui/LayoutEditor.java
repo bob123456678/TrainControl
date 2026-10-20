@@ -3110,10 +3110,10 @@ public class LayoutEditor extends PositionAwareJFrame
     /**
      * The gap between Text Labels and Grid, which goes with Text Labels (OB-289).
      *
-     * The autonomy editor hides Text Labels, which its caption choice replaces (FR-061), and the gap left standing
-     * put itself at the top of the column - twice the space under Visible Elements that every other heading has under
-     * it.  Adam, 2026-09-24: *"slightly too much spacing/padding below "visible elements" in autonomy editor.  make it
-     * be consistent with other labels"*.
+     * The autonomy editor hides Text Labels, which its caption choice replaces (FR-061), and the gap left standing would
+     * put itself at the top of the column: twice the space under Visible Elements that every other heading has under it
+     * (Adam: *"slightly too much spacing/padding below "visible elements" in autonomy editor.  make it be consistent with
+     * other labels"*).
      */
     private java.awt.Component gapUnderTextLabels;
 
@@ -3144,16 +3144,10 @@ public class LayoutEditor extends PositionAwareJFrame
             TrainControlUI.getPrefs().putBoolean(TrainControlUI.EDITOR_GRID_PREF, show);
         }
 
-        // AND THE CHECKBOX SAYS SO, whoever asked (OB-179).
-        //
-        // There are two doors onto this now - the box in the tools column and Control+K - and only the
-        // box used to set the tick, because it was the tick.  A key that turns the grid off and leaves
-        // the box ticked is a window disagreeing with itself about a setting the user can see, and the
-        // next click on that box would then appear to do nothing.
-        //
-        // Here rather than at the key, because this is the one method that knows the answer changed;
-        // put at the caller it would have to be repeated by the next caller, which is how the two come
-        // to disagree.  Setting it to what it already is, on the box's own path, costs nothing.
+        // AND THE CHECKBOX SAYS SO, whoever asked (OB-179).  There are two doors onto this, the box in the tools column and
+        // Control+K, and a key that turns the grid off and leaves the box ticked is a window disagreeing with itself about a
+        // setting the user can see.  Here rather than at the key, because this is the one method that knows the answer
+        // changed; setting the box to what it already is, on its own path, costs nothing.
         if (showGridCheckbox != null) showGridCheckbox.setSelected(show);
 
         // The borders as they stand are the old answer, so they are all put back.  Both panels: the
@@ -3162,16 +3156,11 @@ public class LayoutEditor extends PositionAwareJFrame
 
         if (this.grid != null) clearBordersFromChildren(this.grid.getContainer());
 
-        // AND THE AXIS NUMBERS, which follow the grid now (OB-172, Adam 2026-09-04).
-        //
-        // This method rewrote the CELL borders and nothing else, so the ruler round the outside kept
-        // whatever it was given when the diagram was last built.  His report: "axis numbers do not
-        // appear until after an editor reopen if the grid isn't on beforehand" and "toggling the grid
-        // does not hide the numbers" - one cause, both directions.
-        //
-        // A full redraw rather than reaching into the grid to swap one border: the ruler is built from
-        // the diagram's offsets and dimensions, which live in `drawGrid`, and duplicating that here is
-        // how the two come to disagree.
+        // AND THE AXIS NUMBERS, which follow the grid (OB-172).  This method rewrites the CELL borders and nothing else, so
+        // the ruler round the outside would keep whatever it was given when the diagram was last built: axis numbers would
+        // not appear until an editor reopen if the grid was not on beforehand, and toggling the grid would not hide them.  A
+        // full redraw rather than reaching into the grid to swap one border: the ruler is built from the diagram's offsets
+        // and dimensions, which live in `drawGrid`, and duplicating that is how the two come to disagree.
         drawGrid();
 
         // AND THE OUTLINES DRAWN BACK, as after every redraw (RSA44-C2): Control+K and the Grid box took the picked squares,
@@ -3181,10 +3170,10 @@ public class LayoutEditor extends PositionAwareJFrame
 
     /**
      * After a redraw, the track editor's outlines drawn back rather than only taken down (RSA43-C4, RSA44-C2): the picked
-     * squares, the selection's grip, a box being drawn, a landing and the pointer's blue - which all still act, and an
-     * undo, a redo, Control+K or the Grid box left looking gone until the pointer next moved.  `refreshSelectionBorders`
-     * begins with the same border pass.  The autonomy editor draws its own hover and has no selection here, so it gets the
-     * border pass alone, as it did.
+     * squares, the selection's grip, a box being drawn, a landing and the pointer's blue all still act, and would
+     * otherwise look gone after an undo, a redo, Control+K or the Grid box until the pointer next moved.
+     * `refreshSelectionBorders` begins with the same border pass.  The autonomy editor draws its own hover and has no
+     * selection here, so it gets the border pass alone.
      */
     private void drawTheOutlinesBack()
     {
@@ -3195,10 +3184,9 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
-     * The pointer gone off the squares - into the margin, or straight off a square onto the tools column, the Grid box or
-     * another window, which crosses no margin: over no square, so its blue comes off, and the rest - the picked squares,
-     * the grip, a box being drawn - is drawn back (Adam, 2026-10-06: "Fix them", on RSA45's notes).  The margin used to take
-     * the grip off with the blue, and a pointer that skipped the margin left the blue for the Grid box to draw again.
+     * The pointer gone off the squares (into the margin, or straight off a square onto the tools column, the Grid box or
+     * another window, which crosses no margin): over no square, so its blue comes off, and the rest (the picked squares,
+     * the grip, a box being drawn) is drawn back.
      *
      * Posted, so it lands after any outline the last square's hover has posted, which would otherwise draw the blue back.
      */
@@ -3211,9 +3199,9 @@ public class LayoutEditor extends PositionAwareJFrame
 
     /**
      * The pointer has left a square of the track editor.  Onto another square, whose own hover moves the outline: nothing
-     * here.  Off the squares altogether - which the margin does not always see, since a pointer can go straight onto the
-     * tools column - it is over no square (Adam, 2026-10-06, on RSA45's notes).  The autonomy editor's hover is its own,
-     * and the palette's squares are not the grid's.
+     * here.  Off the squares altogether, which the margin does not always see since a pointer can go straight onto the
+     * tools column: it is over no square.  The autonomy editor's hover is its own, and the palette's squares are not the
+     * grid's.
      *
      * @param e the exit, in the square's coordinates
      * @param label the square left
@@ -3389,19 +3377,16 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
-     * Picks a station label up, so the drag has something in it (FR-035).
+     * Picks a station label up, so the drag has something in it (FR-035: "snapshot the label so users can see it is being
+     * moved (make it follow the cursor while held down).").
      *
-     * Adam: "snapshot the label so users can see it is being moved (make it follow the cursor while
-     * held down)."
+     * On the LAYERED PANE's drag layer rather than in the diagram: the diagram is a grid whose components are laid out by
+     * their constraints, and a floating copy has no cell to be in; the drag layer exists for something that is on top of
+     * everything and belongs to no layout.
      *
-     * On the LAYERED PANE's drag layer rather than in the diagram. The diagram is a grid whose
-     * components are laid out by their constraints, and a floating copy has no cell to be in; the drag
-     * layer is the one place in a Swing window that exists for something that is on top of everything
-     * and belongs to no layout.
-     *
-     * The grab offset is where the pointer took hold of the pill, so the label hangs off the cursor at
-     * the same spot it was picked up. Started from the square rather than the label itself, there is no
-     * such spot and the caller centres it.
+     * The grab offset is where the pointer took hold of the pill, so the label hangs off the cursor at the same spot it
+     * was picked up.  Started from the square rather than the label itself, there is no such spot and the caller centres
+     * it.
      *
      * @param shot a picture of the caption
      * @param grabX where in that picture the pointer took hold
@@ -3466,16 +3451,9 @@ public class LayoutEditor extends PositionAwareJFrame
     /**
      * Marks the square a dragged station label would land on (FR-035).
      *
-     * The drag feedback that says WHERE IT WILL GO, as distinct from the ghost above, which says what
-     * is being carried. Both ship: Adam asked for the picture after seeing this on its own.
-     *
-     * This comment used to argue against carrying a copy of the label at all - "a second copy of the
-     * caption floating over the diagram would cover the very thing being aimed at" - which was the
-     * reasoning before the ghost existed and is now an argument against a feature sitting sixty lines
-     * above it. The concern it was about is met by drawing the ghost slightly see-through.
-     *
-     * Green for a square that will take it, red for one that will refuse, so the answer arrives before
-     * the mouse comes up rather than as a message afterwards.
+     * The drag feedback that says WHERE IT WILL GO, as distinct from the ghost above, which says what is being carried;
+     * both ship.  Green for a square that will take it, red for one that will refuse, so the answer arrives before the
+     * mouse comes up rather than as a message afterwards.
      *
      * @param label the square under the pointer, or null for none
      * @param allowed whether dropping there would work
@@ -3527,14 +3505,13 @@ public class LayoutEditor extends PositionAwareJFrame
     /**
      * Sets a tile's border, unless it is already wearing that one (OB-157).
      *
-     * setBorder repaints whether or not anything changed, and refreshSelectionBorders runs on every
-     * mouse-motion event of a selection drag - so a few hundred tiles were repainted per mouse move to
-     * change the outline on one or two of them.  That is the flickering Adam reported.
+     * setBorder repaints whether or not anything changed, and refreshSelectionBorders runs on every mouse-motion event of
+     * a selection drag, so a few hundred tiles would be repainted per mouse move to change the outline on one or two (the
+     * flickering Adam reported).
      *
-     * The key has to describe everything the border depends on.  A resting border is a different
-     * border in the palette, in autonomy mode, and with the grey grid off, and any of those can change
-     * while the same tiles stay on screen - so a key that left one out would skip a repaint that was
-     * needed, and leave a stale outline behind.  That is worse than the flicker.
+     * The key has to describe everything the border depends on: a resting border is a different border in the palette, in
+     * autonomy mode, and with the grey grid off, and any of those can change while the same tiles stay on screen.  A key
+     * that left one out would skip a needed repaint and leave a stale outline behind, which is worse than the flicker.
      *
      * @param label the tile
      * @param border what it should wear
