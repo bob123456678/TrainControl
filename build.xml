@@ -443,6 +443,7 @@
         <test-one-class class="testTriggerWaitsSayNothing"/>
         <test-one-class class="testConfirmedGoodState"/>
         <test-one-class class="testJavadocsAreAttached"/>
+        <test-one-class class="testCommentsStayLean"/>
         <test-one-class class="testStationBlockedByAnotherPoint"/>
         <test-one-class class="testPageIdsAreDurable"/>
         <test-one-class class="testTimetableCapture"/>
