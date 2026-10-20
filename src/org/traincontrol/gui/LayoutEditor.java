@@ -3953,21 +3953,10 @@ public class LayoutEditor extends PositionAwareJFrame
         }
     }
 
-    // `toggleCoordinates` and `showingCoordinates` are gone (OB-179).
-    //
-    // Adam: "coordinates should always be on with the grid, off without, and the menu option gone."
-    // The numbers had a preference, a menu item in each editor and a key of their own; they now have
-    // none of the three, because they are a property of the grid - see `LayoutGrid.coordinatesVisible`,
-    // which is where that rule lives and the only place it is written down.
-    //
-    // Turning them on and off is `setShowGrid` now, and nothing else needs to exist: it already
-    // redraws, which is what these did, and for the same reason - the numbers live in a border whose
-    // insets change the size of the panel, so the layout has to be done again.
-    //
-    // Said here rather than left as an absence, because the two methods were public and called from
-    // both right-click menus - `AutonomyEditorPanel` and `LayoutEditorRightclickMenu` - and a reader
-    // who goes looking for them should be told what replaced them rather than conclude the feature was
-    // dropped.
+    // There is no `toggleCoordinates` or `showingCoordinates` (OB-179; Adam: "coordinates should always be on with the
+    // grid, off without, and the menu option gone.").  The numbers are a property of the grid (see
+    // `LayoutGrid.coordinatesVisible`, where that rule is written down), so turning them on and off is `setShowGrid`,
+    // which redraws because the numbers live in a border whose insets change the size of the panel.
 
     public void clear()
     {
@@ -3988,30 +3977,15 @@ public class LayoutEditor extends PositionAwareJFrame
             {
                 this.snapshotLayout();
                 
-                // WHAT AUTONOMY KNEW ABOUT THIS PAGE GOES WITH IT (LE-C2).
+                // WHAT AUTONOMY KNEW ABOUT THIS PAGE GOES WITH IT (LE-C2, X8-B4).  Emptying the whole page must tell the setup, as
+                // deleting one square does, or every station, name, length, facing, signal pairing, portal and placement would stay
+                // keyed to squares that now hold nothing: a reconciling save would eventually prune them, but the non-reconciling
+                // writes on the way out (the window captures the running layout and saves without reconciling when it closes) commit
+                // that state to disk first.
                 //
-                // Deleting one square tells the setup so; emptying the whole page told it nothing at
-                // all, so every station, name, length, facing, signal pairing, portal and placement
-                // stayed keyed to squares that now hold nothing. A reconciling save would eventually
-                // prune them, but the non-reconciling writes on the way out - the window captures the
-                // running layout and saves without reconciling when it closes - commit that state to
-                // disk first, and the page's setup outlives the diagram it describes until somebody
-                // opens the autonomy editor and presses Save.
-                //
-                // THE FIRST CLAUSE WAS NOT TRUE WHEN THIS WAS WRITTEN (X8-B4).  `delete` forgot the
-                // square's CAPTION and left everything else keyed to it, so the contrast this comment
-                // draws was between a gesture that forgot nothing and one that forgot almost nothing.
-                // It is true now.
-                // EMPTIED FIRST, THEN FORGOTTEN (FV3-C3).
-                //
-                // forgetWholePage rebuilds the tile graph, and the graph is traced from the
-                // SQUARES - so forgetting first rebuilt from the diagram the next line is about to
-                // throw away, and nothing rebuilt afterwards.  Clear Page left autonomy holding
-                // every tile it had just deleted.
-                //
-                // This is the order N8-B2's adjudication asked for and the fix for it missed.  It
-                // was cosmetic while the rebuild was conditional on the store; it stopped being
-                // cosmetic when the rebuild became unconditional again.
+                // EMPTIED FIRST, THEN FORGOTTEN (FV3-C3).  forgetWholePage rebuilds the tile graph, and the graph is traced from the
+                // SQUARES, so forgetting first would rebuild from the diagram the next line is about to throw away, and nothing would
+                // rebuild afterwards: Clear Page would leave autonomy holding every tile it had just deleted.
                 layout.clear();
 
                 forgetWholePage();
@@ -4041,13 +4015,10 @@ public class LayoutEditor extends PositionAwareJFrame
         
         try
         {       
-            // The outgoing grid lets go of the panel before the new one takes it.
-            //
-            // A grid hides itself until its tiles have decoded and arms two timers to reveal it; both
-            // outlive a rebuild and both still hold this panel.  Left armed, the old grid's grace
-            // timer drops a spinner into the middle of the new one, and a FlowLayout with an extra
-            // component in it pushes the tiles along - which is a row that comes out half drawn a
-            // moment after a resize.
+            // The outgoing grid lets go of the panel before the new one takes it: a grid hides itself until its tiles have
+            // decoded and arms two timers to reveal it, both outlive a rebuild and both still hold this panel, so left armed the
+            // old grid's grace timer would drop a spinner into the middle of the new one, and the extra component would push the
+            // tiles along (a row that comes out half drawn after a resize).
             if (grid != null) grid.discard();
 
             grid = new LayoutGrid(this.layout, size,
@@ -4059,26 +4030,14 @@ public class LayoutEditor extends PositionAwareJFrame
             // Undo, the grid's key, a switch of mode - and the crosshair went with the old panel
             this.showWhetherADragPicks();
 
-            // One row of slack at the bottom of the scrollable area.
+            // One row of slack at the bottom of the scrollable area, and the gaps the layout will add.  The panel is laid out to
+            // exactly the height of the grid, so the last row would sit flush against the edge of the viewport, and anything that
+            // takes a few pixels (a horizontal scrollbar appearing, a border, a slightly taller row of tiles in autonomy mode)
+            // would push it out of sight.  A row rather than a fixed number of pixels, because the tile size is a setting.
             //
-            // The panel is laid out to exactly the height of the grid, so the last row sits flush
-            // against the edge of the viewport - and anything that takes a few pixels (a horizontal
-            // scrollbar appearing, a border, a slightly taller row of tiles in autonomy mode) pushes
-            // it out of sight.  It comes back if the window is stretched, which is not something the
-            // user should have to work out.
-            //
-            // A row rather than a fixed number of pixels, because the tile size is a setting.
-            // AND THE GAPS THE LAYOUT WILL ADD, which this used to leave out (Adam, 2026-09-04).
-            //
-            // `FlowLayout` lays the diagram out as a row of `maxWidth + 2 * DIAGRAM_GAP`, and the
-            // panel was told its preferred width was `maxWidth` exactly.  A CENTRE layout given a row
-            // wider than its container places it at a NEGATIVE x - so the left edge of the diagram sat
-            // outside the panel, where no scrolling can reach it.  It only showed on a narrow window,
-            // because a wide one gives the panel more than its preferred width and the arithmetic
-            // stops biting.
-            //
-            // The horizontal slack is the same thing the row of slack below has always been, in the
-            // other direction, and he asked for it in the same breath.
+            // `FlowLayout` lays the diagram out as a row of `maxWidth + 2 * DIAGRAM_GAP`, and a CENTRE layout given a row wider
+            // than its container places it at a NEGATIVE x, outside the panel where no scrolling can reach it; it only shows on a
+            // narrow window.  The horizontal slack is the same thing as the row of slack, in the other direction.
             this.ExtLayoutPanel.setPreferredSize(new Dimension(
                 grid.maxWidth + 2 * DIAGRAM_GAP + DIAGRAM_SLACK_COLUMNS * size,
                 grid.maxHeight + size + 2 * DIAGRAM_GAP));
@@ -4152,46 +4111,24 @@ public class LayoutEditor extends PositionAwareJFrame
     /**
      * Sizes the window to the diagram it is showing, within what the screen can hold.
      *
-     * The default when the user has expressed no preference for this page. Reported 2026-08-22
-     * (OB-003): "when switching between different pages in the editor, the window size varies and is
-     * often too small".
+     * The default when the user has expressed no preference (OB-003).  There is one remembered window for the editor, so
+     * the fit runs on every arrival, and CAPPED to the screen: a diagram wider than the screen must not produce a window
+     * with its right-hand edge and scrollbar off the side.  The minimum is set here rather than beside the preferred size
+     * because pack() honours it, and a floor taller than the screen would defeat the cap, hence the clamp on both.
      *
-     * Both halves of that are the same cause. Window bounds are remembered PER PAGE - the index is
-     * the page name and the tile size - so every page comes up at whatever size it was last left at,
-     * which for a page opened once months ago on a smaller diagram is too small for what is on it
-     * now. That is right when the user chose that size and wrong when nobody ever did, and the two
-     * were indistinguishable because the fit was only ever computed for a brand-new window.
+     * THE RULE FOR THE FLOOR, in both directions: at its smallest width and its smallest height the window shows every
+     * control, at each diagram size and in each language (OB-342).  The HEIGHT is `EXTRA_MINIMUM_HEIGHT` over the size's
+     * base.  The WIDTH is the diagram's 550 and the sidebar, growing with the size; the tools column and the sidebar need
+     * about 380 pixels together (376 in German), so nothing of the window's own asks for more.  A control whose words are
+     * data, like the status line under the findings (521 pixels in English, 655 in German), has no minimum width and is
+     * cut with an ellipsis where the window is narrow (see `AutonomyEditorPanel.banner`).
      *
-     * So the fit is computed for any page with no remembered bounds, and CAPPED: a diagram wider than
-     * the screen used to produce a window wider than the screen, with its right-hand edge and the
-     * scrollbar that would have reached it both off the side.
-     *
-     * The minimum is set here rather than beside the preferred size because pack() honours it, and a
-     * floor taller than the screen would defeat the cap - hence the clamp on both.
-     *
-     * THE RULE FOR THE FLOOR, in both directions: at its smallest width and its smallest height the
-     * window shows every control, at each diagram size and in each language (OB-342).  The HEIGHT is
-     * `EXTRA_MINIMUM_HEIGHT` over the size's base, and the column of tools and the status line under
-     * the findings fit in it.  The WIDTH is the diagram's 550 and the sidebar, growing with the size,
-     * and what keeps the tools column on screen in it is that nothing of the window's own asks for
-     * more: the column and the sidebar need about 380 pixels together, 376 in German.  A control whose
-     * words are data - the status line under the findings is 521 pixels in English and 655 in German -
-     * has no minimum width and is cut with an ellipsis where the window is narrow, and not the
-     * window's width forced to its sentence, which pushed the whole column off the right edge at the
-     * smallest width (see `AutonomyEditorPanel.banner`).
-     *
-     * AT EVERY DISPLAY SCALE (OB-342): the numbers above are pixels, and the interface is scaled by
-     * the display (`TrainControlUI`'s `flatlaf.uiScale`, dpi / 96) - so the column needs 705 pixels at
-     * Small at 125% and 727 at 150%, 756 at 175% and 775 at 200%, and the floor stayed where it was and
-     * cut off Cancel and the status line by 17 pixels at 150%.  Scaling the pixels does not do: in
-     * proportion to 125% it would put the floor 125 pixels above what 150% needs and under what 100%
-     * needs, because most of the column is not scaled.  The window's own layout knows what it
-     * needs at any scale, in any language, so the floor is never below its minimum height plus the
-     * window's own chrome - the title bar and the borders, which the layout does not hold - and the
-     * fixed numbers stand where that is less.  Still clamped to the screen: where the screen is shorter
-     * than the floor, the window is the screen's height and the controls below that are out of reach, as
-     * for any window.  The width needs nothing of it: the column and the sidebar ask for 363 pixels at
-     * 125%, 386 at 150% and 446 at 200%, under the 700 of the smallest.
+     * AT EVERY DISPLAY SCALE (OB-342): the interface is scaled by the display (`TrainControlUI`'s `flatlaf.uiScale`,
+     * dpi / 96), and most of the column is not scaled, so scaling the pixels does not do.  The window's own layout knows
+     * what it needs at any scale and in any language, so the floor is never below its minimum height plus the window's
+     * own chrome (the title bar and the borders, which the layout does not hold), and the fixed numbers stand where that
+     * is less.  Still clamped to the screen: where the screen is shorter than the floor, the controls below that are out
+     * of reach, as for any window.
      */
     private void sizeForDiagram()
     {
@@ -4205,16 +4142,10 @@ public class LayoutEditor extends PositionAwareJFrame
             Math.min(550 + sideways + Math.max(0, (this.size - 30) * 200 / 30), usable.width),
             Math.min(630 + EXTRA_MINIMUM_HEIGHT + Math.max(0, (this.size - 30) * 320 / 30), usable.height)));
 
-        // Never SMALLER than the window already is (MT-096).
-        //
-        // "It is still too small - but I think the window persistence is getting in the way." It was:
-        // with one entry per page, a page sized once on a small diagram handed that size to every
-        // later visit, and the fit was only computed for a brand-new window.
-        //
-        // Now there is one entry and the fit runs on every arrival, so it has to be able to leave a
-        // window alone as well as grow it - otherwise switching from a big page to a small one would
-        // shrink the window under somebody who had just made it bigger on purpose. Growing only means
-        // a page that needs room gets it, and a size you chose is a floor rather than a suggestion.
+        // Never SMALLER than the window already is (MT-096).  There is one remembered entry and the fit runs on every
+        // arrival, so it has to be able to leave a window alone as well as grow it: otherwise switching from a big page to a
+        // small one would shrink the window under somebody who had just made it bigger on purpose.  A size you chose is a
+        // floor rather than a suggestion.
         int wide = Math.max(getWidth(), grid.maxWidth + 210 + sideways);
         int high = Math.max(getHeight(), grid.maxHeight + 160);
 
@@ -4298,17 +4229,9 @@ public class LayoutEditor extends PositionAwareJFrame
             // The mode's own title, which setAutonomyMode has decided by now (MT-669)
             setTitle(titleFor(isAutonomyMode()));
 
-            // The index FIRST, because everything below asks what has been remembered.
-            //
-            // ONE entry for the whole window, not one per page (MT-095). It was the page name and the
-            // tile size, so every page had its own remembered position and its own remembered size -
-            // which was defensible when a page change meant a new window, and became "the window
-            // location memory is messing with the single window view" the moment the window stopped
-            // closing: clicking a tab moved the window and resized it, because the tab you clicked
-            // had its own idea of where the editor lives.
-            //
-            // There is one editor window now. It should be where you left it, whatever page it is
-            // showing.
+            // The index FIRST, because everything below asks what has been remembered.  ONE entry for the whole window, not one
+            // per page (MT-095): there is one editor window, and it should be where you left it whatever page it is showing;
+            // per-page entries made clicking a tab move and resize the window.
             this.setWindowIndex(EDITOR_WINDOW_KEY);
 
             if (!this.isLoaded())
@@ -4321,15 +4244,11 @@ public class LayoutEditor extends PositionAwareJFrame
             }
             else
             {
-                // A window whose size was remembered keeps the floor the form gave it, which is the
-                // one place the taller minimum would otherwise not reach - the form is generated and
-                // cannot be edited by hand.
-                // Plus the sidebar, which is new since those bounds were remembered: without it the
-                // floor is a width the diagram used to have all of and now has to share.  Once, and
-                // not on top of a floor that has it already: a window that has been through
-                // `sizeForDiagram` has the sidebar in its floor, and adding it again made the floor 150
-                // pixels wider (OB-342).  So the floor is the diagram's own 550 and the sidebar, or what
-                // it is already if that is wider.
+                // A window whose size was remembered keeps the floor the form gave it, the one place the taller minimum would
+                // otherwise not reach (the form is generated).  Plus the sidebar, once and not on top of a floor that has it
+                // already: a window that has been through `sizeForDiagram` has the sidebar in its floor, and adding it again made
+                // the floor 150 pixels wider (OB-342).  So the floor is the diagram's own 550 and the sidebar, or what it is already
+                // if that is wider.
                 int sideways = sidebar == null ? 0 : sidebar.getPreferredSize().width;
 
                 this.setMinimumSize(new Dimension(Math.max(getMinimumSize().width, 550 + sideways),
@@ -4340,22 +4259,13 @@ public class LayoutEditor extends PositionAwareJFrame
             
             setVisible(true);
 
-            // AND IN FRONT OF THE WINDOW THAT OPENED IT (OB-173).
-            //
-            // Adam: "when clicking edit, the autonomy editor appears below other windows, so I might
-            // not even notice it's there... we managed this carefully in 2.7.x".
-            //
-            // `setVisible(true)` shows a window; it does not decide where in the stack it lands, and
-            // a window that takes longer to build is likelier to lose that race - which is why this
-            // showed as an autonomy-only fault when both modes come through this same line.
-            //
-            // These are the two calls `TrainControlUI.showOpenEditor()` already makes to bring this
-            // very window forward when the button is pressed a second time.  The first open did not
-            // make them, so the two doors to one window behaved differently.
-            //
-            // No always-on-top trick here, deliberately.  `comeToTheForeground` needs one because
-            // start-up asks for the foreground from a process that does not have it; this runs from a
-            // click on a window that does, which is the case Windows allows.
+            // AND IN FRONT OF THE WINDOW THAT OPENED IT (OB-173; Adam: "when clicking edit, the autonomy editor appears below
+            // other windows, so I might not even notice it's there... we managed this carefully in 2.7.x").  `setVisible(true)`
+            // shows a window; it does not decide where in the stack it lands.  These are the two calls
+            // `TrainControlUI.showOpenEditor()` already makes to bring this very window forward when the button is pressed a
+            // second time, so the two doors to one window behave alike.  No always-on-top trick here, deliberately:
+            // `comeToTheForeground` needs one because start-up asks for the foreground from a process that does not have it;
+            // this runs from a click on a window that does.
             toFront();
 
             requestFocus();
@@ -4372,16 +4282,11 @@ public class LayoutEditor extends PositionAwareJFrame
           }
           catch (RuntimeException | Error failed)
           {
-            // The Edit button was disabled before this window was asked for, and openLayoutEditor
-            // wraps the CONSTRUCTION in a catch that hands it back - with a comment saying why: without
-            // it, autonomy setup is unreachable until the application is restarted.  But this body runs
-            // on a later event, outside that catch, so anything thrown here escaped to the event
-            // thread's default handler and left the button disabled for the session with no window to
-            // show for it.
-            //
-            // Same remedy, at the other end of the queue.  AND FOR AN ERROR TOO (RSA31-C3), given back and then thrown on,
-            // as the constructor's catch and openLayoutEditor's do: past a catch of exceptions only, the hidden frame
-            // stayed counted and the gate shut for the session.
+            // The Edit button was disabled before this window was asked for, and openLayoutEditor wraps the CONSTRUCTION in a
+            // catch that hands it back, because otherwise autonomy setup is unreachable until the application is restarted.
+            // This body runs on a later event, outside that catch, so the same remedy is needed at the other end of the queue.
+            // AND FOR AN ERROR TOO (RSA31-C3), given back and then thrown on, as the constructor's catch and openLayoutEditor's
+            // do: past a catch of exceptions only, the hidden frame stayed counted and the gate shut for the session.
             parent.autonomyEditorClosed();
 
             if (failed instanceof RuntimeException && parent.getModel() != null)
@@ -4412,11 +4317,8 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         if (tile == null) return;
 
-        // The same question the sidebar asks, and the same three answers (OB-046).
-        //
-        // This used to ask its own YES/NO, and "yes" neither saved nor discarded - it just left, and
-        // because the setup is shared the edits survived into the window that opened next. So the user
-        // was asked about their unsaved work and nothing was done with it either way.
+        // The same question the sidebar asks, and the same three answers (OB-046): a "yes" that neither saved nor discarded
+        // would leave the user asked about their unsaved work with nothing done either way.
         if (!settleUnsavedWork()) return;
 
         layout.setEdit(false);
