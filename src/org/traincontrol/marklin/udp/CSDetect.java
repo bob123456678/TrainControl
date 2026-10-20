@@ -148,7 +148,7 @@ public class CSDetect
                     {
                         // Check for default gateway by sending a ping
                         //
-                        // RETRIED, like every other ping in this class (W21-C2).  This was the one
+                        // RETRIED, like every other ping in this class.  This was the one
                         // that was not, and it is upstream of all of them: one dropped reply makes
                         // `getLocalSubnet()` return empty and `hasLocalSubnets()` false, and the
                         // operator is told auto-detect is not possible at all - a worse answer than

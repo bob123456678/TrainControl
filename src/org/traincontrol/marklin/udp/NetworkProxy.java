@@ -99,7 +99,7 @@ public class NetworkProxy
         return this.transmitIP.getHostAddress();
     }
 
-    // The listener thread, kept so that `listen()` can tell whether one is still running (W21-C6).
+    // The listener thread, kept so that `listen()` can tell whether one is still running.
     //
     // The comment here used to say "kept so that stopListening can end it".  `stopListening` closes the
     // socket, which is what ends the thread, and never mentions this field - so the field was read
@@ -145,7 +145,7 @@ public class NetworkProxy
     /**
      * Makes sure something is listening on the socket, starting a listener if nothing is.
      *
-     * **THE OTHER HALF OF THE REOPEN** (W21-B2).  A listener stops for one reason - the socket being
+     * **THE OTHER HALF OF THE REOPEN**.  A listener stops for one reason - the socket being
      * closed - and `sendMessage` reopens the socket when it finds it closed, which brings TRANSMISSION
      * back.  Nothing restarted the listener, so the end state was an open socket with nothing on it:
      * *"able to transmit but deaf - no feedback, no accessory echoes, no power state changes, and path
@@ -161,7 +161,7 @@ public class NetworkProxy
     {
         if (this.reader != null && this.reader.isAlive()) return;
 
-        // AND NOT BEFORE THERE IS A MODEL TO READ INTO (TWV-C3).
+        // AND NOT BEFORE THERE IS A MODEL TO READ INTO.
         //
         // This was lifted out of setModel, where `this.model = model` had just run, and is now also
         // called from sendMessage - where the model may still be null. The catch below says why that
@@ -219,7 +219,7 @@ public class NetworkProxy
             {
                 this.socket = openReceiveSocket();
 
-                // AND SOMETHING TO LISTEN ON IT (W21-B2).  Reopening the socket restored transmission
+                // AND SOMETHING TO LISTEN ON IT.  Reopening the socket restored transmission
                 // and nothing else; the listener had already exited on the close and was never
                 // replaced.
                 listen();

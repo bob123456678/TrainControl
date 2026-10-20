@@ -281,7 +281,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     // take the monitor that setPowerState and waitForPowerState use: MarklinRoute reads it on the route
     // thread, LayoutLabel and TrainControlUI on the event thread, and without a happens-before edge a route
     // thread could see the power on after a STOP and skip the branch that refuses to run a route with the
-    // power off (S14-C6).  The monitor stays for waitForPowerState, which needs it for the wait.
+    // power off.  The monitor stays for waitForPowerState, which needs it for the wait.
     private volatile boolean powerState = true; // default to true unless power is turned off
         
     // Unique ID of the central station (0 for all stations)
@@ -326,7 +326,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     /**
      * The last measured round trip, in milliseconds.
      *
-     * volatile for the same reason as the two fields above (NSV-C7): it is written on the message-processor
+     * volatile for the same reason as the two fields above: it is written on the message-processor
      * thread, on the very line that reads the volatile pingStart, and read by getLastLatency() from the
      * interface.  A non-volatile double can also TEAR, so a reader could see half of one measurement and
      * half of another, and this figure is what the latency display and the cutoff are built on.
@@ -732,7 +732,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
     private void syncLayouts() throws Exception
     {
-        // ONE PARSER FOR THE WHOLE METHOD (MKR-C1).
+        // ONE PARSER FOR THE WHOLE METHOD.
         //
         // `syncWithCS2` reassigns `fileParser` outside the lock that serialises this method, so every
         // question below is asked of this one local.  A second read of the field after the parse could
@@ -764,19 +764,19 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // lasts only as long as a loop over already-parsed objects.
         List<LayoutDiagram> parsed = parser.parseLayout(accs);
 
-        // ASKED ONCE, HERE, AND CARRIED (RC-B9).
+        // ASKED ONCE, HERE, AND CARRIED.
         //
         // `fileParser` is reassigned by syncWithCS2 outside the lock that serialises this method, so a
         // second question further down could be answered by a fresh parser's zero and the pruning would run
         // on a partial read.  A local removes the question rather than answering it.
         final int couldNotBeRead = parser.getPagesThatCouldNotBeRead();
 
-        // AND THE INDEX'S OWN COUNT, ASKED IN THE SAME BREATH (TWV-C2), for the same reason: read after the
+        // AND THE INDEX'S OWN COUNT, ASKED IN THE SAME BREATH, for the same reason: read after the
         // parse it would be a second question to that field.  A wrong answer costs a spurious revert to the
         // Central Station, or a missed one.
         final int namedByTheIndex = parser.getPagesTheIndexNamed();
 
-        // NOTHING READ IS STILL A FAILURE (RC-A4).
+        // NOTHING READ IS STILL A FAILURE.
         //
         // syncLayoutsFromConfiguredSource reverts to the Central Station in a catch, so the revert needs
         // this to throw when no page read.  Every page is caught individually and a page that will not read
@@ -794,7 +794,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             if (!l.isUnreadable()) actuallyRead++;
         }
 
-        // AND THE QUESTION IS ASKED AGAINST WHAT THE INDEX SAID THERE WAS (T10-C6).
+        // AND THE QUESTION IS ASKED AGAINST WHAT THE INDEX SAID THERE WAS.
         //
         // `couldNotBeRead > 0` means a page threw on the way in.  A page can also simply not arrive: if the
         // parser does not recognise the index's block name at all (a capitalised `Seite`, say) it returns
@@ -821,7 +821,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             this.wireComponents(l, feedbackAddresses);
         }
         
-        // Prune stale feedback, but only when the whole railway was read (RC-A3).
+        // Prune stale feedback, but only when the whole railway was read.
         //
         // This deletes every s88 in the database that no LOADED page mentions.  If a page failed to load (a
         // five-page folder whose third page is truncated, say) the sensors that appeared only on it would
@@ -866,7 +866,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      *
      * Untimed, it could park a caller for the rest of the session.  The power state is written by the
      * inbound GO/STOP echo and nowhere else that can release this wait (the one other write, in simulate
-     * mode during construction, assigns the field directly before anybody can be waiting; NSV-C6), and a
+     * mode during construction, assigns the field directly before anybody can be waiting), and a
      * datagram sent to a Central Station that has been switched off or dropped off the network SUCCEEDS
      * and simply disappears.  The tile handler that waits here runs on a single shared thread, so one such
      * wait would stop every track diagram tile from responding until TrainControl was restarted.
@@ -905,7 +905,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
        
     /**
-     * The monitor the three autonomy-layout doors share (CS3-C4).
+     * The monitor the three autonomy-layout doors share.
      *
      * ITS OWN, not the model's.  `getAutoLayout` is asked constantly - by the driving threads, by the window's
      * repaints and by every route that mentions autonomy - and the model's own monitor is held by other work
@@ -916,7 +916,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
     /**
      * Run between parsing a configuration and the model taking it, when set - the seam a test lands a lookup in
-     * (RLV8-C3).  Null in the application.
+     *.  Null in the application.
      */
     public static volatile Runnable whileParsingForTest;
 
@@ -947,7 +947,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     {
         synchronized (this.autoLayoutLock)
         {
-        // SYNCHRONIZED, AND READ ONCE (CS3-C4).  A route thread asks `hasAutoLayout()` and then this, and the
+        // SYNCHRONIZED, AND READ ONCE.  A route thread asks `hasAutoLayout()` and then this, and the
         // event thread can clear the layout between the two - so the route thread built an empty `Layout`
         // over the configuration the operator had just cleared, after which `hasAutoLayout()` answered yes
         // about nothing and the static layout version had ticked.  `clearAutoLayout` takes the same monitor,
@@ -982,10 +982,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
             this.autoLayout = null;
         }
 
-        // STOPPED OUTSIDE THE LOCK (CS3-C4).  `stopLocomotives` talks to the railway and waits on it, and
+        // STOPPED OUTSIDE THE LOCK.  `stopLocomotives` talks to the railway and waits on it, and
         // nothing else may be made to queue behind that - the lock is only there so a route thread cannot
         // build a fresh layout in the middle of a clear.
-        // RETIRED, as a load retires the railway it replaces (RLV8-A1): a path's thread on the railway dropped stops its
+        // RETIRED, as a load retires the railway it replaces: a path's thread on the railway dropped stops its
         Layout.retireEveryLayout();
 
         if (going != null)
@@ -1015,7 +1015,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // Read before the old layout is discarded, applied after the new one exists.
         boolean wasCapturing = this.autoLayout != null && this.autoLayout.isTimetableCapture();
 
-        // AND WHERE THE TRAINS HAVE BEEN (AUR-C3), for the same reason and by the same route.
+        // AND WHERE THE TRAINS HAVE BEEN, for the same reason and by the same route.
         //
         // `lastArrival` is what `LEAST_RECENTLY_VISITED` reads and it lives on the Layout, so a rebuild would
         // empty it and the rule would go back to choosing at random.  A session is longer than a Layout; the
@@ -1033,7 +1033,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
         if (whileParsingForTest != null) whileParsingForTest.run();
 
-        // TAKEN UNDER THE LOCK, AND MADE THE CURRENT ONE (RLV8-C3), so a lookup of an empty model while this
+        // TAKEN UNDER THE LOCK, AND MADE THE CURRENT ONE, so a lookup of an empty model while this
         // parsed cannot build a railway newer than the one parsed (which would be retired from the start),
         // and the assignment cannot interleave with one.
         synchronized (this.autoLayoutLock)
@@ -1387,7 +1387,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * stopped (OB-303).
      *
      * A sync asks the railway what each locomotive it re-addressed or re-linked now conflicts with, as the window's
-     * edit doors do, and not while autonomy runs, as they do not (RLA2-B2).  An address change is held back until the
+     * edit doors do, and not while autonomy runs, as they do not.  An address change is held back until the
      * run has stopped, so the sync that applies it sweeps it; a Central Station multi-unit's new members are taken at
      * once, so one that arrives during a run is remembered here, or a train standing as a member of a standing
      * multi-unit would stay on the graph and autonomy could run it as a train of its own.  By name, as the database
@@ -1493,7 +1493,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
 
     /**
-     * Forgets the saved address in the given preferences, then runs the exit (OB-338, RSA67-C3).
+     * Forgets the saved address in the given preferences, then runs the exit (OB-338).
      *
      * Both halves are arguments so that a claim can run Exit without ending the JVM or touching the operator's own
      * preferences.  The address is forgotten first, and the exit runs even when the preferences refuse the removal.
@@ -1562,7 +1562,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
         int num = 0;
 
-        // Each locomotive the pass below re-addresses or gives other Central Station members, swept at the end (RLA2-B2)
+        // Each locomotive the pass below re-addresses or gives other Central Station members, swept at the end
         final List<MarklinLocomotive> sweptAfterTheSync = new ArrayList<>();
         
         // Fetch Central Station databases
@@ -1676,7 +1676,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 // Always adopt the remote icon, even while a local override exists: the override has its own
                 // field and getImageURL falls back to this one, so skipping would starve the fallback (a custom
                 // icon restored from the database starts with no imageURL, and clearing the icon offline would
-                // land on nothing; UC-C12).
+                // land on nothing).
                 if (this.locDB.getById(l.getUID()) != null && l.getImageURL() != null)
                 {
                     this.locDB.getById(l.getUID()).setImageURL(l.getImageURL());                         
@@ -1708,7 +1708,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         
         this.rebuildLocIdCache();
 
-        // AND THE GRAPH ASKED WHAT THE SYNC MADE CONFLICT (RLA2-B2).  The sync is the fourth writer of a
+        // AND THE GRAPH ASKED WHAT THE SYNC MADE CONFLICT.  The sync is the fourth writer of a
         // locomotive's address, and the only door a Central Station multi-unit's members come in by, so it
         // asks the graph as the window's edit doors do, of each locomotive it changed: otherwise a standing
         // train given another standing train's address, or added to a standing multi-unit, would be left
@@ -1717,7 +1717,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // makes it; new members of a multi-unit that arrive during a run are remembered and swept by the
         // first sync after it (`sweepsHeldBackByARun`), and the railway is redrawn where a sweep took a
         // train off (OB-303).
-        // Asked once, not built (RLV11-C5): the event thread can clear the railway between two questions
+        // Asked once, not built: the event thread can clear the railway between two questions
         final Layout loadedNow = this.getAutoLayoutIfLoaded();
 
         if (this.isAutonomyRunning())
@@ -1771,10 +1771,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
     /**
      * Takes one route the Central Station describes into this database: added where it is new, replaced where its
      * definition has changed, and locked either way - except that a route running now is left as it is, for the
-     * next sync to change (GSR-B3).
+     * next sync to change.
      *
      * One step of `syncWithCS2`'s route pass, in a method of its own so the decision can be asked without a station
-     * on the network, as `adoptCentralStationAddress` is for the locomotive pass (GSR-B2).
+     * on the network, as `adoptCentralStationAddress` is for the locomotive pass.
      *
      * @param r the route as the Central Station describes it
      * @return true where a route was added, new or replaced, so the sync counts it
@@ -1811,7 +1811,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 )
         )
         {
-            // NOT WHILE IT RUNS (GSR-B3, in the sync).
+            // NOT WHILE IT RUNS (in the sync).
             //
             // This replaces by deleting the route and adding the station's as a new object under the same id -
             // the delete-and-add `editRoute` refuses while the route runs, for the reason it gives there: what a
@@ -1828,7 +1828,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 this.logf("route.deletingDuplicateId", this.routeDB.getById(r.getId()).getName());
 
                 // The SAME route, re-read from the Central Station because something about it
-                // changed - so the operator's autonomy selection survives it (AC2-A1).
+                // changed - so the operator's autonomy selection survives it.
                 wasActivated = this.isRouteActivatedByAutonomy(r.getId());
 
                 this.deleteRoute(this.routeDB.getById(r.getId()).getName());
@@ -1867,7 +1867,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * Gives a locomotive this database already has the address the Central Station reports for it.
      *
      * One step of `syncWithCS2`'s locomotive pass, in a method of its own so the decision can be asked without a
-     * station on the network (GSR-B2).  Nothing happens unless this database has a locomotive of that name, with the
+     * station on the network.  Nothing happens unless this database has a locomotive of that name, with the
      * same decoder type, at a different address.
      *
      * @param l the locomotive as the Central Station describes it
@@ -1887,7 +1887,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             // triggered automatically from a dozen places, so the check belongs here.  A locomotive hashes by
             // identity, so no mutation moves it out of the collections holding it (see
             // MarklinLocomotive.hashCode) and no repair machinery is needed here.
-            // AND WHILE A ROUTE DRIVES IT (GSR-B2).  A route sends its commands to a locomotive by name, one after
+            // AND WHILE A ROUTE DRIVES IT.  A route sends its commands to a locomotive by name, one after
             // another with delays between them, and each goes to whatever address the name has when its turn comes -
             // so an address adopted part-way along sends the rest of the route to a different decoder.  The window's
             // delete and edit doors refuse the same change while a route drives the locomotive (OB-287); this is the
@@ -1906,7 +1906,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 this.locDB.delete(l.getName());
                 this.locDB.add(existingLoc, existingLoc.getName(), existingLoc.getUID());
 
-                // AND THE CACHE FOLLOWS THE NEW UID AT ONCE (MKR-C2).  The rebuild at the end of the sync is on
+                // AND THE CACHE FOLLOWS THE NEW UID AT ONCE.  The rebuild at the end of the sync is on
                 // the success path only, and until it runs every echo for this locomotive resolves to nothing.
                 this.rebuildLocIdCache();
 
@@ -1922,7 +1922,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 {
                     if (other.hasLinkedLocomotives())
                     {
-                        // ONE CALL (NSV-B2).  The two-call form stages on an instance
+                        // ONE CALL.  The two-call form stages on an instance
                         // field, and this loop runs off the event thread inside syncWithCS2
                         // while the multi-unit dialog can be staging on the event thread -
                         // so a consist could be rebuilt from the other thread's list.
@@ -1940,7 +1940,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * syncLayoutsFromConfiguredSource guards: "Switch to CS Layout" calls this directly, from the EDT,
      * before its own syncWithCS2().  Without it this could delete from layoutDB while a background
      * diagram-save refresh was repopulating it (plain HashMaps, modified structurally from two threads),
-     * which FCR-B3's move of refreshes off the EDT made possible.
+     * which moving the refreshes off the EDT made possible.
      *
      * Intrinsic locks are reentrant, so the callers already holding it are unaffected.
      */
@@ -2052,8 +2052,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // for ever would lose whatever the session did instead.
         //
         // But not over a file whose copy could not be made.  The mark is cleared only once the copy is known
-        // to exist; until then this save leaves the file as it is, and the next save tries the copy again
-        // (BPV-C7, RLD-B1).
+        // to exist; until then this save leaves the file as it is, and the next save tries the copy again.
         if (!backup && this.databaseLoadFailed)
         {
             try
@@ -2200,7 +2199,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // first one that did not
         this.databaseLoadFailed = false;
 
-        // THE STREAM IN ITS OWN RESOURCE, because the one wrapping it can throw before it exists (AC3-B1).
+        // THE STREAM IN ITS OWN RESOURCE, because the one wrapping it can throw before it exists.
         //
         // ObjectInputStream's constructor reads the stream header and throws on a corrupt file, so in a single
         // resource the variable is never assigned, try-with-resources closes nothing, and the anonymous
@@ -2223,7 +2222,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             }
             else
             {
-                // READ, AND NOT A DATABASE (GSP-C1).  A file that deserializes to something other than a list is as
+                // READ, AND NOT A DATABASE.  A file that deserializes to something other than a list is as
                 // unreadable as one that will not deserialize at all, and it is marked the same way (see
                 // saveState): otherwise the save on the way out would write an empty database over it with no
                 // copy kept.
@@ -2292,7 +2291,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             return false;
         }
 
-        // NOT WHILE IT RUNS (GSR-B3), and refused before anything is deleted too.
+        // NOT WHILE IT RUNS, and refused before anything is deleted too.
         //
         // This edits by deleting the route and adding a new object under the same id, and what a route is doing
         // lives on its object: `isExecuting`, which `runningRouteDriving` asks before any door edits or deletes
@@ -2326,11 +2325,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
         Integer id = existing.getId();
 
-        // BEFORE THE DELETE STRIPS IT (AC2-A1).  See isRouteActivatedByAutonomy for why the delete is
+        // BEFORE THE DELETE STRIPS IT.  See isRouteActivatedByAutonomy for why the delete is
         // right to strip it and why this door has to put it back.
         final boolean wasActivated = this.isRouteActivatedByAutonomy(id);
 
-        // AND THE LOCK, FOR THE SAME REASON (X8-B5).
+        // AND THE LOCK, FOR THE SAME REASON.
         //
         // This method edits by delete-then-re-add, and `newRoute` builds a fresh `MarklinRoute` whose `locked`
         // defaults to false (the only writer of true is the sync's import loop), and the lock is what
@@ -2357,7 +2356,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // And back into the autonomy selection, which the delete above took it out of.
         this.restoreRouteActivation(id, wasActivated);
 
-        // And the lock, onto the route that now holds this id (X8-B5).
+        // And the lock, onto the route that now holds this id.
         if (wasLocked && this.routeDB.getById(id) != null)
         {
             this.routeDB.getById(id).setLocked(true);
@@ -2473,7 +2472,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // Routes are indexed by name, so an unnamed route cannot be added
         if (r == null || r.getName() == null)
         {
-            // AND THIS ARM RETIRES THE MONITOR TOO (NSV-C1).  The arm below says why: a route is armed by its
+            // AND THIS ARM RETIRES THE MONITOR TOO.  The arm below says why: a route is armed by its
             // own constructor, so a route this method refuses is left watching its sensor with nothing holding
             // it, however it was refused.
             if (r != null) r.disable();
@@ -2485,7 +2484,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         {
             this.routeDB.add(r, r.getName().trim(), r.getId());
 
-            // AND THE TILES FOLLOW THE DATABASE (MKR-B1): a route tile runs the OBJECT it was wired to, so
+            // AND THE TILES FOLLOW THE DATABASE: a route tile runs the OBJECT it was wired to, so
             // every add, replace or delete has to re-point it or the diagram keeps firing the old one.
             rebindRouteTiles();
             return true;
@@ -2701,7 +2700,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public final MarklinFeedback newFeedback(int id, CANMessage message)
     {
-        // IN THE DATABASE BEFORE IT PARSES ITS FIRST MESSAGE (CS3-C2).
+        // IN THE DATABASE BEFORE IT PARSES ITS FIRST MESSAGE.
         //
         // The constructor parses the message it is handed, which sets the state and wakes everything waiting
         // on a sensor, and those waiters ask `isFeedbackSet(name)`, which reads the database.  Added
@@ -2884,7 +2883,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 {
                     feedback.parseMessage(message);
                 }
-                // A DEVICE IS NOT CREATED FROM A FRAME THE PARSER WILL NOT READ (S14-C7, FV3).
+                // A DEVICE IS NOT CREATED FROM A FRAME THE PARSER WILL NOT READ (FV3).
                 //
                 // isFeedbackCommand answers for three commands - 0x11, 0x21 and 0x23 - and
                 // MarklinFeedback.parseMessage acts on one of them, 0x11, and only on an 8-byte frame, dropping
@@ -3378,7 +3377,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
         this.locDB.add(newLoc, name, newLoc.getUID());
 
-        // THE CACHE FOLLOWS EVERY ADD, not only the sync's happy path (CS3-C3): the three-argument overload
+        // THE CACHE FOLLOWS EVERY ADD, not only the sync's happy path: the three-argument overload
         // beside this one rebuilds, and relying on one rebuild after the sync's whole loop would leave the
         // cache without the locomotives just added if a throw came part-way, so every echo for them would be
         // logged as coming from an unknown locomotive.
@@ -3524,7 +3523,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         {
             if (other.hasLinkedLocomotives())
             {
-                // One call - see the syncWithCS2 repair above, and NSV-B2 at the method itself.
+                // One call - see the syncWithCS2 repair above, at the method itself.
                 other.setLinkedLocomotives(other.getLinkedLocomotiveNames());
             }
         }
@@ -3540,7 +3539,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // Staging counts: a staging flow spends its planning phase with nothing dispatched, so isRunning()
         // alone would report the window idle, and every guard that asks the model rather than the UI would
         // permit a locomotive to be deleted, renamed or re-addressed out from under a plan about to drive it.
-        // ASKED ONCE, NOT BUILT (RLV11-C5): route and message threads ask this, and asking whether there is a
+        // ASKED ONCE, NOT BUILT: route and message threads ask this, and asking whether there is a
         // railway and then for it would build an empty one where Unload cleared it between the two
         final Layout layout = this.getAutoLayoutIfLoaded();
 
@@ -3588,7 +3587,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
     
     /**
-     * The route now executing that drives this locomotive, or null (CS3-B1).
+     * The route now executing that drives this locomotive, or null.
      *
      * For the doors that edit or delete a locomotive: a route part-way through its commands is about to send this
      * one a speed, and taking it out from under a running route is the shape that left ironwork half set.  Autonomy
@@ -3628,7 +3627,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * ONE HOP, because that is all the engine reaches: `execRoute` starts at a recursion limit of 1 and
      * hands `limit - 1` to the route it fires, which refuses at less than zero.  Asking further would
      * refuse a delete for a route that cannot fire, and a check that refuses something legal is worse
-     * than no check (S14-C1).
+     * than no check.
      *
      * @param running the route now executing
      * @param name the locomotive
@@ -3786,8 +3785,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
             if (this.view != null) this.view.autonomyLocomotiveRenamed(name, newName);
 
             // AND THE RUNNING LAYOUT'S RECORD OF WHERE IT WAS TURNED, which is keyed by name for the reason the
-            // setup is (RTX-C3, SVA-C4): a rename before the window drains it would otherwise lose the turn.
-            // Asked once, not built (RLV11-C5)
+            // setup is: a rename before the window drains it would otherwise lose the turn.
+            // Asked once, not built
             final Layout loadedNow = this.getAutoLayoutIfLoaded();
 
             if (loadedNow != null) loadedNow.locRenamed(name, newName);
@@ -3872,7 +3871,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
     
     /**
-     * Points every route tile on every page at the route the database holds now (MKR-B1).
+     * Points every route tile on every page at the route the database holds now.
      *
      * **A tile runs the route OBJECT it was wired to**, not the route by that id: `wireComponents` calls
      * `setRoute(routeDB.getById(...))` and `LayoutDiagramComponent.execSwitching` runs whatever it was handed.
@@ -3885,7 +3884,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      */
     public final void rebindRouteTiles()
     {
-        // UNDER THE LOCK THE PAGE DATABASE IS WRITTEN WITH (OP2-B4).  `clearLayouts` empties those maps and the
+        // UNDER THE LOCK THE PAGE DATABASE IS WRITTEN WITH.  `clearLayouts` empties those maps and the
         // configured-source sync refills them, both from other threads and both under this lock, and the maps are
         // plain HashMaps - so a walk taken without it can see the emptied state, or nothing at all.
         synchronized (this.layoutRefreshLock)
@@ -3902,7 +3901,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
                     MarklinRoute bound = this.routeDB.getById(c.getAddress());
 
-                    // SAID OUT LOUD, as the wiring already says it (OP2-C13): `wireComponents` logs
+                    // SAID OUT LOUD, as the wiring already says it: `wireComponents` logs
                     // `layout.routeButtonMissingRoute` for a tile naming a route the database does not have, and this
                     // door, which runs after every routeDB write, must not clear the tile in silence, or a deleted
                     // route would leave a dead button and no line saying which square had lost what.
@@ -3934,7 +3933,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             // Update auto layout route selections.
             // Not getAutoLayout() != null: getAutoLayout() CREATES a Layout when none exists, so that test
             // was always true and deleting a route on a setup with no autonomy silently instantiated one -
-            // bumping the static layoutVersion along with it.  And asked once (RLV12-C5): the sync's thread
+            // bumping the static layoutVersion along with it.  And asked once: the sync's thread
             // and a route edit's reach this, and Unload can clear the model between two questions.
             final Layout layout = this.getAutoLayoutIfLoaded();
 
@@ -3954,7 +3953,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
     
     /**
-     * Every other route with a command that runs this one, by name (GSR-B4).
+     * Every other route with a command that runs this one, by name.
      *
      * What the route delete door counts for its question, before anything is deleted - afterwards there is nothing left
      * to count.  The route's own commands are not asked: a route that runs itself goes with it.
@@ -3980,8 +3979,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
 
     /**
-     * Deletes a route and takes every command that runs it out of every other route, logging each route that lost one
-     * (GSR-B4).
+     * Deletes a route and takes every command that runs it out of every other route, logging each route that lost one.
      *
      * Deleting a route removes the other routes' commands that run it, as deleting a locomotive removes the
      * commands that drive it (`deleteLoc`, `Route.locomotiveDeleted`).  Left behind, such a command would do
@@ -4058,11 +4056,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
         r.setId(newId);
         this.routeDB.add(r, name, newId);
 
-        // AND THE TILES FOLLOW (MKR-B1).  A route tile is bound by ADDRESS, which is the id, so a route whose
+        // AND THE TILES FOLLOW.  A route tile is bound by ADDRESS, which is the id, so a route whose
         // id changes leaves its old tile pointing at it and its new tile pointing at nothing.
         rebindRouteTiles();
         
-        // Update auto layout route selections - asked once, not built (RLV12-C5)
+        // Update auto layout route selections - asked once, not built
         final Layout layout = this.getAutoLayoutIfLoaded();
 
         if (layout != null)
@@ -4078,7 +4076,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
     
     /**
-     * Whether autonomy is set to activate this route, asked BEFORE something deletes it (AC2-A1).
+     * Whether autonomy is set to activate this route, asked BEFORE something deletes it.
      *
      * `deleteRoute` strips the id out of `activateRouteIDs`, and is right to: ids are reused, so an id
      * left behind would switch on whichever route inherited it.  What that costs is the doors that
@@ -4093,14 +4091,14 @@ public class MarklinControlStation implements ViewListener, ModelListener
      */
     public boolean isRouteActivatedByAutonomy(int id)
     {
-        // Asked once, not built (RLV11-C5)
+        // Asked once, not built
         final Layout layout = this.getAutoLayoutIfLoaded();
 
         return layout != null && layout.getActivateRouteIDs().contains((Integer) id);
     }
 
     /**
-     * Puts a route back into the autonomy selection after it has been deleted and re-added (AC2-A1).
+     * Puts a route back into the autonomy selection after it has been deleted and re-added.
      *
      * A method so that every door that deletes and re-adds a route (`changeRouteId`, `editRoute`, the Central
      * Station refresh) shares one repair rather than having to remember it.
@@ -4110,7 +4108,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      */
     public void restoreRouteActivation(int id, boolean wasActivated)
     {
-        // Asked once, not built (RLV12-C5): the sync's thread and a route edit's reach this
+        // Asked once, not built: the sync's thread and a route edit's reach this
         final Layout layout = wasActivated ? this.getAutoLayoutIfLoaded() : null;
 
         if (layout == null) return;
@@ -4143,7 +4141,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
         for (int i : ids)
         {
-            // RESOLVED ONCE, AND SKIPPED IF IT HAS GONE (MKR-C4).  The ids are a copy taken under the collection's
+            // RESOLVED ONCE, AND SKIPPED IF IT HAS GONE.  The ids are a copy taken under the collection's
             // lock; the lookups are not, and the sync's re-read of a changed station route deletes an id and puts
             // it back a few statements later on its own thread.  A reader landing between the two would otherwise
             // take a NullPointerException out of a menu action.
@@ -4294,7 +4292,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     {
         synchronized(this)
         {
-            // THE EPOCH MOVED AT EVERY CHANGE (RSA62-C2, RSA63-C1): odd from a STOP, even again from a GO, once however many
+            // THE EPOCH MOVED AT EVERY CHANGE: odd from a STOP, even again from a GO, once however many
             // report it
             if (state != this.powerState) this.powerEpoch.incrementAndGet();
 
@@ -4409,7 +4407,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     {
         List<MarklinRoute> routes = new ArrayList<>();
 
-        // SAID IN THE SIGNATURE, rather than thrown out of it unannounced (AC3-C2).
+        // SAID IN THE SIGNATURE, rather than thrown out of it unannounced.
         //
         // `new JSONObject(garbage)` throws an unchecked JSONException, which a programmatic caller would get as
         // a raw org.json type out of a TrainControl API.  Wrapped rather than swallowed: the caller asked for
@@ -4432,7 +4430,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
 
         // AN IMPORTED ROUTE IS NOT ARMED: "they should not be armed.  The user can choose to do this when
-        // they are ready."  (S14-A1.)
+        // they are ready."
         //
         // Constructing a MarklinRoute arms it: the complete constructor ends in executeAutoRoute(), which parks
         // a thread on the route's s88 and fires the route whenever it triggers.  A route built here would
@@ -4442,8 +4440,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // its replacement would watch the same sensor until the old one was deleted, so a trigger in that
         // window fires both.
         // railway.  The file's `auto` is overwritten with false before construction, so `executeAutoRoute`
-        // starts no monitor at all: there is no thread to disarm and no moment in which one is watching
-        // (REG2-C6).
+        // starts no monitor at all: there is no thread to disarm and no moment in which one is watching.
         for (int i = 0; i < dataArray.length(); i++)
         {
             JSONObject entry = dataArray.getJSONObject(i);
@@ -4468,13 +4465,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
 
     /**
-     * The routes a route export saved with their automatic firing on, by name (REG2-C7) - those with a sensor to watch,
+     * The routes a route export saved with their automatic firing on, by name - those with a sensor to watch,
      * which are the ones the import arms again when asked to.
      *
      * Read here rather than out of `parseRoutesFromJson`, which overwrites each route's `auto` before it builds it and
-     * must go on doing so (REG2-C6: a route built armed starts watching its sensor at once).
+     * must go on doing so (a route built armed starts watching its sensor at once).
      *
-     * WITH A SENSOR (RLU-C2).  The import arms only a route that has one, as Enable Auto Execution does, so the question
+     * WITH A SENSOR.  The import arms only a route that has one, as Enable Auto Execution does, so the question
      * Routes > Import asks must name exactly those, or its answer would count one fewer than the question named.
      *
      * @param json the export
@@ -4511,7 +4508,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
     /**
      * Replaces existing route data with that from a JSON file, turning automatic firing back on for the routes the file
-     * saved with it on when the operator said so (REG2-C7).
+     * saved with it on when the operator said so.
      *
      * @param json the export
      * @param armAsSaved whether a route saved armed arrives armed
@@ -4524,7 +4521,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
         List<MarklinRoute> routes = this.parseRoutesFromJson(json);
 
-        // Asked about before anything is replaced, and answered by the operator (REG2-C7): "save the state in
+        // Asked about before anything is replaced, and answered by the operator: "save the state in
         // the file on export, and ask the user on import.  if they want them armed, arm them.  otherwise,
         // don't."
         java.util.Set<String> savedArmed = armAsSaved
@@ -4545,7 +4542,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
             boolean nameTwice = !names.add(name);
 
-            // SAYING WHAT REPEATS (RSA56-C2): the name and the number together sent the operator to one that appears once
+            // SAYING WHAT REPEATS: the name and the number together sent the operator to one that appears once
             if (idTwice)
             {
                 throw new IllegalArgumentException(I18n.f("route.errorImportNumbersARouteTwice",
@@ -4559,10 +4556,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
             }
         }
 
-        // EVERY ROUTE HERE IS BUILT DISARMED - parseRoutesFromJson says why (REG2-C6): a route built armed starts
+        // EVERY ROUTE HERE IS BUILT DISARMED - parseRoutesFromJson says why: a route built armed starts
         // watching its sensor at once, before the old routes are gone.  The door asks whether to arm, and a Yes
         // turns automatic firing back on below, after every route is in, for exactly the routes the file saved
-        // with it on (REG2-C7).
+        // with it on.
         this.logf("route.deletingExisting");
         for (MarklinRoute r : this.routeDB.getItems())
         {
@@ -4586,7 +4583,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             }
         }
 
-        // ARMED AFTER EVERY ROUTE IS IN, as Enable Auto Execution arms one (REG2-C7): the old routes are gone, so no
+        // ARMED AFTER EVERY ROUTE IS IN, as Enable Auto Execution arms one: the old routes are gone, so no
         // two watch one sensor.  Only a route that has a sensor to watch, as the right-click item requires.
         int rearmed = 0;
 
@@ -4614,7 +4611,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             return added;
         }
 
-        // AND SAID (REG-B3): an imported route arrives disarmed, and saying so is what stops a restored backup
+        // AND SAID: an imported route arrives disarmed, and saying so is what stops a restored backup
         // from first being noticed when a train runs through a sensor that used to set a road.  The door shows
         // the same sentence.
         this.logf(IMPORTED_ROUTES_NOTICE, added, I18n.t("ui.main.bulkEnable"),
@@ -4665,7 +4662,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 if (rc != null && rc.isStop())
                 {
                     // The first stop moves, and its place fires the stop route.  Its wait stays where it was, on the
-                    // command in its place (RLA5-C4, RLD5-C3): the stop route runs on a thread of its own, and nothing
+                    // command in its place: the stop route runs on a thread of its own, and nothing
                     // after the command that fires it waits for it.
                     if (stopOnly.isEmpty())
                     {
@@ -4684,7 +4681,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 }
             }
 
-            // NUMBERED AS A ROUTE MADE IN THE EDITOR IS, from 1000 up (RLU5-B1, RLA5-C5, RLD5-C2): below that are the
+            // NUMBERED AS A ROUTE MADE IN THE EDITOR IS, from 1000 up: below that are the
             // Central Station's own routes, which its sync replaces by number
             int stopId = Math.max(ROUTE_STARTING_ID, Collections.max(this.routeDB.getItemIds()) + 1);
 
@@ -4721,13 +4718,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
 
     /**
-     * What an import of routes says about them, with the count, then Bulk Enable, then the right-click item (REG-B3).
+     * What an import of routes says about them, with the count, then Bulk Enable, then the right-click item.
      */
     public static final String IMPORTED_ROUTES_NOTICE = "route.infoImportedArriveDisarmed";
 
     /**
      * What an import says when the operator asked for the routes saved armed to be armed again: the count, then how
-     * many were (REG2-C7).
+     * many were.
      */
     public static final String IMPORTED_ROUTES_REARMED = "route.infoImportedRearmed";
         
@@ -4746,7 +4743,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         for (Locomotive l : this.getLocomotives())
         {
             String name = escapeCsv(l.getName());
-            // THE ONE FIELD THAT NEEDS A WINDOW, in a method whose other nine do not (AC2-C3).
+            // THE ONE FIELD THAT NEEDS A WINDOW, in a method whose other nine do not.
             //
             // `view` is null whenever the model was built with showUI false, which is how the documented
             // programmatic API starts (AutomationAPI.md), so an API user asking for the CSV would otherwise get
@@ -5069,7 +5066,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
         catch (Exception ex)
         {
-            // WK-B2: both of the statements above throw on exactly the failures the "Connecting..." notice exists
+            // Both of the statements above throw on exactly the failures the "Connecting..." notice exists
             // to cover - an unknown host, and (per TrainControl.isPortInUse's own javadoc) the
             // second-copy-of-TrainControl case, where the bind happens inside NetworkProxy's own constructor.
             // Without this catch either exception would propagate straight out of init(), past the
@@ -5095,7 +5092,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
             final CountDownLatch latch = new CountDownLatch(1);
 
-            // Whether the window was actually built (FBR-C3): invokeLater only enqueues, so the try/catch around it
+            // Whether the window was actually built: invokeLater only enqueues, so the try/catch around it
             // never sees anything the posted lambda throws, and nothing else after await() would ask.  A failed
             // build would leave a live process with no window, one log line, and display() throwing on the event
             // thread.
@@ -5106,7 +5103,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 try
                 {
-                    // NULL, not the latch (FBR-A1).
+                    // NULL, not the latch.
                     //
                     // setViewListener's LAST statement is `if (latch != null) latch.countDown()`.  Passing the
                     // latch in would release the waiter one statement before `built` was set, so the check after
@@ -5155,7 +5152,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 }
             });
 
-            // WK-B2: await() itself can throw InterruptedException, so the catch below takes the notice down on
+            // await() itself can throw InterruptedException, so the catch below takes the notice down on
             // that path too.
             try
             {
@@ -5176,7 +5173,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             // NOT ON THE SUCCESS PATH: there, `display()` replaces the notice with the application.
             if (!built.get() && theUI != null) theUI.connectingFailed();
 
-            // A failed build stops here (FBR-C3): going on to display() would get a second exception on the event
+            // A failed build stops here: going on to display() would get a second exception on the event
             // thread and a process running with nothing on screen.  Whatever went wrong was already logged where it
             // was caught.
             if (!built.get())
@@ -5211,7 +5208,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 // thread, which is why the flag above exists rather than this catch being widened to look as
                 // though it covers them.
                 //
-                // exit(1) here too, as for the failed build above (FSR-C6).
+                // exit(1) here too, as for the failed build above.
                 model.logf("ui.fatalErrorInitializing");
                 model.log(ex);
                 System.exit(1);
