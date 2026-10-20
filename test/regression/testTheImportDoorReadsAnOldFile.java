@@ -1935,9 +1935,9 @@ public class testTheImportDoorReadsAnOldFile
      * RLV7-C1).
      *
      * Yes stops the trains and releases nothing: a train stopped between sensors keeps its path locked, and a locked path
-     * holds every point on it for its train.  The load then folded that layout into the configuration, placing the train
-     * on each of those squares, and the rebuild was refused as one locomotive in two places - the old layout staying,
-     * reading busy, until a restart.  A layout holding a path is now folded with each train under way written on one
+     * holds every point on it for its train.  Folding that layout into the configuration would place the train on each
+     * of those squares, and the rebuild would be refused as one locomotive in two places - the old layout staying,
+     * reading busy, until a restart.  So a layout holding a path is folded with each train under way written on one
      * point - the last station whose sensor it has tripped, or where it set off - so the Auto tab's settings and a
      * captured timetable are kept too (RLV8-B1); and the destination turns the railway has made and not yet written down
      * are kept across it (RLV9-C1).
@@ -1954,8 +1954,9 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * The same while a setup edit a run declined waits, which carried the train to whichever point of its path the layout
-     * met last - its destination, as here - with the square it stood on reading free (RLV7-C1).
+     * The same while a setup edit a run declined waits; reading each point's occupant would carry the train to whichever
+     * point of its path the layout met last - its destination, as here - with the square it stood on reading free
+     * (RLV7-C1).
      *
      * MUTATION: read each point's occupant, and this fails.
      *
@@ -2125,8 +2126,8 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * Choosing another configuration while a train is under way leaves the configuration running with that train on one
-     * square, where it set off (RLV7-B1).  The fold into the configuration left placed it on every square of its path,
-     * and that configuration then refused to load until each was cleared by hand.
+     * square, where it set off (RLV7-B1).  Folding a layout that holds a path would place it on every square of its path,
+     * and that configuration would then refuse to load until each was cleared by hand.
      *
      * MUTATION: fold a layout that holds a path, and this fails.
      *
@@ -2232,9 +2233,9 @@ public class testTheImportDoorReadsAnOldFile
      * edit, is refused and says why (RLV7-C4).  Here the edit places a train twice: an error, and a setup with errors
      * still loads so that it can be fixed (SVN-B10), so the configuration running stays loaded with its errors.
      *
-     * The choice went ahead: the configuration left kept where its trains stood before the run, with nothing said; the
-     * log said it "could not be loaded at startup", about a load nobody made at start-up; and the flag stayed up over the
-     * configuration chosen, so nothing it did was folded until something rebuilt it.
+     * The choice must not go ahead: the configuration left would keep its trains where they stood before the run, with
+     * nothing said; the log would say it "could not be loaded at startup", about a load nobody made at start-up; and the
+     * flag would stay up over the configuration chosen, so nothing it did would be folded until something rebuilt it.
      *
      * MUTATION: load the configuration chosen whether or not the one running was carried, and this fails.
      *
@@ -2369,8 +2370,8 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * A switch of railway forgets the railway it leaves (RLV7-C2): the flag a declined edit raised, and the name of the
-     * configuration the reset forgot.  The load that followed read "no configuration running" as the reset after an
-     * edit, and carried the previous railway's trains across by Point name.  And only when the railway changes
+     * configuration the reset forgot.  A load that read "no configuration running" as the reset after an edit would carry
+     * the previous railway's trains across by Point name.  And only when the railway changes
      * (RLV8-C5): choosing the folder already in use reloads the same railway, whose trains are carried as any reload
      * carries them.
      *
@@ -2528,12 +2529,12 @@ public class testTheImportDoorReadsAnOldFile
     /**
      * Unload retires the railway it unloads (RLV8-A1): a train its thread was driving, stopped by Unload's Yes between
      * two sensors, is not driven on when it reaches the next one.  And the refresh that railway fires when its last
-     * thread ends builds no empty railway (RLV9-C2): the Return Home button asked the model for its layout, which makes
-     * one where there is none, and `hasAutoLayout` then answered yes about nothing.
+     * thread ends builds no empty railway (RLV9-C2): asking the model for its layout, as the Return Home button did,
+     * makes one where there is none, and `hasAutoLayout` then answers yes about nothing.
      *
      * A path's thread asks, at each sensor, whether its railway is still the current one, and every load replaces it
-     * with a newer one.  Unload replaced it with nothing, and the retirement came by accident - the autonomy panel's list
-     * built an empty railway as Unload remade it.  RLV7-C2 removed that, and the unloaded railway stayed current.
+     * with a newer one.  Unload replaces it with nothing, so it retires the railway itself; the autonomy panel's list no
+     * longer does it by accident, by building an empty railway as Unload remade it (RLV7-C2).
      *
      * MUTATION: drop the railway at Unload without retiring it, or ask `getAutoLayout` for the Return Home button's
      * layout, and this fails.
@@ -2678,7 +2679,7 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * Unload forgets the railway it unloads (RLV7-C2): the flag, and the name the reset forgot.  And nothing brings an
-     * empty railway into being afterwards - asking the model for its layout builds one, and `hasAutoLayout` then answered
+     * empty railway into being afterwards - asking the model for its layout builds one, and `hasAutoLayout` then answers
      * yes about nothing (CS3-C4): the autonomy panel's list of where the trains are did, as Unload remade the panel, and
      * so would the carry.
      *
@@ -2830,9 +2831,9 @@ public class testTheImportDoorReadsAnOldFile
      * Stop Using Autonomy keeps what the run did (RLV9-A1): the configuration loaded again has a train the run moved
      * where it was moved, the Auto tab's settings as they were, and a train under way at Unload once, where it set off.
      *
-     * Unload cleared the model before the reset, whose fold then found no railway - so nothing was folded, and the next
-     * load built every train back where the file had it before the run, with the square each really stands on reading
-     * free (DW-A1's shape).
+     * Unload folds before it clears the model: cleared first, the reset's fold would find no railway, nothing would be
+     * folded, and the next load would build every train back where the file had it before the run, with the square each
+     * really stands on reading free (DW-A1's shape).
      *
      * MUTATION: leave Unload's fold out, or fold each point's occupant, and this fails.
      *
@@ -2931,7 +2932,7 @@ public class testTheImportDoorReadsAnOldFile
     /**
      * A reload confirmed while Return Home runs keeps the configuration's own timetable (RLV9-B1).  Return Home borrows
      * the timetable for its plan and hands it back when it ends; the fold a reload makes with a train under way (RLV8-B1)
-     * wrote the plan into the configuration as its timetable, marked to run one train at a time, and saved it.
+     * must not write the plan into the configuration as its timetable, marked to run one train at a time, and save it.
      *
      * The plan loaded as Return Home loads it, and a train sent as its first move would be.
      *
@@ -3030,12 +3031,13 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * The folder the Central Station's layout is downloaded into is the source a later switch compares with (RLV9-C8).
-     * The Download door writes the source and never reaches `initializeTrackDiagram`, so the source remembered stayed the
-     * Central Station's, and choosing that folder again read as a switch to another railway: the flag an edit a run
-     * declined raised came down, and every train the run moved stood back where it set off.
+     * The Download door writes the source and never reaches `initializeTrackDiagram`, so it must record the source
+     * itself: otherwise the source remembered stays the Central Station's, choosing that folder again reads as a switch
+     * to another railway, the flag an edit a run declined raised comes down, and every train the run moved stands back
+     * where it set off.
      *
      * The door's half after the download itself, over the folder in use as if the window had shown the Central Station's
-     * layout; then that folder chosen again.  Read by reflection, as the claim came first.
+     * layout; then that folder chosen again.
      *
      * MUTATION: leave the door's source unrecorded, and this fails.
      *
@@ -3129,9 +3131,9 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * Stop Using Autonomy while an edit a run declined waits keeps where the trains stand, and the edit (RLV10-B1).  Its
-     * fold is not made then - it would take the edit away - and nothing else was: the model was cleared, the flag
-     * lowered, and the next load built every train the run moved back where the file had it, as the loads did before
-     * they carried the trains (RLA5-B1, RLV6-B1).
+     * fold is not made then - it would take the edit away - so the trains must be kept another way: with nothing, the
+     * model is cleared, the flag lowered, and the next load builds every train the run moved back where the file had it
+     * (RLA5-B1, RLV6-B1).
      *
      * MUTATION: keep nothing at Unload while an edit waits, or fold the whole running layout then, and this fails.
      *
@@ -3208,9 +3210,9 @@ public class testTheImportDoorReadsAnOldFile
     /**
      * A turn the railway owes when Stop Using Autonomy is confirmed during a run is written into the configuration it
      * leaves (RLV10-C1): the train faces the way it came in.  The turns are written only while the railway is idle, so
-     * during a run every one made since it started is still owed, and Unload dropped them with the railway: the
-     * configuration had the turned train facing the way it arrived, and the next dispatch was offered paths for that
-     * heading (OB-189).
+     * during a run every one made since it started is still owed, and Unload must not drop them with the railway: the
+     * configuration would have the turned train facing the way it arrived, and the next dispatch would be offered paths
+     * for that heading (OB-189).
      *
      * MUTATION: leave the turns on the railway Unload drops, and this fails.
      *
@@ -3455,9 +3457,9 @@ public class testTheImportDoorReadsAnOldFile
     /**
      * A click on a train drawn on the diagram is a click on the station it stands on, to Test a Path and to Why Not
      * Moving? (OB-354).  Adam: *"if clicking on a locomotive in test a path / why not moving, make it register a click on
-     * the station."*  The train is drawn over the station's caption, so a click on it landed on the caption, which kept a
-     * left click to itself.  On the frozen railway: a station with a train standing on it, and a point on the train where
-     * something other than the station's own square is on top.
+     * the station."*  The train is drawn over the station's caption, which keeps a left click to itself, so a click on
+     * the train must not stop at the caption.  On the frozen railway: a station with a train standing on it, and a point
+     * on the train where something other than the station's own square is on top.
      *
      * MUTATION: take the click where it lands, and this fails.
      *
@@ -3475,7 +3477,7 @@ public class testTheImportDoorReadsAnOldFile
         String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
 
         // SHOW TRAINS ON, SET AND NOT TOGGLED: the editor's box is remembered in the preferences, and a run's copy of them
-        // starts as Adam's own, so a claim about the trains drawn was green only while his box was ticked
+        // starts as Adam's own, so a claim about the trains drawn would pass only while his box was ticked
         final java.util.prefs.Preferences viewPrefs =
             org.traincontrol.util.Util.preferencesFor(org.traincontrol.gui.AutonomyEditorPanel.class);
 
@@ -3701,11 +3703,11 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * No setup edit is made while trains run (Adam, 2026-09-28: *"There should be no setup edit possible during a
-     * run"*).  The diagram's Autonomy Setup menu is offered only at rest; one opened then and clicked after a run began
-     * wrote the setup, and the rebuild it asked for was declined - an edit waiting against a running railway, which every
-     * door that keeps where the trains stand then had to work around (RLV11-B1, RLV11-B2).  Refused at the click, and
-     * said.
+     * No setup edit is made while trains run (Adam: *"There should be no setup edit possible during a run"*).  The
+     * diagram's Autonomy Setup menu is offered only at rest; one opened then and clicked after a run began would write
+     * the setup, and the rebuild it asks for would be declined - an edit waiting against a running railway, which every
+     * door that keeps where the trains stand would then have to work around (RLV11-B1, RLV11-B2).  So it is refused at
+     * the click, and said.
      *
      * MUTATION: let the menu's items write while trains run, and this fails.
      *
@@ -3830,9 +3832,9 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * Writing the turns the railway owes during a run leaves a train that turned and has set off again on its path
-     * (RLV11-C3).  A train's locked path records it on its start, where it turned, so the write took it for one still
-     * standing there and stood it on the copy facing the way it came in - which swept it off every other point of its
-     * path while it was under way.
+     * (RLV11-C3).  A train's locked path records it on its start, where it turned, so a write that took it for one
+     * still standing there would stand it on the copy facing the way it came in - which sweeps it off every other point
+     * of its path while it is under way.
      *
      * MUTATION: write a turn for a train under way, and this fails.
      *
@@ -3992,9 +3994,9 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * A train's arrival after Unload builds no railway (RLV11-C5).  Its thread runs the arrival callback after its last
-     * check of whether its railway is still the current one, and the callback asked the model for its railway to decide
-     * whether to switch the train's functions off - which builds an empty one where there is none, and `hasAutoLayout`
-     * then answered yes about nothing.  The callbacks are fired here as the train's thread fires them.
+     * check of whether its railway is still the current one, so the callback must not ask the model for its railway to
+     * decide whether to switch the train's functions off: that builds an empty one where there is none, and
+     * `hasAutoLayout` then answers yes about nothing.  The callbacks are fired here as the train's thread fires them.
      *
      * MUTATION: ask `getAutoLayout` in the arrival or the departure callback, and this fails.
      *
@@ -4073,8 +4075,8 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * Nothing the station labels ask after Unload builds a railway (RLV11-C6): the update a train's arrival or a
-     * placement posts, run after Unload has cleared the model, as it can land.  RLV10-B1's claim caught the labels'
-     * builder only when that timing happened; this runs the label code itself.
+     * placement posts, run after Unload has cleared the model, as it can land.  This runs the label code itself, so it
+     * does not depend on that timing.
      *
      * MUTATION: ask `getAutoLayout` in the labels' arrow, their tile lookups or their update, and this fails.
      *
@@ -4168,8 +4170,7 @@ public class testTheImportDoorReadsAnOldFile
      * Stop Using Autonomy while an edit a run declined waits writes what the railway owns - where the trains stand: the
      * train, the side and road of its tail, and the facing of the copy it stands on (RLV11-C6); and the settings the
      * railway changed since it was built, as every other fold then does (RSA21-C2) - and nothing of the setup's: not a
-     * square whose tile is gone, not a home's facing.  RLV10-B1's claim moved a train with no tail onto an unsplit square
-     * and waited on a priority, so it could see none of these.
+     * square whose tile is gone, not a home's facing.
      *
      * MUTATION: write no tail or no facing, or none of the settings, prune squares gone or clear a home's facing in that
      * write, and this fails.
