@@ -12,8 +12,8 @@ import org.traincontrol.gui.LayoutEditor;
 import support.SourceOf;
 
 /**
- * Three rules about the editor's surface, each of which was a defect Adam reported and each of which
- * has the same shape: a decision written down in more than one place, or not written down at all.
+ * Three rules about the editor's surface, each the same shape of defect: a decision written down in more than
+ * one place, or not written down at all.
  *
  * - **OB-039** - the facing menu existed twice, so a redraw added to one copy left the other reporting
  *   the bug.
@@ -25,24 +25,12 @@ import support.SourceOf;
  * Source-level where the fault is textual, following `testNoSelfRecursiveWrappers`; a real call where
  * the rule could be lifted out into a function, which is what OB-028's was.
  *
- * Which way a train is pointing is recorded in one place, and redrawing follows it.
- *
- * OB-039: "when changing the orientation of a loc from the track diagram, the direction on the label is
- * not updated." The facing was written to the setup and nothing repainted, so the caption went on
- * stating the opposite of what had just been chosen.
- *
- * The reason it is worth a test rather than just a fix is the shape of it. The facing menu existed
- * TWICE in `AutonomyEditorPanel` - once for the deep menu inside Autonomy Setup and once handed to the
- * track diagram - and the two copies had already drifted. A redraw added to the copy in front of
- * whoever is reading fixes the surface being looked at and leaves the other one reporting the same bug
- * later, which is how this file's defects have tended to arrive.
- *
- * So this asserts the thing that stops it recurring: the setup is told about a facing from exactly ONE
- * place, and that place redraws.
- *
- * Source-level on purpose, following `testNoSelfRecursiveWrappers`. The fault is textual - a second
- * copy of a menu, or a missing call after a mutation - and it is invisible to a test that drives the
- * model, because the model is the half that was always working.
+ * Which way a train is pointing is recorded in one place, and redrawing follows it (OB-039).  The facing menu
+ * must not exist twice in `AutonomyEditorPanel` (the deep menu inside Autonomy Setup and the one handed to the
+ * track diagram): a redraw added to the copy in front of whoever is reading fixes that surface and leaves the
+ * other reporting the same bug.  So the setup is told about a facing from exactly ONE place, and that place
+ * redraws.  The fault is textual, a second copy of a menu or a missing call after a mutation, and invisible to
+ * a test that drives the model, because the model is the half that always worked.
  *
  * @author Adam
  */
@@ -60,12 +48,10 @@ public class testEditorSurfaceRules
         + "\n        final java.util.List<org.traincontrol.automationui.TileGraph.TileKey> outline)";
 
     /**
-     * The facing menu appears even when the square holds one facing (Adam, 2026-09-06).
+     * The facing menu appears even when the square holds one facing.
      *
-     * **"I also can't manually change 75 407 DB's direction when at bottommainpost."**
-     *
-     * `buildFacingMenu` returned null below two choices, so on a square holding one facing the
-     * question was simply absent - and "no menu" reads as a fault rather than as an answer.
+     * "No menu" reads as a fault rather than as an answer, so `buildFacingMenu` never returns null for want of
+     * choices.
      *
      * **It is an answer, and not one the menu may override.** A facing has to be one the BUILD can
      * hold: `placementCopy` matches it against the copies the split made, and anything else falls
@@ -88,8 +74,7 @@ public class testEditorSurfaceRules
             "the facing menu still vanishes when a square holds one facing, so the operator is given "
             + "no answer at all rather than the answer that there is nothing to choose");
 
-        // GREYED, NOT REFUSED, where there is no facing (OB-347; Adam, 2026-10-13: "rather than hiding it, grey it out."),
-        // which is what this used to hold the other way round
+        // GREYED, NOT HIDDEN, where there is no facing (OB-347).  Adam's rule: "rather than hiding it, grey it out."
         assertFalse(code.contains("if (facings.isEmpty()) return null;"),
             "the menu is hidden on a square with NO facing, where Adam asked for it greyed (OB-347)");
 
@@ -105,15 +90,11 @@ public class testEditorSurfaceRules
     /**
      * Every door that gives a locomotive a name asks whether the name is usable (MT-270).
      *
-     * Adam, 2026-09-06: **"I added a locomotive named a,P[)(] and it went trough.  So, make sure this
-     * doesn't blow things up elsewhere."**
-     *
      * `RouteCommand.isNameUsable`'s own rule is that the doors setting a locomotive's name have to
-     * agree, and four did: the rename dialog, both route-editor doors, and the one applying a name the
-     * Central Station proposes. Every one of those RENAMES. Nothing asked about the name a locomotive
-     * is BORN with, so the character the other four exist to keep out could be typed in there instead.
+     * agree: the Add Locomotive dialog (where a name is BORN), the rename dialog, the route editor and the
+     * one applying a name the Central Station proposes.
      *
-     * **What it costs is not that locomotive.** Routes store locomotives by name in a comma-separated
+     * **What a bad name costs is not that locomotive.** Routes store locomotives by name in a comma-separated
      * format, so a comma in a name re-parses as two commands - and the route naming it was legal when
      * it was written. Brackets are allowed by Adam's own ruling; the comma is what `a,P[)(]` was
      * refused for.
@@ -126,16 +107,9 @@ public class testEditorSurfaceRules
     @Test
     public void testEveryDoorThatNamesALocomotiveChecksTheName() throws Exception
     {
-        // COUNTED PER FILE, not merely present (DIR-C7).
-        //
-        // The first version asserted `source.contains("isNameUsable(")` per FILE, and
-        // `TrainControlUI` holds TWO independent doors - the rename dialog and the one that applies a
-        // name the Central Station proposes.  Removing the call from either left the other`s
-        // occurrence satisfying the check, so the javadoc`s "remove the call from any listed door and
-        // this fails" was untrue of exactly the file with more than one.
-        //
-        // LOCATED PER DOOR since FR-136, which a count per file could not do: each door is its own declaration,
-        // found in whichever file holds it, so one of a pair going silent is named, and so is a door that moved.
+        // LOCATED PER DOOR (DIR-C7, FR-136).  Each door is its own declaration, found in whichever file holds it,
+        // so one of a pair going silent is named, and so is a door that moved.  (A count per file let a file
+        // with two independent doors, TrainControlUI, satisfy the check with the one that was left.)
         final String[][] doors =
         {
             {"private void AddLocButtonActionPerformed(java.awt.event.ActionEvent evt)", "the Add Locomotive dialog"},
@@ -175,11 +149,8 @@ public class testEditorSurfaceRules
     @Test
     public void testTheFacingIsWrittenFromOnePlaceAndThatPlaceRedraws() throws Exception
     {
-        // A PREFIX, so a writer cannot escape this count by spelling (SPEC-B4).
-        //
-        // The facing menu now calls setFacingAndMove, which writes a facing and stands the train
-        // on the copy that faces that way - and an exact match for "setFacing(" stopped seeing it
-        // the moment it was renamed. A guard that a rename walks out of is not guarding.
+        // A PREFIX, so a writer cannot escape this count by spelling (SPEC-B4): the facing menu calls
+        // setFacingAndMove, which an exact match for "setFacing(" would not see.
         //
         // COUNTED OVER THE PROGRAM (FR-136).  Counted over AutonomyEditorPanel's file, a write moved out of it
         // left the count; over every file, each write is one of the doors the message below names.  And by any
@@ -187,25 +158,21 @@ public class testEditorSurfaceRules
         // write moved out behind an accessor is still counted.
         int writes = count(FACING_WRITE, SourceOf.allCode());
 
-        // The redraw lives in radio(), the helper every one of these answers is built with -
-        // not beside this particular write. It was beside this one once, which is exactly how
-        // TD-1 happened: the station and turning radios sat in the same helper and got nothing.
+        // The redraw lives in radio(), the helper every one of these answers is built with,
+        // not beside this particular write: the station and turning radios sit in the same helper.
         //
-        // `placementChanged(null)`, not `placementChanged()`: the door now says WHICH
-        // placements it edited, and a radio edits none (D2-A1).  Matching the bare name
-        // would be satisfied by the declaration itself, which is not a call.
+        // `placementChanged(null)`, not `placementChanged()`: the door says WHICH placements it
+        // edited, and a radio edits none (D2-A1).  The bare name would be satisfied by the
+        // declaration itself, which is not a call.
         boolean redrawn = codeOf("    javax.swing.JMenuItem radio(").contains("placementChanged(null)");
 
-        // The TOGGLE helper as well, which this used to leave out (TD-1).
+        // The TOGGLE helper as well (TD-1).  Pinning radio() alone says "the facing redraws" and lets its
+        // sibling keep the bug: toggle() carries four setup writes reachable from the track diagram's own
+        // menu, and one of them - whether trains may arrive by a side - decides how a square SPLITS, which
+        // is the case the rebuild exists for.  A rule with two implementations needs both named.
         //
-        // Pinning radio() alone said "the facing redraws" and let its sibling keep the bug: toggle()
-        // carries four setup writes reachable from the track diagram's own menu, and one of them -
-        // whether trains may arrive by a side - decides how a square SPLITS, which is the case the
-        // rebuild exists for. A rule with two implementations needs both named, which is the shape
-        // this whole file is about.
-        //
-        // Its whole declaration, not sixty lines after its signature: the window had to grow once already when
-        // the method did (C11), and a declaration cannot borrow a placementChanged() from whatever comes next.
+        // Its whole declaration, not a window of lines after its signature (C11): a declaration cannot
+        // borrow a placementChanged() from whatever comes next.
         assertTrue(codeOf("    javax.swing.JCheckBoxMenuItem toggle(String text, String tooltipKey")
                 .contains("placementChanged(null)"),
             "the menu's toggle helper writes the setup and only refreshes. Four settings go "
@@ -226,16 +193,11 @@ public class testEditorSurfaceRules
         // convention twenty lines down: "adding a writer means saying here which file it is in and why
         // it is allowed to be a second one".  A THIRD write still fails, and the message says what to
         // ask about it.
-        // TWO, since REG8-B2 moved the third out.  The edit-or-assign door used to write the facing
-        // here; it now goes through `GraphLocAssign.commitAndRecord`, because the TRACK DIAGRAM has the
-        // same item and never had the second half at all - an assignment made there reverted on the
-        // next configuration load.  Adam: "there needs to be parity across the board."
-        //
-        // That is a reduction in writers, which is the direction this check wants.  A THIRD here still
-        // fails, and the message says what to ask about it.
-        //
         // FIVE OVER THE PROGRAM (FR-136): the editor's two, and the three in the files the list below names -
         // GraphLocAssign.commitAndRecord, the diagram's placeFacing and the window's rememberPlacement.
+        // The edit-or-assign door does not write the facing itself, because the TRACK DIAGRAM has the
+        // same item and an assignment made there has to be recorded too (REG8-B2).  Adam: "there needs to
+        // be parity across the board."  A sixth write fails, and the message says what to ask about it.
         assertEquals(writes, 5,
             "the facing is written from " + writes + " places in the program. Five are known.  Two are the "
             + "autonomy editor's: the facing menu in EditorTileMenus (which moves the railway too, SPEC-B4) and "
@@ -305,24 +267,14 @@ public class testEditorSurfaceRules
                 + " the door has gone rather than because it was fixed");
         }
 
-        // And project-wide, which is the half this used to claim without checking (NR-4).
-        //
-        // The count above is about ONE file, and its message said "the facing is written from one
-        // place" as though that were a property of the codebase. It was not: a third writer added in
-        // any other file passed, and the surface OB-039 was actually reported from - the track
-        // diagram's own menu - is one of them.
-        //
-        // A named LIST rather than a count, following testTriggerWaitsSayNothing: a count says
-        // something is wrong and a list says what, and adding a writer means saying here which file it
-        // is in and why it is allowed to be a second one.
+        // And project-wide (NR-4), as a named LIST rather than a count, following testTriggerWaitsSayNothing:
+        // a count says something is wrong and a list says what, and adding a writer means saying here which
+        // file it is in and why it is allowed to be a second one.
         assertEquals(filesWriting("setFacing("),
             Arrays.asList("AutonomyEditorPanel.java", "AutonomySession.java",
-                // GraphLocAssign ADDED BY REG8-B2, with the reason this list asks for.  It is the
-                // DIALOG both assignment doors show, so what accepting it means - commit, place,
-                // record the facing - belongs with it rather than being written out twice.  It was
-                // written twice, and the track diagram copy never had the recording half at all: an
-                // assignment made there reverted at the next configuration load.  It redraws through
-                // its callers, both of which repaint immediately after calling it.
+                // GraphLocAssign is the DIALOG both assignment doors show, so what accepting it means (commit,
+                // place, record the facing) is written once, with it (REG8-B2).  It redraws through its
+                // callers, both of which repaint immediately after calling it.
                 "GraphLocAssign.java", "LayoutRightclickAutonomyMenu.java",
                 // SessionImport is the legacy import's facings (FR-136), written behind
                 // AutonomyViewerPanel.importLegacyGraph, which reloads the railway after.
@@ -387,23 +339,14 @@ public class testEditorSurfaceRules
     @Test
     public void testTheSignalFocusIsAlwaysTurnedOffAgain() throws Exception
     {
-        // The CODE, with the comments taken out.
+        // The CODE, with the comments taken out (TD-3).  Read raw, the only "finally" in the window was the word
+        // inside the comment explaining why the clear is in a finally, so the assertion was satisfied by writing
+        // rather than by doing: rewording that comment broke the build, and moving the clear into Done's handler
+        // WITH its comment left the test green.  A test that reads source has to read the code.
         //
-        // This read the raw source, and the only "finally" within its window was the word inside the
-        // comment that explains why the clear is in a finally - so the assertion was satisfied by
-        // writing rather than by doing, and it failed in both directions: rewording that comment broke
-        // the build, and moving the clear into Done's handler WITH its comment left the test green.
-        // The real keyword sat 27 characters outside the window it was searching (TD-3).
-        //
-        // Two sibling tests already had this fix when this one was written, and a third gained it since:
-        // a test that reads source has to read the code.
-        //
-        // EVERY CLEAR IN THE PROGRAM, each INSIDE a finally block (FR-136): the 400 characters before it were a
-        // proxy for that, and a block that had closed before the clear satisfied it as well.
-        //
-        // Inside means the finally's OWN brace has not closed when the clear is reached.  Counting every brace
-        // between the two let a clear in a later method's `if` pass: the finally and its method close, two more
-        // open, and the sum still says "inside".
+        // EVERY CLEAR IN THE PROGRAM, each INSIDE a finally block (FR-136).  Inside means the finally's OWN brace
+        // has not closed when the clear is reached.  Counting every brace between the two would let a clear in a
+        // later method's `if` pass: the finally and its method close, two more open, and the sum still says "inside".
         String source = SourceOf.allCode();
 
         int clears = 0;
@@ -484,27 +427,18 @@ public class testEditorSurfaceRules
      * its visible border in both modes, the layout editor keeps its grey grid, and autonomy mode gets
      * no border at all.
      *
-     * **No border, not an invisible one.** The first version returned an empty border of the same
-     * thickness, to keep the insets so a hover could not shift the artwork. Adam: "The grid is
-     * correctly gone, but now there is a gap between tiles (essentially a white grid)" - an inset with
-     * nothing drawn in it shows the panel behind, so a grey grid became a white one. The shift it
-     * guarded against cannot happen anyway: `receiveMoveEvent` returns immediately in autonomy mode,
-     * so nothing swaps this border for another.
+     * **No border, not an invisible one.** An empty border of the same thickness would keep the insets, but an
+     * inset with nothing drawn in it shows the panel behind, so a grey grid becomes a white one.  The insets
+     * are not needed anyway: `receiveMoveEvent` returns immediately in autonomy mode, so nothing swaps this
+     * border for another.
      */
     @Test
     public void testTheAutonomyEditorHasNoVisibleGrid()
     {
-        // The GRID STATE is passed, never left to the machine (OB-091).
-        //
-        // These used the two-argument form, which asks `showGrid()` - and that reads a live user
-        // preference out of the Java Preferences store. So this test asserted whatever the person at
-        // this computer last clicked. It passed for weeks because the preference defaults to true, and
-        // failed the moment Adam turned the grid off while testing something else: the layout editor's
-        // border is legitimately null with the grid off, and the first assertion below calls that
-        // "the layout editor lost its grid".
-        //
-        // Same family as the carriage-return dependence (FBR-C8): a guard whose answer comes from the
-        // environment is not a guard. Both states are checked now, explicitly.
+        // The GRID STATE is passed, never left to the machine (OB-091).  The two-argument form asks `showGrid()`,
+        // a live user preference in the Java Preferences store, so the test would assert whatever the person at
+        // this computer last clicked: the layout editor's border is legitimately null with the grid off.  A guard
+        // whose answer comes from the environment is not a guard (FBR-C8).  Both states are checked explicitly.
         javax.swing.border.Border editing =
             org.traincontrol.gui.LayoutEditor.restingBorder(false, false, true);
 
@@ -520,10 +454,9 @@ public class testEditorSurfaceRules
         assertTrue(editing instanceof javax.swing.border.LineBorder,
             "the layout editor lost its grid - OB-028 asks for the borders to RETURN in the editor");
 
-        // Not assertNull any more.  MT-127 is a rule about ROOM - "there is now a gap between tiles
-        // (essentially a white grid)" - and asserting null pinned the implementation that happened to
-        // satisfy it, which then made the grid toggle undeliverable in this editor (OB-056). The grid
-        // is drawn here now, by a border that paints and reserves nothing.
+        // Not assertNull: MT-127 is a rule about ROOM (no gap between tiles, essentially a white grid), and
+        // asserting null pinned an implementation that made the grid toggle undeliverable in this editor
+        // (OB-056).  The grid is drawn here by a border that paints and reserves nothing.
         // With the grid ON both editors reserve the same room, so no tile is truncated by a line
         // drawn over art that was sized without it (OB-091). MT-127's rule is the assertion above,
         // about the grid being OFF.
@@ -544,13 +477,11 @@ public class testEditorSurfaceRules
     /**
      * A grid knows whether IT is in an editor, not whether an editor is open somewhere.
      *
-     * `layout.getEdit()` is the flag the two editors share for their mutual exclusion. While either was
-     * open, every grid on screen answered yes to it - the viewer included - so the viewer drew the
-     * editor's grey grid, greyed its captions, dropped its hand cursors and tooltips, and attached
-     * mouse listeners that cast their parent to `LayoutEditor`, which the viewer is not.
-     *
-     * One line of that constructor already asked the question properly, as a conjunction with the
-     * host; the other six asked the short version. This requires the short version to be gone.
+     * `layout.getEdit()` is the flag the two editors share for their mutual exclusion, so while either is open
+     * it is true for every grid on screen, the viewer included: the viewer would draw the editor's grey grid,
+     * grey its captions, drop its hand cursors and tooltips, and attach mouse listeners that cast their parent
+     * to `LayoutEditor`, which the viewer is not.  A grid asks `inEditor`, the conjunction with its own host;
+     * this requires the bare question to be gone.
      */
     @Test
     public void testTheViewerIsNotToldItIsAnEditor() throws Exception
@@ -579,13 +510,10 @@ public class testEditorSurfaceRules
     /**
      * Renaming a station does not re-place its label.
      *
-     * MT-116, Adam: "Weird - the label moves around to adjacent cells on rename."
-     *
-     * `AutonomySession.placeCaption` MOVES a station's caption when it already has one rather than
-     * refusing - which is right when somebody has asked for the name to be shown on a particular
-     * square, and wrong as a side effect of a rename. The label had a place somebody chose; the rename
-     * says nothing about where it should go; and the search picks whichever neighbouring square is free
-     * this time round. So it wandered.
+     * MT-116.  `AutonomySession.placeCaption` MOVES a station's caption when it already has one rather than
+     * refusing, which is right when somebody has asked for the name to be shown on a particular square and
+     * wrong as a side effect of a rename: the rename says nothing about where the label should go, and the
+     * search would pick whichever neighbouring square is free this time round.
      *
      * Nothing needs re-placing for the text to change - a caption points at the station's SQUARE and
      * looks the name up - so the rename path must ask whether the station is labelled already before
@@ -597,8 +525,7 @@ public class testEditorSurfaceRules
         // Every line of the program's code (FR-136), so a rename door in another file is asked as well
         String[] lines = SourceOf.allCode().split("\n");
 
-        // Every place that names a square and then labels it - there are two, and the reason this
-        // test exists is that the fix went on one of them first.
+        // Every place that names a square and then labels it - there are two.
         int renames = 0;
 
         for (int i = 0; i < lines.length; i++)
@@ -631,19 +558,13 @@ public class testEditorSurfaceRules
     /**
      * The running layout is rebuilt from the setup in exactly ONE place.
      *
-     * TD-9, from the three-day history review. `rebuildRunningLayoutFromSetup` was lifted out of
-     * `autonomyEditorClosed` so that an edit made from the diagram's own menu could ask for the same
-     * thing - its javadoc says so - and the original was left behind as a second copy of the same
-     * sixteen lines, comments and all.
+     * TD-9.  `rebuildRunningLayoutFromSetup` exists so that an edit made from the diagram's own menu and
+     * `autonomyEditorClosed` ask for the same thing; a second copy of its sixteen lines would drift, as the
+     * stale-capture defect (NR-1) did when it was fixed at one of two sites and left the other wrong.
      *
-     * That duplication has already cost once. The stale-capture defect (NR-1) was reported at one of
-     * the two sites, and fixing it there left the other one wrong; the commit that fixed it says "the
-     * reviewer found one site; there were two". The ten-line explanation of WHY the load must skip its
-     * capture step was then written into both places rather than one.
-     *
-     * So this asserts the thing that stops a third copy: the load that rebuilds the running layout
-     * without capturing appears once in the whole file. It is deliberately about the CALL rather than
-     * about the comment - a comment can be copied and still be true; a second call is the defect.
+     * So this asserts the thing that stops a copy: the load that rebuilds the running layout without
+     * capturing appears once in the whole program.  It is about the CALL rather than about a comment - a
+     * comment can be copied and still be true; a second call is the defect.
      */
     @Test
     public void testTheRunningLayoutIsRebuiltFromOnePlace() throws Exception
@@ -772,11 +693,10 @@ public class testEditorSurfaceRules
     /**
      * Every door that runs a route asks whether it is already running (SVN-B7).
      *
-     * `executeRoute`'s own comment has always said *"Every door that runs a route comes through
-     * here."*  Every door did; the guard was not in it.  It sat on the play button alone - so clicking
-     * the same route's row and confirming, or right-clicking it and choosing Execute, started a second
-     * run of a route that was already running: two threads throwing the same accessories, each
-     * unlocking what the other had locked.
+     * `executeRoute`'s own comment says *"Every door that runs a route comes through here."*, so the guard
+     * belongs in it: clicking the route's row and confirming, or right-clicking it and choosing Execute, must
+     * not start a second run of a route that is already running (two threads throwing the same accessories,
+     * each unlocking what the other had locked).
      *
      * The button greys while its route runs and that is the AFFORDANCE; the check inside executeRoute
      * is the GUARD, and OB-057 and OB-090 are both this shape - the two must ask one question.  Which
@@ -800,21 +720,14 @@ public class testEditorSurfaceRules
             "executeRoute asks whether the route is running only after marking it as started, which "
             + "answers its own question");
 
-        // AND THE DOOR DOES NOT ASK IT AGAIN.
-        //
-        // Counting every mention would be wrong: the cell painter and the hover both read the same
-        // set to decide what to DRAW, and drawing is the affordance rather than the guard.  What must
-        // not come back is a door deciding for itself whether to call executeRoute, because that is
-        // the arrangement under which two of the three doors were missing the question entirely.
+        // AND THE DOOR DOES NOT ASK IT AGAIN.  Counting every mention would be wrong: the cell painter and the
+        // hover read the same set to decide what to DRAW, which is the affordance rather than the guard.  What
+        // must not come back is a door deciding for itself whether to call executeRoute.
         String door = codeOf("    void RouteListMouseClicked(java.awt.event.MouseEvent evt)");
 
-        // NOT VACUOUS WHEN THE HANDLER MOVES (V33-C7).
-        //
-        // `bodyOf` answered "" when it could not find the declaration, and an empty string contains
-        // nothing - so a renamed or REGENERATED handler turned the assertion below into a no-op that
-        // still read as protection.  This one is a NetBeans `//GEN-FIRST` method, which is exactly
-        // the kind that gets regenerated.  `SourceOf.declaration` fails loudly instead, wherever the
-        // handler has gone (FR-136).
+        // NOT VACUOUS WHEN THE HANDLER MOVES (V33-C7).  This is a NetBeans `//GEN-FIRST` method, the kind that
+        // gets regenerated, and an empty string contains nothing.  `SourceOf.declaration` fails loudly wherever
+        // the handler has gone (FR-136).
 
         assertFalse(door.contains("routesExecuting"),
             "the route row's own click handler asks whether the route is already running instead of "
@@ -835,14 +748,12 @@ public class testEditorSurfaceRules
      * Switching an accessory by hand asks both halves of the question a route asks (SVN-B16).
      *
      * `MarklinRoute.heldReason` refuses two things: an accessory on a locked path, and a signal
-     * protecting a platform somebody is standing at.  The diagram's own accessory tile asked only the
-     * first - so a route setting a platform's signal green was refused, and clicking the same signal
-     * green on the same window was not.  The second is the one `getActiveAccs` cannot see, because a
-     * protecting signal is driven by occupancy rather than by an active path.
+     * protecting a platform somebody is standing at.  The second is the one `getActiveAccs` cannot see,
+     * because a protecting signal is driven by occupancy rather than by an active path, so the diagram's
+     * accessory tile must ask it as well as the first.
      *
-     * The rule lives on `Layout` now so every door can ask it, and there are THREE of them: the route,
-     * the diagram tile, and the switch keyboard, which asked nothing at all until `V31-C2` (`SVN-B17`,
-     * `AU-C12`).  This pins that all three do.
+     * The rule lives on `Layout` so every door can ask it, and there are THREE of them: the route,
+     * the diagram tile, and the switch keyboard (`V31-C2`, `SVN-B17`, `AU-C12`).  This pins that all three do.
      *
      * The aspect half moved with the rule.  `Layout.clearsProtection(accessory, commandingGreen)`
      * carries it, and each door supplies only which way IT is about to command the accessory - a tile
@@ -864,13 +775,11 @@ public class testEditorSurfaceRules
         String helper = codeOf(
             "private static boolean aboutToClearProtection(TrainControlUI tcUI, Accessory accessory)");
 
-        // BOTH LIMBS, and the aspect (TS3-B3, WK3-B1).
-        //
-        // This used to grep the whole file for the method name, so deleting either of the two calls -
-        // the accessory and its twin on a three-way - left it passing, which is exactly the vacuous
-        // shape TCX-A3 was fixed for the day before. And the name being present says nothing about
-        // whether the ASPECT is asked with it: without that, clicking a protecting signal to RED, the
-        // protective act, raises a warning the route door deliberately does not.
+        // BOTH LIMBS, and the aspect (TS3-B3, WK3-B1).  Grepping the whole file for the method name would pass
+        // with either of the two calls deleted (the accessory and its twin on a three-way), the vacuous shape
+        // TCX-A3 was fixed for.  And the name being present says nothing about whether the ASPECT is asked with
+        // it: without that, clicking a protecting signal to RED, the protective act, raises a warning the route
+        // door deliberately does not.
         assertTrue(label.contains("aboutToClearProtection(tcUI, c.getAccessory())")
                 && label.contains("aboutToClearProtection(tcUI, c.getAccessory2())"),
             "the diagram's accessory tile does not ask about BOTH accessories of the tile, so a "
@@ -881,21 +790,15 @@ public class testEditorSurfaceRules
             + "signal.  Setting a protecting signal to RED is the protective act, and the route door "
             + "explicitly permits it - a warning here is the over-strictness that door had removed");
 
-        // AND THE HELPER STILL ASKS THE RULE (V32-B2).
-        //
-        // The three assertions above are about the CALLS.  Gutting the helper they call - its last
-        // line to `return false;` - passes every one of them, and SVN-B16 is undone at the tile door
-        // with the test still green.  That is the same shape as TCX-A3, which is what these
-        // assertions replaced.
+        // AND THE HELPER STILL ASKS THE RULE (V32-B2).  The assertions above are about the CALLS; gutting the
+        // helper they call (its last line to `return false;`) passes every one of them and undoes SVN-B16 at the
+        // tile door.  That is the same shape as TCX-A3.
         assertTrue(helper.contains("clearsProtection(accessory"),
             "the tile's protecting-signal helper no longer asks the shared rule at all, so the doors "
             + "are back to different definitions of one question.  Body: " + helper);
 
-        // THE BODY, not the file (V33-C6).
-        //
-        // Read whole, this passes on the method name appearing in a comment - and `MarklinRoute`'s
-        // comments discuss this rule at length, which is how the assertion would have survived the
-        // call being deleted.
+        // THE BODY, not the file (V33-C6): read whole, this passes on the method name appearing in a comment,
+        // and `MarklinRoute`'s comments discuss this rule at length.
         String held = codeOf("private String[] heldReason(RouteCommand rc)");
 
         assertTrue(held.contains("protectsAnOccupiedSquare"),
@@ -910,22 +813,18 @@ public class testEditorSurfaceRules
                 org.traincontrol.base.Accessory.class),
             "the rule the doors delegate to is not on Layout, so one of them is carrying a copy");
 
-        // AND THE ASPECT IS PART OF THE RULE, not of one caller (V31-C2).
-        //
-        // It used to be a line in the tile's own helper, which is why the keyboard could not ask it
-        // without copying it.  Dropping the direction from the signature would let every door warn
-        // about a click that sets a signal to danger - the over-strictness the route door had removed.
+        // AND THE ASPECT IS PART OF THE RULE, not of one caller (V31-C2), so the keyboard can ask it without
+        // copying it.  Dropping the direction from the signature would let every door warn about a click that
+        // sets a signal to danger - the over-strictness the route door had removed.
         String rule = codeOf("public boolean clearsProtection(Accessory accessory, boolean commandingGreen)");
 
         assertTrue(rule.contains("commandingGreen") && rule.contains("protectsAnOccupiedSquare"),
             "the shared rule no longer asks both halves - which way the accessory is being commanded, "
             + "and whether it protects somewhere occupied.  Body: " + rule);
 
-        // AND THE THIRD DOOR (SVN-B17, V31-C2, AU-C12).
-        //
-        // The switch keyboard went straight to setAccessoryState with no check of any kind, while the
-        // two doors above asked two questions each.  It is the door most likely to be forgotten again,
-        // because it is the one that never had a guard to begin with.
+        // AND THE THIRD DOOR (SVN-B17, V31-C2, AU-C12).  The switch keyboard has to ask the same two questions
+        // as the other two doors; it is the door most likely to be forgotten, being the one that never had a
+        // guard to begin with.
         // Missing, `SourceOf.declaration` fails: the switch keyboard has no guard at all - a turnout on a locked
         // path can be thrown from it under a running train, which is AU-A2 through the one door that never asked
         String keyboard = codeOf(
@@ -935,11 +834,10 @@ public class testEditorSurfaceRules
             "the switch keyboard asks fewer than both halves of the question the other two doors ask.  "
             + "Body: " + keyboard);
 
-        // AND THE POWER QUESTION (MT-261 ruling 4).
-        //
-        // Adam: "yes, route through the same guards."  A command sent with the power off does nothing,
-        // and the keyboard used to send it into the dark leaving the button looking as though it had
-        // worked - the one question of the three that is about whether anything can happen at all.
+        // AND THE POWER QUESTION (MT-261 ruling 4).  Adam: "yes, route through the same guards."  A command
+        // sent with the power off does nothing, and the keyboard must not send it into the dark leaving the
+        // button looking as though it had worked - the one question of the three that is about whether anything
+        // can happen at all.
         String asks = codeOf(
             "private KeyboardSwitch keyboardSwitchAllowed(int address, javax.swing.JToggleButton button)");
 
@@ -963,15 +861,11 @@ public class testEditorSurfaceRules
      * persisted if turned off.  make sure hovering (blue/red outlines) doesn't increase tile widths
      * when it is off."
      *
-     * The second half is the one with teeth, and it was already broken in autonomy mode, which has had
-     * the grid off since it was written: the resting border there was NULL. A border occupies space, so
-     * a square with none is a pixel smaller in each direction than one with a line - and putting a
-     * coloured line on it to show the pointer is over it made it grow, which pushes every square after
-     * it along. Off, the resting border is an EMPTY border of the same width instead.
-     *
-     * So the property is: all three borders a square can be wearing - grid on, grid off, hovered - take
-     * up exactly the same room. Asked of the insets rather than of the picture, because insets are what
-     * the layout manager reads.
+     * The second half is the one with teeth: a border occupies space, so a square with a coloured outline
+     * on it grows by a pixel in each direction and pushes every square after it along.  With the grid off a
+     * square rests in NO border, so its hover outline has to reserve nothing either; with the grid on, both
+     * editors reserve the same room (OB-091).  Asked of the insets rather than of the picture, because
+     * insets are what the layout manager reads.
      *
      * The three-argument form is used deliberately: the two-argument one asks the stored preference,
      * and a test that reads the operator's settings is a test whose answer depends on their settings.
@@ -990,14 +884,10 @@ public class testEditorSurfaceRules
             + "white grid where the grey one used to be, which is MT-127 and which the autonomy "
             + "editor's own rule below pins");
 
-        // The two editors reserve the SAME room with the grid on (OB-091).
-        //
-        // This asserted the opposite - that the autonomy editor reserves none - citing MT-127. That
-        // read one rule across two states: MT-127 is about the grid being OFF, and the assertion above
-        // is the one that pins it. With the grid ON, reserving nothing means the cell is sized as
-        // though there were no line and then has one painted over it, so the line eats a pixel of the
-        // tile art. Adam: "make the behavior of the autonomy editor match so that there are no tile
-        // truncations."
+        // The two editors reserve the SAME room with the grid ON (OB-091).  Reserving nothing would mean the cell
+        // is sized as though there were no line and then has one painted over it, so the line eats a pixel of the
+        // tile art.  MT-127 is about the grid being OFF, and the assertion above pins it.  Adam: "make the
+        // behavior of the autonomy editor match so that there are no tile truncations."
         assertEquals(
             LayoutEditor.restingBorder(false, true, true).getBorderInsets(square).left,
             LayoutEditor.restingBorder(false, false, true).getBorderInsets(square).left,
@@ -1086,24 +976,19 @@ public class testEditorSurfaceRules
     /**
      * Emptying the page cache hands its caption labels back first.
      *
-     * MT-134 item 3 is "open and close the editor a dozen times on a big layout and watch memory", and
-     * Adam asked for a test. The heap growth itself is a hands-on observation - there is no UI harness
-     * here to open a real editor a dozen times - but the DEFECT behind it is a rule about source, and
-     * that is what rots.
+     * MT-134 item 3 is "open and close the editor a dozen times on a big layout and watch memory".  The heap
+     * growth itself is a hands-on observation, but the DEFECT behind it is a rule about source, and that is
+     * what rots.
      *
      * Every page in the cache holds a grid, and every grid holds the caption labels it registered with
      * the window. `discard()` asks the window whether its container is still cached and stands down if
      * it is - so at the moment the cache is thrown away, nothing has handed those labels back and
-     * nothing ever will: the containers become unreachable while `layoutStations` still holds a
-     * reference to every label inside them. One page's worth per cache reset, for the life of the
-     * session.
+     * nothing ever will: `layoutStations` would hold a reference to every label inside unreachable
+     * containers, one page's worth per cache reset.  The lazy prune cannot recover them either: it needs
+     * a successor label for the same square, and a caption that was CLEARED never gets one.
      *
-     * The lazy prune cannot recover them either. It needs a successor label for the same square, and a
-     * caption that was CLEARED never gets one.
-     *
-     * So: the assignment that empties the cache must be preceded by the hand-back. Read from source
-     * rather than exercised, because the thing being pinned is that a future edit which adds a second
-     * way to empty the cache does not forget - which is exactly how this arrived the first time.
+     * So the assignment that empties the cache must be preceded by the hand-back.  Read from source
+     * rather than exercised, so that a future edit adding a second way to empty the cache does not forget.
      */
     @Test
     public void testEmptyingThePageCacheHandsItsLabelsBack() throws Exception
@@ -1148,19 +1033,15 @@ public class testEditorSurfaceRules
      * diagram."
      *
      * A caption square draws the station's OCCUPANT, and a station with no train on it draws as
-     * `GraphLocAssign.NONE_LABEL` - three dashes. So on most of the railway most of the time, a
-     * captioned square says nothing whatever about which station it is captioning, and the menu was
-     * the only way to find out. It did not say either: one item read "Show a Station Name Here..." and
-     * the other "Clear This Square", and neither named anything.
+     * `GraphLocAssign.NONE_LABEL` - three dashes.  So the menu is the only way to find out which station a
+     * captioned square is about, and its items must name it.
      *
      * Two halves, and the second is the one worth a test.
      *
      * The names have to be in `addCaptionItems`, because BOTH menus build their caption items through
-     * it - the editor's own right-click and the deep menu handed to the track diagram. Half the
-     * defects in this file's history are a fix applied to one of a pair, and this file already holds
-     * three tests about exactly that. The deep menu happens to carry a `title()` naming the station
-     * already; the editor's own menu has none, and that is the menu Adam was looking at. So a fix
-     * written at a call site could have been written at the one that was already fine.
+     * it - the editor's own right-click and the deep menu handed to the track diagram.  The deep menu
+     * carries a `title()` naming the station already; the editor's own menu has none, so a fix written
+     * at a call site could have been written at the one that was already fine.
      *
      * Asserted as "the un-named keys are not used anywhere" rather than "the named keys are used
      * here", because that is the version a second copy of the menu cannot get past.
@@ -1179,19 +1060,12 @@ public class testEditorSurfaceRules
             + "whenever no train is standing there - so this asks the user to confirm removing "
             + "something whose identity is not shown anywhere on screen (FR-014)");
 
-        // Each named variant is asked for in the form its own VALUE requires.
-        //
-        // This used to assert that both keys were fetched with I18n.f, on the stated grounds that
-        // "it carries a {0}". That was true of both when it was written and is the kind of fact a
-        // test should not be holding in its head: MT-162 took the placeholder out of
-        // menuShowStationHereNamed - the menu was naming the same station twice in two lines - and
-        // this failed, naming a reason that had stopped being true. A guard that has to be edited
-        // whenever the thing it guards legitimately changes teaches people to edit guards.
-        //
-        // So it reads the bundle. A value with a placeholder must be formatted, because I18n.t would
-        // put the {0} on the menu; a value without one must NOT be, because I18n.f with an argument
-        // nothing consumes is a caller that thinks it is saying something it is not. Both directions
-        // matter, and only the first was ever checked.
+        // Each named variant is asked for in the form its own VALUE requires (MT-162).  The test reads the
+        // bundle rather than assuming both keys carry a {0}: MT-162 took the placeholder out of
+        // menuShowStationHereNamed, and a guard that has to be edited whenever the thing it guards legitimately
+        // changes teaches people to edit guards.  A value with a placeholder must be formatted, because I18n.t
+        // would put the {0} on the menu; a value without one must NOT be, because I18n.f with an argument
+        // nothing consumes is a caller that thinks it is saying something it is not.
         java.util.Properties bundle = new java.util.Properties();
 
         try (java.io.InputStream in = new java.io.FileInputStream(
