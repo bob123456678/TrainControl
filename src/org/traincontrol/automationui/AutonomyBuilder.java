@@ -130,11 +130,9 @@ public class AutonomyBuilder
 
             if (reverse) return arrival == exitSide;
 
-            // Not merely "some other side".  A double curve is two curves crossing in one square with
-            // no connection between them, so a train on one of them cannot leave by either side of the
-            // other - and "any side but the one I came in at" let it, which is a move that changes
-            // track in mid-square.  findPath refuses exactly that, so leaving it here meant the editor
-            // called a run impossible while the configuration it built offered it.
+            // Not merely "some other side".  A double curve is two curves crossing in one square with no connection between
+            // them, so a train on one of them cannot leave by either side of the other; `findPath` refuses exactly that,
+            // and the configuration built here has to agree with what the editor calls a run.
             return arrival != exitSide && onward.contains(exitSide);
         }
 
@@ -158,12 +156,6 @@ public class AutonomyBuilder
     public static final String CAN_REVERSE = "canReverse";
 
     /**
-     * The authored key that marks a station as a berth trains are only ever sent to on purpose.
-     *
-     * Emitted as `reversing`, which is the model's word for a station autonomy will never choose and
-     * cannot route a train through.  Also never emitted under its own name.
-     */
-    /**
      * The authored key that marks a square where a train has NO choice but to turn round.
      *
      * The difference from CAN_REVERSE is whether the plain copies are emitted at all.  "May" leaves
@@ -173,6 +165,12 @@ public class AutonomyBuilder
      */
     public static final String MUST_REVERSE = "mustReverse";
 
+    /**
+     * The authored key that marks a station as a berth trains are only ever sent to on purpose.
+     *
+     * False means a station autonomy will not choose for itself, which a route the user picks still reaches.  The build
+     * does not carry the authored value through: it emits `autoDestination` false from the marked tiles.
+     */
     public static final String AUTO_DESTINATION = "autoDestination";
 
     /**
@@ -210,17 +208,16 @@ public class AutonomyBuilder
     public static final String COPY_FACING = "copyFacing";
 
     /**
-     * What this used to be called, still read so that a setup authored an hour ago keeps its berths.
+     * The old key for a berth (true for one), still read so that a setup authored under it keeps its berths.
      */
     public static final String PARKING = "parking";
 
     /**
      * The two flags this class DERIVES, and which therefore never travel in from the authored data.
      *
-     * They used to be set directly, and a configuration written before this change can still carry
-     * them.  Letting one through now would put a terminus on a plain copy of a split tile, or - worse -
-     * a terminus and a reversing flag on one Point, which Point itself refuses in either order and
-     * which fails the whole configuration rather than that one square.
+     * A configuration written when they were set directly can still carry them.  Letting one through would put a
+     * terminus on a plain copy of a split tile, or - worse - a terminus and a reversing flag on one Point, which Point
+     * itself refuses in either order and which fails the whole configuration rather than that one square.
      */
     private static final List<String> DERIVED = Arrays.asList("terminus", "reversing");
 
@@ -318,12 +315,6 @@ public class AutonomyBuilder
     }
 
     /**
-     * The stations that are parking berths.
-     *
-     * @param tiles the marked tiles, or null for none
-     * @return this
-     */
-    /**
      * The squares where every arriving train must turn round.
      *
      * @param tiles the marked tiles, or null for none
@@ -336,17 +327,6 @@ public class AutonomyBuilder
         return this;
     }
 
-    /**
-     * Which sides each station refuses to let trains arrive by.
-     *
-     * A square is already emitted as one Point per arrival side, so a restriction has somewhere exact
-     * to land: the copy for a barred side stops being a station.  Trains still run over it - the track
-     * is unchanged and pass-through is a different question, answered by the direction arrows - they
-     * simply cannot be sent TO it, which is what "you may not arrive from that way" means.
-     *
-     * @param barred square to the sides it bars, or null for no restrictions
-     * @return this
-     */
     /**
      * Which accessories protect each station.
      *
@@ -387,18 +367,15 @@ public class AutonomyBuilder
     /**
      * Stations that are unavailable to autonomy while another square is occupied (FR-001).
      *
-     * Expressed as LOCK EDGES rather than as a rule of its own, which is Adam's call and the reason
-     * there is no new concept in the running model: "add a lock edge ending with the requested S88 to
-     * be excluded.  that will allow you to mostly reuse the existing model."
+     * Expressed as LOCK EDGES rather than as a rule of its own, so there is no new concept in the running model: "add a
+     * lock edge ending with the requested S88 to be excluded.  that will allow you to mostly reuse the existing model."
      *
-     * So every edge INTO the station gains, as a lock edge, every edge that ENDS at the square being
-     * watched - and the existing lock machinery does the rest.  What that means in practice is worth
-     * being exact about, because it is not quite the words of the request: a lock edge asks whether
-     * that track is HELD BY A ROUTE, not whether a train is standing at the sensor beyond it.
-     * Edge.isLockHeld says so and explains why - counting a parked train made a train beside a junction
-     * a permanent roadblock, and two of them could deadlock.  So the station is held back while
-     * something is running over the watched approach, and free again once that train has arrived and
-     * its path is released.
+     * So every edge INTO the station gains, as a lock edge, every edge that ENDS at the square being watched - and the
+     * existing lock machinery does the rest.  A lock edge asks whether that track is HELD BY A ROUTE, not whether a
+     * train is standing at the sensor beyond it (Edge.isLockHeld explains why: counting a parked train made a train
+     * beside a junction a permanent roadblock, and two of them could deadlock).  So the station is held back while
+     * something is running over the watched approach, and free again once that train has arrived and its path is
+     * released.
      *
      * @param blocking station square to the squares that hold it back
      * @return this
@@ -431,6 +408,17 @@ public class AutonomyBuilder
     /** Null when nobody said, and the configuration then says nothing of it */
     private Map<TileKey, String> piecesToMeasure = null;
 
+    /**
+     * Which sides each station refuses to let trains arrive by.
+     *
+     * A square is already emitted as one Point per arrival side, so a restriction has somewhere exact to land: the copy
+     * for a barred side stops being a station.  Trains still run over it - the track is unchanged and pass-through is a
+     * different question, answered by the direction arrows - they simply cannot be sent TO it, which is what "you may
+     * not arrive from that way" means.
+     *
+     * @param barred square to the sides it bars, or null for no restrictions
+     * @return this
+     */
     public AutonomyBuilder withBarredArrivals(Map<TileKey, Set<TilePorts.Side>> barred)
     {
         this.barredArrivals = barred == null
@@ -459,26 +447,18 @@ public class AutonomyBuilder
         return barred == null || !barred.contains(node.getArrival());
     }
 
+    /**
+     * The stations that are parking berths: ordinary stations that autonomy is told not to choose as a destination.
+     *
+     * @param tiles the marked tiles, or null for none
+     * @return this
+     */
     public AutonomyBuilder withParkingTiles(Set<TileKey> tiles)
     {
         this.manualOnly = tiles == null ? Collections.<TileKey>emptySet() : tiles;
         return this;
     }
 
-    /**
-     * The sides trains arrive at this tile by, in a fixed order.
-     *
-     * Every tile with an arrival is split, not only the marked ones.  A single Point per sensor is a
-     * truthful model of the track and a false model of what a train may do, because it forgets which way
-     * the train is pointing: the running model knows only which Point a locomotive stands on, so nothing
-     * stops a journey taking the edge straight back where it came from.  Splitting by arrival side is
-     * how the facing gets written down, and it is what the hand-built configurations were already doing
-     * by hand with one-way edges and doubled Points.
-     *
-     * One arrival side is still worth splitting on.  It emits a single Point, so nothing is duplicated
-     * and no name changes, but that Point knows which side it was reached by and therefore refuses to
-     * leave by it - which is the whole rule, stated for the commonest case.
-     */
     /**
      * The sides a train can arrive at a square by, for anything offering the user a choice about them.
      *
@@ -493,6 +473,19 @@ public class AutonomyBuilder
         return new ArrayList<>(splitSides(tile));
     }
 
+    /**
+     * The sides trains arrive at this tile by, in a fixed order.
+     *
+     * Every tile with an arrival is split, not only the marked ones.  A single Point per sensor is a truthful model of
+     * the track and a false model of what a train may do, because it forgets which way the train is pointing: the
+     * running model knows only which Point a locomotive stands on, so nothing stops a journey taking the edge straight
+     * back where it came from.  Splitting by arrival side is how the facing gets written down, and it is what the
+     * hand-built configurations were already doing by hand with one-way edges and doubled Points.
+     *
+     * One arrival side is still worth splitting on.  It emits a single Point, so nothing is duplicated and no name
+     * changes, but that Point knows which side it was reached by and therefore refuses to leave by it - which is the
+     * whole rule, stated for the commonest case.
+     */
     private List<TilePorts.Side> splitSides(TileKey tile)
     {
         Set<TilePorts.Side> sides = new java.util.TreeSet<>();
