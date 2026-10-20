@@ -4335,14 +4335,13 @@ public class LayoutEditor extends PositionAwareJFrame
     /**
      * Whether this window may be left, asking about unsaved work first.
      *
-     * Closing only.  Switching page or mode asks its own question - see leaveFor, which can offer to
-     * SAVE because the window is coming straight back, where closing can only offer to throw the work
-     * away.  What counts as unsaved is the same test in both, and is the first line of each.
+     * Closing only.  Switching page or mode asks its own question (see leaveFor), which can offer to SAVE because the
+     * window is coming straight back, where closing can only offer to throw the work away.  What counts as unsaved is the
+     * same test in both, and is the first line of each.
      *
-     * In autonomy mode the diagram was never touched, so the undo stack is empty and the question that
-     * matters is whether the setup has unsaved edits.  Answering yes discards them here, before the
-     * caller does anything: they live in the shared session, so leaving them would mean the question
-     * was asked and its answer ignored.
+     * In autonomy mode the diagram was never touched, so the undo stack is empty and the question that matters is whether
+     * the setup has unsaved edits.  Answering yes discards them here, before the caller does anything: they live in the
+     * shared session, so leaving them would mean the question was asked and its answer ignored.
      *
      * @return true when the window may go
      */
@@ -4397,24 +4396,20 @@ public class LayoutEditor extends PositionAwareJFrame
     /**
      * The same save / discard / cancel question, asked by the main window before it exits.
      *
-     * Commit febb8529's rule is "one save/discard/cancel question, asked wherever a page is left", and
-     * it was enforced at every door out of this window - switching page, switching mode, jumping to a
-     * link's other end - but not at the biggest one. `WindowClosed` never consulted the editor and
-     * called System.exit, so closing the application discarded whatever was open in it without asking
-     * (OB-070).
+     * The rule is "one save/discard/cancel question, asked wherever a page is left", and the biggest door out of this
+     * window is closing the application: without it the exit would call System.exit and discard whatever is open here
+     * without asking (OB-070).  In autonomy mode it would be worse than a silent discard, since the exit capture saves the
+     * setup, so work the user was about to Cancel could be COMMITTED on the way out.
      *
-     * In autonomy mode it was worse than a silent discard: the exit capture saves the setup, so work
-     * the user was about to Cancel could be COMMITTED on the way out.
-     *
-     * Public so the window can ask; it delegates rather than restating the rule, because a second copy
-     * of that dialog would be a second thing to keep in step.
+     * Public so the window can ask; it delegates rather than restating the rule, because a second copy of that dialog
+     * would be a second thing to keep in step.
      *
      * @return true when it is all right to proceed - saved, discarded, or nothing to settle
      */
     public boolean maySettleBeforeExit()
     {
-        // BACK AND IN FRONT FIRST (the popups sweep, on Adam's MT-703 note): its question about unsaved work is its
-        // own, and a minimised window hides what it owns, so the exit waited on a question nobody could see
+        // BACK AND IN FRONT FIRST (MT-703): its question about unsaved work is its own, and a minimised window hides what it
+        // owns, so the exit would wait on a question nobody could see
         if ((getExtendedState() & java.awt.Frame.ICONIFIED) != 0)
         {
             setExtendedState(getExtendedState() & ~java.awt.Frame.ICONIFIED);
@@ -4426,40 +4421,29 @@ public class LayoutEditor extends PositionAwareJFrame
 
         // THE RUNNING LAYOUT HAS FOLLOWED A DISCARD BY NOW (WKV-B2): Discard in autonomy mode restores the setup as the
         // editor opened it, and `discardAutonomyWork`, inside settleUnsavedWork, rebuilds the railway from it before it
-        // returns (RSA26-C1).  So the save on the way out folds a railway that no longer carries the discarded edit - a
-        // bulk clear's empty squares, a changed arrow, a home - and if the exit is then refused, the setup and the
-        // railway agree, as after a Cancel.
+        // returns (RSA26-C1).  So the save on the way out folds a railway that no longer carries the discarded edit, and if
+        // the exit is then refused, the setup and the railway agree, as after a Cancel.
         return true;
     }
 
     /**
      * Completes a track-mode Discard, once the exit is certain.
      *
-     * A track-diagram edit has two halves in two places. The diagram is discarded by
-     * `layoutEditingComplete` re-reading the pages from disk; the autonomy setup those same gestures
-     * wrote - dragging a captioned tile writes it immediately, per gesture - is put back by
-     * `undoAutonomyEdits`, and that is the CALLER'S job. The sidebar switch does it, and so does the
-     * editor's own X, under a comment reading "Both halves of the edit, or neither". Application exit
-     * did not, so answering Discard on the way out put the diagram back and left the caption on the
-     * square it had been dragged to - and the next reconciling save pruned whatever no longer matched.
+     * A track-diagram edit has two halves in two places.  The diagram is discarded by `layoutEditingComplete` re-reading
+     * the pages from disk; the autonomy setup those same gestures wrote (dragging a captioned tile writes it immediately,
+     * per gesture) is put back by `undoAutonomyEdits`, and that is the CALLER'S job, as the sidebar switch and the
+     * editor's own X do.  Application exit must do it too, or answering Discard would put the diagram back and leave the
+     * caption on the square it had been dragged to.
      *
-     * It was unreachable until it was not: before exit began disposing the editor, the pre-edit note
-     * was left on disk and the NEXT start completed the discard by accident.
+     * TWO conditions.  It runs on `settledByDiscarding`, not on "settleUnsavedWork returned true", which a clean editor
+     * returns too: that would rewind the setup to the editor-open snapshot and discard whatever autonomy had done in the
+     * meantime.  And it is called from the exit path beside the dispose, once everything that can say no has said yes,
+     * not from `maySettleBeforeExit` (the FIRST thing the exit does, before the dialog about running trains, which can
+     * still refuse): otherwise the rewind would happen, the application carry on, `autonomyAsOpened` be consumed and the
+     * editor's own Cancel be left with nothing to put back.
      *
-     * TWO conditions, and the first version of this fix had neither right.
-     *
-     * It ran on "settleUnsavedWork returned true", which is also what a clean editor returns - so with
-     * nothing edited at all it rewound the setup to the editor-open snapshot, discarding whatever
-     * autonomy had done in the meantime. `settledByDiscarding` is the actual question.
-     *
-     * And it ran from `maySettleBeforeExit`, which is the FIRST thing the exit does - before the
-     * dialog that asks about running trains, which can still refuse. So the rewind happened and then
-     * the application carried on, with `autonomyAsOpened` consumed and the editor's own Cancel left
-     * with nothing to put back. It is called from the exit path now, beside the dispose, once
-     * everything that can say no has said yes.
-     *
-     * Safe after a Save: saving nulls `autonomyAsOpened`, so this cannot put back a setup the user has
-     * just chosen to keep - and `settledByDiscarding` is false there anyway.
+     * Safe after a Save: saving nulls `autonomyAsOpened`, so this cannot put back a setup the user has just chosen to
+     * keep, and `settledByDiscarding` is false there anyway.
      */
     public void completeExitDiscard()
     {
@@ -4467,22 +4451,16 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
-     * Save, discard, or stay - asked once, wherever a page is being left with work on it.
+     * Save, discard, or stay: asked once, wherever a page is being left with work on it.
      *
-     * Three answers, not two. Closing offers two because closing is final: the window is going whatever
-     * happens, and the only question is whether the work goes with it. LEAVING a page is not final -
-     * the user is coming straight back to the same editor somewhere else - and a two-button "throw it
-     * away or stay here" makes them close the window, save, and reopen it, which is the whole thing the
-     * sidebar exists to stop them doing.
+     * Three answers, not two.  Closing offers two because closing is final: the window is going whatever happens, and
+     * the only question is whether the work goes with it.  LEAVING a page is not final (the user is coming straight back
+     * to the same editor somewhere else), and a two-button "throw it away or stay here" makes them close the window,
+     * save, and reopen it, which is what the sidebar exists to stop them doing.  Save is the default because it is the
+     * answer that cannot lose anything, and this appears on a gesture as small as clicking a tab.
      *
-     * Save is the default because it is the answer that cannot lose anything, and this appears on a
-     * gesture as small as clicking a tab.
-     *
-     * Shared with the link jump since OB-046. That path asked its own YES/NO question - and its "yes"
-     * neither saved nor discarded, it simply left. The setup is SHARED, so the edits then survived into
-     * the window that opened next: the user had answered a question about their unsaved work and
-     * nothing had been done with it either way. Adam: "settings should be saved or discarded before
-     * leaving."
+     * Shared with the link jump (OB-046), whose own YES/NO neither saved nor discarded, so the edits survived into the
+     * next window through the shared setup (Adam: "settings should be saved or discarded before leaving.").
      *
      * @return whether the caller may go ahead; false means the user chose to stay, or the save or the
      *         discard failed and said so
@@ -4567,78 +4545,39 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     private void leaveFor(String page, boolean autonomy)
     {
-        // NOBODY IS POINTING AT THE OLD PAGE ANY MORE (OB-198).
-        //
-        // `hoveredSquare` refuses a stale label anyway - it is not in the new grid - but a field that
-        // is never cleared is one the next reader has to remember to distrust, and there have been
-        // three readers of this one.
+        // NOBODY IS POINTING AT THE OLD PAGE ANY MORE (OB-198).  `hoveredSquare` refuses a stale label anyway, but a field
+        // that is never cleared is one the next reader has to remember to distrust.
         autonomyHover = null;
 
-        // Save, discard, or stay - three answers, not two.
-        //
-        // Closing offers two because closing is final: the window is going whatever happens, and the
-        // only question is whether the work goes with it.  Switching is not final - the user is coming
-        // straight back to the same editor on a different page - and a two-button "throw it away or
-        // stay here" makes them close the window, save, and reopen it, which is the whole thing the
-        // sidebar exists to stop them doing.
-        //
-        // Save is the default because it is the answer that cannot lose anything, and this dialog
-        // appears on a gesture as small as clicking a tab.
+        // Save, discard, or stay: see settleUnsavedWork.
         if (!settleUnsavedWork()) return;
 
-        // Committed: from here the switch is going to happen, and nothing else may start one until it
-        // has (FR-036 follow-up).  After the question, so answering "stay here" leaves this alone.
-        // The window STAYS.
+        // Committed: from here the switch is going to happen, and nothing else may start one until it has (FR-036).  After
+        // the question, so answering "stay here" leaves this alone.  The window STAYS: only the frame survives, and the
+        // teardown still runs in full, because a switch is an exit as far as the rest of the application is concerned (the
+        // diagram is re-read from disk, the setup is put back as it was found, and the main window is told).
         //
-        // Everything above this line is unchanged - the same three answers, the same save, the same
-        // discard of a shared setup.  What changed is what happens after them: this used to dispose()
-        // and ask the main window to open a fresh editor, and the gap between the two was a visible
-        // flash of the desktop on a gesture as small as clicking a tab.
-        //
-        // The teardown still runs in full.  A switch is still an exit as far as the rest of the
-        // application is concerned: the diagram is re-read from disk, the setup is put back as it was
-        // found, and the main window is told.  Only the frame survives.
-        // Posted rather than run straight from the callback - but read the correction below before
-        // relying on what that buys.  OB-016, corrected by GC-A1.
-        //
-        // The reasoning was: autonomyEditorClosed and layoutRefreshComplete both end by calling
-        // repaintLayout, which POSTS its work and builds the main window's grid inside that task;
-        // arriveAt sets layout.setEdit(true) and the main window shares the LayoutDiagram, so a repaint
-        // running after that flag is set builds the VIEWER in edit mode. Posting arriveAt was meant to
-        // put it behind that repaint.
-        //
-        // IT DOES NOT. repaintLayout submits to LayoutGridRenderer - a single-thread ExecutorService -
-        // and only calls invokeLater from inside THAT, so its EDT task is not queued when this one is.
-        // The order between them is whatever the executor decides. An extra invokeLater cannot order
-        // against a task that has not been posted yet, and the comment that used to stand here claimed
-        // it could.
-        //
-        // What actually fixed the reported symptom is in LayoutGrid: the LAYOUT decision now asks
-        // whether that grid is inside an editor rather than reading the shared flag, so the viewer no
-        // longer changes shape whoever wins the race. The posting is kept because it is harmless and
-        // narrows the window on the half that is still shared - see GC-A1 for the rest, which is that
-        // clickability is still decided by the same flag.
+        // The work is posted (OB-016, GC-A1) rather than run straight from the callback, but that does not order it against
+        // the main window's repaint: autonomyEditorClosed and layoutRefreshComplete both end by calling repaintLayout, which
+        // submits to LayoutGridRenderer, a single-thread ExecutorService, and only calls invokeLater from inside THAT, so its
+        // EDT task is not queued when this one is.  What fixed the viewer being built in edit mode is in LayoutGrid: the
+        // LAYOUT decision asks whether that grid is inside an editor rather than reading the shared flag, so the viewer no
+        // longer changes shape whoever wins the race.  The posting is kept because it is harmless and narrows the window on
+        // the half that is still shared (clickability is still decided by the same flag; see GC-A1).
         if (isAutonomyMode())
         {
             layout.setEdit(false);
 
-            // Raised HERE, immediately before the work is posted.
-            //
-            // It used to go up as soon as the switch was committed, with `undoAutonomyEdits` - which parses
-            // every page - still to run. A throw there left it up with nothing on its way to lower it, and
-            // the editor then refused every page and mode change in silence until it was closed and
-            // reopened: a worse fault than the overlapping switches it exists to stop.
+            // Raised HERE, immediately before the work is posted: raised earlier, with `undoAutonomyEdits` (which parses every
+            // page) still to run, a throw would leave it up with nothing on its way to lower it, and the editor would refuse
+            // every page and mode change in silence until it was closed and reopened.
             changingPage = true;
 
             javax.swing.SwingUtilities.invokeLater(() ->
             {
-                // POSTED FROM A FINALLY, like the other branch gets from layoutEditingCompleteThen.
-                //
-                // The comment above was pasted onto both branches; only the other one had the
-                // guarantee it describes (validator, 2026-08-28). autonomyEditorClosed reaches
-                // rebuildRunningLayoutFromSetup, which parses the configuration and rebuilds the
-                // graph - the same class of work as the undoAutonomyEdits the raise was moved ahead
-                // of - and a throw in it left the latch up with nothing on its way to lower it.
+                // POSTED FROM A FINALLY, like the other branch gets from layoutEditingCompleteThen: autonomyEditorClosed reaches
+                // rebuildRunningLayoutFromSetup, which parses the configuration and rebuilds the graph, and a throw in it would leave
+                // the latch up with nothing on its way to lower it.
                 try
                 {
                     parent.autonomyEditorClosed();
@@ -4655,12 +4594,9 @@ public class LayoutEditor extends PositionAwareJFrame
         // Both halves of the edit, or neither - see confirmExit
         undoAutonomyEdits();
 
-        // Raised HERE, immediately before the work is posted.
-        //
-        // It used to go up as soon as the switch was committed, with `undoAutonomyEdits` - which parses
-        // every page - still to run. A throw there left it up with nothing on its way to lower it, and
-        // the editor then refused every page and mode change in silence until it was closed and
-        // reopened: a worse fault than the overlapping switches it exists to stop.
+        // Raised HERE, immediately before the work is posted: raised earlier, with `undoAutonomyEdits` (which parses every
+        // page) still to run, a throw would leave it up with nothing on its way to lower it, and the editor would refuse
+        // every page and mode change in silence until it was closed and reopened.
         changingPage = true;
 
         javax.swing.SwingUtilities.invokeLater(() ->
@@ -4671,11 +4607,9 @@ public class LayoutEditor extends PositionAwareJFrame
     /**
      * Re-points this window at another page, or the other mode, without closing it.
      *
-     * What openLayoutEditor does to a NEW frame, done to this one - and it has to do the same things,
-     * because the checks it makes are not about the window.  A setup can stop being editable between
-     * one click and the next: unloaded, or a train started.  Opening used to answer that by refusing
-     * and leaving the old window shut; here there is a window on screen either way, so an impossible
-     * mode falls back to the track and the sidebar is put back to say so.
+     * What openLayoutEditor does to a NEW frame, done to this one, with the same checks: a setup can stop being editable
+     * between one click and the next (unloaded, or a train started), and here there is a window on screen either way, so
+     * an impossible mode falls back to the track and the sidebar is put back to say so.
      *
      * @param page the page to show
      * @param autonomy whether to show the setup rather than the track
@@ -4687,14 +4621,14 @@ public class LayoutEditor extends PositionAwareJFrame
         // the latch exists to stop.
         changingPage = false;
 
-        // CLOSED ON THE WAY (MT-649).  The switch's work is posted, so a close can land before it arrives - and arriving
-        // at a closed window put it back together out of sight and greyed Edit and Edit Autonomy Paths for the session.
-        // The close has already given them back; the switch has nowhere to arrive.
+        // CLOSED ON THE WAY (MT-649).  The switch's work is posted, so a close can land before it arrives, and arriving at a
+        // closed window would put it back together out of sight and grey Edit and Edit Autonomy Paths for the session.  The
+        // close has already given them back; the switch has nowhere to arrive.
         if (!isDisplayable()) return;
 
-        // THE SQUARE UNDER THE POINTER IS FORGOTTEN (Adam, 2026-10-04: "on page switch - yes, clear the active square"):
-        // Delete and the other keys that act on it asked the old page's coordinates on the new page until the pointer
-        // moved - the track editor's, and the autonomy editor's, whose square is read against the page now showing.
+        // THE SQUARE UNDER THE POINTER IS FORGOTTEN (Adam: "on page switch - yes, clear the active square"): Delete and the
+        // other keys that act on it would ask the old page's coordinates on the new page until the pointer moved, in the
+        // track editor and in the autonomy editor, whose square is read against the page now showing.
         this.lastHoveredX = -1;
         this.lastHoveredY = -1;
         this.autonomyHover = null;
@@ -4734,24 +4668,16 @@ public class LayoutEditor extends PositionAwareJFrame
                 return;
             }
 
-            // Everything remembered about squares on the page being LEFT.
+            // Everything remembered about squares on the page being LEFT.  A TileKey is a page name and a pair of coordinates, and
+            // a selection carried across a switch would name squares on a page that is no longer on screen, the same class of bug
+            // as the setup keys that outlive a move.  Cleared before the diagram changes underneath them, not after.
             //
-            // A TileKey is a page name and a pair of coordinates, and a selection carried across a
-            // switch would name squares on a page that is no longer on screen - the same class of bug
-            // as the setup keys that outlive a move.  Cleared before the diagram changes underneath
-            // them, not after.
-            // A pending cut is not stood down here either (RC-A1, replacing LE-A6 and settling B3).
-            //
-            // Both reasons it was are now asked as questions by cutMoves, per square.  Discard on the
-            // way out restores the cut track, and a restored square is not empty.  And a setup is
-            // still not carried ACROSS pages - paste snapshots only the destination page and this
-            // method has just thrown away the source page's undo history, so a cross-page move could
-            // not be undone - because cutMoves skips an origin whose page is not the page being
-            // pasted onto.
-            //
-            // What that buys: leaving the page and COMING BACK no longer costs the cut.  The squares
-            // are still empty and it is the same page again, so the paste carries the setup, which is
-            // what the user who left to check something else expects.
+            // A pending cut is not stood down here (RC-A1).  Discard on the way out restores the cut track, and a restored square
+            // is not empty, which `cutMoves` asks per square; and a setup is still not carried ACROSS pages (paste snapshots only
+            // the destination page and the source page's undo history is thrown away here, so a cross-page move could not be
+            // undone), because `cutMoves` skips an origin whose page is not the page being pasted onto.  So leaving the page and
+            // COMING BACK does not cost the cut: the squares are still empty and it is the same page again, so the paste carries
+            // the setup.
 
             this.selection.clear();
             this.previewSelection.clear();
@@ -4763,24 +4689,18 @@ public class LayoutEditor extends PositionAwareJFrame
             // armed - the sign for what the next click does - when nothing was held
             this.clearBordersFromChildren(this.newComponents);
 
-            // The undo history goes with the page, and this one would have been a data-loss bug.
-            //
-            // Each entry is a snapshot of a page's COMPONENTS, with nothing in it that says which page
-            // it came from - it did not need one, because the window edited a single page for its whole
-            // life. Carried across a switch, one Ctrl+Z on the new page would have written the old
-            // page's track over it.
-            //
-            // Cleared rather than kept per page: the diagram has just been re-read from disk by the
-            // teardown, so every snapshot in here describes a file state that no longer exists anyway.
+            // The undo history goes with the page.  Each entry is a snapshot of a page's COMPONENTS with nothing in it that says
+            // which page it came from (the window used to edit a single page for its whole life), so carried across a switch one
+            // Ctrl+Z on the new page would write the old page's track over it.  Cleared rather than kept per page: the diagram
+            // has just been re-read from disk by the teardown, so every snapshot in here describes a file state that no longer
+            // exists anyway.
             this.previousLayoutComponents.clear();
             this.previousLayoutComponentsRedo.clear();
 
             this.layout = arriving;
 
-            // Leaving the mode BEFORE the new diagram is drawn.
-            //
-            // setAutonomyMode(null) takes the setup panel and its banner out of the window; run after
-            // the grid, it would be tearing down controls that the new grid has already been wired to.
+            // Leaving the mode BEFORE the new diagram is drawn: setAutonomyMode(null) takes the setup panel and its banner out of
+            // the window, and run after the grid it would be tearing down controls that the new grid has already been wired to.
             setAutonomyMode(null);
 
             // The grid, the sidebar, the title and the size - the parts of render() that are about
@@ -4792,10 +4712,10 @@ public class LayoutEditor extends PositionAwareJFrame
 
             drawGrid();
 
-            // THE ARRIVING MODE'S TITLE, from the start (MT-669; Adam, 2026-10-04: *"when switching pages, the autonomy
-            // editor window title briefly shows the layout editor (not autonomy editor) title for a split second, before
-            // being updated."*).  The track editor's was set here, and the autonomy editor's only by the step
-            // setAutonomyMode posts - so the wrong one showed while the new page drew.
+            // THE ARRIVING MODE'S TITLE, from the start (MT-669; Adam: *"when switching pages, the autonomy editor window title
+            // briefly shows the layout editor (not autonomy editor) title for a split second, before being updated."*).  The track
+            // editor's was set here and the autonomy editor's only by the step setAutonomyMode posts, so the wrong one would show
+            // while the new page drew.
             setTitle(titleFor(session != null));
 
             if (session != null) setAutonomyMode(session);
