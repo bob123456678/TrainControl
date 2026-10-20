@@ -65,22 +65,20 @@ public class testCommentsStayLean
     };
 
     /** Comment lines carrying a history marker, as they stand.  Lower it whenever some go; never raise it. */
-    private static final int HISTORY_ALLOWED = 526;
+    private static final int HISTORY_ALLOWED = 343;
 
     /** WHICH files carry them, so that a swap between files fails and names both.  Files at zero are not listed. */
     private static final String[] HISTORY_BY_FILE = {
         "src/org/traincontrol/automation/Edge.java (7)",
         "src/org/traincontrol/automation/HomeStaging.java (2)",
-        "src/org/traincontrol/automation/Layout.java (7)",
         "src/org/traincontrol/automation/Point.java (13)",
         "src/org/traincontrol/automation/TimetablePath.java (2)",
-        "src/org/traincontrol/automationui/AutonomyBuilder.java (21)",
+        "src/org/traincontrol/automationui/AutonomyBuilder.java (2)",
         "src/org/traincontrol/automationui/AutonomyChecks.java (2)",
         "src/org/traincontrol/automationui/AutonomyRefreshCallback.java (1)",
-        "src/org/traincontrol/automationui/AutonomySession.java (114)",
         "src/org/traincontrol/automationui/DiagramColours.java (7)",
         "src/org/traincontrol/automationui/DiagramMonitor.java (7)",
-        "src/org/traincontrol/automationui/GraphReducer.java (23)",
+        "src/org/traincontrol/automationui/GraphReducer.java (1)",
         "src/org/traincontrol/automationui/LayoutPageEdit.java (2)",
         "src/org/traincontrol/automationui/SessionImport.java (2)",
         "src/org/traincontrol/automationui/StationIndex.java (3)",
@@ -133,7 +131,6 @@ public class testCommentsStayLean
         "src/org/traincontrol/gui/RightClickMenuListener.java (2)",
         "src/org/traincontrol/gui/RightClickSelectorMenu.java (1)",
         "src/org/traincontrol/gui/StartupSplash.java (1)",
-        "src/org/traincontrol/gui/StationCaption.java (21)",
         "src/org/traincontrol/gui/TailCrossedPrompt.java (15)",
         "src/org/traincontrol/gui/TrainControlUI.java (4)",
         "src/org/traincontrol/gui/UsageHistogram.java (2)",
@@ -153,14 +150,13 @@ public class testCommentsStayLean
     };
 
     /** Runs of more than 15 `//` lines plus non-javadoc block comments over 15 lines, as they stand.  Never raise it. */
-    private static final int LONG_BLOCKS_ALLOWED = 64;
+    private static final int LONG_BLOCKS_ALLOWED = 55;
 
     /** WHICH files carry them.  Files at zero are not listed. */
     private static final String[] LONG_BLOCKS_BY_FILE = {
-        "src/org/traincontrol/automation/Layout.java (1)",
         "src/org/traincontrol/automation/Point.java (2)",
-        "src/org/traincontrol/automationui/AutonomyBuilder.java (4)",
-        "src/org/traincontrol/automationui/GraphReducer.java (5)",
+        "src/org/traincontrol/automationui/AutonomyBuilder.java (1)",
+        "src/org/traincontrol/automationui/GraphReducer.java (1)",
         "src/org/traincontrol/automationui/LayoutPageEdit.java (4)",
         "src/org/traincontrol/base/ConditionOutline.java (1)",
         "src/org/traincontrol/gui/AddLocomotive.java (1)",
@@ -180,7 +176,6 @@ public class testCommentsStayLean
         "src/org/traincontrol/gui/ManualReversalPrompt.java (4)",
         "src/org/traincontrol/gui/PositionAwareJFrame.java (1)",
         "src/org/traincontrol/gui/RightClickFunctionMenu.java (1)",
-        "src/org/traincontrol/gui/StationCaption.java (1)",
         "src/org/traincontrol/marklin/MarklinFeedback.java (1)",
         "src/org/traincontrol/marklin/MarklinLocomotive.java (2)",
         "src/org/traincontrol/marklin/MarklinRoute.java (7)",

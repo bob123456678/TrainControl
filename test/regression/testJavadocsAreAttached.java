@@ -73,7 +73,9 @@ public class testJavadocsAreAttached
     // or deleted, which takes those four files out of the list below.
     // 35 -> 33 on 2026-10-19: FR-136, the comment trim of TileGraph and LayoutGrid; each had two javadocs stacked on one
     // declaration (PORTAL_ROUTE, LIVE), now one, which takes both files out of the list below.
-    private static final int ALLOWED = 33;
+    // 33 -> 26 on 2026-10-20: FR-136, the comment pass on GraphReducer and AutonomyBuilder put their seven stacked
+    // javadocs onto the members they describe, which takes both files out of the list below.
+    private static final int ALLOWED = 26;
 
     /**
      * WHICH files carry the orphans, not just how many (VAL-C8).
@@ -84,11 +86,7 @@ public class testJavadocsAreAttached
      */
     private static final String[] ORPHANS_BY_FILE = {
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
-            + "automationui" + File.separator + "AutonomyBuilder.java (5)",
-        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "automationui" + File.separator + "AutonomyChecks.java (2)",
-        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
-            + "automationui" + File.separator + "GraphReducer.java (2)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "base" + File.separator + "CommandRow.java (1)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
