@@ -1949,15 +1949,14 @@ public final class LayoutLabel extends JLabel
     /**
      * The shape to fade when only SOME of this square's roads are covered, or null to fade all of it.
      *
-     * **Only where the square really carries more than one road and the train is on fewer of them.**
-     * A double curve is two curves crossing in one tile with no connection between them, and a wash over
-     * the whole square says a train is on both - which is Adam's report. Everywhere else the square is
-     * the road, and fading the whole tile is simpler and is what he asked for when the wash was added.
+     * **Only where the square really carries more than one road and the train is on fewer of them.**  A double curve
+     * is two curves crossing in one tile with no connection between them, and a wash over the whole square would say
+     * a train is on both.  Everywhere else the square is the road, and fading the whole tile is simpler.
      *
-     * A band along the road rather than the road's own artwork: the tile is an image and there is no
-     * region of it this code can name. The band runs between the midpoints of the two sides the road
-     * joins, which is the same geometry `coveredRoads` uses to draw the orange line - so the fade and
-     * the line cannot come to describe different roads.
+     * A band along the road rather than the road's own artwork: the tile is an image and there is no region of it
+     * this code can name.  The band runs between the midpoints of the two sides the road joins, which is the same
+     * geometry `coveredRoads` uses to draw the orange line, so the fade and the line cannot come to describe
+     * different roads.
      *
      * @return the region to fade, or null to fade the whole square
      */
@@ -1967,10 +1966,10 @@ public final class LayoutLabel extends JLabel
 
         if (getWidth() <= 0 || getHeight() <= 0) return null;
 
-        // THE BLOCKED ROADS, NOT THE TRAIN'S (OB-208).  The fade is the grey, and since Adam's ruling of
-        // 2026-09-23 the grey is its own answer - the places the tails claim, per road (OB-280) - rather than the
-        // orange's squares.  Asking the orange here would fade the whole of a double curve the train is not
-        // on, over which a covered edge runs on one arc: the confusion MT-309 was about.
+        // THE BLOCKED ROADS, NOT THE TRAIN'S (OB-208).  The fade is the grey, and the grey is its own answer (Adam's
+        // ruling): the places the tails claim, per road (OB-280), rather than the orange's squares.  Asking the
+        // orange here would fade the whole of a double curve the train is not on, over which a covered edge runs on
+        // one arc: the confusion MT-309 was about.
         java.util.Set<org.traincontrol.automationui.TileGraph.RouteId> roads = tcUI.blockedRoutesAt(square);
 
         if (roads.isEmpty()) return null;
@@ -2095,21 +2094,17 @@ public final class LayoutLabel extends JLabel
      *
      * Adam: "it is a z order issue.  The stations paint over the locomotives."
      *
-     * The train used to be the last thing this tile painted, and a tile is behind every station
-     * caption - deliberately, because it is opaque and OB-117 was about a lifted one painting a name
-     * out.  So the two reports pull opposite ways and neither component can be in front of the other
-     * and be right.
+     * A tile is behind every station caption, deliberately: it is opaque, and a lifted one painted a name out
+     * (OB-117).  So the two reports pull opposite ways and neither component can be in front of the other and be
+     * right.  The answer is a third pass: the container paints its children (tiles, then captions) and then asks
+     * each tile for this, so the locomotive lands over both and the name is untouched everywhere the locomotive is
+     * not.
      *
-     * The answer is not an order at all but a third pass.  The container paints its children - tiles,
-     * then captions - and then asks each tile for this, so the locomotive lands over both and the name
-     * is untouched everywhere the locomotive is not.
-     *
-     * TRANSLATED to this tile, because the Graphics belongs to the container and the overlay draws in
-     * tile coordinates - and NOT CLIPPED to it (Adam, MT-642: "there should be no clip").  On a curve the
-     * icon runs along the rail at its full size and reaches onto the next tiles, and the clip cut its
-     * front off.  `setAutonomyOverlay` repaints the tiles around this one when a train comes or goes, so
-     * nothing is left behind there.  The centre is the train's own road (`trackCentreOf`): a double
-     * curve has two.
+     * TRANSLATED to this tile, because the Graphics belongs to the container and the overlay draws in tile
+     * coordinates, and NOT CLIPPED to it (Adam, MT-642: "there should be no clip").  On a curve the icon runs along
+     * the rail at its full size and reaches onto the next tiles.  `setAutonomyOverlay` repaints the tiles around
+     * this one when a train comes or goes, so nothing is left behind there.  The centre is the train's own road
+     * (`trackCentreOf`): a double curve has two.
      *
      * @param g the container's graphics
      */
@@ -2157,8 +2152,8 @@ public final class LayoutLabel extends JLabel
     }
 
     /**
-     * What of this square's station icon spills onto the squares beside it, drawn by the diagram once every square is
-     * drawn (Adam, 2026-10-10: *"make the stations spill over onto adjacent tiles"*) - `TileAnnotation.paintSpill`.
+     * What of this square's station icon spills onto the squares beside it, drawn by the diagram once every square
+     * is drawn (Adam: *"make the stations spill over onto adjacent tiles"*) - `TileAnnotation.paintSpill`.
      *
      * @param g the diagram's graphics
      * @return whether anything was drawn: a spill reaching what is being repainted
@@ -2190,8 +2185,8 @@ public final class LayoutLabel extends JLabel
     }
 
     /**
-     * This square's arrows back over a neighbour's station that spilled onto it (Adam, 2026-10-10: *"make sure that the
-     * optional ingress/egress arrows remain visible, especially on curves"*) - `TileAnnotation.paintArrowsAgain`, asked by
+     * This square's arrows back over a neighbour's station that spilled onto it (Adam: *"make sure that the optional
+     * ingress/egress arrows remain visible, especially on curves"*) - `TileAnnotation.paintArrowsAgain`, asked by
      * the diagram once the spills are drawn.  Only where another square's spill reaches this one.
      *
      * @param g the diagram's graphics
@@ -2231,9 +2226,9 @@ public final class LayoutLabel extends JLabel
     }
 
     /**
-     * And the squares around it, where this square's station spills onto them (Adam, 2026-10-10: *"make the stations spill
-     * over onto adjacent tiles"*): the diagram paints a square's neighbours only where it is asked to, so repainting this
-     * square alone left the old spill on them - a station turned grey, still blue past its edges.
+     * And the squares around it, where this square's station spills onto them (Adam: *"make the stations spill over
+     * onto adjacent tiles"*): the diagram paints a square's neighbours only where it is asked to, so repainting this
+     * square alone would leave the old spill on them, a station turned grey and still blue past its edges.
      */
     @Override
     public void repaint(long tm, int x, int y, int width, int height)
@@ -2369,10 +2364,10 @@ public final class LayoutLabel extends JLabel
     /**
      * Whether clicking this accessory would turn protection OFF at a platform somebody is standing at.
      *
-     * Both halves, because either alone is the wrong question. `protectsAnOccupiedSquare` asks about
-     * the SQUARE and knows nothing about which way the signal is going; the aspect asks about the
-     * COMMAND and knows nothing about what is standing where. The route door asks them together at
-     * `MarklinRoute.heldReason`, and this door asked only the first.
+     * Both halves, because either alone is the wrong question.  `protectsAnOccupiedSquare` asks about the SQUARE and
+     * knows nothing about which way the signal is going; the aspect asks about the COMMAND and knows nothing about
+     * what is standing where.  The route door asks them together at `MarklinRoute.heldReason`, and so does this
+     * one.
      *
      * @param tcUI the window, for the running layout
      * @param accessory the accessory the click would toggle, or null
@@ -2388,23 +2383,15 @@ public final class LayoutLabel extends JLabel
 
         if (running == null) return false;
 
-        // AND ONLY WHILE AUTONOMY IS RUNNING, which is what the other two doors ask (REL-A1).
-        //
-        // This asked `hasAutoLayout()` alone, and the dialog that can authorise the click asks
-        // `hasAutoLayout() && isAutonomyRunning()`.  So with a configuration loaded and autonomy idle -
-        // the ordinary state, since the active diagram loads at start-up and places locomotives onto
-        // Points - the two halves disagreed: no dialog could be shown, `warnedAboutProtection` was
-        // always false, and the worker below refused EVERY click that would set a protecting signal
-        // green over a square the model believes occupied.  The log line says "click it again", and
-        // clicking again reached the same answer, for ever.
-        //
-        // Worse in that state than it sounds: with autonomy idle, driving a train away by hand does
-        // not clear `getCurrentLocomotive()`, so the refusal fires for trains that are no longer
-        // there and the one recovery gesture at the diagram does nothing.
-        //
-        // The race this guard exists for - `refreshOneSignal` driving the signal from an occupancy
-        // change between the dialog and the command - only happens while autonomy is processing
-        // occupancy at all.  The route door and the switch keyboard both gate on running, and say so.
+        // AND ONLY WHILE AUTONOMY IS RUNNING, which is what the other two doors ask (REL-A1).  The dialog that can
+        // authorise the click asks `hasAutoLayout() && isAutonomyRunning()`, so this must too.  With a configuration
+        // loaded and autonomy idle (the ordinary state, since the active diagram loads at start-up and places
+        // locomotives onto Points) no dialog could be shown, `warnedAboutProtection` would always be false, and the
+        // worker below would refuse EVERY click that would set a protecting signal green over a square the model
+        // believes occupied, for ever, even for trains driven away by hand (which does not clear
+        // `getCurrentLocomotive()` while autonomy is idle).  The race this guard exists for, `refreshOneSignal`
+        // driving the signal from an occupancy change between the dialog and the command, only happens while
+        // autonomy is processing occupancy at all.
         if (!tcUI.getModel().isAutonomyRunning()) return false;
 
         // A tile TOGGLES, so the click is about to command green exactly when the accessory is not
