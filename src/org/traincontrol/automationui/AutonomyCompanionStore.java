@@ -2729,12 +2729,9 @@ public class AutonomyCompanionStore
 
         if (setup.isFile() && !setup.delete()) failed.add(setup.getName());
 
-        // And the pre-edit note, which is not part of the setup but describes it.
-        //
-        // Left behind it does two things, and the second is serious: the folder is never empty, so the
-        // "way back out of having set autonomy up at all" leaves it there; and the next session build
-        // finds the note and restores the whole deleted setup, then saves it. The operator confirms a
-        // two-step deletion, watches it happen, and gets it all back on restart.
+        // And the pre-edit note, which is not part of the setup but describes it.  Left behind, the folder is never empty
+        // and the next session build finds the note, restores the whole deleted setup and saves it: the operator confirms
+        // a two-step deletion and gets it all back on restart.
         File note = beforeEditFile();
 
         if (note.isFile() && !note.delete()) failed.add(note.getName());
@@ -2760,45 +2757,27 @@ public class AutonomyCompanionStore
     /**
      * Follows a page being renamed.
      *
-     * Every key here begins with a page name, so a rename would otherwise orphan every name, length,
-     * direction and pairing on that page at once - the user would see their entire setup vanish for a
-     * page and have no way to tell that a rename caused it.  So it is rewritten universally, across the
-     * shared file and every configuration.
+     * Every key here begins with a page name, so a rename would otherwise orphan every name, length, direction and
+     * pairing on that page at once, with nothing to tell the user a rename caused it.  So it is rewritten universally,
+     * across the shared file and every configuration.
      *
      * @param from
      * @param to
      */
     public void renamePage(String from, String to)
     {
-        // Each collection knows which of its halves name a square.  Both of the bugs this method
-        // records were a half left behind:
-        //
-        //   Captions are keyed by the square the text sits on AND point at the square of the station.
-        //   Rekeying only the keys left every caption on the page pointing at a station on a page that
-        //   no longer existed, and the next save deleted them for good as unreconcilable.
-        //
-        //   A link switched off is remembered by its square, so a rename turned every one of them back
-        //   on - silently, and only on the renamed page.  That collection was simply not in this
-        //   method: it was the eleventh added, and this was one of the four sites it was missed at.
+        // Each collection knows which of its halves name a square: captions are keyed by the square the text sits on AND
+        // point at the square of the station, so rekeying only the keys would leave every caption on the page pointing at
+        // a station on a page that no longer existed.  A link switched off is remembered by its square, so it must be
+        // rekeyed too or a rename turns it back on.
         for (Kept k : kept()) k.renamePage(from, to);
 
-        // AND the numbering, which this did not touch and which every translation asks (OB-092).
-        //
-        // Adam: "When I renamed '5 - Test' to 5, the main page (1 - Main, id 5) became excluded from
-        // autonomy and lost all its train placement."
-        //
-        // Everything above rekeys a collection. None of it told the store that the page it knows as
-        // `from` now answers to `to`, so `pageNameToId` still held the old name - and the next save
-        // asked it about the new one and got nothing. `translatePages` then wrote the bare NAME into
-        // excludedPages, because that is its fallback for a page it cannot find an id for, and
-        // `untranslatePages` reads every value there as an ID. A page called "5" came back as
-        // whichever page holds id 5.
-        //
-        // The exclusion is the visible half. The rest follows from it: an excluded page is not in the
-        // graph, so every placement on it goes.
-        //
-        // A rename does not change any id - that is what ids are for - so this moves the name and
-        // leaves the number alone.
+        // AND the numbering, which every translation asks (OB-092): a rename that rekeyed the collections but not the
+        // store would leave `pageNameToId` holding the old name, so the next save, asking about the new one, got nothing.
+        // `translatePages` then wrote the bare NAME into excludedPages (its fallback for a page it cannot find an id for)
+        // and `untranslatePages` reads every value there as an ID, so a page renamed to "5" came back as whichever page
+        // holds id 5, excluded from autonomy with every placement lost.  A rename does not change any id, so this moves
+        // the name and leaves the number alone.
         String renamedId = pageNameToId.remove(from);
 
         if (renamedId != null)
@@ -2806,21 +2785,15 @@ public class AutonomyCompanionStore
             pageNameToId.put(to, renamedId);
             pageIdToName.put(renamedId, to);
 
-            // And what that id was CALLED when the file was written, or every save between here and
-            // the next load declines to reconcile - and, since DR-B10, warns - naming the page under
-            // the name it no longer has (store review, B1).
-            //
-            // Transient rather than permanent, because sharedFields rewrites this map from
-            // pageIdToName at the next save. Fixed anyway: the window between a rename and a reload is
-            // exactly when somebody is editing, which is when the saves happen.
+            // And what that id was CALLED when the file was written, or every save between here and the next load declines
+            // to reconcile, and warns, naming the page under the name it no longer has.  Transient, as sharedFields
+            // rewrites this map from pageIdToName at the next save, but the window is when somebody is editing.
             pageNamesWhenWritten.put(renamedId, to);
         }
 
-        // Configurations DO key by tile - setPointProperty and captureFromLayout both write
-        // "page:x,y" - so they are rewritten here too.  The note that used to stand in this place said
-        // they were untouched and warned that anything growing a tile key must be handled; it grew one,
-        // and without this a rename silently dropped every placement, home, terminus and length in
-        // every configuration while the shared file survived, making the loss look arbitrary.
+        // Configurations DO key by tile - setPointProperty and captureFromLayout both write "page:x,y" - so they are
+        // rewritten here too, or a rename silently drops every placement, home, terminus and length in every
+        // configuration while the shared file survives.
         for (JSONObject configuration : configurations.values())
         {
             if (!configuration.has("points")) continue;
@@ -2908,24 +2881,13 @@ public class AutonomyCompanionStore
     /**
      * Forgets everything about a page that has been deleted.
      *
-     * renamePage's counterpart, and it had none: deleting a page removed the file and rewrote the
-     * index, and nothing told the setup.  What was left behind was worse than an orphan.  Page ids come
-     * from the index, so removing a page used to renumber every page after it - and on the next load
-     * the deleted page's entries resolved through pageOf, whose recorded name is now gone from the
-     * index, so they were handed to whatever page had inherited that id.  Where the two pages shared
-     * coordinates, one page's names and stations landed on the other's track; the rest was pruned by
-     * the following reconcile and written back.  And because the old NAME no longer existed anywhere,
-     * the renumber could not even be detected - readShared's test is whether that name still exists,
-     * so isPageNumberingSuspect stayed false and the guard in AutonomySession.save never engaged.
+     * renamePage's counterpart.  Page ids come from the index and are durable (see LayoutDiagram.writeLayoutIndex): a
+     * deleted page's id is retired rather than handed on, so what is left to remove is the page's own settings, which are
+     * about track that no longer exists and which nothing else will ever claim.
      *
-     * Ids are durable now (see LayoutDiagram.writeLayoutIndex), so the inheriting-page half of that is
-     * gone: a deleted page's id is retired rather than handed on.  This is the other half - the page's
-     * own settings, which are about track that no longer exists and which nothing else will ever claim.
-     *
-     * Gathered here and removed by forgetSquares, which is the method that already knows how to take a
-     * square out of all eleven collections AND out of everything that NAMES one - a caption pointing at
-     * a station on this page, a protecting signal, the far end of a portal.  Those are on OTHER pages
-     * and would otherwise be left pointing at nothing.
+     * Gathered here and removed by forgetSquares, which already knows how to take a square out of all eleven collections
+     * AND out of everything that NAMES one - a caption pointing at a station on this page, a protecting signal, the far
+     * end of a portal.  Those are on OTHER pages and would otherwise be left pointing at nothing.
      *
      * @param page the page being deleted
      * @return the number of squares whose setup was forgotten
@@ -2936,62 +2898,38 @@ public class AutonomyCompanionStore
 
         Set<TileKey> squares = new LinkedHashSet<>();
 
-        // Every square this page names, as a key OR as a value.
-        //
-        // The value half matters and was missed once: a protecting signal, a blocker or the far end of
-        // a portal can sit on this page while having no entry of its own - nothing is recorded ABOUT
-        // that square, it is only pointed AT.  Gathering by key alone left the pointer behind when the
-        // page went, dangling until some later reconcile happened to tidy it.
-        //
-        // And a direction is keyed by the square AND a route across it, so the square has to be asked
-        // for rather than assumed.  That is the same distinction the eleventh member of forgetSquares'
-        // own list once got wrong.  Both facts now live with the collection they are about.
+        // Every square this page names, as a key OR as a value: a protecting signal, a blocker or the far end of a portal
+        // can sit on this page while having no entry of its own, since nothing is recorded ABOUT that square, it is only
+        // pointed AT.  And a direction is keyed by the square AND a route across it, so the square has to be asked for
+        // rather than assumed; both facts live with the collection they are about.
         for (Kept k : kept()) k.squaresOn(page, squares);
 
         forgetSquares(squares);
 
-        // Keyed by PAGE rather than by square, so forgetSquares has nothing to say about it - and a
-        // page that is gone cannot be excluded from autonomy.  Left behind, the name sits in the set
-        // for ever, and a page later created with the same name would silently start out excluded.
+        // Keyed by PAGE rather than by square, so forgetSquares has nothing to say about it - and a page that is gone
+        // cannot be excluded from autonomy: left behind, a page later created with the same name would start out excluded.
         excludedPages.remove(page);
 
         // And the decision about it, for the same reason: a page that is gone cannot be one the
         // operator is keeping, and a name left behind would apply to whatever is created with it next.
         keptDespiteRepeats.remove(page);
 
-        // And the record of what that page was called, which is the same one line forgetHeldPages
-        // ends with - and the twin this method was missing (store review, B1).
-        //
-        // `pageNamesWhenWritten` is written back out as the file's "pages" map, so a stale entry
-        // survives every reload. `pagesNotLoaded` walks it, so a page the operator deliberately
-        // DELETED was named for ever as one that had merely failed to load - which makes
-        // `pagesSafeToJudge` false for the rest of the layout's life. The store then never reconciles
-        // anything again, and since DR-B10 it also raises a warning dialog on every editor save,
-        // naming the page that was deleted on purpose.
-        //
-        // FR-018 could not clear it either: it offers the "it was deleted" answer for pages the INDEX
-        // still holds, and a deleted page is not in the index.
-        //
-        // Same line in renamePage, where the symptom is transient rather than permanent - the record
-        // is rewritten at the next load - but the saves in between decline and warn under the OLD name.
+        // And the record of what that page was called, the same one line forgetHeldPages ends with.
+        // `pageNamesWhenWritten` is written back out as the file's "pages" map and `pagesNotLoaded` walks it, so a stale
+        // entry would name a page the operator deliberately DELETED as one that merely failed to load, which makes
+        // `pagesSafeToJudge` false for the rest of the layout's life: the store would never reconcile again, and (DR-B10)
+        // would warn on every editor save.  FR-018 cannot clear it, as a deleted page is not in the index.
         pageNamesWhenWritten.values().remove(page);
 
-        // And out of the index this store is holding, which is what `sharedFields` rebuilds the file's
-        // "pages" map from - so removing only the record above changed nothing at all, and the first
-        // version of this fix was ineffective for exactly that reason.
-        //
-        // Safe for the id floor, and this is the part worth being sure about. `highestPageIdSeen`
-        // reserves ids so a new page cannot inherit an absent page's settings (IAR-A1) - but that is
-        // about a page whose file merely did not load, whose settings are still here. This page's
-        // settings have just been forgotten, three lines above. There is nothing left for a reissued
-        // id to collect.
+        // And out of the index this store is holding, which `sharedFields` rebuilds the file's "pages" map from; removing
+        // only the record above would change nothing.  Safe for the id floor: `highestPageIdSeen` reserves ids so a new
+        // page cannot inherit an absent page's settings (IAR-A1), but this page's settings have just been forgotten, so
+        // there is nothing left for a reissued id to collect.
         String deletedId = pageNameToId.remove(page);
 
         if (deletedId != null) pageIdToName.remove(deletedId);
 
-        // And the configurations, which key by square too.  renamePage's note records what happens
-        // when they are missed: "a rename silently dropped every placement, home, terminus and length
-        // in every configuration while the shared file survived, making the loss look arbitrary".
+        // And the configurations, which key by square too (see renamePage).
         for (JSONObject configuration : configurations.values())
         {
             if (!configuration.has("points")) continue;
@@ -3012,10 +2950,8 @@ public class AutonomyCompanionStore
     /**
      * Squares that have been built over, whose setup is therefore about track that is gone.
      *
-     * moveTiles does this for the squares a move LANDS on, and for a long time that was the only way a
-     * square could be overwritten.  A paste, a copied tile and a palette drop write new tiles over
-     * what was there instead, so the same thing happens - to a whole pasted block at once - and
-     * nothing was telling the setup about any of them.
+     * moveTiles does this for the squares a move LANDS on.  A paste, a copied tile and a palette drop write new tiles over
+     * what was there as well, to a whole pasted block at once, and the setup must hear of them too.
      *
      * @param tiles the squares whose setup is to be forgotten
      */
@@ -3041,24 +2977,18 @@ public class AutonomyCompanionStore
     /**
      * Follows tiles being moved on the diagram.
      *
-     * Everything here is keyed by SQUARE, so a tile that moves leaves its whole setup behind at the
-     * old coordinates - where there is now no track.  The next reconcile finds a station on a square
-     * with no sensor and drops it, and a station that took ten minutes to name, face, restrict and
-     * measure is gone because somebody nudged a tile one square left.  The caption alone was
-     * followed, which made the loss look arbitrary: the NAME moved and the station under it did not.
+     * Everything here is keyed by SQUARE, so a tile that moves would leave its whole setup behind at the old coordinates,
+     * where there is now no track, and the next reconcile would drop it: a station that took ten minutes to name, face,
+     * restrict and measure, gone because somebody nudged a tile one square left.
      *
-     * The whole set in one call, not one tile at a time.  A group dragged one square right has every
-     * source square landing on another source square, so moving them in sequence makes each write
-     * destroy the data the next read was going to need - the same trap the captions hit, where
-     * dragging left happened to work and dragging right ate every other one.
+     * The whole set in one call, not one tile at a time.  A group dragged one square right has every source square
+     * landing on another source square, so moving them in sequence makes each write destroy the data the next read needed.
      *
-     * Two different things happen to a key.  A square that MOVES takes what is written about it; a
-     * square that is only NAMED by something else - a caption pointing at a station, a station's
-     * protecting signal, a portal's partner - is repointed where it stands.  Doing only the first
-     * leaves half the setup naming the square the tile used to be on.
+     * Two different things happen to a key.  A square that MOVES takes what is written about it; a square that is only
+     * NAMED by something else - a caption pointing at a station, a station's protecting signal, a portal's partner - is
+     * repointed where it stands.
      *
-     * A tile moved onto a square that is not itself moving replaces what was there, which is what
-     * the diagram does too.
+     * A tile moved onto a square that is not itself moving replaces what was there, which is what the diagram does too.
      *
      * @param moves each square being vacated, and where it is going
      */
@@ -3070,15 +3000,13 @@ public class AutonomyCompanionStore
     /**
      * One diagram edit: what moved, and what else was built over.
      *
-     * Both halves in one call, and deliberately not two.  Every edit that replaces track has both - a
-     * bulk column move is a line arriving and a line being written over - and doing them separately
-     * means the caller has to get the ORDER right (forget first, or the arriving setup is wiped) and
-     * has to tell the forgetting which squares are only passing through.  The bulk path did exactly
-     * that, by hand, with the second argument nobody else had to pass; and a rule that has to be
-     * restated at each call site is a rule that will eventually be restated wrongly.
+     * Both halves in one call, and deliberately not two.  Every edit that replaces track has both - a bulk column move is
+     * a line arriving and a line being written over - and doing them separately would make the caller get the ORDER right
+     * (forget first, or the arriving setup is wiped) and tell the forgetting which squares are only passing through; a
+     * rule restated at each call site will eventually be restated wrongly.
      *
-     * So the store works out the whole landing set itself and the callers cannot get it wrong.  A pure
-     * forget is this with no moves, and a pure move is this with nothing built over.
+     * So the store works out the whole landing set itself.  A pure forget is this with no moves, and a pure move is this
+     * with nothing built over.
      *
      * @param moves each square being vacated, and where it is going - may be null
      * @param builtOver squares whose track has been replaced by other track - may be null
@@ -3099,16 +3027,11 @@ public class AutonomyCompanionStore
             }
         }
 
-        // Every square being LANDED ON that is not itself moving away.
-        //
-        // The diagram writes the arriving tile over whatever was there, and the setup has to let go of
-        // the same square - the two loops below only overwrite a landing square when the source had
-        // something to overwrite it with.  So dragging a piece of plain track onto a station left the
-        // station's name, signals, length and restrictions attached to a square that now holds plain
-        // track, and reconcile never tidied it up because the square still had a tile on it.
-        //
-        // A landing square that is ALSO a source is left alone: it is being vacated in the same
-        // gesture, and its own entry travels with it.
+        // Every square being LANDED ON that is not itself moving away.  The diagram writes the arriving tile over whatever
+        // was there, and the setup has to let go of the same square: the two loops below only overwrite a landing square
+        // when the source had something to overwrite it with, so a piece of plain track dragged onto a station would leave
+        // the station's name, signals, length and restrictions attached to plain track.  A landing square that is ALSO a
+        // source is left alone: it is being vacated in the same gesture, and its own entry travels with it.
         Set<TileKey> landing = new LinkedHashSet<>();
 
         for (TileKey to : byKey.values())
@@ -3123,32 +3046,20 @@ public class AutonomyCompanionStore
             if (!byKey.containsKey(over)) landing.add(over);
         }
 
-        // Sparing the labels of the tiles that are arriving - see forgetSquares.  A platform whose
-        // name is written on the square below it, nudged down one, lands ON its own label.
-        //
-        // And WHETHER IT FOUND ANYTHING (X8V-B2), which is what the caller's "did this change
-        // something" answer is built from.
+        // Sparing the labels of the tiles that are arriving - see forgetSquares.  A platform whose name is written on the
+        // square below it, nudged down one, lands ON its own label.  The answer says WHETHER IT FOUND ANYTHING (X8V-B2),
+        // which the caller's "did this change something" is built from.
         boolean changed = forgetSquares(landing, byKey);
 
         if (byKey.isEmpty()) return changed;
 
-        // Where both halves name a square, both follow - and the value is REPOINTED rather than
-        // moved: a caption on a square that stayed put, naming a station that moved, still names that
-        // station.
-        //
-        // A direction belongs to a square AND a route across it, and for as long as that was written
-        // as a string it could not be moved at all: moveKeys matched whole keys, so it never matched
-        // one of these, and a moved tile left every facing behind on the square the track had walked
-        // away from - dropped by the next reconcile, which did know about the suffix.  That is the
-        // same loss moveTiles exists to prevent, hiding behind a key shape.  It took a second map of
-        // the moves in string form to fix, kept in step with this one by eye.  Since FR-013 stage two
-        // there is one map of moves and one method, because moveKeys asks a key which square it is on
-        // rather than assuming the key IS one.
+        // Where both halves name a square, both follow - and the value is REPOINTED rather than moved: a caption on a
+        // square that stayed put, naming a station that moved, still names that station.  A direction belongs to a square
+        // AND a route across it, so moveKeys asks a key which square it is on rather than assuming the key IS one (FR-013).
         for (Kept k : kept()) k.move(byKey);
 
-        // The configurations key by tile as well - setPointProperty and captureFromLayout both write
-        // "page:x,y" - and that is where the facings, the placements, the homes, the termini and the
-        // maximum lengths live.  See renamePage, which learned this the same way.
+        // The configurations key by tile as well, and that is where the facings, the placements, the homes, the termini and
+        // the maximum lengths live (see renamePage).
         for (JSONObject configuration : configurations.values())
         {
             if (!configuration.has("points")) continue;
@@ -3156,15 +3067,10 @@ public class AutonomyCompanionStore
             JSONObject points = configuration.getJSONObject("points");
             JSONObject moved = new JSONObject();
 
-            // The ones staying put first, so a tile arriving on a square that is not moving replaces
-            // what was there rather than the other way round.
-            // The configuration's keys are the PRINTED form - it is JSON - so each is parsed before
-            // being asked about (FR-013).
-            //
-            // `byKey.containsKey(aString)` compiles, because containsKey takes Object, and is always
-            // false. That is the whole defect class this conversion is against, and it was reproduced
-            // here within an hour of doing the conversion: the settings matrix caught it as "what a
-            // configuration says about the square did not travel with the tile".
+            // The ones staying put first, so a tile arriving on a square that is not moving replaces what was there rather
+            // than the other way round.  The configuration's keys are the PRINTED form (it is JSON), so each is parsed
+            // before being asked about (FR-013): `byKey.containsKey(aString)` compiles, because containsKey takes Object,
+            // and is always false.
             for (String key : points.keySet())
             {
                 TileKey tile = parseTileKey(key);
@@ -3213,14 +3119,12 @@ public class AutonomyCompanionStore
     /**
      * Everything this store holds about one page, as something that can be put back.
      *
-     * For the diagram editor's undo.  It used to snapshot the CAPTIONS of a page and nothing else,
-     * which was enough while a caption was the only thing the editor moved - and stopped being
-     * enough the moment a tile started carrying its whole setup with it.  Undo then put the track
-     * back and left the station, the name, the facings and the restrictions wherever the move had
-     * taken them.
+     * For the diagram editor's undo.  A snapshot of a page's CAPTIONS alone stopped being enough the moment a tile started
+     * carrying its whole setup with it: undo would put the track back and leave the station, the name, the facings and the
+     * restrictions wherever the move had taken them.
      *
-     * By page, not by square, because that is the unit the editor works in and because a move can
-     * put a square somewhere the caller has no reason to have thought of.
+     * By page, not by square, because that is the unit the editor works in and a move can put a square somewhere the
+     * caller has no reason to have thought of.
      *
      * The shape of what comes back is this class's own business - it goes straight back into
      * restorePage and nowhere else.
@@ -3234,19 +3138,14 @@ public class AutonomyCompanionStore
 
         if (page == null) return out;
 
-        // Keyed by the collection's file name, which is what restorePage asks for.  A collection with
-        // nothing to snapshot - `excludedPages`, whose exclusion is not part of the page's contents -
-        // simply puts null, and restorePage does nothing with it.
-        //
-        // The lists are COPIED, not shared.  Most of these hold strings and numbers, which cannot
-        // change underneath a snapshot; the two that hold LISTS are written into in place by
-        // forgetSquares, so deleting the signal's square emptied the snapshot's list too and undo
-        // restored the deletion.  That rule now lives on the one kind it applies to.
+        // Keyed by the collection's file name, which is what restorePage asks for.  A collection with nothing to snapshot
+        // (`excludedPages`, whose exclusion is not part of the page's contents) simply puts null, and restorePage does
+        // nothing with it.  The lists are COPIED, not shared: forgetSquares writes into the two that hold LISTS in place,
+        // so a shared list would be emptied in the snapshot too and undo would restore the deletion.
         for (Kept k : kept()) out.put(k.json, k.snapshotOf(page));
 
-        // The configurations key by tile too, and that is where the facings, the placements, the
-        // homes and the maximum lengths live - the half of a station's setup that is not in the
-        // shared file.  A snapshot without them restores half a station.
+        // The configurations key by tile too, and that is where the facings, the placements, the homes and the maximum
+        // lengths live: a snapshot without them restores half a station.
         Map<String, JSONObject> points = new LinkedHashMap<>();
 
         for (Map.Entry<String, JSONObject> entry : configurations.entrySet())
@@ -3258,10 +3157,8 @@ public class AutonomyCompanionStore
 
             for (String key : from.keySet())
             {
-                // Deep, for the same reason as the signals above and with more at stake: this is where
-                // the facings, the placements, the homes and the maximum lengths live, and
-                // setPointProperty writes them with points.getJSONObject(id).put(...) - straight into
-                // the object a shared snapshot would be holding.  Undo then restored the edit.
+                // Deep: setPointProperty writes the facings, placements, homes and maximum lengths with
+                // points.getJSONObject(id).put(...), straight into the object a shared snapshot would be holding.
                 if (!isOnPage(key, page)) continue;
 
                 Object value = from.get(key);
@@ -3292,9 +3189,8 @@ public class AutonomyCompanionStore
     {
         if (page == null || snapshot == null) return;
 
-        // By the same names snapshotPage wrote, which are the collections' file names.  A snapshot
-        // taken by an older build simply has no entry for a collection added since, and each kind's
-        // put-back already treats absent as "this page had none".
+        // By the same names snapshotPage wrote, which are the collections' file names.  A snapshot taken by an older build
+        // has no entry for a collection added since, and each kind's put-back treats absent as "this page had none".
         for (Kept k : kept()) k.restoreTo(page, snapshot.get(k.json));
 
         Map<String, JSONObject> points = (Map<String, JSONObject>) snapshot.get("configurations");
@@ -3317,9 +3213,8 @@ public class AutonomyCompanionStore
 
             if (was != null)
             {
-                // Copied on the way back as well, so the store and the snapshot do not end up sharing
-                // again: a snapshot is held for as long as the editor might undo, and the very next
-                // edit would write through it.
+                // Copied on the way back as well, so the store and the snapshot do not end up sharing again: a snapshot is
+                // held for as long as the editor might undo, and the very next edit would write through it.
                 for (String key : was.keySet())
                 {
                     Object value = was.get(key);
@@ -3334,17 +3229,11 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Whether a stored key names a square on a page.  The key is "page:x,y", and a page name may
-     * itself contain a colon - so the comparison is on the prefix rather than on a split.
-     */
-    /**
      * Whether a square is on a page (FR-013).
      *
-     * One field comparison. The string form of this parsed the key to find its page part, which is
-     * where OB-071 lived - it split on the first colon while four other sites split on the last, so
-     * every square on a page whose name contained one was read as belonging to a different page.
-     *
-     * There is nothing here to get wrong any more, which is the point of the conversion.
+     * One field comparison.  The string form parsed the key to find its page part, which is where OB-071 lived: it split on
+     * the first colon while four other sites split on the last, so every square on a page whose name contained one was read
+     * as belonging to a different page.
      *
      * @param key the square
      * @param page the page name
@@ -3358,14 +3247,9 @@ public class AutonomyCompanionStore
     /**
      * Whether a stored key belongs to this page.
      *
-     * By what the key PARSES to, not by what it starts with.  A key is "page:x,y" and a page name may
-     * hold a colon - "Yard: Upper" is an ordinary thing to call a page - so "Yard: Upper:2,3" starts
-     * with "Yard:" and was taken to be on the page called "Yard".  snapshotPage and restorePage then
-     * captured and rewrote another page's entries, which is exactly what the editor's undo promises
-     * not to do.
-     *
-     * parseTileKey splits on the LAST colon and has been exact all along.  This was the one place not
-     * using it.
+     * By what the key PARSES to, not by what it starts with.  A key is "page:x,y" and a page name may hold a colon ("Yard:
+     * Upper" is an ordinary thing to call a page), so "Yard: Upper:2,3" starts with "Yard:" and would be taken to be on the
+     * page called "Yard".  parseTileKey splits on the LAST colon and is exact.
      */
     private static boolean isOnPage(String key, String page)
     {
@@ -3405,10 +3289,9 @@ public class AutonomyCompanionStore
     /**
      * The entries of one collection that live on one page.
      *
-     * Generic over {@link SquareKeyed} rather than over TileKey (FR-013 stage two), so the one
-     * collection keyed by a square PLUS a route goes through the same method as the other ten. It used
-     * to have a copy of its own - four of them, in fact - because erasure makes {@code Map<String, T>}
-     * and {@code Map<TileKey, T>} the same signature and they could not be overloaded.
+     * Generic over {@link SquareKeyed} rather than over TileKey (FR-013), so the one collection keyed by a square PLUS a
+     * route goes through the same method as the other ten; erasure makes {@code Map<String, T>} and
+     * {@code Map<TileKey, T>} the same signature, so they could not be overloaded.
      *
      * @param <K> what the collection is keyed by
      * @param <T> what it holds
@@ -3431,17 +3314,12 @@ public class AutonomyCompanionStore
     /**
      * One page's entries from a map whose VALUES are squares too (B5).
      *
-     * `onPage` above asks only about the key, which is right for a map of squares to names and wrong
-     * for one that pairs squares with squares. Portals are stored symmetrically and their two ends are
-     * normally on DIFFERENT pages; protecting signals and blocked points cross pages the same way.
-     *
-     * `move` and `forget` have always reached both halves - the base class says "each collection drops
-     * what it knows about these squares AND anything POINTING at them. Both halves matter and both
-     * have been got wrong here" - and snapshot/restore was the one member of the interface that never
-     * got the message. So an edit that broke the far page's half had no record of it to put back.
-     *
-     * This is not "restoring one page reaches into another". It captures exactly the entries that
-     * MENTION this page, which are exactly the ones this page's edit can break.
+     * `onPage` above asks only about the key, which is right for a map of squares to names and wrong for one that pairs
+     * squares with squares.  Portals are stored symmetrically and their two ends are normally on DIFFERENT pages;
+     * protecting signals and blocked points cross pages the same way.  `move` and `forget` reach both halves ("each
+     * collection drops what it knows about these squares AND anything POINTING at them"), and snapshot/restore must too,
+     * or an edit that broke the far page's half would have no record of it to put back.  This captures exactly the entries
+     * that MENTION this page, which are exactly the ones this page's edit can break.
      *
      * @param from the collection
      * @param page the page wanted
