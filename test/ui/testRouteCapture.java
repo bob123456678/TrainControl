@@ -36,7 +36,7 @@ public class testRouteCapture
     private static MarklinControlStation model;
 
     /**
-     * THE OPERATOR'S RAILWAY IS NOT THIS TEST'S TO OPEN (OB-111, TST-B3).
+     * THE OPERATOR'S RAILWAY IS NOT THIS TEST'S TO OPEN (OB-111).
      *
      * init() reads the layout preference and loads whatever it names, which on his machine is his
      * live layout.  This class never had a sandbox before now.

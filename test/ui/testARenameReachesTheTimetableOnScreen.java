@@ -160,7 +160,7 @@ public class testARenameReachesTheTimetableOnScreen
 
             assertTrue(after.contains(AFTER), "the new key does not name the new locomotive: " + after);
 
-            // AND THE GUARD ITSELF, not only the function it consults (TSX-B2).
+            // AND THE GUARD ITSELF, not only the function it consults.
             //
             // Everything above drives `timetableSignature`.  The guard is one line in
             // `repaintTimetable` - `if (showing.equals(lastTimetableState)) return;` - and the

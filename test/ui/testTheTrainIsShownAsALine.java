@@ -237,7 +237,7 @@ public class testTheTrainIsShownAsALine
     /**
      * And the TRAIN mark is a LINE - it covers a small part of the square, not the whole of it.
      *
-     * **MEASURED IN ORANGE, and it used to be measured in changed pixels** (W7B-B1, 2026-09-09).
+     * **MEASURED IN ORANGE, and it used to be measured in changed pixels** (2026-09-09).
      *
      * The square this class chooses is a covered one, and a covered square that is an intermediate
      * tile of a covered edge is also a BLOCKED one - so it now carries the grey wash as well as the
@@ -713,7 +713,7 @@ public class testTheTrainIsShownAsALine
     }
 
     /**
-     * A standing train's own square is one orange (RSA66-C5).  The line is drawn again over a run line; the overlay of a
+     * A standing train's own square is one orange.  The line is drawn again over a run line; the overlay of a
      * standing train's own square - the diagram's mark for the train - has none, and drawn there the second line lay over
      * the first: rgb(239,134,65) beside rgb(209,125,69) on the train's other squares.  The same on the part of a run's
      * first or last square its run line does not reach.

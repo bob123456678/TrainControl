@@ -630,13 +630,13 @@ public class testTheWaitMarkIsAnHourglass
     }
 
     /**
-     * The drain is drawn UPRIGHT in every cycle, not only the first (VAL-B4, 2026-08-29).
+     * The drain is drawn UPRIGHT in every cycle, not only the first (2026-08-29).
      *
      * Adam, 2026-08-29: "the hourglass flows backwards after the flip." The fix in the tree today
      * never rotates the drain at all - only the turn does - so a mid-drain frame in the second cycle
      * has to render EXACTLY like the same point in the first, not merely fall in the same direction.
      *
-     * This replaces what was here before this review (VAL-B4): a check that shot frames deep into the
+     * This replaces what was here before this review: a check that shot frames deep into the
      * second cycle and asked whether sand still fell downward. That is not the property that
      * distinguishes a correct drain from a rotated one - a 180-degree rotation flips top and bottom
      * AND reverses the fall, so the two inversions cancel and "sand ends up at the bottom" stays true
@@ -653,7 +653,7 @@ public class testTheWaitMarkIsAnHourglass
     public void testItRunsDownwardsAfterTheFlipToo() throws Exception
     {
         // Mid-drain, past the antialiased edges of "just started" or "just finished" - the same frame
-        // VAL-D4 measured by sand mass to confirm the two cycles agree.
+        // measured by sand mass to confirm the two cycles agree.
         int midDrain = 25;
 
         BufferedImage firstCycle = shoot(midDrain);
@@ -689,7 +689,7 @@ public class testTheWaitMarkIsAnHourglass
      * which under the rotation reads as an EMPTY top - so the glass snapped from full-at-top back to
      * empty-at-top the instant the turn finished, and then ran backwards.
      *
-     * VAL-B4 (2026-08-29): the drain no longer rotates at all, so "putting the rotation back into the
+     * Since 2026-08-29 the drain no longer rotates at all, so "putting the rotation back into the
      * drain" is not a live risk here any more - that mutation is caught by
      * `testItRunsDownwardsAfterTheFlipToo` instead. What this test still guards, on the code as it
      * stands, is the TURN's own arithmetic reaching a full half-turn by its last frame.

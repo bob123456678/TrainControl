@@ -156,7 +156,7 @@ public class testUiStateIsNotLostWhenUnreadable
         // BEFORE the window is built: it reads the layout preference in its constructor (OB-111).
         // Opened here rather than in a @BeforeClass because this is the only place that builds one,
         // and the finally below is already where this method puts things back.
-        // INSIDE THE TRY, so the close cannot be skipped (TSX-B1).
+        // INSIDE THE TRY, so the close cannot be skipped.
         //
         // This stood one line above `new TrainControlUI()` - the statement it exists to protect - and
         // outside the `try` whose `finally` closes it.  A throw from the constructor left the

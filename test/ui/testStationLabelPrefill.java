@@ -146,7 +146,7 @@ public class testStationLabelPrefill
      * The caller nearestOf serves is untested: nearestStation, which turns the graph into the list
      * nearestOf chooses from by keeping only the reduced points the user marked as stations.
      *
-     * TST-B19. The two tests above drive nearestOf hard; nothing before this called
+     * The two tests above drive nearestOf hard; nothing before this called
      * nearestStation itself - the class javadoc said doing so needed "the panel, a session and a
      * railway" and settled for reading the source instead (testTheLastClickedStationIsSpentAfterOneUse,
      * above). It does need those three, and this builds the smallest ones that will do: a session

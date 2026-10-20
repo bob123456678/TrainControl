@@ -22,7 +22,7 @@ import support.SourceOf;
  * When the run finished, the next echo carried that same direction, `was == forward` was true, and
  * there was nothing left to follow.
  *
- * **The ruling this was written under has since been withdrawn, and the mechanism kept** (REG8-C4).
+ * **The ruling this was written under has since been withdrawn, and the mechanism kept**.
  * `ca0265f4` wanted a mid-run reversal to surface after the run; Adam reversed that nine hours later -
  * *"reversals during the run should be ignored and not queued.  Only count reversals when nothing is
  * running.  That way, there is no backlog."* - and `bc6120f1` implemented it. So the sentence that
@@ -80,7 +80,7 @@ public class testADirectionChangeIsNotSwallowed
     }
 
     /**
-     * The other half of "no backlog": the baseline is levelled when the railway goes idle (REG8-C4).
+     * The other half of "no backlog": the baseline is levelled when the railway goes idle.
      *
      * The ordering above stops a mid-run change being recorded as acted-on. On its own that is not the
      * ruling Adam gave - it leaves the pre-run direction in the map, so the first echo after the run
@@ -92,7 +92,7 @@ public class testADirectionChangeIsNotSwallowed
      * reason the ordering is: the behaviour is a race between an echo and a repaint.
      *
      * The exception is asserted too - a turn the railway made at a destination must be WRITTEN before
-     * the levelling wipes the evidence of it (IND9-B4), and "levels everything" would silently undo
+     * the levelling wipes the evidence of it, and "levels everything" would silently undo
      * that.
      *
      * @throws Exception on a failure to read the source
@@ -105,7 +105,7 @@ public class testADirectionChangeIsNotSwallowed
             + " it half-prevents is back: the pre-run direction stays in the baseline and the first"
             + " echo after the run re-follows a reversal the railway already made (REG8-C4)");
 
-        // INSIDE THE METHOD, not across the file (REG9-C1, 2026-09-11).
+        // INSIDE THE METHOD, not across the file (2026-09-11).
         //
         // These two offsets were taken with `ui.indexOf` over the whole of TrainControlUI.java, and
         // `takeReversalsOnArrival()` appears TWICE in it: once in `takeThePendingTurns`, which has
@@ -129,7 +129,7 @@ public class testADirectionChangeIsNotSwallowed
             + " job its name claims");
 
         // THE DRAIN IS `writeTheTurns`, which this method calls and the doors that leave a railway during a run share
-        // (RLV10-C1) - so the call is looked for here, and the drain in that method's own body
+        // - so the call is looked for here, and the drain in that method's own body
         int writes = body.indexOf("writeTheTurns(built, session)");
 
         assertTrue(writes > 0,

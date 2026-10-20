@@ -91,7 +91,7 @@ public class testTheDiagramPrintsItsCoordinates
     @Test
     public void testANumberTooWideForItsSquareIsLeftOut()
     {
-        // THE READER FIRST (TSX-C7).
+        // THE READER FIRST.
         //
         // `digitsIn` recognises numbers by re-rendering each candidate with a font it chooses itself
         // and sliding the stamp over the painted ink.  If that font ever stops matching the one the
@@ -311,7 +311,7 @@ public class testTheDiagramPrintsItsCoordinates
      * captions - and that did not work: the override ran, the border was the ruler and the clip was
      * the whole component, and the numbers were still rubbed out.  Swing hands each child its own
      * graphics inside `paintChildren`.  This sentence described that first attempt for a while after
-     * it was reverted (FR3-C4).
+     * it was reverted.
      *
      * MUTATION: removing that block fails this. The first assertion is what stops the mutation passing
      * by painting nothing at all.

@@ -40,7 +40,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * At TunnelLeftPark on the frozen `live-snapshot`, with both arrows of 8,7 below it red, through the real window's
  * diagram monitor.
  *
- * And on the validator's findings (V348-C1, V348-C2), Adam, 2026-10-14: *"The icon can guess in that case, but it must be
+ * And on the validator's findings, Adam, 2026-10-14: *"The icon can guess in that case, but it must be
  * N/S or a N/S track, or E/W on E/W, or angled on a curved track."*  The facing for such a square is asked of the setup
  * whenever the captions are, so a facing a door writes reaches the icon without a rebuild; and a recorded facing the track
  * does not run is shown by none of the icon, the caption and the Is Facing menu.
@@ -167,8 +167,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
     }
 
     /**
-     * A facing written after the diagram was bound reaches the icon at the refresh every door ends with, with no rebuild
-     * (V348-C2).
+     * A facing written after the diagram was bound reaches the icon at the refresh every door ends with, with no rebuild.
      *
      * @throws Exception from the window
      */
@@ -201,7 +200,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
     /**
      * A recorded facing the track does not run is shown by none of the three: the icon lies along the track, the caption
-     * has no east arrow, and the Is Facing menu is greyed (V348-C1).
+     * has no east arrow, and the Is Facing menu is greyed.
      *
      * @throws Exception from the window
      */
@@ -282,9 +281,9 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
     /**
      * On a square that does have ways out, where the railway does not hold the setup's train, a recorded facing the track
-     * does not run is ticked in the Is Facing menu no more than the caption shows it (V348B-C3), and once the railway is
+     * does not run is ticked in the Is Facing menu no more than the caption shows it, and once the railway is
      * built from that setup - which cannot stand the train, so the diagram draws it on no Point - its icon lies along the
-     * track (V348C-C1).
+     * track.
      *
      * MUTATION: let the menu read the record as it stands again (OB-177's tick) and this fails; draw a train on no Point
      * facing its record as it stands, and this fails at the icon.
@@ -407,7 +406,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
     }
 
     /**
-     * The same on every square of the snapshot that offers one facing, for every way its track does not run (V348D-C1).
+     * The same on every square of the snapshot that offers one facing, for every way its track does not run.
      */
     @Test
     public void testEverySquareWithOneWayOutGuessesIt()
@@ -456,7 +455,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
     /**
      * On a square with one way out, a train the railway cannot stand - its recorded facing off the track - faces that way
-     * out, which the Is Facing menu ticks (V348D-C1).
+     * out, which the Is Facing menu ticks.
      *
      * MUTATION: guess the track's first way before the facing the square offers, and this fails at TunnelRightPark, whose
      * one way out is south on track that runs from the north.

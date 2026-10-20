@@ -156,7 +156,7 @@ public class testTheRebuildIsOnePass
         int emptied = code.indexOf("parent.removeAll();");
         int added = code.indexOf("parent.add(container);");
 
-        // COUNTED, not just located (VLD-C1).
+        // COUNTED, not just located.
         //
         // These were assignments, so the LAST match won - and a build that empties the panel at the
         // top AND swaps at the bottom left `emptied` pointing at the bottom copy, with the defect
@@ -165,7 +165,7 @@ public class testTheRebuildIsOnePass
         int emptiedCount = SourceOf.occurrences("parent.removeAll();");
         int addedCount = SourceOf.occurrences("parent.add(container);");
 
-        // AND THE PANEL'S OTHER NAME (RG5-C2).
+        // AND THE PANEL'S OTHER NAME.
         //
         // This class calls the same panel `parent` inside the constructor and `owner` in the field it
         // keeps it in, and a scan that lists only one spelling reports clean about the other.  It was

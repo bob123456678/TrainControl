@@ -306,7 +306,7 @@ public class testRenderingCost
             + " coldDecodeTotal=" + String.format("%.1f", ms) + "ms"
             + " perDecode=" + String.format("%.2f", decoded == 0 ? 0 : ms / decoded) + "ms");
 
-        // TST-C14: the decode loop swallows every exception, so a getImage that throws for EVERY
+        // The decode loop swallows every exception, so a getImage that throws for EVERY
         // tile leaves decoded at 0 and ms near zero - which used to read as a fast, passing test.
         // That is the "0.00ms looks like good news" failure this class's own header comment says it
         // was rewritten to avoid; the floor below is what closes it for this loop too.

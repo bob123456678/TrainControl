@@ -135,7 +135,7 @@ public class testRouteEditorLocked
 
         // Assert the variable, not the control.  This loop used to be vacuous-if-empty, and its
         // non-vacuity companion opens a DIFFERENT window down a different branch - so a locked frame
-        // that built no fields at all would have passed both (TA-B10)
+        // that built no fields at all would have passed both
         assertTrue(fields.size() > 0,
             "the locked window has no text fields at all, so the loop below proves nothing about "
             + "what the keyboard can reach");
@@ -154,7 +154,7 @@ public class testRouteEditorLocked
      * No cell of a locked route's tables will accept a keystroke.
      *
      * The surface this class's own javadoc is about - "the plus, the trash, the arrows" - and until
-     * TA-B10 of the 2026-08-24 test suite audit nothing in the repository so much as named the gate
+     * 2026-08-24 nothing in the repository so much as named the gate
      * that holds it.  The tests above walk the component TREE, and a cell editor is not in the tree
      * until the cell is already being edited; by then the gate has been passed.  The gate itself is
      * `isCellEditable` on the table model, and deleting the `if (locked) return false;` at the top of

@@ -291,7 +291,7 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
     }
 
     /**
-     * Both questions name the square the way the diagram does, not by the copy the paste happened to pick (GUI-C7).
+     * Both questions name the square the way the diagram does, not by the copy the paste happened to pick.
      *
      * A split square's Points are named with a heading - "BottomMainB (eastbound)" - and both questions asked here
      * are ABOUT direction, so the name put an answer in the question, and an arbitrary one: the Point is picked before

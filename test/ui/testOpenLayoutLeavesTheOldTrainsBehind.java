@@ -34,7 +34,7 @@ import support.Restart;
 /**
  * File &gt; Open Layout..., answered with another railway's folder, leaves the railway that was open behind: its setup,
  * the trains standing on it and the track they claim, while its locomotives stay in the database (OB-363).  Answered
- * with the folder already open, it keeps that railway's trains standing (RLV8-C5).
+ * with the folder already open, it keeps that railway's trains standing.
  *
  * The window starts on a copy of the frozen railway, with its setup loaded and its four trains standing; Open Layout...
  * is chosen from the File menu, answered first with that railway's own folder and then with a copy of the
@@ -193,7 +193,7 @@ public class testOpenLayoutLeavesTheOldTrainsBehind
 
     /**
      * Open Layout... answered with the folder already open reloads the same railway, and its trains go on standing
-     * where they stood (RLV8-C5): only another railway's folder takes them out of memory.
+     * where they stood: only another railway's folder takes them out of memory.
      *
      * MUTATION: in `TrainControlUI.sourceIsNow`, clear the autonomy layout on every switch of source, the same one too.
      */

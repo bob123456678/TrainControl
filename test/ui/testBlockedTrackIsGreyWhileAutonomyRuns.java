@@ -50,7 +50,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * - grey and no orange - track a train's presence has made unusable;
  * - neither - free.
  *
- * **And the grey is NOT bounded to while autonomy is running, which it was until W7B-B1.**  The
+ * **And the grey is NOT bounded to while autonomy is running, which it once was.**  The
  * bound was Adam's own - *"while autonomy is running"* - and the refusal it draws never had one, so a
  * stopped railway refused manual sends over track this drew as free.  Adam, 2026-09-09: *"yes, this
  * greyout should appear at idle and be regenerated if a placement or train/track length is changed."*
@@ -204,7 +204,7 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
         blockedTile = drawnTileFor(blockedSquare);
         freeTile = drawnTileFor(freeSquare);
 
-        // STOPPED, with the train exactly where it is.  Both marks are drawn (W7B-B1).
+        // STOPPED, with the train exactly where it is.  Both marks are drawn.
         setRunning(false);
 
         refreshCoveredTrack();
@@ -309,7 +309,7 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
 
         int drawn = drawnPixels(bareBlocked);
 
-        // A REAL FRACTION OF THE SQUARE, not one pixel (E8-C6).  `drawn > 0` admits a tile with
+        // A REAL FRACTION OF THE SQUARE, not one pixel.  `drawn > 0` admits a tile with
         // eight drawn pixels, where "seven of them changed" is satisfied by any mark at all - and the
         // claim below is meant to tell a fade of the whole tile from a stroke across part of it.
         assertTrue(drawn > TILE * TILE / 10,
@@ -324,7 +324,7 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
     }
 
     /**
-     * And a stopped railway shows exactly the same grey - the mark is NOT bounded to a run (W7B-B1).
+     * And a stopped railway shows exactly the same grey - the mark is NOT bounded to a run.
      *
      * **This test asserted the opposite until 2026-09-09, and the reversal is the point of it.**  The
      * bound was Adam's own sentence - *"can we just grey out the tiles just like blocked edges while
@@ -397,7 +397,7 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
     {
         assertBuilt();
 
-        // AGAINST THE BARE PICTURE, and it used to be against the STOPPED one (W7B-B1).
+        // AGAINST THE BARE PICTURE, and it used to be against the STOPPED one.
         //
         // While the grey was fenced on a running railway, "stopped" was the same square with no wash
         // on it and that comparison said what this claim means.  The fence is gone: the two pictures

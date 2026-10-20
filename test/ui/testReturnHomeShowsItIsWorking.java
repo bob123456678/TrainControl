@@ -60,7 +60,7 @@ public class testReturnHomeShowsItIsWorking
 
         // AND THE STARTUP LOAD OF HIS CONFIGURATION, which this test is about - as openTheWindow waits for it in the
         // import-door claims.  It asked hasAutoLayout the moment the window was up, and passed only because the
-        // autonomy panel's list built an empty Layout as it was made; since RLV7-C2 nothing does, and it skipped.
+        // autonomy panel's list built an empty Layout as it was made; nothing does now, and it skipped.
         final java.util.concurrent.CountDownLatch settled = new java.util.concurrent.CountDownLatch(1);
 
         ui.whenTilesSettled(() -> settled.countDown());

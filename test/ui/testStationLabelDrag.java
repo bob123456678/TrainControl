@@ -245,7 +245,7 @@ public class testStationLabelDrag
      *
      * MUTATION: moving `hideCaptionGhost` below the early return fails this.
      *
-     * TST-B8: `hideCaptionGhost()` is called TWICE in this method - once inside the wrong-button
+     * `hideCaptionGhost()` is called TWICE in this method - once inside the wrong-button
      * branch, ahead of THAT branch's own `return;`, and once more, unconditionally, ahead of the
      * real "did this actually move anything" question. Anchoring on the first occurrence of each
      * name, as this test used to, finds the wrong-button branch's own pairing every time and can
@@ -269,7 +269,7 @@ public class testStationLabelDrag
         int leaves = released.indexOf("if (!moved", movedRead);
 
         // Proved present, and past the wrong-button branch's own pairing, before they are
-        // ordered - an absent term made this pass unconditionally before (TST-C7's shape).
+        // ordered - an absent term made this pass unconditionally before.
         assertTrue(down > movedRead, "the floating copy of the label is never removed after a "
             + "real drag ends, so it stays on the window after the drag ends");
 
@@ -306,7 +306,7 @@ public class testStationLabelDrag
             "any mouse button now starts a station-label drag, so a right-press that wanders a few "
             + "pixels moves the label and swallows the menu that was being asked for");
 
-        // TST-B8: "dragging[0] = false" occurs TWICE in this method - once in the wrong-button
+        // "dragging[0] = false" occurs TWICE in this method - once in the wrong-button
         // branch this assertion is about, and once more on the ordinary path a few lines later.
         // Searching the whole method body for the substring passes on the second occurrence alone,
         // so deleting the first (the actual fix this test protects) would go unnoticed. Scoped to

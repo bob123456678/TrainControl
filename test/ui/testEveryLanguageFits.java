@@ -188,7 +188,7 @@ public class testEveryLanguageFits
 
         try
         {
-            // Inside the try, so nothing can leave the preference behind (TSX-B8).
+            // Inside the try, so nothing can leave the preference behind.
             sandbox = support.LayoutSandbox.open();
 
             for (String language : LANGUAGES)
@@ -205,7 +205,7 @@ public class testEveryLanguageFits
             Locale.setDefault(was);
             I18n.setLocale(was);
 
-            // LET WHAT THE WINDOWS POSTED RUN FIRST (TSX-C2).
+            // LET WHAT THE WINDOWS POSTED RUN FIRST.
             //
             // The failure this check exists for is work scheduled by a disposed window landing after
             // the preference has been put back - which by construction happens some milliseconds after
@@ -225,8 +225,8 @@ public class testEveryLanguageFits
 
             if (sandbox != null) sandbox.close();
 
-            // AND IN THE FINALLY, because the run most likely to have written is the one that threw
-            // (TSX-C2).  This stood after the try, so a window constructor that failed took the
+            // AND IN THE FINALLY, because the run most likely to have written is the one that threw.
+            // This stood after the try, so a window constructor that failed took the
             // railway check with it.
             assertEquals(fingerprint(LIVE), railwayBefore,
                 "this test wrote to " + LIVE + ", which is the operator's real railway and is not "
@@ -314,7 +314,7 @@ public class testEveryLanguageFits
                 + ", which is not a window - the layout did not happen and nothing was asked");
         }
 
-        // THE TWO PICTURES HAVE TO EXIST FIRST (TSX-C1).
+        // THE TWO PICTURES HAVE TO EXIST FIRST.
         //
         // `sameBytes` answers false when either file is missing, and `shoot` swallows a write failure
         // by design - so an unwritable OUT, or a JVM with no PNG writer, satisfied the control below

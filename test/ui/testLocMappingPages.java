@@ -193,7 +193,7 @@ public class testLocMappingPages
      * button's key code into it under keys -1 and -2, as strings, and they survive a load.  The rename
      * dialog asked `containsValue`, which saw them - so after any start from a saved state, naming a
      * page the digits of the last-saved active page, or the key code of the active button ("81" for Q),
-     * was refused as a duplicate of a page that does not exist (SVN-C13).
+     * was refused as a duplicate of a page that does not exist.
      *
      * Asked of the predicate rather than through the dialog, which is modal and would hang a battery.
      *
@@ -237,7 +237,7 @@ public class testLocMappingPages
     }
 
     /**
-     * The autonomy menu greys itself, and says which of the two reasons it is (TSX-B4).
+     * The autonomy menu greys itself, and says which of the two reasons it is.
      *
      * `AutonomyMenu.refreshEnabled()` decides two things a person meets: whether the menu can be
      * opened at all, and what the tooltip tells them instead.  Both were tested nowhere - and this is
@@ -2390,7 +2390,7 @@ public class testLocMappingPages
         try
         {
             // Inside the try, so nothing between the open and the close can leave the
-            // preference behind (TSX-B8).
+            // preference behind.
             sandbox = support.LayoutSandbox.open();
 
             javax.swing.SwingUtilities.invokeAndWait(() -> built[0] = new TrainControlUI());

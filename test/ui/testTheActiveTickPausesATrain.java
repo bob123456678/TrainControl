@@ -569,7 +569,7 @@ public class testTheActiveTickPausesATrain
     }
 
     /**
-     * The Auto tab's pause button pressed after the diagram's tick is not undone by the next rebuild (RSA60-B1).
+     * The Auto tab's pause button pressed after the diagram's tick is not undone by the next rebuild.
      *
      * The tick pauses the train and records it in the setup; the button then sets the train going on the railway alone,
      * as it is meant to, for the fold to take in; and a setup gesture's rebuild folds the railway's settings that changed

@@ -144,7 +144,7 @@ public class testRouteEditorShading
      * lets this run without a control station - and is why it exists.
      */
     /**
-     * Highlight on Diagram survives a route that drives a locomotive (IPR-B1).
+     * Highlight on Diagram survives a route that drives a locomotive.
      *
      * The button gathers the addresses a route touches so it can flash them on the diagram, and it
      * asked every command for its address.  `RouteCommand.getAddress()` is an `Integer.parseInt` over a

@@ -113,7 +113,7 @@ public class testWhereHisTrainsMayBeSent
 
     /**
      * A send the right-click refuses says why in a message that belongs to the main window: with the power off, "-> a
-     * station" on his train's right-click tells him to turn the power on, in front of the window he is using (RLU-B2).
+     * station" on his train's right-click tells him to turn the power on, in front of the window he is using.
      *
      * The refusals were parented on the popup menu, which has left the window by the time its item runs, so the message
      * belonged to Swing's hidden frame - and with Window Always on Top ticked, the default, it opened beneath the main
@@ -190,8 +190,8 @@ public class testWhereHisTrainsMayBeSent
 
     /**
      * No message on either right-click menu - the diagram's autonomy menu, or the track-diagram editor's - belongs to the
-     * menu itself, and none on the autonomy viewer panel to the panel (RLU-B2, RLU2-C5, RLU2-C6, RLD4-C9).  The setup's
-     * tidy report is a message too (IND9X-C4, RLD3-C4).
+     * menu itself, and none on the autonomy viewer panel to the panel.  The setup's
+     * tidy report is a message too.
      *
      * The claim above drives one refusal; the rest are read here.  A menu has left its window by the time its item runs,
      * so a message parented on it belongs to Swing's hidden frame and, with Window Always on Top, opens beneath the
@@ -216,7 +216,7 @@ public class testWhereHisTrainsMayBeSent
 
             for (int i = 0; i < lines.length; i++)
             {
-                // A message, or the setup's tidy report, which is one (RLD3-C4, RLD4-C9)
+                // A message, or the setup's tidy report, which is one
                 String shows = lines[i].contains("JOptionPane.show") ? "JOptionPane.show"
                     : lines[i].contains("AutonomyReport.show(") ? "AutonomyReport.show(" : null;
 
@@ -236,7 +236,7 @@ public class testWhereHisTrainsMayBeSent
 
         assertTrue(messages > 10, "precondition: the two menus show only " + messages + " messages");
 
-        // AND THE SETUP'S TIDY REPORT (IND9X-C4, RLU3-C3): the viewer panel is built and never shown, so a report
+        // AND THE SETUP'S TIDY REPORT: the viewer panel is built and never shown, so a report
         // parented on it belonged to the hidden frame too.
         assertTrue(SourceOf.allCode().contains("AutonomyReport.show(ui, session().save())"), "the setup's tidy report is not parented on"
             + " the main window (IND9X-C4, RLU3-C3)");

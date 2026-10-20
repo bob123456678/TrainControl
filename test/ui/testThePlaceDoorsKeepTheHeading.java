@@ -492,14 +492,14 @@ public class testThePlaceDoorsKeepTheHeading
 
     /**
      * With the autonomy editor open but minimised, the tail question's list belongs to the main window - where it can be
-     * seen - and not to the minimised editor (RLA-C4).
+     * seen - and not to the minimised editor.
      *
      * MT-575 hung the list from the editor whenever one was open, and a minimised editor is still open: on Windows a
      * window owned by a minimised frame is hidden, so the question was a modal nobody could see, holding the application
      * until the editor was restored.  Asked here for his 75 407 DB, 5 long, on Tunnel from the north, as the main
      * window's own doors ask it.
      *
-     * NO DOOR REACHES THIS TODAY (RLA2-C5): every main-window door that asks the question refuses while an editor is
+     * NO DOOR REACHES THIS TODAY: every main-window door that asks the question refuses while an editor is
      * open, a minimised one included, and the editor's own door cannot be used while it is minimised.  So this pins the
      * owner rule itself, asked as a door would ask it, against the day a door does reach it.
      *

@@ -42,7 +42,7 @@ public class testLocIconCrop
 
         try
         {
-            // INSIDE the try, because everything below it throws (TSX-B8).
+            // INSIDE the try, because everything below it throws.
             //
             // The window constructor, the temporary folder, the writes - and the
             // SkipException below, which is not a failure at all but an ordinary
@@ -253,7 +253,7 @@ public class testLocIconCrop
 
         try
         {
-            // INSIDE the try, because everything below it throws (TSX-B8).
+            // INSIDE the try, because everything below it throws.
             //
             // The window constructor, the temporary folder, the writes - and the
             // SkipException below, which is not a failure at all but an ordinary
@@ -323,7 +323,7 @@ public class testLocIconCrop
                         + view[i] + " and read as " + read[i]);
                 }
 
-                // AND WITH THE CROP'S WIDTH IN THE PHOTOGRAPH, the sixth number (OB-257, RSA48-C2): written, read back,
+                // AND WITH THE CROP'S WIDTH IN THE PHOTOGRAPH, the sixth number (OB-257): written, read back,
                 // and in the array the crop dialog opens on and writes into
                 double[] six = { 250.5, 200.25, 0.4, 2.5, 0.7, 812.5 };
 
@@ -548,7 +548,7 @@ public class testLocIconCrop
     }
 
     /**
-     * Pressing OK at full zoom-out does not allocate an image squared in the source (IPR-B4).
+     * Pressing OK at full zoom-out does not allocate an image squared in the source.
      *
      * `contentOf` built the whole overhanging rectangle at source resolution and then threw it away:
      * the output is 296 x 114. At `zoomFraction = 0` - the left end of the slider, and what
@@ -576,7 +576,7 @@ public class testLocIconCrop
         java.awt.image.BufferedImage source =
             new java.awt.image.BufferedImage(8000, 6000, java.awt.image.BufferedImage.TYPE_INT_RGB);
 
-        // PAINTED, so the composition can be asserted and not only its size (VD9-C5).
+        // PAINTED, so the composition can be asserted and not only its size.
         //
         // A blank source lets every assertion below pass against a bound that puts the photograph in
         // the wrong place - swapping the scale and the offset, which is the one mistake the code’s
@@ -645,7 +645,7 @@ public class testLocIconCrop
 
         // Both of these are structural: every return path of getCroppedImage is CONSTRUCTED at the
         // icon size, so no value of `cut` can make them fail.  Kept as a shape check and not counted
-        // as evidence (VD9-C5).
+        // as evidence.
         assertEquals(icon.getWidth(), OUT_WIDTH, "the icon is the wrong width");
         assertEquals(icon.getHeight(), OUT_HEIGHT, "the icon is the wrong height");
 
@@ -692,7 +692,7 @@ public class testLocIconCrop
 
         try
         {
-            // OPENED INSIDE THE TRY (TSX-B8, OB-111)
+            // OPENED INSIDE THE TRY (OB-111)
             sandbox = support.LayoutSandbox.open();
 
             model = support.TestStationAddress.withNoStation(
@@ -793,7 +793,7 @@ public class testLocIconCrop
 
         try
         {
-            // OPENED INSIDE THE TRY (TSX-B8, OB-111)
+            // OPENED INSIDE THE TRY (OB-111)
             sandbox = support.LayoutSandbox.open();
 
             model = support.TestStationAddress.withNoStation(
@@ -903,7 +903,7 @@ public class testLocIconCrop
 
     /**
      * A picture that cannot be read, picked with the wrench, is refused by name and leaves the locomotive's icon as it
-     * was: in the locomotive, and in the locomotive database once saved (FR-022, LD-6).  Crop is unticked, the case the
+     * was: in the locomotive, and in the locomotive database once saved (FR-022).  Crop is unticked, the case the
      * guard once missed.
      *
      * MUTATION: take `pictureCanBeRead` out of `setLocIcon`, and this fails.
@@ -940,7 +940,7 @@ public class testLocIconCrop
 
         try
         {
-            // OPENED INSIDE THE TRY (TSX-B8, OB-111)
+            // OPENED INSIDE THE TRY (OB-111)
             sandbox = support.LayoutSandbox.open();
 
             model = support.TestStationAddress.withNoStation(() ->
@@ -1217,7 +1217,7 @@ public class testLocIconCrop
 
         try
         {
-            // OPENED INSIDE THE TRY (TSX-B8, OB-111)
+            // OPENED INSIDE THE TRY (OB-111)
             sandbox = support.LayoutSandbox.open();
 
             model = support.TestStationAddress.withNoStation(
@@ -1296,7 +1296,7 @@ public class testLocIconCrop
 
         try
         {
-            // OPENED INSIDE THE TRY (TSX-B8, OB-111)
+            // OPENED INSIDE THE TRY (OB-111)
             sandbox = support.LayoutSandbox.open();
 
             model = support.TestStationAddress.withNoStation(
@@ -1427,7 +1427,7 @@ public class testLocIconCrop
 
         try
         {
-            // OPENED INSIDE THE TRY (TSX-B8, OB-111)
+            // OPENED INSIDE THE TRY (OB-111)
             sandbox = support.LayoutSandbox.open();
 
             model = support.TestStationAddress.withNoStation(

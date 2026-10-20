@@ -94,7 +94,7 @@ public class testDiagramLooksRight
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        // THE WINDOW TOO (TSX-C6).
+        // THE WINDOW TOO.
         //
         // This class builds a `TrainControlUI` in its set-up, a real top-level window with its listeners
         // and its grid, so it disposes it here.
@@ -1045,7 +1045,7 @@ public class testDiagramLooksRight
     /**
      * Java source with its comments stripped, so a scan reads code and not the prose about it.
      *
-     * TST-C10: a body scan that does not strip comments passes on the strength of a comment
+     * A body scan that does not strip comments passes on the strength of a comment
      * describing the removed call, not the call itself.
      */
     private String withoutComments(String body)
@@ -1265,7 +1265,7 @@ public class testDiagramLooksRight
 
         panel[0].setOnDiagramChanged(() -> rebuilds[0]++);
 
-        // WHETHER IT WAS STORED, not what the accessor answers (TSX-B3).
+        // WHETHER IT WAS STORED, not what the accessor answers.
         //
         // Selecting below WRITES the preference, so a machine that had never set it ends up with it
         // set - and putting the old value back writes the default, which is not the same as leaving
@@ -2252,7 +2252,7 @@ public class testDiagramLooksRight
             "the first item on the menu is live, so it is a command and not a name. A heading has to "
             + "be unclickable or it is one more thing to press by accident");
 
-        // Compared against the name read independently above (TST-C9), not against
+        // Compared against the name read independently above, not against
         // session.describeTile(square) again - both sides of that comparison come from the same
         // method under test, so a broken describeTile would move with the heading and still match.
         assertEquals(heading.getText(), expectedName,
@@ -2569,7 +2569,7 @@ public class testDiagramLooksRight
 
         caption.setText("Bottom Main C");
         caption.setOpaque(true);
-        // OPAQUE, deliberately (TCS-A2).
+        // OPAQUE, deliberately.
         //
         // The resting fill has an alpha, so a caption drawn over a train still lets 18% of the train
         // through - and an exact-RGB comparison would then find the two pictures different and pass
@@ -2605,7 +2605,7 @@ public class testDiagramLooksRight
         javax.imageio.ImageIO.write(empty, "png", new File(OUT, "train-over-caption-empty.png"));
         javax.imageio.ImageIO.write(withTrain, "png", new File(OUT, "train-over-caption-train.png"));
 
-        // SAMPLED WHERE THE CAPTION AND THE ICON OVERLAP (TCS-A2).
+        // SAMPLED WHERE THE CAPTION AND THE ICON OVERLAP.
         //
         // The middle of the square, (60, 60) at this size, is above the pill entirely, since the caption
         // sits at (0, 80, 120, 30): the pixel would be identical whether the train was drawn over the
@@ -2643,7 +2643,7 @@ public class testDiagramLooksRight
         int atX = size / 12;
         int atY = size * 3 / 4;
 
-        // AND THE CALL SITE, which the pixels cannot reach (TCS-A2).
+        // AND THE CALL SITE, which the pixels cannot reach.
         //
         // This method asks `LayoutGrid.newDiagramContainer()` itself, so the container it photographs
         // is the right one however the application builds its own.  Put a plain JPanel back at the
@@ -3773,7 +3773,7 @@ public class testDiagramLooksRight
     }
 
     /**
-     * A repaint of a corner of the diagram paints the addresses in that corner and no others (RSA60-C1): the pass that
+     * A repaint of a corner of the diagram paints the addresses in that corner and no others: the pass that
      * draws the addresses over the trains must take only those inside the clip, not every one on the page.
      *
      * Forty addresses across a diagram, a repaint clipped to the first one's corner: it is painted, by the ordinary pass
@@ -3984,7 +3984,7 @@ public class testDiagramLooksRight
 
     /**
      * A caption over the square a curve's station spills onto stays in front of the spill, as it is in front of the icon
-     * on the station's own square (RSA61-C2; OB-117, captions in front of the tiles), and the arrows drawn again over the
+     * on the station's own square (OB-117, captions in front of the tiles), and the arrows drawn again over the
      * spill go no further than the spill, so a caption stays in front of them too.  Nine squares in the diagram's own
      * container, a station on an E-S curve in the middle, the square to its right a one-way road under an opaque yellow
      * caption covering the whole square: none of the station's blue and none of the arrows' red or green shows on that
@@ -4113,7 +4113,7 @@ public class testDiagramLooksRight
     }
 
     /**
-     * And the whole of every kind of station's spill is under the captions, at both sizes (RSA62-C1), not only the
+     * And the whole of every kind of station's spill is under the captions, at both sizes, not only the
      * icon's OUTLINE (a ring): at 60 pixels the body of a block or a terminus would otherwise be drawn in front of a
      * caption over the square it reaches.  Nine squares in the diagram's own container, a station on an E-S curve in the
      * middle, opaque yellow captions over the whole of the squares to its right and below: none of the station's blue on
@@ -4147,7 +4147,7 @@ public class testDiagramLooksRight
     }
 
     /**
-     * And its region is built once for a size, and quickly (RSA62-B1): building it again on every paint, as an `Area` of
+     * And its region is built once for a size, and quickly: building it again on every paint, as an `Area` of
      * a stroke of the icon's stroked outline, stalls the window.  A named block on an N-E curve: asked twice for its
      * region, it answers the same region, built in well under a frame.
      *
@@ -4476,7 +4476,7 @@ public class testDiagramLooksRight
     }
 
     /**
-     * The outline of a square a curve station's spill reaches is drawn over the spill, as its arrows are (RSA63-C4): the
+     * The outline of a square a curve station's spill reaches is drawn over the spill, as its arrows are: the
      * spill is drawn over the square's own paint, so its selection outline would be broken where the station reached it.
      * Nine squares in the diagram's own container, a station on an E-S curve in the middle, the square to its right
      * selected: all of its outline's orange with the station beside it as without.

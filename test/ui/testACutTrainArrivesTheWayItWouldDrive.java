@@ -158,7 +158,7 @@ public class testACutTrainArrivesTheWayItWouldDrive
     {
         Point from = null;
 
-        // THE COPY FACING WEST, where the square has copies (TDY-C4): the journey he described is a train going west, and
+        // THE COPY FACING WEST, where the square has copies: the journey he described is a train going west, and
         // on a split square the copy IS the heading, so the copy cut from has to be the westbound one - the heading forced
         // below is only what the cut remembers.  BottomSecondary is one Point on his railway, and then it is that one.
         Map<String, Side> copies = session.facingsFor(secondary);
@@ -248,7 +248,7 @@ public class testACutTrainArrivesTheWayItWouldDrive
 
     /**
      * The Place Locomotive dialog puts the train on the copy facing the way it records - not on whichever copy the menu
-     * was opened on (GUI-B3).
+     * was opened on.
      *
      * OB-270 is a rule about putting a train down - the copy IS the direction - and was fixed at the paste.  The dialog
      * is the same act by another door: it moved the train onto the copy it was opened on, then recorded the train's old

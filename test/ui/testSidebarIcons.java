@@ -137,11 +137,11 @@ public class testSidebarIcons
     @Test
     public void testEachTabIconIsOnTheTabItNames() throws Exception
     {
-        // COMMENTS OUT FIRST (TSX-C5).
+        // COMMENTS OUT FIRST.
         //
         // The file already holds a commented-out `setIconAt`, so a rule that matched the raw text could
-        // be satisfied by code somebody had deliberately switched off - which is the shape `TCX-A3` is
-        // named for.  Three sibling tests strip comments for exactly this reason; this one did not.
+        // be satisfied by code somebody had deliberately switched off - which is the shape
+        // to avoid.  Three sibling tests strip comments for exactly this reason; this one did not.
         String source = SourceOf.withoutComments(SourceOf.declaration("public void setViewListener("));
 
         // Where the routes panel is put back, and where the routes icon is put.

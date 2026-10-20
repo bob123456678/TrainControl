@@ -169,13 +169,13 @@ public class testRouteEditorValidation
     }
 
     /**
-     * The route editor asks about a LOGICAL address (S14-C1, REG9-C2).
+     * The route editor asks about a LOGICAL address.
      *
      * It checked the number the operator types - counting from one - against `MAX_MM2_ADDRESS`, which
      * is RAW and counts from zero. Exactly one address per protocol was refused here and accepted by
      * the diagram editor, which converts before it asks. The fix shipped with no test:
      * `grep -rn "isValidLogicalAddress" test/` found nothing, and putting the defect back verbatim left
-     * this class, `testRouteEditorRoundTripCases` and `core.testAccessory` all green (REG9-C2).
+     * this class, `testRouteEditorRoundTripCases` and `core.testAccessory` all green.
      *
      * **Why this is a shape check and not a behavioural one, which is worth knowing about this whole
      * class.** Its editors are built as `new RouteEditorFrame(null, null)` - no parent window, so no
@@ -275,7 +275,7 @@ public class testRouteEditorValidation
     }
 
     /**
-     * The two messages that refuse a name say what is refused: a comma, and only a comma (GSB-C1).  Brackets have been
+     * The two messages that refuse a name say what is refused: a comma, and only a comma.  Brackets have been
      * allowed since Adam's ruling of 2026-09-04 (*"bracketed loc names should just be allowed"*) and `isNameUsable`
      * refuses only the comma, but both messages went on saying a name "cannot contain a comma or a bracket" - telling an
      * operator renaming "SBB 460 (2)" a rule the program does not have.  Read from the English bundle.
@@ -409,7 +409,7 @@ public class testRouteEditorValidation
         }
     }
     /**
-     * Deleting an unrelated condition does not turn a leading "or" into "and" (FR3-B1).
+     * Deleting an unrelated condition does not turn a leading "or" into "and".
      *
      * **A silent change to when a route fires**, in the route editor that is a headline 3.0.0 feature,
      * over a path no test covered.
@@ -472,7 +472,7 @@ public class testRouteEditorValidation
     }
 
     /**
-     * Deleting the FIRST condition of a group takes the group's own word, not the outer one (VD13-B4).
+     * Deleting the FIRST condition of a group takes the group's own word, not the outer one.
      *
      * **Found by a validation of the fix beside this one.**  `removeAt` was given a depth comparison
      * for a deleted WORD on 2026-09-21 and its other half - a deleted CONDITION - kept preferring
@@ -514,7 +514,7 @@ public class testRouteEditorValidation
             javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(outline));
 
             // THE EXACT SHAPE, because `startsWith("Or(")` is satisfied by a FLAT outline and the whole
-            // claim below is about depth (VD14-T1).
+            // claim below is about depth.
             assertEquals(reads(frame), "Or(x,Group(And(x,x)))",
                 "the fixture is not an OR in front of a bracketed group, so nothing below is about one: "
                 + reads(frame));
@@ -522,7 +522,7 @@ public class testRouteEditorValidation
             // THE FIRST CONDITION OF THE GROUP, which is row 2.
             javax.swing.SwingUtilities.invokeAndWait(() -> frame.deleteConditionForTest(2));
 
-            // AND THE EXACT SHAPE AFTER IT, for the same reason (VD14-T1).  `assertFalse(startsWith
+            // AND THE EXACT SHAPE AFTER IT, for the same reason.  `assertFalse(startsWith
             // ("And("))` ruled out ONE wrong answer: it passed just as happily for an outline swept down
             // to a single condition - one keystroke silently deleting two - or emptied altogether.
             assertEquals(reads(frame), "Or(x,Group(x))",

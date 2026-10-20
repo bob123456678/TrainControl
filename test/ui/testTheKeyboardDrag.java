@@ -325,7 +325,7 @@ public class testTheKeyboardDrag
         f.setAccessible(true);
         f.set(built[0], model);
 
-        // WHATEVER WAS ON THE CLIPBOARD, so the battery can be run without losing it (IND9-C4).
+        // WHATEVER WAS ON THE CLIPBOARD, so the battery can be run without losing it.
         //
         // setCopyTarget writes the locomotive name to the system clipboard - deliberately, per Adam -
         // so exercising the gesture necessarily overwrites it. Saved here and put back by
