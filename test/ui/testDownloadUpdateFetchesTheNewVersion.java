@@ -42,8 +42,8 @@ import support.Components;
  * and is deleted after each claim.  The folder the program then shows is refused by the claim's own security manager,
  * so no file manager opens on the desktop; the folder it asked for is kept.
  *
- * Download & Update cannot be reached here: it needs TrainControl running from a jar it can replace.  Its refusals
- * ("not a whole TrainControl jar", "the backup did not finish") need a test hook to reach and are left to Adam.
+ * Download & Update needs TrainControl running from a jar it can replace, so it is tested in
+ * ui.testDownloadAndUpdateFromAJar, which sets `SelfUpdate.runningJarForTests`.
  *
  * MUTATIONS, each seen red: the download written somewhere other than the target the notice names (the download
  * claim); the error notice dropped from the download's catch (the failure claim); Cancel taken as Download (the
