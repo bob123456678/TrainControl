@@ -918,15 +918,11 @@ public class LayoutEditor extends PositionAwareJFrame
     }
    
     /**
-     * The name of the station on a square, for the autonomy editor's tooltip (FR, 2026-08-27).
+     * The name of the station on a square, for the autonomy editor's tooltip.
      *
-     * Asked of the autonomy session, not of any caption drawn nearby. A caption is a label somebody
-     * chose to place on some square, and the square this is about usually has no label at all - which
-     * is the whole reason for saying its name on hover.
-     *
-     * Null for anything that is not a station, which is what a JLabel wants for "no tooltip": most of
-     * a diagram is plain track, and a tooltip that appeared everywhere saying nothing would be worse
-     * than none.
+     * Asked of the autonomy session, not of any caption drawn nearby: a caption is a label somebody chose to place on some
+     * square, and the square this is about usually has none.  Null for anything that is not a station, which is what a
+     * JLabel wants for "no tooltip": a tooltip that appeared everywhere saying nothing would be worse than none.
      *
      * @param label the square under the pointer
      * @return the station's name, or null
@@ -946,13 +942,13 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
-     * What the square under the pointer says in autonomy mode: its station's name, as it did, and - where a click there
-     * changes which way trains may run - a hand and one short line saying so (FR-112; Adam, 2026-10-05: *"show a pointer
-     * mouse icon over tiles that can have their arrows changed (i.e., most of them), and a brief hover tooltip "Click to
-     * change allowed directions".  Make sure that tooltip is very short."*).
+     * What the square under the pointer says in autonomy mode: its station's name, and where a click there changes which
+     * way trains may run, a hand and one short line saying so (FR-112; Adam: *"show a pointer mouse icon over tiles that
+     * can have their arrows changed (i.e., most of them), and a brief hover tooltip "Click to change allowed directions".
+     * Make sure that tooltip is very short."*).
      *
-     * Asked of the panel's own rule, which is the click's, so the hand is never over a square a click leaves alone - a
-     * blank one, a link, a page left out, or any square while a tool is armed.  A station caption keeps its own four-way
+     * Asked of the panel's own rule, which is the click's, so the hand is never over a square a click leaves alone (a
+     * blank one, a link, a page left out, or any square while a tool is armed).  A station caption keeps its own four-way
      * arrow: it is a component of its own over the square, with its own pointer.
      *
      * @param label the square under the pointer
@@ -969,8 +965,8 @@ public class LayoutEditor extends PositionAwareJFrame
 
         label.setCursor(turns ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR) : null);
 
-        // THE LINE ONLY UNTIL A SQUARE HAS BEEN CLICKED in this window (Adam, on MT-697: *"Stop showing it after the user has
-        // clicked any square"*) - the hand stays, saying the same thing without words
+        // THE LINE ONLY UNTIL A SQUARE HAS BEEN CLICKED in this window (MT-697: *"Stop showing it after the user has clicked
+        // any square"*); the hand stays, saying the same thing without words
         String says = turns && !squareClicked ? I18n.t("autosetup.ui.tooltipClickToChangeDirections") : null;
 
         label.setToolTipText(name == null ? says : says == null ? name
@@ -986,19 +982,14 @@ public class LayoutEditor extends PositionAwareJFrame
     /**
      * The square the pointer is over in autonomy mode, or null when it is over none (OB-198).
      *
-     * **One question, asked by all three shortcuts that need it** - Control+H, Control+S and
-     * Control+E.  Each of them used to read `autonomyHover` itself and build a `TileKey` out of
-     * whatever coordinates it gave, which is fine until the label is stale.
+     * **One question, asked by all three shortcuts that need it** (Control+H, Control+S and Control+E).  `autonomyHover`
+     * is set when the pointer enters a label and nothing clears it: this window has no mouse-exit hook, and a page change
+     * replaces the grid without touching it.  A label from a page that has been left behind is not in the grid it is
+     * asked about, so `LayoutGrid.getCoordinates` answers -1,-1, and a key would act on `(page, -1, -1)`, a square
+     * nobody pointed at.
      *
-     * `autonomyHover` is set when the pointer enters a label and there is nothing that clears it: this
-     * window has no mouse-exit hook, and a page change replaces the grid without touching it.  A label
-     * from a page that has been left behind is not in the grid it is asked about, so
-     * `LayoutGrid.getCoordinates` answers -1,-1 - and the key then acted on `(page, -1, -1)`, which is
-     * a square nobody pointed at and which the panel answers about with a sentence about a square
-     * nobody chose.
-     *
-     * **It forgets the stale label rather than merely refusing it**, so nothing can read it again, and
-     * `leaveFor` clears it on the way out of a page for the same reason.
+     * **It forgets the stale label rather than merely refusing it**, so nothing can read it again, and `leaveFor` clears
+     * it on the way out of a page for the same reason.
      *
      * @return the square, or null when the pointer is over none this window can answer about
      */
@@ -1024,38 +1015,26 @@ public class LayoutEditor extends PositionAwareJFrame
 
     public void receiveMoveEvent(MouseEvent e, LayoutLabel label)
     {
-        // In autonomy mode there is no PLACEMENT preview - nothing is being placed - but the blue
-        // outline still says where the pointer is (OB-091).
+        // In autonomy mode there is no PLACEMENT preview (nothing is being placed), but the blue outline still says where the
+        // pointer is (OB-091; Adam: "also, add the blue outline hover effect to the autonomy editor.").  The outline is not a
+        // preview: it is the answer to "which square am I about to right-click", and this editor's menus act on exactly that
+        // square.
         //
-        // Adam: "also, add the blue outline hover effect to the autonomy editor." Returning here took
-        // the whole gesture away, tooltip and outline together, on the reasoning that the preview had
-        // nothing to show. The outline is not a preview: it is the answer to "which square am I about
-        // to right-click", and this editor's menus act on exactly that square.
-        //
-        // `lastHoveredX/Y` are deliberately NOT set. They are where a paste would land, and nothing is
-        // pasted here - leaving them alone keeps this from teaching the placement code a position it
-        // has no business acting on.
-        //
-        // Nothing moves: highlightLabel sizes the outline to the room the resting border takes, which
-        // is a line when the grid is on and an overlay when it is off.
+        // `lastHoveredX/Y` are deliberately NOT set: they are where a paste would land, and nothing is pasted here.  Nothing
+        // moves: highlightLabel sizes the outline to the room the resting border takes, which is a line when the grid is on
+        // and an overlay when it is off.
         if (isAutonomyMode())
         {
             if (label == null || (this.popup != null && this.popup.isVisible())) return;
 
-            // WHICH SQUARE, kept where a shortcut can find it (MT-258 item 4).
-            //
-            // Not in `lastHoveredX/Y`, for the reason the paragraph above gives.  In its own field,
-            // because Control+S has to name the square under the pointer and asking the placement
-            // variables got it -1,-1 and a null label - which is why Adam reported the key as not
-            // firing at all when it was in fact firing and finding nothing.
+            // WHICH SQUARE, kept where a shortcut can find it (MT-258 item 4): not in `lastHoveredX/Y`, for the reason above, but
+            // in its own field, because Control+S has to name the square under the pointer and the placement variables hold -1,-1
+            // and a null label here.
             autonomyHover = label;
 
-            // And the square's NAME, which is the one thing this window is about that the diagram
-            // does not already show (Adam, 2026-08-27).
-            //
-            // Set outside the invokeLater: a tooltip is read when the pointer settles, not when the
-            // outline is painted, and putting it in the queue behind a repaint only delays it.  With the
-            // hand and the line a square a click turns carries (FR-112).
+            // And the square's NAME, the one thing this window is about that the diagram does not already show, with the hand
+            // and the line a square a click turns carries (FR-112).  Set outside the invokeLater: a tooltip is read when the
+            // pointer settles, not when the outline is painted.
             showWhatAClickDoes(label);
 
             javax.swing.SwingUtilities.invokeLater(() ->
@@ -1144,11 +1123,10 @@ public class LayoutEditor extends PositionAwareJFrame
                     this.clearBordersFromChildren(this.grid.getContainer());
                     this.highlightLabel(label, COMPONENT_BORDER_HOVERED_COLOR);
 
-                    // The hover clears every border on the page, which took the picked squares and
-                    // the grip with it - so moving the pointer across a selection erased the one
-                    // control that can move it.  Drawn back, after - AND A BOX BEING DRAWN, OR A LANDING,
-                    // NOT ONLY PICKED SQUARES (RSA34-C4): a box with nothing picked yet lost its outline
-                    // on each square entered.
+                    // The hover clears every border on the page, which took the picked squares and the grip with it, so moving the
+                    // pointer across a selection erased the one control that can move it.  Drawn back, after: a box being drawn, or a
+                    // landing, not only picked squares (RSA34-C4), because a box with nothing picked yet lost its outline on each square
+                    // entered.
                     if (!this.selection.isEmpty() || this.boxAnchorX >= 0 || !this.landingSelection.isEmpty())
                     {
                         this.refreshSelectionBorders();
@@ -1166,9 +1144,9 @@ public class LayoutEditor extends PositionAwareJFrame
     private LayoutLabel dragSource = null;
 
     /**
-     * The square of a box Escape dropped while its button was down: the click its release makes there is ignored, once,
-     * and the next press forgets it (RSA34-C2) - as does a release off that square, which makes no click (RSA35-C2), and a
-     * release after the pointer moved at all with the button down, which makes none either (RSA36-C1).  And only the very
+     * The square of a box Escape dropped while its button was down: the click its release makes there is ignored, once
+     * (RSA34-C2).  The next press forgets it, as does a release off that square, which makes no click (RSA35-C2), and a
+     * release after the pointer moved at all with the button down, which makes none either (RSA36-C1).  Only the very
      * next click is asked: whatever it is, the record goes with it.
      */
     private LayoutLabel clickToIgnore = null;
@@ -1188,18 +1166,15 @@ public class LayoutEditor extends PositionAwareJFrame
     /**
      * The square that drags the whole selection: the top right corner of what is picked.
      *
-     * With picking switched on, EVERY drag draws a new box - that is what the mode is - so the
-     * "start a drag on a picked square and the group moves" gesture could not be reached at all
-     * without turning the mode off first.  Which works, and which nobody would guess.
+     * With picking switched on, EVERY drag draws a new box, so the gesture "start a drag on a picked square and the group
+     * moves" could not be reached without turning the mode off first.  So one square of the selection is a grip.  Top
+     * right rather than top left, because a selection is usually dragged out left-to-right and the pointer is already
+     * over there when the button comes up; a corner rather than the middle, because the middle is where the contents are
+     * and the grip has to be somewhere the user is not aiming at anyway.
      *
-     * So one square of the selection is a grip instead.  Top right rather than top left, because a
-     * selection is usually dragged out left-to-right and the pointer is already over there when the
-     * button comes up; and a corner rather than the middle, because the middle of a selection is
-     * where its contents are and the grip has to be somewhere the user is not aiming at anyway.
-     *
-     * The corner of the BOUNDING BOX, which need not be a picked square itself - an L-shaped
-     * selection has an empty corner.  Being able to grab the corner of the box you can see is worth
-     * more than the grip always sitting on something chosen.
+     * The corner of the BOUNDING BOX, which need not be a picked square itself (an L-shaped selection has an empty
+     * corner): being able to grab the corner of the box you can see is worth more than the grip always sitting on
+     * something chosen.
      *
      * @return the square, or null when nothing is picked
      */
@@ -1228,16 +1203,14 @@ public class LayoutEditor extends PositionAwareJFrame
 
         this.pressMoved = false;
 
-        // Dragging MOVES track.  In autonomy mode the user is deciding which way trains may run, not
-        // rearranging their railway, and a drag that quietly relaid the diagram would be the worst kind
-        // of accident: silent, and to the thing everything else is derived from.
+        // Dragging MOVES track.  In autonomy mode the user is deciding which way trains may run, not rearranging their
+        // railway, and a drag that quietly relaid the diagram would be the worst kind of accident: silent, and to the thing
+        // everything else is derived from.
         if (isAutonomyMode()) return;
 
-        // The grip comes first, or picking mode would swallow it.
-        //
-        // While the mode is on every drag draws a box, which is what the mode is for - so this one
-        // square is the exception, and it is the only way to move a group without first turning the
-        // mode off.  Checked before the box branch rather than after, because the box branch returns.
+        // The grip comes first, or picking mode would swallow it: while the mode is on every drag draws a box, so this one
+        // square is the exception, and the only way to move a group without first turning the mode off.  Checked before the
+        // box branch, which returns.
         if (label != null && isSelectionHandle(label))
         {
             beginGroupDrag(label);
@@ -1245,9 +1218,8 @@ public class LayoutEditor extends PositionAwareJFrame
             return;
         }
 
-        // Shift held: this is a box, not a move.  Recorded and otherwise ignored - nothing is picked
-        // until the button comes up, so a shift-drag that changes its mind can simply be released
-        // back where it started.
+        // Shift held: this is a box, not a move.  Recorded and otherwise ignored, since nothing is picked until the button
+        // comes up; a shift-drag that changes its mind can simply be released back where it started.
         if (label != null && (e.isShiftDown() || this.selectMode)
             && getX(label) >= 0 && getY(label) >= 0)
         {
@@ -1262,12 +1234,9 @@ public class LayoutEditor extends PositionAwareJFrame
         this.boxAnchorX = -1;
         this.boxAnchorY = -1;
 
-        // A drag that starts on a picked square moves the WHOLE selection.
-        //
-        // This is what the selection is a state for: the user has already said which squares they
-        // mean, so both hands are free for the drag.  Starting on an unpicked square is the old
-        // single-tile drag, unchanged - and does not disturb the selection, so a mis-aimed drag does
-        // not throw away the picking that preceded it.
+        // A drag that starts on a picked square moves the WHOLE selection: the user has already said which squares they
+        // mean, so both hands are free for the drag.  Starting on an unpicked square is the old single-tile drag, and does
+        // not disturb the selection, so a mis-aimed drag does not throw away the picking that preceded it.
         if (label != null && !this.selection.isEmpty()
             && this.selection.contains(getX(label), getY(label)))
         {
@@ -1280,22 +1249,15 @@ public class LayoutEditor extends PositionAwareJFrame
 
         if (label != null && label.getComponent() != null)
         {
-            // PLACING IS NOT DRAGGING (OB-169).
+            // PLACING IS NOT DRAGGING (OB-169; Adam: "clicking a tile in 'new components' followed by a square on the diagram no
+            // longer places that tile.").  Pressing on a square that already has track picks that tile up to be moved, which would
+            // throw away the palette tile the user had just chosen: endDrag would see press and release on one square, call it a
+            // click, clear the clipboard, and leave receiveClickEvent no tool to execute.  On an EMPTY square the same gesture
+            // always worked, because a press there picks nothing up.
             //
-            // Adam: "clicking a tile in 'new components' followed by a square on the diagram no longer
-            // places that tile."  The square he was clicking already had track on it, and pressing on
-            // track is how a tile is picked up to be moved - so this arms a MOVE and takes the drag
-            // source with it, throwing away the palette tile the user had just chosen.  endDrag then
-            // sees press and release on one square, calls it a click rather than a drag, clears the
-            // clipboard, and by the time receiveClickEvent runs there is no tool left to execute.
-            //
-            // On an EMPTY square the same gesture always worked, because a press there picks nothing
-            // up and the palette selection survives to the click.  That is why this went unnoticed.
-            //
-            // So while a palette tile is held, a press on the diagram starts nothing: no pick-up, no
-            // ghost, no drag source.  The click that follows places, and the tool stays armed for the
-            // next square - "it should place it and stay in place mode until escape is pressed or
-            // another action taken".
+            // So while a palette tile is held, a press on the diagram starts nothing (no pick-up, no ghost, no drag source).  The
+            // click that follows places, and the tool stays armed for the next square: "it should place it and stay in place mode
+            // until escape is pressed or another action taken".
             if (placingFromPalette() && (getX(label) != -1 || getY(label) != -1)) return;
 
             // Remembered so that a press and release on one square can be told from a drag.
@@ -1362,11 +1324,8 @@ public class LayoutEditor extends PositionAwareJFrame
     /**
      * The picked squares drawn as one picture, for the thing that follows the pointer.
      *
-     * Laid out as they sit on the diagram - the same gaps, the same shape - because that is what a
-     * user is lining up when they drag a group, and a tidy row of icons would be a different shape
-     * from the one actually being moved.
-     *
-     * Scaled down where the selection is large, since a group of forty squares at full size would be
+     * Laid out as they sit on the diagram (the same gaps, the same shape), because that is what a user is lining up when
+     * they drag a group.  Scaled down where the selection is large, since a group of forty squares at full size would be
      * a window bigger than the diagram it is being dragged over.
      *
      * @return the picture, or null where there is nothing to draw
@@ -1497,9 +1456,9 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         if (isAutonomyMode()) return;
 
-        // THE CLICK TO IGNORE, ONLY IF THIS RELEASE MAKES ONE (RSA35-C2): a release off the square pressed - the drag left
-        // it - ends in no click, and that square's next click, of any button, was swallowed instead.  Nor does a release
-        // after the pointer moved at all with the button down, out and back or a pixel within the square (RSA36-C1).
+        // THE CLICK TO IGNORE, ONLY IF THIS RELEASE MAKES ONE (RSA35-C2, RSA36-C1): a release off the square pressed ends in
+        // no click, nor does a release after the pointer moved at all with the button down, out and back or a pixel within the
+        // square; otherwise that square's next click, of any button, would be swallowed.
         if (this.clickToIgnore != null && (this.pressMoved || this.getLastHoveredLabel() != this.clickToIgnore))
         {
             this.clickToIgnore = null;
@@ -1571,11 +1530,10 @@ public class LayoutEditor extends PositionAwareJFrame
                 return;
             }
 
-            // Nothing under the pointer.  Hovering the palette sets the hovered square to -1,-1, so a
-            // plain click there reached executeTool with no target: execCopy then built a component at
-            // (-1,-1) and addComponent threw IndexOutOfBounds - unchecked, on the EDT, on every single
-            // palette click.  Only IOException is caught around it.  The palette appeared to work
-            // because receiveClickEvent re-arms the tool afterwards, so nothing is left to do here.
+            // Nothing under the pointer.  Hovering the palette sets the hovered square to -1,-1, so a plain click there reaches
+            // executeTool with no target, and execCopy would build a component at (-1,-1) and addComponent throw
+            // IndexOutOfBounds, unchecked, on the EDT, on every palette click.  Nothing is left to do here: receiveClickEvent
+            // re-arms the tool afterwards.
             if (target == null) return;
 
             // A press and release on the SAME square is a click, not a drag.  Executing there cut the
