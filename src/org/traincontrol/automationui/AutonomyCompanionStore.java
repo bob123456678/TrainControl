@@ -5985,15 +5985,10 @@ public class AutonomyCompanionStore
                 if (only != null) values.add(only);
             }
 
-            // An entry whose members ALL failed to parse is dropped, not stored empty (CR-C2).
-            //
-            // Storing it empty writes `"key": []` back out - and an array is the form this file only
-            // gained at version 2, so a setup stamped version 1 would go to disk carrying one. That is
-            // exactly what the version gate exists to keep away from an older TrainControl, and it
-            // would have been produced by reading a corrupt file rather than by anything the user did.
-            //
-            // The pair readers drop a half-parsed entry for the same reason: half a pairing is worse
-            // than none. An empty signal list is the same thing said differently.
+            // An entry whose members ALL failed to parse is dropped, not stored empty (CR-C2): `"key": []` is an array, the
+            // form this file only gained at version 2, so a setup stamped version 1 would go to disk carrying one, which is
+            // what the version gate exists to keep from an older TrainControl.  Half a pairing is worse than none, and an
+            // empty signal list is the same thing said differently.
             if (!values.isEmpty()) into.put(tile, values);
         }
     }
@@ -6040,10 +6035,10 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Folds the timetable entries a build of rounds 23 and 24 set aside for pages out of autonomy back into the
-     * configuration's timetable, each after the entry it followed - first where it followed none, last where that entry is
-     * gone, and after any brought back there before it - and forgets the list (Adam, 2026-09-30: "Just keep the
-     * entries").  The railway keeps every entry now, and refuses one it cannot run when the run reaches it.
+     * Folds the timetable entries an earlier build set aside for pages out of autonomy back into the configuration's
+     * timetable, each after the entry it followed - first where it followed none, last where that entry is gone, and after
+     * any brought back there before it - and forgets the list.  The railway keeps every entry, and refuses one it cannot
+     * run when the run reaches it.
      *
      * @param configuration a configuration as read, changed in place
      */
