@@ -2656,30 +2656,20 @@ public class testAutoLayout
     }
 
     /**
-     * A BERTH stays in the base list, and an excluded square leaves the menu (Adam, 2026-09-04/12).
+     * A BERTH stays in the base list, and an excluded square leaves the menu (Adam).
      *
-     * Two rulings on one gesture, given after seeing `BottomMainB` and `BottomMainC` move out of the
-     * base list for `2-8-4 3505 SP`: *"We should still show the same number of base options (unless
-     * unselectable)"* and *"if it excludes the loc, don't even include it in the list."*
+     * Two rulings on one gesture: *"We should still show the same number of base options (unless unselectable)"* and
+     * *"if it excludes the loc, don't even include it in the list."*  The menu asks `isOfferableToOperator` and not
+     * `isChoosableByAutonomy(end, locomotive)` (VD11-C2), which would move a terminus out of the base list.
      *
-     * The first undid `VD11-C2`, which had the menu ask `isChoosableByAutonomy(end, locomotive)` on
-     * the strength of a comment I had written promising that a terminus a non-reversible train could
-     * not get out of belonged in More Destinations. Measured on `test/operator_layout` before changing
-     * anything - the fixture emits each of those squares twice, once as a through arrival and once as
-     * a reverse arrival that is a terminus, and it was the terminus copies that moved. Neither square
-     * excludes any locomotive, so the exclusion clause was never involved.
+     * **The terminus rule is about a berth** (OB-205, MT-367): *"75 407 DB can go from Tunnel to BottomMainC manually,
+     * even though it is not reversible and THIS IS NOT A PARKING BERTH (excluded from autonomy). it should not be
+     * allowed to be chosen."*  The exemption that moved the terminus rule out of `isPathClear` said *"the operator
+     * asking for that BERTH by hand is no longer refused"* - the word doing the work is berth.
      *
-     * **NARROWED by his own ruling of 2026-09-12** (OB-205, MT-367), and this class read the older one
-     * as wider than he ever made it: *"75 407 DB can go from Tunnel to BottomMainC manually, even
-     * though it is not reversible and THIS IS NOT A PARKING BERTH (excluded from autonomy). it should
-     * not be allowed to be chosen."* The 2026-09-01 ruling that moved the terminus rule out of
-     * `isPathClear` said *"the operator asking for that BERTH by hand is no longer refused"* - the word
-     * doing the work was berth, and the rule written from it did not carry it.
-     *
-     * So the first claim below is now about a berth: a terminus autonomy will not choose is still
-     * offered to a train that cannot reverse. The claim beside it is the other half - an ORDINARY
-     * terminus, one autonomy may choose, is not - and the two together are what keep either from being
-     * satisfied by a rule that has simply stopped asking.
+     * So the first claim below is about a berth: a terminus autonomy will not choose is still offered to a train that
+     * cannot reverse. The claim beside it is the other half - an ORDINARY terminus, one autonomy may choose, is not -
+     * and the two together are what keep either from being satisfied by a rule that has simply stopped asking.
      *
      * MUTATION, stated exactly: dropping `isAutoDestination()` from `isOfferableToOperator`'s terminus
      * clause fails the first assertion; dropping the clause entirely fails the second; dropping the
@@ -2722,7 +2712,7 @@ public class testAutoLayout
                 + " asking for that BERTH by hand is no longer refused\" - and it survived the"
                 + " narrowing of 2026-09-12");
 
-            // AND THE HALF HE NARROWED IT TO, 2026-09-12: an ordinary terminus, one autonomy may
+            // AND THE HALF HE NARROWED IT TO (OB-205): an ordinary terminus, one autonomy may
             // choose, is not offered to a train that could not get out of it again.
             terminus.setAutoDestination(true);
 
@@ -2765,12 +2755,9 @@ public class testAutoLayout
      * A failure during the LOCK PHASE leaves the train where it is standing, and leaves other trains'
      * claims alone (ACC-A1).
      *
-     * **The release blocker.  This is the second fixture; the first one passed without reaching the
-     * code it was about** (`OV2-B1`).  It put a `null` into an edge's `lockEdges` on the theory that
-     * `Edge.setOccupied` would throw as it cascaded - and `isPathClear` walks the same list four
-     * statements earlier, so the `NullPointerException` came out THERE, before `takingPath` was
-     * claimed and before anything was locked.  A strictly weaker window, asserted with a javadoc that
-     * told the next reader otherwise.
+     * **The fixture has to reach the lock loop** (`OV2-B1`).  Putting a `null` into an edge's `lockEdges` does not:
+     * `isPathClear` walks the same list four statements earlier, so the `NullPointerException` comes out THERE,
+     * before `takingPath` is claimed and before anything is locked - a strictly weaker window.
      *
      * The injection that does reach it: a config command mapped to a **null state on an accessory that
      * exists**.  `isPathClear`'s preview takes `configureEdge`'s `preConfigure != null` arm and
@@ -2779,21 +2766,19 @@ public class testAutoLayout
      * `edgesLocked++`, after `setOccupied()` and after `reserve()`.  `handleMisconfiguredPath` then
      * genuinely runs.
      *
-     * **The precondition is where the throw came from**, because that is the thing the first fixture
-     * got wrong and no assertion about the outcome could have caught: a stack that never enters
+     * **The precondition is where the throw came from**, because no assertion about the outcome could tell a throw
+     * from the wrong place from the right one: a stack that never enters
      * `configureEdge` is not this failure.
      *
-     * What the handler used to do over the top of that recovery: `unlockPath`'s `i == 0` clause
-     * cleared the start reservation `handleMisconfiguredPath` had just written, so the train stood on
-     * a square the model believed empty; and every never-taken edge was released, each cascading to
-     * lock edges whose occupancy is a COUNT shared with other running dispatches.
+     * The handler must not unlock over that recovery: `unlockPath`'s `i == 0` clause would clear the start
+     * reservation `handleMisconfiguredPath` had just written, so the train would stand on a square the model believes
+     * empty; and every never-taken edge would be released, each cascading to lock edges whose occupancy is a COUNT
+     * shared with other running dispatches.
      *
      * **Only the first of those two is asserted here, and the second is not testable at this door.**
      * Making a spurious release observable means giving the untaken edge a claim to lose - and any
      * claim on it, or on its lock edges, makes `isPathClear` refuse the path, so the lock loop is
-     * never entered and nothing throws.  The fixture and the observation exclude each other.  Said
-     * out loud rather than left as an unasserted sentence in a javadoc, which is how the first
-     * version of this test came to claim more than it checked.
+     * never entered and nothing throws.  The fixture and the observation exclude each other.
      *
      * MUTATION: removing the `hadItsPath` gate fails the second assertion.  Reading the flag after the
      * `activeLocomotives.remove` rather than before makes it always false, which is caught by
@@ -2860,7 +2845,7 @@ public class testAutoLayout
             caught = expected;
         }
 
-        // WHERE IT THREW, which is the whole of what the first fixture got wrong.
+        // WHERE IT THREW.
         java.io.StringWriter trace = new java.io.StringWriter();
 
         caught.printStackTrace(new java.io.PrintWriter(trace));
@@ -2869,9 +2854,8 @@ public class testAutoLayout
         //
         // `configureAndLockPath` calls `configureEdge` twice over: once through `isPathClear`, which
         // previews the configuration, and once directly in the lock loop.  A stack carrying
-        // `configureEdge` is therefore true of both the strong window and the weak one - the very
-        // distinction the previous fixture got wrong.  `isPathClear` is what tells them apart: it is
-        // in the preview stack and not in the lock loop’s.
+        // `configureEdge` is therefore true of both the strong window and the weak one.  `isPathClear` is what tells
+        // them apart: it is in the preview stack and not in the lock loop’s.
         assertTrue(trace.toString().contains("configureEdge"),
             "the failure did not come out of configureEdge at all, so this is not the window ACC-A1 "
             + "is about.  Stack was:" + trace);
@@ -2900,8 +2884,8 @@ public class testAutoLayout
      * A may-turn square's turning copy is a terminus whose one way out is back the way the train came.  On Adam's railway
      * BottomMainB admits a train of 4, and every station its turning copy leads to is shorter: a reversible train of 4
      * that autonomy turned there never moved again - no journey, nothing offered by hand - and while it stood there Return
-     * Home found no plan for the whole fleet.  A train that cannot reverse has been kept out of a terminus since
-     * 2026-09-01; this is the same rule for one that can, at its length.
+     * Home found no plan for the whole fleet.  A train that cannot reverse is already kept out of a terminus; this is
+     * the same rule for one that can, at its length.
      *
      * Here the terminus is the first choice by priority and leads only to a station of 2, so a train of 4 is sent to the
      * other station and a train of 2 to the terminus; the Why Not Moving? reasons say the same.
@@ -2999,18 +2983,17 @@ public class testAutoLayout
 
     /**
      * A clear route is found although a shorter one that throws a switch both ways reaches a square on it first
-     * (RSA59-B1; Adam, 2026-10-09: "Fix B1").
+     * (RSA59-B1).
      *
-     * The route search marked a square visited the first time any route reached it.  So a shorter route that set a
-     * switch one way and then the other - refused for its conflicting commands - hid a clear route reaching the same
-     * square with the switch untouched, and the station beyond was offered on some openings of the right-click menu and
-     * not on others, with Why Not Moving? blaming the conflict.  On Adam's railway the lower level's eleven stations came
-     * and went that way, Switches 51 and 99.
+     * The route search must not mark a square visited the first time any route reaches it: a shorter route that sets a
+     * switch one way and then the other - refused for its conflicting commands - would hide a clear route reaching the
+     * same square with the switch untouched, and the station beyond would be offered on some openings of the
+     * right-click menu and not on others, with Why Not Moving? blaming the conflict.
      *
      * Here the short way RV_S - RV_X - RV_E sets the switch STRAIGHT and then TURN; the long way RV_S - RV_Y - RV_W - RV_X
-     * - RV_E sets it only TURN.  RV_X is reached by the short way two squares sooner, so the old search never found the long
-     * way at all, whatever order it took the squares in.  Asked twelve times, because the answer used to depend on that
-     * order.
+     * - RV_E sets it only TURN.  RV_X is reached by the short way two squares sooner, so a search keyed on the
+     * square alone never finds the long way, whatever order it takes the squares in.  Asked twelve times, because the
+     * answer depends on that order.
      *
      * MUTATION: key the search on the square alone again and this fails.
      *
@@ -3068,8 +3051,7 @@ public class testAutoLayout
     }
 
     /**
-     * Two routes of the same length to a station are both offered, every time (RSA59-B1's fix; Adam, 2026-10-09: "Fix
-     * B1").
+     * Two routes of the same length to a station are both offered, every time (RSA59-B1's fix).
      *
      * The route search marks a square when it is taken OFF the queue, not when it is put on, so a square two routes reach
      * at the same distance is followed on from by both - and the menu, which asks again with each route it has been given
@@ -3134,8 +3116,7 @@ public class testAutoLayout
     }
 
     /**
-     * Where the only route to a station throws a switch both ways, Why Not Moving? still says so (RSA59-B1's fix; Adam,
-     * 2026-10-09: "Fix B1").
+     * Where the only route to a station throws a switch both ways, Why Not Moving? still says so (RSA59-B1's fix).
      *
      * The search B1 brought in keeps a route whose switch commands disagree out of the way of every route whose commands
      * do not - but it still follows it, and still returns it when it reaches the station, because that is how Why Not
