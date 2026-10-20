@@ -47,7 +47,8 @@ import support.Components;
  *
  * MUTATIONS, each seen red: the download written somewhere other than the target the notice names (the download
  * claim); the error notice dropped from the download's catch (the failure claim); Cancel taken as Download (the
- * cancel claim).
+ * cancel claim and the MT-774 claim); the download's `finally` leaving the item greyed (the MT-774 claim, and every
+ * claim after it, which starts from an enabled item).
  */
 public class testDownloadUpdateFetchesTheNewVersion
 {
@@ -297,6 +298,94 @@ public class testDownloadUpdateFetchesTheNewVersion
         assertEquals(requests.get(), before, "the server was asked for the new version without Download being pressed");
 
         assertFalse(target().exists(), "a cancelled question downloaded the new version");
+    }
+
+    /**
+     * MT-774, as the user does it: Cancel on the question downloads nothing and changes nothing (no request, no file,
+     * no folder shown, the menu item as it was); opened again, Download still downloads, says where, shows the folder,
+     * and leaves the menu item usable.
+     *
+     * @throws Exception from the window or the server
+     */
+    @Test
+    public void testCancelChangesNothingAndTheNextDownloadStillWorks() throws Exception
+    {
+        final AbstractButton item = item();
+
+        final String cancel = I18n.t("ui.cancel");
+        final String download = I18n.t("ui.update.download");
+        final String textBefore = item.getText();
+        final String tipBefore = item.getToolTipText();
+        final boolean visibleBefore = item.isVisible();
+        final int requestsBefore = requests.get();
+
+        final NoFileManager guard = new NoFileManager();
+
+        System.setSecurityManager(guard);
+
+        try
+        {
+            List<String> first;
+
+            try (Answering answering = Answering.start(message -> Answering.press(cancel)))
+            {
+                SwingUtilities.invokeLater(item::doClick);
+
+                assertTrue(answering.awaitAsked(1, 10000), "Download Update asked nothing");
+
+                Components.settle();
+
+                first = answering.asked();
+            }
+
+            assertEquals(first, Collections.singletonList(firstLineOfTheQuestion()), "Cancel was followed by"
+                + " something, or the question does not name the new version and this one");
+
+            assertEquals(requests.get(), requestsBefore, "Cancel asked the server for the new version");
+            assertFalse(target().exists(), "Cancel downloaded the new version");
+            assertFalse(new File(target().getAbsolutePath() + Util.PARTIAL_DOWNLOAD_SUFFIX).exists(), "Cancel left a"
+                + " partial download");
+            assertTrue(guard.asked.isEmpty(), "Cancel showed a folder: " + guard.asked);
+
+            assertTrue(item.isEnabled() && item.isVisible() == visibleBefore && textBefore.equals(item.getText())
+                && java.util.Objects.equals(tipBefore, item.getToolTipText()), "Cancel changed the Download Update item:"
+                + " enabled " + item.isEnabled() + ", reading \"" + item.getText() + "\"");
+
+            List<String> second;
+
+            try (Answering answering = Answering.start(message -> message.startsWith(firstLineOfTheQuestion())
+                ? Answering.press(download) : Answering.press(I18n.t("ui.ok"))))
+            {
+                SwingUtilities.invokeLater(item::doClick);
+
+                assertTrue(answering.awaitAsked(2, 30000), "opened again, Download never said it had finished: "
+                    + answering.asked());
+
+                second = answering.asked();
+
+                assertTrue(Components.waitFor(() -> !guard.asked.isEmpty(), 10000), "the download did not show its"
+                    + " folder");
+            }
+
+            assertEquals(second.get(0), firstLineOfTheQuestion(), "opened again, the question does not name the new"
+                + " version");
+
+            assertEquals(second.get(1), I18n.f("ui.infoDownloadedUpdateReplaceExistingJar", target().getAbsolutePath()),
+                "after a Cancel, the notice does not say where the download is");
+
+            assertTrue(Arrays.equals(Files.readAllBytes(target().toPath()), SERVED), "after a Cancel, the file is not"
+                + " what was served");
+
+            assertEquals(new ArrayList<>(guard.asked), Collections.singletonList(target().getAbsoluteFile().getParent()),
+                "after a Cancel, the download did not show the folder it is in");
+
+            assertTrue(Components.waitFor(() -> item.isEnabled() && textBefore.equals(item.getText()), 10000),
+                "Download Update is not itself again after the download: \"" + item.getText() + "\"");
+        }
+        finally
+        {
+            System.setSecurityManager(null);
+        }
     }
 
     /** The question's first sentence, which the answer is chosen by. */
