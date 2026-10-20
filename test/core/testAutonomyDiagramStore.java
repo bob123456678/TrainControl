@@ -2364,15 +2364,15 @@ public class testAutonomyDiagramStore
     /**
      * Undo re-opens a link whose two halves are on different pages (SVN-B8).
      *
-     * A portal is a pair of squares on two pages - that is what it is for - and `setPortalDisabled`
-     * writes **both** ends. `453a3ef4` taught `PairMapKept` and `ListMapKept` to capture an entry with
-     * either end on the page being snapshotted, and left the set kind alone; `disabledLinks` is a set,
-     * and it is the one set whose members are paired across pages.
+     * A portal is a pair of squares on two pages (that is what it is for), and `setPortalDisabled`
+     * writes **both** ends.  `PairMapKept` and `ListMapKept` capture an entry with either end on the page
+     * being snapshotted; `disabledLinks` is a set, and it is the one set whose members are paired across
+     * pages, so it needs the same.
      *
-     * So: link open, snapshot page 1 (captures nothing about it), shut the link (both ends go in),
-     * undo page 1. The members on page 1 are dropped and nothing is put back, leaving the far half
-     * alone in the set - and `isPortalDisabled` answers through the partner, so **the undo did not
-     * re-open the link**. What reaches disk is `disabledLinks` with one end in it, the shape
+     * So: link open, snapshot page 1 (captures nothing about it), shut the link (both ends go in), undo
+     * page 1.  The members on page 1 would be dropped and nothing put back, leaving the far half alone in
+     * the set, and `isPortalDisabled` answers through the partner, so **the undo would not re-open the
+     * link**.  What reaches disk would be `disabledLinks` with one end in it, the shape
      * `TileGraph.portalClosed` calls out as having no migration.
      *
      * Both directions are asserted, because a fix that simply cleared the set would pass the first.
@@ -2389,10 +2389,9 @@ public class testAutonomyDiagramStore
 
         // AND A SECOND LINK, ON PAGES THIS RESTORE IS NOT ABOUT (VD9-B5).
         //
-        // Without it the test passes against a putPairedMembersBack that simply empties the set -
-        // the very fix this test’s own comment says it rules out - because the snapshot of page 1
-        // was empty, so "put back nothing" and "put back what was there" look identical.  A member
-        // that must SURVIVE is the only thing that can tell them apart.
+        // Without it the test passes against a putPairedMembersBack that simply empties the set, because
+        // the snapshot of page 1 was empty, so "put back nothing" and "put back what was there" look
+        // identical.  A member that must SURVIVE is the only thing that can tell them apart.
         TileKey farA = new TileKey("3", 2, 2);
         TileKey farB = new TileKey("4", 7, 7);
 
@@ -2434,15 +2433,11 @@ public class testAutonomyDiagramStore
     /**
      * A rename reaches a setup that nothing has open.
      *
-     * OB-062. A locomotive rename has to reach the database, the setup in memory and the setup on
-     * disk. With no session built the window did the last of those not at all, on the reasoning that
-     * the file "is read the next time it IS opened - by which time this rename is already in the
-     * locomotive database".
-     *
-     * Nothing repairs locomotive names at load, so that is not what happens. The old name survives in
-     * the placement, the home and the exclusions until somebody chooses that configuration - and
-     * parseAuto answers a locomotive it cannot resolve by invalidating the whole layout, days later,
-     * with nothing connecting it to the rename.
+     * OB-062: a locomotive rename has to reach the database, the setup in memory and the setup on disk,
+     * even with no session built.  Nothing repairs locomotive names at load, so the old name would survive
+     * in the placement, the home and the exclusions until somebody chooses that configuration, and
+     * parseAuto answers a locomotive it cannot resolve by invalidating the whole layout, days later, with
+     * nothing connecting it to the rename.
      */
     @Test
     public void testARenameReachesASetupNothingHasOpen() throws IOException
@@ -2537,12 +2532,8 @@ public class testAutonomyDiagramStore
      *
      * That record is the only evidence a page renumber ever happened. readShared compares it against
      * the current index to tell a rename from a renumber, and pageOf resolves every stored id through
-     * it. Blanking it is the same data loss this class was repaired for in the commit before this one,
-     * arriving by a new door: a locomotive rename would quietly disarm the detection for the whole
-     * setup, and the next renumber would go through unnoticed.
-     *
-     * Caught by probing the method rather than by reading it, which is the only reason it is not in the
-     * repository.
+     * it. Blanking it would quietly disarm the detection for the whole setup, and the next renumber
+     * would go through unnoticed.
      */
     @Test
     public void testRepairingOnDiskChangesOnlyTheLocomotive() throws IOException
@@ -2610,10 +2601,9 @@ public class testAutonomyDiagramStore
      * check, a save, a load, and verification that the mutation is still there (while rest staying the
      * same)."
      *
-     * Both halves matter and the second is the one this week kept failing. Every loss so far has been a
-     * rename that worked perfectly in memory and then took a page of settings with it on the way to
-     * disk - pruned by a reconcile against stale names, or reattached by a renumber. Checking only the
-     * memory would have passed throughout.
+     * Both halves matter and the second is the one that fails in practice: a rename can work perfectly
+     * in memory and then take a page of settings with it on the way to disk, pruned by a reconcile
+     * against stale names or reattached by a renumber. Checking only the memory would pass throughout.
      *
      * So the fixture carries one of everything the store holds, on TWO pages, and the untouched page is
      * asserted as hard as the renamed one.
@@ -2687,9 +2677,9 @@ public class testAutonomyDiagramStore
     /**
      * The same, through the door used when nothing has the setup open.
      *
-     * `renamePageOnDisk` had no test at all. It reads the file twice on purpose - the first read has no
-     * page numbering to work with, so every key comes back in ID form, and renamePage works on NAMES
-     * and would match nothing against those. Delete the second read and this is the test that notices.
+     * `renamePageOnDisk` reads the file twice on purpose: the first read has no page numbering to work
+     * with, so every key comes back in ID form, and renamePage works on NAMES and would match nothing
+     * against those. Delete the second read and this is the test that notices.
      */
     @Test
     public void testARenamedPageSurvivesTheOnDiskDoor() throws IOException
@@ -2846,12 +2836,12 @@ public class testAutonomyDiagramStore
     /**
      * A locomotive rename reaches the captured timetable, and survives a save and a load.
      *
-     * OB-069. The repair's own note enumerated three holders of a locomotive's name - the placement,
-     * the home and the exclusion list - and all three are inside "points". The captured timetable is
-     * not: it rides in "globals", and every entry names its locomotive.
+     * OB-069: the repair's own note enumerates three holders of a locomotive's name (the placement, the
+     * home and the exclusion list), all inside "points".  The captured timetable is a fourth: it rides in
+     * "globals", and every entry names its locomotive.
      *
-     * Left behind, the entry named a locomotive that no longer exists, and the loader answered that by
-     * discarding the ENTIRE timetable - then the next capture wrote the emptiness back permanently.
+     * Left behind, the entry would name a locomotive that no longer exists, and the loader answers that
+     * by discarding the ENTIRE timetable, then the next capture writes the emptiness back permanently.
      */
     @Test
     public void testARenameReachesTheCapturedTimetable() throws IOException
@@ -2942,13 +2932,13 @@ public class testAutonomyDiagramStore
     /**
      * A page whose NAME contains a colon keeps its own setup.
      *
-     * OB-071. A key is "page:x,y", and `parseTileKey`'s own comment calls "Yard: Upper" an ordinary
-     * thing to call a page - which is why it, `isOnPage` and `rekeyOne` all split on the LAST colon.
-     * `toStored` and `fromStored` were splitting on the first, so every square on "Yard: Upper" was
-     * stored under the id belonging to the page called "Yard".
+     * OB-071: a key is "page:x,y", and `parseTileKey`'s own comment calls "Yard: Upper" an ordinary
+     * thing to call a page, which is why it, `isOnPage` and `rekeyOne` all split on the LAST colon.
+     * `toStored` and `fromStored` must too, or every square on "Yard: Upper" is stored under the id
+     * belonging to the page called "Yard".
      *
-     * The consequence is the one this month keeps producing: rename "Yard" - a page you are not
-     * touching - and "Yard: Upper" loses its entire setup, with nothing connecting the two.
+     * Then renaming "Yard", a page you are not touching, loses the entire setup of "Yard: Upper", with
+     * nothing connecting the two.
      */
     @Test
     public void testAPageNameContainingAColonKeepsItsOwnSetup() throws IOException
