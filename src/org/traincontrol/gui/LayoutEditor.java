@@ -2461,12 +2461,12 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         this.clearBordersFromChildren(this.grid.getContainer());
 
-        // THE SQUARE UNDER THE POINTER KEEPS ITS OUTLINE (RSA33-C1): the pass above put every square back, and nothing
-        // drew the hover again - so Escape, and every hover over a selection, left it showing nothing until the pointer
-        // entered another.  Asked of where the pointer IS - over a square of this grid, not since gone to the margin, the
-        // palette or another page (RSA34-C1) - and not of which square last wore the blue: the square under the pointer
-        // can be wearing another outline, picked up, picked or the grip, and then none did (RSA35-C1).  Drawn before the
-        // picked squares, so a picked square still shows picked.
+        // THE SQUARE UNDER THE POINTER KEEPS ITS OUTLINE (RSA33-C1, RSA34-C1, RSA35-C1): the pass above put every square back,
+        // and nothing drew the hover again, so Escape, and every hover over a selection, would leave it showing nothing until
+        // the pointer entered another.  Asked of where the pointer IS (over a square of this grid, not since gone to the
+        // margin, the palette or another page) and not of which square last wore the blue: the square under the pointer can
+        // be wearing another outline (picked up, picked or the grip).  Drawn before the picked squares, so a picked square
+        // still shows picked.
         LayoutLabel hovered = this.pointerOnGrid ? this.getLastHoveredLabel() : null;
 
         if (hovered != null) this.highlightLabel(hovered, COMPONENT_BORDER_HOVERED_COLOR);
@@ -2488,8 +2488,8 @@ public class LayoutEditor extends PositionAwareJFrame
             if (label != null) this.highlightLabel(label, COMPONENT_BORDER_SELECTED_COLOR);
         }
 
-        // And where a group being dragged would land, in the paler shade.  Last, so a square that is
-        // both picked and a landing square shows the landing - during a drag that is the live answer.
+        // And where a group being dragged would land, in blue.  Last, so a square that is both picked and a landing square
+        // shows the landing: during a drag that is the live answer.
         for (org.traincontrol.base.TileSelection.At at : this.landingSelection.all())
         {
             LayoutLabel label = this.grid.getValueAt(at.getX(), at.getY());
@@ -2497,17 +2497,15 @@ public class LayoutEditor extends PositionAwareJFrame
             if (label != null) this.highlightLabel(label, COMPONENT_BORDER_LANDING_COLOR);
         }
 
-        // The grip, last of all and drawn thicker, so it is visible even where it sits on a square
-        // already outlined as picked.  A control nobody can see is a control nobody uses, and while
-        // picking is on this is the only way to move what has been picked.
+        // The grip, last of all, so it is visible even where it sits on a square already outlined as picked: while picking
+        // is on it is the only way to move what has been picked.
         int[] handle = selectionHandle();
 
         LayoutLabel grip = handle == null || !this.landingSelection.isEmpty()
             ? null : this.grid.getValueAt(handle[0], handle[1]);
 
-        // The square that WAS the grip stops saying so.  The corner moves as squares are added to
-        // the selection, and a tooltip left behind on the old one offers a drag that would do
-        // something else entirely.
+        // The square that WAS the grip stops saying so: the corner moves as squares are added to the selection, and a
+        // tooltip left on the old one would offer a drag that does something else entirely.
         if (this.handleLabel != null && this.handleLabel != grip)
         {
             this.handleLabel.setToolTipText(null);
@@ -2517,16 +2515,10 @@ public class LayoutEditor extends PositionAwareJFrame
 
         if (grip != null)
         {
-            // Drawn as a BORDER, over the tile rather than behind it.
-            //
-            // A background will not do: the tile art is an opaque image, so a coloured background is
-            // hidden by whatever track is drawn on that square - and the corner of a selection is as
-            // likely to be a piece of track as an empty square.  A border paints AFTER the component
-            // does, so this is the one hook that can put something on top.
-            //
-            // And it takes no space at all, which the four-pixel line it replaces did: a border is
-            // laid inside the label, so a thick one squeezed the tile art and opened a visible gap
-            // around the square.  A mark that moves the thing it marks is not a mark.
+            // Drawn as a BORDER, over the tile rather than behind it: the tile art is an opaque image, so a coloured background is
+            // hidden by whatever track is drawn on that square, and the corner of a selection is as likely to be track as an
+            // empty square.  A border paints AFTER the component does, and takes no space (a thick one is laid inside the label,
+            // squeezing the tile art and opening a gap round the square).
             grip.setBorder(new SelectionGrip());
 
         // Set directly rather than through applyBorder, so the record has to be dropped (OB-157).
@@ -2540,8 +2532,7 @@ public class LayoutEditor extends PositionAwareJFrame
     private LayoutLabel handleLabel;
 
     /**
-     * The key for Select by Dragging a Box (FR-107; Adam, 2026-10-03: "make a hotkey, with a tool tip for select by
-     * dragging a box in the track diagram editor").  M for the marquee: free in this window, and the main window's own
+     * The key for Select by Dragging a Box (FR-107).  M for the marquee: free in this window, and the main window's own
      * Control+M never reaches it.
      */
     public static final String SHORTCUT_SELECT_BY_DRAGGING = "Control+M";
@@ -2554,14 +2545,10 @@ public class LayoutEditor extends PositionAwareJFrame
     /**
      * Turns picking on for ONE box, then turns it off again.
      *
-     * For the right-click menu.  Dragging to pick cannot be the default over track, because a drag
-     * that starts on a tile has to go on moving that tile - that is the older gesture and the one
-     * people use constantly.  So a drag across a diagram picks nothing unless the mode is on, and the
-     * mode is a button somebody has to find, turn on, use, and remember to turn off.
-     *
-     * This is the same thing without the remembering: pick one box and the editor goes back to
-     * normal by itself.  The button stays for the times somebody wants to pick several boxes in a
-     * row.
+     * For the right-click menu.  Dragging to pick cannot be the default over track, because a drag that starts on a tile
+     * has to go on moving that tile; so a drag across a diagram picks nothing unless the mode is on, and the mode is a
+     * button somebody has to find, turn on, use, and remember to turn off.  This is the same thing without the
+     * remembering; the button stays for picking several boxes in a row.
      */
     public void selectOnce()
     {
@@ -2584,9 +2571,8 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
-     * The diagram's pointer says whether a drag picks: a crosshair while it does (MT-661's note; Adam, 2026-10-03: "there
-     * is no indicator that we have entered this mode when control M is pressed", and "I'd rather not have text popping
-     * up, why not just change the cursor?").  Squares inherit it, the one under the pointer included; only the
+     * The diagram's pointer says whether a drag picks: a crosshair while it does (MT-661; Adam: "I'd rather not have text
+     * popping up, why not just change the cursor?").  Squares inherit it, the one under the pointer included; only the
      * selection's grip keeps its own.  Asked again by every redraw, which builds a new panel (RSA30-C5), and by a switch
      * of mode: in Autonomy Setup no drag picks, so picking carried there shows the arrow until it comes back (RSA31-C4).
      */
