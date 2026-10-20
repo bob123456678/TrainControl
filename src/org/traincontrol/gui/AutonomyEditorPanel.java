@@ -80,6 +80,13 @@ public class AutonomyEditorPanel extends JPanel
         ONE_WAY
     }
 
+    /**
+     * The setup being edited.
+     *
+     * Package-private only so the editor's helpers (`EditorTileMenus`, `EditorPrompts`, `EditorSignals`,
+     * `EditorMassAssign`, `EditorWhy`) can read it; no other class reaches it through the panel.  A write to the setup
+     * goes through the panel, so `setupChanged()` follows.
+     */
     final AutonomySession session;
     private final Runnable onChanged;
 
@@ -4286,9 +4293,9 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Names a square, from somewhere other than its own right-click menu (MT-257 item 4).
      *
-     * The editor's Control+S needs this: `promptName` is private and the key handler lives in `LayoutEditor`, which owns
-     * this panel.  One line rather than making the prompt itself public, so the panel keeps deciding what naming means
-     * and this only decides who may ask.
+     * The editor's Control+S needs this: `promptName` is package-private, for the editor's own helpers only, and the key
+     * handler lives in `LayoutEditor`, which owns this panel.  One line rather than making the prompt itself public, so
+     * the panel keeps deciding what naming means and this only decides who may ask.
      *
      * @param tile the square to name, ignored when null
      */
@@ -4363,8 +4370,8 @@ public class AutonomyEditorPanel extends JPanel
      * Sets the length of the square under the pointer, from outside this panel (FR-066).
      *
      * Control+E (Adam: *"a keyboard shortcut for setting a square's length"*, and *"let's do E"*, Control+D being taken
-     * twice over).  Like Control+S for Rename, `applyLength` is private and the key handler lives in `LayoutEditor`; this
-     * decides only who may ask.
+     * twice over).  Like Control+S for Rename, `applyLength` is package-private, for the editor's own helpers only, and
+     * the key handler lives in `LayoutEditor`; this decides only who may ask.
      *
      * **It asks `offersALength`, the menu's own question, and writes where the menu writes**: the menu acts on
      * `leaderOf(tile)`, the square that speaks for a run of plain track, so a key acting on the hovered square would
@@ -4507,6 +4514,15 @@ public class AutonomyEditorPanel extends JPanel
         return session != null && session.canBeNamed(tile);
     }
 
+    /**
+     * Asks for a square's name and writes it (MT-257 item 4).
+     *
+     * Package-private only for the editor's helpers (`EditorTileMenus`, `EditorPrompts`, `EditorSignals`,
+     * `EditorMassAssign`, `EditorWhy`).  Every other caller goes through `promptNameFor`, which decides who may ask, and a
+     * write to the setup goes through the panel so `setupChanged()` follows.
+     *
+     * @param tile the square to name
+     */
     void promptName(TileKey tile)
     {
 
@@ -4957,6 +4973,15 @@ public class AutonomyEditorPanel extends JPanel
     /** 0 to 999: three digits is every length anybody means, and 100000 is not one (OB-048) */
     private static final int MAX_LENGTH_DIGITS = 3;
 
+    /**
+     * Asks for a length and writes it to the selection, or to the square's leader where nothing is selected (FR-066).
+     *
+     * Package-private only for the editor's helpers (`EditorTileMenus`, `EditorPrompts`, `EditorSignals`,
+     * `EditorMassAssign`, `EditorWhy`).  Every other caller goes through `promptLengthFor`, which decides who may ask, and
+     * a write to the setup goes through the panel so `setupChanged()` follows.
+     *
+     * @param tile the square the length was asked on
+     */
     void applyLength(TileKey tile)
     {
         Set<TileKey> targets = selection.isEmpty()

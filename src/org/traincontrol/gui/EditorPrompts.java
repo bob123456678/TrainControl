@@ -389,8 +389,8 @@ final class EditorPrompts
      * Sets the length of the square under the pointer, from outside this panel (FR-066).
      *
      * Control+E (Adam: *"a keyboard shortcut for setting a square's length"*, and *"let's do E"*, Control+D being taken
-     * twice over).  Like Control+S for Rename, `applyLength` is private and the key handler lives in `LayoutEditor`; this
-     * decides only who may ask.
+     * twice over).  Like Control+S for Rename, `applyLength` is package-private, for the editor's own helpers only, and
+     * the key handler lives in `LayoutEditor`; this decides only who may ask.
      *
      * **It asks `offersALength`, the menu's own question, and writes where the menu writes**: the menu acts on
      * `leaderOf(tile)`, the square that speaks for a run of plain track, so a key acting on the hovered square would
