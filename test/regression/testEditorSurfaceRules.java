@@ -237,8 +237,9 @@ public class testEditorSurfaceRules
         // FIVE OVER THE PROGRAM (FR-136): the editor's two, and the three in the files the list below names -
         // GraphLocAssign.commitAndRecord, the diagram's placeFacing and the window's rememberPlacement.
         assertEquals(writes, 5,
-            "the facing is written from " + writes + " places in the program. Five are known.  Two are in "
-            + "AutonomyEditorPanel: the facing menu (which moves the railway too, SPEC-B4) and placeLocomotive - the "
+            "the facing is written from " + writes + " places in the program. Five are known.  Two are the "
+            + "autonomy editor's: the facing menu in EditorTileMenus (which moves the railway too, SPEC-B4) and "
+            + "AutonomyEditorPanel.placeLocomotive - the "
             + "add-to-autonomy door, which was the LAST one recording who without which way "
             + "(CONF-B2), and the worst of them, because placeLocomotive does not clear the facing on "
             + "the non-null path and so left the previous occupant's direction attached to the "
