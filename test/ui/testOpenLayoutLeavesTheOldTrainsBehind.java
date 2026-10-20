@@ -9,8 +9,11 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import javax.swing.AbstractButton;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
@@ -30,10 +33,12 @@ import support.Restart;
 
 /**
  * File &gt; Open Layout..., answered with another railway's folder, leaves the railway that was open behind: its setup,
- * the trains standing on it and the track they claim (list 2's layout switch row).
+ * the trains standing on it and the track they claim, while its locomotives stay in the database (OB-363).  Answered
+ * with the folder already open, it keeps that railway's trains standing (RLV8-C5).
  *
  * The window starts on a copy of the frozen railway, with its setup loaded and its four trains standing; Open Layout...
- * is chosen from the File menu, and the folder chooser is answered with a copy of the `single-switch` railway.
+ * is chosen from the File menu, answered first with that railway's own folder and then with a copy of the
+ * `single-switch` railway.
  *
  * MUTATION: each claim names the line it rests on; see its javadoc.
  *
@@ -49,6 +54,12 @@ public class testOpenLayoutLeavesTheOldTrainsBehind
 
     /** Where the frozen railway's trains stood before the switch, by name. */
     private static final List<String> STOOD = new ArrayList<>();
+
+    /** Where they stood once Open Layout... had been answered with the frozen railway's own folder. */
+    private static final List<String> STOOD_AFTER_THE_SAME_FOLDER = new ArrayList<>();
+
+    /** Each of those trains' database record before the switch: address, length and icon, by name. */
+    private static final Map<String, String> RECORDS = new LinkedHashMap<>();
 
     @BeforeClass
     public static void setUpClass() throws Exception
@@ -67,14 +78,42 @@ public class testOpenLayoutLeavesTheOldTrainsBehind
 
         assertFalse(STOOD.isEmpty(), "precondition: no train stands on the frozen railway");
 
-        // The other railway, a copy of its own, so the window writes nothing checked in
-        final File other = Files.createTempDirectory("tc-other-railway").toFile();
+        for (String stood : STOOD)
+        {
+            String name = stood.substring(stood.indexOf('=') + 1);
 
-        copy(support.Scenario.folderFor("single-switch").toPath(), other.toPath());
+            RECORDS.put(name, record(name));
+        }
 
         final AbstractButton open = Components.withText(ui, I18n.t("ui.main.toolbar.openLayout"));
 
         assertNotNull(open, "the window has no Open Layout...");
+
+        // THE SAME RAILWAY FIRST: its own folder, as the window has it
+        final String source = TrainControlUI.getPrefs().get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
+
+        assertFalse(source.isEmpty(), "precondition: the frozen railway has no folder");
+
+        try (Answering answering = Answering.start(message -> Answering.pressAt(0)).choosing(new File(source)))
+        {
+            Components.press(open);
+
+            // The reset that every reload of the pages makes says it has run: no configuration is loaded after it
+            assertTrue(Components.waitFor(() -> Components.onTheEventThread(ui::getActiveDiagramConfiguration) == null,
+                PATIENCE_MS), "Open Layout... on the frozen railway's own folder did not reload its pages");
+
+            Components.settle();
+        }
+
+        assertEquals(TrainControlUI.getPrefs().get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, ""), source,
+            "precondition: Open Layout... answered with the frozen railway's own folder named another");
+
+        STOOD_AFTER_THE_SAME_FOLDER.addAll(standing(model.getAutoLayoutIfLoaded()));
+
+        // The other railway, a copy of its own, so the window writes nothing checked in
+        final File other = Files.createTempDirectory("tc-other-railway").toFile();
+
+        copy(support.Scenario.folderFor("single-switch").toPath(), other.toPath());
 
         try (Answering answering = Answering.start(message -> Answering.pressAt(0)).choosing(other))
         {
@@ -115,12 +154,11 @@ public class testOpenLayoutLeavesTheOldTrainsBehind
 
     /**
      * No train of the railway that was open still stands, and nothing it claimed is still claimed, once another
-     * railway is open.
+     * railway is open (OB-363): its autonomy layout leaves memory, as Unload leaves it.
      *
-     * DEFECT, so not run: the model keeps the frozen railway's running layout after the switch, with its four trains
-     * standing and the track one of them covers still claimed, under the other railway's pages.  Reported for filing.
+     * MUTATION: in `TrainControlUI.sourceIsNow`, take out `this.model.clearAutoLayout();`.
      */
-    @Test(enabled = false)
+    @Test
     public void testNoTrainOfTheOldRailwayStillStandsOrClaims()
     {
         Layout running = model.getAutoLayoutIfLoaded();
@@ -135,6 +173,43 @@ public class testOpenLayoutLeavesTheOldTrainsBehind
 
         assertTrue(running.edgesCoveredByStandingTrains().isEmpty() && running.getActiveLocomotives().isEmpty(),
             "track of the railway that was open is still claimed");
+    }
+
+    /**
+     * The trains of the railway that was open stay in the locomotive database once another railway is open, each with
+     * the address, length and icon it had (OB-363; Adam: "Locs can stay in the DB.").
+     *
+     * MUTATION: in `TrainControlUI.sourceIsNow`, delete each standing train from the database before the clear.
+     */
+    @Test
+    public void testTheOldRailwaysLocomotivesStayInTheDatabase()
+    {
+        for (Map.Entry<String, String> train : RECORDS.entrySet())
+        {
+            assertEquals(record(train.getKey()), train.getValue(), train.getKey() + " of the railway that was open is"
+                + " gone from the locomotive database, or changed in it, after the switch");
+        }
+    }
+
+    /**
+     * Open Layout... answered with the folder already open reloads the same railway, and its trains go on standing
+     * where they stood (RLV8-C5): only another railway's folder takes them out of memory.
+     *
+     * MUTATION: in `TrainControlUI.sourceIsNow`, clear the autonomy layout on every switch of source, the same one too.
+     */
+    @Test
+    public void testTheSameRailwayChosenAgainKeepsItsTrains()
+    {
+        assertEquals(STOOD_AFTER_THE_SAME_FOLDER, STOOD, "Open Layout... answered with the folder already open took"
+            + " that railway's trains off it");
+    }
+
+    /** A locomotive's database record, as "address/length/icon", or null where the database has no such name. */
+    private static String record(String name)
+    {
+        org.traincontrol.marklin.MarklinLocomotive loc = model.getLocByName(name);
+
+        return loc == null ? null : loc.getAddress() + "/" + loc.getTrainLength() + "/" + loc.getImageURL();
     }
 
     /** The window's list of the diagram's pages. */

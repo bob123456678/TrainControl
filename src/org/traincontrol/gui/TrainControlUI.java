@@ -2662,15 +2662,24 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The switch-of-source rule, at every door that changes the layout source: the railway loaded is forgotten where the
-     * source is another railway (RLV7-C2), and not where the source in use is chosen again, which reloads the same
-     * railway, whose trains are carried as any reload carries them (RLV8-C5).
+     * The switch-of-source rule, at every door that changes the layout source.  Where the source is another railway, the
+     * railway loaded is forgotten (RLV7-C2) and its autonomy layout leaves memory as Unload clears it, so none of its
+     * trains stands or claims track under the next one's pages; its locomotives stay in the database (OB-363).  Not where
+     * the source in use is chosen again, which reloads the same railway, whose trains are carried as any reload carries
+     * them (RLV8-C5).
      *
      * @param source the layout source now in use - a folder, or empty for the Central Station's
      */
     private void sourceIsNow(String source)
     {
-        if (!source.equals(this.railwaySource)) this.forgetTheRailway();
+        if (!source.equals(this.railwaySource))
+        {
+            // After the reset's capture has written where the trains stand into the railway left's own file; the Download
+            // door leaves the Central Station's layout, which has no setup to write into
+            if (this.model != null) this.model.clearAutoLayout();
+
+            this.forgetTheRailway();
+        }
 
         this.railwaySource = source;
     }
