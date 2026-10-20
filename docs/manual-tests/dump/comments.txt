@@ -29119,3 +29119,93 @@ text:
 |
 | Validated on your *Works* of 2026-10-19.
 |
+
+[comment MT-798 0]
+who: Adam
+date: 2026-10-20
+kind: verdict
+verdict: Could not run this
+text:
+| **Adam, 2026-10-20 (triage).** Could not run this.
+|
+| make a test for this
+|
+| *Run against commit c5367015, in English - build\classes, compiled 20 Oct 01:17 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-798 1]
+who: Claude
+date: 2026-10-20
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-20.**
+|
+| No longer needs your machine: ui.testOpenLayoutLeavesTheOldTrainsBehind (`0e8437bf`) checks every expected result.  Opening another railway unloads the old setup (testTheOldRailwaysSetupIsNoLongerLoaded), leaves no train standing or claiming track (testNoTrainOfTheOldRailwayStillStandsOrClaims), keeps every locomotive in the database (testTheOldRailwaysLocomotivesStayInTheDatabase), and the same railway chosen again keeps its trains (testTheSameRailwayChosenAgainKeepsItsTrains).  Each claim has a mutation that turns it red.
+|
+
+[comment MT-799 0]
+who: Adam
+date: 2026-10-20
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-20 (triage).** Works.
+|
+| *Run against commit c5367015, in English - build\classes, compiled 20 Oct 01:17 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-799 1]
+who: Claude
+date: 2026-10-20
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-20.**
+|
+| Validated on your *Works* of 2026-10-20.
+|
+
+[comment MT-800 0]
+who: Adam
+date: 2026-10-20
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-20 (triage).** Works.
+|
+| *Run against commit c5367015, in English - build\classes, compiled 20 Oct 01:17 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-800 1]
+who: Claude
+date: 2026-10-20
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-20.**
+|
+| Validated on your *Works* of 2026-10-20.
+|
+
+[comment MT-801 0]
+who: Adam
+date: 2026-10-20
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-20 (triage).** Works.
+|
+| *Run against commit c5367015, in English - build\classes, compiled 20 Oct 01:17 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-801 1]
+who: Claude
+date: 2026-10-20
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-20.**
+|
+| Validated on your *Works* of 2026-10-20.
+|

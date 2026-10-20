@@ -62,35 +62,16 @@
       "home": "EN57-947"
     },
     "1 - Main:20,12": {
-      "loc": {"name": "75 407 DB"},
       "maxTrainLength": 5,
-      "arrivedAlong": [
-        [
-          "BottomSecondary",
-          "TunnelPre"
-        ],
-        [
-          "TunnelPre",
-          "Tunnel (southbound)"
-        ],
-        [
-          "Tunnel (southbound)",
-          "BottomMainAPre (eastbound)"
-        ],
-        [
-          "BottomMainAPre (eastbound)",
-          "BottomMainA (eastbound)"
-        ]
-      ],
       "homeFacing": "E",
-      "facing": "E",
-      "arrivedFrom": "W",
       "home": "EN57-203"
     },
     "1 - Main:20,13": {
+      "loc": {"name": "75 407 DB"},
       "maxTrainLength": 4,
       "homeFacing": "W",
       "facing": "E",
+      "arrivedFrom": "W",
       "canReverse": true,
       "home": "ET22-245"
     },

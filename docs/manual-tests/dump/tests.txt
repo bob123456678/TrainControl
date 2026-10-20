@@ -31469,7 +31469,7 @@ ordinal: 797
 anchor: mt-798
 date: 2026-10-20
 title: OB-363: opening another railway leaves none of the old railway's trains in memory; the locomotives stay
-disposition: needs test
+disposition: fixed validated
 from: OB-363
 written: 2026-10-20
 reopened: no
@@ -31477,7 +31477,7 @@ body:
 | <a id="mt-798"></a>
 | ### MT-798 - 2026-10-20 - OB-363: opening another railway leaves none of the old railway's trains in memory; the locomotives stay
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** OB-363
 |
 | **Written:** 2026-10-20
@@ -31508,7 +31508,7 @@ ordinal: 798
 anchor: mt-799
 date: 2026-10-20
 title: OB-365: pasting a train on a square that is not a station says so and asks nothing
-disposition: needs test
+disposition: fixed validated
 from: OB-365
 written: 2026-10-20
 reopened: no
@@ -31516,7 +31516,7 @@ body:
 | <a id="mt-799"></a>
 | ### MT-799 - 2026-10-20 - OB-365: pasting a train on a square that is not a station says so and asks nothing
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** OB-365
 |
 | **Written:** 2026-10-20
@@ -31543,7 +31543,7 @@ ordinal: 799
 anchor: mt-800
 date: 2026-10-20
 title: FR-142: the locomotive icon chooser can clear the icon
-disposition: needs test
+disposition: fixed validated
 from: FR-142
 written: 2026-10-20
 reopened: no
@@ -31551,7 +31551,7 @@ body:
 | <a id="mt-800"></a>
 | ### MT-800 - 2026-10-20 - FR-142: the locomotive icon chooser can clear the icon
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** FR-142
 |
 | **Written:** 2026-10-20
@@ -31581,7 +31581,7 @@ ordinal: 800
 anchor: mt-801
 date: 2026-10-20
 title: OB-366: the autonomy editor's notices float over the bottom of the diagram, with an X to dismiss them
-disposition: needs test
+disposition: fixed validated
 from: OB-366
 written: 2026-10-20
 reopened: no
@@ -31589,7 +31589,7 @@ body:
 | <a id="mt-801"></a>
 | ### MT-801 - 2026-10-20 - OB-366: the autonomy editor's notices float over the bottom of the diagram, with an X to dismiss them
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** OB-366
 |
 | **Written:** 2026-10-20
