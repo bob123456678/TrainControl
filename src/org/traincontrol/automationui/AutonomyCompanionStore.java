@@ -2048,18 +2048,16 @@ public class AutonomyCompanionStore
         //
         // An export keys every square by the EXPORTER's page ids, and page ids are numbered from the same start on every
         // railway, so their id means nothing here until it is turned back into the page it names.  Adopting their page
-        // record per id would read their "Yard" as id 1 onto my "Main" as id 1 (TDR-B4), re-label my own id 2, or
-        // overwrite my record that 7 is "Away", a page still downloading, so Away's held settings landed on Main (TDR-A1).
+        // record per id would read their "Yard" as id 1 onto my "Main" as id 1 (TDR-B4), or overwrite my record that 7 is
+        // "Away", a page still downloading, so Away's held settings landed on Main (TDR-A1).
         //
         // So each of their ids maps to the id this layout uses for the same name: a loaded page's, or the id this setup
         // recorded for a page it knows and cannot load right now.  A name that is neither is a page this layout does not
-        // have ("keep only the pages, and alert the user") and maps to nothing.  Their page record is never merged: the
-        // translated keys are in MY numbering.
+        // have ("keep only the pages, and alert the user") and maps to nothing.  Their page record is never merged.
         //
-        // Only when both sides have a numbering at all.  A file with no page record is keyed however it is keyed, and a
-        // store that knows no page by any number has nothing of mine to re-label.  A store with no page LOADED still
-        // knows its pages by the record it was written with (TDR-C6): a OneDrive start with every page still a
-        // placeholder has an empty index and a full record.
+        // Only when both sides have a numbering at all: a file with no page record, or a store that knows no page by any
+        // number, has nothing of mine to re-label.  A store with no page LOADED still knows its pages by the record it was
+        // written with (TDR-C6): a OneDrive start with every page still a placeholder has an empty index and a full record.
         JSONObject theirPages = incoming.optJSONObject("pages");
 
         boolean iKnowMyPages = !pageIdToName.isEmpty() || !pageNamesWhenWritten.isEmpty();
@@ -2597,8 +2595,8 @@ public class AutonomyCompanionStore
 
     public void renameConfiguration(String from, String to) throws IOException
     {
-        // Refused rather than allowed to overwrite: renaming A to an existing B used to replace B and
-        // then delete B's file, destroying a configuration the user never named in the gesture.
+        // Refused rather than allowed to overwrite: renaming A to an existing B would replace B and then delete B's file,
+        // destroying a configuration the user never named in the gesture.
         if (!from.equals(to) && configurations.containsKey(to))
         {
             throw new IOException(ERROR_NAME_IN_USE);
@@ -5026,18 +5024,16 @@ public class AutonomyCompanionStore
         // through writeAtomically because the folder can be locked by a sync client.
         //
         // A note that cannot be removed is a note that will be APPLIED, and applying it after a clean Save undoes the work
-        // that was just saved.  So if it cannot be taken away it is made harmless instead: overwritten with the setup as it
-        // stands now, which reverts to the present and therefore changes nothing.
+        // that was just saved.  So it is made harmless instead: overwritten with the setup as it stands now.
         //
         // **Written IN PLACE, not through writeAtomically, and that distinction is the whole fix.**  writeJson ends in
         // Files.move(REPLACE_EXISTING), and on Windows replacing a file needs the same DELETE access the delete above just
         // failed to get: in that lock state delete() fails and the atomic move fails, but a plain truncating write
-        // succeeds.  An atomic fallback would fail in exactly the case it exists for, leaving the pre-edit contents to
-        // revert a cleanly saved edit at the next start.
+        // succeeds.  An atomic fallback would fail in exactly the case it exists for.
         //
         // Torn writes are acceptable here and nowhere else in this class: a half-written note fails unfinishedEdit's shape
-        // check, so it is refused, kept, and reported, which is the safe outcome.  There is nothing to protect, because
-        // the content being overwritten is the thing being disposed of.
+        // check, so it is refused, kept, and reported.  There is nothing to protect, because the content being overwritten
+        // is the thing being disposed of.
         try (java.io.FileOutputStream out = new java.io.FileOutputStream(was))
         {
             out.write(snapshotSetup().toString(2).getBytes(StandardCharsets.UTF_8));

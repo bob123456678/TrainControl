@@ -1920,7 +1920,7 @@ public class TileAnnotation
             return;
         }
 
-        // A STATION TAKES THE ICONS ADAM CHOSE FOR FR-118 - `paintStation` - while they are the ones drawn.  With the classic
+        // A STATION TAKES THE ICONS CHOSEN FOR FR-118 - `paintStation` - while they are the ones drawn.  With the classic
         // icons, and for a passing point either way, the grid below.
         if (badge.isStation() && stationIcons() == StationIcons.SHAPES)
         {
