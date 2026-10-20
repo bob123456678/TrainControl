@@ -478,8 +478,8 @@ public class testLocomotiveExclusions
     }
 
     /**
-     * A station whose arrival from one side is barred still lets the trains its list keeps out drive through it that way
-     *.  The copy the builder makes for the barred side is no destination - "A station, unless a train arriving
+     * A station whose arrival from one side is barred still lets the trains its list keeps out drive through it that way.
+     * The copy the builder makes for the barred side is no destination - "A station, unless a train arriving
      * THIS way is not allowed to stop" - and read as "not a station", its list stopped them passing: with an allow-only
      * list, every train it does not name.  A station's list says who may not STOP there (`514071ee`), so it is asked of
      * the square, not of the copy.  The control: on a plain sensor the list is still a wall.

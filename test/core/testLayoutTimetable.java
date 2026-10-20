@@ -543,8 +543,8 @@ public class testLayoutTimetable
     /**
      * The run stops at an entry the railway cannot run, and says why (Adam, 2026-09-30: "stop the timetable run upon
      * encountering an invalid path, and let the user know").  Refused and passed over, a train's later entries started
-     * where it was not, and the run stood for minutes before giving up, saying only that the track never became free
-     *.  The entry is left unrun, so the window names it, and nothing after it runs.
+     * where it was not, and the run stood for minutes before giving up, saying only that the track never became free.
+     * The entry is left unrun, so the window names it, and nothing after it runs.
      *
      * MUTATION: pass over an entry the railway cannot run, and this fails.
      *

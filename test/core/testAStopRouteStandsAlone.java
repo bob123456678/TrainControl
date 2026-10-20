@@ -206,8 +206,8 @@ public class testAStopRouteStandsAlone
 
     /**
      * The stop route a split makes is numbered as a route made in the editor is - from 1000 up - so a Central Station
-     * sync, which numbers its own routes below, cannot replace it and take the power cut out of the route that fires it
-     *.  Read from a file whose one route is numbered below 1000.
+     * sync, which numbers its own routes below, cannot replace it and take the power cut out of the route that fires it.
+     * Read from a file whose one route is numbered below 1000.
      *
      * @throws Exception from the file or the model
      */
@@ -245,8 +245,8 @@ public class testAStopRouteStandsAlone
     }
 
     /**
-     * A route that reaches a split route by two paths - the longer listed first - still counts as cutting the power
-     *.  The walk remembered every route it had asked, so the split route, first met too deep to fire its stop,
+     * A route that reaches a split route by two paths - the longer listed first - still counts as cutting the power.
+     * The walk remembered every route it had asked, so the split route, first met too deep to fire its stop,
      * was not asked again by the shorter path that does; the route was then asked about at the human doors, and Cancel
      * called off the power cut.
      *
@@ -460,8 +460,8 @@ public class testAStopRouteStandsAlone
     }
 
     /**
-     * The latency cut-off cuts the power whatever the model believes about it, as a route's stop does
-     *: it asked only while the power flag read on, and that flag is only the last echo heard.
+     * The latency cut-off cuts the power whatever the model believes about it, as a route's stop does:
+     * it asked only while the power flag read on, and that flag is only the last echo heard.
      *
      * MUTATION: send the latency cut-off's stop only while the power flag reads on, and this fails.
      *

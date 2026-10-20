@@ -84,8 +84,8 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     }
 
     /**
-     * A square round 18 split by its ways out keeps a timetable leg that set out from it under its old, whole name
-     *: carried to the copy that leg leaves by - read as the next start of TrainControl reads it, by a session
+     * A square round 18 split by its ways out keeps a timetable leg that set out from it under its old, whole name:
+     * carried to the copy that leg leaves by - read as the next start of TrainControl reads it, by a session
      * that has built nothing yet, as the first start after the upgrade does.
      *
      * MUTATION: carry nothing a build of this session did not name, and this fails.
@@ -787,8 +787,8 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     }
 
     /**
-     * A station renamed to the name another has keeps another configuration's legs out of that other station too
-     *: every other configuration is carried across a rename, and a name the build now gives another square is
+     * A station renamed to the name another has keeps another configuration's legs out of that other station too:
+     * every other configuration is carried across a rename, and a name the build now gives another square is
      * traced from the square it named there as well.
      *
      * MUTATION: leave alone a name the build still gives in another configuration, and this fails.

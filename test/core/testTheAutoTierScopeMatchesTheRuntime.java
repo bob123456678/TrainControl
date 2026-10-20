@@ -124,8 +124,8 @@ public class testTheAutoTierScopeMatchesTheRuntime
 
             // The railway's own rule, quoted rather than paraphrased: `Layout.isSendableDestination` refuses a
             // destination that is reversing or is not an auto destination.
-            // ALL THREE CLAUSES A SQUARE CAN ANSWER, and `isActive` was missing until 2026-09-10
-            //.  This paraphrase is what the guard compares the diagram against, so a clause
+            // ALL THREE CLAUSES A SQUARE CAN ANSWER, and `isActive` was missing until 2026-09-10.
+            // This paraphrase is what the guard compares the diagram against, so a clause
             // absent from BOTH sides is a divergence the guard written to catch it cannot see - and
             // that is exactly what happened: a station switched out of service was reported as one
             // autonomy will choose, and this class was green throughout.

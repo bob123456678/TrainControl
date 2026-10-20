@@ -1596,8 +1596,8 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
         assertNull(org.traincontrol.automationui.AutonomySession.legacySignalAddress("Signalbox 4"),
             "a user-named accessory that merely begins with the word is not a signal");
 
-        // THE NAME THIS PROGRAM ACTUALLY GENERATES for anything that is not the implicit protocol
-        //.  `Accessory.getNameWithProtocol` appends the decoder, so a DCC railway writes
+        // THE NAME THIS PROGRAM ACTUALLY GENERATES for anything that is not the implicit protocol.
+        // `Accessory.getNameWithProtocol` appends the decoder, so a DCC railway writes
         // "Signal 116 DCC" - and parsing the whole remainder as a number returned null for every one
         // of them.  The address set stayed empty and the report written to stop a signal being
         // silently left out was silent about an entire protocol.

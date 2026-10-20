@@ -139,8 +139,8 @@ public class testTheOwnTailArithmetic
 
     /**
      * A route that comes back over its own earlier track - a reversing loop, out and back through one switch - is judged
-     * like a return to the body: the head may come back to a place the route ran over only once the tail has left it
-     *.  With no body at all, so nothing but the route's own timing can refuse it.
+     * like a return to the body: the head may come back to a place the route ran over only once the tail has left it.
+     * With no body at all, so nothing but the route's own timing can refuse it.
      *
      * Out over Q (2) and the switch, round the loop - L1 (3), L2 (3) - and back through the switch to Q: six units from
      * leaving the switch to coming back to it.

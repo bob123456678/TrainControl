@@ -266,8 +266,8 @@ public class testAnImportSaysItsRoutesAreOff
     }
 
     /**
-     * The refusal of a file naming a route twice says what repeats: the name, the number, or a route with no name
-     *.  It named the second route's name and its number together, though only one of them repeated, so the
+     * The refusal of a file naming a route twice says what repeats: the name, the number, or a route with no name.
+     * It named the second route's name and its number together, though only one of them repeated, so the
      * operator looking for the repeat was sent first to a name or a number that appears once.
      *
      * MUTATION: name both again, and this fails.

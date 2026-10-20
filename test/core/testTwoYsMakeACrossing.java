@@ -888,8 +888,8 @@ public class testTwoYsMakeACrossing
      * one way there is.
      *
      * Every road of a permanent turnout is directed at its toe, and its default is `BOTH`, which the blades narrow to
-     * that one way - a train may leave by the toe and by no other arm.  The submenus learned to tick what is in force
-     *; the boxes went on reading the stored `BOTH` and ticked every arm.
+     * that one way - a train may leave by the toe and by no other arm.  The submenus learned to tick what is in force;
+     * the boxes went on reading the stored `BOTH` and ticked every arm.
      *
      * MUTATION: read the stored direction in `AutonomyEditorPanel.armMask` again, and this fails.
      *

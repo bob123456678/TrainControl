@@ -197,8 +197,8 @@ public class testInvalidInput
             "a release named without a v threw, and the caller catches Exception, so the update check"
             + " went silent for as long as that release was the latest (C5)");
 
-        // AND A NUMBER BEFORE THE "v", which the first fix for this got wrong in the other direction
-        //. Anchoring on the first digits rather than on the "v" swapped one silent failure
+        // AND A NUMBER BEFORE THE "v", which the first fix for this got wrong in the other direction.
+        // Anchoring on the first digits rather than on the "v" swapped one silent failure
         // for two: "2026" compares NEWER than anything, so the menu offers an update that is not
         // there, and "1" compares older, which hides a release exactly the way the original bug did.
         assertEquals(Util.parseReleaseVersion(release("TrainControl 2026 Edition v3.0.0")), "3.0.0",

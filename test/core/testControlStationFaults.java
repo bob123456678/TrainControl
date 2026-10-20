@@ -313,8 +313,8 @@ public class testControlStationFaults
      * added to prevent - and brought it back silently, because everything about the timetable looks
      * right until it runs.
      *
-     * A fold no longer writes a plan: while one has the timetable, the owner's is written, with no flag
-     *.  What this keeps working is a file a fold wrote before that, with a plan as its
+     * A fold no longer writes a plan: while one has the timetable, the owner's is written, with no flag.
+     * What this keeps working is a file a fold wrote before that, with a plan as its
      * timetable and the flag set - stated here by hand, as the file states it.
      */
     @Test

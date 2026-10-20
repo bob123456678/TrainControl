@@ -722,8 +722,8 @@ public class testMassAssignLengths
      *
      * Asked of the real walk on the event thread, through the same prompt Mass Assign Lengths uses - so its title is the
      * walk's own name, and Skip leaves the next station as it was.  It presses OK rather than Enter, because Enter acts
-     * on whichever text component has the keyboard focus and a battery machine does not always give a window one
-     *; `testTheNumberFieldHasFocusAndEnterSubmits` is where Enter is pinned.
+     * on whichever text component has the keyboard focus and a battery machine does not always give a window one;
+     * `testTheNumberFieldHasFocusAndEnterSubmits` is where Enter is pinned.
      *
      * @throws Exception from the event thread
      */

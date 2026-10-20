@@ -772,8 +772,8 @@ public class testTrainTailClearsEdges
     }
 
     /**
-     * The rest of the state a driving thread reads while the event thread or the network writes it is volatile too
-     *: whether the layout is valid, a locomotive's speed, direction, length and reversibility, and a sensor's
+     * The rest of the state a driving thread reads while the event thread or the network writes it is volatile too:
+     * whether the layout is valid, a locomotive's speed, direction, length and reversibility, and a sensor's
      * state.  Without it a thread may go on reading what it cached - a train driving on a layout declared invalid, a
      * length changed on the event thread unseen by the train it describes.
      *

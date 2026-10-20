@@ -1551,8 +1551,8 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     }
 
     /**
-     * A two-ended station with a signal on each side of it, for every setting a station has and a plain point has not
-     *: the station at 3,1, entered from the west and from the east, and signals at 2,1 (address 21) and 4,1
+     * A two-ended station with a signal on each side of it, for every setting a station has and a plain point has not:
+     * the station at 3,1, entered from the west and from the east, and signals at 2,1 (address 21) and 4,1
      * (address 22) on the track either side, wired as parsing a real layout wires them.
      *
      * @return the page, its file written

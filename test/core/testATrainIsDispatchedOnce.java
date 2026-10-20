@@ -2916,8 +2916,8 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * And a Return Home leg whose route setting the power cuts three times is still run once the power stays on
-     *: a give-back for the power must not count as a refused attempt, or three of them end Return Home with
+     * And a Return Home leg whose route setting the power cuts three times is still run once the power stays on:
+     * a give-back for the power must not count as a refused attempt, or three of them end Return Home with
      * "the path stayed blocked ... move the train out of the way by hand" - a train in nobody's way.  A one-leg plan run
      * one train at a time, as Return Home's is; each attempt's route cut 300 ms in for three seconds: the run goes on, and
      * the leg sets off once the cuts stop.
