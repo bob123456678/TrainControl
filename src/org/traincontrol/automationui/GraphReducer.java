@@ -142,7 +142,7 @@ public class GraphReducer
 
         /**
          * The track from the last SWITCH on this edge to its far end, which is the room a train has to
-         * stop in without standing on the points (Adam's ruling, 2026-09-02).
+         * stop in without standing on the points.
          *
          * `Integer.MIN_VALUE` when this edge crosses no switch at all, which is not the same thing as
          * zero and not the same thing as unmeasured: such an edge does not bound the room and the
@@ -181,8 +181,7 @@ public class GraphReducer
          * The room after the last switch on this edge.
          *
          * `Integer.MIN_VALUE` when it crosses no switch; `-1` when it crosses one and NOTHING in the
-         * stretch is measured.  Partly measured answers with the total of what is - the all-or-nothing
-         * reading was Adam's rule until 2026-09-06 and this line until 2026-09-08.
+         * stretch is measured.  Partly measured answers with the total of what is.
          *
          * @return the room, or one of the two sentinels above
          */
@@ -288,8 +287,7 @@ public class GraphReducer
 
         /**
          * Whether this tile's 0 was answered on purpose (OB-274) - measured track of no length to every length rule but
-         * the own-tail one (OB-300)
-         * (TDU-C6; Adam, 2026-09-25), and not listed as missing (Adam, 2026-09-23).
+         * the own-tail one (OB-300, TDU-C6), and not listed as missing.
          *
          * @param tile the square
          * @return true when its length was answered 0; false by default
@@ -387,11 +385,11 @@ public class GraphReducer
      */
     public void reduce()
     {
-        // BUILT APART AND HANDED OVER WHOLE (OB-298).  This cleared and refilled the lists in place, so a reader walking
-        // them while a rebuild ran - `AutonomyBuilder.splitSides` over `getEdges()`, in a test that edited the setup off
-        // the event thread - threw `ConcurrentModificationException`, or read half a rebuild.  A fresh reducer over the
-        // same diagram and settings does the work, and its lists replace these only once they are complete; a list
-        // handed out before is never changed again.  The edges go last, as the thing most readers start from.
+        // BUILT APART AND HANDED OVER WHOLE (OB-298).  A fresh reducer over the same diagram and settings does the work,
+        // and its lists replace these only once they are complete; a list handed out before is never changed again, so a
+        // reader walking them - `AutonomyBuilder.splitSides` over `getEdges()`, off the event thread - neither throws
+        // `ConcurrentModificationException` nor reads half a rebuild.  The edges go last, as the thing most readers start
+        // from.
         GraphReducer fresh = new GraphReducer(graph, authored);
 
         fresh.buildPoints();
@@ -485,15 +483,10 @@ public class GraphReducer
     /**
      * @param barred the sides each square refuses arrivals by - the red arrows on the diagram (OB-120).
      *
-     * WHAT A BARRED SIDE MEANS: a train may not come in and STOP that way. The build says so plainly -
-     * `AutonomyBuilder` emits the barred copy as a non-station and notes that it "still carries
-     * traffic; it is simply not somewhere a train can be sent" - and the chevrons drawn for it are
-     * documented the same way.
-     *
-     * An earlier version of this javadoc claimed the build dropped those copies entirely, and the code
-     * under it refused the move wherever it appeared. That described a railway more restricted than the
-     * one that exists, and this walk feeds the editor's path test: it drew no route for journeys the
-     * railway would happily run. Corrected 2026-08-28 after an independent review.
+     * WHAT A BARRED SIDE MEANS: a train may not come in and STOP that way.  The build still emits the barred copy, as a
+     * non-station that "still carries traffic; it is simply not somewhere a train can be sent" (`AutonomyBuilder`), so
+     * this walk refuses only a destination hop and passes through everything else, which is what the editor's path test
+     * needs: it must draw the routes the railway would run.
      *
      * The START is exempt, as it is in the build: a train standing at a square did not arrive there by
      * any side, and refusing it would make a restricted station unable to SEND trains rather than
@@ -508,41 +501,14 @@ public class GraphReducer
     /**
      * The same, with squares that are CLOSED rather than merely barred (DIR-B1).
      *
-     * **The sibling learned this and this did not.** `reachableTiles` gained a `closed` set on
-     * 2026-09-06 so the findings panel would stop routing through squares switched out of service.
-     * This method is the editor's *test a path* tool, called three lines away in the same file on the
-     * same turn sets - and it was left walking the old railway.
-     *
-     * Two comments in this tree state the invariant that broke.  `AutonomyEditorPanel`: *"The same
-     * turn sets the reachability check uses, from the one place that computes them, so the path test
-     * and the findings panel cannot disagree about which way a train may go."*  `AutonomyChecks`:
-     * *"reachableTiles answers the split-aware question instead, which is the same one Layout.bfs and
-     * the editor's path test ask."*  Both were true when written; neither was after that change.
-     *
-     * Measured before the fix: a three-sensor run A-B-C with B closed gave `reachableWithClosed=[A,
-     * B]` and `findPathAtoC=FOUND (through the closed square)` - the tool drew a route the runtime
+     * `reachableTiles` takes the same `closed` set, so the editor's *test a path* tool and the findings panel cannot
+     * disagree about which way a train may go: a route this walk drew to a closed square would be one the runtime
      * refuses.
      *
-     * Same semantics as the sibling, for the same reason: `isPathClear` refuses a closed square as an
-     * INTERMEDIATE and not at either end, so it is a valid destination and never a way through.
-     *
-     * **`isPathClear` refuses a closed FINAL point in EVERY tier, and this paragraph said otherwise
-     * for four days (DIR-C10, corrected by E8V-C2).**  It read "but only `if (this.isAutoRunning())`",
-     * and concluded that treating a closed square as a valid destination merely overstates what
-     * AUTONOMY can reach.  That fence went on 2026-09-06, on Adam's ruling: *"in manual mode, inactive
-     * endpoints and intermediates should be refused as well.  Just not inactive start points.
-     * Inactive really means nothing can pass."*
-     *
-     * So the overstatement is wider than it was: a route this walk draws to a closed square is refused
-     * at every door there is, not only autonomy's.  While autonomy runs, the railway additionally
-     * refuses any edge with a closed endpoint.
-     *
-     * Left as it is deliberately, and the reason survives the correction: the overstatement is in the
-     * safe direction - the checks may call a closed station reachable when nothing may be sent there,
-     * which hides nothing that was not hidden before - and the alternative is a second walk with a
-     * second rule, which is how the two walks came to disagree in the first place.  What the checks do
-     * NOT do any more is explain such a leg with the wrong sentence: the Auto-tier note tells a shut
-     * square apart from a manual-only one (E8V-B1).
+     * A closed square is neither a way through nor a destination, in EVERY tier, manual included: `isPathClear` refuses
+     * it as an intermediate and as the final point (DIR-C10, E8V-C2), because inactive really means nothing can pass.
+     * Only a closed START is exempt.  While autonomy runs, the railway additionally refuses any edge with a closed
+     * endpoint, and the checks' Auto-tier note tells a shut square apart from a manual-only one (E8V-B1).
      *
      * @param from where the train is
      * @param to where it should go
@@ -606,28 +572,22 @@ public class GraphReducer
                     {
                         if (!mayTurn.contains(at)) continue;
                     }
-                    // Carrying on has to be carrying on along the SAME TRACK.  Comparing sides alone was
-                    // not enough at a double-curve sensor, which is two curves crossing in one square
-                    // with no connection between them: a train arriving on one of them was allowed onto
-                    // any edge that did not leave by the side it came in at, including the edges of the
-                    // other curve - a run that jumps tracks in mid-square, which is the same class of
-                    // impossible move the arrival-side search was written to get rid of.
+                    // Carrying on has to be carrying on along the SAME TRACK.  Comparing sides alone is not enough at a
+                    // double-curve sensor, which is two curves crossing in one square with no connection between them: a
+                    // train arriving on one of them would be allowed onto the edges of the other, a run that jumps tracks
+                    // in mid-square.
                     else if (!onwardSides(at, arrived).contains(edge.getExitSide()))
                     {
                         continue;
                     }
                 }
 
-                // The red arrows, and only where they mean something (OB-120, corrected 2026-08-28).
+                // The red arrows, and only where they mean something (OB-120).
                 //
-                // A barred side says a train may not COME IN AND STOP that way. It does not say the
-                // square cannot be passed through: `AutonomyBuilder` still emits the barred copy, and
-                // its own comment says so - "the copy still exists and still carries traffic; it is
-                // simply not somewhere a train can be sent". This used to refuse the move outright,
-                // on a javadoc of mine claiming the build dropped such copies, which it does not.
-                //
-                // So the refusal belongs on the DESTINATION hop, which is what OB-120 was filed about:
-                // "Test a path drew routes INTO stations that refuse arrivals from that side."
+                // A barred side says a train may not COME IN AND STOP that way.  It does not say the square cannot be
+                // passed through: `AutonomyBuilder` still emits the barred copy, which "still carries traffic; it is simply
+                // not somewhere a train can be sent".  So the refusal belongs on the DESTINATION hop: "Test a path drew
+                // routes INTO stations that refuse arrivals from that side."
                 String next = searchKey(edge.getEnd(), edge.getEntrySide());
 
                 if (arrivedBy.containsKey(next)) continue;
@@ -639,18 +599,16 @@ public class GraphReducer
 
                 // ARRIVED, unless the square refuses to be arrived at that way.
                 //
-                // Tested HERE and not at the hop above (validator, 2026-08-28). Refusing the hop threw
-                // away the search state for this square entirely, so the track BEYOND it was never
-                // explored either - and a station reached first by a barred side and afterwards by an
-                // open one, which is any station with a reversing point past it, became unroutable.
-                // `reachableTiles` gates only its `reached.add` and walks on, so the two answered
-                // differently about the same railway, which is the thing OB-120 was filed to stop.
-                //
-                // The search continues through this square below either way; what is refused is
+                // Tested HERE and not at the hop above: refusing the hop would throw away the search state for this square
+                // entirely, so the track BEYOND it would never be explored either, and a station reached first by a barred
+                // side and afterwards by an open one, which is any station with a reversing point past it, would be
+                // unroutable.  `reachableTiles` gates only its `reached.add` and walks on, so the two answer alike about the
+                // same railway (OB-120).  The search continues through this square below either way; what is refused is
                 // stopping here by this side.
-                // NOT A DESTINATION EITHER (Adam, 2026-09-06): "inactive really means nothing can
-                // pass".  Asked before the arrival test, not after it - after, the square is accepted
-                // as the destination and the search returns before the closure is ever consulted.
+                //
+                // NOT A DESTINATION EITHER, IF CLOSED: "inactive really means nothing can pass".  Asked before the arrival
+                // test, not after it: after, the square is accepted as the destination and the search returns before the
+                // closure is ever consulted.
                 if (closed != null && closed.contains(edge.getEnd())) continue;
 
                 if (edge.getEnd().equals(to)
@@ -681,9 +639,6 @@ public class GraphReducer
      * emitted: the barred copy is emitted and still carries traffic, which is why the callers refuse
      * only a destination hop and walk through everything else.
      *
-     * An earlier version of this sentence said the build dropped those copies entirely. It does not,
-     * and the code written to match that sentence refused runs the railway makes every day.
-     *
      * A null side is the starting square, which has no arrival and is never barred.
      *
      * @param barred square to the sides it refuses, never null
@@ -700,13 +655,6 @@ public class GraphReducer
         return sides != null && sides.contains(by);
     }
 
-    /**
-     * The sides a train that arrived at this square by the given side can carry on out of - the track it
-     * is actually standing on, rather than every side the square happens to have.
-     *
-     * Never includes the arrival side: the tile graph builds its exits from routes, and a route never
-     * leads back out the way it came in.  Turning round is therefore always the separate case.
-     */
     /**
      * Every tile a train standing at {@code from} can reach, honouring the arrival-side split exactly as
      * findPath does.
@@ -740,16 +688,12 @@ public class GraphReducer
     /**
      * The same, with squares that are CLOSED rather than merely barred (V31-C3).
      *
-     * **The two are different claims and this walk already made one of them.** A barred side says
-     * "trains may pass through here but not stop", which is why the loop below reaches past it - that
-     * is `OB-120`, and it is right. A square switched out of service says "nothing may pass here" -
-     * the cross drawn on it says exactly that, and `Layout.isPathClear` enforces it for every path,
-     * manual routes included.
+     * The two are different claims.  A barred side says "trains may pass through here but not stop", which is why the
+     * loop below reaches past it (OB-120).  A square switched out of service says "nothing may pass here": the cross
+     * drawn on it says exactly that, and `Layout.isPathClear` enforces it for every path, manual routes included.
      *
-     * Barring every side of a closed square does NOT express that, which is what the first attempt at
-     * this finding did: the square stopped counting as reachable and the walk went straight on through
-     * it, so the station beyond stayed reachable and the finding never fired. The test written for the
-     * rule passed; the one written for the behaviour is what caught it.
+     * Barring every side of a closed square does NOT express that: the square would stop counting as reachable and the
+     * walk would go straight on through it, so the station beyond stayed reachable and the finding never fired.
      *
      * @param from where the train is
      * @param mayTurn squares where turning round is allowed
@@ -815,27 +759,16 @@ public class GraphReducer
                     }
                 }
 
-                // THROUGH a barred side, but not TO it (OB-120, corrected 2026-08-28).
+                // THROUGH a barred side, but not TO it (OB-120).
                 //
-                // Reached means "a train could be sent here", which is the question both callers ask -
-                // can this station reach another, can this reversing point reach anything. A square a
-                // train may pass through but not stop at is not an answer to that, and the track beyond
-                // it is still perfectly reachable.
+                // Reached means "a train could be sent here", which is the question both callers ask - can this station
+                // reach another, can this reversing point reach anything.  A square a train may pass through but not stop
+                // at is not an answer to that, and the track beyond it is still perfectly reachable.  Refusing the move
+                // outright would make the findings describe a more restricted railway than the one that exists.
                 //
-                // Refusing the move outright, which is what this did, made the findings describe a
-                // more restricted railway than the one that exists: a station whose only route ran
-                // through a barred side was reported as reaching nothing, and Adam acts on those
-                // warnings by editing his diagram.
-                // NEITHER REACHED NOR ENTERED (Adam, 2026-09-06).
-                //
-                // **"Inactive really means nothing can pass."**  An earlier version of this let a
-                // closed square be a DESTINATION, on the strength of `isPathClear` refusing it only
-                // as an intermediate - and that fence has been taken off the destination rule, so the
-                // walk follows.
-                //
-                // The START is still exempt, and needs no clause: `from` is seeded before this loop
-                // and never tested here.  That is the one case Adam kept - a train standing on a
-                // square that has been switched off is driven out by hand.
+                // NEITHER REACHED NOR ENTERED, IF CLOSED: **"Inactive really means nothing can pass."**  The START is
+                // exempt, and needs no clause: `from` is seeded before this loop and never tested here, so a train
+                // standing on a square that has been switched off can still be driven out by hand.
                 if (closed != null && closed.contains(edge.getEnd())) continue;
 
                 if (!refusesArrival(barred, edge.getEnd(), edge.getEntrySide()))
