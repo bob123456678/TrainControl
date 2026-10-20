@@ -35,7 +35,7 @@ import org.traincontrol.util.Conversion;
  * reduction and before the destination's sensor - so a mark taken there and a count taken after the run
  * is exactly the arrival, and nothing else.
  *
- * **WHAT THE WIRE DROPS, and it is a lower bound rather than a count** (E8-C3).
+ * **WHAT THE WIRE DROPS, and it is a lower bound rather than a count**.
  * `MarklinControlStation.log(String)` is `if (message != null && !message.equals(this.lastMessage))` -
  * two IDENTICAL, ADJACENT messages reach this recorder as one line.  That dedupe is right for a log a
  * person reads and there is nothing to fix in it, but it means a claim of "exactly one direction
