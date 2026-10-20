@@ -273,15 +273,10 @@ public class LayoutDiagram
             }            
         }  
 
-        // A page with nothing on it keeps both seeds, because only a square that HOLDS something
-        // lowers minx.  LayoutGrid then builds its array from maxx - minx + 2, which on a thirty-wide
-        // page is -28: NegativeArraySizeException out of the constructor, and since the grid registers
-        // itself against its panel before it finishes building, the diagram tab goes blank and stays
-        // blank.  One component anywhere is enough to make the bounds right, so this is the empty page
-        // and nothing else - which the editor's own "clear" produces.
-        //
-        // Each axis on its own: components along a single row leave miny seeded while minx was pulled
-        // down to them.
+        // A page with nothing on it keeps both seeds, because only a square that HOLDS something lowers minx.
+        // LayoutGrid builds its array from maxx - minx + 2, which on a thirty-wide empty page is -28
+        // (NegativeArraySizeException out of the constructor, and a blank diagram tab), so each axis falls back to 0 on
+        // its own: components along a single row leave miny seeded while minx was pulled down to them.
         if (maxx < minx) minx = 0;
         if (maxy < miny) miny = 0;
 
@@ -320,29 +315,21 @@ public class LayoutDiagram
 
         builder.append("[gleisbildseite]\n");
 
-        // THE LEFT-MARGIN KEYS, WHERE THE FILE HAS THEM (X8-A1).
+        // THE LEFT-MARGIN KEYS, WHERE THE FILE HAS THEM (X8-A1).  `page=1` sits between the header and the first block on
+        // a genuine export, and is written back before anything else, which is where a station puts them.
         //
-        // `page=1` sits between the header and the first block on a genuine export, and it was dropped
-        // on read and therefore deleted on save.  Written back before anything else, which is where a
-        // station puts them.
-        //
-        // BY KEY AND BY RULE, NOT BY LINE (X8V-C6).  Two shapes do not survive unchanged: a key
-        // REPEATED in one file keeps only the last value, and a key written BELOW the blocks comes back
-        // above them.  Neither is a regression - before this existed all of it was deleted - and no
-        // file in this repository has either shape: 18 left-margin keys across 65 `.cs2` files, every
-        // one a single `page=N` on line 2.  Recorded because this comment used to claim the file comes
-        // out in the order it went in, which is true of what a station writes and not of those two.
+        // BY KEY AND BY RULE, NOT BY LINE (X8V-C6).  Two shapes do not come back unchanged: a key REPEATED in one file
+        // keeps only the last value, and a key written BELOW the blocks comes back above them.  No file in this
+        // repository has either shape (18 left-margin keys across 65 `.cs2` files, every one a single `page=N` on
+        // line 2), and the file comes out in the order it went in only for what a station writes.
         for (Map.Entry<String, String> bare : bareKeys.entrySet())
         {
             builder.append(bare.getKey()).append("=").append(bare.getValue()).append("\n");
         }
 
-        // The blocks above the elements, put back as they were read.
-        //
-        // This used to emit a hardcoded version block, which is the same loss the elements themselves
-        // suffered one level up: a version carrying anything besides .major, or any block a later
-        // Central Station firmware writes into a page, was deleted the first time the page was saved.
-        // The hardcoded header is still the fallback, for a page built in memory rather than read.
+        // The blocks above the elements, put back as they were read: a version carrying anything besides .major, or any
+        // block a later Central Station firmware writes into a page, must survive a save.  The hardcoded header is the
+        // fallback, for a page built in memory rather than read.
         if (unmodelledBlocks.isEmpty())
         {
             builder.append("version\n .major=1\n");
@@ -351,12 +338,10 @@ public class LayoutDiagram
         {
             for (Map<String, String> block : unmodelledBlocks)
             {
-                // THE SPELLING THE FILE USED, where it differed from the lower-cased form the
-                // readers ask about (TWV-C1).  This machinery exists to write back what the file
-                // said - "what TrainControl does not understand it is not entitled to throw
-                // away" - and case is part of what it said.  Lower-casing `_type` for the
-                // readers alone would have rewritten a block spelled `Version` as `version` on
-                // the first save.
+                // THE SPELLING THE FILE USED, where it differed from the lower-cased form the readers ask about
+                // (TWV-C1).  This machinery writes back what the file said ("what TrainControl does not understand it
+                // is not entitled to throw away"), and case is part of what it said: a block spelled `Version` stays
+                // `Version` on the first save.
                 builder.append(block.containsKey("_typeAsWritten")
                     ? block.get("_typeAsWritten") : block.get("_type")).append("\n");
 
@@ -385,14 +370,11 @@ public class LayoutDiagram
             }
         }
 
-        // The elements this build could make nothing of, put back exactly as they were read.
-        //
-        // Saving regenerates the whole page from this model, and an element whose type TrainControl does
-        // not recognise never entered the model - so writing the file deleted it.  That is done on the
-        // user's behalf, without a save button being pressed: naming one station writes its page out,
-        // and renaming a point writes out every page carrying that caption.  Losing scenery, or a
-        // component a later Central Station firmware added, because this program had not heard of it is
-        // not a trade anybody agreed to.
+        // The elements this build could make nothing of, put back exactly as they were read.  Saving regenerates the
+        // whole page from this model, and an element whose type TrainControl does not recognise never entered it.  Saving
+        // happens on the user's behalf without a save button (naming one station writes its page out, and renaming a
+        // point writes out every page carrying that caption), so losing scenery, or a component a later Central Station
+        // firmware added, because this program had not heard of it is not a trade anybody agreed to.
         for (Map<String, String> element : unmodelledElements)
         {
             builder.append("element\n");
@@ -421,31 +403,26 @@ public class LayoutDiagram
     /**
      * Keys that sit at the left margin of a page file, between the header and the first block (X8-A1).
      *
-     * A genuine Central Station page export has exactly one - `page=1` - and it matched none of the
-     * three line shapes `CS2File.parseFileContents` knew, so it was dropped on read and deleted the
-     * first time this application saved the page.  Measured on this repository's own exports: every
-     * untouched page carries it, and the pages the application has worked on do not.
+     * A genuine Central Station page export has exactly one, `page=1`, which matches none of the three line shapes
+     * `CS2File.parseFileContents` knows and would otherwise be dropped on read and deleted the first time this
+     * application saved the page.
      *
-     * This is the same rule as `unmodelledBlocks` and `unmodelledElements` a few lines away, and the
-     * reason is the one written there: *"Losing scenery, or a component a later Central Station
-     * firmware added, because this program had not heard of it is not a trade anybody agreed to."*
-     * A left-margin key is neither a block nor an element, and fell between the two.
+     * This is the same rule as `unmodelledBlocks` and `unmodelledElements` a few lines away: nothing the program does not
+     * understand is thrown away.  A left-margin key is neither a block nor an element.
      */
     private final Map<String, String> bareKeys = new LinkedHashMap<>();
 
     /**
      * Remembers a key at the left margin of a page file, so that it survives a save (X8-A1).
      *
-     * PRESERVED VERBATIM, AND IT MAY DISAGREE WITH THE INDEX (X8V-C3).  `page=N` is a number, and
-     * `writeLayoutIndex` can reissue the id of the page that carries it - a duplicate id loses the
-     * argument to the first claimant, and the genuine export here has such a pair.  Measured:
-     * `1 gods.cs2` says `page=1` while the index, after a write, says `.id=8`.
+     * PRESERVED VERBATIM, AND IT MAY DISAGREE WITH THE INDEX (X8V-C3).  `page=N` is a number, and `writeLayoutIndex` can
+     * reissue the id of the page that carries it (a duplicate id loses the argument to the first claimant): `1 gods.cs2`
+     * says `page=1` while the index, after a write, says `.id=8`.
      *
-     * **That costs nothing, and Adam settled why (2026-09-10):** *"the `.id` field is what the Central
-     * Station uses to order the pages.  We still order by name, which is the simpler behavior."*  So
-     * neither number decides anything in TrainControl - `getLayoutList` sorts by name, and the id is an
-     * identity the autonomy setup is keyed by, not a position.  Rewriting this line from the id would
-     * be this program asserting something about an ordering it deliberately does not use.
+     * **That costs nothing**: *"the `.id` field is what the Central Station uses to order the pages.  We still order by
+     * name, which is the simpler behavior."*  So neither number decides anything in TrainControl: `getLayoutList` sorts
+     * by name, and the id is an identity the autonomy setup is keyed by, not a position.  Rewriting this line from the
+     * id would assert something about an ordering the program deliberately does not use.
      *
      * @param key the name, `page` on a real export
      * @param value what follows the equals sign
@@ -534,25 +511,18 @@ public class LayoutDiagram
     /**
      * Writes the page index and re-aims every arrow at the page it was aimed at, saving what changed.
      *
-     * **THE ONE PLACE THE RULE LIVES** (N8-A1).  Two methods write this index - `LayoutPageEdit` for
-     * Add, Rename and Duplicate, `TrainControlUI` for Delete and Combine - and a link tile holds a
-     * POSITION in the name-sorted page list, so all five change what every arrow on the layout means.
-     * A rule implemented in one of two writers and not the other is the defect this project produces
-     * most often, so neither writer implements it.
+     * **THE ONE PLACE THE RULE LIVES** (N8-A1).  Two methods write this index (`LayoutPageEdit` for Add, Rename and
+     * Duplicate, `TrainControlUI` for Delete and Combine), and a link tile holds a POSITION in the name-sorted page list,
+     * so all five change what every arrow on the layout means.  The re-aim is here rather than at the call sites because
+     * it is the one step a caller could get wrong in a way nothing would notice.
      *
-     * **Both ends of the re-aim are the sorted list, and the OLD one comes from the pages** (FV3-A2,
-     * corrected here by T10-C1).  This paragraph used to say the old order was read from the index
-     * before it was overwritten, and that it was done here so no caller could get it wrong.  It is not
-     * read from the index at all any more: `layoutDB` is keyed by name, so an index naming two pages
-     * the same aliases them onto one entry and the read gave an order neither page was written
-     * against.  `before` is taken from the pages this session is holding instead.
+     * **Both ends of the re-aim are the sorted list, and the OLD one comes from the pages** (FV3-A2, T10-C1): `layoutDB`
+     * is keyed by name, so an index naming two pages the same aliases them onto one entry, and an order read from the
+     * index file is one neither page was written against.  `before` is taken from the pages this session is holding.
      *
-     * The reason the work is here rather than at the call sites is unchanged, and it is the important
-     * half: it is the one step a caller could get wrong in a way nothing would notice.
-     *
-     * A rename carries the arrows with it - the page is the same page under another name.  A page that
-     * has gone leaves its arrows pointing at nothing rather than at whatever slid into its place, which
-     * is Adam's ruling of 2026-09-10; see `LayoutDiagramComponent.setLinkedPageIndex`.
+     * A rename carries the arrows with it, the page being the same page under another name.  A page that has gone leaves
+     * its arrows pointing at nothing rather than at whatever slid into its place; see
+     * `LayoutDiagramComponent.setLinkedPageIndex`.
      *
      * @param path the layout folder
      * @param layoutList the new page list, name-sorted
@@ -569,22 +539,14 @@ public class LayoutDiagram
     {
         // BOTH ENDS ARE THE SORTED LIST, WHICH IS THE ONLY THING A LINK'S NUMBER INDEXES INTO (FV3-A2).
         //
-        // `getLayoutList()` sorts by name, and that sorted list is what an arrow's number means.  This
-        // used to read the OLD order from the index file and take the NEW order from `layoutList` as
-        // handed in, and neither is that list: four of the five gestures pass something else.  A rename
-        // removes the old name and puts the new one back IN THE OLD SLOT, deliberately; an add, a
-        // duplicate and a combine APPEND, and the default name Combine offers - "<page> and neighbours" -
-        // sorts immediately after the page it was made from rather than last.  Only a delete was safe,
-        // because removing an element from a sorted list leaves it sorted.
+        // `getLayoutList()` sorts by name, and that sorted list is what an arrow's number means.  The list handed in is
+        // not it: a rename removes the old name and puts the new one back IN THE OLD SLOT, deliberately; an add, a
+        // duplicate and a combine APPEND, and the default name Combine offers ("<page> and neighbours") sorts
+        // immediately after the page it was made from rather than last.  Only a delete leaves it sorted.
         //
-        // Measured before this: adding a page left an arrow pointing at `2 - Bottom` where
-        // `3 - Top Parking` is correct, which is the same wrong answer the finding reported in the first
-        // place, and each write left the index unsorted so the next operation started from a worse one.
-        //
-        // `before` comes from the PAGES this session is holding rather than from the index file, which
-        // also settles the case where two pages carry one name: `layoutDB` aliases them into a single
-        // entry, so the index names more pages than the list the arrows index into, and a `before` taken
-        // from the file was longer than that list and moved an arrow that was already right.
+        // `before` comes from the PAGES this session is holding rather than from the index file, which also settles the
+        // case where two pages carry one name: `layoutDB` aliases them into a single entry, so the index names more
+        // pages than the list the arrows index into.
         List<LayoutDiagram> changed = repointLinksForNewOrder(pages, layoutList, renamed);
 
         writeLayoutIndex(path, layoutList, renamed, floor, keepAbsent);
@@ -595,22 +557,14 @@ public class LayoutDiagram
     /**
      * Re-aims every arrow for a new page order, in memory, and says which pages changed.
      *
-     * **SEPARATE FROM THE INDEX WRITE BECAUSE THE ORDER MATTERS** (T10-B1, T10-B2, T10-B3).  A caller
-     * that WRITES A PAGE FILE as part of the same gesture has to re-aim before it writes, or the file it
-     * writes carries the old numbers.  `LayoutPageEdit` does exactly that for Add, Duplicate and Rename -
-     * it saves the page and only then reached the re-aim - so all three left a page on disk aimed at the
-     * old alphabet while every other page was corrected.
+     * **SEPARATE FROM THE INDEX WRITE BECAUSE THE ORDER MATTERS** (T10-B1, T10-B2, T10-B3).  A caller that WRITES A PAGE
+     * FILE as part of the same gesture has to re-aim before it writes, or the file it writes carries the old numbers.
+     * `LayoutPageEdit` does exactly that for Add, Duplicate and Rename.  `writeIndexAndKeepLinksAimed` is the whole job
+     * for a caller that writes no page of its own, which is Delete and Combine.
      *
-     * `writeIndexAndKeepLinksAimed` is still the whole job for a caller that writes no page of its own,
-     * which is Delete and Combine.
-     *
-     * A link holds the destination's place in the NAME-SORTED page list, so both ends are sorted here
-     * regardless of what order the caller is holding: a rename puts the new name back in the old slot,
-     * and an add, a duplicate and a combine append.
-     *
-     * `before` is taken from the PAGES rather than from any list, which is what settles the case where
-     * two pages carry one name: `layoutDB` aliases them into a single entry, so a list read from the
-     * index would be longer than the one arrows index into.
+     * A link holds the destination's place in the NAME-SORTED page list, so both ends are sorted here regardless of what
+     * order the caller is holding.  `before` is taken from the PAGES rather than from any list, so two pages carrying one
+     * name (which `layoutDB` aliases into a single entry) do not make it longer than the list arrows index into.
      *
      * @param pages every page of the layout
      * @param layoutList the new page list, in whatever order the caller holds it
@@ -655,8 +609,7 @@ public class LayoutDiagram
     /**
      * Repoints the links on every given page, and says which pages changed.
      *
-     * One call for a whole layout, because an arrow on ANY page can point at the page that moved - the
-     * measured case had arrows on three different pages all aimed at two others.
+     * One call for a whole layout, because an arrow on ANY page can point at the page that moved.
      *
      * @param pages every page of the layout
      * @param before the page order the arrows were written against - the OLD page list, sorted
@@ -681,19 +634,14 @@ public class LayoutDiagram
     /**
      * Rewrites every link on this page so it still points at the page it pointed at before.
      *
-     * **A LINK HOLDS A POSITION IN THE NAME-SORTED PAGE LIST** (N8-A1), and four of the five items on
-     * Manage Pages move that list: adding a page, renaming one, duplicating one and deleting one all
-     * change the alphabet, and Combine adds a page as well.  Nothing re-aimed the arrows, so they
-     * silently came to mean something else - measured on the five pages of the sample layout, adding a
-     * page under the default name Combine itself offers repointed FOUR OF SEVEN arrows, and renaming
-     * `2 - Bottom` to `9 - Bottom` repointed the same four and left Bottom reachable from no arrow at
-     * all.  The new number is written straight back to the file, so it persisted.
+     * **A LINK HOLDS A POSITION IN THE NAME-SORTED PAGE LIST** (N8-A1), and every Manage Pages item that adds, renames,
+     * duplicates or deletes a page (and Combine) changes that list, so without a re-aim the arrows would silently come to
+     * mean something else.  The new number is written straight back to the file.
      *
-     * The destination is identified by NAME across the change, which is the only thing about a page
-     * that both lists agree on.  A page that is not in the new list - because it was deleted - leaves
-     * its arrows pointing at nothing rather than at whatever slid into its place, which is Adam's
-     * ruling of 2026-09-10: *"set the ID to -1 ... and simply resolve to nothing when clicked.  Then,
-     * the user can set it to the right page on their next edit."*
+     * The destination is identified by NAME across the change, which is the only thing about a page that both lists agree
+     * on.  A page that is not in the new list (it was deleted) leaves its arrows pointing at nothing rather than at
+     * whatever slid into its place: *"set the ID to -1 ... and simply resolve to nothing when clicked.  Then, the user can
+     * set it to the right page on their next edit."*
      *
      * A link that already points nowhere is left alone, and so is one whose number is not a page in the
      * OLD list - there is nothing to carry across for either.
@@ -767,10 +715,10 @@ public class LayoutDiagram
      */
     public void saveChanges(String filename, boolean duplicate) throws Exception
     {
-        // A PLACEHOLDER IS NEVER WRITTEN (NSV-B3).  This page is blank and the file it would go over is
-        // the one the operator is trying to get back - an unhydrated cloud file, a bad copy - so saving
-        // it would turn a page that cannot be read into a page that no longer exists.  Refused here,
-        // at the one method that writes a page, rather than at each caller.
+        // A PLACEHOLDER IS NEVER WRITTEN (NSV-B3).  This page is blank and the file it would go over is the one the
+        // operator is trying to get back (an unhydrated cloud file, a bad copy), so saving it would turn a page that
+        // cannot be read into a page that no longer exists.  Refused here, at the one method that writes a page, rather
+        // than at each caller.
         if (this.unreadable)
         {
             throw new Exception(I18n.f("layout.errorPageWasNotReadSoNotSaved", this.getName()));
@@ -782,13 +730,9 @@ public class LayoutDiagram
             String data = exportToCS2TextFormat();
 
             // Determine the file path.
-            //
-            // Sanitised, because this is the third writer of a page file and the only one that was
-            // not.  sanitizeFilename says why in its own javadoc: the reader locates a page by the
-            // name in the index and applies it, so a write that does not produces a file the reader
-            // will never look for.  A name holding a slash was the live case - resolveSibling reads it
-            // as a directory, so "Up/Down" was written into a folder of its own and the page was
-            // simply gone from the layout.
+            // Sanitised, because the reader locates a page by the name in the index and applies it (see
+            // sanitizeFilename), so a write that does not produces a file the reader will never look for.  A name holding
+            // a slash would be read by resolveSibling as a directory, and "Up/Down" written into a folder of its own.
             String renaming = filename == null ? null
                 : org.traincontrol.util.Util.sanitizeFilename(filename.trim());
 
@@ -797,16 +741,14 @@ public class LayoutDiagram
                     ? originalFilePath.resolveSibling(renaming + ".cs2")
                     : originalFilePath;
 
-            // Staged and moved into place, never truncated where it stands.
+            // Staged and moved into place, never truncated where it stands: this is a page of somebody's track diagram,
+            // and it is rewritten by things they did not ask for (the caption migration runs on the first repaint after
+            // an upgrade), so a crash or a power cut during a truncate-in-place write would lose the page.  The same care
+            // is taken over the locomotive database and the UI state.
             //
-            // This is a page of somebody's track diagram, and it is rewritten by things they did not
-            // ask for - the caption migration runs on the first repaint after an upgrade.  A plain
-            // truncate-in-place turns a crash or a power cut during that write into a lost page, and
-            // the same care is already taken over the locomotive database and the UI state.
-            //
-            // A copy of what was there is kept beside it the first time a page is rewritten, so that
-            // a migration which strips something a user wanted is recoverable by hand.  Only the
-            // first: the point is the state before this build touched it, not before the last save.
+            // A copy of what was there is kept beside it the first time a page is rewritten, so that a migration which
+            // strips something a user wanted is recoverable by hand.  Only the first: the point is the state before this
+            // build touched it, not before the last save.
             Path backup = newFilePath.resolveSibling(newFilePath.getFileName() + ".bak");
 
             if (Files.exists(newFilePath) && !Files.exists(backup))
@@ -829,13 +771,10 @@ public class LayoutDiagram
                 out.write(contents.getBytes(java.nio.charset.StandardCharsets.UTF_8));
             });
 
-            // If filename is not null, delete the original file - unless it IS the new file.
-            //
-            // On Windows and macOS "Main" and "MAIN" name one file, so the writer above did not create
-            // a second one, it reopened this one and wrote it.  Deleting the "original" then deleted
-            // the only copy of the page, and the index was left naming a file that does not exist.
-            // Renaming is offered only for local layouts, so there is no Central Station copy to fall
-            // back on - the page was simply gone.
+            // If filename is not null, delete the original file - unless it IS the new file.  On Windows and macOS "Main"
+            // and "MAIN" name one file, so the writer above reopened it rather than creating a second, and deleting the
+            // "original" would delete the only copy of the page (renaming is offered only for local layouts, so there is
+            // no Central Station copy to fall back on) and leave the index naming a file that does not exist.
             if (filename != null && !duplicate)
             {
                 if (Files.isSameFile(originalFilePath, newFilePath))
@@ -986,11 +925,9 @@ public class LayoutDiagram
     /**
      * Turns edit mode on or off.
      *
-     * There was no way to turn it OFF, because the only thing that ever cleared it was re-parsing the
-     * pages after a diagram edit.  A window that opens the editor and closes without saving - which
-     * autonomy mode always does - therefore left this flag set on the SHARED diagram, and the main
-     * window then rebuilt its grid in edit mode: labels wired to an editor that is not there, station
-     * labels gone, and a ClassCastException on the next click.
+     * A window that opens the editor and closes without saving (which autonomy mode always does) must clear the flag, or
+     * it stays set on the SHARED diagram and the main window rebuilds its grid in edit mode: labels wired to an editor
+     * that is not there, station labels gone, and a ClassCastException on the next click.
      *
      * @param edit
      */
@@ -1025,11 +962,8 @@ public class LayoutDiagram
         this.showAddress = showAddress;
     }
     
-    // ALL FOUR ARE WIRED (C18).  This used to say they were unused in the UI and that shiftLeft and
-    // shiftDown would be needed for completeness.  Both were written, all four are on the editor's
-    // right-click menu, and LayoutEditor asks shiftUp and shiftLeft whether they would do anything
-    // before offering them.  A comment saying a method has no callers is read as permission to change
-    // it freely, which is what makes a stale one worse than none.
+    // ALL FOUR ARE WIRED (C18): shiftRight, shiftLeft, shiftDown and shiftUp are on the editor's right-click menu, and
+    // LayoutEditor asks shiftUp and shiftLeft whether they would do anything before offering them.
     
     /**
      * Adds a new column to the layout at the specified index and shifts all existing components one column to the right.
