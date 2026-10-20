@@ -96,3 +96,4 @@ pushed: `git checkout <tag>` to look, `git reset --hard <tag>` on a branch to go
 | `fr136-phase1b-skips-phase6` | `0054eee3` | Every skip inspected and fixed; Phase 6 coverage of the main window, routes and events, layout editor (battery 108) |
 | `fr136-phase6` | `572c31c0` | Phase 6's fourth area, autonomy, merged: 157 new user-level claims in all (battery 109, 353 classes) |
 | `fr136-phase4-layout` | `18ef631a` | Phase 4, first part: Layout and LayoutEditor extractions with their review fixes, and the testAutonomyDiagramSession split (battery 111: 361 green; its one new red, the captions claim, was the test's own and is fixed in `765b37c3`) |
+| `fr136-phase4-tcui-tier2` | `fbfecf82` | Phase 4: TrainControlUI's Tier 2 in AutonomySettingsTab, LocomotiveActions, TimetableTab, CoveredTrackView, CaptionVisibility, with its review fixes; the fixes for battery 110's two reds (battery 112: 362 green) |
