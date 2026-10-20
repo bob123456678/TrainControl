@@ -30694,3 +30694,772 @@ body:
 tail:
 | ---
 |
+
+[test MT-779]
+ordinal: 778
+anchor: mt-779
+date: 2026-10-19
+title: FR-136: importing an older autonomy.json or an exported configuration into the autonomy setup works as before
+disposition: needs test
+from: FR-136
+written: 2026-10-19
+reopened: no
+body:
+| <a id="mt-779"></a>
+| ### MT-779 - 2026-10-19 - FR-136: importing an older autonomy.json or an exported configuration into the autonomy setup works as before
+|
+| **Disposition:** needs test
+| **From:** FR-136
+|
+| **Written:** 2026-10-19
+|
+| **Steps**
+|
+| 1. Autonomy > Configuration (name) > Export...  Save the configuration you have under a new file name.
+| 2. Autonomy > Configuration (name) > Import...  Choose that file, and when asked "What should the imported configuration be called?" type a new name (not one you already have).  Read the message that follows.
+| 3. Autonomy > Configuration (name) > Import... again.  Choose `docs/manual-tests/files/MT-491-autonomy-2.7.4c.json` (or your own older autonomy.json), and type another new name.  Read the message that follows.
+| 4. Autonomy > Configuration (name) > Import... a third time with the same old file, typing the name from step 3.  Answer Yes to the question.
+| 5. Choose each imported configuration in turn from Autonomy > Configuration, check that its stations and trains look right, and delete it with Autonomy > Manage Configurations... > Delete (which deletes the one chosen).  Finish by choosing your own configuration again.
+|
+| **Expected**
+|
+| - Step 2: a message begins "Imported." and says how many station names, lengths and other track settings were brought in.  Your own configuration is unchanged.
+| - Step 3: a message begins "Named", and says how many squares it named, how many locomotives it placed, how many squares it marked where every train turns round and how many other settings it carried, and how many squares already had a name and how many points could not be matched to a sensor.  It ends by saying which configuration it was imported into and that yours is still the one in use.
+| - Step 4: the question reads "A configuration named ... already exists.  Add to it what the file has and ... does not?  Nothing already set in ... is changed."  After Yes, a message says it was imported into that configuration again.
+| - Step 5: both imported configurations open without an error, and deleting them leaves your own untouched.  While autonomy is running, Import instead says "Autonomy is running, so nothing was imported.  Stop autonomy and import the file again."
+|
+| *What this is:* FR-136 Phase 3 moved this feature's code out of `AutonomySession` into `SessionImport` without changing what it does (94a35cf6).  The battery and the user-level claims in `regression.testTheImportDoorReadsAnOldFile` and `core.testALegacyImportBringsWhatItCanAndSaysWhatItLeaves` pass on the new code; this checks it on your own railway.  Any difference from before is a defect of the move.
+|
+tail:
+| ---
+|
+
+[test MT-780]
+ordinal: 779
+anchor: mt-780
+date: 2026-10-19
+title: FR-136: setting a run of track's direction in the autonomy editor, and the arrows drawn for it, work as before
+disposition: needs test
+from: FR-136
+written: 2026-10-19
+reopened: no
+body:
+| <a id="mt-780"></a>
+| ### MT-780 - 2026-10-19 - FR-136: setting a run of track's direction in the autonomy editor, and the arrows drawn for it, work as before
+|
+| **Disposition:** needs test
+| **From:** FR-136
+|
+| **Written:** 2026-10-19
+|
+| **Steps**
+|
+| 1. Autonomy > Edit Autonomy on Page, and pick a page.  Choose `Autonomy Setup` in the sidebar and set `Track Directions` to `Show All`.
+| 2. Left-click one piece of plain track in the middle of a long stretch between two stations or switches.  Read the message strip, then click the same square three more times, reading it each time.
+| 3. Click a square at the far end of that same stretch once.
+| 4. Press `Cancel` and answer Yes to "Close the autonomy editor and throw away everything changed since you last saved?", so nothing you did is kept.
+| 5. In Preferences > Autonomy, tick `Display Travel Restrictions` and `Display Allowed Directions`, and compare the arrows on the ordinary track diagram with the ones you saw in the editor.  Untick them again if you do not normally use them.
+|
+| **Expected**
+|
+| - Step 2: the whole stretch between the two stations or switches changes together, not just the square you clicked.  The strip says, in turn, "...: now one way, toward ...", then the other way, then "closed", then "runs both ways", each followed by "Click again to change it, or right-click for everything else."
+| - Step 3: it changes the same whole stretch, and the message names the same square as in step 2 (that square flashes if it is not the one you clicked).
+| - Step 4: the stretch is back as it was before step 2.
+| - Step 5: the ordinary diagram draws arrows on the same stretches as the editor, pointing the same way.
+|
+| *What this is:* FR-136 Phase 3 moved this feature's code out of `AutonomySession` into `SessionRuns` without changing what it does (29980741).  The battery and the user-level claims in `core.testTheArrowsTellTheWholeStory` and `core.testTheDiagramDrawsWhatTrainsMayDo` pass on the new code; this checks it on your own railway.  Any difference from before is a defect of the move.
+|
+tail:
+| ---
+|
+
+[test MT-781]
+ordinal: 780
+anchor: mt-781
+date: 2026-10-19
+title: FR-136: Why not Moving?, the Auto tab's "No available paths" and the paused reason work as before
+disposition: needs test
+from: FR-136
+written: 2026-10-19
+reopened: no
+body:
+| <a id="mt-781"></a>
+| ### MT-781 - 2026-10-19 - FR-136: Why not Moving?, the Auto tab's "No available paths" and the paused reason work as before
+|
+| **Disposition:** needs test
+| **From:** FR-136
+|
+| **Written:** 2026-10-19
+|
+| **Steps**
+|
+| 1. Autonomy > Edit Autonomy on Page, pick a page, choose `Autonomy Setup` in the sidebar.  Under `Autonomy Tools` set `Path Type` to `Auto`, press `Why not Moving?` and click the square a train stands on.  Read the banner.
+| 2. Set `Path Type` to `Manual` without clicking anything else.
+| 3. Click a square with no train on it.
+| 4. Close the editor with `Cancel`.  In the main window, on a train's card on the Auto tab, press the pause button (or untick `<train> Is Active` on its station's right-click menu).  Open the editor again, set `Path Type` to `Auto`, press `Why not Moving?` and click that train; then set `Path Type` to `Manual`.  Un-pause the train afterwards.
+| 5. On the Auto tab, if any train's card reads "No available paths.", hover over it, then click it.
+|
+| **Expected**
+|
+| - Step 1: the banner says either "<train>: can go to N station(s) - ..." or "<train>: nowhere to go".  Below it, stations autonomy could choose but cannot right now are listed under "Stations autonomy could choose, but cannot right now (N)", and stations it will never choose under "Stations autonomy will never choose (N)", each with its reason, for instance "Switched off.", "Set not to be chosen automatically.", "No track route leads there.", "This station does not accept <train>." or "<other train> is standing there."  A station on another page is named with "(Page ...)".
+| - Step 2: the answer is worked out again by itself.  The list is now headed "Stations the train cannot be sent to right now (N)", and nothing says a station "will never" be chosen.
+| - Step 3: the banner says "No train is standing on that square."
+| - Step 4: on `Auto` the banner says "<train> cannot be sent anywhere: This locomotive is paused."  On `Manual` it does not say that, because a pause is autonomy's alone.
+| - Step 5: the tooltip lists up to twelve stations, each with its reason.  Clicking opens a window titled "Why <train> has no available paths" with the same reasons grouped under the same headings.
+|
+| *What this is:* FR-136 Phase 4 moved this feature's code out of `Layout` into `LayoutExplanations` without changing what it does (6d67647b).  The battery and the user-level claims in `core.testWhyStuck` and `regression.testTheDestinationDoorsAgree` pass on the new code; this checks it on your own railway.  Any difference from before is a defect of the move.
+|
+tail:
+| ---
+|
+
+[test MT-782]
+ordinal: 781
+anchor: mt-782
+date: 2026-10-19
+title: FR-136: the track a standing train covers, its tail, and the grey on that track work as before
+disposition: needs test
+from: FR-136
+written: 2026-10-19
+reopened: no
+body:
+| <a id="mt-782"></a>
+| ### MT-782 - 2026-10-19 - FR-136: the track a standing train covers, its tail, and the grey on that track work as before
+|
+| **Disposition:** needs test
+| **From:** FR-136
+|
+| **Written:** 2026-10-19
+|
+| **Steps**
+|
+| 1. With autonomy loaded and stopped, right-click a train standing at a station on the track diagram and note the number in "Autonomy Train Length (...)".  Choose it and give the train a length that reaches back past the station's own track, over the track behind it (a few units more than the station's length).
+| 2. Look at the track behind that train.
+| 3. Right-click another train that would have to cross that stretch to get anywhere, and look at the destinations it offers.
+| 4. Point at the first train's station and press Control+X, then Control+V.  If a small window appears asking "Which is the farthest sensor the tail of ... has crossed on its way into ...?  Click it on the diagram", click one of the lit sensors (or press Not known).
+| 5. Put the first train's length back to the number you noted in step 1.
+|
+| **Expected**
+|
+| - Step 2: an orange line runs from the station back along the road the train came in on, over every square its length covers, and the track the train blocks is grey; the grey stops where the train's length runs out and does not carry on past a switch the train does not reach.
+| - Step 3: a destination that can only be reached across the grey track is not offered.
+| - Step 4: the train is put down where it was, the lit squares go out, and the orange and grey run back towards the sensor you clicked (with Not known they stop at the junction).
+| - Step 5: the grey shrinks back, and the destination from step 3 is offered again.
+|
+| *What this is:* FR-136 Phase 4 moved this feature's code out of `Layout` into `StandingTrains` without changing what it does (474b2ba6).  The battery and the user-level claims in `core.testATrainCoversTheTrackBehindIt`, `ui.testTheGreyAppearsAtIdleToo` and `regression.testTheTailIsPickedOnTheDiagram` pass on the new code; this checks it on your own railway.  Any difference from before is a defect of the move.
+|
+tail:
+| ---
+|
+
+[test MT-783]
+ordinal: 782
+anchor: mt-783
+date: 2026-10-19
+title: FR-136: the refusals for a train too long for a route, a berth or a station, or meeting its own tail, work as before
+disposition: needs test
+from: FR-136
+written: 2026-10-19
+reopened: no
+body:
+| <a id="mt-783"></a>
+| ### MT-783 - 2026-10-19 - FR-136: the refusals for a train too long for a route, a berth or a station, or meeting its own tail, work as before
+|
+| **Disposition:** needs test
+| **From:** FR-136
+|
+| **Written:** 2026-10-19
+|
+| **Steps**
+|
+| 1. On the track diagram, right-click a train standing at a station and note the number in "Autonomy Train Length (...)".  Choose it and give the train a length of 100.
+| 2. Autonomy > Edit Autonomy on Page, pick the page, choose `Autonomy Setup`, set `Path Type` to `Manual`, press `Why not Moving?` and click that train.  Read the reasons under "Stations the train cannot be sent to right now".  Then set `Path Type` to `Auto` and read the answer again.
+| 3. Press `Cancel` (answer Yes) to close the editor.  Right-click the train on the track diagram and look at the destinations it offers.
+| 4. Give the train a length of 1, and ask `Why not Moving?` again on `Manual`.
+| 5. If your railway has a loop with every square of it measured, give the train a length a little over the loop's length (try 20) and ask `Why not Moving?` again, clicking the train where a route round the loop would bring it back onto its own track.
+| 6. Put the train's length back to the number you noted in step 1.
+|
+| **Expected**
+|
+| - Step 2: stations whose measured track cannot hold the train say so in these words (the names and numbers are yours): "<train> (length 100) is longer than the track leading into <station>, which measures N - so it would stand across the switch behind it", or "<train> (length 100) does not fit at <place> on the way to <station>, where the track measures N".  A parking berth that the train would make stand across track other trains need says "... is too long for the parking berth at <station> and would stand across <place>, which other trains need - park a shorter train here, or send this one somewhere longer".  A station you gave a smaller Maximum Train Length says "trainLength is too long to stop at <station>".  On `Auto` the same stations are refused, with a station autonomy will never choose listed under "Stations autonomy will never choose".
+| - Step 3: no station that step 2 refused for its length is offered.
+| - Step 4: those length reasons are gone.
+| - Step 5: the refusal reads "<train> (length N) would run into its own tail on <place>: the route comes back onto track the train still covers after only M units - send a train of M units or shorter, or send this one another way".
+|
+| *What this is:* FR-136 Phase 4 moved this feature's code out of `Layout` into `TrainFit` without changing what it does (bd956fb6).  The battery and the user-level claims in `core.testAManualSendIsRefusedABerthTooShort`, `core.testATrainDoesNotRunIntoItsOwnTail` and `core.testABerthAndAPlatformJudgeAnOverhangDifferently` pass on the new code; this checks it on your own railway.  Any difference from before is a defect of the move.
+|
+tail:
+| ---
+|
+
+[test MT-784]
+ordinal: 783
+anchor: mt-784
+date: 2026-10-19
+title: FR-136: the track editor's selecting, cut, copy, paste, move and rotate work as before
+disposition: needs test
+from: FR-136
+written: 2026-10-19
+reopened: no
+body:
+| <a id="mt-784"></a>
+| ### MT-784 - 2026-10-19 - FR-136: the track editor's selecting, cut, copy, paste, move and rotate work as before
+|
+| **Disposition:** needs test
+| **From:** FR-136
+|
+| **Written:** 2026-10-19
+|
+| **Steps**
+|
+| 1. On the Track Diagram tab press `Edit` and pick a page.  Use a stretch of plain track with no station, signal or switch on it, with free squares beside it.  Shift+click three of its squares, then right-click one and look at `Selection (3)`.
+| 2. In `Selection (3)` choose `Copy`; point at a free square and press Control+V.  Then pick the same three again, choose `Cut`, point at another free square and press Control+V.
+| 3. Drag one of the picked squares to a free spot, then drag it so that part of the selection would go off the edge of the page.
+| 4. With the squares picked, choose `Selection` > `Rotate`.  Then point at one square alone and press Control+R.
+| 5. Click one square (it is picked up), then click a free square (it is put down there).
+| 6. Press Control+Z until the page looks as it did when you opened the editor, then press `Cancel` and answer Yes to "Are you sure you want to close the editor without saving changes?"
+|
+| **Expected**
+|
+| - Step 1: the three squares are picked out, and the menu reads `Selection (3)` with `Copy`, `Cut`, `Rotate` and `Delete` available.
+| - Step 2: the copy leaves the originals where they are and adds three squares at the pointer; the cut removes the three and the paste puts them down at the pointer, so the stretch has moved.
+| - Step 3: the first drag moves all the picked squares by the same step.  The second is refused with "That move would take part of the selection off the diagram." and nothing moves.
+| - Step 4: every picked square turns where it stands, and the single square turns one step.
+| - Step 5: the square moves, it is not copied.
+| - Step 6: each Control+Z takes back one of the steps above, and nothing you did is kept after Cancel.
+|
+| *What this is:* FR-136 Phase 4 moved this feature's code out of `LayoutEditor` into `LayoutEditorSelection` without changing what it does (a54a6622).  The battery and the user-level claims in `ui.testTheTrackEditorByHand` and `regression.testTheEditorTellsAutonomy` pass on the new code; this checks it on your own railway.  Any difference from before is a defect of the move.
+|
+tail:
+| ---
+|
+
+[test MT-785]
+ordinal: 784
+anchor: mt-785
+date: 2026-10-19
+title: FR-136: shifting, growing and shrinking a page in the track editor work as before
+disposition: needs test
+from: FR-136
+written: 2026-10-19
+reopened: no
+body:
+| <a id="mt-785"></a>
+| ### MT-785 - 2026-10-19 - FR-136: shifting, growing and shrinking a page in the track editor work as before
+|
+| **Disposition:** needs test
+| **From:** FR-136
+|
+| **Written:** 2026-10-19
+|
+| **Steps**
+|
+| 1. Before you start, File > Backup TrainControl Data.  On the Track Diagram tab press `Edit` and pick a page.  Hover over the "Diagram Size" heading and note the size it gives ("The page is ... squares.").
+| 2. Press `+` under Diagram Size (or Control+I), then `-`.
+| 3. Press `+`, place a piece of track on the new last column, and press `-` again.  Take the piece back with Control+Z before going on.
+| 4. Right-click a square in the middle of a row and open `Diagram`.  Choose `Shift Down`, then press Control+Z.  Do the same with `Shift Right`, `Shift Up` and `Shift Left`.
+| 5. Right-click a square on the bottom row and look at `Shift Up`; right-click a square in the last column and look at `Shift Left`.
+| 6. In the autonomy editor look at a station that was below or beside the square you shifted from, then close it and press `Cancel` in the track editor and answer Yes.
+|
+| **Expected**
+|
+| - Step 2: `+` adds a column on the right and a row at the bottom, so the size grows by one each way; `-` takes them away again.
+| - Step 3: the second `-` is refused with "The rightmost column or the bottom row still holds track, so the diagram cannot be made smaller without losing it." and the page keeps its size and the piece.
+| - Step 4: each shift moves everything from the highlighted row (or column) on in that direction by one square (Shift Down and Shift Right add a row or column to make room), and Control+Z puts it back.
+| - Step 5: `Shift Up` and `Shift Left` are greyed there, because there is nothing further along to move.
+| - Step 6: during step 4 the stations, names, lengths and links went with the track they were on, and after Cancel the page is as it was in step 1.
+|
+| *What this is:* FR-136 Phase 4 moved this feature's code out of `LayoutEditor` into `LayoutEditorReshape` without changing what it does (aecaf627).  The battery and the user-level claims in `regression.testDiagramShiftKeepsSetup` and `ui.testTheTrackEditorByHand` pass on the new code; this checks it on your own railway.  Any difference from before is a defect of the move.
+|
+tail:
+| ---
+|
+
+[test MT-786]
+ordinal: 785
+anchor: mt-786
+date: 2026-10-19
+title: FR-136: undo and redo in the track editor, captions included, work as before
+disposition: needs test
+from: FR-136
+written: 2026-10-19
+reopened: no
+body:
+| <a id="mt-786"></a>
+| ### MT-786 - 2026-10-19 - FR-136: undo and redo in the track editor, captions included, work as before
+|
+| **Disposition:** needs test
+| **From:** FR-136
+|
+| **Written:** 2026-10-19
+|
+| **Steps**
+|
+| 1. Before you start, File > Backup TrainControl Data.  On the Track Diagram tab press `Edit`, pick a page, and right-click a blank square: note that `Undo` and `Redo` are greyed.
+| 2. Rotate a square (Control+R), place a piece of track on a free square, and drag another square to a free spot.  Right-click and note that `Undo` is now available.  Press Control+Z three times, then Control+Y three times, then Control+Z three times again.
+| 3. Pick a sensor that has a station caption on the diagram.  Press Delete with the pointer over it, then Control+Z.
+| 4. Drag that same captioned sensor to a free square, then press Control+Z.
+| 5. Right-click and choose `Undo`, then `Redo`, from the menu instead of the keys.
+| 6. Press `Cancel` and answer Yes to "Are you sure you want to close the editor without saving changes?"  Then open the autonomy editor on that page and check the station is named as before.
+|
+| **Expected**
+|
+| - Step 1: both are greyed on an untouched page.
+| - Step 2: each Control+Z takes back the last change, newest first; each Control+Y puts it back; after the last three Control+Z presses the page is as you opened it.
+| - Step 3: after Delete the sensor and its caption are gone; after Control+Z both are back.
+| - Step 4: after the drag the caption is with the sensor on its new square; after Control+Z both are back where they were.
+| - Step 5: the menu items do the same as the keys.
+| - Step 6: closing asks the question; afterwards the station is named as before and no change of yours is kept.
+|
+| *What this is:* FR-136 Phase 4 moved this feature's code out of `LayoutEditor` into `LayoutEditorUndo` without changing what it does (3708b669).  The battery and the user-level claims in `ui.testTheTrackEditorByHand` and `regression.testCancelUndoesAutonomyEdits` pass on the new code; this checks it on your own railway.  No automated test notices if Undo stops putting captions back (steps 3 and 4), so those two are the ones only you can check.  Any difference from before is a defect of the move.
+|
+tail:
+| ---
+|
+
+[test MT-787]
+ordinal: 786
+anchor: mt-787
+date: 2026-10-19
+title: FR-136: the Auto tab's settings, and their refusal while autonomy is busy, work as before
+disposition: needs test
+from: FR-136
+written: 2026-10-19
+reopened: no
+body:
+| <a id="mt-787"></a>
+| ### MT-787 - 2026-10-19 - FR-136: the Auto tab's settings, and their refusal while autonomy is busy, work as before
+|
+| **Disposition:** needs test
+| **From:** FR-136
+|
+| **Written:** 2026-10-19
+|
+| **Steps**
+|
+| 1. With autonomy loaded and stopped, open Autonomy > Autonomy Settings... and write down every setting: Minimum Action Delay (s), Maximum Action Delay (s), Default Locomotive Speed (%), Pre-arrival Speed Multiplier (%), Prioritize Locomotives After (min), Maximum Active Trains, Maximum Network Latency (ms), and the ticks for Atomic Routes, Turn Off Functions on Arrival, Turn On Functions on Departure and Toggle specified routes.
+| 2. Move each slider a little and untick or tick each of the ticks, then change tab and come back to the settings.  Then load the same configuration again from Autonomy > Configuration (...) and look at the settings once more.
+| 3. If any train or any track autonomy uses has no length, untick `Atomic Routes`.
+| 4. Click a route in the list under `Toggle specified routes`, then click it again.
+| 5. Press `Start Autonomous Operation` and, while the trains run, hover over a slider and try to move it.  Press Graceful Stop, and when the trains have stopped try a slider again.
+| 6. Put every setting back to the values you wrote down in step 1.
+|
+| **Expected**
+|
+| - Step 2: each slider and tick keeps what you set, both when you come back to the tab and after the configuration is loaded again.
+| - Step 3: you are told "Atomic Routes cannot be switched off while ..." (naming how many pieces of track or locomotives have no length), and the tick goes back on.  If everything has a length it simply switches off.
+| - Step 4: the route is armed or disarmed, and the list shows it.
+| - Step 5: while trains run, every slider and tick is greyed, and hovering over one says "Please wait for all active locomotives to stop."; trying to move one does nothing, and no message appears.  Once the trains have stopped the controls work again.
+| - Step 6: every setting reads as in step 1.
+|
+| *What this is:* FR-136 Phase 4 moved this feature's code out of `TrainControlUI` into `AutonomySettingsTab` without changing what it does (49fb47fa).  The battery and the user-level claims in `ui.testNonAtomicRoutesNeedTheirLengths` and `regression.testNoSetupEditDuringARun` pass on the new code; this checks it on your own railway.  Any difference from before is a defect of the move.
+|
+tail:
+| ---
+|
+
+[test MT-788]
+ordinal: 787
+anchor: mt-788
+date: 2026-10-19
+title: FR-136: jumping to a locomotive, changing its name or address, its notes, finding similar ones and deleting one work as before
+disposition: needs test
+from: FR-136
+written: 2026-10-19
+reopened: no
+body:
+| <a id="mt-788"></a>
+| ### MT-788 - 2026-10-19 - FR-136: jumping to a locomotive, changing its name or address, its notes, finding similar ones and deleting one work as before
+|
+| **Disposition:** needs test
+| **From:** FR-136
+|
+| **Written:** 2026-10-19
+|
+| **Steps**
+|
+| 1. Press Control+F and type part of the name of a locomotive that is on a button; press Enter.  Press Control+F and Enter with nothing typed.
+| 2. Add a throwaway locomotive with `Add Locomotive` (Control+D), using a name no other locomotive has (for instance "ZZ Test") and an address nothing uses, and put it on a button (Control+A assigns a locomotive to the active button).  Right-click its button, open `Manage Locomotive...` and choose `Edit Name/Address/Decoder`; give it another name and the next address up.
+| 3. On that locomotive choose `Edit Notes` (Control+N); type a railway name and a start year, then press OK.  Open it again and press Cancel.
+| 4. Choose `Find Similar Locomotives` on it, and on a locomotive that has no railway and no start year.
+| 5. Try `Edit Name/Address/Decoder` again with the name of a locomotive you already have.
+| 6. Choose `Delete from Database` on the throwaway one, answer No, then do it again and answer Yes.
+|
+| **Expected**
+|
+| - Step 1: the button of the locomotive whose name matches is made the active one (a name that matches exactly first), and the log says where the locomotive was found.  Pressing Control+F and Enter again moves on to the next match.
+| - Step 2: the dialog is titled "Change name/address for ..."; afterwards the button, the locomotive list and any route that drives it use the new name and address.
+| - Step 3: the dialog is titled "Edit Locomotive Info: ..." and holds the start year, end year, railway name and notes; OK keeps what you typed, Cancel changes nothing.
+| - Step 4: a dialog titled "Find Locomotives Similar to ..." lets you choose how many to find and how to order them, then lists the matches and offers to map them to a page.  On the locomotive with neither railway nor year it says "This locomotive has no railway and no start year." and "Cannot perform similarity search."
+| - Step 5: the change is refused with "Locomotive ... already exists in the locomotive DB. Rename or delete it first." and nothing changes.
+| - Step 6: it asks "Are you sure you want to delete ... from the database?"; No keeps it, Yes removes it from the database and from its button.  While autonomy is running, the name/address change instead says "Cannot edit locomotives while autonomy is running."
+|
+| *What this is:* FR-136 Phase 4 moved this feature's code out of `TrainControlUI` into `LocomotiveActions` without changing what it does (6aa89560).  The battery and the user-level claims in `ui.testMappingPagesAndLocomotiveDoors` and `regression.testLocomotiveIdentityPropagates` pass on the new code; this checks it on your own railway.  Any difference from before is a defect of the move.
+|
+tail:
+| ---
+|
+
+[test MT-789]
+ordinal: 788
+anchor: mt-789
+date: 2026-10-19
+title: FR-136: the timetable's list, Delete Entry, Change Delay, Restart and Clear work as before
+disposition: needs test
+from: FR-136
+written: 2026-10-19
+reopened: no
+body:
+| <a id="mt-789"></a>
+| ### MT-789 - 2026-10-19 - FR-136: the timetable's list, Delete Entry, Change Delay, Restart and Clear work as before
+|
+| **Disposition:** needs test
+| **From:** FR-136
+|
+| **Written:** 2026-10-19
+|
+| **Steps**
+|
+| 1. With autonomy stopped, make a copy to work on: Autonomy > Manage Configurations... > New Configuration..., type a name such as "MT copy", and answer Yes to "Copy where the trains stand and the timetable from ... too?"  Then choose the copy under Autonomy > Configuration (...).  Open the Auto tab's Timetable tab and look at the list.  (If your timetable is empty, press `Capture Locomotive Commands`, send one train by hand, press it again, and work on that.)
+| 2. Right-click an entry and choose `Change Delay`.  Type a different number of seconds.
+| 3. Right-click an entry and choose `Delete Entry`; answer No, then do it again and answer Yes.
+| 4. Right-click and choose `Restart Timetable`; answer Yes.  Choose it a second time.
+| 5. Right-click and choose `Clear Timetable`; answer No, then do it again and answer Yes.
+| 6. Choose your own configuration again under Autonomy > Configuration (...), then choose the copy and delete it with Autonomy > Manage Configurations... > Delete.  Choose your own configuration again.
+|
+| **Expected**
+|
+| - Step 1: the list shows one row for each entry with the columns Index, Locomotive, Start, Destination and Time.
+| - Step 2: asked "Enter delay (seconds) before this route executes:" with the current delay filled in; the Time column shows the new delay.
+| - Step 3: asked "This will remove entry #... (...). Continue?"; No leaves the list alone, Yes removes that one row and no other.
+| - Step 4: asked "This will mark all timetable entries as unvisited to allow the next execution to start from the top. Continue?"; after Yes every entry reads as not yet run, and the second time it says "The timetable is already reset."
+| - Step 5: asked "This will remove all timetable entries. Continue?"; No leaves it, Yes empties the list.
+| - Step 6: your own configuration still has its timetable, untouched.  While autonomy is running, each of these items instead says "Please wait for all active locomotives to stop."
+|
+| *What this is:* FR-136 Phase 4 moved this feature's code out of `TrainControlUI` into `TimetableTab` without changing what it does (13c07b3f).  The battery and the user-level claims in `ui.testTheTimetableAnswersItsMenu` and `ui.testARenameReachesTheTimetableOnScreen` pass on the new code; this checks it on your own railway.  Any difference from before is a defect of the move.
+|
+tail:
+| ---
+|
+
+[test MT-790]
+ordinal: 789
+anchor: mt-790
+date: 2026-10-19
+title: FR-136: the orange and grey covered-track shading on the track diagram follows the trains as before
+disposition: needs test
+from: FR-136
+written: 2026-10-19
+reopened: no
+body:
+| <a id="mt-790"></a>
+| ### MT-790 - 2026-10-19 - FR-136: the orange and grey covered-track shading on the track diagram follows the trains as before
+|
+| **Disposition:** needs test
+| **From:** FR-136
+|
+| **Written:** 2026-10-19
+|
+| **Steps**
+|
+| 1. With autonomy loaded and stopped, look at a train standing at a station on the track diagram.  Right-click it, open "Autonomy Train Length (...)" and note the number, then give it a length that reaches back over the track behind its station.
+| 2. Point at that station, press Control+X to pick the train up, then Control+V to put it down again (answer any question about its tail as it was before).
+| 3. Press `Start Autonomous Operation` and watch one train run from one station to the next.  When it has arrived press Graceful Stop.
+| 4. Put the train's length back to the number you noted in step 1.
+| 5. Choose Autonomy > Manage Configurations... > Stop Using Autonomy, look at the diagram, then press `Load this configuration` on the strip above it.
+|
+| **Expected**
+|
+| - Step 1: within a moment of setting the length, an orange line is drawn along the squares the train covers, from its station back along the road it came in on, and the track it blocks is grey.  The window stays responsive while this is drawn.
+| - Step 2: the orange and grey leave when the train is picked up and come back, in the same place, when it is put down.
+| - Step 3: while it runs, its route ahead is blue, the track it has driven and still holds is dark grey, and the train itself is orange along its length; where `Atomic Routes` is unticked the dark grey goes as the train gives the track behind it back.  Once it has arrived and stopped, the orange and grey are those of a standing train.
+| - Step 4: the orange and grey shrink to match.
+| - Step 5: with autonomy unloaded no orange or grey is drawn; after it is loaded again they are back as in step 1.
+|
+| *What this is:* FR-136 Phase 4 moved this feature's code out of `TrainControlUI` into `CoveredTrackView` without changing what it does (02348dc8).  The battery and the user-level claims in `ui.testTheGreyAppearsAtIdleToo` and `ui.testBlockedTrackIsGreyWhileAutonomyRuns` pass on the new code; this checks it on your own railway.  Any difference from before is a defect of the move.
+|
+tail:
+| ---
+|
+
+[test MT-791]
+ordinal: 790
+anchor: mt-791
+date: 2026-10-19
+title: FR-136: Show Inactive Labels hides and shows the captions of stations autonomy cannot choose as before
+disposition: needs test
+from: FR-136
+written: 2026-10-19
+reopened: no
+body:
+| <a id="mt-791"></a>
+| ### MT-791 - 2026-10-19 - FR-136: Show Inactive Labels hides and shows the captions of stations autonomy cannot choose as before
+|
+| **Disposition:** needs test
+| **From:** FR-136
+|
+| **Written:** 2026-10-19
+|
+| **Steps**
+|
+| 1. With a configuration loaded, look at Preferences > Autonomy and note whether `Show Inactive Labels` is ticked.  On the track diagram find one station autonomy will never choose (a parking berth, a station with `Can Be Chosen in Full Autonomy` unticked, or one switched off) and one it does choose.
+| 2. Untick `Show Inactive Labels`.
+| 3. Tick it again.
+| 4. If you have a second configuration, untick `Show Inactive Labels`, choose the other configuration under Autonomy > Configuration (...), and look at the captions; then choose your own again.
+| 5. Put `Show Inactive Labels` back to how it was in step 1.
+|
+| **Expected**
+|
+| - Step 1: every station has its caption while the box is ticked.
+| - Step 2: at once, the captions of stations autonomy can never choose disappear and the rest keep theirs.  The tiles, trains and arrows on the diagram do not change.
+| - Step 3: every caption comes back at once.
+| - Step 4: the captions that are hidden are those of the stations the other configuration cannot choose, not the ones hidden before.
+| - Step 5: the diagram is as it was in step 1.
+|
+| *What this is:* FR-136 Phase 4 moved this feature's code out of `TrainControlUI` into `CaptionVisibility` without changing what it does (02348dc8).  The battery and the user-level claims in `regression.testDiagramDrawingSettings` and `regression.testTheDiagramRefreshDoesNotWaitOnTheRailway` pass on the new code; this checks it on your own railway.  Any difference from before is a defect of the move.
+|
+tail:
+| ---
+|
+
+[test MT-792]
+ordinal: 791
+anchor: mt-792
+date: 2026-10-19
+title: FR-136: a square's right-click menu in the autonomy editor and on the track diagram, and Bulk Tools, work as before
+disposition: needs test
+from: FR-136
+written: 2026-10-19
+reopened: no
+body:
+| <a id="mt-792"></a>
+| ### MT-792 - 2026-10-19 - FR-136: a square's right-click menu in the autonomy editor and on the track diagram, and Bulk Tools, work as before
+|
+| **Disposition:** needs test
+| **From:** FR-136
+|
+| **Written:** 2026-10-19
+|
+| **Steps**
+|
+| 1. Autonomy > Edit Autonomy on Page, pick a page, choose `Autonomy Setup`.  Right-click a station.  Look at the heading and the items, then open `Station (...)` and `Changing Direction`.  Close the menu with Escape.
+| 2. Right-click a piece of plain track, a switch, and a page link or tunnel (if you have one), one after another, and look at each menu.
+| 3. Right-click a blank square and a square that carries your own text, and look at the first item of each.
+| 4. Open `Bulk Tools` from any menu.
+| 5. Press `Cancel` (answer Yes) to close the editor.  On the Track Diagram tab right-click the same station, and open its `Autonomy Setup` submenu.  Close it with Escape without choosing anything.
+|
+| **Expected**
+|
+| - Step 1: the menu opens with the station's name as a bold heading, then, as they apply: `Add a Locomotive to Autonomy...`, the train standing there with `... Is Facing...` and `... Is Active`, `Set Home Locomotive...`, `Rename...`, `Station (...)`, `Changing Direction`, `Trains May Arrive...`, `Trains May Depart...`, `Exit Guard Signal...`, `Entry Guard Signal...`, `Advanced Parameters...`, `Segment Length...`, `Show a Station Name Here...` and `Bulk Tools`.  `Station (...)` holds `Yes - Trains Can Stop Here`, `No - Trains Can Only Pass Through`, `No - Nothing Can Pass`, `Can Be Chosen in Full Autonomy` and `Maximum Train Length (...)`; `Changing Direction` holds `Trains Never Change Direction Here`, `Trains May Change Direction Here` and `Trains Must Change Direction Here`, with the current one marked.
+| - Step 2: plain track offers `Trains May Depart...` (`Both Ways`, `One Way, Toward ...`, `Closed - No Trains`) and `Segment Length...`; a switch offers a tick for each side it leaves by (`The N Side` and so on) and `Every Branch of This Switch`; a link offers `Autonomy Uses This Link` and `Pair with a Link...` (or `Go to the Other End (...)...` and `Unpair This Link` once paired).  Nothing offers a station name on a switch or signal.
+| - Step 3: the first item reads `Show a Station Name Here...`; on a square with your own text, its tooltip says choosing it asks to replace the text.
+| - Step 4: `Bulk Tools` lists `One-Way Run`, `Name Everything...`, `Mass Assign Lengths...`, `Mass Assign Station Max Train Lengths...`, `Mass Assign Train Lengths (... missing)...`, the Clear items, `Allow Every Path`, `Home All Trains Where They Stand`, `Place All Trains at Their Homes`, and `Activate All Trains` or `Deactivate All Trains`.
+| - Step 5: the submenu offers the same station items as the editor did in step 1.
+|
+| *What this is:* FR-136 Phase 4 moved this feature's code out of `AutonomyEditorPanel` into `EditorTileMenus` without changing what it does (e3e2c1e7).  The battery and the user-level claims in `ui.testBulkToolsHoldsTheWholeLayoutTools` and `ui.testDiagramLooksRight` pass on the new code; this checks it on your own railway.  Any difference from before is a defect of the move.
+|
+tail:
+| ---
+|
+
+[test MT-793]
+ordinal: 792
+anchor: mt-793
+date: 2026-10-19
+title: FR-136: the "<train> Is Facing..." menu with its arrived-from and tail choices works as before
+disposition: needs test
+from: FR-136
+written: 2026-10-19
+reopened: no
+body:
+| <a id="mt-793"></a>
+| ### MT-793 - 2026-10-19 - FR-136: the "<train> Is Facing..." menu with its arrived-from and tail choices works as before
+|
+| **Disposition:** needs test
+| **From:** FR-136
+|
+| **Written:** 2026-10-19
+|
+| **Steps**
+|
+| 1. With autonomy loaded and stopped, right-click a train standing at a station on the track diagram.  Hover over `<train> Is Facing...` and read its tooltip, then open it.
+| 2. Choose the other facing it offers.  Right-click the train again and look at which facing is ticked.  Choose the original facing again.
+| 3. If the train has a length set and its tail could lie on either of two roads, look further down the same menu for "Arrived from (tail lies this way)" and "Where the tail lies".  Choose another side, then choose the original one again; and choose `Not known`, then your original answer again.
+| 4. Right-click a train standing on a square no track leads out of, if you have one, and look at the menu.
+| 5. Autonomy > Edit Autonomy on Page, pick the page, `Autonomy Setup`, right-click the same train and open `<train> Is Facing...` there; if "Where the tail lies" is shown, choose `Pick on the diagram...`, click one of the outlined squares, then press `Cancel` and answer Yes.
+|
+| **Expected**
+|
+| - Step 1: the tooltip says "Which way the train points.  Unsure?  Leave it: autonomy corrects it on the first run."  The menu is headed "Facing (front of the train)" and offers the ways the track allows, from North (up the diagram), East (right), South (down) and West (left), with the train's present one ticked.  Where only one way is possible it also shows the greyed line "Only one direction is possible here".
+| - Step 2: the ticked facing changes to the one you chose; putting it back restores it.
+| - Step 3: the sides offered are those a train may arrive by, with the recorded one ticked, and the choices for the tail (the farthest sensor it has crossed, and `Not known`) follow it; each choice you make stays ticked when you look again.
+| - Step 4: `<train> Is Facing...` is there but greyed, and its tooltip says "No train can be driven out of this square, so there is no facing to choose."
+| - Step 5: the editor's menu offers the same facings as the track diagram's; `Pick on the diagram...` outlines the squares the tail can have crossed, and clicking an outlined one records it.  Cancel puts everything back.
+|
+| *What this is:* FR-136 Phase 4 moved this feature's code out of `AutonomyEditorPanel` into `EditorTileMenus` without changing what it does (e3e2c1e7).  The battery and the user-level claims in `regression.testTheFacingMenuIsAboutTheTrainThere` and `ui.testThePlaceDoorsKeepTheHeading` pass on the new code; this checks it on your own railway.  Any difference from before is a defect of the move.
+|
+tail:
+| ---
+|
+
+[test MT-794]
+ordinal: 793
+anchor: mt-794
+date: 2026-10-19
+title: FR-136: the autonomy editor's prompts for a number, locomotives, a length, a link name and blocked points work as before
+disposition: needs test
+from: FR-136
+written: 2026-10-19
+reopened: no
+body:
+| <a id="mt-794"></a>
+| ### MT-794 - 2026-10-19 - FR-136: the autonomy editor's prompts for a number, locomotives, a length, a link name and blocked points work as before
+|
+| **Disposition:** needs test
+| **From:** FR-136
+|
+| **Written:** 2026-10-19
+|
+| **Steps**
+|
+| 1. Autonomy > Edit Autonomy on Page, pick a page, choose `Autonomy Setup`.  Right-click a station, open `Advanced Parameters...` and choose `Station Priority (...)`.  Type "abc", then press OK; ask again and type 5.  Then choose `Speed Multiplier (...%)` and type 250, then 150.
+| 2. On the same station open `Advanced Parameters...` > `Excluded Locomotives (...)`.  Look at the window, choose `Exclude the chosen locomotives`, and tick a train that is not this station's home.  Then open it again, tick this station's home train and press OK.
+| 3. Point at the station and press Control+B; type -1, press OK, then 4.  Right-click a piece of track beside it and choose `Segment Length...`; then point at that same square and press Control+E.  Point at a square with no track and press Control+E.
+| 4. Right-click a page link or tunnel (if you have one), choose `Name...`, and type a name.
+| 5. On the station choose `Advanced Parameters...` > `Unavailable While Occupied (...)`, tick another station, and try `Pick on the Diagram...` too.
+| 6. Press `Cancel` and answer Yes to "Close the autonomy editor and throw away everything changed since you last saved?"
+|
+| **Expected**
+|
+| - Step 1: "abc" is refused with ""abc" is not a whole number, so nothing was changed."; 5 is accepted and the menu item then reads `Station Priority (5)`.  The multiplier prompt reads "Enter speed multiplier (1-200%) for ...:"; 250 is refused with "Invalid input. Please enter a valid integer." and 150 is accepted, the item reading `Speed Multiplier (150%)`.
+| - Step 2: the window is titled "Locomotive Exclusions" and offers `Exclude the chosen locomotives` and `Allow only the chosen locomotives - every other one, including any added later, is excluded`.  Excluding the station's home train first asks "... has ... as its home station. Shutting it out of that station leaves the two disagreeing, and Return Home will not be able to send it there. Exclude it anyway?" (the window of that question is titled "Locomotives that may not stop here").
+| - Step 3: -1 is refused with "A maximum train length cannot be negative.  Enter 0 for a train of any length, or at least 1.", and 4 is accepted.  The track question reads "How long does this piece of track count as?  ...  0 means it does not count." from the menu and from Control+E alike.  On a square with no track the strip says "There is no track on this square to measure - a length belongs to the rail trains run over."
+| - Step 4: the question reads "What should this link be called?" with the current name filled in, and the name is kept.
+| - Step 5: the window reads "Trains will not be routed to or through ... while any of these is occupied or has a route running into it:" with the other named stations to tick, and `Pick on the Diagram...` asks you to click the square.
+| - Step 6: nothing you entered is kept.
+|
+| *What this is:* FR-136 Phase 4 moved this feature's code out of `AutonomyEditorPanel` into `EditorPrompts` without changing what it does (c3a3dfb7).  The battery and the user-level claims in `ui.testTheAutonomyEditorsQuestionsChangeTheSetup`, `regression.testControlEAsksTheMenusQuestion` and `regression.testControlBAsksTheMenusQuestion` pass on the new code; this checks it on your own railway.  Any difference from before is a defect of the move.
+|
+tail:
+| ---
+|
+
+[test MT-795]
+ordinal: 794
+anchor: mt-795
+date: 2026-10-19
+title: FR-136: pairing a station's exit and entry guard signals, in the window, by clicking and by address, works as before
+disposition: needs test
+from: FR-136
+written: 2026-10-19
+reopened: no
+body:
+| <a id="mt-795"></a>
+| ### MT-795 - 2026-10-19 - FR-136: pairing a station's exit and entry guard signals, in the window, by clicking and by address, works as before
+|
+| **Disposition:** needs test
+| **From:** FR-136
+|
+| **Written:** 2026-10-19
+|
+| **Steps**
+|
+| 1. Autonomy > Edit Autonomy on Page, pick a page, choose `Autonomy Setup`.  Right-click a station and choose `Exit Guard Signal...` (it reads `Exit Guard Signal ......` if one is already paired).  Look at the window that opens beside the editor.
+| 2. Press `Click It on the Diagram`, and click first something that is not a signal, then a signal.
+| 3. Press `Enter Its Address...` and type "north".  Press it again and type the address of a signal on the diagram (as written on the diagram), then once more and type the same address.
+| 4. Select a signal in the list and press `Remove Selected`, then press `Done`.
+| 5. Right-click the station and choose `Entry Guard Signal...`; pair a signal there the same way, then press `Done`.
+| 6. Press `Cancel` and answer Yes to "Close the autonomy editor and throw away everything changed since you last saved?"
+|
+| **Expected**
+|
+| - Step 1: the window explains "Which signal is thrown to red while a train is standing at ...?" (or "These signals are thrown to red while a train is standing at ..., and are outlined on the diagram behind this window.  Add another, or remove one." when some are paired).  The list reads "No signal paired yet." or "Signal ..., at ..." for each, and the buttons are `Click It on the Diagram`, `Enter Its Address...`, `Remove Selected` and `Done`.
+| - Step 2: everything that is not a signal is greyed out and the strip says "Click the signal that protects ...".  Clicking a non-signal says "That square is not a signal, or the signal on it has no address.  Click one of the squares still drawn in colour."; clicking a signal adds it to the list and says "... is now protected by ... .  Save to keep it." (or "... as well." for a second one).
+| - Step 3: "Which signal addresses?  The numbers as they are written on the diagram and in the accessory list, counting from 1.  Several may be separated by commas." is asked; "north" is refused with "north is not a number."; an address no signal has says "No signal on this layout has address ...."; a good address is added; the same address again says "Signal ... is already on the list."
+| - Step 4: the signal leaves the list and the strip says the station is no longer protected by it (or by a signal at all, if it was the last one), with "Save to keep it."; Done closes the window.
+| - Step 5: the same window with the entry guard's words: "Which signal is thrown to red when a train arrives at ... at the end of its journey?  The next route that needs it sets it green again.", and "... now guards the way into ...  Save to keep it."
+| - Step 6: no pairing is kept.
+|
+| *What this is:* FR-136 Phase 4 moved this feature's code out of `AutonomyEditorPanel` into `EditorSignals` without changing what it does (37d6a1b5).  The battery and the user-level claims in `ui.testTheAutonomyEditorsQuestionsChangeTheSetup` and `ui.testTheGuardWindowIsNotTooWide` pass on the new code; this checks it on your own railway.  Any difference from before is a defect of the move.
+|
+tail:
+| ---
+|
+
+[test MT-796]
+ordinal: 795
+anchor: mt-796
+date: 2026-10-19
+title: FR-136: Bulk Tools Mass Assign for track lengths, station maximums and train lengths works as before
+disposition: needs test
+from: FR-136
+written: 2026-10-19
+reopened: no
+body:
+| <a id="mt-796"></a>
+| ### MT-796 - 2026-10-19 - FR-136: Bulk Tools Mass Assign for track lengths, station maximums and train lengths works as before
+|
+| **Disposition:** needs test
+| **From:** FR-136
+|
+| **Written:** 2026-10-19
+|
+| **Steps**
+|
+| 1. Autonomy > Edit Autonomy on Page, pick a page, choose `Autonomy Setup`, tick `Unmeasured Track` under `Visible Elements` and note what is still unmeasured.  Right-click any square, open `Bulk Tools`, and hover over `Mass Assign Lengths...`.  Choose it.  Type 1 for the first stretch, press `Skip` for the next, and carry on through the switches and crossings questions with 1 and `Skip`.
+| 2. Choose `Mass Assign Station Max Train Lengths...`.  On the first station type 0, then type 3; press `Skip` on the next, and press `Cancel` on the one after.
+| 3. Choose `Mass Assign Train Lengths (... missing)...`.  Press `Skip` on every train (if you enter a length, note the train's old length and put it back afterwards).
+| 4. Press `Cancel` in the editor and answer Yes to "Close the autonomy editor and throw away everything changed since you last saved?"  Open the editor again and look at `Unmeasured Track`.
+|
+| **Expected**
+|
+| - Step 1: the tooltip reads "Still unmeasured here - track: ..., switches: ..., crossings: ...."  Each stretch is outlined on the diagram and asked as "Stretch ... of ..., between ... and ..., outlined on the diagram (squares: ...).  Enter the whole length of this stretch (0 = none):" with `OK`, `Skip` and `Cancel`; then "Switches on this page without a length: ....  They are outlined on the diagram.  Enter the length of one turnout; each of them is given it (0 = none):" and "Squares on this page that two roads cross, without a length: ....  ...  Enter the length of one such square; each of them is given it, and it counts on both roads (0 = none):".  The lengths you gave show on the diagram.  If nothing is unmeasured the strip says "Every stretch of track, every switch and every crossing on this page already has a length." instead.
+| - Step 2: each station is outlined and asked "Station ... of ..., ..., outlined on the diagram.  Enter the maximum length of a train that can stop at this station:"; 0 is refused with "0 means a train of any length, which is what this station has now.  Enter at least 1, or press Skip." and the question comes again; 3 is kept, `Skip` moves on, `Cancel` stops the walk.  If every station has a maximum the strip says "Every station on this page already has a maximum train length."
+| - Step 3: each train is asked "Locomotive ... of ..., ..., standing at ....  Enter how long this train is.  The length is set on the locomotive itself, not in this setup, so Cancel in this window does not take it back:" (a train that already has one reads "... is ... long.  Enter a new length, or Skip to keep it.").  With no train placed the strip says "No locomotive is placed for autonomy to run, so there is no train length to set."
+| - Step 4: the track lengths and station maximums you entered are gone and `Unmeasured Track` shows what it showed before step 1.
+|
+| *What this is:* FR-136 Phase 4 moved this feature's code out of `AutonomyEditorPanel` into `EditorMassAssign` without changing what it does (e813c353).  The battery and the user-level claims in `core.testMassAssignLengths` and `ui.testTheLengthPromptHasTheKeyboard` pass on the new code; this checks it on your own railway.  Any difference from before is a defect of the move.
+|
+tail:
+| ---
+|
+
+[test MT-797]
+ordinal: 796
+anchor: mt-797
+date: 2026-10-19
+title: FR-136: Why not Moving? in the autonomy editor, on Auto and on Manual, works as before
+disposition: needs test
+from: FR-136
+written: 2026-10-19
+reopened: no
+body:
+| <a id="mt-797"></a>
+| ### MT-797 - 2026-10-19 - FR-136: Why not Moving? in the autonomy editor, on Auto and on Manual, works as before
+|
+| **Disposition:** needs test
+| **From:** FR-136
+|
+| **Written:** 2026-10-19
+|
+| **Steps**
+|
+| 1. Autonomy > Edit Autonomy on Page, pick a page, choose `Autonomy Setup`.  Under `Autonomy Tools` hover over `Why not Moving?` and then press it, on a page that has trains on it.
+| 2. Click a train that has somewhere to go, then one that has nowhere (a train with no station it may be sent to), then a square with no train.
+| 3. With `Path Type` on `Auto`, click a train, then switch `Path Type` to `Manual` without clicking anything else, then back to `Auto`.
+| 4. Make an unsaved change (click a piece of plain track once) and click a train again.  Click the track again until it is back as it was.
+| 5. Press `Why not Moving?` again, or press Escape, to put the tool away, then press `Cancel` and answer Yes.
+|
+| **Expected**
+|
+| - Step 1: the tooltip reads "Click a square with a train on it.  Says why that train is not being sent anywhere, and draws every route it could take."  Pressing it outlines every square that has a train on it and no other.
+| - Step 2: the banner for the first reads "<train>: can go to N station(s) - ..." with the names, and every route it could take is drawn on the track; below it the stations it cannot go to are listed under "Stations autonomy could choose, but cannot right now (N)" and "Stations autonomy will never choose (N)", each in alphabetical order, the stations on this page first, and a station on another page named like "Station (Page 2)".  The train with nowhere to go reads "<train>: nowhere to go" and draws no lines.  The empty square says "No train is standing on that square."
+| - Step 3: on `Manual` the answer is worked out again by itself and the list is headed "Stations the train cannot be sent to right now (N)", with nothing saying a station will never be chosen; back on `Auto` the first answer returns.
+| - Step 4: the banner ends with "This answer is about the setup as last saved - you have changes that are not in it yet.  Save and ask again to see what they do."
+| - Step 5: the tool lets go and nothing you did is kept.
+|
+| *What this is:* FR-136 Phase 4 moved this feature's code out of `AutonomyEditorPanel` into `EditorWhy` without changing what it does (3f1a41da).  The battery and the user-level claims in `regression.testTheEditorSaysWhatItsToolsDo` and `regression.testPathTypeRedrawsTheTestInTheEditor` pass on the new code; this checks it on your own railway.  Any difference from before is a defect of the move.
+|
+tail:
+| ---
+|
