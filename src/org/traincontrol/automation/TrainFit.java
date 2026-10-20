@@ -45,13 +45,13 @@ final class TrainFit
 
         if (ids.isEmpty() || ids.size() != spans.size()) return null;
 
-        // AND NOTHING IS KNOWN ABOUT AN APPROACH NOBODY HAS MEASURED (PRW-B1).  The walk below spends the train's length
+        // AND NOTHING IS KNOWN ABOUT AN APPROACH NOBODY HAS MEASURED.  The walk below spends the train's length
         // backwards over the places and, against all zeroes, never runs out: it claims the WHOLE approach and refuses the berth
         // against any road sharing any part of it, a refusal invented from the absence of a measurement.  This is the room
         // rule's own answer (`walkStandingTrains` claims nothing on an unmeasured segment) and Adam's ruling on MT-364: *"a
         // stretch is only indeterminate when ALL of it is zero"*.  One measurement is something to reason from; none is nothing.
         // THE BERTH'S OWN SQUARE COUNTS (OB-278): it is rail the train stands on and is spent first, so a berth measured on an
-        // otherwise unmeasured approach is something to reason from (SVV-B1).
+        // otherwise unmeasured approach is something to reason from.
         boolean anyMeasured = false;
 
         for (int n = 0; n < spans.size(); n++)
@@ -75,7 +75,7 @@ final class TrainFit
 
         Set<String> claimed = new LinkedHashSet<>();
 
-        // HOW MUCH OF WHAT IS CLAIMED WAS NEVER MEASURED (RTX-C2, AUR-C2): an unmeasured place costs the walk nothing and is
+        // HOW MUCH OF WHAT IS CLAIMED WAS NEVER MEASURED: an unmeasured place costs the walk nothing and is
         // claimed anyway (the refusing side of the rounding, ruled behaviour), so the refusal also says so, pointing the
         // operator at the piece Mass Assign Lengths left at zero.  Counted over the places the walk actually claims.
         int unmeasured = 0;
@@ -114,7 +114,7 @@ final class TrainFit
                 String why = I18n.f("autolayout.errorBerthWouldFoulAnotherRoad", loc.getName(),
                     Layout.placeNameOf(berth), Layout.placeNameOf(sharing), loc.getTrainLength());
 
-                // AND WHY THE WHOLE APPROACH WAS CLAIMED, when that is what happened (RTX-C2).
+                // AND WHY THE WHOLE APPROACH WAS CLAIMED, when that is what happened.
                 return unmeasured > 0
                     ? why + ". " + I18n.f("autolayout.errorBerthApproachPartlyUnmeasured", unmeasured)
                     : why;
@@ -143,16 +143,16 @@ final class TrainFit
         Map<String, Integer> freeOnceTheTailPasses = new HashMap<>();
 
         // And how far the ROUTE had run when the head left each place, and in which of its edges - the way round is what
-        // it runs from there (TDA-B1).  A place of the body was left before the journey began, in no edge (-1).
+        // it runs from there.  A place of the body was left before the journey began, in no edge (-1).
         Map<String, Integer> routeRunWhenLeft = new HashMap<>();
         Map<String, Integer> edgeWhenLeft = new HashMap<>();
 
         // And where in that edge the head left each place - after any repeats of the same square that follow it.
         Map<String, Integer> leftAt = new HashMap<>();
 
-        // WHAT MASS ASSIGN WOULD ASK FOR, place by place along the route (OB-297, ADA-C1): the key of the piece, switch or
+        // WHAT MASS ASSIGN WOULD ASK FOR, place by place along the route (OB-297): the key of the piece, switch or
         // shared square each place lies in, where the build marked it as still wanting a length - or, on a configuration
-        // built before the marks, one key per edge with nothing measured on it (TDA2-C1).  NOT THE SQUARE: a square with no
+        // built before the marks, one key per edge with nothing measured on it.  NOT THE SQUARE: a square with no
         // length inside a measured piece is how a short piece drawn over several squares is stored, not a gap.  The note
         // counts the keys of the way round, once each.
         List<String> askedAlong = new ArrayList<>();
@@ -195,7 +195,7 @@ final class TrainFit
 
         String previous = null;
 
-        // THE TIGHTEST RETURN, and where, and how much of its way round has no length (TDA-C1).
+        // THE TIGHTEST RETURN, and where, and how much of its way round has no length.
         Integer tightest = null;
         Edge tightestOn = null;
         int tightestUnmeasured = 0;
@@ -230,7 +230,7 @@ final class TrainFit
 
                 Integer free = freeOnceTheTailPasses.get(place);
 
-                // JUDGED WHERE THE WAY ROUND IS MEASURED (TDA-B1, OB-300): some length run on it since the head left the
+                // JUDGED WHERE THE WAY ROUND IS MEASURED (OB-300): some length run on it since the head left the
                 // place, or every place on it answered 0 on purpose - a loop answered 0 all the way round is measured track
                 // of no length, and refused to any train lying on it.  A way round nobody measured is still not judged.
                 if (free != null && (travelled - routeRunWhenLeft.get(place) > 0
@@ -245,7 +245,7 @@ final class TrainFit
                         tightestOn = edge;
                         tightestUnmeasured = 0;
 
-                        // What Mass Assign would ask for on the way round (TDA2-C1, TDD2-C3, OB-297, ADA-C1).
+                        // What Mass Assign would ask for on the way round (OB-297).
                         int leftIn = edgeWhenLeft.get(place);
 
                         tightestUnmeasured = askedForOnTheWayRound(askedAlong,
@@ -284,18 +284,18 @@ final class TrainFit
         String why = I18n.f("autolayout.errorWouldMeetItsOwnTail", loc.getName(), Layout.placeNameOf(tightestOn), tightest, length);
 
         // AND WHAT IS NOT MEASURED ON THE WAY ROUND, which is the other way past: measured, it may be long enough.
-        // After a full stop: the sentence before it has none, as every refusal here is written (TDA2-C7).
+        // After a full stop: the sentence before it has none, as every refusal here is written.
         return tightestUnmeasured > 0 ? why + ". " + I18n.f("autolayout.errorOwnTailPartlyUnmeasured", tightestUnmeasured)
             : why;
     }
 
     /**
-     * What Mass Assign Lengths would ask a length for at this place of an edge, as a key - or null (OB-297, ADA-C1).
+     * What Mass Assign Lengths would ask a length for at this place of an edge, as a key - or null (OB-297).
      *
      * The build marks each place lying in a piece, switch or shared square still wanting a length with that thing's key
      * (`Edge.pieceToMeasure`), so the note counts exactly the editor's list: a route tile is in no piece, and a piece whose
      * units sit on a station's square is measured whichever edge it is read from.  A configuration built before the
-     * marks has none, and each edge of it with nothing measured on it counts as one thing, as it did (TDA2-C1).
+     * marks has none, and each edge of it with nothing measured on it counts as one thing, as it did.
      *
      * @param edge the edge
      * @param index its place in the route, which keys an edge of the old reading
@@ -444,7 +444,7 @@ final class TrainFit
 
             if (here == null || berth)
             {
-                // THE BOUND THAT REFUSED (MFR-C6): at a station autonomy may choose, the route in was asked too, and it is
+                // THE BOUND THAT REFUSED: at a station autonomy may choose, the route in was asked too, and it is
                 // the larger of the two - quoting the room past the switch said the square holds less than it does.
                 int refusedAt = berth && ending != null && ending.isAutoDestination()
                     ? Math.max(room, Layout.measuredRouteIn(ordered)) : room;

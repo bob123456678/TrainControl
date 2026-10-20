@@ -180,7 +180,7 @@ public final class ConditionOutline
 
         if (rows == null) return out;
 
-        // The word first seen in the RUN currently open at each depth (IPR-B3).
+        // The word first seen in the RUN currently open at each depth.
         //
         // This was keyed on depth alone, across the whole list - so `A and (B or C) and (D and E)`
         // read as one level disagreeing with itself, was shown in red, and the save was REFUSED for an
@@ -298,7 +298,7 @@ public final class ConditionOutline
             {
                 // A deeper run is one thing at this level, and the whole of it is consumed here.
                 //
-                // AT depth + 1, NOT AT THE ROW’S OWN DEPTH (IPR-B2).
+                // AT depth + 1, NOT AT THE ROW’S OWN DEPTH.
                 //
                 // The two are the same number wherever this branch meets a row exactly one level
                 // deeper, which is every outline in which no level’s own rows come out after a
@@ -315,7 +315,7 @@ public final class ConditionOutline
                 // follows joins it.
                 //
                 // THE FAMILY IS WIDER THAN A BRACKET, and the first account of this said otherwise
-                // (VD9-C2).  The step is two whenever a cross-operator child is itself the left child
+                //.  The step is two whenever a cross-operator child is itself the left child
                 // of a cross-operator parent: writeChild bumps each of them and the left spine is
                 // written first, so both bumps land before the outer joiner does.  A NodeGroup is one
                 // way to arrive there and not the only one - `Or(And(Or(1,2), 4), 3)` has no group in

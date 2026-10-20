@@ -137,7 +137,7 @@ public class Point
      * On a split square, the way a train standing on this copy points; null on a square that is one Point (OB-282).
      *
      * The facing and not the arrival side, because a turning copy points back at the side it came in by: it shares its
-     * plain twin's arrival and faces the other way (TDY-B1, AUT-B2).
+     * plain twin's arrival and faces the other way.
      */
     private String copyFacing;
 
@@ -268,7 +268,7 @@ public class Point
     /**
      * Returns if the point is active.
      * Active means the point will be selected by autonomous logic
-     * Asked of every square since 2026-09-02 (D24-B5) - it used to be ignored for a non-station, and `isPathClear` refuses a path THROUGH an inactive point whatever it is, which is what the editor's Out of service means
+     * Asked of every square since 2026-09-02 - it used to be ignored for a non-station, and `isPathClear` refuses a path THROUGH an inactive point whatever it is, which is what the editor's Out of service means
      * @return 
      */
     public boolean isActive()
@@ -569,7 +569,7 @@ public class Point
      * one that drove it.
      *
      * Cleared on the same change of occupant that clears `arrivedFrom`, for the same reason: a route
-     * describes the train that arrived, not whoever stands here next.  Saved with the point since WK7-B1, carried across
+     * describes the train that arrived, not whoever stands here next.  Saved with the point, carried across
      * a rebuild and captured into the setup; a hand-placed train can be given one (FR-085, behaviour.md 5c).
      *
      * @return the edges in the order they were driven, or null when nothing was driven here
@@ -675,7 +675,7 @@ public class Point
 
         this.currentLoc = l;
 
-        // AND THE TAIL BELONGS TO THE TRAIN THAT LEFT, HERE TOO (AUR-C1).
+        // AND THE TAIL BELONGS TO THE TRAIN THAT LEFT, HERE TOO.
         //
         // `setLocomotive` clears both on a change of occupant and this door did not, so a square left
         // holding a side and a road with nobody on it - a placement the loader dropped, which is a
@@ -714,7 +714,7 @@ public class Point
 
     /**
      * The square of the diagram this Point is a copy of, as the build names it, or null on a Point written by hand
-     * (RSA5-A1).  A rebuild carries each train by it: a rename can hand a Point's name to another square.
+     *.  A rebuild carries each train by it: a rename can hand a Point's name to another square.
      */
     private String square;
 
@@ -841,7 +841,7 @@ public class Point
      *
      * Splitting the occupancy source out is what lets the rule itself - which squares are consulted,
      * and which locomotive is exempt - live in exactly one place.  Before this, three copies of that
-     * iteration existed and answered differently (DR-B2).
+     * iteration existed and answered differently.
      */
     public interface Occupancy
     {
@@ -876,7 +876,7 @@ public class Point
      *
      * ONE expression of the rule.  It used to be written three times - the runtime check in
      * `isPathClear`, the staging planner's `canRest`, and the replay oracle in the staging tests - and
-     * the three answered differently on real layouts, which is the defect DR-B2 named.  Everything that
+     * the three answered differently on real layouts.  Everything that
      * asks the question now asks it here; what a caller supplies is only where to look for occupancy.
      *
      * The train LEAVING the watched square is exempt.  Adam, asked directly: "The condition should not
@@ -1153,7 +1153,7 @@ public class Point
         if (!this.isDestination) return true;
         if (this.getMaxTrainLength() == 0) return true;
 
-        // Nothing known about the train is not a train too long (AMR-C1).  Every other reader of the length treats
+        // Nothing known about the train is not a train too long.  Every other reader of the length treats
         // null that way, and this one unboxed it inside the route checks that ask it.
         if (loc.getTrainLength() == null) return true;
         
@@ -1174,7 +1174,7 @@ public class Point
      *
      * Held as the locomotive itself; its NAME is what gets written out and matched back on load, which
      * is why the naming rules below decide what survives a round trip.  This pair used to say the
-     * assignment was made by name, which the signature has never done (RC-C8).
+     * assignment was made by name, which the signature has never done.
      *
      * Not validated here: a name that matches nothing is a legitimate stored state, reported on load
      * rather than refused.
@@ -1211,7 +1211,7 @@ public class Point
     }
 
     /**
-     * @return the square of the diagram this Point is a copy of, or null where no build said (RSA5-A1)
+     * @return the square of the diagram this Point is a copy of, or null where no build said
      */
     public String getSquare()
     {
@@ -1255,7 +1255,7 @@ public class Point
 
     /**
      * The same, writing the given locomotive as the one standing here - or none, for null - rather than whichever this
-     * point records (RLV8-B1).  A train under way is recorded on every point of its locked path, and a fold writes it on
+     * point records.  A train under way is recorded on every point of its locked path, and a fold writes it on
      * the one point it is kept at.  The side it arrived by and its road are written only for the train this point
      * records.
      *
@@ -1307,7 +1307,7 @@ public class Point
         // Written as well as read.  parseAuto has always taken this back in, and leaving it out of the
         // export made the configuration JSON quietly lossy: a setup exported and imported came back
         // with every station-signal pairing gone, and nothing said so.  Exactly what happened to the
-        // block field below, whose own comment this one had been tacked onto (CMT-C1).
+        // block field below, whose own comment this one had been tacked onto.
         //
         // One is written as a bare string, several as an array.  The single case is what every
         // version before this one wrote and read, and a station guarded by one signal - which is most
@@ -1343,7 +1343,7 @@ public class Point
             jsonObj.put("block", this.block);
         }
 
-        // Read back too, for the same reason (RSA5-A1)
+        // Read back too, for the same reason
         if (this.square != null) jsonObj.put("square", this.square);
 
         // written only when it differs from the default, so a file gains no noise from a setting
@@ -1467,17 +1467,17 @@ public class Point
             jsonObj.put("blockedBy", new JSONArray(named));
         }
 
-        // ONLY BESIDE AN OCCUPANT (AUR-C1).
+        // ONLY BESIDE AN OCCUPANT.
         //
         // A side with nobody on the square is a record of a train the database no longer has, and it
-        // was written back on every save for ever - so the AMR-C3 drop's own promise, "the next save
+        // was written back on every save for ever - so the drop's own promise, "the next save
         // writes the file back without the phantom", was true of the placement and false of its tail.
         if (this.arrivedFrom != null && standing != null && standing == this.currentLoc)
         {
             jsonObj.put("arrivedFrom", this.arrivedFrom);
         }
 
-        // AND THE ROAD IT CAME IN ON, which the side alone cannot say past a junction (WK7-B1).
+        // AND THE ROAD IT CAME IN ON, which the side alone cannot say past a junction.
         //
         // Adam, 2026-09-14: *"Then state will always be fully consistent."*  This lived in memory only, so a
         // save, a restart or a rebuild put a driven train back with its side and not its road, and its tail

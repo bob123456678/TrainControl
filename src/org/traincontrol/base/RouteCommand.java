@@ -152,7 +152,7 @@ public class RouteCommand implements java.io.Serializable
     {
         RouteCommand r = new RouteCommand(TYPE_LOCOMOTIVE);
 
-        // CLAMPED HERE, WHICH IS WHERE EVERY DOOR MEETS (S14-B2).
+        // CLAMPED HERE, WHICH IS WHERE EVERY DOOR MEETS.
         //
         // fromLine clamped and fromJSON did not, so a route imported from a hand-edited or shared JSON
         // file could carry a speed of 150.  execRoute passes it to setSpeed, and _setSpeed DISCARDS an
@@ -646,7 +646,7 @@ public class RouteCommand implements java.io.Serializable
      * `NodeExpression.fromJSON`, and `fromTextRepresentation` has no caller left in `src/` at all.
      *
      * So the restriction outlived its reason, and what it cost was real: a 2.7.4c route naming such a
-     * locomotive could not be saved at all, not even to change the route's own name (RGN-C3).
+     * locomotive could not be saved at all, not even to change the route's own name.
      *
      * The text form survives in `toTextRepresentation`, which feeds the CSV export and the read-only
      * display of a condition the outline cannot draw.  A bracketed name will read oddly there.  That
@@ -657,7 +657,7 @@ public class RouteCommand implements java.io.Serializable
      * about it, and when only one of them knew, the others let names through that broke routes which
      * had been working.
      *
-     * **The doors that ask are still not all of them** (RGN-C3): the route editor and the two rename
+     * **The doors that ask are still not all of them**: the route editor and the two rename
      * dialogs ask; `AddLocomotive` and the Central Station sync do not.  That mattered while the rule
      * refused brackets, because a name could arrive by a door that did not ask and then poison every
      * route mentioning it.  With only the comma left it matters much less - a comma in a locomotive
@@ -804,7 +804,7 @@ public class RouteCommand implements java.io.Serializable
     {
         line = line.trim();
 
-        // CASE DOES NOT DECIDE WHETHER A COMMAND IS A COMMAND (WP-C19d, ruled 2026-09-08).
+        // CASE DOES NOT DECIDE WHETHER A COMMAND IS A COMMAND (ruled 2026-09-08).
         //
         // `Feedback` was already matched through `toLowerCase()` and every other command name was not,
         // so "feedback 12,1" parsed and "emergency stop" did not - in the same file, in the same list,

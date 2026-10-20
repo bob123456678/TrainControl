@@ -199,7 +199,7 @@ public class LayoutDiagram
 
     /**
      * Whether the running diagram draws this square: the part of the page its components cover, whatever mode the page is in
-     * (AD-C6).  In edit mode the page's own bounds are the whole page, and a caption - which is not a component - filed
+     *.  In edit mode the page's own bounds are the whole page, and a caption - which is not a component - filed
      * on a square outside what the components cover is drawn in the editor and never when trains run.
      *
      * @param x the column
@@ -315,10 +315,10 @@ public class LayoutDiagram
 
         builder.append("[gleisbildseite]\n");
 
-        // THE LEFT-MARGIN KEYS, WHERE THE FILE HAS THEM (X8-A1).  `page=1` sits between the header and the first block on
+        // THE LEFT-MARGIN KEYS, WHERE THE FILE HAS THEM.  `page=1` sits between the header and the first block on
         // a genuine export, and is written back before anything else, which is where a station puts them.
         //
-        // BY KEY AND BY RULE, NOT BY LINE (X8V-C6).  Two shapes do not come back unchanged: a key REPEATED in one file
+        // BY KEY AND BY RULE, NOT BY LINE.  Two shapes do not come back unchanged: a key REPEATED in one file
         // keeps only the last value, and a key written BELOW the blocks comes back above them.  No file in this
         // repository has either shape (18 left-margin keys across 65 `.cs2` files, every one a single `page=N` on
         // line 2), and the file comes out in the order it went in only for what a station writes.
@@ -339,7 +339,7 @@ public class LayoutDiagram
             for (Map<String, String> block : unmodelledBlocks)
             {
                 // THE SPELLING THE FILE USED, where it differed from the lower-cased form the readers ask about
-                // (TWV-C1).  This machinery writes back what the file said ("what TrainControl does not understand it
+                //.  This machinery writes back what the file said ("what TrainControl does not understand it
                 // is not entitled to throw away"), and case is part of what it said: a block spelled `Version` stays
                 // `Version` on the first save.
                 builder.append(block.containsKey("_typeAsWritten")
@@ -401,7 +401,7 @@ public class LayoutDiagram
     private final List<Map<String, String>> unmodelledBlocks = new ArrayList<>();
 
     /**
-     * Keys that sit at the left margin of a page file, between the header and the first block (X8-A1).
+     * Keys that sit at the left margin of a page file, between the header and the first block.
      *
      * A genuine Central Station page export has exactly one, `page=1`, which matches none of the three line shapes
      * `CS2File.parseFileContents` knows and would otherwise be dropped on read and deleted the first time this
@@ -413,9 +413,9 @@ public class LayoutDiagram
     private final Map<String, String> bareKeys = new LinkedHashMap<>();
 
     /**
-     * Remembers a key at the left margin of a page file, so that it survives a save (X8-A1).
+     * Remembers a key at the left margin of a page file, so that it survives a save.
      *
-     * PRESERVED VERBATIM, AND IT MAY DISAGREE WITH THE INDEX (X8V-C3).  `page=N` is a number, and `writeLayoutIndex` can
+     * PRESERVED VERBATIM, AND IT MAY DISAGREE WITH THE INDEX.  `page=N` is a number, and `writeLayoutIndex` can
      * reissue the id of the page that carries it (a duplicate id loses the argument to the first claimant): `1 gods.cs2`
      * says `page=1` while the index, after a write, says `.id=8`.
      *
@@ -511,12 +511,12 @@ public class LayoutDiagram
     /**
      * Writes the page index and re-aims every arrow at the page it was aimed at, saving what changed.
      *
-     * **THE ONE PLACE THE RULE LIVES** (N8-A1).  Two methods write this index (`LayoutPageEdit` for Add, Rename and
+     * **THE ONE PLACE THE RULE LIVES**.  Two methods write this index (`LayoutPageEdit` for Add, Rename and
      * Duplicate, `TrainControlUI` for Delete and Combine), and a link tile holds a POSITION in the name-sorted page list,
      * so all five change what every arrow on the layout means.  The re-aim is here rather than at the call sites because
      * it is the one step a caller could get wrong in a way nothing would notice.
      *
-     * **Both ends of the re-aim are the sorted list, and the OLD one comes from the pages** (FV3-A2, T10-C1): `layoutDB`
+     * **Both ends of the re-aim are the sorted list, and the OLD one comes from the pages**: `layoutDB`
      * is keyed by name, so an index naming two pages the same aliases them onto one entry, and an order read from the
      * index file is one neither page was written against.  `before` is taken from the pages this session is holding.
      *
@@ -537,7 +537,7 @@ public class LayoutDiagram
         Map<String, String> renamed, int floor, java.util.Collection<String> keepAbsent,
         java.util.Collection<LayoutDiagram> pages) throws IOException
     {
-        // BOTH ENDS ARE THE SORTED LIST, WHICH IS THE ONLY THING A LINK'S NUMBER INDEXES INTO (FV3-A2).
+        // BOTH ENDS ARE THE SORTED LIST, WHICH IS THE ONLY THING A LINK'S NUMBER INDEXES INTO.
         //
         // `getLayoutList()` sorts by name, and that sorted list is what an arrow's number means.  The list handed in is
         // not it: a rename removes the old name and puts the new one back IN THE OLD SLOT, deliberately; an add, a
@@ -557,7 +557,7 @@ public class LayoutDiagram
     /**
      * Re-aims every arrow for a new page order, in memory, and says which pages changed.
      *
-     * **SEPARATE FROM THE INDEX WRITE BECAUSE THE ORDER MATTERS** (T10-B1, T10-B2, T10-B3).  A caller that WRITES A PAGE
+     * **SEPARATE FROM THE INDEX WRITE BECAUSE THE ORDER MATTERS**.  A caller that WRITES A PAGE
      * FILE as part of the same gesture has to re-aim before it writes, or the file it writes carries the old numbers.
      * `LayoutPageEdit` does exactly that for Add, Duplicate and Rename.  `writeIndexAndKeepLinksAimed` is the whole job
      * for a caller that writes no page of its own, which is Delete and Combine.
@@ -634,7 +634,7 @@ public class LayoutDiagram
     /**
      * Rewrites every link on this page so it still points at the page it pointed at before.
      *
-     * **A LINK HOLDS A POSITION IN THE NAME-SORTED PAGE LIST** (N8-A1), and every Manage Pages item that adds, renames,
+     * **A LINK HOLDS A POSITION IN THE NAME-SORTED PAGE LIST**, and every Manage Pages item that adds, renames,
      * duplicates or deletes a page (and Combine) changes that list, so without a re-aim the arrows would silently come to
      * mean something else.  The new number is written straight back to the file.
      *
@@ -682,7 +682,7 @@ public class LayoutDiagram
     }
 
     /**
-     * Whether this page stands in for one whose file would not read (NSV-B3).
+     * Whether this page stands in for one whose file would not read.
      */
     private boolean unreadable = false;
 
@@ -715,7 +715,7 @@ public class LayoutDiagram
      */
     public void saveChanges(String filename, boolean duplicate) throws Exception
     {
-        // A PLACEHOLDER IS NEVER WRITTEN (NSV-B3).  This page is blank and the file it would go over is the one the
+        // A PLACEHOLDER IS NEVER WRITTEN.  This page is blank and the file it would go over is the one the
         // operator is trying to get back (an unhydrated cloud file, a bad copy), so saving it would turn a page that
         // cannot be read into a page that no longer exists.  Refused here, at the one method that writes a page, rather
         // than at each caller.
@@ -994,7 +994,7 @@ public class LayoutDiagram
                 }
             }
 
-            // AND WHAT THIS BUILD COULD NOT MODEL, by the same rule (GSP-C2) - see shiftUnmodelledElements
+            // AND WHAT THIS BUILD COULD NOT MODEL, by the same rule - see shiftUnmodelledElements
             shiftUnmodelledElements(true, startCol, true);
 
             this.checkBounds();
@@ -1031,7 +1031,7 @@ public class LayoutDiagram
                 }
             }
 
-            // AND WHAT THIS BUILD COULD NOT MODEL, by the same rule (GSP-C2) - see shiftUnmodelledElements
+            // AND WHAT THIS BUILD COULD NOT MODEL, by the same rule - see shiftUnmodelledElements
             shiftUnmodelledElements(false, startRow, true);
 
            this.checkBounds();
@@ -1065,7 +1065,7 @@ public class LayoutDiagram
             }
         }
 
-        // AND WHAT THIS BUILD COULD NOT MODEL, by the same rule (GSP-C2) - see shiftUnmodelledElements
+        // AND WHAT THIS BUILD COULD NOT MODEL, by the same rule - see shiftUnmodelledElements
         shiftUnmodelledElements(false, startRow, false);
 
         this.checkBounds();
@@ -1098,14 +1098,14 @@ public class LayoutDiagram
             }
         }
 
-        // AND WHAT THIS BUILD COULD NOT MODEL, by the same rule (GSP-C2) - see shiftUnmodelledElements
+        // AND WHAT THIS BUILD COULD NOT MODEL, by the same rule - see shiftUnmodelledElements
         shiftUnmodelledElements(true, startCol, false);
 
         this.checkBounds();
     }
     
     /**
-     * Moves the elements this build could not model with a shift, as the shift moves the tiles (GSP-C2).
+     * Moves the elements this build could not model with a shift, as the shift moves the tiles.
      *
      * An element whose type TrainControl does not know is kept as the file had it and written back verbatim on save, its id
      * with it, and the id IS its square: x + (y << 8), as `LayoutDiagramComponent.exportToCS2TextFormat` writes a tile's
@@ -1192,12 +1192,12 @@ public class LayoutDiagram
      * `7 autonom annotated` while the stated ids run 1..7, so reading the absent one as 0 lines the ids up with the names
      * exactly.
      *
-     * **Reading it as the page's POSITION would make two pages hold one id** (S14-A2): the first page would get the number
+     * **Reading it as the page's POSITION would make two pages hold one id**: the first page would get the number
      * the SECOND page states, `setPageIds` would invert them into one key, and one page's autonomy settings would come
      * back on the other's track.  `writeLayoutIndex` resolves a duplicate when it runs, but nothing writes the index at
      * start-up or on load, so the collision would stand until a page was added, renamed, deleted or combined.
      *
-     * The one statement of a rule that had two implementations (DR-B4).  Both this file and `CS2File` parse
+     * The one statement of a rule that had two implementations.  Both this file and `CS2File` parse
      * `gleisbild.cs2` and both ask this.  One feeds the id allocator; the other feeds `setPageIds` and therefore every
      * stored key.  Where they disagree, the setup is keyed by ids the index does not believe.
      *
@@ -1255,14 +1255,14 @@ public class LayoutDiagram
             {
                 String trimmed = line.trim();
 
-                // WHICH BLOCK WE ARE IN, not just whether this line looks like a page (AC2-C1).  The genuine CS2 export
+                // WHICH BLOCK WE ARE IN, not just whether this line looks like a page.  The genuine CS2 export
                 // opens with `zuletztBenutzt` (the station remembering which page you were last looking at), and that block
                 // carries a `.name=` of its own, which must not be read as a page at position 0.  Relying on the real
                 // `seite` further down to overwrite it would be luck that preserving the block below makes expire.
                 if (trimmed.length() > 0 && !trimmed.startsWith(".") && !trimmed.startsWith("["))
                 {
-                    // WITHOUT REGARD TO CASE, as the other two readers of this file do (X8V-C4): `readLayoutIndexExtras`
-                    // matches its modelled names case-insensitively (VLD-B2, because the genuine export spells its version
+                    // WITHOUT REGARD TO CASE, as the other two readers of this file do: `readLayoutIndexExtras`
+                    // matches its modelled names case-insensitively (because the genuine export spells its version
                     // block `Version`), and so does `readLayoutIndexPageExtras`.  This is the reader whose answer everything
                     // else is keyed BY: an index spelling the block `Seite` would give no page an id at all, and a write
                     // would reissue 1..n across the whole layout.
@@ -1280,14 +1280,14 @@ public class LayoutDiagram
                 }
                 else if (inPage && trimmed.toLowerCase().startsWith(".name="))
                 {
-                    // Through the shared rule rather than inline (DR-B4).
+                    // Through the shared rule rather than inline.
                     out.put(trimmed.substring(6), pageIdOrPosition(idText, position));
                 }
             }
         }
         catch (IOException e)
         {
-            // An unreadable index is NOT the same as not having one (DR-B4), now that page ids are identities.  With no ids
+            // An unreadable index is NOT the same as not having one, now that page ids are identities.  With no ids
             // to keep, writeLayoutIndex reissues 1..n to every page, so a transient lock on gleisbild.cs2 (which a sync
             // client can take at any moment) would renumber the whole layout at the next page add, rename or delete, and
             // the setup would have to self-heal through its own record of what each id was called.
@@ -1303,14 +1303,14 @@ public class LayoutDiagram
     }
 
     /**
-     * The keys inside a page's own `seite` block that TrainControl does not model (X8-B2).
+     * The keys inside a page's own `seite` block that TrainControl does not model.
      *
      * `readLayoutIndexExtras` below keeps whole blocks the program has no name for, and declares `seite` modelled.  That
      * is true of the two keys the writer emits, `.id` and `.name`, and not of the block: a Central Station writes the
      * page's scroll position into it as `.xoffset` and `.yoffset`, and a later firmware may write anything else there, so
      * what sat inside each page must be kept too.
      *
-     * **Keyed by the page's NAME** (N8-B1), not by id: two pages can resolve to one id (the genuine Central Station export
+     * **Keyed by the page's NAME**, not by id: two pages can resolve to one id (the genuine Central Station export
      * here has such a pair), so one of them would lose its keys.  A name identifies a page everywhere else in this
      * program and the file states it on every block; the writer is handed the rename map, which is how a renamed page
      * still finds its own lines.
@@ -1336,10 +1336,10 @@ public class LayoutDiagram
         {
             boolean inPage = false;
 
-            // KEYED BY THE PAGE'S NAME, NOT BY ITS ID (N8-B1).  Two pages can resolve to one id: `Oles kreds`, in the
+            // KEYED BY THE PAGE'S NAME, NOT BY ITS ID.  Two pages can resolve to one id: `Oles kreds`, in the
             // genuine Central Station export here, opens with a `seite` that carries `.xoffset=1`, `.yoffset=3` and NO
             // `.id`, and the page after it states `.id=1`.  Keyed by id, one of the two pages would lose (a map keeps the
-            // last, and withdrawing the contested id, X8V-B1, throws away the offsets the file states unambiguously).  A
+            // last, and withdrawing the contested id throws away the offsets the file states unambiguously).  A
             // name identifies a page throughout this program (`getLayout`, the autonomy setup's name map and the window's
             // list are all keyed by it, and `writeLayoutIndex` emits it).  The writer is handed the rename map and uses it
             // for these lines as it does to carry an id across a rename.
@@ -1415,7 +1415,7 @@ public class LayoutDiagram
 
     /**
      * The blocks in `gleisbild.cs2` that TrainControl does not model, kept so a page edit does not
-     * delete them (AC2-C1).
+     * delete them.
      *
      * Under the rule written at `LayoutDiagramComponent`: *"What TrainControl does not understand it is not entitled to
      * throw away."*  The index is regenerated from a hardcoded header every time, so anything the Central Station put
@@ -1425,7 +1425,7 @@ public class LayoutDiagram
      * **What is NOT kept here, and where it is kept instead.**  `[gleisbild]`, `version`, `groesse` and `seite` are the
      * modelled parts: the writer emits them itself, from what the layout actually is now, and keeping a stale copy of any
      * of them would be worse than regenerating it.  Everything else is passed through untouched.  For `seite` the writer
-     * regenerates only the BLOCK and its two keys, `.id` and `.name` (X8-B2); the other keys on a real export, such as the
+     * regenerates only the BLOCK and its two keys, `.id` and `.name`; the other keys on a real export, such as the
      * page's scroll position, are read by `readLayoutIndexPageExtras` above and written back with the page they belong to.
      *
      * Best-effort by design.  An index that cannot be read is already handled, loudly, by `readLayoutIndexIds`; this
@@ -1442,11 +1442,11 @@ public class LayoutDiagram
 
         if (!index.exists()) return out;
 
-        // The three block names this method writes for itself, matched WITHOUT REGARD TO CASE (VLD-B2).  `[gleisbild]` is
+        // The three block names this method writes for itself, matched WITHOUT REGARD TO CASE.  `[gleisbild]` is
         // the fourth thing regenerated and is handled by its own branch below, since it is not a block.
         //
         // A block whose name is one of these is regenerated and must not also be carried over, or the file gains a second
-        // copy.  The genuine CS2 export, which AC2-C1 was written from, spells it `Version` with a capital V, so the match
+        // copy.  The genuine CS2 export spells it `Version` with a capital V, so the match
         // is case-insensitive.
         final java.util.Set<String> modelled = new java.util.HashSet<>(
             java.util.Arrays.asList("version", "groesse", "seite"));
@@ -1499,9 +1499,9 @@ public class LayoutDiagram
     /**
      * The index file's lines, decoded by something that will not refuse them.
      *
-     * SV-B1.  `Files.readAllLines(path, UTF_8)` throws `MalformedInputException` on a byte that is not valid UTF-8, and
+     * `Files.readAllLines(path, UTF_8)` throws `MalformedInputException` on a byte that is not valid UTF-8, and
      * older builds wrote this file with a `FileWriter`, in the platform's own encoding, so an index written by an older
-     * TrainControl, or by anything else on a Windows box, must still be readable.  DR-B4 refuses to write over an index
+     * TrainControl, or by anything else on a Windows box, must still be readable.  The writer refuses to write over an index
      * that could not be read, so an unreadable one would stay unwritable for good.
      *
      * ISO-8859-1 is the fallback because it is total: every byte sequence decodes, so this cannot
@@ -1567,7 +1567,7 @@ public class LayoutDiagram
     /**
      * The same, with a floor below which a fresh id will not be issued.
      *
-     * IAR-A1.  The ids in the file are the only thing `next` could see, so a retired one is out of reach for exactly one
+     * The ids in the file are the only thing `next` could see, so a retired one is out of reach for exactly one
      * write (the one that dropped it) and free again afterwards.  That is fine for a page that was DELETED, whose settings
      * were forgotten first.  It is not fine for a page whose file was merely absent when the index was written: its
      * settings are still in the autonomy setup under its old number, and the next new page would collect them.
@@ -1617,7 +1617,7 @@ public class LayoutDiagram
         Map<String, Integer> existing = readLayoutIndexIds(path);
 
         // An index that could not be READ says nothing about what is absent.  writeLayoutIndex
-        // refuses that case outright (DR-B4); reporting an empty list here rather than every page in
+        // refuses that case outright; reporting an empty list here rather than every page in
         // the layout is what keeps the two halves agreeing about it.
         if (existing.isEmpty()) return dropped;
 
@@ -1636,8 +1636,7 @@ public class LayoutDiagram
     }
 
     /**
-     * The lines of a page's `seite` block that this writer does not model, written back with it
-     * (X8-B2).
+     * The lines of a page's `seite` block that this writer does not model, written back with it.
      *
      * @param contents the file being built
      * @param pageExtras what `readLayoutIndexPageExtras` found, keyed by page name
@@ -1712,7 +1711,7 @@ public class LayoutDiagram
         contents.append(" .major=1\n");
         contents.append("groesse\n");
 
-        // AND WHATEVER ELSE THE STATION PUT HERE (AC2-C1).  The header above is regenerated from scratch on every write,
+        // AND WHATEVER ELSE THE STATION PUT HERE.  The header above is regenerated from scratch on every write,
         // which is right for the parts this program models and wrong for the parts it does not: a genuine CS2 export opens
         // with `zuletztBenutzt` (the page you were last looking at), which would be deleted by the first rename.  This is
         // the page exporter's rule ("what TrainControl does not understand it is not entitled to throw away") one level
@@ -1733,10 +1732,10 @@ public class LayoutDiagram
         Map<String, Integer> existing = readLayoutIndexIds(path);
 
         // And what the station wrote INSIDE each page's block, which this writer does not model
-        // (X8-B2).  Read here, beside the ids it is keyed by, and emitted with each page below.
+        //.  Read here, beside the ids it is keyed by, and emitted with each page below.
         Map<String, List<String>> pageExtras = readLayoutIndexPageExtras(path);
 
-        // Refuse to renumber the whole layout because the index could not be READ (DR-B4).  With `existing` empty every
+        // Refuse to renumber the whole layout because the index could not be READ.  With `existing` empty every
         // page below is issued a fresh id, which is right for a layout that has never had an index and wrong when the file
         // is there and something stopped us reading it (a sync client holding it open): writing then reissues 1..n across
         // the board, and every stored setting has to be recovered through the setup's own record of what each id used to be
@@ -1745,7 +1744,7 @@ public class LayoutDiagram
         if (existing.isEmpty() && getUnreadableIndex() != null)
         {
             // Reachable only for a file that cannot be READ (missing, locked, a device error).  A file this build cannot
-            // DECODE does not come here (SV-B1): readIndexLines falls back to a total charset.  That distinction is the
+            // DECODE does not come here: readIndexLines falls back to a total charset.  That distinction is the
             // whole safety of this throw: refusing something a retry can fix is a delay, and refusing something a retry
             // cannot fix is a layout nobody can save.
             throw new IOException("The layout index could not be read, so the pages were not renumbered."
@@ -1762,7 +1761,7 @@ public class LayoutDiagram
             if (taken != null && taken >= next) next = taken + 1;
         }
 
-        // Every id issued so far in THIS write, so that two pages cannot leave holding one (DR-B4).  A duplicate in the
+        // Every id issued so far in THIS write, so that two pages cannot leave holding one.  A duplicate in the
         // file would otherwise be written straight back out; `setPageIds` inverts name->id into id->name, so the second
         // page silently wins and the first page's settings resolve to it, and `pageIdConflicts` only fires when an id's
         // NAME has changed.
@@ -1796,7 +1795,7 @@ public class LayoutDiagram
 
             contents.append("seite\n");
 
-            // ALWAYS written (X8-C6).  An absent id is read as ZERO (see `pageIdOrPosition`, which CS2File's page loop
+            // ALWAYS written.  An absent id is read as ZERO (see `pageIdOrPosition`, which CS2File's page loop
             // calls), so omitting it for a page whose id is not 0 would silently give that page id 0, and omitting it for
             // two such pages would give them both the same one.
             contents.append(" .id=").append(id).append("\n");

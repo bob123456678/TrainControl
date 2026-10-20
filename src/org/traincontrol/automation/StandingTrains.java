@@ -28,7 +28,7 @@ final class StandingTrains
     }
 
     /**
-     * Where a standing train's road says its tail goes from here (TLR-A1, TLV-B1).
+     * Where a standing train's road says its tail goes from here.
      *
      * The road's edge ENDING at this square first: a road a train drove runs towards it, so that edge names where it
      * came from - and when a road passes a square twice, the later arrival wins.  Only where no edge ends here, the edge
@@ -74,7 +74,7 @@ final class StandingTrains
 
     /**
      * The square a train's road goes back to from the platform, where that is one of the rails on its arrival side
-     * (TLV-B1) - so a fork right behind the platform is decided by the road, and a road that names nothing there
+     * - so a fork right behind the platform is decided by the road, and a road that names nothing there
      * leaves the side to decide as it always has.
      *
      * @param arrivedFrom the side the train came in by
@@ -115,7 +115,7 @@ final class StandingTrains
      */
     private static String placeKey(Point point)
     {
-        // THE SQUARE AND THE LANE (TLW-B1).  A turning copy runs on the lane of the copy it turns - "X (eastbound,
+        // THE SQUARE AND THE LANE.  A turning copy runs on the lane of the copy it turns - "X (eastbound,
         // reverse)" beside "X (eastbound)" - and is the same road.  The copies for a square's two arrival sides are its
         // two ends, which a balloon reaches from one junction by different track: a split, where the tail stops.
         if (point.getBlock() == null) return "point " + point.getName();
@@ -126,7 +126,7 @@ final class StandingTrains
     }
 
     /**
-     * Whether the walk has already been on this square, under any of its names (TLR-A1).
+     * Whether the walk has already been on this square, under any of its names.
      *
      * `walked` holds Point names, and a split square is several Points - so a name test says a copy the walk never
      * stood on is new ground when its sibling is where the walk just came from.
@@ -177,7 +177,7 @@ final class StandingTrains
         // is its last MILESTONE, and the road behind it is the part of its path it has already driven.  The walk then spends
         // the train's length back along that road and stops, the arithmetic `tailHasProvablyPassed` uses to hand an edge back,
         // read generously here (the head at the far end of its milestone's square, where the release does not count that
-        // square until the next sensor answers, GS-B3), so the release is never ahead of this walk.
+        // square until the next sensor answers), so the release is never ahead of this walk.
         Set<Locomotive> alreadyWalked = new LinkedHashSet<>();
 
         for (Point standing : owner.points.values())
@@ -197,11 +197,11 @@ final class StandingTrains
             String side = standing.getArrivedFrom();
             List<Edge> road = standing.getArrivedAlong();
 
-            // THE PATH IT IS TAKING, WHICHEVER MAP HOLDS IT YET (VD12-B3): `configureAndLockPath` claims `takingPath` and reserves
+            // THE PATH IT IS TAKING, WHICHEVER MAP HOLDS IT YET: `configureAndLockPath` claims `takingPath` and reserves
             // every Point on the road before it returns, and `activeLocomotives` is written only afterwards, so in that window the
             // locomotive holds several Points and has no path here, and the one-tail-per-train rule would walk ONE arbitrary
             // reservation and leave its real tail claimed by nobody.  `getActiveAccs` has the same union for the same window
-            // (RC-A10).  The claims first (RSA4-C3), see `pathHeldBy`.
+            //.  The claims first, see `pathHeldBy`.
             List<Edge> running = owner.pathHeldBy(loc);
 
             if (running != null && !running.isEmpty())
@@ -272,7 +272,7 @@ final class StandingTrains
 
         if (head == null) return driven;
 
-        // THE HEAD IS THE START OF THE PATH, so nothing has been driven yet (VD13-C1) - AND BY IDENTITY ONLY (VD14-B2): by place,
+        // THE HEAD IS THE START OF THE PATH, so nothing has been driven yet - AND BY IDENTITY ONLY: by place,
         // a first leg that REVERSES IN PLACE ends at another copy of the start square, so the head is a different Point on the
         // same piece of track and the train HAS driven that leg; answering "nothing driven" there sends the caller back to the
         // stale road the Point recorded on an earlier run (MT-438).
@@ -287,7 +287,7 @@ final class StandingTrains
 
             driven.add(leg);
 
-            // IDENTITY FIRST, PLACE SECOND (VD12-C2): `isSamePlaceAs` matches every copy of a square, so a path that passes one
+            // IDENTITY FIRST, PLACE SECOND: `isSamePlaceAs` matches every copy of a square, so a path that passes one
             // twice would be truncated at the EARLIER copy and the side read off the wrong leg.  The place test stays as the
             // fallback, because a milestone can be reported on a different copy than the path names (`cameFromAlong` compares
             // this way, and its javadoc says the LATER arrival wins).
@@ -350,7 +350,7 @@ final class StandingTrains
 
         walked.add(here.getName());
 
-        // WHAT THIS TRAIN HAS ALREADY PAID FOR (PRW-C3): two hops share the square the walk turned at (the end of one edge, a
+        // WHAT THIS TRAIN HAS ALREADY PAID FOR: two hops share the square the walk turned at (the end of one edge, a
         // place on the next); charged twice, the tail stops short of where it really reaches and the track under its back end
         // is claimed by nobody, the permitting side of the guard between two trains.
         Set<String> spent = new LinkedHashSet<>();
@@ -373,11 +373,11 @@ final class StandingTrains
                 // THE SIDE IT CAME IN BY, which is the whole point of recording it.  Only the first hop can be chosen this way;
                 // past that the train is somewhere it never stopped, and the deterministic rule below takes over.
                 //
-                // AND THE ROAD, where the train has one and more than one rail comes in on that side (TLV-B1): a fork right
+                // AND THE ROAD, where the train has one and more than one rail comes in on that side: a fork right
                 // behind the platform is asked about, and the side alone took whichever rail it met first.
                 Point roadBack = roadBackAtTheFirstHop(arrivedFrom, arrivedAlong, here, back, walked);
 
-                // The first rail arriving by that side, kept in case none comes from a plain copy (AUT3-C3, below).
+                // The first rail arriving by that side, kept in case none comes from a plain copy (below).
                 Edge arriving = null;
 
                 for (Edge candidate : back)
@@ -400,7 +400,7 @@ final class StandingTrains
                         continue;
                     }
 
-                    // AND THE COPY THAT ARRIVES HERE, where the rail is written both ways (SVZ-B1): a piece of rail is two `Edge`
+                    // AND THE COPY THAT ARRIVES HERE, where the rail is written both ways: a piece of rail is two `Edge`
                     // objects, one per direction, and at a berth both can report the same way in.  `getNeighborsAndIncoming` lists
                     // the OUTGOING ones first, and an edge's places are the path plus the square it ARRIVES at, so the copy running
                     // away from the berth has the track behind and never the berth itself: the square a train was standing on was
@@ -409,7 +409,7 @@ final class StandingTrains
                     // copy is still taken when there is no arriving one, as at a square a train has been turned on: it lies across
                     // that rail whichever way traffic runs, and half an answer beats none.
                     //
-                    // AND FROM THE NEIGHBOUR'S PLAIN COPY, where its turning twin also arrives by this side (AUT3-C3).  At a
+                    // AND FROM THE NEIGHBOUR'S PLAIN COPY, where its turning twin also arrives by this side.  At a
                     // neighbour trains may turn at, its plain copy and its turning copy both have a rail in here, and
                     // `getNeighborsAndIncoming` sorts them by name (a turning copy is named by the opposite heading plus ", reverse",
                     // so it came first whenever the plain heading was southbound or westbound).  Every rail from a turning copy leads
@@ -477,11 +477,11 @@ final class StandingTrains
                     if (other == null) continue;
 
                     // NOT THE WAY WE CAME: every point on a straight run has two neighbours, and counting the one just walked would
-                    // make every ordinary tile look like a fork.  BY PLACE (TLR-B3, TLV-B2): a split square's copies are one square,
+                    // make every ordinary tile look like a fork.  BY PLACE: a split square's copies are one square,
                     // and the walk has been on it if it has been on any of them.
                     if (walkedAPlaceLike(other, walked)) continue;
 
-                    // COUNTED BY PLACE (TLR-B3, TLV-B2).  Adam's rule is to stop where the track SPLITS - "end locking at the
+                    // COUNTED BY PLACE.  Adam's rule is to stop where the track SPLITS - "end locking at the
                     // switch" - and a square's lane copy and turning copy are one piece of track under two names, not a split.
                     if (neighbours.add(placeKey(other))) segment = candidate;
                 }
@@ -496,7 +496,7 @@ final class StandingTrains
                 // rule; a hand-placed train can be given one (behaviour.md 5c, FR-085).
                 if (neighbours.size() > 1 && arrivedAlong != null)
                 {
-                    // Where the road says it came from - see `cameFromAlong`, shared with the first hop (TLV-B1).
+                    // Where the road says it came from - see `cameFromAlong`, shared with the first hop.
                     Point cameFrom = cameFromAlong(arrivedAlong, here, walked);
 
                     if (cameFrom != null)
@@ -521,9 +521,9 @@ final class StandingTrains
 
                 if (neighbours.size() != 1) break;
 
-                // AT THE SQUARE IT STANDS ON, THE RAIL THAT ARRIVES THERE (TDY2-C5), as the side rule above takes it (SVZ-B1):
+                // AT THE SQUARE IT STANDS ON, THE RAIL THAT ARRIVES THERE, as the side rule above takes it:
                 // `getNeighborsAndIncoming` lists the rails LEAVING a Point first, whose places begin after the square the train
-                // stands on, so the square would be neither claimed nor spent.  The AUT-C3 read below spends it off an arriving
+                // stands on, so the square would be neither claimed nor spent.  The read below spends it off an arriving
                 // rail only where the square has a block, which the build writes only on a split square; on a square emitted once
                 // (a dead end's turning copy among them) the tail would reach one square further back than the train lies.  The
                 // rail arriving here ends with the square, so it is read from the end and the square is spent first.
@@ -538,7 +538,7 @@ final class StandingTrains
                         if (candidate.getEnd() == here && candidate.getStart() != null
                             && candidate.getStart().isSamePlaceAs(towards))
                         {
-                            // THE PLAIN COPY FIRST (AUT3-C3), as the side rule above takes it.
+                            // THE PLAIN COPY FIRST, as the side rule above takes it.
                             if (isPlainCopy(candidate.getStart()))
                             {
                                 segment = candidate;
@@ -555,7 +555,7 @@ final class StandingTrains
                 }
             }
 
-            // THE SQUARE IT STANDS ON, WHERE THE RAIL TAKEN DOES NOT ARRIVE AT IT (AUT-C3).  OB-278 spends the standing square
+            // THE SQUARE IT STANDS ON, WHERE THE RAIL TAKEN DOES NOT ARRIVE AT IT.  OB-278 spends the standing square
             // first by reading the first hop's places from the end, which holds the standing square only when the hop ARRIVES
             // at this copy.  A train turned where it stands and re-stood on the other arrival's copy (the idle drain does that
             // after a turn at a square trains may turn at) has no rail arriving by that side, so the walk takes the one running
@@ -606,14 +606,14 @@ final class StandingTrains
             // claims the unmeasured squares behind for nothing, the refusing side `whyABerthCannotHoldIt` takes on the same approach.
             if (segment.getLength() <= 0 && !segment.isMeasured()) break;
 
-            // BOTH DIRECTIONS OF THE SAME RAIL (VAL8-A1, REG7-B3): the graph writes one piece of rail as two `Edge` objects, one
+            // BOTH DIRECTIONS OF THE SAME RAIL: the graph writes one piece of rail as two `Edge` objects, one
             // per direction, and `isPathClear` looks the covered set up by Edge identity, so covering A -> B alone left B -> A
             // clear and a train routed the other way over the same metal was cleared to run into the one standing on it.
             // `behaviour.md` 5c says a tail fouls the rail whichever way traffic runs.
             //
-            // ON A BUILT GRAPH THIS LOOP SELDOM MATCHES (AUT2-C3): the two directions of a rail there usually run between
+            // ON A BUILT GRAPH THIS LOOP SELDOM MATCHES: the two directions of a rail there usually run between
             // different COPIES of its squares, because facing is one-way edges, so no edge ends where this one starts and
-            // starts where it ends.  The reverse rail is refused by place instead - `anotherTailOn` (AUT-B1).  This loop
+            // starts where it ends.  The reverse rail is refused by place instead - `anotherTailOn`.  This loop
             // covers it where both directions join the same two Points, as on a hand-written graph.
             covered.put(segment, loc);
 
@@ -636,7 +636,7 @@ final class StandingTrains
 
             List<Integer> spans = segment.getPlaceLengths();
 
-            // What the places walk actually charged, which is what this hop costs (PRW-C3).  Negative until the places are walked
+            // What the places walk actually charged, which is what this hop costs.  Negative until the places are walked
             // at all, so the edge's own length can stand in for a configuration that does not carry them.
             int chargedHere = -1;
 
@@ -661,7 +661,7 @@ final class StandingTrains
                     // maximum train length typed on it, is the allowance `whyTooLongForThisRoute` asks; the length measured on the
                     // square is rail.
                     //
-                    // AND NOT TWICE (PRW-C3): the square the walk turned at is the end of the last edge and a place on this one;
+                    // AND NOT TWICE: the square the walk turned at is the end of the last edge and a place on this one;
                     // charging it again shortens the tail by its length and leaves the track under the train's back end unclaimed.
                     if (!spent.add(ids.get(at))) continue;
 
@@ -673,10 +673,10 @@ final class StandingTrains
                 }
             }
 
-            // ONE BUDGET, NOT TWO (PRW-C3): what the finer places walk charged IS what the hop costs.  A second arithmetic over
+            // ONE BUDGET, NOT TWO: what the finer places walk charged IS what the hop costs.  A second arithmetic over
             // the same train (spending the whole edge) agreed with it only while every square was measured, the standing square
-            // was treated alike by both, and no square belonged to two hops, and each of those failed in turn (SEV-B3, SVX-B1,
-            // PRW-C3).  The edge's own length is kept for a configuration that carries no places, where there is nothing finer.
+            // was treated alike by both, and no square belonged to two hops, and each of those failed in turn.
+            // The edge's own length is kept for a configuration that carries no places, where there is nothing finer.
             remaining -= chargedHere >= 0 ? chargedHere : segment.getLength();
 
             Point next = segment.getStart() == here ? segment.getEnd() : segment.getStart();
@@ -788,7 +788,7 @@ final class StandingTrains
     }
 
     /**
-     * Whether a Point is a copy trains pass through without turning - neither a terminus nor a reversing point (AUT3-C3).
+     * Whether a Point is a copy trains pass through without turning - neither a terminus nor a reversing point.
      *
      * The build emits the turning copy of a square trains may turn at as a terminus, so this is how the tail walk tells a
      * square's plain copy from its turning twin - the rule `AutonomySession.copyFacing` and `placementCopy` use.

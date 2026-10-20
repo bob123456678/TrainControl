@@ -1115,7 +1115,7 @@ public class LayoutDiagramComponent
      * The same, for a type with no instance to hand.
      *
      * Static because the port map needs the answer while it is BUILDING the table, before any component
-     * exists - and it had a verbatim copy of the rule to get it (DD-C10). Two copies of "how many ways
+     * exists - and it had a verbatim copy of the rule to get it. Two copies of "how many ways
      * up can this tile be" is two chances to disagree about a tile somebody has just added.
      *
      * @param type the tile type
@@ -1242,7 +1242,7 @@ public class LayoutDiagramComponent
     }
 
     /**
-     * Whether a command to this accessory address, in this protocol, reaches this tile's decoder (GUI-C5).
+     * Whether a command to this accessory address, in this protocol, reaches this tile's decoder.
      *
      * **A three-way is two decoders**, at its address and the next - `layout.switchThreeWayAddr` prints both, and
      * a CS2 route sets the other diverging road by commanding the second.  Only the first is the logical address,

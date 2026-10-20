@@ -252,8 +252,7 @@ public final class CommandRow
             case LOCOMOTIVE_SPEED: return "0";
             case FUNCTION: return "0:off";
 
-            // AUTO_LOCOMOTIVE never reaches here, and this arm is kept only to say so (REL-C13,
-            // VD9-C13).
+            // AUTO_LOCOMOTIVE never reaches here, and this arm is kept only to say so.
             //
             // The argument that used to stand here was that refusing is better than offering sensor 1
             // to somebody who did not choose it.  That decision was reversed by `ef33f4a8`: the editor
@@ -294,21 +293,21 @@ public final class CommandRow
      * carrying one silently stops firing with no error anywhere - the condition editor offered all
      * seven kinds, which made that a two-click mistake.
      *
-     * AUTO_LOCOMOTIVE **is** offered, and this paragraph used to say it was not (`REL-C13`).
+     * AUTO_LOCOMOTIVE **is** offered, and this paragraph used to say it was not.
      * `ef33f4a8` added it - *"an AUTONOMY CONDITION could be chosen and did nothing ... it starts on
      * the first locomotive now, like every other kind starts on something"* - and
      * `RouteEditorFrame.conditionKindChanged` supplies both halves the old sentence said the row could
      * not have: the first locomotive for the target, and sensor 1 for the setting.  So the editor does
      * build the row the route editor's documentation used as its example.
      *
-     * **By method name, not by line** (`VD9-C12`): the first version of this paragraph cited
+     * **By method name, not by line**: the first version of this paragraph cited
      * `RouteEditorFrame:3415-3419`, which was already wrong when it was copied here out of a review,
      * and a stale line number in a javadoc outlives every edit above it with nothing able to notice.
      *
      * The other NINE kinds are absent, and for the original reason: a condition built from one is
      * permanently false.  (This said **four**, and there was no version in which four was right:
      * when `Kind` had seven members this predicate admitted two, so five were absent, and the enum
-     * already had thirteen on the day the sentence was written - `VD10-C5`.)  One already in a
+     * already had thirteen on the day the sentence was written.)  One already in a
      * route is preserved
      * read-only, the way every other unsupported kind is.
      */
@@ -329,7 +328,7 @@ public final class CommandRow
     /**
      * Whether this kind can carry a delay.
      *
-     * EIGHT OF THE FOURTEEN CANNOT (X8-C3): FEEDBACK, STOP, FUNCTIONS_OFF, LIGHTS_ON,
+     * EIGHT OF THE FOURTEEN CANNOT: FEEDBACK, STOP, FUNCTIONS_OFF, LIGHTS_ON,
      * AUTONOMY_LIGHTS_ON, ROUTE, AUTO_LOCOMOTIVE and AUTO_LOCOMOTIVE_NOT_AT.  This sentence used to name
      * the first three, and `Kind` has grown since.
      *

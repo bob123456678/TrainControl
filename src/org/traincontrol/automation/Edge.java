@@ -26,7 +26,7 @@ import org.traincontrol.util.I18n;
 public class Edge
 {
     /**
-     * HOW MANY CLAIMS ARE STANDING ON THIS EDGE, not whether any is (RC-A9).
+     * HOW MANY CLAIMS ARE STANDING ON THIS EDGE, not whether any is.
      *
      * This was a boolean, and a boolean cannot hold two claims.  Two different edges may name this one
      * as a lock edge - which is what a crossing looks like when the editor writes it - and with a
@@ -450,7 +450,7 @@ public class Edge
 
     /**
      * What Mass Assign Lengths would ask a length for on this edge, place by place: the key of the piece, switch or shared
-     * square each place lies in, where that still wants a length (OB-297, ADA-C1; Adam, 2026-09-24: *"Locations of
+     * square each place lies in, where that still wants a length (OB-297; Adam, 2026-09-24: *"Locations of
      * switches are known."*).  The own-tail note counts these, so it asks for exactly what the editor offers.
      *
      * Written by the build.  A configuration built before has none, and says so (`knowsPiecesToMeasure`): its edges are
@@ -491,18 +491,18 @@ public class Edge
 
     /**
      * Whether this edge is measured: it has a length, or every place on it was answered 0 on purpose - measured track of
-     * no length (Adam, 2026-09-24, TDU-C6: *"0 lengths count as measures, so non-atomic should be allowed"*; and Adam, 2026-09-25: *"we can't possibly have positive lengths everywhere because the tracks just aren't that long.  We need to find a way to allow trains in atomic mode in as well if the total track lengths allow"*).
+     * no length (Adam, 2026-09-24: *"0 lengths count as measures, so non-atomic should be allowed"*; and Adam, 2026-09-25: *"we can't possibly have positive lengths everywhere because the tracks just aren't that long.  We need to find a way to allow trains in atomic mode in as well if the total track lengths allow"*).
      *
      * **The question every length rule asks** of a leg with no length: the Atomic Routes gate
      * (`Layout.unmeasuredTrackThatCouldBeReleased`) and the release escape it stands for (`Layout.pathIsUnmeasured`), the
      * route in, the room walk, the walk that claims a standing train's tail, the berth rule and the tail question - and
      * the own-tail rule, which asks it of the places on a way round, since a way round begins and ends inside a leg: a
      * return is judged once the way round has a length on it or every place on it answered (`Layout.measuredThroughout`;
-     * OB-300, RLA-C6; Adam, 2026-10-10, asked: into 3.0.0 - until then it judged only a way round that had run some
+     * OB-300; Adam, 2026-10-10, asked: into 3.0.0 - until then it judged only a way round that had run some
      * length, and let a train round a loop answered 0 into its own body).  An
      * answered leg is counted, adding nothing, and walked on over; a leg nobody answered still ends each of them.  They
      * ask it together because they must agree: a route in that counted on past an answered 0 while the tail walk stopped
-     * there admitted a train whose tail lay on track nothing claimed (ADA-A1, before the tail walk asked it too).  Every
+     * there admitted a train whose tail lay on track nothing claimed (before the tail walk asked it too).  Every
      * place must be answered - a square nobody answered, a switch or crossing on it included, leaves the leg unmeasured,
      * as Mass Assign Lengths still asks for it.  Without places, which a hand-written configuration has none of, only a
      * length says so.
@@ -546,7 +546,7 @@ public class Edge
      *
      * **"A switch" in the room rule** is what bounds a berth's room (`GraphReducer.boundsTheRoom`): a switch, or a
      * turnout drawn permanent (FR-097) - and not either square of a crossing made of two permanent Ys (OB-320).  Every
-     * statement of the rule that says "switch" means this (VD18-C4).
+     * statement of the rule that says "switch" means this.
      */
     public boolean crossesASwitch()
     {
@@ -699,14 +699,14 @@ public class Edge
     }
 
     /**
-     * Gives up one claim, and never fewer than none (RC-A9).
+     * Gives up one claim, and never fewer than none.
      *
      * The floor is not defensive tidiness, it is a contract something already depends on.
      * configureAndLockPath counts an edge as taken BEFORE it takes it, so that an edge a throw leaves
      * occupied is still inside the range its recovery releases.
      *
      * **Its comment used to add "setUnoccupied on an edge that is already clear does nothing", and
-     * this javadoc used to endorse that: "it still does nothing"** (`REL-C16`, `DAY-C4`). It is not
+     * this javadoc used to endorse that: "it still does nothing"**. It is not
      * true here. The floor holds for THIS edge, and then `setUnoccupied` cascades
      * `setLockedEdgeUnoccupied()` to every entry in `lockEdges`, each decrementing its own count with
      * no knowledge of whether this edge was ever taken. A reader who followed the `Layout` comment to
@@ -847,7 +847,7 @@ public class Edge
         // what every hand-written and pre-3.0.0 configuration should read as.
         if (this.crossesASwitch()) jsonObj.put("roomAtTheEnd", this.getRoomAtTheEnd());
 
-        // THE ARRIVAL SIDE, WHICH THIS METHOD DID NOT WRITE (S14-B3).
+        // THE ARRIVAL SIDE, WHICH THIS METHOD DID NOT WRITE.
         //
         // Layout.fromJSON reads `entrySide`, AutonomyBuilder writes it when it traces a diagram, and the
         // field's own javadoc says it travels in the configuration - so the program's export was not a
@@ -860,7 +860,7 @@ public class Edge
         // is what a hand-written configuration and anything built before the diagram work should read as.
         if (this.entrySide != null) jsonObj.put("entrySide", this.entrySide);
 
-        // AND THE PLACES, for the same reason S14-B3 gives just above: an export that drops them is not
+        // AND THE PLACES, for the same reason as just above: an export that drops them is not
         // a configuration this program can reload, and reloading without them silently returns the
         // whole-edge coverage that OB-207 is about.
         if (!this.placeIds.isEmpty())

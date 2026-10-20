@@ -20,7 +20,7 @@ public class TimetablePath
     private final List<Edge> path;
     private long executionTime;
     
-    // MILLISECONDS to the next execution, despite the name (X8-C4).  Precalculated externally.
+    // MILLISECONDS to the next execution, despite the name.  Precalculated externally.
     //
     // Every writer and reader uses milliseconds: `Layout` stores a difference of two
     // `System.currentTimeMillis()` stamps and compares it against another one, `TrainControlUI`
@@ -39,7 +39,7 @@ public class TimetablePath
     private final JSONObject unbuilt;
     private final String whyNot;
 
-    // WHAT THE ARRIVAL WAS TOLD, for an entry recorded by hand (RSA49-B1): whether the train was turned at the end of
+    // WHAT THE ARRIVAL WAS TOLD, for an entry recorded by hand: whether the train was turned at the end of
     // its path, or null for one recorded from autonomy or written before this was kept.  Played back, it is answered
     // again, so the train ends facing and standing as it did when it was recorded.
     private Boolean turnAtTheEnd = null;
@@ -91,7 +91,7 @@ public class TimetablePath
     }
 
     /**
-     * Whether the train was turned at the end of this path when it was recorded by hand (RSA49-B1).
+     * Whether the train was turned at the end of this path when it was recorded by hand.
      *
      * @return the answer, or null for an entry recorded from autonomy or before this was kept
      */
@@ -339,7 +339,7 @@ public class TimetablePath
             path.add(newEdge);
         }
 
-        // A ROUTE THAT ENDS WHERE IT STARTS - a lap - is kept, and refused when it is run (RSA30-C2): no door offers one,
+        // A ROUTE THAT ENDS WHERE IT STARTS - a lap - is kept, and refused when it is run: no door offers one,
         // a file can carry one, and run, it left its train on no Point
         if (whyNot == null && !path.isEmpty() && path.get(0).getStart() == path.get(path.size() - 1).getEnd())
         {
@@ -357,7 +357,7 @@ public class TimetablePath
             ttp.setSecondsToNext(json.getLong("secondsToNext"));
         }
 
-        // WHAT THE ARRIVAL WAS TOLD, where it was recorded by hand (RSA49-B1)
+        // WHAT THE ARRIVAL WAS TOLD, where it was recorded by hand
         if (json.has("turnAtTheEnd"))
         {
             ttp.setTurnAtTheEnd(json.getBoolean("turnAtTheEnd"));

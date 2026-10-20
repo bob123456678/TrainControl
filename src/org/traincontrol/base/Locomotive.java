@@ -109,7 +109,7 @@ public abstract class Locomotive
     protected Integer arrivalFunc;
     protected Integer departureFunc;
     // Volatile, with the speed, direction and length: written on the event thread or by the network while a driving
-    // thread reads them (GST-C1)
+    // thread reads them
     protected volatile boolean reversible;
     
     // Length of the train corresponding to this locomotive
@@ -669,7 +669,7 @@ public abstract class Locomotive
     }
 
     /**
-     * The same, given up once `abandon` says so (RSA2-C2) - asked whenever the wait wakes, which a change of speed and a
+     * The same, given up once `abandon` says so - asked whenever the wait wakes, which a change of speed and a
      * retirement (`wakeEveryWait`) both do.  A turn's resume passes "a stop ordered, or my railway gone": a Yes landing
      * between the resume and this wait left it waiting for a speed only the next driver would give.
      *
@@ -777,7 +777,7 @@ public abstract class Locomotive
     }
 
     /**
-     * The same, given up without the sensor once `abandon` says so (RSA-B1).  It is asked whenever the wait wakes, and
+     * The same, given up without the sensor once `abandon` says so.  It is asked whenever the wait wakes, and
      * every wait is woken when a railway is retired (`wakeEveryWait`): a journey passes "my railway has gone", so a
      * train the reload's Yes stopped short of its sensor leaves no thread behind to stop it later, whoever drives it
      * then.  A route's trigger passes nothing and waits for as long as the layout runs.
@@ -795,15 +795,15 @@ public abstract class Locomotive
             System.currentTimeMillis(), adviseAfterMs <= 0, abandon);
     }
 
-    /** Whether a wait has been given up (RSA-B1). */
+    /** Whether a wait has been given up. */
     private static boolean givenUp(java.util.function.BooleanSupplier abandon)
     {
         return abandon != null && abandon.getAsBoolean();
     }
 
     /**
-     * Wakes every thread waiting on a sensor or a speed, so each asks again whether to go on waiting (RSA-B1,
-     * RSA2-C2).  Called when a railway is retired; a wait with nothing to give up on goes back to waiting.
+     * Wakes every thread waiting on a sensor or a speed, so each asks again whether to go on waiting.
+     * Called when a railway is retired; a wait with nothing to give up on goes back to waiting.
      */
     public static void wakeEveryWait()
     {
@@ -821,7 +821,7 @@ public abstract class Locomotive
     /**
      * @param originMs when the WAIT began, which is not when this call began
      * @param alreadyAdvised whether the advisory has been given for this wait
-     * @param abandon when to give the wait up without the sensor (RSA-B1), or null never to
+     * @param abandon when to give the wait up without the sensor, or null never to
      *
      * A sensor that makes for a moment and lets go restarts the wait - the tile bounced, or a bogie
      * bridged it, and a train that has not really arrived must not be treated as though it had.  The
@@ -883,7 +883,7 @@ public abstract class Locomotive
             }  
         }
 
-        // GIVEN UP, not arrived (RSA-B1): the journey's railway has been retired, and its thread goes without the
+        // GIVEN UP, not arrived: the journey's railway has been retired, and its thread goes without the
         // debounce - the train it drove may be another railway's now.
         if (givenUp(abandon))
         {
@@ -1076,7 +1076,7 @@ public abstract class Locomotive
     }
     
     /**
-     * Turns a function on for a pulse, then off - for as long as the subclass says (S14-C4).
+     * Turns a function on for a pulse, then off - for as long as the subclass says.
      *
      * This said "one second", which no caller can obtain: every concrete locomotive in the application
      * is a MarklinLocomotive, which overrides this with PULSE_FUNCTION_DURATION - 300 ms - so the body
@@ -2001,7 +2001,7 @@ public abstract class Locomotive
     abstract public Map<Locomotive, Double> getLinkedLocomotives();
     abstract public int setLinkedLocomotives();
 
-    // THE ONE-CALL FORM, which is what a caller holding its list should use (NSV-B2).  The pair
+    // THE ONE-CALL FORM, which is what a caller holding its list should use.  The pair
     // below stages on an instance field and reads it back, and two threads rebuild consists - a
     // Central Station sync off the event thread, and the multi-unit dialog on it - so one caller's
     // list could be applied to the other caller's consist.  The pair remains for the one caller

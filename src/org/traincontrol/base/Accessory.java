@@ -53,7 +53,7 @@ abstract public class Accessory
     /**
      * Whether a LOGICAL address - the number the operator types - is one this protocol has.
      *
-     * **The maxima above are RAW, and two callers disagreed about that** (S14-C1).  The diagram editor
+     * **The maxima above are RAW, and two callers disagreed about that**.  The diagram editor
      * converts before asking (`isValidAddress(address - 1, ...)`); the route editor passed the logical
      * value straight in, so its accepted band was `1..MAX` where the diagram's is `1..MAX + 1` - and
      * logical MM2 320 and logical DCC 2048 were refused in one place and taken in the other.

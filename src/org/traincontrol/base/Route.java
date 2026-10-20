@@ -145,7 +145,7 @@ abstract public class Route
     }
     
     /**
-     * Whether a command in this route runs the named route (GSR-B4).
+     * Whether a command in this route runs the named route.
      *
      * Asked before that route is deleted, for the count the delete's question gives: `otherRouteDeleted` removes the
      * commands, and afterwards there is nothing left to count.
@@ -166,7 +166,7 @@ abstract public class Route
     }
 
     /**
-     * Takes every command that runs a deleted route out of this one (GSR-B4).
+     * Takes every command that runs a deleted route out of this one.
      *
      * Adam's ruling of 2026-10-10: deleting a route removes the other routes' calls to it, as deleting a locomotive
      * removes the commands that drive it (`locomotiveDeleted`).  A command naming a route that is not there does nothing
@@ -174,7 +174,7 @@ abstract public class Route
      * command carried goes with it, as a deleted locomotive's commands take theirs.
      *
      * Through the iterator, on the live list, as `locomotiveDeleted` does: a route already running walks a copy taken
-     * when it started (CS3-B1), so it finishes the commands it began with.
+     * when it started, so it finishes the commands it began with.
      *
      * @param name the route that has been deleted
      * @return true when a command was removed, so the caller can say which route lost it
@@ -398,7 +398,7 @@ abstract public class Route
         }
         else if (rc.isAutoLocomotive())
         {
-            // ASKED ONCE, NOT BUILT (RLV11-C5): a route's conditions are asked on its own thread
+            // ASKED ONCE, NOT BUILT: a route's conditions are asked on its own thread
             Layout layout = control.getAutoLayoutIfLoaded();
 
             if (layout == null)
@@ -427,7 +427,7 @@ abstract public class Route
      */
     private static boolean trainStandsAt(Layout layout, Locomotive loc, String s88)
     {
-        // THE RUN'S BOOKKEEPING CAUGHT UP WITH THE TRAIN FIRST, and no longer (RSA56-C1): while the train stands on
+        // THE RUN'S BOOKKEEPING CAUGHT UP WITH THE TRAIN FIRST, and no longer: while the train stands on
         // the sensor its run has not yet recorded - the gap in which a route fired by that sensor asks - and not at all
         // for a sensor it has not reached, which this used to wait for, untimed, until the train got there
         layout.waitForTheRunToRecord(loc, 3000);

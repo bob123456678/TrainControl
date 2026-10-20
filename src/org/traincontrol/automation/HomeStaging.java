@@ -71,7 +71,7 @@ public final class HomeStaging
      * graph: milliseconds per state on a 62-point layout.  An arrangement with no solution must say NO_PLAN_FOUND ("may
      * still be possible") within this budget, not freeze the application.
      *
-     * **One budget for the whole search, shared out** (MFR-C2, MFV-B1, OB-230).  A third looks for the SHORTEST plan
+     * **One budget for the whole search, shared out** (OB-230).  A third looks for the SHORTEST plan
      * from where the greedy pass stopped, a third for the shortest from the railway as it stands (the retry OB-228
      * needs, for a train the greedy pass parked with no way out), and the last third for ANY plan from the railway as
      * it stands, with the estimate weighted (`ANY_PLAN_WEIGHT`).  Halves, shortest then any, when the greedy pass moved
@@ -84,10 +84,10 @@ public final class HomeStaging
     private long searchStarted;
 
     /**
-     * Where the search reads the time (MFW-C3).
+     * Where the search reads the time.
      *
      * The wall clock, always, on the railway.  A field rather than a call so a test can step it: how the budget is
-     * shared out between the searches (MFV-B1) is a rule about time, and a claim on the real clock would spend fifteen
+     * shared out between the searches is a rule about time, and a claim on the real clock would spend fifteen
      * seconds a run.  `core.testReturnHomeKeepsClearOfTheTailsItLeaves` sets it.
      */
     private java.util.function.LongSupplier clock = System::currentTimeMillis;
@@ -142,7 +142,7 @@ public final class HomeStaging
      */
     private Map<Locomotive, List<Edge>> movedAlong = new java.util.HashMap<>();
 
-    /** A train's body at a square, by the square, the train and the road the plan moved it along (OB-294, TDA-C4). */
+    /** A train's body at a square, by the square, the train and the road the plan moved it along (OB-294). */
     private final Map<List<Object>, Map<String, Integer>> bodies = new HashMap<>();
 
     /** What the greedy pass left in `movedAlong`, for A* to start from. */
@@ -169,10 +169,10 @@ public final class HomeStaging
         // Taken once, with the rest of the starting state: asking the live layout during the search would answer for a
         // railway that has moved on, differently on every expansion.
         //
-        // At both grains (PRW-B2): the edges a standing train's tail touches, and the pieces of metal it lies on, which
+        // At both grains: the edges a standing train's tail touches, and the pieces of metal it lies on, which
         // the runtime narrows its shared-metal refusal with.
         //
-        // One train at a time (TDD-A1): the railway's single map holds one train per place, so two tails fouling one
+        // One train at a time: the railway's single map holds one train per place, so two tails fouling one
         // switch from its two legs were recorded as one. tails fouling one switch from its two legs were recorded as
         // one - and the train recorded, moving, hid the other.
         this.coveredAtStart = new LinkedHashMap<>();
@@ -392,7 +392,7 @@ public final class HomeStaging
         @Override
         public String toString()
         {
-            // The square, not the builder's copy of it - this is the "planned" line the log shows (TDR-C9).
+            // The square, not the builder's copy of it - this is the "planned" line the log shows.
             return this.loc.getName() + " -> " + Layout.placeNameOf(getEnd());
         }
     }
@@ -483,7 +483,7 @@ public final class HomeStaging
 
         if (trivial != null) return new Plan(trivial, empty(), noLocs());
 
-        // A locomotive in two places at once, which nothing below this line can reason about (SG-A3).
+        // A locomotive in two places at once, which nothing below this line can reason about.
         //
         // A locked path reserves every point along it for one locomotive, and a path that failed part-way through
         // unlocking leaves those reservations standing.  Nothing in the model tells a reservation from a train
@@ -530,15 +530,15 @@ public final class HomeStaging
             // A home the locomotive could never be parked at (inactive, excluding it, too short, or a terminus it
             // cannot reverse out of), or an origin it cannot leave (an inactive one), is impossible by construction.
             //
-            // The STATELESS canRest and no FR-001 test (FBR-B1, FBR-B2): this pre-scan reads the STARTING occupancy, so
+            // The STATELESS canRest and no FR-001 test: this pre-scan reads the STARTING occupancy, so
             // a state-aware canRest (OB-073) would let a locomotive merely standing on a watched square prove the goal
             // unreachable, including one whose departure is the plan's own first move.  FR-001 is asked at the arrival
-            // test in `firstClearRoute` (E8-B5).
+            // test in `firstClearRoute`.
             //
             // THE SQUARE: `canRest` and `connected` are asked of the same copy of the home, and a terminus turns a
             // train round as it ARRIVES, so only the copies that turn are closed to a locomotive that cannot reverse.
             //
-            // THE INACTIVE START IS REFUSED HERE, DELIBERATELY (SPEC-B3).  A hand-driven send allows one (Adam:
+            // THE INACTIVE START IS REFUSED HERE, DELIBERATELY.  A hand-driven send allows one (Adam:
             // "inactive really means nothing can pass", with the square a train is ALREADY standing on exempted), but
             // Return Home is a plan made for every staged locomotive at once, and a square switched off is a square its
             // author has said to leave alone.
@@ -554,7 +554,7 @@ public final class HomeStaging
             }
         }
 
-        // NOR ONE THAT CANNOT LEAVE WHERE IT STANDS (OB-325, from E2E-B1).  A reversible train of 4 on BottomMainB's
+        // NOR ONE THAT CANNOT LEAVE WHERE IT STANDS (OB-325).  A reversible train of 4 on BottomMainB's
         // turning copy, from which every station reachable is shorter, has its home connected by track, so the scan
         // above passes it, yet it has no first move: the search would run the whole fleet for about fifteen seconds and
         // name nobody.  A train with no first move and not at home can never get home, so that is a proof, said with
@@ -572,7 +572,7 @@ public final class HomeStaging
 
             if (atHome(home, from) || this.hasAFirstMove(l, from, true)) continue;
 
-            // NOT WHERE A SENSOR IS ALL THAT HOLDS IT (RSA58-C1).  A sensor that reads occupied with no train on the
+            // NOT WHERE A SENSOR IS ALL THAT HOLDS IT.  A sensor that reads occupied with no train on the
             // graph to account for it (a vehicle TrainControl does not know, a dirty contact, a tail past where the
             // walk stops) blocks every arrangement alike, so it would pass for a proof; but it is live state, and goes
             // when somebody clears it.  A train with a move once no sensor is read is left to the search, which
@@ -598,7 +598,7 @@ public final class HomeStaging
 
                 if (!sharesSection(a.getValue(), b.getValue())) continue;
 
-                // Both already parked: nothing arrives, so nothing is checked (SG-A1).  What is proved here is that the
+                // Both already parked: nothing arrives, so nothing is checked.  What is proved here is that the
                 // SECOND arrival onto a shared detection section is refused, and neither of these trains arrives: both
                 // stand on their own homes, so the pair is finished before the run begins.  Leaving the exemption out
                 // costs no plan, not a worse one: IMPOSSIBLE refuses the WHOLE staging run, so a third locomotive that
@@ -621,7 +621,7 @@ public final class HomeStaging
             }
         }
 
-        // AND NO CYCLE SCAN OVER THE OCCUPANCY RESTRICTIONS (OB-085, E8-B5).  Two homes that each hold back the square
+        // AND NO CYCLE SCAN OVER THE OCCUPANCY RESTRICTIONS (OB-085).  Two homes that each hold back the square
         // the other's occupant must end on are a real deadlock now that the planner enforces FR-001, and the scan stays
         // out anyway: IMPOSSIBLE names locomotives and asserts that no arrangement exists, and the scan that produced
         // that verdict was wrong three times, each time about a railway that works.  A search that exhausts and answers
@@ -782,7 +782,7 @@ public final class HomeStaging
         // Nothing has moved yet (OB-228).
         this.movedAlong = new java.util.HashMap<>();
 
-        // ONE BUDGET, for every search this runs (MFR-C2), shared out below (MFV-B1).
+        // ONE BUDGET, for every search this runs, shared out below.
         this.searchStarted = this.clock.getAsLong();
 
         boolean progress = true;
@@ -818,7 +818,7 @@ public final class HomeStaging
         // A* starts from the greedy pass's arrangement, so it inherits the routes that pass gave (OB-228).
         this.greedyMovedAlong = new java.util.HashMap<>(this.movedAlong);
 
-        // A SHARE OF THE BUDGET EACH (MFV-B1, OB-230): the shortest plan from where the greedy pass stopped, the shortest
+        // A SHARE OF THE BUDGET EACH (OB-230): the shortest plan from where the greedy pass stopped, the shortest
         // from the railway as it stands, then any plan.  Thirds when the greedy pass moved something; halves when it
         // moved nothing, because then the first two would search from the same arrangement.
         boolean retry = !plan.isEmpty();
@@ -872,7 +872,7 @@ public final class HomeStaging
         Map<String, Move> arrivedBy = new HashMap<>();
         Map<String, String> cameFrom = new HashMap<>();
 
-        // THE ROUTES EACH ARRANGEMENT'S MOVED TRAINS CAME BY, kept with it (MFR-B2).  The key is the squares plus those
+        // THE ROUTES EACH ARRANGEMENT'S MOVED TRAINS CAME BY, kept with it.  The key is the squares plus those
         // routes: two orders reaching the same squares with different tails are different arrangements (MT-335's shape:
         // a train parked the short way lies across the run another needs; parked the long way, it does not).
         Map<String, Map<Locomotive, List<Edge>>> routesOf = new HashMap<>();
@@ -923,7 +923,7 @@ public final class HomeStaging
 
             if (misplaced(current) == 0) return rebuild(currentKey, cameFrom, arrivedBy);
 
-            // THE ROUTES THAT BROUGHT THE TRAINS TO THIS ARRANGEMENT (OB-228), as it was reached (MFR-B2).
+            // THE ROUTES THAT BROUGHT THE TRAINS TO THIS ARRANGEMENT (OB-228), as it was reached.
             this.movedAlong = routesOf.get(currentKey);
 
             // One set per state, not one per candidate move: nothing moves while we expand this state
@@ -951,18 +951,18 @@ public final class HomeStaging
                     continue;
                 }
 
-                // A TRAIN THAT CANNOT REVERSE IS TURNED ON THE WAY ONLY TO GO HOME (AMH-B1; Adam: *"This should only be
+                // A TRAIN THAT CANNOT REVERSE IS TURNED ON THE WAY ONLY TO GO HOME (Adam: *"This should only be
                 // allowed if the train is going to reverse into its berth on the next turn."*).  The run turns a train
                 // at every terminus and reversing point a leg ends at (`ALWAYS_REVERSE`), so resting such a train on
                 // one and then sending it anywhere but home would drive it on running the other way (OB-205).  A move
                 // onto such a square is made only by a train with a home to go to, and a train the PLAN has put on one
                 // moves next only to its home.
                 //
-                // CARRIED BY THE TRAIN, NOT READ OFF THE SQUARE (AMW-B3): a plan could turn a train on its way into a
+                // CARRIED BY THE TRAIN, NOT READ OFF THE SQUARE: a plan could turn a train on its way into a
                 // berth, which the ruling permits, and then take it out to an ordinary station, which it does not; the
                 // pair breaks the rule though neither move does.  So what is asked is the route that brought the train
                 // here: if it turned the train and the train is not home, its next move owes itself to its home.  And
-                // ONLY OF A TRAIN THIS PLAN HAS MOVED (RTX-B1): `turnsATrainArrivingAt(at)` asks about the SQUARE,
+                // ONLY OF A TRAIN THIS PLAN HAS MOVED: `turnsATrainArrivingAt(at)` asks about the SQUARE,
                 // which cannot tell who turned the train standing on it, and a train the railway already had on a
                 // terminus (or a free agent with no home) would be refused every square there is.  `movedAlong` knows:
                 // a train this plan has moved has an entry there.
@@ -983,7 +983,7 @@ public final class HomeStaging
 
                     if (path == null) continue;
 
-                    // NOR TURNED IN THE MIDDLE OF THE MOVE AND SENT ON (AMV-B1).  The two rules above are about where a
+                    // NOR TURNED IN THE MIDDLE OF THE MOVE AND SENT ON.  The two rules above are about where a
                     // move ENDS.  A route may also turn the train at a reversing point on the way (how a train that
                     // cannot reverse backs into a berth, MT-245) and then carry on, so it arrives running the other way
                     // round.  A turn on the way is allowed only where this move ends somewhere the turn was FOR: the
@@ -1077,7 +1077,7 @@ public final class HomeStaging
         // be planned home and then refused at its first edge.
         if (!from.isActive()) return null;
 
-        // And the rule in the very next `if` (SG-A2): "Starting point is not a station - do not pick it in fully
+        // And the rule in the very next `if`: "Starting point is not a station - do not pick it in fully
         // autonomous mode".  Staging is fully autonomous operation (executeTimetable sets `running`, which is why the
         // reversing-point exclusion was moved out of isPathClear and into selection).  Missing it costs more than a
         // refused plan: the run STARTS, the first leg is refused, and the retry loop asks every two seconds until it
@@ -1092,7 +1092,7 @@ public final class HomeStaging
         // `getPossiblePaths`, where `isPathClear` applies the rule.
         //
         // Asked of the PLANNED state, never of the live railway: by the time this move happens the trains are where the
-        // plan put them (see `plannedOccupancy`).  NOT in the reachability pre-scan (FBR-B1, FBR-B2), which reads the
+        // plan put them (see `plannedOccupancy`).  NOT in the reachability pre-scan, which reads the
         // STARTING occupancy and so would prove goals unreachable that the plan's own first move frees.
         if (!canRest(loc, to, state) || state.containsKey(to)) return null;
 
@@ -1102,7 +1102,7 @@ public final class HomeStaging
         // ITS OWN BODY AS IT STANDS HERE, for the own-tail question below (OB-294): the road this plan moved it along
         // where it has moved it, and what the railway records where it has not, the two bodies the runtime would walk.
         //
-        // Walked after the cheap refusals, and once per train and road (TDA-C4): it depends on neither the destination
+        // Walked after the cheap refusals, and once per train and road: it depends on neither the destination
         // nor the rest of the arrangement, and is asked once per destination inside a search with a time budget.
         List<Edge> cameAlong = this.movedAlong.get(loc);
 
@@ -1127,7 +1127,7 @@ public final class HomeStaging
         // change which route this search returns first.  (`connected` lost the same state, because it only answers yes
         // or no and pruning cannot change that.)
         //
-        // NOT A TERMINUS (FV2-B2, SV2-A1).  `executePath` flips direction on arrival at a terminus and at a reversing
+        // NOT A TERMINUS.  `executePath` flips direction on arrival at a terminus and at a reversing
         // point alike, but this flag means "this train will BACK INTO the terminus it is ending at".  At a reversing
         // point the arrival flip leaves the train trailing, so it goes on backing: seeding true is right.  At a
         // TERMINUS that flip is the one that turns a backed-in train round to face out again, so it is spent and a
@@ -1140,7 +1140,7 @@ public final class HomeStaging
         {
             Candidate current = queue.poll();
 
-            // BY NAME, NOT AS THE RAILWAY SHUFFLES THEM (AMH-C1).  `Layout.getNeighbors` shuffles deliberately (that is
+            // BY NAME, NOT AS THE RAILWAY SHUFFLES THEM.  `Layout.getNeighbors` shuffles deliberately (that is
             // how autonomy spreads its choices over a railway), and this search returns the FIRST clear route it finds,
             // so a plan would ride on the shuffle: the same railway answering READY on one press and NO_PLAN_FOUND on
             // the next.  A capability claim that answers differently each time spends the battery's authority.  Ordered
@@ -1202,11 +1202,11 @@ public final class HomeStaging
 
                 // AND NOT ROUND A LOOP INTO ITS OWN TAIL (OB-294), as `Layout.isPathClear` asks it: the one rule, not a
                 // copy.  Prefix-closed, like the room rule below: every return is asked and the tightest named
-                // (TDA-C1), and an extension keeps every return the route already has, so no extension of a route that
+                //, and an extension keeps every return the route already has, so no extension of a route that
                 // meets the tail can clear it, and pruning here loses nothing.
                 if (Layout.whyItWouldMeetItsOwnTail(route, loc, ownBody) != null) continue;
 
-                // ROOM IS ASKED BEFORE THE ARRIVAL IS RECORDED (WK3-B2, D3F-B1, RT3-B1).  The refusal below is a
+                // ROOM IS ASKED BEFORE THE ARRIVAL IS RECORDED.  The refusal below is a
                 // `continue` because another route to the same berth may be longer and a longer approach is more room;
                 // but `alreadyReached` is a DOMINANCE test, so a short arrival recorded first would dominate the longer
                 // one and drop it before its room was measured.  An arrival refused for want of room is not a state
@@ -1221,7 +1221,7 @@ public final class HomeStaging
                 // cheap: the property is prefix-closed, so no extension of a route the train does not fit on can fit.
                 if (next.equals(to))
                 {
-                    // AT THE DESTINATION, THE BERTH RULE AS WELL AS THE ROOM (PRW-B2).  `Layout.whyABerthCannotHoldIt`
+                    // AT THE DESTINATION, THE BERTH RULE AS WELL AS THE ROOM.  `Layout.whyABerthCannotHoldIt`
                     // is the static method `isPathClear` asks, so the two cannot come to disagree (the pattern
                     // `Point.heldBackBy` sets for FR-001); without it a plan sends a long train into a parking berth
                     // the runtime then refuses at the first move (OB-073).
@@ -1270,7 +1270,7 @@ public final class HomeStaging
 
                 if (next.equals(to))
                 {
-                    // Room was asked above, before this arrival was recorded (TCX-A2, WK3-B2).
+                    // Room was asked above, before this arrival was recorded.
                     //
                     // NO TURN IS REQUIRED HERE (Adam: *"Return home is manual, take the rule out and say why."*).  The
                     // reason is the same as his rule for `isPathClear`: *"in manual operation, non reversing trains
@@ -1432,7 +1432,7 @@ public final class HomeStaging
             Map<String, Locomotive> places = this.placesByAMove.computeIfAbsent(road,
                 r -> this.layout.placesATailWouldCover(end, train, r));
 
-            // AND EVERY OTHER COPY OF THE SAME METAL, as `Layout.isPathClear` asks it (AUT-B1).
+            // AND EVERY OTHER COPY OF THE SAME METAL, as `Layout.isPathClear` asks it.
             if (Layout.anotherTailOn(edge, mover, places) != null) return false;
 
             for (Edge sharing : edge.getLockEdges())
@@ -1464,7 +1464,7 @@ public final class HomeStaging
      * are genuinely clear (Adam's standing preference is no check over an over-strict one).  Where the train has not
      * moved, the record is exactly true.
      *
-     * **EVERY TRAIN LYING ACROSS IT, not the first found** (AUT2-C2).  An edge two start tails lie across must not pass
+     * **EVERY TRAIN LYING ACROSS IT, not the first found**.  An edge two start tails lie across must not pass
      * as soon as the first-found train has gone while the second still lies there: the runtime walks the tails as they
      * are now and would refuse the leg, a plan that stops half way (OB-073).  The runtime may stop at the first,
      * because any one refuses; this has to ask them all.
@@ -1479,7 +1479,7 @@ public final class HomeStaging
     {
         Set<Locomotive> lyingAcross = new LinkedHashSet<>();
 
-        // EACH TRAIN'S OWN RECORD, one at a time (TDD-A1) - so a place two tails claim answers with both.
+        // EACH TRAIN'S OWN RECORD, one at a time - so a place two tails claim answers with both.
         for (Map.Entry<Locomotive, Map<Edge, Locomotive>> each : this.coveredAtStart.entrySet())
         {
             Locomotive train = each.getKey();
@@ -1500,7 +1500,7 @@ public final class HomeStaging
     }
 
     /**
-     * Whether this train's tail, as it stood at the start of the plan, lies over metal this edge runs on (OB-184, TDD-A1).
+     * Whether this train's tail, as it stood at the start of the plan, lies over metal this edge runs on (OB-184).
      *
      * @param edge the edge being entered
      * @param train one train standing at the start
@@ -1521,7 +1521,7 @@ public final class HomeStaging
         // switch's tiles belong to every road through it, so the tail fouls roads that are not the edge it lies on.
         // `Layout.isPathClear` reads that through `getLockEdges`, restricted to SYMMETRIC partners (sharing a tile is
         // mutual, while the builder's one-directional travel restrictions live in the same collection and must not be
-        // swept, RGD-B2).  The same rule asked the same way, because a planner that asks a different question offers
+        // swept).  The same rule asked the same way, because a planner that asks a different question offers
         // plans the runtime refuses.
         for (Edge sharing : edge.getLockEdges())
         {
@@ -1529,7 +1529,7 @@ public final class HomeStaging
 
             if (!sharing.getLockEdges().contains(edge)) continue;
 
-            // AND ONLY OVER THE PART OF IT THE TRAIN IS ACTUALLY LYING ON (PRW-B2, OB-207).  The runtime narrows this
+            // AND ONLY OVER THE PART OF IT THE TRAIN IS ACTUALLY LYING ON (OB-207).  The runtime narrows this
             // to places, and a planner that did not follow would declare impossible what the railway would carry out
             // (`Tunnel -> BottomMainA` past a one-unit tail twelve tiles away): a proof may be looser than the search
             // it guards, never tighter.  `Layout.tailLiesOn` rather than a copy of it (the pattern `Point.heldBackBy`
@@ -1544,7 +1544,7 @@ public final class HomeStaging
             return true;
         }
 
-        // AND EVERY OTHER COPY OF THE SAME METAL, as `Layout.isPathClear` asks it (AUT-B1): the rail into a turning copy
+        // AND EVERY OTHER COPY OF THE SAME METAL, as `Layout.isPathClear` asks it: the rail into a turning copy
         // runs over the places of the rail into its plain twin, and is no lock partner of it.
         return Layout.tailLiesOn(edge, train, places);
     }
@@ -1610,7 +1610,7 @@ public final class HomeStaging
 
                 Locomotive there = state.get(sibling);
 
-                // The MOVER is not exempt either (SG-A4).  It reads as though it must be (a train cannot be blocked by
+                // The MOVER is not exempt either.  It reads as though it must be (a train cannot be blocked by
                 // its own sensor), but the point it is standing on is not what is being asked about: isPathClear never
                 // looks at the point a path STARTS from, it looks at the end of every edge against the live feedback,
                 // and it exempts nobody.  While the train still stands on this section the feedback really is set, so a
@@ -1628,7 +1628,7 @@ public final class HomeStaging
         // through route is exactly where an operator puts "not this one, not here".  The stricter reading on stations
         // too removed 45% of the reachable station pairs for two locomotives on the author's layout.
         //
-        // Asked of the square, as isPathClear asks it (RSA65-B1): a station's copy for a barred arrival side is no
+        // Asked of the square, as isPathClear asks it: a station's copy for a barred arrival side is no
         // destination, and is still a station's.
         return !p.excludes(loc) || this.layout.isAStationSquare(p);
     }
@@ -1644,7 +1644,7 @@ public final class HomeStaging
      * occupied.  Expressing it there is what makes the rule structural instead of a function of whatever the feedback
      * happened to read a moment ago.
      *
-     * **AND A SENSOR A STANDING TRAIN'S TAIL IS LYING ON GOES WITH THAT TRAIN** (AMH-B2; Adam: **"Yes, tails hold
+     * **AND A SENSOR A STANDING TRAIN'S TAIL IS LYING ON GOES WITH THAT TRAIN** (Adam: **"Yes, tails hold
      * sensors."**).  So the section behind a long train reads occupied with nothing standing on any square that reports
      * it: unexplained here, and shut for every move of the plan while that train has not moved, because
      * `Layout.isPathClear` reads the live feedback and refuses an edge whose end reports a set sensor (OB-073).  Once
@@ -1655,7 +1655,7 @@ public final class HomeStaging
     {
         Set<String> out = new HashSet<>();
 
-        // PER CAUSE AND PER END, not per sensor (AMW-B2).  Freeing a sensor as soon as ONE tail that had lain on it
+        // PER CAUSE AND PER END, not per sensor.  Freeing a sensor as soon as ONE tail that had lain on it
         // moved, or freeing both ends of every covered edge, would over-claim in the direction this class must never
         // take (the planner looser than the railway, OB-073):
         //
@@ -1672,7 +1672,7 @@ public final class HomeStaging
         {
             Locomotive tail = each.getKey();
 
-            // THIS TRAIN'S OWN PLACES (TDD-A1), so a second tail on the same square is not read as this one's.
+            // THIS TRAIN'S OWN PLACES, so a second tail on the same square is not read as this one's.
             Map<String, Locomotive> tailPlaces = this.placesCoveredAtStart.get(tail);
 
             boolean moved = false;
@@ -1806,7 +1806,7 @@ public final class HomeStaging
      * where the search would not - that train is then searched for as before - and never the other way round.
      *
      * Asked twice by `plan`: reading the sensors, as the search reads them, and then with none read - a train held only
-     * by a sensor nothing on the graph accounts for is not named (RSA58-C1).
+     * by a sensor nothing on the graph accounts for is not named.
      *
      * @param l the train
      * @param from where it stands
@@ -1854,8 +1854,8 @@ public final class HomeStaging
      *
      * The same questions `plan` asks before it calls a train unreachable, broken into their parts, so the log can say
      * which part: the square it stands on, the home itself, or the way between, each named as the square it is, never
-     * as the builder's direction copy (TDR-C8).  A home is a SQUARE, so a home rule is reported only when no copy of it
-     * a train can STOP at would take the train: a copy that is not a destination has no say in it (TDR-B3).
+     * as the builder's direction copy.  A home is a SQUARE, so a home rule is reported only when no copy of it
+     * a train can STOP at would take the train: a copy that is not a destination has no say in it.
      *
      * @param loc the locomotive
      * @param from where it stands
@@ -1871,11 +1871,11 @@ public final class HomeStaging
             out.add(I18n.f("autolayout.whyHomeStartOutOfService", Layout.placeNameOf(from)));
         }
 
-        // FACING THE WAY TRAINS MAY NOT ARRIVE, AT A STATION (AUT3-B1): said so, with what to do.  A placement turns
+        // FACING THE WAY TRAINS MAY NOT ARRIVE, AT A STATION: said so, with what to do.  A placement turns
         // the train round, so "place it on a station first" would send the operator back to the same square.
         if (this.layout.isABarredCopyOfAStation(from))
         {
-            // Without "open that side" where every train turns (GUI4-C3): that is the terminus error.
+            // Without "open that side" where every train turns: that is the terminus error.
             out.add(this.layout.turnsEveryTrainAt(from)
                 ? I18n.f("autolayout.whyHomeStartFacingBarredMustTurn", Layout.placeNameOf(from))
                 : I18n.f("autolayout.whyHomeStartFacingBarred", Layout.placeNameOf(from),
@@ -1891,7 +1891,7 @@ public final class HomeStaging
 
         boolean anyActive = false, anyAdmits = false, anyLongEnough = false, anyStation = false;
 
-        // OVER THE COPIES A TRAIN CAN STOP AT, and only those (TDR-B3).  A platform whose arrival from one side is
+        // OVER THE COPIES A TRAIN CAN STOP AT, and only those.  A platform whose arrival from one side is
         // barred is built as a destination copy and a copy that is not one, and `validateTrainLength` answers yes for a
         // copy that is not a destination, so the barred copy would answer the length question and the length sentence
         // would never be said.
@@ -2010,7 +2010,7 @@ public final class HomeStaging
 
     /**
      * The copies of a home square a train may come home on: every copy, or - for a home held to a facing - those facing
-     * that way, which is what `atHome` counts as home (OB-282, TDY-C1).
+     * that way, which is what `atHome` counts as home (OB-282).
      *
      * @param home the home
      * @return the copies, never empty
@@ -2071,7 +2071,7 @@ public final class HomeStaging
         boolean sawACopy = false;
 
         // THE COPIES IT MAY COME HOME ON: every copy of the square, or those facing the way a home held to a facing
-        // faces (TDY-C1).  Asked of every copy, a home the train could only reach turned round would pass here, and the
+        // faces.  Asked of every copy, a home the train could only reach turned round would pass here, and the
         // search would spend its budget to answer "maybe" about something provable.
         for (Point copy : homeCopiesOf(home))
         {
@@ -2129,14 +2129,14 @@ public final class HomeStaging
      * Asked of the PLANNED state rather than the live railway: by the time this move happens the trains are where the
      * plan put them.  The locomotive being routed is exempt, as it is at runtime (Adam: *"the condition should not
      * apply to trains leaving, only departing"*).  WHICH squares are consulted and WHO is exempt is the rule, and it
-     * lives in `Point.heldBackBy` (DR-B2); all this contributes is where to look for occupancy.
+     * lives in `Point.heldBackBy`; all this contributes is where to look for occupancy.
      *
-     * **THE AUDIT'S GUARANTEE RUNS ONE WAY** (E8-C8).  `auditAgainstRuntime` proves the planner offers nothing the
+     * **THE AUDIT'S GUARANTEE RUNS ONE WAY**.  `auditAgainstRuntime` proves the planner offers nothing the
      * runtime refuses (OB-073).  The reverse is deliberately false: `plannedOccupancy` also consults the points
      * reporting the same SENSOR, which the runtime does not, so where a station and its approach guard share a feedback
      * address this refuses arrivals the railway would allow.  It fails safe: a refused plan, never a wrong movement.
      *
-     * **AND NOTHING PINS IT** (E8V-B3).  Neutering the sensor half of `sameTrackAs` leaves every test green: on a
+     * **AND NOTHING PINS IT**.  Neutering the sensor half of `sameTrackAs` leaves every test green: on a
      * four-point ring the arrival is already refused by `canEnter`'s own sensor rule.  Isolating this rule needs a
      * fixture where the watched square is **not on any route** to the destination and only the FR-001 relation joins
      * the two.  Until somebody writes it, this is a deliberate divergence that would not be noticed going.
@@ -2258,9 +2258,9 @@ public final class HomeStaging
             && at.validateTrainLength(loc);
     }
 
-    // There is no two-argument `connected` (SVN-C14, FV2-C6): a convenience overload that silently supplies one of the
-    // two things this question turns on is worth removing, and `SV2-A1` was about which value that argument should
-    // take.
+    // There is no two-argument `connected`: a convenience overload that silently supplies one of the
+    // two things this question turns on is worth removing, and which value that argument should
+    // take is the caller's to make.
 
 
     /**
@@ -2268,8 +2268,8 @@ public final class HomeStaging
      *
      * There is no reversal parameter: Return Home is manual operation, so nothing asks whether the way there turned the
      * train round (Adam: *"Return home is manual, take the rule out and say why"*).  A parameter every caller answers
-     * the same way is how a reader comes to believe there is a choice being made (`DAY-C1` is an open finding about the
-     * same shape kept in the diagram code).  `firstClearRoute` still tracks `turned` and keys on it deliberately:
+     * the same way is how a reader comes to believe there is a choice being made (the
+     * same shape is kept in the diagram code).  `firstClearRoute` still tracks `turned` and keys on it deliberately:
      * collapsing ITS key changes which route the search returns first, and this one only has to answer yes or no.
      *
      * @param from where the train is
@@ -2285,8 +2285,8 @@ public final class HomeStaging
         Deque<Point> queue = new ArrayDeque<>();
 
         // NO REVERSAL STATE: nothing asks whether the train has been turned by the time it arrives.  The findings that
-        // shaped this search are about its relationship to the executor: `D24-B1` was the two searches disagreeing
-        // about where a train starts, and `FV2-B2` was this one forgetting that `executePath` turns a train on arrival
+        // shaped this search are about its relationship to the executor: the two searches disagreeing
+        // about where a train starts, and this one forgetting that `executePath` turns a train on arrival
         // at a terminus as well as at a reversing point.  Both were the PROOF being stricter than the runtime, which is
         // the error that matters here: `plan()` consults this to call a locomotive UNREACHABLE, the only thing this
         // class claims to have proved.  A proof may be looser than the search it guards, never tighter.
@@ -2319,7 +2319,7 @@ public final class HomeStaging
                 // neither is not a stop, and travelling through it would invent a move the planner cannot make, the
                 // costlier error: a proof may be looser than the search it guards, never tighter.
 
-                // WHERE THIS IS STILL TIGHTER THAN THE SEARCH, for whoever widens it next (TV2-C6).  An out-of-service
+                // WHERE THIS IS STILL TIGHTER THAN THE SEARCH, for whoever widens it next.  An out-of-service
                 // or non-destination terminus is not expanded at all, and the search WILL end a leg at one and start
                 // the next from it, so a graph whose only route home passes through such a square is proved IMPOSSIBLE
                 // although a two-move plan exists.  Not reachable on a builder-derived graph, because the main line
@@ -2394,14 +2394,14 @@ public final class HomeStaging
         // A copy is a facing (behaviour.md 3), so the other arrival of the home square is the train turned round, which
         // counts as home only for a home set with no facing (the square, MT-165).  Where the home was set facing a way,
         // only a copy FACING that way is home.  Not the copy with the same arrival side: that includes the home copy's
-        // turning twin, which points back at the side it came in by, the train turned round again (TDY-B1, AUT-B2:
-        // reported already home at BottomMainB, which trains may turn at).  A copy of the other arrival that has turned
+        // turning twin, which points back at the side it came in by, the train turned round again:
+        // reported already home at BottomMainB, which trains may turn at.  A copy of the other arrival that has turned
         // faces the home's way, and is home.
         return !home.isHomeFacingFixed() || java.util.Objects.equals(home.getCopyFacing(), where.getCopyFacing());
     }
 
     /**
-     * Whether the run turns a train round when a leg ends here (AMH-B1).
+     * Whether the run turns a train round when a leg ends here.
      *
      * Legs run under `ALWAYS_REVERSE`, for which `Layout.turnsOnArrival` is a terminus or a reversing point.
      */
@@ -2442,7 +2442,7 @@ public final class HomeStaging
     }
 
     /**
-     * Whether a route turned the train on its way, short of where it ends (AMW-B3).
+     * Whether a route turned the train on its way, short of where it ends.
      *
      * The end is the caller's own question - `turnsATrainArrivingAt` - because a route that ends at a turning square
      * leaves the train facing out of it, which is the backing-in case MT-245 protects.  A reversing point PASSED on
@@ -2566,7 +2566,7 @@ public final class HomeStaging
     }
 
     /**
-     * An arrangement's key: where the trains stand, and the track the trains the plan has moved lie across (MFR-B2).
+     * An arrangement's key: where the trains stand, and the track the trains the plan has moved lie across.
      *
      * Two orders of moves that put the trains on the same squares are the same arrangement only if they leave the same
      * tails - otherwise one of them may let a later move through that the other refuses, and a search that keeps the
@@ -2585,7 +2585,7 @@ public final class HomeStaging
 
         List<String> tails = new ArrayList<>();
 
-        // AND WHAT THE PLAN DID TO EACH TRAIN IT MOVED (RTX-C1, OP3-C2).  `turnedByThePlan` reads two facts out of
+        // AND WHAT THE PLAN DID TO EACH TRAIN IT MOVED.  `turnedByThePlan` reads two facts out of
         // `movedAlong`: whether the train is in it at all, and whether the route it holds passed a reversing point.
         // `key(state)` carries neither, so two states with the same arrangement would share a key, and whichever the
         // search reached first would decide whether that train was restricted to its home on the next expansion.  Both
@@ -2593,7 +2593,7 @@ public final class HomeStaging
         // tails list below drops a train whose tail covers nothing).  Written `<name>/turned` or `<name>/straight`, the
         // spelling `firstClearRoute` uses for its own visited set.
         //
-        // A finer key can spend more of SEARCH_LIMIT (FXV-C4: about 8% more states over
+        // A finer key can spend more of SEARCH_LIMIT (about 8% more states over
         // `core.testReturnHomeOnRealLayout`, the same plans); it cannot lose a plan, because every state it separates
         // was two states the search was treating as one.
         List<String> turned = new ArrayList<>();
