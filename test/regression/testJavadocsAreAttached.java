@@ -71,7 +71,9 @@ public class testJavadocsAreAttached
     // 45 -> 35 on 2026-10-19: FR-136 Phase 2, the comment trim of the next six files.  Ten stacked or stale javadocs in
     // AutonomyCompanionStore, TileAnnotation, RouteEditorFrame and MarklinControlStation merged into the member they describe
     // or deleted, which takes those four files out of the list below.
-    private static final int ALLOWED = 35;
+    // 35 -> 33 on 2026-10-19: FR-136, the comment trim of TileGraph and LayoutGrid; each had two javadocs stacked on one
+    // declaration (PORTAL_ROUTE, LIVE), now one, which takes both files out of the list below.
+    private static final int ALLOWED = 33;
 
     /**
      * WHICH files carry the orphans, not just how many (VAL-C8).
@@ -88,8 +90,6 @@ public class testJavadocsAreAttached
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "automationui" + File.separator + "GraphReducer.java (2)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
-            + "automationui" + File.separator + "TileGraph.java (1)",
-        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "base" + File.separator + "CommandRow.java (1)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "base" + File.separator + "RouteCommand.java (1)",
@@ -101,8 +101,6 @@ public class testJavadocsAreAttached
             + "gui" + File.separator + "DiagramTileRegistry.java (1)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "gui" + File.separator + "LayoutEditor.java (3)",
-        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
-            + "gui" + File.separator + "LayoutGrid.java (1)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "gui" + File.separator + "LayoutLabel.java (1)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
