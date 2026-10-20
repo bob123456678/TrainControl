@@ -42,7 +42,7 @@ public interface ViewListener
     public void deleteRoute(String name);
 
     /**
-     * Every other route with a command that runs this one, by name (GSR-B4) - what the route delete door counts before
+     * Every other route with a command that runs this one, by name - what the route delete door counts before
      * it asks.
      *
      * @param name the route
@@ -52,7 +52,7 @@ public interface ViewListener
 
     /**
      * Deletes a route and takes every command that runs it out of every other route, logging each route that lost one
-     * (GSR-B4) - the route delete door's delete.  `deleteRoute` leaves the other routes alone, because `editRoute`
+     * - the route delete door's delete.  `deleteRoute` leaves the other routes alone, because `editRoute`
      * deletes and re-adds through it.
      *
      * @param name the route
@@ -90,7 +90,7 @@ public interface ViewListener
     public boolean getPowerState();
 
     /**
-     * The track power's epoch, as the Central Station has reported it (RSA62-C2, RSA63-C1): a number that moves at every
+     * The track power's epoch, as the Central Station has reported it: a number that moves at every
      * cut and every return, odd while the power is off - so one read says whether it is off now, and two, at a journey's
      * dispatch and once its route is set, whether it went off in between, even for a moment.
      *
@@ -132,7 +132,7 @@ public interface ViewListener
     public Layout getAutoLayout();
 
     /**
-     * The auto layout if one is loaded, or null - never making one, as getAutoLayout does (RLV7-C2, CS3-C4).  In one
+     * The auto layout if one is loaded, or null - never making one, as getAutoLayout does.  In one
      * step, so a clear cannot fall between asking and getting.
      * @return the layout, or null
      */
@@ -151,7 +151,7 @@ public interface ViewListener
      */
     public void refreshLayouts();
     /**
-     * The route now executing that drives this locomotive, or null (CS3-B1).
+     * The route now executing that drives this locomotive, or null.
      *
      * Asked by the doors that edit or delete a locomotive: a route part-way through its commands is about to send
      * this one a speed, and a route runs by hand or from an s88 with autonomy idle, so `isAutonomyRunning` does not
@@ -186,8 +186,7 @@ public interface ViewListener
     public int importRoutes(String json);
 
     /**
-     * The same, turning automatic firing back on for the routes the file saved with it on, when the operator said so
-     * (REG2-C7).
+     * The same, turning automatic firing back on for the routes the file saved with it on, when the operator said so.
      *
      * @param json the export
      * @param armAsSaved whether a route saved armed arrives armed
@@ -196,7 +195,7 @@ public interface ViewListener
     public int importRoutes(String json, boolean armAsSaved);
 
     /**
-     * The routes a route export saved with their automatic firing on and a sensor to watch, by name (REG2-C7, RLU-C2) -
+     * The routes a route export saved with their automatic firing on and a sensor to watch, by name -
      * the ones the import arms again when asked, and what its door asks about before anything is replaced.
      *
      * @param json the export

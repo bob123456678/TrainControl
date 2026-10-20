@@ -650,11 +650,11 @@ public class Util
             throw e;
         }
 
-        // AND THE STAGING FILE GOES EITHER WAY (AC3-C1).
+        // AND THE STAGING FILE GOES EITHER WAY.
         //
         // The catch above deletes it when the WRITE fails, with a comment about a half-written file
         // accumulating beside the target.  The move was outside that, so the Windows failure - a
-        // target somebody holds open - left the staging file behind, which is how AC3-B1's probe
+        // target somebody holds open - left the staging file behind, which is how a probe
         // found a `LocDB.data.part` sitting next to a corrupt `LocDB.data`.
         //
         // Deleted rather than kept as a recovery artefact.  It holds the GOOD data, which is an
@@ -770,13 +770,13 @@ public class Util
     {
         String name = gitHubReleaseInfo.getString("name");
 
-        // THE ONE AFTER THE "v" FIRST (IND9-C2).  Matching the first number outright was the same
+        // THE ONE AFTER THE "v" FIRST.  Matching the first number outright was the same
         // mistake as the original, pointing the other way: "TrainControl 2026 Edition v3.0.0" gave
         // "2026" - newer than anything, so the menu offers an update that does not exist - and
         // "Build 1 v3.0.0" gave "1", which compares as older and hides a real release in silence.
         // Release names are typed by hand at tag time and carry both a "v" and, sometimes, other
         // numbers.
-        // The "v" has to BE the tag marker, not the last letter of a word (VAL9-B3).  Without the left
+        // The "v" has to BE the tag marker, not the last letter of a word.  Without the left
         // boundary "Nov2026 build - TrainControl v3.0.0" matched the v of "Nov" and invented 2026, and
         // taking the FIRST anchored match made "Marklin CS3 v2.6 compatibility - TrainControl v3.0.0"
         // report 2.6, which compares older and hides the release. Longest wins among the anchored ones,
@@ -869,7 +869,7 @@ public class Util
 
         StringBuilder content = new StringBuilder();
 
-        // TRY-WITH-RESOURCES, so a bad response does not keep the connection (AC2-C4).
+        // TRY-WITH-RESOURCES, so a bad response does not keep the connection.
         //
         // The plain close() at the end was skipped by anything thrown from readLine, which leaked the
         // reader and the HTTPS connection under it.  Every other fetch in this project was converted
