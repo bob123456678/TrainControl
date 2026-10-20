@@ -4,21 +4,51 @@ This is the intended behaviour of the features that decide where trains may go a
 they get there. It is written to be **read against the code and disagreed with**: where this document
 and the program differ, one of them is a bug, and Adam decides which.
 
-Every rule below is Adam's, quoted where the wording matters. Rules that were argued over carry the
-date and the case that settled them, because several were reversed once and a rule without its reason
-gets reversed again by the next person who finds it inconvenient.
+Every rule below is Adam's, quoted where the wording is the rule. A rule states what is true and why. How it was
+argued, which round found it and on what date lives in the tracker row its id resolves to, and in git.
 
 **What this is not.** It is not a description of the code's structure, and it is not a changelog. It
 says what the railway should do. Where a rule has a known limit — something it deliberately does not
 catch — the limit is stated, because a limit nobody wrote down reads as a bug the day it is met.
 
-**How this relates to the comments in the code.** Adam, 2026-09-07: *"we should make comments in the
+**How this relates to the comments in the code.** Adam: *"we should make comments in the
 code to strive to be authoritative and self-contained, with the behaviour document being the
 documented intended functionality."* The division: **this document holds the intent**, and a comment
 explains why the code in front of you implements it the way it does. A comment stands on its own - a
 reader who has never opened a review document should be able to understand it - and where it cites a
 finding id, that is provenance rather than the explanation. The full rule is in
 [`docs/reviews/README.md`](../reviews/README.md).
+
+**Sections are cited by number** (`behaviour.md 5c`) from `src/` and `test/`, so a heading's text and numbering do not
+change. This index lists them in file order; search for the heading to jump to it.
+
+| section | what it settles |
+|---|---|
+| 1. The three tiers | autonomy, manual and Return Home obey different rules; occupancy restrictions bind all three; the active-trains cap |
+| 1a. How autonomy chooses | priority, the routing rule, the yield to a quiet train, the pauses, paused trains |
+| 2. Inactive squares | nothing passes an inactive square; 2a: a square that stops being a station keeps its settings |
+| 3. Reversals | where a train turns round, when the operator is asked, how direction commands and turns are recorded, turning versus being chosen |
+| 4. Which way a train is pointing | `facing` versus `arrivedFrom`, hand placement, pasting a train, what a parking berth is |
+| 4a. Station captions | a caption is a live readout of a station, one per station per page |
+| 4b. A station's icon | what the shape and colour of a station mark say |
+| 5. Length: will the train fit? | two length rules, track room and station capacity |
+| 5a. Room, where the train comes to rest | the track-room rule: where it is asked, from the last switch, the overhang at a station versus a parking berth |
+| 5b. What "unmeasured" means | unmeasured track gives no room but not no answer; Mass Assign Lengths; an answered 0; the bulk doors |
+| 5c. The tail | track a standing train lies across: the walk, the tail question, the shared-metal rule, the orange and grey marks, the reversal and platform notices, the census |
+| 5d. Atomic Routes | when an edge is handed back as the tail clears it, and the gates that refuse non-atomic running |
+| 5e. Permanently-set turnouts | fork to base only, and they still bound a berth |
+| 5f. Two permanent turnouts toe to toe | drawn as one diagonal crossing |
+| The autonomy editor's keyboard doors | Control+S/E/B/H/N/L act on the square under the pointer |
+| The main window's key map | the key map reaches the whole window |
+| 6. Parking and Return Home | what Return Home plans, homes and their facing, the event-thread rule |
+| 6a. Editing the setup while the railway is using it | Escape, what may not change mid-run, the railway wins about where a train is, rebuild and fold rules |
+| 7. Routing checks in the editor | Path Type, barred arrivals, Why Not Moving?, laps, termini, route colours |
+| 7a. A route that meets a train | which accessory is refused, who is asked, emergency stops, conditions |
+| 7c. The signals a station commands | the exit guard and the entry guard |
+| 7b. Routes that come from a file | imported routes arrive switched off; the delay floor; speed limits |
+| 8. Things that are true of the whole system | page order and links, configuration loading, name carrying, import and export, what is greyed while autonomy runs |
+| Where this document came from | provenance in one paragraph |
+| Looking up a citation | how to resolve a finding id in a comment |
 
 ---
 
@@ -529,7 +559,7 @@ editor's hint says it that way.
 
 ## 4. Which way a train is pointing, and where its tail is
 
-Two different properties, and confusing them was the cause of a day's worth of defects.
+Two different properties.
 
 - **`facing`** — the side the train's front points at. It is which copy of the square the train
   stands on, and it decides where it can go next.
@@ -543,11 +573,9 @@ puts a train down asks `Layout.moveLocomotive`, and that refuses in four cases: 
 the locomotive is unknown, the point is unknown, and the target is not a destination. (The rebuild's
 put-back, the paste and the Place Locomotive dialog may also stand a train on a copy of a station trains may
 not arrive at, where no station copy of the square faces its way: the copy is its direction - TDY3-A1,
-TDY4-B1, OB-284, section 7.) Its answer used
-to be discarded at the diagram's own menu, so the placement and the facing were written into the setup
-AND SAVED for a move the railway had just declined - and the setup is the half that survives a restart,
-so the next build emitted the train on a square it was never put on. The refusal is the method's, and
-the caller's job is to honour it: no placement, no facing, no arrival side, nothing saved. The log line
+TDY4-B1, OB-284, section 7.) The refusal is the method's, and
+the caller's job is to honour it: no placement, no facing, no arrival side, nothing saved, because the setup is the
+half that survives a restart and the next build would emit the train on a square it was never put on. The log line
 `moveLocomotive` already writes is what the operator sees; a second message would say the same thing
 twice. `regression.testTheRefusalsAreAskedAtTheDoors.testEveryPlacementDoorUsesTheRailwaysAnswer` names
 every door and says which one is allowed to discard the answer, and why.
@@ -560,13 +588,11 @@ every door and says which one is allowed to discard the answer, and why.
   the train drove in forwards, so its tail is on the side it is **not** pointing at; **a may-reverse
   square asks**, because turning round is what those squares are for and the train is as likely to
   have backed in as driven in.
-- **"Behind it" is chosen from the square's own sides, not from the compass** (`REV9-B3`, corrected
-  2026-09-08). This rule used to be written as "the opposite of the facing", and it was computed that
-  way: facing N gave S, whatever track the square had. That is the same answer on a straight and a
-  different one on a curve, where the build enters a square by, say, N and E and no rail lies to the
-  south at all. The side recorded then named no edge, the tail walk matched nothing on its first hop,
-  and **nothing was blocked** — a protection reporting itself as present while doing nothing. The
-  sides are now given first and the facing picks between them:
+- **"Behind it" is chosen from the square's own sides, not from the compass** (`REV9-B3`). The compass opposite of
+  the facing (facing N gives S) is the same answer on a straight and a different one on a curve, where the build
+  enters a square by, say, N and E and no rail lies to the south at all: the side recorded would name no edge, the tail
+  walk would match nothing on its first hop, and **nothing would be blocked** — a protection reporting itself as
+  present while doing nothing. So the sides are given first and the facing picks between them:
   - one side left once the facing's own is taken out — the whole answer on a two-sided square,
     straight or curved. On a straight it is still the compass opposite; on a curve it is the side
     that exists.
@@ -579,25 +605,24 @@ every door and says which one is allowed to discard the answer, and why.
   with a straight platform in the same fixture as the control.
 - It can be **set** afterwards from inside the **"<locomotive> is facing"** menu, on both the editor
   and the track diagram. Not cleared - see below. The two questions live in one menu under separate
-  headings because they are opposite ends of one train, and because a second submenu is what gave the
+  headings because they are opposite ends of one train, and because a second submenu is what would give the
   editor a setting the viewer did not have.
 - **The sides offered are the ones the BUILD splits on**, not the compass direction of the neighbouring
   point. A `Point` is the far end of a reduced edge that can run several tiles and turn corners, so a
-  rail leaving north and curving east reaches a neighbour lying east; asking the geometry offered "E"
-  where the metal leaves by "N". On a straight the two agree, which is why it went unnoticed.
+  rail leaving north and curving east reaches a neighbour lying east; asking the geometry would offer "E"
+  where the metal leaves by "N". On a straight the two agree.
 - Not knowing is a legitimate answer. It does **not** mean nothing is blocked: where the geometry
   leaves only one way back, the walk still follows it, because that answer is forced rather than
-  guessed. `arrivedFrom` picks between candidates; it is not a switch that turns blocking on.
-  (Corrected 2026-09-07 after `VAL8-C1` — the earlier wording claimed less than the code does.)
+  guessed. `arrivedFrom` picks between candidates; it is not a switch that turns blocking on (VAL8-C1).
 
 - **It survives a train being re-stood on a sibling copy.** When the window writes a destination turn
   it also moves the locomotive onto the copy for its new facing, and that is two changes of occupant —
   which is what `Point.setLocomotive` drops the side on. Right for a different train arriving, wrong
   here: this is the *same* train on another copy of *one* square, and turning it did not move its
-  carriages. So the side is carried across the move, and exactly the train that turned no longer loses
+  carriages. So the side is carried across the move, and exactly the train that turned does not lose
   the record of the track it is lying across.
 
-**When would it not be known?** Adam asked, and it is a fair question given the two rules above.
+**When would it not be known?**
 
 - a setup saved before the field existed;
 - a square whose **occupant changed** - `Point.setLocomotive` drops the side, because the new train
@@ -606,18 +631,16 @@ every door and says which one is allowed to discard the answer, and why.
 - a square with **three or more ways in** where the facing cannot separate them and the build does
   not enter by the compass opposite either - see the rule above. Deliberate: nothing is recorded
   rather than a side guessed.
-- and a square whose occupant a **placement door could not ask about**, which since 2026-09-11 is
+- and a square whose occupant a **placement door could not ask about**, which is
   only the dismissed prompt: `placeFacing` treats that as "do not place the train", so nothing lands
   and nothing is recorded.
 
-**Every hand-placement door works it out, as of 2026-09-11** (`REV9-B2`, closed). This was the one
-entry in the list above that was a defect rather than a design: the right-click "Place locomotive"
-item and the assign dialog both placed a train without working the side out at all, so the same
-placement blocked the track behind it or did not depending on which menu it was made from. Adam
-settled it: *"the missing arrival side should be set - either from the data, by the user, or
+**Every hand-placement door works it out** (`REV9-B2`): the right-click "Place locomotive" item and the assign
+dialog place a train with the side worked out, so the same placement blocks the track behind it whichever menu it is
+made from. Adam: *"the missing arrival side should be set - either from the data, by the user, or
 randomly."*
 
-The three doors now differ only in **where the question is put**, because the rule behind them is one
+The three doors differ only in **where the question is put**, because the rule behind them is one
 method:
 
 | door | how it asks |
@@ -636,10 +659,9 @@ cannot answer differently.
 The combo offers **sides and nothing else**, for the reason clearing is not offered on the menu below:
 recorded, else derived, else the first side the square has, which is the "randomly" above.
 
-**Clearing is not offered.** Adam, 2026-09-07: *"clearing should not be possible, only setting."* The
-menu used to carry a "Not known" option, on the argument that a mistaken answer would otherwise be
-permanent. It would not: the menu lists every side the geometry offers, so a wrong answer is corrected
-by choosing the right one. What clearing offered was a way to switch the tail blocking off, which is a
+**Clearing is not offered.** Adam: *"clearing should not be possible, only setting."* A mistaken answer is not
+permanent: the menu lists every side the geometry offers, so a wrong answer is corrected
+by choosing the right one. A "Not known" option would be a way to switch the tail blocking off, which is a
 preference about the check rather than a fact about the railway. The automatic clear above stays - the
 railway dropping a fact it no longer holds is not a person declaring ignorance.
 
@@ -647,7 +669,7 @@ railway dropping a fact it no longer holds is not a person declaring ignorance.
 
 > *"Calculate the simple BFS path from the current station to the paste target using the current
 > direction. Paste with the direction where the train ends up at the destination. If no path, pick
-> randomly from the allowed departure destinations."* — Adam, 2026-09-06
+> randomly from the allowed departure destinations."* — Adam
 
 The heading is not carried and not inferred from the two squares: **the railway is walked**. Which
 way a train ends up facing is decided by the track between the two platforms and by which way it set
@@ -655,13 +677,12 @@ off — one that leaves southbound round a loop is northbound one square away. A
 has one answer, which at a terminus is the reversal.
 
 **The walk answers with the nearest copy a train could be STANDING on**, and the same paste twice
-gives the same railway. Both halves of that were untrue until 2026-09-12, and the two compounded:
-`Layout.getNeighbors` shuffles on purpose - *"Randomize order to allow for variation in paths"*, which
-is right for autonomy picking a journey - and the walk answered with the first copy it touched, so on
-a square trains may turn round at, where the plain copy and the turning copy are always the same
-distance away and face **opposite** ways, the shuffle chose the direction. Measured on the frozen
-snapshot: 2-8-4 3505 SP put down on BottomMainB faced east 21 times out of 40 and west the other 19
-(Adam, MT-377: *"When 2-8-4 is pasted, it should always face east. Does it?"*).
+gives the same railway. `Layout.getNeighbors` shuffles on purpose - *"Randomize order to allow for variation in paths"*,
+which is right for autonomy picking a journey - so the walk must not answer with the first copy it touched: on
+a square trains may turn round at, the plain copy and the turning copy are always the same
+distance away and face **opposite** ways, and the shuffle would choose the direction (on the frozen snapshot,
+2-8-4 3505 SP put down on BottomMainB faced east 21 times out of 40 and west the other 19; Adam, MT-377: *"When 2-8-4
+is pasted, it should always face east. Does it?"*).
 
 So the walk runs to the end and the distances decide - breadth-first measures those correctly through
 any expansion order - and the tie at the nearest distance goes to the copy a train would simply be
@@ -670,54 +691,50 @@ decision, and the facing menu is where an operator makes it. A compulsory turn e
 there is nothing to prefer and its turning copy is still the answer, which is Adam's *"for terminuses,
 they must reverse on paste"* falling out of the same rule rather than bolted beside it.
 
-This is the fourth site of one confusion: a may-turn square's turning copy is emitted with
-`terminus: true`, so `isTerminus()` cannot tell it from a real terminus (OB-205 claims 1-3, MT-368).
+A may-turn square's turning copy is emitted with `terminus: true`, so `isTerminus()` cannot tell it from a real
+terminus (OB-205 claims 1-3, MT-368).
 
-**And the train is PUT on the copy the walk names, not only recorded as facing that way** (Adam,
-2026-09-22, OB-270: *"Trains should not inadvertently change direction when pasted, so a loc going west
+**And the train is PUT on the copy the walk names, not only recorded as facing that way** (OB-270; Adam:
+*"Trains should not inadvertently change direction when pasted, so a loc going west
 from bottomsecondary should always face east when pasted on bottommaina."*). A paste writes two things -
 the heading in the setup and the copy the train stands on in the running layout - and the copy IS the
 direction (section 3). Where a square has two copies a train may stop at, facing opposite ways, the copy
-used to be whichever `StationIndex.speakerAt` met first, so the record said east while the train stood
-westbound, and its arrival side and tail were then worked out for the wrong copy. **The rule: the copy
+taken is not whichever `StationIndex.speakerAt` met first (the record would say east while the train stood
+westbound, and its arrival side and tail would be worked out for the wrong copy). **The rule: the copy
 taken is the operator's chosen heading where one was asked, and the walked heading otherwise**; the heading
-is chosen and recorded over the copies a train could leave, so no impossible facing is saved. Built
-2026-09-23; **the barred-arrival half ruled 2026-09-24** (OB-284, Adam: *"this should check for barred
+is chosen and recorded over the copies a train could leave, so no impossible facing is saved. **Barred arrivals**
+(OB-284; Adam: *"this should check for barred
 departure directions, not arrival ones.  for barred arrival directions, keep the direction.  for barred
-departure directions, turn it to a way trains may arrive in"*).  So a train facing the way trains may not
+departure directions, turn it to a way trains may arrive in"*): a train facing the way trains may not
 arrive at the landing keeps its heading - as a reversal on the throttle or the Facing menu keeps it (the
 copy is the direction, section 3) - and stands where autonomy will not start it, told why; a heading no
 copy can leave by is turned to one trains may arrive in.  The same rule at the editor's Place and the
 Place Locomotive dialog (`AutonomySession.departableFacingsFor`).
 
-**A cut train is walked from the square it was cut from** (Adam, 2026-09-23, OB-270: *"it should be east.
+**A cut train is walked from the square it was cut from** (OB-270; Adam: *"it should be east.
 no train should inadvertently change direction when pasted."*). Control+X takes the train off the railway,
-so the walk had nowhere to start and the paste kept the compass heading it was cut with (MT-368) - west, for
+so the walk would have nowhere to start and the paste would keep the compass heading it was cut with (MT-368) - west, for
 a train cut going west at BottomSecondary, where the route to BottomMainA loops round and arrives facing
 east. The cut remembers its square, and the paste walks from there; the cut heading stands only where no
 route reaches the landing. `ui.testACutTrainArrivesTheWayItWouldDrive`.
 
 **Where there is no path**, the heading the train already has is kept if the landing can hold it, and
-otherwise the first copy it could depart from is taken. Adam's 2026-09-06 wording for that arm was
-*"pick randomly from the allowed departure destinations"*, on the reasoning that nothing in the
-situation determines an answer; it is superseded by his ruling of 2026-09-12 - *"as long as the
-direction isnt flipped (which it was before)"* - because something does determine one, and a
+otherwise the first copy it could depart from is taken. Adam: *"as long as the
+direction isnt flipped (which it was before)"* - because something does determine an answer, and a
 placement that answers differently each time it is repeated is drift (*"in all your simulations, state
-should never drift"*, 2026-09-07). **The diagram's right-click Place follows the same rule** (Adam,
-2026-09-24, OB-296: *"Yes, keep the train's heading."*) - the heading over every copy the train can
+should never drift"*). **The diagram's right-click Place follows the same rule** (OB-296; Adam: *"Yes, keep the
+train's heading."*) - the heading over every copy the train can
 leave by, a copy trains may not arrive at included, and the copy the paste would take (`copyFacing`);
 otherwise the first copy the menu offers.  The item is offered wherever a copy has a way out, as the action
-chooses (ADU2-C2).  It took one at random until then, and for a day chose only among station copies, which turned a
-train facing the barred way round at a square with a barred side (ADU-B1).  A copy with a way out that reaches no
+chooses (ADU2-C2); among station copies only, it would turn a train facing the barred way round at a square with a
+barred side (ADU-B1).  A copy with a way out that reaches no
 station autonomy may choose is kept too, and Why not Moving? says why autonomy never starts a train there - turn it round where another copy of the square reaches a station and a train may be started from that copy (RLA-C5); where that copy is barred, open its side and turn it round - but where every train turns round at the square, drive it off by hand, since opening that side there is the terminus error (RLU3-C2, RLU4-C6, GUI4-C3); where autonomy starts no train from that copy for another reason, drive it off by hand (RLU3-C2); and where no copy reaches one, drive it off by hand or let autonomy choose a station it can reach - switched on, Can Be Chosen in Full Autonomy ticked, and the side a train would arrive on open under Trains May Arrive... unless every train turns round there (RLU-C4, RLU2-C10, RLU3-C1, RLU4-C4) (OB-299; by hand it is no reason, since a hand send may go where autonomy never does).  `core.testWhyStuck.testACopyThatReachesNoStationSaysSo`, `core.testWhyStuck.testTurningRoundIsOfferedOnlyOntoACopyATrainMayStartFrom`, `core.testWhyStuck.testTurningRoundIsNotOfferedOntoACopyThatIsNoStation`, `core.testWhyStuck.testOpeningASideIsNotOfferedWhereEveryTrainTurns`, `core.testATrainIsPutOnlyWhereItCanStart.testTheRightClickPlaceKeepsTheTrainsHeading`.
 
 > *"Simply don’t place the train, leave it on the clipboard as if no paste had been done."* — Adam,
-> 2026-09-07, on a dismissed prompt
+> on a dismissed prompt
 
 **A dismissed arrival-side question abandons the paste.** The question is asked *before* the train
-moves, which is what makes declining it possible at all: it used to be asked after the drop, by which
-point the train had been lifted, put down, and the clipboard emptied, so closing the dialog placed the
-train anyway and merely declined to record which way round it was. Nothing moves, the clipboard still
+moves, which is what makes declining it possible at all. Nothing moves, the clipboard still
 holds the train, and the next square accepts the same paste.
 
 Only a **may-reverse** square can be dismissed. Everywhere else the side is worked out rather than
@@ -726,8 +743,7 @@ the two alike would refuse every paste onto plain track.
 
 **And a may-reverse square asks a second question: which way the train should face.**
 
-> *"If pasting at a 'may reverse' square, ask what direction the train should face."* - Adam,
-> 2026-09-13
+> *"If pasting at a 'may reverse' square, ask what direction the train should face."* - Adam
 
 The two questions are about different things and only that square needs both. **Where the tail lies**
 is where the train came in from; **which way it faces** is where it will go next. On any other square
@@ -746,34 +762,31 @@ filter.
 
 > *"For now, we consider anything with autodestination=false and only one way in/out as a parking
 > square. We can revisit dedicated marking if this doesn't work out with clean logic, or if it gets
-> too confusing to the user to manage."* - Adam, 2026-09-13, ruling on FR-060
+> too confusing to the user to manage."* - Adam (FR-060)
 
 Two facts, and neither is enough alone. **Autonomy will not choose it** says the operator is keeping
 the square for himself, which is true of a berth and of a platform he wants to dispatch by hand.
 **One way in and out** says the track is a dead end, which is true of a berth and of a headshunt.
 Together they are what FR-060 wanted a fourth designation for, so there is nothing to mark and nothing
-to migrate. Measured on his railway the day of the ruling: 20 stations carry `autoDestination: false`
-and 12 of them are berths by this test.
+to migrate.
 
 Counted in **squares**, not copies: a square split into a northbound and a southbound Point is one
 place with one way out, and a neighbour reached by two copies is one neighbour.
 
-**This is not the berth rule's gate.** "A berth may not block another road" (5b) applies wherever
+**This is not the berth rule's gate.** "A berth may not block another road" (5a) applies wherever
 autonomy will not choose the square, which is deliberately wider - the example Adam ruled it on has
 three ways in and is not a parking berth by the test above. The two questions stay separate.
 
-**A paste onto a square no train could leave is refused**, naming the square, from both doors. The
-right-click menu had always greyed the item; the diagram drop said nothing and did it anyway
-(Adam, MT-136). The question is asked of the square rather than of one arbitrary copy, since the paste
+**A paste onto a square no train could leave is refused**, naming the square, from both doors
+(MT-136). The question is asked of the square rather than of one arbitrary copy, since the paste
 itself walks to a copy that can depart.
 
 ---
 
 ## 4a. Station captions: a readout, not a name plate
 
-Adam, 2026-09-13: *"nothing seems to happen when I say 'show a different station here', is it meant to
-reset the label?  we should make it clear what this does."*  He had been using the feature for weeks;
-that the question could be asked at all is the reason this section exists.
+Adam: *"nothing seems to happen when I say 'show a different station here', is it meant to
+reset the label?  we should make it clear what this does."*
 
 **A caption is a square that shows the live state of a station somewhere else on the diagram.**  It is
 not a label naming the square it sits on.  What it draws changes as the railway runs:
@@ -798,9 +811,9 @@ has no caption it ADDS one, and the station's captions on other pages stay.  Sho
 the caption within its page and adds one on another; dragging a caption moves it within its page only, since a drop on
 another page is refused; "Stop Showing" removes only the caption of the square clicked.  The same rule holds for the
 automatic placement, an import and the migration of old `Point:` labels, each of which captions a station only where it
-has none on that page.  Two rulings of Adam's, both 2026-10-12, made it per page: the setup check (*"The duplicate caption
+has none on that page.  It is per page for the setup check (Adam: *"The duplicate caption
 check should be per page.  It is OK to show on another page what is going on on another, unless you think this breaks
-something major."*), and then the editor, which he ruled should go the same way.
+something major."*) and for the editor alike.
 
 A setup file edited by hand, or written by an older version, can still carry more than one on a page.  A station
 captioned on its own square and beside it on that page is drawn once, the beside one, and is no error; one on each of
@@ -818,19 +831,19 @@ puts a caption over text, naming the text, and the setup check warns about each 
 A caption goes only on a square the running diagram draws, which is the part of the page its components cover and not
 the blank margin the editor shows around it: Show a Station Name Here is greyed there, with the reason on its tooltip,
 Control+N does nothing and a dragged label is refused.  Deleting the square a caption sits on takes the caption with it,
-and deleting the STATION takes every caption naming it - text pointing at track that no longer exists is the orphan this
-design removed.
+and deleting the STATION takes every caption naming it - text pointing at track that no longer exists would be an
+orphan.
 
 **Why a station with no train reads as an em dash and not as its name**: the caption is about the
 station's state, and "empty" is a state.  That is also why an unlabelled square captioning an empty
-station tells you nothing about which station it is, which is what FR-014 was raised about - the menu
+station tells you nothing about which station it is (FR-014) - the menu
 names it in the "Stop Showing" item, and the tooltip explains the rest.
 
 ## 4b. A station's icon: what the shape says
 
-**Circles, diamonds and squares again** (round 131; Adam, 2026-10-11: *"The icons are hard to work with in reality, because
+**Circles, diamonds and squares** (Adam: *"The icons are hard to work with in reality, because
 they add complexity.  Keep the work on the new icons so we can revisit later, and revert roughly to what we had before"*).
-`TileAnnotation.StationIcons.CLASSIC`, the default; FR-118's icons, described below, are kept whole behind
+`TileAnnotation.StationIcons.CLASSIC` is the default; FR-118's icons, described below, are kept whole behind
 `TileAnnotation.setStationIcons(StationIcons.SHAPES)`.
 
 | | trains do not turn | trains may turn | trains must turn, or its track runs out |
@@ -838,30 +851,26 @@ they add complexity.  Keep the work on the new icons so we can revisit later, an
 | a station | big circle | big diamond | big square |
 | a sensor that is no station | small circle | small diamond | small square |
 
-Blue where autonomy uses it, grey a berth it does not choose (*"no change here"*); filled when named, white ringed in the
+Blue where autonomy uses it, grey a berth it does not choose; filled when named, white ringed in the
 colour when not; the same in the autonomy editor as on the track diagram (*"same appearance in editor as viewer"*).  A
-station's mark is 14 pixels across at the small size and 28 at the large, its diamond 17 and 36 - a pixel under the badges
-before FR-118 (*"same as before, just ever slightly smaller"*) - and it covers the sensor's contact, the track drawn back
-across it.  A sensor's mark is 10 and 20, its diamond 13 and 26, the inside of the contact's ring (*"match radius of s88,
-so 2px more diameter"*).  A square out of service is an orange sign, with no arrows
-on its square: on a station a solid orange circle with a white X, its mark's size (*"larger (same size a normal station)
-if a station"*; *"give the station out of service a solid orange fill, with a white X inside instead"*); on a sensor the
-white circle ringed in orange with an orange X, 12 and 24 (*"smaller if just a sensor"*; *"1px more radius on the non
-station out of service"*).
+station's mark is 14 pixels across at the small size and 28 at the large, its diamond 17 and 36, and it covers the
+sensor's contact, the track drawn back across it.  A sensor's mark is 10 and 20, its diamond 13 and 26, the inside of
+the contact's ring.  A square out of service is an orange sign, with no arrows
+on its square: on a station a solid orange circle with a white X, its mark's size (*"give the station out of service
+a solid orange fill, with a white X inside instead"*); on a sensor the
+white circle ringed in orange with an orange X, 12 and 24.
 The red and green arrows are drawn over the mark (MT-710).  A mark stays inside its square, on the middle of its track,
 on a curve too: nothing spills.  On a curve a station's diamond is 15 and 29, a pixel in from the middle of its rails as
-the circles are - a curve has no room on its rails for 17 and 36, and kept inside its square at that size it sat 3 and 5
-pixels off them (*"make sure that the diamonds are correctly aligned on curves"*; shown three ways, Adam chose it a
-little smaller there) - `testAClassicStationsDiamondOnACurveIsOnItsRails`.  `TileAnnotation.classicBox`; `core.testAutonomyDiagramMonitor` -
+the circles are - a curve has no room on its rails for 17 and 36 (Adam: *"make sure that the diamonds are correctly
+aligned on curves"*) - `testAClassicStationsDiamondOnACurveIsOnItsRails`.  `TileAnnotation.classicBox`; `core.testAutonomyDiagramMonitor` -
 `testTheClassicIconsAreTheGridAgain`, `testTheClassicIconsAreTheSizesAdamAskedFor`,
 `testTheClassicOutOfServiceSignIsAStationsOrASensors`, `testTheClassicIconsAreTheSameInTheEditor`,
 `testAStationOnACurveIsWhollyInsideItsSquare`; FR-118's own claims are marked `@DrawsFR118Icons` and drawn with its icons.
 
-**With FR-118's icons** (Adam, 2026-10-09, choosing on the station icon page, https://claude.ai/artifact/Y9BydDSBLW3eLy85i1yQfB): every
+**With FR-118's icons**: every
 station's icon is no taller across its track than the sensor's contact under it - 13 pixels at the small size, 26 at the
-large - and longer along the track, so a caption stood on end beside it is full size again (OB-327 had drawn it 15%
-smaller to clear the old badges, half a square across; *"the small font on the vertical labels is really hard to
-read"*).
+large - and longer along the track, so a caption stood on end beside it is full size (OB-327; *"the small font on the
+vertical labels is really hard to read"*).
 
 | the icon | the station |
 |---|---|
@@ -874,24 +883,24 @@ read"*).
 Blue where autonomy uses the station, grey a berth it does not choose - a colour on whatever shape the station has
 (*"shouldn't parking have the same shape as terminus?"*); on the track diagram filled when the station is named, white
 ringed in the colour when it is not; in the autonomy editor every icon is white ringed in its colour, so that the direction
-arrows over it read clearly (Adam, 2026-10-10: *"Let's make all of the icons white with a blue border in the editor.
+arrows over it read clearly (Adam: *"Let's make all of the icons white with a blue border in the editor.
 That way, arrows can be seen clearly."*).  The icon covers the sensor's own contact with white, the track drawn back across
-it (*"make sure the white would cover an s88 circle"*).  A passing point - a sensor that is no station - keeps its small
-mark; where trains turn there, a little bigger, over its contact too (round 127).  A square out of service, a station of
+it.  A passing point - a sensor that is no station - keeps its small
+mark; where trains turn there, a little bigger, over its contact too.  A square out of service, a station of
 any kind or a passing point, is one sign: the white circle with the orange ring and X, the contact's size, inside the red
 arrows the sensor's art shows round its contact while it reads occupied, and no arrows on its square - nothing can pass it
-(rounds 127 and 128; Adam, 2026-10-10: *"regardless of the type of station or point it otherwise is"*).
+(Adam: *"regardless of the type of station or point it otherwise is"*).
 
 **A terminus is a station whose track runs out on one side** - at a buffer stop, or where the drawn track simply stops -
-before it reaches another sensor (Adam, 2026-10-09, asked *"a station with only one way out becomes a terminus,
+before it reaches another sensor (Adam, asked *"a station with only one way out becomes a terminus,
 correct?"*: yes).  It is drawn flat against that side whatever its turning setting.  The TRACK is asked, not the setup: a
 station that trains can leave only one way because of a one-way run or a barred arrival, its track carrying on, keeps
 its own shape.  With the classic icons it is the big square.  `AutonomySession.deadEndSide`; `core.testATrainIsPlacedOnceAndKeepsItsFacing.testAStationWhoseTrackRunsOutIsATerminus`.
 
 On a curve the icon lies along the line between the curve's two ends, on its rails and its full size; what falls outside
 its square is drawn over the squares beside it, under any caption there, and their arrows, arrival marks and outline are
-drawn again over it (Adam, 2026-10-10: *"can we instead make the stations spill over onto adjacent tiles?"*; RSA61-C2,
-RSA62-C1, RSA63-C4) - in the editor as on the track diagram since round 127.  On a double-curve sensor it is on the curve
+drawn again over it (Adam: *"can we instead make the stations spill over onto adjacent tiles?"*; RSA61-C2,
+RSA62-C1, RSA63-C4) - in the editor as on the track diagram.  On a double-curve sensor it is on the curve
 the art draws the contact on, and a terminus there faces where that curve's track runs out (MT-712, RSA63-C2).  The red and green arrows are drawn over the icon, on the diagram and in the editor (MT-710: *"We need to
 render red arrows on top of stations"*).  A may-turn hexagon is 24 pixels long at the small size and 47 at the large, a
 terminus 24 and 48, and the must-turn pair, both halves and the gap, no longer than the may-turn (MT-710).  The icons:
@@ -2781,23 +2790,14 @@ saved (RLA-C3).  `core.testASecondImportFillsGapsAndDoesNotOverwrite.testAnImpor
 
 ## Where this document came from
 
-Written 2026-09-07 at Adam's request, after a run of sessions in which the same rules were
-re-litigated because nothing stated them in one place. Several were reversed during that work — the
-Return Home tier, the meaning of an unmeasured segment, and whether a compulsory turn is a question —
-and each reversal is recorded above with the case that forced it.
-
-**Revised 2026-09-07** against Adam's annotations on the first draft. Six of them were requests to
-say something more precisely - terminus against station, what "the flag" is, whether `canReverse`
-describes a train or a square, what signals and switches share and what they do not, and which of the
-two length rules the word "fit" belongs to - and those are now written out rather than assumed. Two
-were rulings: intermediates are not asked about, and the arrival side may be set but not cleared. One
-is still owed: the written evaluation of whether the two copies could be replaced by following the
-edges. Nothing has been built on that one.
+Written at Adam's request after a run of sessions in which the same rules were re-litigated because nothing
+stated them in one place. Several were reversed during that work — the Return Home tier, the meaning of an
+unmeasured segment, and whether a compulsory turn is a question — and the rules above are the settled answers.
 
 The review documents were the working record of how these rules were arrived at. This is the answer
-they were working towards, and they were deleted in its favour: 143 on 2026-09-08 - documents that
-could no longer say who needed to do what, against one that says what is true - and the last 65 on
-2026-09-21, on Adam's *"I don't want more reviews living in the repo."*
+they were working towards, and they were deleted in its favour (Adam: *"I don't want more reviews living in the repo."*).
+Their findings are in the store, below. One question is still Adam's to answer: whether the written evaluation of
+replacing the two copies by following the edges changes anything (§3). Nothing has been built on it.
 
 ---
 
@@ -2843,49 +2843,31 @@ SELECT ref, severity, title FROM finding WHERE document LIKE '%test-suite%' ORDE
 ```
 
 **`disposition` is a quotation, `status` is the answer to it.** The disposition column is what a
-document said on the day it was written, and nothing ever updated one: 63 A-severity findings still
-read `open` on 2026-09-08, and of the thirteen checked against the code that day, all thirteen had
-been fixed. Every row therefore carries a `status`, set deliberately and with its evidence in
+document said on the day it was written, and nothing ever updated one: A-severity findings still
+read `open` that had long been fixed. Every row therefore carries a `status`, set deliberately and with its evidence in
 `status_note` - the commit that named it, the comment that cites it, or the check that was made and
 when. **Read a row to find out what a citation referred to, never whether it is still true.** For
 that, read the code - or write the test.
 
-The 2026-09-21 round of the same work gave a status to the 996 rows of the last 65 documents that had
-none:
+A status is decided one of five ways: a D finding (a clean check by the review convention, nothing to do); cited
+from `src/` or `test/`, where a fix landed and left a comment naming it; its own document's closing word; named by a
+commit message; or checked by hand against the code. **`Open - unverified`** means no evidence either way, and saying
+so is the point: a status invented to tidy a row is worse than a row that admits nobody has looked. It is counted in
+rows and in findings separately, because a finding written up in two documents has a row for each, which is the
+distinction this file draws above (VD18-R1). Two documents (VD12 and VD15) were written in a scratchpad and never
+committed, so their own evidence is gone and `git` cannot bring it back the way it brings back the deleted reviews.
 
-| how it was decided | |
-|---|---|
-| a D finding - a clean check by the review convention, nothing to do | 415 |
-| cited from `src/` or `test/`, where a fix landed and left a comment naming it | 416 |
-| its own document's closing word | 101 |
-| named by a commit message | 5 |
-| checked by hand against the code that day | 49 |
-| **`Open - unverified`** - no evidence either way | 10 |
-
-That table is what the 2026-09-21 sweep decided, not a live count, and the numbers in it do not move.
-The last ten were all C-severity and all but one from 2026-09-09. Saying so is the point: a status
-invented to tidy a row is worse than a row that admits nobody has looked.
-
-**Since then** (2026-09-22): the general sweep's audit settled three of those ten against the code, and
-two findings joined them for a different reason - the VD12 and VD15 documents were written in a
-scratchpad and never committed, so their own evidence is gone, and `git` cannot bring them back the way
-it brings back the deleted reviews. 18 rows for nine findings read `Open - unverified` today - rows and findings, because a finding written up in two documents has a row for each, which is the distinction this file draws sixty lines above and then collapsed here (VD18-R1).
-
-**And one status was added that day**, `Open - deferred until the MT retests`: work that is real, that
-is understood, and that must not land until Adam has re-run the manual tests it would change under.
-It is not a parking space - each one names the test it waits on. Nothing reads status except
-`LIKE 'Open%'` and `= 'Closed'`, so a new word costs nothing but has to be written down here.
-
-Of what is open now: four are **verified still true** on the day their document was
-deleted and each is in the Inbox as an OB, which is where open work belongs; four are Adam's ruling
-to make; three wait on the manual tests; one is deferred past 3.0.0 by his own word. The whole
-list, at any time:
+`Open - deferred until the MT retests` is work that is real, that is understood, and that must not land until Adam
+has re-run the manual tests it would change under. It is not a parking space - each one names the test it waits on.
+Nothing reads status except `LIKE 'Open%'` and `= 'Closed'`, so a new word costs nothing but has to be written down
+here. Work that is verified still true is in the Inbox as an OB, which is where open work belongs. The whole
+open list, at any time:
 
 ```sql
 SELECT ref, severity, status, status_note FROM finding WHERE status LIKE 'Open%';
 ```
 
-Forty-five citations resolve to no finding at all; they are rolled in the `dead_citation` table and at
+Citations that resolve to no finding at all are rolled in the `dead_citation` table and at
 the foot of the mirror.  The CITING FILES are in the table, not in the mirror - the mirror's roll is `ref` and four dashes, and `SELECT * FROM dead_citation` is where to read who cites what (VD12-R11).  They cluster into whole prefixes whose
 declaring document never existed - `RC` above A5, all of `LE2` and `LD` - so they were dead ends before
 the deletion, not because of it.
