@@ -21,6 +21,7 @@ import org.traincontrol.gui.ArrivalSidePrompt;
 import org.traincontrol.gui.FacingPrompt;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
+import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
@@ -153,6 +154,140 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
         assertEquals(pasteFacing(Side.E), Side.E,
             "a train pasted onto " + SQUARE_NAME + " was told to face EAST and is standing on a copy"
             + " facing another way, so the paste is not following the answer in either direction");
+    }
+
+    /**
+     * A train pasted onto a square that is no station says it can only be placed at a station, and asks nothing first
+     * (OB-365): the facing and tail questions were put about a square the placement then refused.
+     *
+     * Real dialogs, answered by {@link support.Answering}, which keeps what each one said: the only thing asked is the
+     * notice.  The train stays on the clipboard for the next square, and no square holds it.  The square is the
+     * may-reverse one the other claims use, made a plain square for the length of the claim.
+     *
+     * MUTATION: take the station check out of the paste door in TrainControlUI and the questions are asked again, so
+     * this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testPastingOnASquareThatIsNoStationSaysSoAndAsksNothing() throws Exception
+    {
+        // The may-reverse square demoted: it keeps its turning copies and is no station, which is the square that
+        // used to be asked both questions and then refused.
+        session.setStation(square, false);
+
+        try
+        {
+            rebuild();
+
+            assertTrue(session.mayTurnTiles().contains(square), "precondition: " + SQUARE_NAME + " is no longer a"
+                + " may-reverse square once it is no station, so no question is put there");
+
+            Point speaker = session.getStationIndex().speakerAt(layout, square);
+
+            assertNotNull(speaker, "precondition: " + SQUARE_NAME + " has no Point once it is no station");
+
+            assertTrue(ArrivalSidePrompt.wouldAsk(layout, speaker, true, session.unbarredArrivalSides(square))
+                || FacingPrompt.wouldAsk(session.facingsFor(square).values()), "precondition: no question is put at "
+                + SQUARE_NAME + " once it is no station, so this claim would assert nothing");
+
+            clearTheSquareAndTheTrain();
+
+            FacingPrompt.answerForTests(null);
+            ArrivalSidePrompt.answerForTests(null);
+
+            List<String> asked;
+            Object handled;
+
+            try (support.Answering answering = support.Answering.start(message -> null))
+            {
+                handled = pasteOnto(square);
+
+                pump();
+
+                asked = answering.asked();
+            }
+
+            assertEquals(handled, Boolean.TRUE, "the paste door did not take Control+V over " + SQUARE_NAME + ": "
+                + handled);
+
+            assertEquals(asked, java.util.Collections.singletonList(I18n.t("autolayout.ui.errorTrainOnlyAtStation")),
+                "pasting a train onto " + SQUARE_NAME + ", which is no station, should show the one notice and ask"
+                + " nothing (OB-365), but the dialogs shown were: " + asked);
+
+            for (Point point : layout.getPoints())
+            {
+                assertTrue(point.getCurrentLocomotive() != train, "the train was put on " + point.getName()
+                    + ", though " + SQUARE_NAME + " is no station");
+            }
+
+            Field cut = TrainControlUI.class.getDeclaredField("cutLocomotive");
+            cut.setAccessible(true);
+
+            assertSame(cut.get(ui), train, "the refused paste took the train off the clipboard");
+        }
+        finally
+        {
+            session.setStation(square, true);
+
+            rebuild();
+        }
+    }
+
+    /**
+     * Builds the railway again from the setup, as the other claims here found it.
+     *
+     * @throws Exception from the event thread
+     */
+    private static void rebuild() throws Exception
+    {
+        model.parseAuto(session.buildConfiguration());
+
+        layout = model.getAutoLayout();
+
+        pump();
+    }
+
+    /**
+     * Presses Control+V over a square with the test train on the clipboard and no remembered heading.
+     *
+     * @param target the square
+     * @return what the paste door answered
+     * @throws Exception from the window
+     */
+    private static Object pasteOnto(TileKey target) throws Exception
+    {
+        final Field cut = TrainControlUI.class.getDeclaredField("cutLocomotive");
+        cut.setAccessible(true);
+
+        final Field cutFacing = TrainControlUI.class.getDeclaredField("cutFacing");
+        cutFacing.setAccessible(true);
+
+        final Method gesture = TrainControlUI.class.getDeclaredMethod(
+            "locomotiveGestureOnDiagram", int.class, boolean.class);
+
+        gesture.setAccessible(true);
+
+        final Object[] handled = new Object[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                cut.set(ui, train);
+                cutFacing.set(ui, null);
+
+                ui.setHoveredDiagramTile(target.getPage(), target.getX(), target.getY());
+
+                handled[0] = gesture.invoke(ui, KeyEvent.VK_V, true);
+            }
+            catch (Exception refused)
+            {
+                handled[0] = refused;
+            }
+        });
+
+        return handled[0];
     }
 
     /**

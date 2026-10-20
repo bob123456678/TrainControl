@@ -7310,29 +7310,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // a station is the one outcome they cannot have meant.
             if (placing == null) return true;
 
-            // Somewhere the train could actually be driven away from - one rule with the right-click Place
-            // (MT-136), which since OB-350 places on a station no copy can leave as well.
-            java.util.List<org.traincontrol.automation.Edge> away =
-                this.model.getAutoLayout().getNeighbors(point);
-
-            // Asked of the square, not of one copy (SPEC-B5): `away` is the neighbours of whichever copy getAutonomyPointForTile handed back,
-            // and on an empty square "any copy will do" (StationIndex.speakerAt), so this refused a good platform when the arbitrary copy
-            // was the dead one.  The paste itself walks to a copy that can depart, so the guard permits whatever the walk can find.
-            boolean anyWayOut = getAutonomySession() == null
-                ? (away != null && !away.isEmpty())
-                : getAutonomySession().canDepartFrom(this.model.getAutoLayout(), aimed);
-
-            // BUT A STATION NO COPY CAN LEAVE IS PLACED ON, as the editor's Place and the right-click Place place there
-            // (OB-350): the train stands where the build would, with no facing recorded.  Only somewhere that is no
-            // station is refused.
-            boolean aStation = getAutonomySession() != null && getAutonomySession().getStore().isStation(aimed);
-
-            if (!anyWayOut && !aStation)
+            // A train is only ever placed at a station (OB-365): said before the facing and tail questions, which would otherwise
+            // be asked about a square the placement then refuses.  The clipboard keeps the train for the next square.
+            if (!getAutonomySession().getStore().isStation(aimed))
             {
-                this.model.logf("autolayout.warnNoWayOutOfPoint", point.getName());
+                JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorTrainOnlyAtStation"));
 
                 return true;
             }
+
+            // Asked of the square, not of one copy (SPEC-B5): on an empty square getAutonomyPointForTile hands back any copy, and
+            // that one may be the dead end while another can depart.  A station no copy can leave is placed on all the same (OB-350).
+            boolean anyWayOut = getAutonomySession().canDepartFrom(this.model.getAutoLayout(), aimed);
 
             // Where it would end up if it drove there: read before the move, because the walk starts from where the train is standing NOW
             // and `moveLocomotive` is what takes it off that copy.
