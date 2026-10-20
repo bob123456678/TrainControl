@@ -2072,12 +2072,11 @@ afternoon's edits away - so a user who armed the wrong tool and pressed Escape t
 asked to discard their work. Pressing Escape twice costs nothing; there is no way back from a window
 that closed.
 
-It is handled in the editor frame's own key listener, and nowhere else. The autonomy column used to
-bind Escape as well, `WHEN_IN_FOCUSED_WINDOW`, which never fired: every control in that window is made
+It is handled in the editor frame's own key listener, and nowhere else. Every control in that window is made
 unfocusable so the frame keeps the keyboard, and a top-level frame has no parent chain for the focus
-manager to walk. Two handlers could not be kept, either - the frame's runs its work deferred, so a
-binding would have disarmed the tool first and left the frame's branch finding nothing armed and
-closing the window: one press doing both.
+manager to walk, so a `WHEN_IN_FOCUSED_WINDOW` binding never fires. Two handlers could not be kept, either - the
+frame's runs its work deferred, so a binding would disarm the tool first and leave the frame's branch finding
+nothing armed and closing the window: one press doing both.
 
 **Nothing that changes the shape of the graph may run while trains are moving or a plan is being
 made.** Renaming a point, deleting a point and deleting an edge all refuse while `isRunning()` or
@@ -2088,24 +2087,23 @@ object those sets and already-issued paths hold.
 at all, which is exactly the window a bare "is autonomy running" flag waves through.
 
 **A locomotive edit takes a train off the graph only through a train that stands and drives the edited one**
-(BPV-A1, RLA-B1, 2026-09-25).  Renaming, re-addressing, re-linking or deleting a locomotive is refused while
+(BPV-A1, RLA-B1).  Renaming, re-addressing, re-linking or deleting a locomotive is refused while
 autonomy runs - its coast-down and Return Home's planning included - so the edit doors act on a
 stopped railway, and their sweep for multi-unit conflicts asks of the edited train where it stands, and of every
 standing multi-unit that drives it - a consist linked here or one the Central Station holds - what putting that
 multi-unit down again would ask.  A train that neither stands nor is driven by one that stands clashes with nothing
 that stands.  The Central Station sync asks the same of every locomotive it re-addresses or gives other members,
-when autonomy is not running (RLA2-B2); members that change during a run are swept by the next load or Place (OB-303).  Renaming a member of a
-multi-unit whose head stood on a station took the head off it - a head is never compatible with its
-own member - and the platform read as empty with the train on it.  Putting a train down still sweeps
-first, before it is placed.
+when autonomy is not running (RLA2-B2); members that change during a run are swept by the next load or Place (OB-303).
+Renaming a member of a multi-unit whose head stood on a station must not take the head off it (a head is never
+compatible with its own member), or the platform reads as empty with the train on it.  Putting a train down still
+sweeps first, before it is placed.
 
 **The greying on the menu is not this guard.** Menu items are greyed when the popup *opens* and the
 action fires when it is *clicked*; starting autonomy from another window in between leaves a live item
 over a running railway. The refusal has to be in the method, and the menu asks the same question so
 the two agree.
 
-> *"Where a train IS is a fact, and where the file thinks it is is a record."* - Adam, 2026-09-08,
-> ruling on OB-183
+> *"Where a train IS is a fact, and where the file thinks it is is a record."* - Adam (OB-183)
 
 **Every setup edit regenerates the running layout from the setup, and where the two disagree about a
 train the railway wins.** A run moves trains, where they ended up lives only in the running layout,
@@ -2115,7 +2113,7 @@ placement**, and it is why nothing that runs when a run ends may work out an ans
 the setup records - see §3. A recorded facing is also never cleared, so an empty square still carries
 the last occupant's, which makes "there is a value here" no evidence that it is this train's.
 
-Regenerating from it would put each one back where it set off, in the model and then on disk, and
+Regenerating from the setup would put each train back where it set off, in the model and then on disk, and
 occupancy is the model's own record rather than the sensors: the next dispatch could then be routed
 into a block that is physically occupied.
 
@@ -2126,74 +2124,76 @@ trains the setup IS the newer answer and the rebuild's placement stands. Every o
 a train - the track diagram's own place, facing and assign items - writes the running layout too, so
 it needs no exception: the record and the setup already agree.
 
-Neither half is inferred from the fact that a rebuild is happening. That inference is what made the
-rule wrong in both directions within one day: an edit undone on the way to being redrawn when the
-railway always won, and a train teleported back to its pre-run square when the setup always did. The
-surface that reaches this most often has no editor in it at all - the track diagram viewer's
-right-click autonomy menu rebuilds after every gesture, and nothing on that path ever captures where
-the trains are.
+Neither half is inferred from the fact that a rebuild is happening: the railway wins for a train an edit was not
+about, and the setup wins for one it was. The surface that reaches this most often has no editor in it at all - the
+track diagram viewer's right-click autonomy menu rebuilds after every gesture, and nothing on that path ever
+captures where the trains are.
 
-**A direction is never refused for a standing train: what it does to the train is a finding** (Adam, 2026-10-01:
+**A direction is never refused for a standing train: what it does to the train is a finding** (Adam:
 *"Generally I prefer warnings or errors over outright refusals, since it makes editing easier for the user.  Make
-refusals that make sense be errors, and smaller issues be warnings."*).  This replaces RSA5-A2's refusal and the walk
-that judged a change by where it left a train able to go, which rounds 29 to 33 kept finding edges of.  The copy a train
+refusals that make sense be errors, and smaller issues be warnings."*).  The copy a train
 stands on is its direction, so a one-way run set through a station against the way a train there faces leaves the
 square no copy facing it.  The change is made, and the train is written into the setup where it stands, facing the way
 it faces - a train the last run left there included, so the fold that follows keeps it rather than taking it off the
-setup.  The build stands such a train on no Point, never on a copy facing another way - the copy is its direction, and
-the capture that followed wrote that copy's facing over the train's, turning it in the setup and clearing the error
-(round 34's mutations found it).
+setup.  The build stands such a train on no Point, never on a copy facing another way: the copy is its direction, and
+capturing that copy's facing over the train's would turn the train in the setup and clear the error.
 
-**And a rebuild the setup has fallen behind never loses a train** (RSA17-A1).  After a run the setup still names each
+**A rebuild the setup has fallen behind never loses a train** (RSA17-A1).  After a run the setup still names each
 moved train's old square, and the diagram's own setup menu rebuilds without folding, so where the railway had a train is
-put back by `putTheTrainsBack`.  It stands the train on its own copy even where that copy is no station now - a station
-marked one trains only pass through, with the train still on it: the train is there, and autonomy will not start it from
-there and says why.  Where no copy of its square faces its way any more - its turning taken away - the train is taken off
-wherever the stale setup put it and recorded where it stands, so the error stops every send until it is put right.
-Before, both were left where the setup last had them and the square they stood on read free.  **An error is asked of the
-railway's train first** (RSA17-B1): a setup record whose train the railway has on another square is one the last run
-outran, not a train there, and raises nothing - nor does one on the same square, the railway's facing being the one asked
-(RSA18-B1).  **Only over a railway the load replaced** (RSA18-A1): a load declined for a problem that stops the build -
-a link unpaired - leaves the railway and its trains as they were, and nothing is put back or recorded over it; the setup is
-then marked newer than the railway, as after a rebuild a run declined, so no fold of the railway built before the edit -
-opening or closing the editor, Export, New Configuration, the exit - writes its homes, lengths and priorities back over
-the edit until a load carries it (RSA19-B1).  **Those folds still write what the railway owns** (RSA20-A1, RSA21-A1) - every
-door that folds: opening or closing the editor, Export, New Configuration, the exit, Unload, and the reset behind Open
-Layout, Combine Linked Pages, a page renamed or a switch of railway: where each train stands, and the settings and
-timetable the Auto tab and a run write to the railway (the ones it changed since it was built); folding nothing lost
-where the run left the trains and the timetable it captured.  A switch of railway writes them into the railway's own
-file, which it leaves, and carries nothing onto the next (RLV7-C2).  After a page renamed or squares moved the reset's
-fold leaves the timetable alone, as it leaves the placements: the railway still has the old Point names, and the rename's
-own fold before it has taken the run's timetable already (RSA22-C1).  A page deleted is not folded back: the delete marks
-the session's pages stale, as a rename does (RSA22-C2).  **And a rebuild from the setup keeps the railway's
-settings and timetable** (RSA20-B1): the ones the railway changed since it was built are folded first - only those,
-compared with the railway as it was built, so a setting a door edited in the setup is not written over; a setting the
-railway turned off (Simulate, the sequential flag, written only while on) is turned off in the setup, and atomic routes
-the load turned on itself for want of a length are not written as the operator's (RSA21-C1, MT-470).  A train placed in the setup meanwhile goes where the railway has it at that load: where a train
-stands is the railway's to say (OB-183).  **A train
-recorded where it stands keeps the side it came in by and its road** (RSA18-A2), so the track put back stands it with
-its tail.  **Readers of who stands where ask the railway first** (RSA18-B2): Home All Trains Where They Stand, from the
-track diagram's menu after a run, homes each train where the railway has it, and the no-length notice names the train
-that stands on its square (RSA19-C1).  `regression.testAnEditedPlacementSurvivesTheRebuild` -
+put back by `putTheTrainsBack`:
+
+- It stands the train on its own copy even where that copy is no station now - a station marked one trains only pass
+  through, with the train still on it: the train is there, and autonomy will not start it from there and says why.
+- Where no copy of its square faces its way any more - its turning taken away - the train is taken off wherever the
+  stale setup put it and recorded where it stands, so the error stops every send until it is put right.
+- **An error is asked of the railway's train first** (RSA17-B1): a setup record whose train the railway has on another
+  square is one the last run outran, not a train there, and raises nothing - nor does one on the same square, the
+  railway's facing being the one asked (RSA18-B1).
+- **Only over a railway the load replaced** (RSA18-A1): a load declined for a problem that stops the build - a link
+  unpaired - leaves the railway and its trains as they were, and nothing is put back or recorded over it; the setup is
+  then marked newer than the railway, as after a rebuild a run declined, so no fold of the railway built before the
+  edit - opening or closing the editor, Export, New Configuration, the exit - writes its homes, lengths and priorities
+  back over the edit until a load carries it (RSA19-B1).
+- **Those folds write what the railway owns** (RSA20-A1, RSA21-A1) - every door that folds: opening or closing the
+  editor, Export, New Configuration, the exit, Unload, and the reset behind Open Layout, Combine Linked Pages, a page
+  renamed or a switch of railway: where each train stands, and the settings and timetable the Auto tab and a run
+  write to the railway (the ones it changed since it was built); folding nothing lost where the run left the trains
+  and the timetable it captured.  A switch of railway writes them into the railway's own file, which it leaves, and
+  carries nothing onto the next (RLV7-C2).  After a page renamed or squares moved the reset's fold leaves the timetable
+  alone, as it leaves the placements: the railway still has the old Point names, and the rename's own fold before it
+  has taken the run's timetable already (RSA22-C1).  A page deleted is not folded back: the delete marks the session's
+  pages stale, as a rename does (RSA22-C2).
+- **A rebuild from the setup keeps the railway's settings and timetable** (RSA20-B1): the ones the railway changed
+  since it was built are folded first - only those, compared with the railway as it was built, so a setting a door
+  edited in the setup is not written over; a setting the railway turned off (Simulate, the sequential flag, written
+  only while on) is turned off in the setup, and atomic routes the load turned on itself for want of a length are not
+  written as the operator's (RSA21-C1, MT-470).  A train placed in the setup meanwhile goes where the railway has it at
+  that load: where a train stands is the railway's to say (OB-183).
+- **A train recorded where it stands keeps the side it came in by and its road** (RSA18-A2), so the track put back
+  stands it with its tail.
+- **Readers of who stands where ask the railway first** (RSA18-B2): Home All Trains Where They Stand, from the track
+  diagram's menu after a run, homes each train where the railway has it, and the no-length notice names the train that
+  stands on its square (RSA19-C1).
+
+`regression.testAnEditedPlacementSurvivesTheRebuild` -
 `testATrainOnAStationMadePassThroughIsPutBackOnIt`, `testATrainWhoseTurnIsTakenAwayIsRecordedWhereItStands`,
-`testARecordTheRunOutranRaisesNoError`, `testATrainBesideALinkSwitchedOffIsRecordedWhereItStands`.  The setup check then reports an **error**: the train faces a way its station no longer has, and nothing is sent
+`testARecordTheRunOutranRaisesNoError`, `testATrainBesideALinkSwitchedOffIsRecordedWhereItStands`.
+
+The setup check then reports an **error**: the train faces a way its station no longer has, and nothing is sent
 until it is turned from its right-click menu, moved, or the track is put back.  A link switched off beside a train is
 the same.  **A train facing track that now runs only towards it** - judged at the train's own square (Adam: *"Only near
 the train"*) - is a **warning**: it can be started, and goes nowhere that way.  **A station at the end of a line that
-trains may not change direction at is an error** (Adam, 2026-10-01): a train sent there could never leave; marking it
-Trains Must Change Direction Here clears it.  A click on the track or a switch steps to the next direction, as it did
-before there were refusals.
+trains may not change direction at is an error** (Adam): a train sent there could never leave; marking it
+Trains Must Change Direction Here clears it.  A click on the track or a switch steps to the next direction.
 `core.testTheEditorWarnsOfARailwayThatCannotWork.testADirectionUnderAPlacedTrainIsSetAndReportedAsAnError`,
 `core.testTheEditorWarnsOfARailwayThatCannotWork.testATrainFacingTrackRunningTowardsItIsAWarning`,
 `core.testTheEditorWarnsOfARailwayThatCannotWork.testAStationAtTheEndOfALineIsAnError`,
 `regression.testAnEditedPlacementSurvivesTheRebuild.testATrainTheRunLeftIsRecordedWhereItStandsWhenItsWayGoes`.
 
-**So the Facing menu is about the train the RAILWAY has on the square** (TDY4-C5, 2026-09-24). After a run
-the setup can still name a square's pre-run occupant while another train stands there. The menu named the
-setup's train, ticked the railway's, and a click turned neither - it wrote the setup's record and looked for
-the setup's train on a square it was not on. It now names the train that is there, turns that one onto the
-copy facing the chosen way, and writes the setup's facing only where the setup's train is the one standing
-there (or nothing is). `regression.testTheFacingMenuIsAboutTheTrainThere`.
+**The Facing menu is about the train the RAILWAY has on the square** (TDY4-C5). After a run
+the setup can still name a square's pre-run occupant while another train stands there. The menu names the
+train that is there, turns that one onto the copy facing the chosen way, and writes the setup's facing only where
+the setup's train is the one standing there (or nothing is). `regression.testTheFacingMenuIsAboutTheTrainThere`.
 
 ---
 
@@ -2203,7 +2203,7 @@ there (or nothing is). `regression.testTheFacingMenuIsAboutTheTrainThere`.
 where a train may be sent: an inactive square stops both, a barred arrival stops both, a compulsory
 turn turns both.
 
-**A BARRED ARRIVAL STOPS BEING SENT THERE, AND NOTHING ELSE ABOUT THE TRACK** (Adam, 2026-09-23, of RampDown and
+**A BARRED ARRIVAL STOPS BEING SENT THERE, AND NOTHING ELSE ABOUT THE TRACK** (Adam, of RampDown and
 BottomMainPost: *"may need station restrictions but not pass through restrictions, since they are meant
 for shunting only"*, with *"make sure trains can still go through there"*). The restriction is spent
 entirely on one flag: `AutonomyBuilder.arrivalAllowed` makes that copy of the square `station: false`.
@@ -2213,49 +2213,47 @@ siding he describes. The tile-wide copy a never-split square is emitted as is ne
 because there is no arrival side to bar and refusing it would make the station unreachable rather than
 restricted.
 
-**A train may still come in the barred way and turn there** (Adam, 2026-09-24, TDA-C8: *"Arrivals THAT STOP
+**A train may still come in the barred way and turn there** (TDA-C8; Adam: *"Arrivals THAT STOP
 THERE should only be allowed from the configured side(s).  Turning shouldn't need to factor this in, since the
 former would govern the behavior."*). The turn-round copy of a barred side is still built, so the notice asking
 for the length behind a turn asks about that side as it does any other; the two berth notices, about a train
 that stops, leave it out (MT-552).
 
-**A train can still stand facing the barred way, and is not started there** (the 2026-09-23 review; the
-placement doors' rule was Adam's question, OB-284, ruled 2026-09-24). The copy a train is on is its direction (section 3), so a
-train reversed on the throttle, turned by the Facing menu, standing when the side was barred, or built from a setup
-that records that facing stands on the barred copy. Autonomy does not start it there, and Why not Moving? and Return
-Home say that trains may not arrive facing its way and what to do: drive it off by hand, turn it round, or open the
-side (GUI3-C1, TDY4-C3). The rebuild's put-back stands it there again where no station copy faces its way (TDY3-A1,
-TDY4-B1); a placement keeps it where the train can leave that way (OB-284); a home does not save such a facing
-(GUI3-C2); and an import of an old
+**A train can still stand facing the barred way, and is not started there** (OB-284). The copy a train is on is its
+direction (section 3), so a train reversed on the throttle, turned by the Facing menu, standing when the side was
+barred, or built from a setup that records that facing stands on the barred copy. Autonomy does not start it there,
+and Why not Moving? and Return Home say that trains may not arrive facing its way and what to do: drive it off by
+hand, turn it round, or open the side (GUI3-C1, TDY4-C3). The rebuild's put-back stands it there again where no
+station copy faces its way (TDY3-A1, TDY4-B1); a placement keeps it where the train can leave that way (OB-284); a
+home does not save such a facing (GUI3-C2); and an import of an old
 autonomy.json takes each train's facing from the side its point's one-way edges leave by, guessing one trains may
 arrive in where they cannot say and the square records none - a facing the square records stays (REG3-C1, REG4-A1,
-REG4-C1, RLA3-C4; counting it and preferring a way trains may arrive are OB-304). **The old file's directions are carried onto the
-diagram first** (Adam, 2026-09-24: *"Carry the old file's directions onto the diagram - yes, to the extent
+REG4-C1, RLA3-C4; counting it and preferring a way trains may arrive are OB-304). **The old file's directions are
+carried onto the diagram first** (Adam: *"Carry the old file's directions onto the diagram - yes, to the extent
 possible."*): each one-way edge sets the track it ran over running its way, as the editor's one-way run does; track run
 both ways stays both; and the log says how much was carried. **Only onto a diagram nobody has set a direction on** -
 the fresh upgrade the ruling was for. A default is stored as nothing, so on a tuned diagram the import cannot tell
-track left running both ways on purpose from track nobody has looked at: on Adam's own railway it would have made 176
+track left running both ways on purpose from track nobody has looked at: on Adam's own railway it would make 176
 pieces one-way, 170 of them plain track he runs both ways, and directions are shared by every configuration. There the
 diagram is left as it is and the log counts what the file ran differently. Where the diagram cannot hold the file's
 facing, no impossible facing is saved (OB-270): the train stands the way the square allows, and the import's log names
 the square, since that is the other way round from how it drives.
 
-**The flag is decided once**, and that is a fix rather than a tidy: it is emitted as both `station` and
-the terminus, and read twice the turn-round copy of a barred side came out as a terminus that is not a
-destination - a pair `Point.setTerminus` refuses and `parseAuto` answers by invalidating the whole
-layout. Restricting a terminus platform, the most natural use this setting has, once made a setup
-unloadable. Both of his squares are `canReverse`, so both are that shape.
+**The flag is decided once.** It is emitted as both `station` and the terminus, and if it were read twice the
+turn-round copy of a barred side would come out as a terminus that is not a destination - a pair `Point.setTerminus`
+refuses and `parseAuto` answers by invalidating the whole layout. Restricting a terminus platform, the most natural use
+this setting has, must not make a setup unloadable. Both of his squares are `canReverse`, so both are that shape.
 
 **Barring every way in is a different thing and is reported, not enforced.** `AutonomySession.shutStations`
 names a station whose every arrival side is barred, because such a square is no longer a destination by
 any road and that is worth saying out loud rather than discovering from an empty menu.
 
-On **Auto**, a station autonomy is told to leave alone is reported as reachable **and never chosen** —
+On **Auto**, a station autonomy is told to leave alone is reported as reachable **and never chosen** -
 which is the state somebody opens the panel to explain. The route is still drawn, because the track
 is passable and reporting "no path" would be a lie about the railway to make a point about the
 settings.
 
-**Why Not Moving? follows Path Type as well** (MT-434, Adam 2026-09-15, asked which tool: *"Why Not
+**Why Not Moving? follows Path Type as well** (MT-434; Adam, asked which tool: *"Why Not
 Moving?"*). On **Auto** it answers for autonomy: the stations it could choose but cannot right now, and the
 stations it will never choose, each with autonomy's reason. On **Manual** it answers for a train sent by hand, the
 way the right-click menu decides what to offer: autonomy's standing bars - not to be chosen, a reversing square on
@@ -2263,28 +2261,25 @@ the way or at the end - are not reasons there, so those stations are listed as r
 every refusal is under *Stations the train cannot be sent to right now*.  **What the menu itself leaves out is still
 a reason by hand** (AMR-B2): a station that excludes the train, and a terminus autonomy may choose for a train that
 cannot reverse (OB-205) - `Layout.isOfferableToOperator`'s rule, asked through the same method, so the list and
-its explanation cannot disagree.  This paragraph used to list "a train excluded" among the bars that do not count,
-while the menu left the station out. A switched-off station
+its explanation cannot disagree.  A switched-off station
 is still refused by hand, as the first paragraph of this section says of both tiers: nothing may be sent to one,
-and the menu's rule is asked first, so it is listed there saying it is switched off (MFV-C5; the sentence said the
-reason came from the route check, which refuses it too - AMV-C6). Switching the radio asks the
-last square again. `Layout.explainDestinations(Locomotive, boolean)`;
+and the menu's rule is asked first, so it is listed there saying it is switched off (MFV-C5; AMV-C6). Switching the
+radio asks the last square again. `Layout.explainDestinations(Locomotive, boolean)`;
 `regression.testPathTypeRedrawsTheTestInTheEditor.testWhyNotMovingFollowsPathType`.
 
-**The locomotive list answers the same way** (the REG4 lead, 2026-09-24): its "No available paths" tooltip and its
+**The locomotive list answers the same way** (REG4): its "No available paths" tooltip and its
 why-window have no Path Type of their own, so they answer for a train sent by hand whenever autonomy is not running
-- which is when the list offers routes picked by hand - and for autonomy while it runs. They gave autonomy's reasons
-on Manual until then: a train on a copy that is no station was told it could not be sent anywhere while the list
-offered it routes. `regression.testTheDestinationDoorsAgree.testEveryWhyNamesItsTier` holds every why-window under
-`gui/` to a tier.
+- which is when the list offers routes picked by hand - and for autonomy while it runs. Otherwise a train on a copy
+that is no station would be told it could not be sent anywhere while the list offered it routes.
+`regression.testTheDestinationDoorsAgree.testEveryWhyNamesItsTier` holds every why-window under `gui/` to a tier.
 
-**And where the only way there is a lap, it says so** (Adam, 2026-09-15, AMR-B1). No route in any tier passes
+**And where the only way there is a lap, it says so** (AMR-B1). No route in any tier passes
 another copy of the square it starts at or the square it ends at: a square drawn as several Points is one piece of
 track, so such a route goes round a loop to where the train already was, or drives through its destination to reach
 it. Adam, shown the 22 such routes on his railway and the 14 the right-click menu was offering: *"We need to refuse
-both. A copy makes a cycle."* **The railway's search applies it; Return Home's does not** — shown that applying it
-there cost Return Home plans it used to find, and reminded that Return Home is manual operation (§1, his ruling of
-2026-09-04), he chose *"menu and autonomy only"*. So a lap is available to the planner when it is the only way a train
+both. A copy makes a cycle."* **The railway's search applies it; Return Home's does not**: applying it
+there cost Return Home plans it used to find, and Return Home is manual operation (§1), so he chose *"menu and
+autonomy only"*. So a lap is available to the planner when it is the only way a train
 can get home, and `HomeStaging.auditAgainstRuntime` exempts such a destination as a deliberate tier difference rather
 than a planner defect — the runtime agrees with the looser answer, because `isPathClear` exempts an intermediate copy
 of the train's own square as occupied by that train. A station left unreachable by
@@ -2294,31 +2289,31 @@ for the terminus: the question the window puts to the TRACK may walk a lap, so t
 that question found. `core.testARouteIsFoundPastATerminus.testNoRoutePassesAnotherCopyOfTheTrainsOwnSquare`,
 `testNoRoutePassesAnotherCopyOfItsDestination` and `testWhyNotMovingSaysTheOnlyWayThereIsALap`.
 
-**And the drawn route says it too, in its colour** (Adam, 2026-09-09). A tested path is drawn yellow
+**And the drawn route says it too, in its colour.** A tested path is drawn yellow
 on the way out and orange on the way back; a leg whose **destination** is a station autonomy will
-never choose **and a person still may** — a parking berth — is drawn in magenta instead, whichever
+never choose **and a person still may** - a parking berth - is drawn in magenta instead, whichever
 direction it runs.
 
 **Two squares are deliberately not magenta.** A **compulsory turn** is chosen like any other station
-since OB-195, when *Can Be Chosen in Full Autonomy* is on. And a square **switched out of service** is
+(OB-195) when *Can Be Chosen in Full Autonomy* is on. And a square **switched out of service** is
 not a manual-only point at all: nothing may be sent there by any tier, so colouring the leg as though
 a hand-driven run were the remedy would point at a shut door. The routing check says so in its own
-sentence instead — see §7. The colour asks `AutonomySession.manualOnlyStations`, which is the runtime
+sentence instead. The colour asks `AutonomySession.manualOnlyStations`, which is the runtime
 rule less the shut squares. Adam: *"just use a different color going to manual-only points.
 yellow is currently forward, and orange is backwards — path, not the chevron arrows."* The colour is
 about the destination, so every square of that leg carries it; the chevrons still say the direction.
 
-**A route is found past a terminus, never through one** (OB-229, Adam 2026-09-15: *"Search past termini"*). A route may
-end at a terminus and may not pass through one - the route check refuses that on every tier. The route search used to
-extend a route through a terminus anyway, and because it spends each square on the first way it reaches it, a shorter
-way through a terminus hid a longer clear way past it: from Tunnel, 75 407 DB was offered neither RampDown nor
-BottomSecondary, though the loop over the top level reaches both and Return Home's planner found it. The right-click
+**A route is found past a terminus, never through one** (OB-229; Adam: *"Search past termini"*). A route may
+end at a terminus and may not pass through one - the route check refuses that on every tier. The route search does not
+extend a route through a terminus: it spends each square on the first way it reaches it, so a shorter
+way through a terminus would hide a longer clear way past it (from Tunnel, 75 407 DB must be offered RampDown and
+BottomSecondary by the loop over the top level). The right-click
 menu, autonomy's choice and Why Not Moving? all use that search. `core.testARouteIsFoundPastATerminus`.
 
-**No tier sends a train round a loop to another copy of its own square** (Adam, 2026-09-15, reading the routes the
-terminus fix opens: *"we should never do a round trip just to change direction"*). The right-click menu and autonomy
-never offered one - a copy of the square a train stands on reads as occupied by that train - and Why Not Moving? does not
-list the train's own square; Return Home's planner now refuses it too. A train turns round at a reversing square or a
+**No tier sends a train round a loop to another copy of its own square** (Adam: *"we should never do a round trip
+just to change direction"*). The right-click menu and autonomy
+never offer one - a copy of the square a train stands on reads as occupied by that train - and Why Not Moving? does not
+list the train's own square; Return Home's planner refuses it too. A train turns round at a reversing square or a
 terminus on its way, never by lapping the railway back onto where it started.
 `core.testARouteIsFoundPastATerminus.testNoRoundTripBackToTheTrainsOwnSquare`.
 
@@ -2327,7 +2322,7 @@ terminus on its way, never by lapping the railway back onto where it started.
 **Known limit: in non-atomic mode the diagram's right-click menu can offer a train no destinations**
 where the Locomotive commands panel offers several (OB-164, MT-087). The two ask different questions -
 the menu gates on the one locomotive being on a run, the panel on the whole railway running - and the
-state that separates them was never reproduced. Adam, 2026-08-31: *"The user can rely on full autonomy
+state that separates them was never reproduced. Adam: *"The user can rely on full autonomy
 or the panels to send trains more clearly."* Accepted as it stands, and written here so the next reader
 who notices the two surfaces disagree finds the answer rather than reopening it.
 
@@ -2335,8 +2330,8 @@ who notices the two surfaces disagree finds the answer rather than reopening it.
 
 **A sensor announces itself however it changed** (W21-B1). A module changes state two ways - a
 message arriving over the wire, and `setState`, which is everything else: clicking an s88 tile on the
-track diagram, the simulation's own announce and clear, the restore at start-up. Only the first told
-anything, so the route editor's capture could not see a sensor the operator had just clicked. The
+track diagram, the simulation's own announce and clear, the restore at start-up. Both tell the listeners, so the
+route editor's capture sees a sensor the operator has just clicked. The
 capture cannot tell a clicked sensor from a wired one and should not: a route being recorded is about
 what the railway did, not about which code path said so. The announcement is outside the debug check -
 a capture that depends on a logging setting is the same defect reachable by a preference.
@@ -2349,25 +2344,23 @@ A route is a list of commands - accessories, functions, locomotive speeds, the p
 switches may sit on track a train is standing on or has reserved, and throwing one there moves metal
 under a train.
 
-**What "under a train" covers** (BCR-A1; Adam, 2026-10-04): the track a train's journey holds - claimed and not yet
+**What "under a train" covers** (BCR-A1): the track a train's journey holds - claimed and not yet
 given back. A train standing at the end of its journey has given its route back, so a switch under its tail is
 neither refused nor asked about. A route reaches such a switch during a run only because somebody fired it by hand
 or armed it as a conditional route and answered Yes to Start's warning that conditional routes are active - Adam
 ruled that the operator's to control.
 
 **Only the accessory a train needs is refused - the switch under it, or a signal turned green over a platform it
-stands at or is bound for. Everything else in the route runs.** Adam, 2026-09-08:
+stands at or is bound for. Everything else in the route runs.** Adam:
 *"don't run the conflicting switch commands, but do run the power off and others."* Each accessory is
 asked about immediately before it goes out, so one held turnout costs that turnout and nothing else -
-the power still cuts, the functions still fire, and every other switch is thrown. Until MT-247 the
-question was asked once, before the loop, about the FIRST held command, and every accessory in the
-route was then skipped: one turnout under a train silently dropped all the others.
+the power still cuts, the functions still fire, and every other switch is thrown (MT-247).
 
-**The setting the train's path already holds is not a change** (Adam, 2026-10-11: *"make sure the code allows
+**The setting the train's path already holds is not a change** (Adam: *"make sure the code allows
 switching to the correct (same) setting that autonomy is using"*). A switch a path holds, and a guard signal it holds
 green - the exit guard of the platform it leaves, the home signal of the one it is bound for - may be set by a route to
-that same setting, and is neither refused nor asked about: only a command that would change it is (round 137,
-RSA66-C1). Where two paths underway would hold one accessory at different settings, every command on it is refused.
+that same setting, and is neither refused nor asked about: only a command that would change it is (RSA66-C1). Where two
+paths underway would hold one accessory at different settings, every command on it is refused.
 
 **Who is asked depends on who started it.**
 
@@ -2383,9 +2376,6 @@ RSA66-C1). Where two paths underway would hold one accessory at different settin
     list has already gone out and stands - a stop already obeyed, an accessory already thrown. The
     code says so where it happens: *"once a command is refused the ones already sent stand, because
     they went out before the conflict existed."*
-
-  This bullet read "Cancel abandons the whole route - not one command goes out" until 2026-09-08. That
-  is true of the first door and false of the second, which is the door the paragraph above is about.
 - **A trigger started it** - an s88 or a condition, with nobody watching. No dialog: there is nobody
   to answer it, and a modal dialog raised by the railway is a dialog nobody sees. A line is written to
   the log instead, and the route runs without the held switches.
@@ -2394,7 +2384,7 @@ RSA66-C1). Where two paths underway would hold one accessory at different settin
 human door and never has its stop skipped (SVN-A4). Suppressing a stop is the one refusal that can
 make things worse, and a route that contains one is a route somebody wants to happen now.
 
-**An emergency stop stands in a route of its own** (Adam, 2026-09-25: *"if a route has emergency stop, it cannot have
+**An emergency stop stands in a route of its own** (Adam: *"if a route has emergency stop, it cannot have
 any other types of commands.  Reject it from being created or imported as such.  This will keep a clean separation."*;
 MT-507, MT-508: *"routes with an emergency stop should still fire"*).  The route editor will not save a stop among other
 commands, and the model refuses to make one.  A route that should set something and then cut the power fires a
@@ -2412,9 +2402,9 @@ to hold back - and a route that fires a split route still cuts the power, and co
 `ui.testARouteOverATrainAtItsDoors`.
 
 **Saving a route leaves autonomy alone** (RLV7-A1).  A route is no page of the diagram - its tiles follow it by number -
-so the route editor's Save refreshes the routes and redraws the diagram, and does not rebuild the autonomy setup.  It
-did, and during a run the rebuild asked to abandon it: Yes stood every train the run had moved back where it set off,
-and No left the run going with no configuration to save it into.
+so the route editor's Save refreshes the routes and redraws the diagram, and does not rebuild the autonomy setup:
+during a run that rebuild would ask to abandon it, and either answer is wrong (Yes stands every train the run had moved
+back where it set off; No leaves the run going with no configuration to save it into).
 `regression.testTheImportDoorReadsAnOldFile.testSavingARouteWhileAutonomyRunsLeavesTheRunAlone`.
 
 **Conditions hold back the route's own firing, not a route somebody runs by hand (X8-B6).** A route's
@@ -2425,11 +2415,8 @@ tile on the diagram all run the route whatever its conditions say.
 
 That is deliberate, and it is the same rule as the tiered destination lists in §1 and the same reason
 §7a gives for letting a person answer OK: the operator running a route by hand can see the railway and
-the condition cannot. Every one of these doors is a person deciding to do this now.
-
-The help text used to say only *"The route is held until these are true"*, with nothing about which
-firing, so a user who added a condition, pressed Test, was told the route would not fire, and then
-pressed Play got every switch in it thrown. It now says which firing it means.
+the condition cannot. Every one of these doors is a person deciding to do this now. The help text says which firing
+the conditions hold back.
 
 ## 7c. The signals a station commands: the exit guard and the entry guard
 
@@ -2438,31 +2425,32 @@ editor through the same dialog - the list, **Click It on the Diagram**, **Enter 
 comma-separated), **Remove Selected**, **Done** - and each may hold several signals, because a platform reachable from
 two ends needs one on each approach.
 
-Each of the two items says what its guard does in a tooltip (OB-293; Adam, 2026-09-24: *"add brief tooltips on what
+Each of the two items says what its guard does in a tooltip (OB-293; Adam: *"add brief tooltips on what
 entry guards and exit guards are"*).
 
-**The exit guard** - *Exit Guard Signal...* on the menu (Adam, 2026-09-23: *"rename it, but add Signal at the end
-(Exit Guard Signal, Entry Guard Signal)"*; it was *Signal Protecting This Station*).  Its signals are RED while the platform is claimed - a train
+**The exit guard** - *Exit Guard Signal...* on the menu (Adam: *"rename it, but add Signal at the end
+(Exit Guard Signal, Entry Guard Signal)"*).  Its signals are RED while the platform is claimed - a train
 standing there, or a locked path that starts or ends there - and GREEN when it is free, except that the first edge of
 the path a train leaves by holds it GREEN for that train (OB-340, below).  **A train only passing through
-leaves it alone** (OB-315, OB-316; Adam, 2026-10-03: *"the exit guard signals are applied for more than just the arrival
-station"*): a locked path reserves every station along it, and those it only passes do not count (`Layout.onlyPassing`).  An aspect DERIVED from the
+leaves it alone** (OB-315, OB-316; Adam: *"the exit guard signals are applied for more than just the arrival
+station"*): a locked path reserves every station along it, and those it only passes do not count (`Layout.onlyPassing`).
+An aspect DERIVED from the
 platform, asked again on every change of occupancy (`Layout.refreshProtectingSignal`), and asked per SIGNAL: one paired
 to two platforms stays red while either is claimed.  Only while trains are being run, so arranging the railway by hand
 moves no hardware.
 
 **A route over a guard sets it as it sets any signal on it** (RSA41-C2, -C3; RSA42-C1): GREEN, with the edge's other
 accessories, as the route is claimed edge by edge - each edge's end claimed, which asks protection, and then the edge
-set.  So a train leaving by its station's exit signal turns it green as it goes - which is what it needs, and what OB-315
-asked for - and it stays green while that edge is held, though the departing train still holds the platform.  A
+set.  So a train leaving by its station's exit signal turns it green as it goes - which is what it needs (OB-315) - and
+it stays green while that edge is held, though the departing train still holds the platform.  A
 guard that routes to other stations cross is turned green the same way, over a train standing at its station.  And a
 guard on a way INTO its station - a home signal - is turned green by the arriving route on its last edge, and stays green
 over the train once it stands there; one an edge further out is turned green by its edge, and stays green through the
-approach (OB-340, below).  Adam's ruling of 2026-08-23 is that a signal a path crosses and a signal
+approach (OB-340, below).  Adam's ruling is that a signal a path crosses and a signal
 protecting a station are two different signals on a railway wired as he intends; the signal on the way in is the entry
 guard's.  The runtime does not choose between a route and protection; the editor's notices say which case a guard is in.
 
-**A train leaving a station turns its exit guards green** (OB-340; Adam, 2026-10-12: *"when departing a terminus,
+**A train leaving a station turns its exit guards green** (OB-340; Adam: *"when departing a terminus,
 autonomy should make its exit guard green.  otherwise, trains stopped by that guard would remain stuck."*, then *"extend
 the rule to MAY TURN stations too.  just make the exit guard green when something departs."*, and *"this is essentially
 just adding the exit guard into the config commands of the path out of the terminus, so that it turns green on the way
@@ -2478,8 +2466,8 @@ The hold lapses when the train's tail has passed the first edge.  With Atomic Ro
 and its guards are asked again at once; with them on, they are asked at the next change of occupancy at a platform they
 guard, or when the run's track is given back - so a shared guard can stay GREEN over a train at its other platform until
 then.  The protection rule is general: a signal any active path holds GREEN is not turned red under it.  So a home
-signal an edge further out stays GREEN through the approach, no longer turned red in front of the arriving train by the
-claim of the station beyond (the half of RSA42-C1 that described that), and, as the last edge's home signal already did,
+signal an edge further out stays GREEN through the approach, not turned red in front of the arriving train by the
+claim of the station beyond (RSA42-C1), and, as the last edge's home signal does,
 over the train once it stands there until that station next changes.  The guards are set GREEN before the train is given
 its speed - commanded, not confirmed: they are not among the accessories `Layout.validatePathActuation` waits for, so a
 departure that fails that check leaves them green while it waits and red once its route is given back.  And a signal
@@ -2487,7 +2475,7 @@ that is one station's entry guard and another's exit guard is thrown RED by an a
 (`Layout.throwEntryGuard`), whatever a path holds; this rule does not override that, and the editor's notice for an exit
 guard that routes to other stations cross already points at such wiring.
 
-**The entry guard** - *Entry Guard Signal...* (Adam, 2026-09-23, FR-096: *"a signal that turns red after arrival at the
+**The entry guard** - *Entry Guard Signal...* (FR-096; Adam: *"a signal that turns red after arrival at the
 final designation.  Same UI to set it as the current linked signal exit guard, and multiple selections are
 possible"*).  Its signals are thrown RED when a train ARRIVES at the station as the end of its journey - in every tier,
 because every run records its arrival in the same place (`Layout.executePath`).  A train that only passes the station
@@ -2495,7 +2483,7 @@ throws nothing.  **Nothing turns it green**: *"The next route sets it green, so 
 command on an event rather than an aspect, and nothing is remembered or undone.
 
 The two lists are separate and thrown at different moments, and **one station's entry guard is never its exit
-guard** (AUT-C2, Adam 2026-09-24: *"make sure the entry guard can never be the same as the exit guard.  otherwise, it's
+guard** (AUT-C2; Adam: *"make sure the entry guard can never be the same as the exit guard.  otherwise, it's
 up to the user to set it up right."*): the editor refuses the pairing and says why, both setters refuse it, and a file
 that carries it anyway is warned about.  Two stations may still share a signal.  The editor's notices read the built
 railway - which routes command each guard, walked from the station's copies to the first stop on each way, so a train
@@ -2510,27 +2498,26 @@ reported by the editor's gone-signal notice.
 
 ## 7b. Routes that come from a file, and the pause between their commands
 
-**A route read from a file arrives switched off.** Adam, 2026-09-10: *"they should not be armed.  The
+**A route read from a file arrives switched off.** Adam: *"they should not be armed.  The
 user can choose to do this when they are ready."*  So Routes then Import reads each route's automatic
 flag and then overrides it: nothing in an imported file starts watching a sensor until the operator
 turns it on.  That is the one thing about an import which is deliberately not a faithful restoration of
 what the file says.
 
-**Unless the operator asks for it** (REG2-C7, Adam 2026-09-24: *"save the state in the file on export, and ask the
+**Unless the operator asks for it** (REG2-C7; Adam: *"save the state in the file on export, and ask the
 user on import.  if they want them armed, arm them.  otherwise, don't."*).  The export writes each route's `auto`, and
 where the file holds any route saved armed, the import asks - before anything is replaced, No the default - whether to
 turn automatic firing back on for those.  A Yes arms exactly those, after every route is in, and only one with a
-sensor to watch; a No, or a file with none saved armed, imports them all off as before.  The question names the
+sensor to watch; a No, or a file with none saved armed, imports them all off.  The question names the
 routes, and the message after a Yes counts the routes the import armed: a route saved armed that has lost its sensor
-is not armed and not counted, and where none was armed the message is the one a No gets (found automating MT-496 and
-MT-497, 2026-09-25 - the question showed a count, and the message counted the file's list).
+is not armed and not counted, and where none was armed the message is the one a No gets (MT-496, MT-497).
 
 It is also what makes the import safe.  Building a route ARMS it - a route with a sensor and its flag
-set parks a thread on that sensor as soon as it exists - so before this, a file that failed to parse
-half way through left the routes it had already built running for the rest of the session: in no
+set parks a thread on that sensor as soon as it exists - so a file that failed to parse
+half way through would leave the routes it had already built running for the rest of the session: in no
 database, on no list, reachable by nothing, and throwing switches for a route the operator could not
-see (S14-A1).  And on an import that succeeded, the route being replaced and its replacement both
-watched the same sensor until the old one was deleted, so a trigger in that window fired both.
+see (S14-A1).  And on an import that succeeded, the route being replaced and its replacement would both
+watch the same sensor until the old one was deleted, so a trigger in that window would fire both.
 
 **A delay below 150 ms is the same as a delay of 150 ms.**  A command may carry its own delay, and the
 executor pauses for a fixed interval PLUS the larger of that delay and 150 - so the floor is on the
@@ -2551,9 +2538,8 @@ switch needs between its two commands real rather than inert.
 outside that range is clamped where the command is BUILT, so a route that arrives from a JSON file or
 from a Central Station import cannot hold one (S14-B2).  The editor is different and stays different: it
 range-checks a typed speed and refuses to save, which tells the operator rather than quietly changing
-what they wrote.  Before that an imported route could
-ask for 150, which the head of a multi-unit discarded while every member was sent 100: the two engines
-of one consist pulling against each other.
+what they wrote.  An unclamped 150 would be discarded by the head of a multi-unit while every member was sent 100:
+the two engines of one consist pulling against each other.
 
 ## 8. Things that are true of the whole system
 
