@@ -4,9 +4,9 @@
 #   bash docs/tools/release-tree.sh <development commit> <file holding the commit message>
 #
 # Left on development: everything under docs/ except the test runners in docs/tools, the store's catalogue tool,
-# this script, the notes beside the guide's pictures, the builders' rules (CLAUDE.md, AGENTS.md), and the three test
-# classes that check the tracker's records (with their lines in build.xml, which testEveryTestIsInTheBattery holds to
-# the files).
+# this script, the notes beside the guide's pictures, the builders' rules (CLAUDE.md, AGENTS.md), the three test
+# classes that check the tracker's records, and the comment guard that enforces CLAUDE.md (with their lines in
+# build.xml, which testEveryTestIsInTheBattery holds to the files).
 #
 # The tree is computed, not merged, so a release never conflicts: the commit's parents are master and the
 # development commit, and its tree is the development tree less those paths.  The commit goes to the local branch
@@ -18,7 +18,7 @@ DEV=$(git rev-parse --verify "${1:?a development commit}^{commit}")
 MESSAGE=${2:?a file holding the commit message}
 MASTER=$(git rev-parse --verify refs/heads/master)
 
-RECORDS=(testEveryCitationResolves testTheRecordsCountTheStore testTheSuppliedManualTestFilesAreWhatTheySay)
+RECORDS=(testEveryCitationResolves testTheRecordsCountTheStore testTheSuppliedManualTestFilesAreWhatTheySay testCommentsStayLean)
 
 OUT=()
 while IFS= read -r path
