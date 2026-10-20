@@ -2718,11 +2718,10 @@ public class LayoutEditor extends PositionAwareJFrame
      *
      * Delegates to `LayoutEditorSelection.deleteSelection`.
      *
-     * @param tellAutonomy whether the setup should forget what was on those squares. TRUE for a plain
-     *        delete, where the track is going and its name should go with it. FALSE for a CUT, where
-     *        the paste that follows carries the setup to wherever the block lands - and where
-     *        forgetting the captions here destroys the one part of it that is drawn on the diagram,
-     *        because forgetCaptionsAt deletes the caption on the square AND every caption naming it.
+     * @param tellAutonomy whether the setup should forget what was on those squares.  TRUE for a plain delete, where the
+     *        track is going and its name should go with it.  FALSE for a CUT, where the paste that follows carries the
+     *        setup to wherever the block lands, and where forgetting the captions here would destroy the one part of it
+     *        drawn on the diagram, because forgetCaptionsAt deletes the caption on the square AND every caption naming it.
      * @return true if anything was picked to delete
      */
     synchronized public boolean deleteSelection(boolean tellAutonomy)
@@ -2760,13 +2759,11 @@ public class LayoutEditor extends PositionAwareJFrame
      *
      * @param tellAutonomy false when the CALLER is going to tell the setup what happened
      *
-     * A cut empties its squares one at a time, and the paste that follows tells the setup where the block
-     * went (deleteSelection).  If each of those deletes had already announced itself, the announcement
-     * would be wrong: it says the track is gone, and the track is on its way somewhere else.  The captions
-     * are the visible half of that - forgetCaptionsAt deletes the caption on the square and every caption
-     * naming it, which the paste cannot bring back - and it is why this parameter exists rather than the
-     * callers reaching past delete().  It was written for the whole-row and whole-column moves, removed
-     * with DCN-C3.
+     * A cut empties its squares one at a time, and the paste that follows tells the setup where the block went
+     * (deleteSelection), so announcing each delete would be wrong: it says the track is gone, and the track is on its way
+     * somewhere else.  The captions are the visible half of that: forgetCaptionsAt deletes the caption on the square and
+     * every caption naming it, which the paste cannot bring back.  (DCN-C3 removed the whole-row and whole-column moves
+     * this was written for.)
      */
     synchronized public void delete(LayoutLabel label, boolean tellAutonomy)
     {
@@ -2816,20 +2813,16 @@ public class LayoutEditor extends PositionAwareJFrame
             {
                 layout.addComponent(lc, grid.getCoordinates(label)[0], grid.getCoordinates(label)[1]);
 
-                // ONLY WHEN SOMETHING WAS ACTUALLY EDITED (C24).  Both statements ran whether the
-                // dialog was accepted or cancelled, so cancelling a label edit disarmed whatever tool
-                // the user had picked up - a gesture that changes nothing must leave everything alone.
-                //
-                // The re-add above stays unconditional: it puts the tile back where it was, and on a
-                // cancel that is a no-op.  Skipping it as well would risk a blank square to fix a
-                // clipboard, which is a worse trade than the defect.
+                // ONLY WHEN SOMETHING WAS ACTUALLY EDITED (C24): cancelling a label edit must not disarm whatever tool the user had
+                // picked up, since a gesture that changes nothing must leave everything alone.  The re-add above stays unconditional:
+                // it puts the tile back where it was, and on a cancel that is a no-op; skipping it as well would risk a blank square
+                // to fix a clipboard.
                 if (newText != null) this.resetClipboard();
             }
             catch (IOException ex)
             {
-                // A tile edit that fails should say so.  This was silent, so the component simply did
-                // not appear and nothing explained why.  Logged rather than shown as a dialog: the
-                // editor calls this per placement, and a dialog per failed tile would be worse.
+                // A tile edit that fails should say so, not leave the component silently absent.  Logged rather than shown as a
+                // dialog: the editor calls this per placement, and a dialog per failed tile would be worse.
                 this.parent.getModel().log(ex);
             }
 
@@ -2843,16 +2836,11 @@ public class LayoutEditor extends PositionAwareJFrame
     */
     public void editTextWithDropdown(LayoutLabel label)
     {
-        // Station captions are not text on the diagram any more.
-        //
-        // They were, and this dialog is what wrote them: it picked a Point by name and stored
-        // "Point:<name>" into a text square.  That binding broke whenever the station was renamed, named
-        // nothing at all once a station became several Points, and made saving the layout the only way
-        // to record a caption - which is what put autonomy in the business of rewriting layout files.
-        //
-        // A caption now belongs to the autonomy setup and points at the sensor SQUARE, so it is set
-        // where the rest of autonomy is set.  Said plainly rather than removed from the menu, because
-        // somebody who used to do it here needs to be told where it went.
+        // Station captions are not text on the diagram any more.  A caption belongs to the autonomy setup and points at the
+        // sensor SQUARE, so it is set where the rest of autonomy is set: a "Point:<name>" binding in a text square broke
+        // whenever the station was renamed, named nothing at all once a station became several Points, and made saving the
+        // layout the only way to record a caption, which put autonomy in the business of rewriting layout files.  Said
+        // plainly rather than removed from the menu, because somebody who used to do it here needs to be told where it went.
         JOptionPane.showMessageDialog(
             this,
             I18n.t("layout.ui.infoStationLabelsMovedToAutonomy")
@@ -2897,7 +2885,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 // 91g == addr 183
                 
                 // Create and display the JPanel LayoutEditorAddressPopup
-                // Told which page this square is on, so a link is not offered it (Adam, 2026-09-10).
+                // Told which page this square is on, so a link is not offered it.
                 LayoutEditorAddressPopup addressPopup = new LayoutEditorAddressPopup(lc, parent,
                     layout == null ? null : layout.getName());
                 
@@ -2929,13 +2917,10 @@ public class LayoutEditor extends PositionAwareJFrame
                     // Retrieve the address from LayoutEditorAddressPopup and use it
                     int newAddress = Integer.parseInt(addressPopup.getAddress());
 
-                    // A LINK MAY BE AIMED AT NOTHING, AND ONLY THIS PATH CAN SAY SO (FV3-C8).
-                    //
-                    // Zero from the popup means the operator chose "(none)", or the arrow was already
-                    // pointing nowhere and they pressed OK without changing it.  setLogicalAddress
-                    // cannot express that - it subtracts one for a link and throws on a negative - so
-                    // pressing OK on a broken arrow used to aim it at the first page in the alphabet,
-                    // silently, which is exactly the choice Adam's ruling leaves to the operator.
+                    // A LINK MAY BE AIMED AT NOTHING, AND ONLY THIS PATH CAN SAY SO (FV3-C8).  Zero from the popup means the operator
+                    // chose "(none)", or the arrow was already pointing nowhere and they pressed OK without changing it.
+                    // setLogicalAddress cannot express that (it subtracts one for a link and throws on a negative), and aiming the link at
+                    // the first page in the alphabet would silently make a choice that is the operator's.
                     if (lc.isLink() && newAddress <= 0)
                     {
                         lc.setLinkedPageIndex(-1);
@@ -2962,31 +2947,20 @@ public class LayoutEditor extends PositionAwareJFrame
     }
     
     /**
-     * What a tile's border looks like when nothing is happening to it.
+     * What a tile's border looks like when nothing is happening to it (OB-028: "in the autonomy editor, the gray grid is
+     * not needed. show the track diagram as it appears in the viewer, without the tile borders. make sure the borders
+     * return in the editor.").
      *
-     * OB-028: "in the autonomy editor, the gray grid is not needed. show the track diagram as it appears
-     * in the viewer, without the tile borders. make sure the borders return in the editor."
+     * NO border at all in autonomy mode, so the tiles sit flush exactly as they do in the viewer.  An empty border of the
+     * same thickness would leave a gap between tiles: an inset with nothing drawn in it shows the panel behind, a white
+     * grid in place of the grey one.
      *
-     * NO border at all in autonomy mode, so the tiles sit flush exactly as they do in the viewer.
+     * The artwork does not shift when the hover swaps the border for a coloured line (`receiveMoveEvent` gives this
+     * editor the blue outline too, OB-091), because overlayLine is sized to the room the resting border takes, so the
+     * swap costs no insets in either direction; FR-006 states the same care for the layout editor.
      *
-     * The first attempt used an empty border of the same thickness, reasoning that keeping the insets
-     * would stop the artwork shifting when a hover swapped it for a coloured line. Adam: "The grid is
-     * correctly gone, but now there is a gap between tiles (essentially a white grid)." Of course it
-     * is - an inset with nothing drawn in it shows the panel behind, so the grey grid was replaced by
-     * a white one, which is not what "as it appears in the viewer" means.
-     *
-     * The shift it was guarding against still cannot happen, though not for the reason that stood
-     * here until RC-C10. That reason was that `receiveMoveEvent` returns immediately in autonomy mode,
-     * so nothing ever swaps this border - which OB-091 ended, in this same round, by giving the blue
-     * outline to this editor as well. The hover DOES swap the border now.
-     *
-     * What keeps the artwork still is overlayLine: it is sized to the room the resting border takes,
-     * so the swap costs no insets in either direction. The three-argument javadoc below says as much.
-     * The care was real and aimed at the wrong mode; FR-006's version of it, for the layout editor,
-     * still applies.
-     *
-     * The palette keeps its visible border in both modes: those tiles are a menu of things to place, not
-     * a picture of a railway, and the border is what separates one from the next.
+     * The palette keeps its visible border in both modes: those tiles are a menu of things to place, not a picture of a
+     * railway, and the border is what separates one from the next.
      *
      * @param palette whether this is the palette of new components rather than the diagram
      * @param autonomy whether the editor is in autonomy mode
@@ -3003,10 +2977,9 @@ public class LayoutEditor extends PositionAwareJFrame
      * @param palette a tile in the toolbox rather than on the diagram, which keeps its thicker line
      * @param autonomy the autonomy editor, which draws its grid ON the squares rather than around them
      * @param grid whether the grey grid is being drawn
-     * @return the border, or NULL when the grid is off.  Null rather than an empty border of the same
-     *         width, because an empty border still takes up room and the room shows the panel behind
-     *         it: a white grid where the grey one used to be (MT-127).  The hover outline answers the
-     *         same question, so nothing moves - see overlayLine.
+     * @return the border, or NULL when the grid is off.  Null rather than an empty border of the same width, because an
+     *         empty border still takes up room and the room shows the panel behind it: a white grid where the grey one
+     *         used to be (MT-127).  The hover outline answers the same question, so nothing moves; see overlayLine.
      */
     public static Border restingBorder(boolean palette, boolean autonomy, boolean grid)
     {
@@ -3016,34 +2989,19 @@ public class LayoutEditor extends PositionAwareJFrame
                 NEW_COMPONENT_BORDER_WIDTH);
         }
 
-        // NULL when the grid is off, not an empty border of the same width.
-        //
-        // An empty border still takes up room, and the room shows the panel behind it - a white grid
-        // where the grey one used to be, which is MT-127 and which testEditorSurfaceRules pins.  Tiles
-        // with the grid off have to sit flush, exactly as they do in the viewer.
-        //
-        // That leaves FR-006's other half - "make sure hovering doesn't increase tile widths when it is
-        // off" - to be answered on the HIGHLIGHT side instead, by a border that paints without
-        // reserving anything.  See overlayLine.
+        // NULL when the grid is off, not an empty border of the same width (MT-127, pinned by testEditorSurfaceRules): an
+        // empty border still takes up room, and the room shows the panel behind it, a white grid where the grey one used to
+        // be.  Tiles with the grid off sit flush, exactly as they do in the viewer.  Hovering must not widen them either
+        // (FR-006), which is answered on the HIGHLIGHT side by a border that paints without reserving anything; see
+        // overlayLine.
         if (!grid) return null;
 
-        // BOTH editors reserve the room, and this used to be the one place they differed (OB-091).
-        //
-        // The autonomy editor drew its grid with overlayLine - painted on the square, reserving
-        // nothing - on the reasoning that MT-127 requires its tiles to sit flush. That reads across
-        // two states as though it were one. MT-127 is about the grid being OFF: "the grid is correctly
-        // gone, but now there is a gap between tiles (essentially a white grid)", and the branch above
-        // answers it by returning null, which is unchanged.
-        //
-        // With the grid ON, reserving nothing means the cell is sized as though there were no line and
-        // then has one painted over it, so the line eats a pixel of the tile art. Adam: "enabling the
-        // grid widens the track diagram in the layout editor (how it always was, because there is a
-        // double line in between cells), but not in the autonomy editor. Make the behavior of the
-        // autonomy editor match so that there are no tile truncations."
-        //
-        // So the widening is not a defect to be avoided here - it is what makes room for the line, and
-        // the layout editor has always paid it. overlayLine is still what the HOVER outline uses, where
-        // the resting border is null and nothing may move.
+        // BOTH editors reserve the room when the grid is on (OB-091).  Painting the grid with overlayLine, reserving nothing,
+        // would size the cell as though there were no line and then paint one over it, so the line would eat a pixel of the
+        // tile art (Adam: "enabling the grid widens the track diagram in the layout editor (how it always was, because there
+        // is a double line in between cells), but not in the autonomy editor. Make the behavior of the autonomy editor match
+        // so that there are no tile truncations.").  The widening is what makes room for the line.  overlayLine stays the
+        // HOVER outline, where the resting border is null and nothing may move.
         return BorderFactory.createLineBorder(COMPONENT_BORDER_DEFAULT_COLOR, COMPONENT_BORDER_WIDTH);
     }
 
@@ -3100,18 +3058,13 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
-     * Puts the grid switch into the window's own Toggle Visibility group.
+     * Puts the grid switch into the window's own Toggle Visibility group (FR-006: "make the gray grid an option you can
+     * toggle in the visible elements.  on by default, but persisted if turned off.").
      *
-     * FR-006: "make the gray grid an option you can toggle in the visible elements.  on by default,
-     * but persisted if turned off."
-     *
-     * By REPLACING the Text Labels box with a small column holding both, which is the trick the
-     * autonomy sidebar already uses one control along: a GroupLayout cannot have a component added to
-     * it after the fact, but it can swap one for another - so this lands where it belongs without
-     * touching the generated form, which must not be edited by hand.
-     *
-     * Text Labels rather than Addresses, because Addresses is the one autonomy mode swaps for a column
-     * of its own; two replacements of one component would fight.
+     * By REPLACING the Text Labels box with a small column holding both, the trick the autonomy sidebar already uses: a
+     * GroupLayout cannot have a component added to it after the fact, but it can swap one for another, so this lands where
+     * it belongs without touching the generated form.  Text Labels rather than Addresses, because Addresses is the one
+     * autonomy mode swaps for a column of its own; two replacements of one component would fight.
      */
     private void mountGridToggle()
     {
