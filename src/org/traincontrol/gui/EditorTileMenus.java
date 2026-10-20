@@ -27,7 +27,13 @@ final class EditorTileMenus
     }
 
     /**
-     * `AutonomyEditorPanel.buildTileMenu`'s body.
+     * The same menu, built and handed back rather than shown, so the main window's own right-click menu can carry it:
+     * the track diagram there is the same diagram, and one menu built once cannot drift into offering different things
+     * in the two places.
+     *
+     * @param tile which square
+     * @param component what is drawn there, or null to read it off the page
+     * @return the menu, or null where this square has nothing to offer
      */
     javax.swing.JPopupMenu buildTileMenu(TileKey tile, LayoutDiagramComponent component)
     {
@@ -784,7 +790,21 @@ final class EditorTileMenus
     }
 
     /**
-     * `AutonomyEditorPanel.buildArrivedFromMenu`'s body.
+     * Where the tail of the train standing here lies - the "arrived from" side.
+     *
+     * Adam, 2026-09-07: **"expose this property in the right-click menu advanced settings, both for the autonomy editor
+     * and track diagram viewer."**
+     *
+     * **Built here rather than twice.**  `TrainControlUI.buildAutonomyTileMenu` serves this panel's menu to the track
+     * diagram, so one implementation reaches both surfaces (two copies is how `OB-039` survived being fixed).
+     *
+     * The sides offered are the ones the railway HAS: `ArrivalSidePrompt.sidesOf` is the same list the placement prompt
+     * uses, so the menu and the prompt cannot disagree about which answers exist.
+     *
+     * Null when no train is standing here: a tail belongs to a train.
+     *
+     * @param target the square
+     * @return the menu, or null when there is nothing to offer
      */
     javax.swing.JMenu buildArrivedFromMenu(final TileKey target)
     {
@@ -888,7 +908,17 @@ final class EditorTileMenus
     }
 
     /**
-     * `AutonomyEditorPanel.buildFacingMenu`'s body.
+     * The "{loc} Is Facing..." submenu for a square, or null when there is nothing to ask.
+     *
+     * Handed out on its own so that the track diagram's own right-click menu can carry it, beside the other things it
+     * offers about the train standing there (Place, Facing, Remove and the locomotive's settings); the deep menu does
+     * not offer it.
+     *
+     * Null unless a locomotive is standing there.  Where the square has no facing to choose - no track leads out of
+     * it - the submenu is there and greyed, with the reason in its tooltip (OB-347).
+     *
+     * @param target the square
+     * @return the submenu, or null
      */
     javax.swing.JMenu buildFacingMenu(final TileKey target)
     {

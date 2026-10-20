@@ -386,7 +386,18 @@ final class EditorPrompts
     }
 
     /**
-     * `AutonomyEditorPanel.promptLengthFor`'s body.
+     * Sets the length of the square under the pointer, from outside this panel (FR-066).
+     *
+     * Control+E (Adam: *"a keyboard shortcut for setting a square's length"*, and *"let's do E"*, Control+D being taken
+     * twice over).  Like Control+S for Rename, `applyLength` is private and the key handler lives in `LayoutEditor`; this
+     * decides only who may ask.
+     *
+     * **It asks `offersALength`, the menu's own question, and writes where the menu writes**: the menu acts on
+     * `leaderOf(tile)`, the square that speaks for a run of plain track, so a key acting on the hovered square would
+     * measure a run through both doors and count it twice.  A key that acts where the menu offers nothing is the shape
+     * of MT-313 (Control+S named plain track), and it says a sentence rather than doing nothing quietly.
+     *
+     * @param tile the square to measure, ignored when null
      */
     void promptLengthFor(TileKey tile)
     {
