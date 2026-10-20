@@ -198,8 +198,8 @@ public class LayoutDiagram
     }
 
     /**
-     * Whether the running diagram draws this square: the part of the page its components cover, whatever mode the page is in
-     *.  In edit mode the page's own bounds are the whole page, and a caption - which is not a component - filed
+     * Whether the running diagram draws this square: the part of the page its components cover, whatever mode the page is in.
+     * In edit mode the page's own bounds are the whole page, and a caption - which is not a component - filed
      * on a square outside what the components cover is drawn in the editor and never when trains run.
      *
      * @param x the column
@@ -338,8 +338,8 @@ public class LayoutDiagram
         {
             for (Map<String, String> block : unmodelledBlocks)
             {
-                // THE SPELLING THE FILE USED, where it differed from the lower-cased form the readers ask about
-                //.  This machinery writes back what the file said ("what TrainControl does not understand it
+                // THE SPELLING THE FILE USED, where it differed from the lower-cased form the readers ask about.
+                // This machinery writes back what the file said ("what TrainControl does not understand it
                 // is not entitled to throw away"), and case is part of what it said: a block spelled `Version` stays
                 // `Version` on the first save.
                 builder.append(block.containsKey("_typeAsWritten")
@@ -1731,8 +1731,8 @@ public class LayoutDiagram
         // would shift with every rename and delete and silently reattach other pages' settings to the wrong track.
         Map<String, Integer> existing = readLayoutIndexIds(path);
 
-        // And what the station wrote INSIDE each page's block, which this writer does not model
-        //.  Read here, beside the ids it is keyed by, and emitted with each page below.
+        // And what the station wrote INSIDE each page's block, which this writer does not model.
+        // Read here, beside the ids it is keyed by, and emitted with each page below.
         Map<String, List<String>> pageExtras = readLayoutIndexPageExtras(path);
 
         // Refuse to renumber the whole layout because the index could not be READ.  With `existing` empty every

@@ -314,8 +314,8 @@ public final class ConditionOutline
                 // where the writer put it, as the first item of the next level down, and the AND that
                 // follows joins it.
                 //
-                // THE FAMILY IS WIDER THAN A BRACKET, and the first account of this said otherwise
-                //.  The step is two whenever a cross-operator child is itself the left child
+                // THE FAMILY IS WIDER THAN A BRACKET, and the first account of this said otherwise.
+                // The step is two whenever a cross-operator child is itself the left child
                 // of a cross-operator parent: writeChild bumps each of them and the left spine is
                 // written first, so both bumps land before the outer joiner does.  A NodeGroup is one
                 // way to arrive there and not the only one - `Or(And(Or(1,2), 4), 3)` has no group in

@@ -200,8 +200,8 @@ final class StandingTrains
             // THE PATH IT IS TAKING, WHICHEVER MAP HOLDS IT YET: `configureAndLockPath` claims `takingPath` and reserves
             // every Point on the road before it returns, and `activeLocomotives` is written only afterwards, so in that window the
             // locomotive holds several Points and has no path here, and the one-tail-per-train rule would walk ONE arbitrary
-            // reservation and leave its real tail claimed by nobody.  `getActiveAccs` has the same union for the same window
-            //.  The claims first, see `pathHeldBy`.
+            // reservation and leave its real tail claimed by nobody.  `getActiveAccs` has the same union for the same window.
+            // The claims first, see `pathHeldBy`.
             List<Edge> running = owner.pathHeldBy(loc);
 
             if (running != null && !running.isEmpty())

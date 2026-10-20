@@ -52,7 +52,7 @@ final class TimetableTab
         // activeLocomotives, and activeLocomotives -> Layout is the order the completion block establishes); idle callers take it uncontended
         // and hand the EDT a finished copy.  The UI callers' busy guard does not make the monitor free by the time they run: three hold a modal
         // dialog open between the check and the snapshot, and a dispatch started meanwhile takes the monitor (`isRunning()` is true from the
-        // moment `Layout.executePath` counts the train's thread, but the guard is asked before that.  Bouncing off the EDT costs one
+        // moment `Layout.executePath` counts the train's thread, but the guard is asked before that).  Bouncing off the EDT costs one
         // short-lived thread on a user action and asks nothing of the callers, which still marshal their own work through the invokeLater below.
         if (javax.swing.SwingUtilities.isEventDispatchThread())
         {

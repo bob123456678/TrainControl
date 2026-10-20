@@ -750,13 +750,13 @@ public class AutonomyViewerPanel extends JPanel
             return;
         }
 
-        // WHILE A SETUP EDIT A RUN DECLINED WAITS FOR ITS REBUILD, THE TRAINS ARE CARRIED ACROSS RATHER THAN FOLDED
-        //.  The running layout is the older of the two, and folding it would take the edit
+        // WHILE A SETUP EDIT A RUN DECLINED WAITS FOR ITS REBUILD, THE TRAINS ARE CARRIED ACROSS RATHER THAN FOLDED.
+        // The running layout is the older of the two, and folding it would take the edit
         // away; but where its trains stand is the railway's to say (OB-183), and a load that rebuilt from the setup
         // without a fold stood each train the run moved back where it set off, with the square it really stands on
         // reading free.  So these loads carry them across (`carryTheTrainsAcross`), and the load itself is the one asked
         // for, interactive or not, after the question above rather than through a door that refuses while
-        // autonomy reads busy (c).
+        // autonomy reads busy.
         //
         // A layout that holds a path - Yes above stops the trains and releases nothing - is folded as any other, with
         // each train under way written on the one point it is kept at (`loadPrepared`).  Carried
@@ -764,7 +764,7 @@ public class AutonomyViewerPanel extends JPanel
         // session went back to the file's.
         if (captureRunningState && ui.isSetupNewerThanTheRunningLayout())
         {
-            // The configuration running - or, where a reset has forgotten its name, the one it forgot (a).  Not
+            // The configuration running - or, where a reset has forgotten its name, the one it forgot.  Not
             // "nothing running" read as that: Unload, a deleted setup and a switch of railway forget the name too, and a
             // load after a switch carried the previous railway's trains across.
             final String running = ui.getActiveDiagramConfiguration() != null ? ui.getActiveDiagramConfiguration()
@@ -778,7 +778,7 @@ public class AutonomyViewerPanel extends JPanel
                 return;
             }
 
-            // Another configuration (b): the one running first, with the edit and where the trains stand, so
+            // Another configuration: the one running first, with the edit and where the trains stand, so
             // it is folded below as any configuration left is.  With nothing running there is nothing to carry, and
             // nothing to fold.
             if (running != null)
@@ -1629,8 +1629,8 @@ public class AutonomyViewerPanel extends JPanel
             // FIRST, and the reload after the import does not capture again - captured on the reload, as every reload
             // is, it wrote the running railway back over the homes and settings the import had just brought.  And the
             // file places no train in it: where a train stands on the railway running is the railway's to say (OB-183),
-            // and nothing knows where the file's trains are now.  While autonomy runs, the door refuses the name
-            //.  And not while a setup edit a run declined waits for its rebuild: the running layout is
+            // and nothing knows where the file's trains are now.  While autonomy runs, the door refuses the name.
+            // And not while a setup edit a run declined waits for its rebuild: the running layout is
             // then the older of the two, and folding it in would take that edit away - which is why the exit save and the
             // editor doors do not; the reload after the import does not fold either (`load`).
             final boolean intoTheOneRunning = into.equals(ui.getActiveDiagramConfiguration());

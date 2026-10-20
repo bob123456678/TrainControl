@@ -2412,8 +2412,8 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * A setting word in the colour of what it does: green for on, straight and green, red for off, turn and red
-     *.  By the WORD, because the same true or false is "on" for a sensor and "turn" for a switch.
+     * A setting word in the colour of what it does: green for on, straight and green, red for off, turn and red.
+     * By the WORD, because the same true or false is "on" for a sensor and "turn" for a switch.
      * Any other word - a direction, a three-way position - is left as it is.
      */
     private static String setting(String word)
@@ -3618,8 +3618,8 @@ public class RouteEditorFrame extends JFrame
                     default:
                         if (!CommandRow.hasDelay(at.getKind())) return "";
 
-                        // The number the railway will wait, not the number somebody once typed
-                        //.  A delay below the floor arrives here from every route saved before
+                        // The number the railway will wait, not the number somebody once typed.
+                        // A delay below the floor arrives here from every route saved before
                         // the floor was made visible, and from every import.
                         int shown = delayTheRailwayWillUse(at.getDelay());
 

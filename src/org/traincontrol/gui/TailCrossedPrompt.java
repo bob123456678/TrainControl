@@ -720,8 +720,8 @@ public class TailCrossedPrompt
     }
 
     /**
-     * The same, saying why this answer was dropped - an editor opened in the wait, trains began running in it
-     *, or the square changed.
+     * The same, saying why this answer was dropped - an editor opened in the wait, trains began running in it,
+     * or the square changed.
      *
      * @param model where the log goes
      * @param train the train the question was about

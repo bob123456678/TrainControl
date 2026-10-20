@@ -2778,8 +2778,8 @@ public class TileAnnotation
     }
 
     /**
-     * The same, from a square's own ports - its track type and orientation - rather than from what autonomy says about it
-     *: every square has those, where an annotation knows the roads only while the restriction arrows are
+     * The same, from a square's own ports - its track type and orientation - rather than from what autonomy says about it:
+     * every square has those, where an annotation knows the roads only while the restriction arrows are
      * shown, and a station's first road otherwise.
      *
      * @param routes the square's roads, from `TilePorts.ports`

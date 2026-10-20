@@ -1185,8 +1185,8 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                     final List<Edge> chosen = this.paths.get(index);
 
                     // THROUGH THE ONE DOOR both hand doors send through (Adam, 2026-09-29: "can all the checks go through
-                    // a single door?"): whether a train may be sent at all - the editor, which this copy did not ask
-                    //, the setup, the power - this path's standing rules, the reversal question, the
+                    // a single door?"): whether a train may be sent at all - the editor, which this copy did not ask,
+                    // the setup, the power - this path's standing rules, the reversal question, the
                     // last-moment question again, the atomic-routes gate and the dispatch, in that order.
                     this.parent.sendATrainByHand(this.layout, chosen, locomotive);
                 }

@@ -2584,8 +2584,8 @@ public final class CS2File
                         
                 for (Map<String, String> m : l)
                 {
-                    // The left-margin keys, which are not a block and must not be written as one
-                    //.  `page=1` is the only one a real export carries.
+                    // The left-margin keys, which are not a block and must not be written as one.
+                    // `page=1` is the only one a real export carries.
                     if ("_bareKeys".equals(m.get("_type")))
                     {
                         for (Map.Entry<String, String> bare : m.entrySet())

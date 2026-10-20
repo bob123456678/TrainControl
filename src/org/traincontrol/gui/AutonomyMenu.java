@@ -413,8 +413,8 @@ public class AutonomyMenu extends JMenu
             choose.addSeparator();
 
             // Import is greyed only with the rest of the menu while autonomy runs (`guardWhileRunning`), and refuses then
-            // too, saying so; into the configuration that is running it refuses a file that would replace it
-            //, and takes an old file's gaps without its trains; otherwise it brings one in -
+            // too, saying so; into the configuration that is running it refuses a file that would replace it,
+            // and takes an old file's gaps without its trains; otherwise it brings one in -
             // and the moment it is most needed is when the current setup will not load, which is repaired by importing
             // one that will.
             choose.add(item(I18n.t("autosetup.ui.btnImportConfiguration"), new Runnable()

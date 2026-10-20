@@ -1201,8 +1201,8 @@ public final class HomeStaging
                 route.add(e);
 
                 // AND NOT ROUND A LOOP INTO ITS OWN TAIL (OB-294), as `Layout.isPathClear` asks it: the one rule, not a
-                // copy.  Prefix-closed, like the room rule below: every return is asked and the tightest named
-                //, and an extension keeps every return the route already has, so no extension of a route that
+                // copy.  Prefix-closed, like the room rule below: every return is asked and the tightest named,
+                // and an extension keeps every return the route already has, so no extension of a route that
                 // meets the tail can clear it, and pruning here loses nothing.
                 if (Layout.whyItWouldMeetItsOwnTail(route, loc, ownBody) != null) continue;
 

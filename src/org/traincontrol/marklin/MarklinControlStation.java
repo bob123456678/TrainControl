@@ -915,8 +915,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
     private final Object autoLayoutLock = new Object();
 
     /**
-     * Run between parsing a configuration and the model taking it, when set - the seam a test lands a lookup in
-     *.  Null in the application.
+     * Run between parsing a configuration and the model taking it, when set - the seam a test lands a lookup in.
+     * Null in the application.
      */
     public static volatile Runnable whileParsingForTest;
 

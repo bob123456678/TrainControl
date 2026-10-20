@@ -40,8 +40,8 @@ final class LayoutExplanations
         // BY HAND, ONLY WHAT STOPS A HAND ROUTE.  A route picked by hand may start from a copy that is no station
         // and from a square switched off while autonomy is not running - `isPathClear` fences those two rules behind
         // `isAutoRunning` - so then they are autonomy's reasons and not the operator's (Adam, OB-225: "in manual mode, I
-        // still get reasons like ... will never be chosen in autonomy").  While autonomy runs they are the hand's too
-        //.  The pause is autonomy's alone: nothing a hand send passes through reads it.
+        // still get reasons like ... will never be chosen in autonomy").  While autonomy runs they are the hand's too.
+        // The pause is autonomy's alone: nothing a hand send passes through reads it.
         if (loc == null) return null;
 
         if (owner.getLocomotiveLocation(loc) == null) return I18n.t("autolayout.why.notOnGraph");

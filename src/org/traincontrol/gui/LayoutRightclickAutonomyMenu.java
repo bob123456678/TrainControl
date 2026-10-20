@@ -639,8 +639,8 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                         menuItem = new JMenuItem(
                             I18n.f("layout.ui.menuRemoveLocomotive", current.getCurrentLocomotive().getName())
                         );
-                        // A METHOD RATHER THAN A LAMBDA HERE, so that this constructor asks the railway nothing at all
-                        //: `moveLocomotive` is `synchronized` on the `Layout`, and the guard would otherwise have
+                        // A METHOD RATHER THAN A LAMBDA HERE, so that this constructor asks the railway nothing at all:
+                        // `moveLocomotive` is `synchronized` on the `Layout`, and the guard would otherwise have
                         // to allow the constructor as a whole, which would also allow the next path search somebody adds.
                         menuItem.addActionListener(event -> removeLocomotiveHere(current));
 

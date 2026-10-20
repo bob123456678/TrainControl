@@ -713,8 +713,8 @@ public class Point
     private String block;
 
     /**
-     * The square of the diagram this Point is a copy of, as the build names it, or null on a Point written by hand
-     *.  A rebuild carries each train by it: a rename can hand a Point's name to another square.
+     * The square of the diagram this Point is a copy of, as the build names it, or null on a Point written by hand.
+     * A rebuild carries each train by it: a rename can hand a Point's name to another square.
      */
     private String square;
 

@@ -1268,8 +1268,8 @@ public class TileOverlay
 
         for (Segment segment : segments)
         {
-            // AND A SEGMENT WITH NO COLOUR, which the line pass twenty lines above also skips
-            //. `colourOf` answers null for IDLE, so without this an idle segment drew a
+            // AND A SEGMENT WITH NO COLOUR, which the line pass twenty lines above also skips.
+            // `colourOf` answers null for IDLE, so without this an idle segment drew a
             // black arrowhead floating over track with no line under it. Nothing emits that pair
             // today - the only IDLE overlay built anywhere passes null segments - so this is a trap
             // for the next author rather than a defect on screen, which is why `isBlank()` was taught

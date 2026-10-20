@@ -1575,8 +1575,8 @@ public class LayoutGrid
                     }
 
                     // Shift on-tile labels down
-                    // Current limitation if we wanted to use borders: if you have a text element and an on-tile label in the same row
-                    // , they both get shifted down by the same amount.  Therefore, do this multiline hack.
+                    // Current limitation if we wanted to use borders: if you have a text element and an on-tile label in the same row,
+                    // they both get shifted down by the same amount.  Therefore, do this multiline hack.
                     if (c != null && !c.isText() && drawn)
                     {
                         //text.setBorder(new EmptyBorder(16 * (size / 30), 0, 0, 0)); //top, left, bottom, right

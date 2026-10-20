@@ -4114,8 +4114,8 @@ public class AutonomyEditorPanel extends JPanel
 
         // Taking it off wherever it was is the SESSION's job, in placeLocomotive: it works over the complete configuration, while
         // the reducer's Points omit excluded pages, so a train standing on one would not be lifted and the build would emit it at
-        // two Points and invalidate the layout.  THE HEADING THIS TRAIN ALREADY HAS is read before the placement moves it
-        //: `placeLocomotive` does not clear the facing on the non-null path, so the PREVIOUS occupant's would attach.
+        // two Points and invalidate the layout.  THE HEADING THIS TRAIN ALREADY HAS is read before the placement moves it:
+        // `placeLocomotive` does not clear the facing on the non-null path, so the PREVIOUS occupant's would attach.
         org.traincontrol.automationui.TilePorts.Side heading = session.facingOf(name);
 
         session.placeLocomotive(tile, name);
@@ -4142,8 +4142,8 @@ public class AutonomyEditorPanel extends JPanel
      * rather than from the setup; so without a rebuild the setup gains a locomotive and nothing on screen changes, while
      * the facing menu, which reads the setup, lists it (OB-035).
      *
-     * Rebuilding the running layout is what makes them agree, and is the same seam OB-034 uses.  It is unconditional
-     *, because the two surfaces are on screen together.
+     * Rebuilding the running layout is what makes them agree, and is the same seam OB-034 uses.  It is unconditional,
+     * because the two surfaces are on screen together.
      *
      * @param placementsEdited the locomotives whose placement this gesture wrote into the setup
      *                         and nowhere else, or null where it changed no placement
@@ -5775,8 +5775,8 @@ public class AutonomyEditorPanel extends JPanel
 
     /**
      * The direction one route stores for a set of open arms: both its arms open is both ways, one open is one way
-     * toward it, neither is closed.  `applyArmMask`'s translation, and the one the click's states are checked by
-     *, so the two cannot differ.
+     * toward it, neither is closed.  `applyArmMask`'s translation, and the one the click's states are checked by,
+     * so the two cannot differ.
      *
      * @param route the route
      * @param sides the tile's arms, as `armsOf` orders them
@@ -5993,8 +5993,8 @@ public class AutonomyEditorPanel extends JPanel
         // derivation belongs to the thread holding the setup.
         org.traincontrol.automationui.StationIndex index = session.getStationIndex();
 
-        // AND WHAT THE SETUP SAYS ABOUT TURNING, ARRIVALS AND CLOSED SQUARES, captured here for the index's reason
-        //: they are the setup's live collections, which the event thread edits, and a click on the diagram while
+        // AND WHAT THE SETUP SAYS ABOUT TURNING, ARRIVALS AND CLOSED SQUARES, captured here for the index's reason:
+        // they are the setup's live collections, which the event thread edits, and a click on the diagram while
         // the answer was worked out changed them under a walk that was iterating them.
         final WhySetup setup = new WhySetup(session);
 
@@ -6890,8 +6890,8 @@ public class AutonomyEditorPanel extends JPanel
             refresh();
 
             // IN THE LAMBDA, beside the write, not at the end of the builder: a run's direction is an edge in the
-            // running graph, and this per-route radio must reach the railway as the bulk "All branches" answer does
-            //.  Through the LIGHT door, like its three siblings (MT-334) - see `cycle`.
+            // running graph, and this per-route radio must reach the railway as the bulk "All branches" answer does.
+            // Through the LIGHT door, like its three siblings (MT-334) - see `cycle`.
             annotationsChanged();
         });
 

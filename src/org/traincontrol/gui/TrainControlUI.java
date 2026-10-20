@@ -2447,8 +2447,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Why the autonomy setup on this computer would not read, in words - or null when it read, or there is none to read
-     *.  Worked out afresh by `getAutonomySession` at every attempt to build the session.
+     * Why the autonomy setup on this computer would not read, in words - or null when it read, or there is none to read.
+     * Worked out afresh by `getAutonomySession` at every attempt to build the session.
      */
     private String autonomySetupUnreadable;
 
@@ -2700,12 +2700,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Runs a load while a setup edit a run declined waits for its rebuild, carrying where every train stands across it
-     *.  The running layout is then the older of the two, so no door folds all of it into the setup (the folds
+     * Runs a load while a setup edit a run declined waits for its rebuild, carrying where every train stands across it.
+     * The running layout is then the older of the two, so no door folds all of it into the setup (the folds
      * made meanwhile take what the railway owns alone) and where its trains stand is still the railway's to say
      * (OB-183): they are recorded before the load replaces it and put back after, with the turns they were due, as
-     * `rebuildRunningLayoutFromSetup` does for the editor doors; once a valid layout carries the edit the flag comes down
-     *.  Unlike that rebuild this runs whatever `isAutonomyBusy` says: it is reached after `prepareAutonomyReload` has
+     * `rebuildRunningLayoutFromSetup` does for the editor doors; once a valid layout carries the edit the flag comes down.
+     * Unlike that rebuild this runs whatever `isAutonomyBusy` says: it is reached after `prepareAutonomyReload` has
      * stopped the run, and a train stopped between sensors keeps the old layout reading busy until something replaces it.
      *
      * @param load the load, which replaces the running layout or leaves it
@@ -23336,8 +23336,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             ? java.util.Collections.<String>emptyList() : this.model.routesSavedArmed(json);
 
         // No is the default: an import that starts nothing cannot surprise anybody.  The routes by name, as the sentence reads in every
-        // language ("saved with their automatic firing on: {0}") and as MT-496 expects; given the count it read "...on: 1.".  And wrapped
-        //: a question does not wrap a line, and the names go into the middle of the first one, so many routes made a dialog wider
+        // language ("saved with their automatic firing on: {0}") and as MT-496 expects; given the count it read "...on: 1.".  And wrapped:
+        // a question does not wrap a line, and the names go into the middle of the first one, so many routes made a dialog wider
         // than the screen.
         final boolean arm = !savedArmed.isEmpty() && JOptionPane.showOptionDialog(this,
             wrappedToFit(I18n.f("route.ui.confirmRearmImported", String.join(", ", savedArmed))),
@@ -25938,8 +25938,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             if (seen.contains(ttp.getLoc())) continue;
 
-            // ON ITS START COPY, or on another copy of that square facing the same way, which the entry runs from
-            //: the exit and the next start, Autonomy > Load and the placement doors stand a train on
+            // ON ITS START COPY, or on another copy of that square facing the same way, which the entry runs from:
+            // the exit and the next start, Autonomy > Load and the placement doors stand a train on
             // the plain copy, and the entry may name the turning one
             if (layout.pathFromWhereItStands(ttp.getPath(), ttp.getLoc()) == null) return ttp;
 

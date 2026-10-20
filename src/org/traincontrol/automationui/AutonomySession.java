@@ -3853,8 +3853,8 @@ public class AutonomySession
     }
 
     /**
-     * Every switch square on a leg autonomy uses - a switch or a permanent turnout, as `isSwitchSquare` says
-     *.  A switch is in no piece - its share would sit where the room rule
+     * Every switch square on a leg autonomy uses - a switch or a permanent turnout, as `isSwitchSquare` says.
+     * A switch is in no piece - its share would sit where the room rule
      * does not count it - so switches are asked for on their own, one turnout length for a page (Adam:
      * "One length for all switches").
      *
@@ -7409,8 +7409,8 @@ public class AutonomySession
      * - An ENTRY guard turns red behind a train arriving: noticed where no route into its station commands it.
      * - An EXIT guard is red while its station is occupied, and a route over it sets it green as it sets any signal on it.
      *   Commanded only by routes out of its station, it is that station's exit signal and right.  A route INTO it - a home
-     *   signal - turns it green for the arriving train, and the arrival's claim can turn it red in front of that train
-     *  : the entry guard is the signal on the way in.  Routes to other stations turn it green over a train
+     *   signal - turns it green for the arriving train, and the arrival's claim can turn it red in front of that train:
+     * the entry guard is the signal on the way in.  Routes to other stations turn it green over a train
      *   standing there.  And no route at all, away from the station's own track, leaves it only showing whether
      *   the station is occupied.  One notice for each, in that order.
      *
@@ -8682,8 +8682,8 @@ public class AutonomySession
      * a curve (MT-125) - a train entering an N-E curve by N leaves by E, and saying it faces S describes a train
      * sitting across the rails.
      *
-     * The sides come from arrivalSides - the same door the build splits on - not from a second walk of the reduced edges
-     *.  A square the door declines to split offers no facing at all, which is right: the build emits it whole.
+     * The sides come from arrivalSides - the same door the build splits on - not from a second walk of the reduced edges.
+     * A square the door declines to split offers no facing at all, which is right: the build emits it whole.
      * Ordered the way the builder orders its copies.  The first answer is NOT what a placement with no recorded facing
      * gets: that is `startableCopy`'s choice, the first copy trains may arrive at.
      *
@@ -10287,8 +10287,8 @@ public class AutonomySession
      * Adam: *"to bulk tools in the autonomy editor, add an option to mass mark current train locations as their homes."*
      *
      * **The same shape as `clearEveryHome` beside it**: `setPointProperty` rebuilds the station index on every call, a full
-     * builder construction on the event thread.  It writes through `writeHome`, which is that rule without the re-derive
-     *.  **ONE LOCOMOTIVE, ONE STATION still holds**: a train being homed HERE has to lose its home anywhere else,
+     * builder construction on the event thread.  It writes through `writeHome`, which is that rule without the re-derive.
+     * **ONE LOCOMOTIVE, ONE STATION still holds**: a train being homed HERE has to lose its home anywhere else,
      * and `writeHome` is where that rule lives - writing the property directly would be a second door with the sweep
      * missing, which is how duplicate homes arrived.
      *
