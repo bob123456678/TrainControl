@@ -58,21 +58,17 @@ public class AutonomyBuilder
     }
 
     /**
-     * One emitted Point: a tile, which arrival side it stands for, and whether it is the copy that
-     * reverses.
+     * One emitted Point: a tile, which arrival side it stands for, and whether it is the copy that reverses.
      *
-     * The reduction gives one Point per sensor, which is a truthful model of the track and a lossy
-     * model of what a train may do there.  Arriving from the west and carrying on east is a different
-     * move from arriving from the west and backing out west again, and as one Point they are the same
-     * edge set - so either the reversal is unreachable or every passing train may perform one.  The
-     * running model cannot tell them apart either: it records which Point a locomotive stands on and
-     * never which way it faces, so nothing there refuses the edge back the way it came.
+     * The reduction gives one Point per sensor, which is a truthful model of the track and a lossy model of what a
+     * train may do there.  Arriving from the west and carrying on east is a different move from arriving from the west
+     * and backing out west again, and as one Point they are the same edge set.  The running model records which Point a
+     * locomotive stands on and never which way it faces, so nothing there refuses the edge back the way it came.
      *
-     * A hand-written configuration solved this by putting several Points on one s88 and writing most
-     * edges one way only.  The sample layout does exactly that: TunnelPre -> Tunnel exists and
-     * Tunnel -> TunnelPre does not, and the way back out of that sensor is a second Point on the same
-     * s88 called TunnelReverse.  Those one-way edges are not caution; they are the direction the train
-     * is facing, written down.  This class reconstructs that shape from the diagram.
+     * A hand-written configuration solved this by putting several Points on one s88 and writing most edges one way only
+     * (the sample layout's TunnelPre -> Tunnel exists, and the way back out of that sensor is a second Point on the same
+     * s88 called TunnelReverse).  Those one-way edges are the direction the train is facing, written down; this class
+     * reconstructs that shape from the diagram.
      */
     private static class Node
     {
@@ -242,14 +238,10 @@ public class AutonomyBuilder
     private Map<String, JSONObject> pointExtras = null;
 
     /**
-     * What each tile splits into, worked out once.
-     *
-     * Not premature: nodesFor is asked inside the edge loop, for both ends of every edge, and each call
-     * walks every edge to find the arrival sides - so without this the build is quadratic in the edge
-     * count.  It also lets a name ask cheaply whether its tile became more than one Point, which is what
-     * decides whether the name needs a suffix at all.
-     *
-     * Cleared by every setter that can change the answer.
+     * What each tile splits into, worked out once: nodesFor is asked inside the edge loop, for both ends of every edge,
+     * and each call walks every edge to find the arrival sides, so without this the build is quadratic in the edge
+     * count.  It also lets a name ask cheaply whether its tile became more than one Point, which is what decides
+     * whether the name needs a suffix at all.  Cleared by every setter that can change the answer.
      */
     private final Map<TileKey, List<Node>> nodeCache = new LinkedHashMap<>();
 
@@ -1235,22 +1227,20 @@ public class AutonomyBuilder
                     }
                 }
 
-                // A station turns round at a terminus; anything else turns round at a reversing point.
-                // Same physical act, and the model spells it two ways: a terminus is a destination that
-                // reverses on arrival, a reversing point is one autonomy will never choose to stop at.
+                // A station turns round at a terminus; anything else turns round at a reversing point.  Same physical act,
+                // and the model spells it two ways: a terminus is a destination that reverses on arrival, a reversing point
+                // is one autonomy will never choose to stop at.
                 //
-                // Either the copy that exists to turn trains round, or - where the square was marked and
-                // nothing arrives at it by any side of the grid, so there was no facing to record and no
-                // copy to make - the single Point it became.  Without that second case a square nothing
-                // arrives at by a side of the grid emitted no flag at all and its trains would have run into the
-                // buffers.
+                // Either the copy that exists to turn trains round, or - where the square was marked and nothing arrives at
+                // it by any side of the grid, so there was no facing to record and no copy to make - the single Point it
+                // became.  Without that second case such a square would emit no flag at all and its trains would run into
+                // the buffers.
                 //
-                // MUST, not may, in that second case.  The flag means "every arriving train reverses",
-                // which is what "must" says and is emphatically not what "may" says - so putting it on a
-                // may-turn square silently promoted the user's choice to the other one, and made a
-                // through station one no path could be routed through.  Where "may" cannot be expressed
-                // - which is exactly this case, since expressing it needs the two copies a split makes -
-                // nothing is emitted, and the checks report that the marking cannot mean anything here.
+                // MUST, not may, in that second case.  The flag means "every arriving train reverses", which is what "must"
+                // says and is emphatically not what "may" says: on a may-turn square it would silently promote the user's
+                // choice to the other one, and make a through station one no path could be routed through.  Where "may"
+                // cannot be expressed (it needs the two copies a split makes) nothing is emitted, and the checks report
+                // that the marking cannot mean anything here.
                 if (node.reverse
                     || (mandatory.contains(point.getTile()) && splitSides(point.getTile()).isEmpty()))
                 {
