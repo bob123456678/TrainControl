@@ -1228,39 +1228,27 @@ public class LayoutGrid
 
                     if (captioned != null) captionNamesAsBuilt.put(captioned, captionName);
 
-                    // WHETHER THIS LABEL IS DRAWN AT ALL (OB-272).  In the autonomy editor a CAPTION follows
-                    // the caption dropdown and the user's own writing follows the text switch, which only the
-                    // Text Labels box turns on (FR-133) - Adam, 2026-09-23: *"make text labels be a dedicated
-                    // setting, and hide the text labels unless it is selected."*  Everywhere else one switch
-                    // decides both, as it always has.
+                    // WHETHER THIS LABEL IS DRAWN AT ALL (OB-272).  In the autonomy editor a CAPTION follows the
+                    // caption dropdown and the user's own writing follows the text switch, which only the Text
+                    // Labels box turns on (FR-133; Adam: "make text labels be a dedicated setting, and hide the text
+                    // labels unless it is selected.").  Everywhere else one switch decides both.
                     final AutonomyEditorPanel captionPanel = autonomyEditor && master instanceof LayoutEditor
                         ? ((LayoutEditor) master).getAutonomyPanel() : null;
 
                     final boolean drawn = captioned != null && autonomyEditor && captionPanel != null
                         ? captionPanel.isDrawingCaptions() : !layout.getEditHideText();
 
-                    // Autonomy station caption, live.
-                    //
-                    // An excluded page is already gone by here, and the clause that used to say so has
-                    // been removed with this comment (review, 2026-08-26).  `hidesStationCaptions`
-                    // takes the decision once, three hundred lines up, and nulls `captioned` for an
-                    // excluded page - so asking again was dead, and the dead half of a condition is
-                    // where a rule quietly stops being enforced when the live half changes.
-                    //
-                    // This also used to promise "the name is still drawn, below, as ordinary text",
-                    // which stopped being true when B6 routed exclusion through that one decision:
-                    // nothing autonomy knows is drawn on an excluded page now, which is what Adam asked
-                    // for ("hide captions", 2026-08-25).  Writing of the user's OWN is untouched - it
-                    // was never autonomy's to hide.
+                    // Autonomy station caption, live.  An excluded page is already gone by here: `hidesStationCaptions`
+                    // takes the decision once, earlier, and nulls `captioned` for it, so asking again would be dead
+                    // code, and the dead half of a condition is where a rule quietly stops being enforced when the
+                    // live half changes.  Nothing autonomy knows is drawn on an excluded page (B6; Adam: "hide
+                    // captions").  Writing of the user's OWN is untouched: it was never autonomy's to hide.
                     if (captioned != null && !inEditor)
                     {
-                        // Blank until autonomy says otherwise.
-                        //
-                        // A caption belongs to the running setup: it shows what is standing at that
-                        // station, and with nothing loaded there is no answer to give.  Seeding it
-                        // with the station's name instead was tried and was worse - an unloaded
-                        // diagram covered in names that look like live captions and are not, which is
-                        // the placeholder state this comment exists to stop somebody restoring.
+                        // Blank until autonomy says otherwise.  A caption belongs to the running setup: it shows what
+                        // is standing at that station, and with nothing loaded there is no answer to give.  Seeding
+                        // it with the station's name would cover an unloaded diagram in names that look like live
+                        // captions and are not.
                         text.setText("");
 
                         // Of this build, so registering its other caption of the same station spares it (RSA40-C1)
@@ -1279,15 +1267,12 @@ public class LayoutGrid
 
                         text.addMouseListener(new MouseAdapter()
                         {
-                            // The name is a component of its own, stacked on top of the square, and the
-                            // keyboard's idea of what is hovered comes from the square's listener - which
-                            // gets mouseEXITED the moment the pointer moves onto the name.  So Control+V
-                            // over the platform worked and Control+V over the name did nothing, when the
-                            // name is the larger and more obvious of the two things to aim at.
-                            //
-                            // Reports the STATION rather than whichever square the text happens to sit on:
-                            // a caption may be drawn on blank space beside its platform, and pointing at a
-                            // station's name means that station either way.
+                            // The name is a component of its own, stacked on top of the square, and the keyboard's
+                            // idea of what is hovered comes from the square's listener, which gets mouseEXITED the
+                            // moment the pointer moves onto the name.  So this reports the hover itself, which makes
+                            // Control+V work over the name as it does over the platform.  It reports the STATION
+                            // rather than the square the text sits on: a caption may be drawn on blank space beside
+                            // its platform, and pointing at a station's name means that station either way.
                             @Override
                             public void mouseEntered(MouseEvent e)
                             {
@@ -1305,21 +1290,13 @@ public class LayoutGrid
                             {
                                 // A DOUBLE-CLICK IS TWO CLICKS, and each activates (OB-138).
                                 //
-                                // Adam: "double clicking station label in track viewer should activate
-                                // that locomotive (as if it was selected on the key mappings) if it is
-                                // mapped, not open the editor."
-                                //
-                                // This used to open the autonomy setup at the station, deliberately.
-                                // He has ruled the other way, so the branch is gone rather than given
-                                // another condition - what is left is the ordinary left-click path
-                                // below, which is exactly the behaviour he describes: jumpToLocomotive
-                                // switches to the locomotive\u2019s mapping page and selects its button, and
-                                // does nothing when it has no mapping.
-                                //
-                                // The setup is not stranded. The right-click menu on this same square
-                                // still opens the full editor, and it is the door that explains itself
-                                // when it has to refuse - which is why the removed branch had to carry
-                                // a copy of that reasoning, and why the copy goes with it.
+                                // Adam: "double clicking station label in track viewer should activate that
+                                // locomotive (as if it was selected on the key mappings) if it is mapped, not open
+                                // the editor."  So no branch here opens the autonomy setup; the ordinary left-click
+                                // path below does what he describes (jumpToLocomotive switches to the locomotive's
+                                // mapping page and selects its button, and does nothing when it has no mapping).
+                                // The setup is not stranded: the right-click menu on this same square still opens
+                                // the full editor, and explains itself when it has to refuse.
 
                                 if (e.getButton() == MouseEvent.BUTTON3)
                                 {
@@ -1329,9 +1306,9 @@ public class LayoutGrid
                                 // Left-clicking a station will activate its locomotive
                                 else
                                 {
-                                    // By SQUARE.  A square where trains may turn round is several
-                                    // Points, none of them called what the diagram says, and a lookup
-                                    // by the text of the caption simply returned null.
+                                    // By SQUARE: a square where trains may turn round is several Points, none of
+                                    // them called what the diagram says, so a lookup by the text of the caption
+                                    // would find nothing.
                                     org.traincontrol.automation.Point standing =
                                         ui.getAutonomyPointForTile(station);
 
@@ -1365,18 +1342,14 @@ public class LayoutGrid
                                 || ((LayoutEditor) master).getAutonomyPanel() == null
                                 || !((LayoutEditor) master).getAutonomyPanel().isShowingParkedTrains();
 
-                            // WHERE THE TRAIN LIVES, if that is what has been asked for (MT-261
-                            // ruling 2, R28-C3).
+                            // WHERE THE TRAIN LIVES, if that is what has been asked for (MT-261 ruling 2, R28-C3).
                             //
-                            // Adam: "labels show the home locomotive in white to indicate it's not
-                            // there (and black/no change if it's there)."  Nothing in 3.0.0 drew the
-                            // home assignment at all, so the only way to see where a locomotive
-                            // belonged was to open one square's menu at a time.
+                            // Adam: "labels show the home locomotive in white to indicate it's not there (and
+                            // black/no change if it's there)."
                             //
-                            // Asked FIRST, because it is the more specific question: a caption has
-                            // room for one name, and somebody who has turned this on is looking at
-                            // homes rather than at station names or at what happens to be parked.
-                            // Squares with no home fall through to whichever of the other two is on.
+                            // Asked FIRST, because it is the more specific question: a caption has room for one
+                            // name, and somebody who has turned this on is looking at homes rather than at station
+                            // names or at what happens to be parked.  A square with no home shows nothing (below).
                             boolean homes = master instanceof LayoutEditor
                                 && ((LayoutEditor) master).getAutonomyPanel() != null
                                 && ((LayoutEditor) master).getAutonomyPanel().isShowingHomeLocomotives();
@@ -1389,11 +1362,10 @@ public class LayoutGrid
 
                                 // AWAY IS THE DARK ONE, which is how the name comes out white.
                                 //
-                                // `StationCaption.onPill` picks a foreground that reads on whatever
-                                // fill it is given, so the colour is chosen by naming the FILL rather
-                                // than by hard-coding a white that would vanish on the resting pill.
-                                // Home and standing here gets the ordinary resting fill and its
-                                // ordinary near-black text - "no change if it's there".
+                                // `StationCaption.onPill` picks a foreground that reads on whatever fill it is
+                                // given, so the colour is chosen by naming the FILL rather than by hard-coding a
+                                // white that would vanish on the resting pill.  Home and standing here gets the
+                                // ordinary resting fill and its ordinary near-black text.
                                 String standing = ui.autonomyLocomotiveAt(captioned);
 
                                 boolean athome = home.equals(standing);
@@ -1406,21 +1378,13 @@ public class LayoutGrid
                             }
                             else if (homes)
                             {
-                                // NO HOME, NO LABEL (Adam, 2026-09-07: "if there are no home
-                                // locomotives, just hide the label at that station, rather than still
-                                // showing the station name").
+                                // NO HOME, NO LABEL (Adam: "if there are no home locomotives, just hide the label at
+                                // that station, rather than still showing the station name").
                                 //
-                                // While this was a tick box layered over station names, falling
-                                // through to the station name was right - the box added an answer
-                                // rather than replacing one. As one of five options that exclude each
-                                // other it is wrong: a mode that quietly shows another mode's content
-                                // is indistinguishable from a control that does not work, which is how
-                                // it was reported.
-                                //
-                                // Nothing at all rather than the empty placeholder, which is what he
-                                // asked for: the placeholder means "a station with no name", and these
-                                // squares have names - they have no HOME, and a label saying nothing
-                                // about homes is the thing being removed.
+                                // Home Locs is one of several options that exclude each other, and a mode that
+                                // quietly shows another mode's content is indistinguishable from a control that does
+                                // not work.  Nothing at all rather than the empty placeholder, which means "a
+                                // station with no name": these squares have names, they have no HOME.
                                 text.setText("");
 
                                 text.setOpaque(false);
@@ -1429,9 +1393,8 @@ public class LayoutGrid
                             }
                             else if (naming)
                             {
-                                // The station's own name, which is what the track editor used to show
-                                // and what this window is for. Greyed like the placeholder was: it is
-                                // a label on the diagram rather than something set here.
+                                // The station's own name, which is what this window is for.  Greyed like the
+                                // placeholder: it is a label on the diagram rather than something set here.
                                 text.setText(captionName == null ? LAYOUT_STATION_EMPTY : captionName);
 
                                 labelColour = captionName == null
@@ -1440,11 +1403,9 @@ public class LayoutGrid
                                 standingTrain = captionName != null;
                             }
                             else
-                            // What the SETUP puts on this square, which is the question the editor is
-                            // about.  The running diagram shows what is on the rails; here there may be
-                            // no run at all, and a platform with a train assigned to it was drawing the
-                            // empty placeholder - so the one view where placements are made was the one
-                            // view that did not show them.
+                            // What the SETUP puts on this square, which is the question the editor is about.  The
+                            // running diagram shows what is on the rails; here there may be no run at all, so a
+                            // platform with a train assigned to it still has to show it.
                             {
                             String placed = ui.autonomyCaptionTextAt(captioned);
 
@@ -1452,25 +1413,22 @@ public class LayoutGrid
                             {
                                 text.setText(placed);
 
-                                // The running diagram's own style for a named train: black on
-                                // translucent white, so it reads over whatever tile art is underneath.
+                                // The running diagram's own style for a named train: black on translucent white, so
+                                // it reads over whatever tile art is underneath.
                                 //
-                                // Applied AFTER the generic setBackground(WHITE) below rather than
-                                // here.  Set here it was overwritten by it - and because this is the
-                                // one branch that also turns opacity ON, the result was the only
-                                // label on the diagram painting a solid white rectangle, which is the
-                                // exact thing a translucent style exists to avoid.
+                                // Applied AFTER the generic setBackground(WHITE) below rather than here: set here it
+                                // would be overwritten, and because this is the one branch that also turns opacity
+                                // ON, the label would paint a solid white rectangle, which a translucent style
+                                // exists to avoid.
                                 standingTrain = true;
 
                                 labelColour = Color.BLACK;
                             }
                             else
                             {
-                                // NO LOCOMOTIVE, NO LABEL (OB-312; Adam, 2026-10-03: "When in text
-                                // labels-parked locomotive, dont show labels without a locomotive"), as
-                                // Home Locs draws nothing where there is no home.  The placeholder used
-                                // to be kept here, to show where the captions land - Station Names does
-                                // that.
+                                // NO LOCOMOTIVE, NO LABEL (OB-312; Adam: "When in text labels-parked locomotive,
+                                // dont show labels without a locomotive"), as Home Locs draws nothing where there is
+                                // no home.  Station Names is the option that shows where the captions land.
                                 text.setText("");
 
                                 text.setOpaque(false);
@@ -1491,10 +1449,9 @@ public class LayoutGrid
                         }
                         else
                         {
-                            // Everything else: what the user wrote there.
-                            // This includes an old autonomy "Point:" label on a layout served by the Central
-                            // Station, which is drawn as written (OB-344; Adam, 2026-10-12: "stop stripping
-                            // that prefix.").
+                            // Everything else: what the user wrote there.  This includes an old autonomy "Point:"
+                            // label on a layout served by the Central Station, which is drawn as written (OB-344;
+                            // Adam: "stop stripping that prefix.").
                             text.setText(own);
 
                             // Writing of their own, greyed while autonomy is being edited: it is still
@@ -1519,16 +1476,10 @@ public class LayoutGrid
                     {
                         text.setPill(true);
                         text.setBackground(StationCaption.restingFill());
-                        // onPill and not readableOn: the branches above choose a grey for a
-                        // placeholder and a black for a name, deliberately, and readableOn threw both
-                        // away because its condition is a superset of all of them.
-                        //
-                        // This said "the distinction survives now" for two days before it was true.
-                        // onPill kept RED and let grey fall through to the same readableOn, so a
-                        // placeholder and a name came out the identical colour - found by a review that
-                        // did not believe the comment and ran it.  onPill dims a neutral grey towards
-                        // the pill now, and `testAPlaceholderStaysDimmerThanAName` is what keeps this
-                        // sentence honest.
+                        // onPill and not readableOn: the branches above choose a grey for a placeholder and a black
+                        // for a name, deliberately, and readableOn would throw both away because its condition is a
+                        // superset of all of them.  onPill dims a neutral grey towards the pill, so a placeholder
+                        // stays dimmer than a name (`testAPlaceholderStaysDimmerThanAName`).
                         text.setForeground(
                             StationCaption.onPill(StationCaption.restingFill(), labelColour));
 
@@ -1538,10 +1489,10 @@ public class LayoutGrid
                             text.getFont().getSize2D() * StationCaption.FONT_SCALE));
                     }
 
-                    // AND A HALO ROUND EVERY LABEL THAT IS NOT A PILL (Adam, 2026-10-10: "Give regular text labels on
-                    // the track diagram (.text) the same halo as address labels (possibly a smaller outline) so that
-                    // labels are visible against black backgrounds like tracks.") - the user's own writing, and an old
-                    // file's station label; a pill has its own fill.
+                    // AND A HALO ROUND EVERY LABEL THAT IS NOT A PILL (Adam: "Give regular text labels on the track
+                    // diagram (.text) the same halo as address labels (possibly a smaller outline) so that labels are
+                    // visible against black backgrounds like tracks."): the user's own writing, and an old file's
+                    // station label.  A pill has its own fill.
                     text.setHalo(!text.isPill());
 
                     // The one label drawn ON something rather than beside it.  Opaque, so the name
@@ -1555,10 +1506,9 @@ public class LayoutGrid
 
                         // A HOME THAT IS EMPTY GETS THE DARK PILL (MT-261 ruling 2).
                         //
-                        // Adam asked for the name "in white to indicate it's not there".  White ink on
-                        // the resting pill - which is pale - would be invisible, so the fill is what
-                        // changes and `onPill` below picks the readable foreground for it.  The result
-                        // is the white he asked for, on a caption that can still be read.
+                        // Adam asked for the name "in white to indicate it's not there".  White ink on the resting
+                        // pill, which is pale, would be invisible, so the fill is what changes and `onPill` below
+                        // picks the readable foreground for it.
                         Color fill = text.isPill()
                             ? (awayFromHome ? AWAY_FROM_HOME_FILL : StationCaption.restingFill())
                             : new Color(255, 255, 255, LAYOUT_STATION_OPACITY);
@@ -1569,33 +1519,29 @@ public class LayoutGrid
                             StationCaption.onPill(text.getBackground(), labelColour));
                     }
                     
-                    // Where a pill lands, and out of the row's baseline - for EVERY caption.
-                    //
-                    // This lived inside the branch below, which asks `c != null`: a caption drawn on a
-                    // BLANK square therefore kept the baseline anchor and got no placement at all,
-                    // which is both the wrong position and the live half of OB-115. Blank squares are
-                    // not a curiosity - the caption placer calls one "the most readable place of all"
-                    // and picks it second.
+                    // Where a pill lands, and out of the row's baseline, for EVERY caption.  This must not depend on
+                    // `c != null`: a caption drawn on a BLANK square needs the placement too (OB-115), and blank
+                    // squares are not a curiosity: the caption placer calls one "the most readable place of all" and
+                    // picks it second.
                     if (text.isPill())
                     {
-                        // Adam: "land them so that they align just below straight tracks if the track
-                        // goes east to west, or centered over the track if north to south." An
-                        // east-west rail runs across the middle of the square, so a caption on the
-                        // middle would sit on it; a north-south rail runs UP it, and a caption beneath
-                        // would be beside the track rather than on it. A blank square has no rails to
-                        // be placed against, so it takes the east-west answer.
+                        // Adam: "land them so that they align just below straight tracks if the track goes east to
+                        // west, or centered over the track if north to south."  An east-west rail runs across the
+                        // middle of the square, so a caption on the middle would sit on it; a north-south rail runs
+                        // UP it, and a caption beneath would be beside the track rather than on it.  A blank square
+                        // has no rails to be placed against, so it takes the east-west answer.
                         //
-                        // A border and not gbc.anchor: this cell is declared gridheight = 0 -
-                        // REMAINDER - so it runs from this row to the bottom of the diagram, and
-                        // anchoring SOUTH inside it means the bottom of the PAGE.
+                        // A border and not gbc.anchor: this cell is declared gridheight = 0 (REMAINDER), so it runs
+                        // from this row to the bottom of the diagram, and anchoring SOUTH inside it means the bottom
+                        // of the PAGE.
                         //
                         // NORTHWEST because a caption has no business voting on the row's baseline.
-                        // BASELINE_LEADING lines up every component anchored that way, so a caption
-                        // whose height changed moved the row's baseline and took its neighbours with
-                        // it - three pixels, on labels nobody had touched (OB-115).
-                        // ROTATED for track that runs up the square (Adam, 2026-08-27), which is
-                        // also what decides which way the caption is centred and which way it is
-                        // offset - so the orientation is asked once, here, and the caption is told.
+                        // BASELINE_LEADING lines up every component anchored that way, so a caption whose height
+                        // changed would move the row's baseline and take its neighbours with it (OB-115).
+                        //
+                        // ROTATED for track that runs up the square, which also decides which way the caption is
+                        // centred and which way it is offset, so the orientation is asked once, here, and the
+                        // caption is told.
                         boolean onEnd = runsNorthSouth(c);
 
                         text.setRotated(onEnd);
@@ -1636,18 +1582,14 @@ public class LayoutGrid
                         //text.setBorder(new EmptyBorder(16 * (size / 30), 0, 0, 0)); //top, left, bottom, right
                         gbc.gridheight = 0;
 
-                        // A caption with a train on it is left as PLAIN text, which is the one thing
-                        // that made the editor's version of this label look different from the running
-                        // diagram's.  It is the same label, with the same styling; what differed was
-                        // the string.
-                        //
-                        // On the running diagram the caption is registered EMPTY here and its text set
-                        // afterwards by updateStationLabels, so it never reaches the wrap below.  The
-                        // editor has no run to wait for, so it sets the text now - and picked up the
-                        // wrap on the way past.  A leading <br> makes the label two lines tall and the
-                        // &nbsp; stops it wrapping, so an OPAQUE label - which this is the only one of
-                        // - painted its background as a block a tile tall and three wide, over
-                        // whatever was beside it.
+                        // A caption with a train on it is left as PLAIN text: the editor's label is the same label
+                        // with the same styling as the running diagram's, and only the string differed.  On the
+                        // running diagram the caption is registered EMPTY here and its text set afterwards by
+                        // updateStationLabels, so it never reaches the wrap below.  The editor has no run to wait
+                        // for and sets the text now, so it would pick up the wrap: a leading <br> makes the label two
+                        // lines tall and the &nbsp; stops it wrapping, so an OPAQUE label (this is the only one)
+                        // would paint its background as a block a tile tall and three wide over whatever was beside
+                        // it.
                         if (!text.isPill() && !standingTrain)
                         {
                             text.setText("<html><br>" + text.getText().replaceAll(" ", "&nbsp;") + "</html>");
@@ -1663,19 +1605,14 @@ public class LayoutGrid
                         gbc.gridheight = 0;    
                     }
                     
-                    // DRAGGABLE, in the autonomy editor, and only a square that carries a caption
-                    // (FR-035).  Not tiles and not the user's own writing: Adam asked for station
-                    // labels only.
-                    // AND THE LABELS ARE ACTUALLY DRAWN (OB-139).
-                    //
-                    // `captioned` is the caption OBJECT, which exists whether or not the text layer is
-                    // showing - so with Text Labels unticked the pills disappear and every square that
-                    // had one went on offering a move cursor for something invisible. A drag begun
-                    // there would move a label the user cannot see.
-                    //
-                    // Not installed at all rather than installed without its cursor: the cursor IS the
-                    // diagram saying the thing can be picked up, and the two must not disagree. The
-                    // grid is rebuilt when the box is toggled, so ticking it back restores the drag.
+                    // DRAGGABLE, in the autonomy editor, and only a square that carries a caption (FR-035).  Not
+                    // tiles and not the user's own writing: Adam asked for station labels only.
+                    // AND THE LABELS ARE ACTUALLY DRAWN (OB-139).  `captioned` is the caption OBJECT, which exists
+                    // whether or not the text layer is showing; with Text Labels unticked the pills disappear, and a
+                    // move cursor on an invisible label would offer a drag of something the user cannot see.  Not
+                    // installed at all rather than installed without its cursor: the cursor IS the diagram saying
+                    // the thing can be picked up, and the two must not disagree.  The grid is rebuilt when the box
+                    // is toggled, so ticking it back restores the drag.
                     if (autonomyEditor && captioned != null && master instanceof LayoutEditor
                         && drawn)
                     {
@@ -1683,18 +1620,16 @@ public class LayoutGrid
                             new org.traincontrol.automationui.TileGraph.TileKey(
                                 layout.getName(), x, y);
 
-                        // The station this label NAMES, which is usually not the square it is on.
-                        //
-                        // A caption goes on blank space beside its platform, because a platform road
-                        // rarely has room for the text - so asking the square underneath what station
-                        // it is answers "none" for precisely the labels worth asking about. What the
-                        // caption was built from is the answer.
+                        // The station this label NAMES, which is usually not the square it is on.  A caption goes on
+                        // blank space beside its platform, because a platform road rarely has room for the text, so
+                        // asking the square underneath what station it is would answer "none" for precisely the
+                        // labels worth asking about.  What the caption was built from is the answer.
                         text.setToolTipText(captionName);
 
-                        // BOTH the label and the square under it (Adam, 2026-08-27: "have it fire on
-                        // the label or the tile, so the mouse icon is more clearly shown").  A pill is
-                        // a small target, and a move cursor that only appears over those few pixels
-                        // gives the diagram almost no way of saying a label can be picked up.
+                        // BOTH the label and the square under it (Adam: "have it fire on the label or the tile, so
+                        // the mouse icon is more clearly shown").  A pill is a small target, and a move cursor that
+                        // only appears over those few pixels gives the diagram almost no way of saying a label can
+                        // be picked up.
                         dragCaption(text, text, grid[x][y], here, (LayoutEditor) master, container);
                         dragCaption(text, grid[x][y], grid[x][y], here, (LayoutEditor) master,
                             container);
@@ -1703,22 +1638,12 @@ public class LayoutGrid
                     container.add(text, gbc);
                     container.setComponentZOrder(text, 0);
 
-                    // And back to this square's own column.
-                    //
-                    // Centring a caption moves gbc.gridx a column LEFT so the pill can start before
-                    // its square. gbc is then reused by the address label below, which pays nothing
-                    // back - so on every captioned, clickable square the sensor's number was drawn a
-                    // whole tile away from the sensor, over its neighbour's. Fifteen of them on one
-                    // page of the operator's layout.
-                    //
-                    // The bounds harness that checked FR-028 could not see this: it built its grids
-                    // with the address labels switched OFF, so it measured a diagram this cannot
-                    // happen on and reported that nothing had moved. A harness only answers about the
-                    // diagram you point it at.
-                    //
-                    // gridy is paid back for exactly the same reason, and was added with the rotation
-                    // that first moved it (2026-08-27). The bug above is what this line is: a shift
-                    // taken out for the caption and left in the constraints for whoever came next.
+                    // And back to this square's own column.  Centring a caption moves gbc.gridx a column LEFT so the
+                    // pill can start before its square, and gbc is then reused by the address label below, which
+                    // pays nothing back: on every captioned, clickable square the sensor's number would be drawn a
+                    // whole tile away from the sensor, over its neighbour's.  gridy is paid back for the same reason
+                    // (the rotation moves it up): a shift taken out for the caption must not be left in the
+                    // constraints for whoever comes next.
                     gbc.gridx = x;
                     gbc.gridy = y;
                 }
