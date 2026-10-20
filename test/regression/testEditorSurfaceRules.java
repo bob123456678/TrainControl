@@ -2428,16 +2428,12 @@ public class testEditorSurfaceRules
      * `undoAutonomyEdits`, and that is the CALLER'S job. The sidebar switch does it. The editor's own
      * X does it, under a comment reading "Both halves of the edit, or neither".
      *
-     * Closing the APPLICATION did not. `maySettleBeforeExit` was a bare delegation to
-     * `settleUnsavedWork`, which completes a Discard by itself only in autonomy mode - so answering
-     * Discard on the way out put the diagram back and left the caption on the square it had been
-     * dragged to. The two then described different railways, and the next reconciling save resolved
-     * that by pruning the entries that no longer matched anything: the precise loss the pre-edit note
-     * exists to prevent.
-     *
-     * It was unreachable until it was not. Before application exit began disposing the editor, the note
-     * was left behind on disk and the NEXT start completed the discard by accident. The fix for a real
-     * defect removed the accident that had been covering this one.
+     * Closing the APPLICATION has to do it as well.  `maySettleBeforeExit` must not be a bare delegation
+     * to `settleUnsavedWork`, which completes a Discard by itself only in autonomy mode: answering
+     * Discard on the way out would put the diagram back and leave the caption on the square it had been
+     * dragged to.  The two would then describe different railways, and the next reconciling save would
+     * resolve that by pruning the entries that no longer matched anything: the precise loss the pre-edit
+     * note exists to prevent.
      *
      * **This reads the source, and that is a weaker thing than running it.** `settleUnsavedWork` puts a
      * modal dialog on the screen and there is no seam to answer it from here; nothing in the suite
@@ -2471,21 +2467,15 @@ public class testEditorSurfaceRules
             "the setup is put back in both modes now. The autonomy editor discards its own edits "
             + "already, so this undoes them twice - and after a Save it would undo the save");
 
-        // And only when the user actually said Discard.
-        //
-        // The first version undid whenever settleUnsavedWork returned true, which it also does when
-        // there was nothing to settle and nothing was asked - so closing the application with a clean
-        // editor open rewound the setup to the editor-open snapshot, losing whatever autonomy had
-        // done since. A reviewer found it by asking what the method does when `unsaved` is false.
+        // And only when the user actually said Discard: settleUnsavedWork also returns true when there was
+        // nothing to settle and nothing was asked, and undoing then would rewind the setup to the
+        // editor-open snapshot, losing whatever autonomy had done since.
         assertTrue(completes.contains("settledByDiscarding"),
             "the exit path undoes on \"nothing needed settling\" as well as on Discard, which "
             + "rewinds a setup nobody chose to discard");
 
-        // AFTER everything that can refuse the exit.
-        //
-        // It was called from maySettleBeforeExit, the first thing the exit does - so the rewind
-        // happened, the trains dialog then said no, and the application carried on running with the
-        // undo already spent.
+        // AFTER everything that can refuse the exit: the trains dialog may still say no, and the application
+        // would carry on running with the undo already spent.
         // THE EXIT'S FIRST QUESTION MOVED INTO A METHOD OF ITS OWN (VB2-B1, SVT-B1): `WindowClosed` ends in
         // System.exit and could not be tested, so what it does before it saves anything is
         // `everyOpenWindowMaySettle`.  The ORDER is still asked of `WindowClosed` - the settle question has
@@ -2507,8 +2497,7 @@ public class testEditorSurfaceRules
             "the exit no longer asks the open route editor whether it may settle, so closing the application"
             + " throws away unsaved typing without asking (UIX-B1)");
 
-        // ASKED ONCE (VB2-B1, VC2-B1).  The layout editor's own call stood in `WindowClosed` as well when the
-        // route editor's was added, so a dirty diagram editor was asked twice and Discard-then-Save wrote the
+        // ASKED ONCE (VB2-B1, VC2-B1): a dirty diagram editor asked twice lets Discard-then-Save write the
         // discarded work to disk.  `core.testCancelUndoesAutonomyEdits.testTheExitAsksOneQuestionPerEditor`
         // counts the dialogs; this counts the calls, because the two fail differently.
         int settleCalls = 0;
@@ -2527,11 +2516,9 @@ public class testEditorSurfaceRules
         int settles = exit.indexOf("maySettleBeforeExit()");
         int completes2 = exit.indexOf("completeExitDiscard()");
 
-        // Proved present before they are compared - indexOf answers -1 for an absent term, which is
-        // less than every real index, so deleting the settle call outright (a worse fault than
-        // reordering it - the exit stops asking about unsaved work at all) would otherwise still leave
-        // a present completeExitDiscard() reading as "after" and this passing on the strength of a
-        // call that is no longer there (TST-B7).
+        // Proved present before they are compared (TST-B7): indexOf answers -1 for an absent term, which is
+        // less than every real index, so deleting the settle call outright would otherwise leave a present
+        // completeExitDiscard() reading as "after" and this passing.
         assertTrue(settles >= 0,
             "maySettleBeforeExit() is no longer called from WindowClosed - the exit stopped asking "
             + "about unsaved work at all, which is worse than what this test was written for");
@@ -2555,21 +2542,15 @@ public class testEditorSurfaceRules
      * group, the armed tool - and the picking MODE, which stayed on afterwards with its button still
      * pressed. Letting go of the squares but not of the mode is the half of Escape nobody asks for."
      *
-     * The autonomy panel had none of it, and the button half matters more here than in the track
-     * editor. A tool left LOOKING armed while the panel thinks nothing is armed sends the next click to
-     * `cycle()`, which changes a square's direction - so a read-only inspection tool that appeared to
-     * be armed would silently edit the railway. That exact fault has been fixed here once already, when
-     * a second tool button arrived without a button group.
+     * The button half matters more here than in the track editor.  A tool left LOOKING armed while the
+     * panel thinks nothing is armed sends the next click to `cycle()`, which changes a square's direction,
+     * so a read-only inspection tool that appeared to be armed would silently edit the railway.
      *
-     * **WHERE ESCAPE IS BOUND MOVED, and this test moved with it (FR-065).**  It used to pin
-     * `installEscape` - a `WHEN_IN_FOCUSED_WINDOW` binding on this panel - including an assertion that
-     * it was WHEN_IN_FOCUSED_WINDOW, on the reasoning that the click which armed the tool leaves focus
-     * on the diagram.  The 2026-09-09 review's B5 measured what that actually meant: bindings of that
-     * kind are never consulted in this window at all, because `LayoutEditor` makes every control
-     * `setFocusable(false)` so the FRAME keeps the keyboard, and a top-level frame has no parent chain
-     * for the focus manager to walk.  Escape lives in `LayoutEditor.escapePressed` now, reached from
-     * the frame's own `KeyListener`, and `testEscapeClosesTheEditor` presses the key and looks at the
-     * window.
+     * **Escape is bound in `LayoutEditor.escapePressed` (FR-065)**, reached from the frame's own
+     * `KeyListener`: `LayoutEditor` makes every control `setFocusable(false)` so the FRAME keeps the
+     * keyboard, and a top-level frame has no parent chain for the focus manager to walk, so a
+     * `WHEN_IN_FOCUSED_WINDOW` binding on this panel is never consulted.  `testEscapeClosesTheEditor`
+     * presses the key and looks at the window.
      *
      * So what is left here is the half that is still a property of THIS file: that putting the tools
      * down puts all of them down, and brings their buttons up.  Read rather than run, because the
@@ -2620,14 +2601,10 @@ public class testEditorSurfaceRules
      * The grid actually asks the caption rules, and asks them the right things.
      *
      * Three rules were lifted out of the constructor so they could be tested without building a window
-     * - `captionOffset`, `runsNorthSouth` and `onPill` - and all three got a test of the rule. None got
-     * a test that the grid still calls it, which is the half that has cost this project four defects,
-     * three of them in the last week.
-     *
-     * The javadoc on `hidesStationCaptions` states the price plainly: "what that leaves uncovered is
-     * whether the caller passes the right two booleans, which is the usual price of pulling a rule out
-     * of its call site". That rule has had a call-site check since the day it was written. Its three
-     * neighbours did not, and there is no reason for the difference beyond nobody having noticed.
+     * - `captionOffset`, `runsNorthSouth` and `onPill` - and each has a test of the rule.  This tests that
+     * the grid still calls it with the right arguments, which is the half that costs.  The javadoc on
+     * `hidesStationCaptions` states the price: "what that leaves uncovered is whether the caller passes the
+     * right two booleans, which is the usual price of pulling a rule out of its call site".
      *
      * Read rather than run, for the reason the one above it is: the constructor needs a diagram, a
      * window and a UI to reach, and what can silently break here is the call being dropped or handed
@@ -2646,19 +2623,15 @@ public class testEditorSurfaceRules
             "nothing asks captionOffset where a caption goes, so the rule is computed by something "
             + "else - or by nothing, and every caption sits wherever the layout drops it");
 
-        // The ORIENTATION, which is the argument that can be wrong without anything failing.
-        //
-        // It moved on 2026-08-27, from captionOffset to setRotated: rotating the north-south captions
-        // made the offset the same for both, so the orientation now decides which WAY a caption is
-        // turned rather than how far down it sits. Still asked of THIS square, and still the thing
-        // that can be a constant without anything falling over.
+        // The ORIENTATION, the argument that can be wrong without anything failing: it decides which WAY a
+        // caption is turned (setRotated) rather than how far down it sits, is asked of THIS square, and
+        // can be a constant without anything falling over.
         assertTrue(grid.contains("runsNorthSouth(c)"),
             "the grid no longer asks which way the rails run on THIS square. Pass a constant and every "
             + "caption is turned the same way: half of them read upwards along track that runs across");
 
-        // The ANSWER and not just the call.  `setRotated(` alone would be satisfied by
-        // `setRotated(false)`, which is the whole defect with the guard still in place - and it is
-        // the mistake this morning's onPill assertion made, so it is not a hypothetical one.
+        // The ANSWER and not just the call.  `setRotated(` alone would be satisfied by `setRotated(false)`,
+        // which is the whole defect with the guard still in place.
         assertTrue(grid.contains("setRotated(onEnd)"),
             "the caption is not told what runsNorthSouth answered - pass a constant and either every "
             + "caption stands on end or none does, and half of them lie across the rail they name, "
@@ -2672,22 +2645,15 @@ public class testEditorSurfaceRules
         //
         // A caption borrows room to centre itself - a column to the left when flat, a row above when
         // stood on end - by moving gbc, and gbc is then REUSED by the address label for the same
-        // square. Leaving the shift in draws that label a whole tile away, over its neighbour's. That
-        // is not hypothetical: it happened with gridx, fifteen times on one page of Adam's layout, and
-        // the bounds harness could not see it because it built its grids with addresses switched off.
-        //
-        // gridy joined it on 2026-08-27 with the rotation, and the mutation proved the point - taking
-        // the payback out again left the whole suite green.
+        // square. Leaving the shift in draws that label a whole tile away, over its neighbour's.  The
+        // bounds harness could not see it: it builds its grids with addresses switched off.
         //
         // Read rather than run, and that is a real limitation: the behavioural version needs a square
         // that carries BOTH an autonomy caption and an address label, which means standing up an
-        // autonomy graph. What this catches is the payback being dropped, which is how the bug
-        // actually arrived both times.
-        // Asserted by POSITION, not by counting.
+        // autonomy graph. What this catches is the payback being dropped.
         //
-        // Counting was the first attempt and it was worthless: both statements appear three times in
-        // this file, so dropping one left two and the check passed. Both mutations survived it. The
-        // property was never "it appears often enough" - it is that the shift is undone in the window
+        // Asserted by POSITION, not by counting: both statements appear three times in this file, so
+        // a count survives dropping one.  The property is that the shift is undone in the window
         // between adding the caption and the next thing that reads gbc.
         int added = grid.indexOf("container.add(text, gbc);");
         int reused = grid.indexOf("getShowAddress()");
@@ -2713,11 +2679,8 @@ public class testEditorSurfaceRules
             "captionOffset is no longer given the caption's line height, so where a caption sits stops "
             + "depending on how tall its text actually is");
 
-        // onPill and not readableOn, at BOTH places that colour a caption.
-        //
-        // The first version of this asserted that onPill appears somewhere in the file, and there are
-        // two call sites - so swapping one of them back to readableOn left it green. That is the same
-        // looseness this whole test exists to remove, committed inside the test removing it.
+        // onPill and not readableOn, at BOTH places that colour a caption: asserting only that onPill appears
+        // somewhere would let one of the two call sites go back to readableOn.
         int asks = 0;
 
         for (int at = grid.indexOf("StationCaption.onPill("); at >= 0;
@@ -2777,7 +2740,7 @@ public class testEditorSurfaceRules
     /**
      * Hovering a station label outlines its square, once.
      *
-     * Adam, 2026-08-27: "make sure hovering the label triggers the cell hover effect (blue outline)."
+     * Adam: "make sure hovering the label triggers the cell hover effect (blue outline)."
      *
      * A caption is a component stacked on top of its square, so moving the pointer onto the name sends
      * the square a mouseExited and the outline goes out - on the larger and more obvious of the two
@@ -2803,12 +2766,8 @@ public class testEditorSurfaceRules
             + "outline goes out as soon as the pointer moves onto the name - which is the bigger of "
             + "the two things to point at");
 
-        // EACH handler, asked separately.
-        //
-        // Counting them, and looking for the guard anywhere, was the first version and a mutation
-        // walked through it: taking the guard off mouseEntered alone left it on mouseMoved, so the
-        // name was still in the file and the count was still right. That is the third assertion this
-        // week satisfied by one of two sites, so each one is now asked about itself.
+        // EACH handler, asked separately: counting them, or looking for the guard anywhere, passes when the
+        // guard is taken off mouseEntered alone and left on mouseMoved.
         for (String handler : new String[] { "mouseEntered", "mouseMoved" })
         {
             // Missing, `SourceOf.declarationIn` fails: the drag no longer handles it
@@ -2829,7 +2788,7 @@ public class testEditorSurfaceRules
     /**
      * A right-click on a station label opens the square's menu.
      *
-     * Adam, 2026-08-27: "right-clicks on the label don't propagate to the tile underneath it."
+     * Adam: "right-clicks on the label don't propagate to the tile underneath it."
      *
      * A caption covers the middle of its square and takes every click landing there, so the autonomy
      * menu - which is how everything about a square is set - did not open on the part of the diagram
@@ -2870,11 +2829,11 @@ public class testEditorSurfaceRules
     /**
      * The autonomy editor says which station the pointer is on.
      *
-     * Adam, 2026-08-27: "on hover of a tile in the autonomy editor, show the station name as the
+     * Adam: "on hover of a tile in the autonomy editor, show the station name as the
      * tooltip."
      *
-     * This editor has had no tooltip at all, and the code says why: returning early once "took the
-     * whole gesture away, tooltip and outline together", and OB-091 put back only the outline.
+     * This editor's hover handler once returned early, which "took the whole gesture away, tooltip and
+     * outline together"; OB-091 put back only the outline, so the tooltip is the part to guard.
      *
      * The name is asked of the SESSION and not of any caption drawn nearby, which is the assertion
      * worth having. A caption is a label somebody chose to place on some square; the square under the
@@ -2905,11 +2864,8 @@ public class testEditorSurfaceRules
         String grid = codeOf("public LayoutGrid(LayoutDiagram layout, int size, JPanel parent, Container master, "
             + "boolean popup, TrainControlUI ui)");
 
-        // Scoped to the EDITOR's branch by position.
-        //
-        // `contains` alone passed with the line deleted, because the running diagram sets the same
-        // tooltip in its own branch and the name was still somewhere in the file. Fourth time this
-        // week that a check has been satisfied by the site it was not about.
+        // Scoped to the EDITOR's branch by position: `contains` alone passes with the line deleted, because
+        // the running diagram sets the same tooltip in its own branch.
         int editorBranch = grid.indexOf("autonomyEditor && captioned != null");
         int draggable = grid.indexOf("dragCaption(text, text,");
 
@@ -2930,7 +2886,7 @@ public class testEditorSurfaceRules
     /**
      * Plus and minus change pages in BOTH editors, through the switch that already exists (FR-036).
      *
-     * Adam, 2026-08-27: "make the +/- keys scroll through pages in the layout/autonomy editor.  just
+     * Adam: "make the +/- keys scroll through pages in the layout/autonomy editor.  just
      * have them call existing components to reuse the same guards/warnings."
      *
      * Two things can be wrong here without anything failing to compile, and both have happened before
@@ -2963,8 +2919,7 @@ public class testEditorSurfaceRules
             "the page keys are gone, so + and - no longer move between pages");
 
         // ABOVE the guard, identified by the guard's OWN sentence rather than by a method name that
-        // appears a dozen times in this file - which is how the first version of this check fooled
-        // itself into passing.
+        // appears a dozen times in this file.
         int guard = editor.indexOf(
             "// Every shortcut below places, cuts, rotates or retextures a tile.");
 
@@ -2984,14 +2939,8 @@ public class testEditorSurfaceRules
             + "unsaved-work question and the latch that stops two switches overlapping - which is "
             + "precisely what Adam asked them to reuse");
 
-        // THE LATCH THAT SPANS THE SWITCH, not merely the word.
-        //
-        // This asserted `contains("switching")` and passed, while the property it claimed was false:
-        // `switching` is assigned only inside syncSidebar, synchronously, so it is never true when a
-        // second switch could start. A validator found it. The token was present and the sentence
-        // above it was wrong - which is the most expensive kind of green there is, because it reads
-        // as coverage.
-        //
+        // THE LATCH THAT SPANS THE SWITCH, not merely the word: `switching` is assigned only inside
+        // syncSidebar, synchronously, so it is never true when a second switch could start.
         // `changingPage` is the one that answers the question: set when a switch is committed, cleared
         // in arriveAt where it lands, so it is true across the whole gap leaveFor posts its work into.
         assertTrue(step.contains("changingPage"),
@@ -3005,11 +2954,8 @@ public class testEditorSurfaceRules
             "nothing raises the latch when a switch is committed, so it can never be true and every "
             + "door that asks it is asking a constant");
 
-        // BOTH PRESENT, then ordered.
-        //
-        // `indexOf` answers -1 for something absent, and -1 is less than every real index - so
-        // deleting the unsaved-work question outright made this pass, which is the very mutation the
-        // message below names (reviewer, 2026-08-28).
+        // BOTH PRESENT, then ordered.  `indexOf` answers -1 for something absent, and -1 is less than
+        // every real index, so deleting the unsaved-work question outright would make the order check pass.
         int asks = leave.indexOf("settleUnsavedWork()");
         int raises = leave.indexOf("changingPage = true");
 
@@ -3034,11 +2980,11 @@ public class testEditorSurfaceRules
     /**
      * The excluded-page label and the banner's Fix Setup bring an open editor forward, as the Edit item does (GUI-C8).
      *
-     * Adam, 2026-09-19, on the label: *"just make it attempt to click the edit button if it's enabled"*.  With an
-     * editor already open the Edit item IS enabled, and `openLayoutEditor` brings that window forward (OB-058).  The
-     * label and Fix Setup asked `refuseWhileEditorOpen` first, which in exactly that state shows "Close the editor
-     * first" - telling the operator to close the window the Edit item would have handed them.  Loading is still
-     * refused while an editor is open, which is what that guard is for.
+     * Adam, on the label: *"just make it attempt to click the edit button if it's enabled"*.  With an
+     * editor already open the Edit item IS enabled, and `openLayoutEditor` brings that window forward
+     * (OB-058).  The label and Fix Setup must not ask `refuseWhileEditorOpen` first, which in exactly that
+     * state shows "Close the editor first" - telling the operator to close the window the Edit item would
+     * have handed them.  Loading is still refused while an editor is open, which is what that guard is for.
      *
      * Read from the source: an open editor in a test would need the whole window, and the dialog this is about is
      * modal.
@@ -3081,10 +3027,10 @@ public class testEditorSurfaceRules
      * The Facing menu ticks nothing where nothing says which way the train faces (GUI3-C4) - except on a square that
      * holds one facing, where every copy faces that way and the facing IS known (DCN4-C3).
      *
-     * It ticked the first facing, as "the one a placement with no recorded facing actually gets" - which stopped being
-     * so when the build began standing such a train on a copy it can start from (GUI2-B1): at BottomMainA that faces the
-     * other way, so the menu's tick contradicted the train.  With nothing recorded and nothing on the railway to ask,
-     * nothing is known, and a tick would say otherwise.
+     * The first facing is not ticked as "the one a placement with no recorded facing actually gets": the
+     * build stands such a train on a copy it can start from (GUI2-B1), which at BottomMainA faces the other
+     * way, so the tick would contradict the train.  With nothing recorded and nothing on the railway to
+     * ask, nothing is known, and a tick would say otherwise.
      *
      * MUTATION: tick the first facing again and this fails.
      *
@@ -3124,14 +3070,10 @@ public class testEditorSurfaceRules
     /**
      * "Is an editor open" is asked of the EDITOR, not of the button that opens one.
      *
-     * This was `!editLayoutButton.isEnabled()`, which was a true answer for as long as the button
-     * being grey had exactly one cause. OB-126 gave it a second - there is no local layout to edit -
-     * and six callers went on reading it as "an editor is open". Switching to a Central Station layout
-     * therefore greyed every item in the Layout menu, including the ones that switch back, and did the
-     * same to the Autonomy menu. Both escape hatches were inside the dead menus: restart required,
-     * from a change meant to stop the application offering an editor it could not open.
-     *
-     * A reviewer found it within the hour. Nothing tested the predicate, which is how a proxy for a
+     * `!editLayoutButton.isEnabled()` is a true answer only while the button being grey has exactly one
+     * cause.  OB-126 gave it a second - there is no local layout to edit - so a caller reading it as "an
+     * editor is open" would grey every item in the Layout and Autonomy menus on a Central Station layout,
+     * including the ones that switch back.  Nothing else tests the predicate, which is how a proxy for a
      * fact gets a second job and nobody notices.
      *
      * MUTATION: deriving it from the button again fails this.
@@ -3162,10 +3104,9 @@ public class testEditorSurfaceRules
      * Every caption on the diagram is shown or hidden by the same rule.
      *
      * FR-023 added a second reason to hide a station's name - it is one autonomy will never choose -
-     * beside the one that already existed, the overlay switch. Adam reported the new setting having no
-     * effect, and the reason was a THIRD place deciding: `showStaticAutonomyLayer` set every label to
-     * its own `show` parameter wholesale, ran whenever the overlay was drawn, and overwrote the other
-     * two without asking anything about the station.
+     * beside the overlay switch.  A THIRD place deciding broke it: `showStaticAutonomyLayer` set every
+     * label to its own `show` parameter wholesale and overwrote the other two without asking anything
+     * about the station.
      *
      * That is this codebase's most repeated defect - one decision written in more than one place -
      * and it is exactly what the DR findings are about. So this insists there is one rule and that
@@ -3204,14 +3145,10 @@ public class testEditorSurfaceRules
             + "three.  A new one is not wrong in itself - but it has to ask the same rule, and this "
             + "test is here because the third one did not: " + deciders);
 
-        // AND WHERE `visible` COMES FROM, which is the hole the disjunct above leaves.
-        //
-        // One of the three deciders - refreshCaptionVisibility, the path the toggle actually uses -
-        // passes a local called `visible` rather than naming the rule on the same line. That is
-        // perfectly good code, and it is why the disjunct exists; but it meant the line assigning that
-        // local could be changed to a constant with nothing failing, restoring FR-023's reported
-        // symptom on the one path a user reaches. Found by a reviewer; the first repair was to demand
-        // the rule on the setVisible line itself, which failed against correct code.
+        // AND WHERE `visible` COMES FROM, the hole the disjunct above leaves: refreshCaptionVisibility, the
+        // path the toggle actually uses, passes a local called `visible` rather than naming the rule on the
+        // same line, so the line assigning that local could be changed to a constant with nothing failing,
+        // restoring FR-023's reported symptom on the one path a user reaches.
         int assignments = 0;
 
         for (String line : source.split("\n"))
@@ -3228,10 +3165,8 @@ public class testEditorSurfaceRules
                 + "computed from IS the rule for that path");
         }
 
-        // A loop over nothing asserts nothing.
-        //
-        // Renaming that local, or writing `final boolean visible =`, made the block above a no-op that
-        // passed (reviewer, 2026-08-28).
+        // A loop over nothing asserts nothing: renaming that local, or writing `final boolean visible =`,
+        // would make the block above a no-op that passes.
         assertTrue(assignments > 0,
             "no line assigns a `boolean visible` any more, so the check above ran over nothing and "
             + "proved nothing - find what the caption deciders are handed now and check that instead");
