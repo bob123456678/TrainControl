@@ -256,7 +256,9 @@ public class testTheTimetableAnswersItsMenu
     /**
      * Clear Timetable, answered Yes, empties the timetable, the tab, and the timetable saved in the layout's setup.
      *
-     * MUTATION: in `TimetableTab.clearTimetable`, take out `keeping.clearTheTimetable();`.
+     * MUTATION: in `TimetableTab.clearTimetable`, `keeping.clearTheTimetable();` to `if (false) keeping.clearTheTimetable();` (taking
+     * the call out altogether does not compile: the `catch` after it names an exception nothing then throws).  The saved-setup assertion
+     * fails; verified red on 2026-10-19.
      *
      * @throws Exception from the event thread
      */

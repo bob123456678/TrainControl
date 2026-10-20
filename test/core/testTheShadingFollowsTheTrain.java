@@ -52,7 +52,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * A test that asserts only on `tilesCoveredByStandingTrains` therefore passes identically with the
  * defect present and with it repaired, however faithfully the train runs.  So this one goes all the way
  * to the ICONS: real `LayoutLabel`s, registered in the real `DiagramTileRegistry`, redrawn by the real
- * `TrainControlUI.refreshCoveredTrack`, and asked afterwards which image they are actually showing.
+ * `CoveredTrackView` (reached through `TrainControlUI.refreshCoveredTrack`), and asked afterwards which image they are actually showing.
  *
  * **How far that is, exactly.**  Every tile is PAINTED and looked at: since MT-309 the mark is an
  * orange line drawn along the road the train is on rather than a greyed copy of the icon, so "is this
@@ -61,9 +61,10 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * picture changing - the recompute, the difference, the registry lookup, the event-thread hop, the
  * paint - is production code being run.  Confirmed by mutation on
  * 2026-09-08: with `repaintTheWashWhereItChanged(was, coveredTrack)` deleted from `refreshCoveredTrack`
- * this class stops at the icon assertion in stage 2 - having passed every model-level assertion above
+ * (the call now lives in `CoveredTrackView.workOutCoveredTrack`) this class stops at the icon assertion in stage 2 - having passed every model-level assertion above
  * it, including the one saying those same squares are no longer covered - which is OB-180 restored and
- * is the gap between the two that no other test in this suite closes.
+ * is the gap between the two that no other test in this suite closes.  As of 2026-10-19 that mutation leaves the class green
+ * (FR-136 log, issue 19).
  *
  * **The fixture is Adam's own railway, in a sandbox copy (OB-111), and never the folder itself.**  A
  * hand-built `Layout` would have been easier to make deterministic, and it was rejected: the squares
@@ -247,8 +248,8 @@ public class testTheShadingFollowsTheTrain
      * circuit driven again, with nothing but the running to tell them apart.
      *
      * MUTATIONS that fail it: deleting `repaintTheWashWhereItChanged(was, coveredTrack)` from
-     * `TrainControlUI.refreshCoveredTrack` fails stage 2's icon assertion while every model-level
-     * assertion here still passes - which is the defect exactly.  Making `repaintTheWashWhereItChanged`
+     * `CoveredTrackView.workOutCoveredTrack` fails stage 2's icon assertion while every model-level
+     * assertion here still passes - which is the defect exactly. As of 2026-10-19 this mutation leaves the claim green (FR-136 log, issue 19).  Making `repaintTheWashWhereItChanged`
      * take the intersection rather than the symmetric difference fails stage 2 as well.  Making
      * `Layout.edgesCoveredByStandingTrains` keep the departed train's edges fails stage 2's model
      * assertion, and leaving `arrivedFrom` set on the square a train drove away from fails stage 4.

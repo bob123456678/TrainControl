@@ -338,6 +338,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * How many pages THIS installation has: read once at startup, written whenever a page is added or deleted.  Grown, never
      * truncated, when a saved state holds more pages than this says - see setViewListener.
+     *
+     * Package-private for `LocomotiveActions.findSimilarLocs`, which reads it on the event thread to list the pages; a plain field, no lock.
      */
     int numLocMappings = DEFAULT_LOC_MAPPINGS;
     
@@ -404,6 +406,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     // Graph viewer instance
     
     // The active locomotive
+    // Package-private for `LocomotiveActions.deleteLoc`, which clears it on the event thread; a plain field, no lock
     Locomotive activeLoc;
     
     // The active locomotive button
@@ -420,12 +423,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private final HashMap<javax.swing.JButton, JTextField> labelMapping;
     private final HashMap<javax.swing.JButton, javax.swing.JSlider> sliderMapping;
     private final HashMap<javax.swing.JSlider, javax.swing.JButton> rSliderMapping;
+    // Package-private for `LocomotiveActions.deleteLoc`, which walks every page on the event thread to unmap a deleted locomotive; no lock
     final List<HashMap<javax.swing.JButton, Locomotive>> locMapping;
     private final HashMap<javax.swing.JToggleButton, Integer> functionMapping;
     private final HashMap<Integer, javax.swing.JToggleButton> rFunctionMapping;
     private final HashMap<Integer, javax.swing.JToggleButton> switchMapping;
     
     // Custom labels for mapping pages
+    // Package-private for `LocomotiveActions.findSimilarLocs`, which reads it on the event thread to name the pages; no lock
     Map<Integer, String> pageNames;
 
     private LayoutGrid trainGrid;
@@ -5800,6 +5805,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * autonomy idle.  The route itself no longer breaks when its list is rewritten (it runs the list it began with), so this is
      * what prevents the operator taking a locomotive out from under a road being set for it.
      *
+     * Package-private for `LocomotiveActions`' edit and delete doors; event thread only, because it shows a dialog.
+     *
      * @param source what to hang the dialog off
      * @param name the locomotive being edited or deleted
      * @return true when the caller must not proceed
@@ -7900,6 +7907,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * @param was the previous covered set
      * @param now the covered set just computed
      * @param wasBlocked the previous blocked set
+     * Package-private for `CoveredTrackView.workOutCoveredTrack`, its one caller, which runs on the `CoveredTrackRenderer` worker, not the
+     * event thread.  It takes no lock of its own and asks nothing of the railway: `LayoutLabel.refreshCoveredMark` posts each redraw.
+     *
      * @param nowBlocked the blocked set just computed
      */
     void repaintTheWashWhereItChanged(
@@ -10773,6 +10783,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.repaintMappings();
     }
     
+    /**
+     * Repaints the locomotive keyboard.  Package-private for `LocomotiveActions.deleteLoc`, on the event thread.  Synchronized on the window,
+     * so no caller may hold the railway's monitor (the window-synchronized methods take it while holding the window's: `Layout.getEdges`
+     * has the deadlock); it only queues the work, so it returns at once.
+     */
     synchronized void repaintMappings()
     {
         repaintMappings(null, false);
@@ -11505,8 +11520,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * with nothing reading it and they got RANDOM after the upgrade, silently.  Moved once and the old key deleted, so it cannot
      * come back and overrule a later choice; only when the configuration does not already carry one.
      *
-     * Package-private for `AutonomySettingsTab.loadAutoLayoutSettings`, its one caller: a refresh on the event thread, never a
-     * click, which is what the once-only flag and the field read below rely on.
+     * Package-private for `AutonomySettingsTab.loadAutoLayoutSettings`, its one caller, which runs on the event thread.  The first
+     * call is normally the configuration load (`setAutonomyDependentTabs`), which carries the preference across and sets the once-only
+     * flag; later calls, from the settings handlers' refusal paths (each puts its control back by calling `loadAutoLayoutSettings`),
+     * find it already done.  That is what the once-only flag and the field read below rely on.
      *
      * @param live the loaded layout, or null when there is none yet
      */
@@ -12600,6 +12617,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return this.locMapping.get(Math.floorMod(this.locMappingNumber - 2, this.numLocMappings));
     }
         
+    /**
+     * The mapping page on screen.  Package-private for `LocomotiveActions.findSimilarLocs`, which reads it on the event thread; no lock.
+     */
     Map<JButton, Locomotive> currentLocMapping()
     {
         return this.locMapping.get(this.locMappingNumber - 1);
@@ -19618,6 +19638,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         changeLocAddress(l, null);
     }
     
+    /**
+     * Delegates to `LocomotiveActions.changeLocAddress`.
+     */
     public void changeLocAddress(Locomotive l, MouseEvent evt)
     {
         this.locomotiveActions.changeLocAddress(l, evt);
@@ -20042,6 +20065,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         deleteLoc(value, null);
     }
     
+    /**
+     * Delegates to `LocomotiveActions.deleteLoc`.
+     */
     public void deleteLoc(String value, MouseEvent evt)
     {
         this.locomotiveActions.deleteLoc(value, evt);
@@ -20520,6 +20546,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }//GEN-LAST:event_locIconMouseReleased
 
+    /**
+     * Delegates to `TimetableTab.clearTimetable`.
+     */
     public void clearTimetable()
     {
         this.timetableTab.clearTimetable();
@@ -24852,11 +24881,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return Accessory.stringToAccessoryDecoderType(this.MM2.getText());
     }
     
+    /**
+     * Delegates to `TimetableTab.deleteTimetableEntry`.
+     */
     public void deleteTimetableEntry(MouseEvent evt)
     {
         this.timetableTab.deleteTimetableEntry(evt);
     }
     
+    /**
+     * Delegates to `TimetableTab.updateTimetableDelay`.
+     */
     public void updateTimetableDelay(MouseEvent evt)
     {
         this.timetableTab.updateTimetableDelay(evt);
@@ -25822,6 +25857,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * session the emitted name is the only name there is, and it is returned unchanged.
      *
      * @param point a Point of the running configuration, or null
+     * Package-private for `TimetableTab.timetableStop`, which calls it from the table redraw's invokeLater (the event thread) and from the
+     * Start Timetable refusal dialog.  It reads the session field and takes no lock of its own.
+     *
      * @return the station's own name
      */
     String stationLabel(org.traincontrol.automation.Point point)
@@ -25844,6 +25882,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * operator is setting autonomy up.  Called from the constructor as well, which is why it is separate: repaintTimetable's first act is
      * to ask the running Layout for a snapshot, and at construction there is none.  Idempotent, on the column count, because both callers
      * may run in either order.
+     *
+     * Package-private for `TimetableTab.repaintTimetable`, which calls it from its invokeLater, so on the event thread; it touches the table.
      */
     void prepareTimetableColumns()
     {
@@ -25928,6 +25968,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * sometimes when it is not; the redraw is the cheap half and the wrong direction to be wrong in.
      *
      * @param timeTable the snapshot about to be drawn
+     * Package-private for `TimetableTab.repaintTimetable`, which calls it from its invokeLater, so on the event thread.
+     *
      * @return a key that changes when the drawing would
      */
     String timetableSignature(List<TimetablePath> timeTable)
@@ -26011,6 +26053,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     /**
      * Repaints the auto locomotive list paths only
+     *
+     * Package-private for `TimetableTab`, which calls it from the event thread; any thread may, the drawing is posted to the event thread.
+     * Synchronized on the window, so no caller may hold the railway's monitor (see `repaintMappings`).
      */
     synchronized void repaintAutoLocListLite()
     { 
@@ -26076,6 +26121,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     /**
      * Fully repaints the auto locomotive list based on auto layout state
+     *
+     * Package-private for `LocomotiveActions.deleteLoc`, which calls it from the event thread; any thread may, the drawing is posted to the
+     * event thread.  Synchronized on the window, so no caller may hold the railway's monitor (see `repaintMappings`).
      */
     synchronized void repaintAutoLocListFull()
     { 

@@ -48,8 +48,8 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * | AFTER | the train moved away, and that square is EXACTLY the bare image again |
  *
  * MUTATION: removing the `repaintTheWashWhereItChanged` call from
- * `TrainControlUI.refreshCoveredTrack` leaves the AFTER image dark - the train has gone and the track
- * behind where it stood is still greyed - which is the defect, seen.
+ * `CoveredTrackView.workOutCoveredTrack` leaves the AFTER image dark - the train has gone and the track
+ * behind where it stood is still greyed - which is the defect, seen. As of 2026-10-19 this mutation leaves the claim green (FR-136 log, issue 19).
  *
  * @author Adam
  */

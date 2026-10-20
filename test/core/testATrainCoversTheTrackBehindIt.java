@@ -970,7 +970,7 @@ public class testATrainCoversTheTrackBehindIt
      *
      * The wash is decided when a tile is DRAWN, and tiles are drawn when their own accessory, feedback
      * or route changes - so moving a train, which changes which track its tail lies across and nothing
-     * else, updated the set and repainted nothing. `TrainControlUI.refreshCoveredTrack` now redraws the
+     * else, updated the set and repainted nothing. `CoveredTrackView.workOutCoveredTrack` now redraws the
      * squares whose state changed.
      *
      * **What this test is for.** The redraw itself needs a window; what does not, and what the fix
