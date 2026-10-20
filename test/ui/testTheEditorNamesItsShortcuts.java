@@ -172,7 +172,9 @@ public class testTheEditorNamesItsShortcuts
 
             if (takesAClick) asked.add(c);
 
-            if (takesAClick && c.isFocusable())
+            // A control that never asks for the keyboard on a click (the notices' X, which Tab reaches) keeps the window's
+            if (takesAClick && c.isFocusable()
+                && !(c instanceof javax.swing.JComponent && !((javax.swing.JComponent) c).isRequestFocusEnabled()))
             {
                 out.add(c.getClass().getSimpleName() + (c instanceof javax.swing.AbstractButton
                     ? " '" + ((javax.swing.AbstractButton) c).getText() + "'" : ""));

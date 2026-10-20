@@ -39,8 +39,8 @@ import org.traincontrol.gui.AutonomyBanner;
  * back at the top, have nothing to scroll and do nothing.  Where the slice lands depends on how much
  * taller the pane is than the strip.
  *
- * **MEASURED IN THE MOUNTING THE EDITOR USES**, not in a bare panel: `LayoutEditor` puts this banner,
- * keeping its height, under the diagram's scroll pane in a `BorderLayout`, which gives it the width and its own
+ * **MEASURED IN THE MOUNTING THE EDITOR USES**, not in a bare panel: `LayoutEditor` floats this banner over the
+ * bottom of the diagram's viewport (`AutonomyBanner.floatOver`), which gives it the viewport's width and its own
  * preferred height.  That height is the number this defect turns on, so a test that set it itself would be choosing
  * the answer.
  *
@@ -216,8 +216,8 @@ public class testTheWhyAnswerIsOnScreen
     /**
      * A banner in the mounting `LayoutEditor` gives it, saying something, laid out.
      *
-     * Kept at its height and put under a scroll pane in a `BorderLayout`, as the editor does (OB-366): the layout
-     * gives it the width and its own `getPreferredSize().height`, and that height is the number this defect turns on.
+     * Floated over a scroll pane by `floatOver`, as the editor does (OB-366): the layout gives it the viewport's width
+     * and its own `getPreferredSize().height`, and that height is the number this defect turns on.
      *
      * LAID OUT EMPTY FIRST, then given the message, then laid out again.  That is the order the editor
      * meets: the banner has been on screen since the window opened, so the message arrives at a strip
@@ -233,12 +233,12 @@ public class testTheWhyAnswerIsOnScreen
 
         SwingUtilities.invokeAndWait(() ->
         {
-            AutonomyBanner banner = new AutonomyBanner(true);
+            AutonomyBanner banner = new AutonomyBanner();
 
             javax.swing.JPanel around = new javax.swing.JPanel(new java.awt.BorderLayout());
 
-            around.add(new javax.swing.JScrollPane(new javax.swing.JPanel()), java.awt.BorderLayout.CENTER);
-            around.add(banner, java.awt.BorderLayout.SOUTH);
+            around.add(banner.floatOver(new javax.swing.JScrollPane(new javax.swing.JPanel())),
+                java.awt.BorderLayout.CENTER);
 
             javax.swing.JFrame frame = new javax.swing.JFrame();
 

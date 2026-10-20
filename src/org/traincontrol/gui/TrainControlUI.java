@@ -8357,9 +8357,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         autonomyDiagramBanner = new AutonomyBanner();
 
-        // Starts out of the way.  A banner keeps a fixed height so that the editor it was written for
-        // never jumps, and here that would be an empty band across the top from the moment the window
-        // opens; it appears when it has something to offer and collapses again afterwards.
+        // Starts out of the way: it appears when it has something to offer and collapses again afterwards.  No X
+        // (AutonomyBanner.floatOver gives one only to the editor's notices): this offer is a state with its button.
         autonomyDiagramBanner.setVisible(false);
 
         autonomyDiagramStrip = new javax.swing.JPanel(new java.awt.BorderLayout());

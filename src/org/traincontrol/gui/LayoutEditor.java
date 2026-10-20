@@ -1609,7 +1609,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 buildPalette();
             }
 
-            // The notices leave with the stack under the diagram that holds them
+            // The notices leave with the layered pane that floats them over the diagram
             autonomyBanner = null;
 
             // put the Addresses box back where the form had it
@@ -1633,7 +1633,7 @@ public class LayoutEditor extends PositionAwareJFrame
             //     being true when the session changed.
             if (autonomyFindings != null)
             {
-                autonomyFindings.remove(this.jScrollPane1);
+                if (this.jScrollPane1.getParent() != null) this.jScrollPane1.getParent().remove(this.jScrollPane1);
 
                 if (formPane.getLayout() instanceof javax.swing.GroupLayout)
                 {
@@ -1786,8 +1786,8 @@ public class LayoutEditor extends PositionAwareJFrame
             this.newComponents.setLayout(new java.awt.BorderLayout());
             this.newComponents.add(autonomyPanel, java.awt.BorderLayout.CENTER);
 
-            // The notices, the diagram's width for a sentence, mounted under the diagram with the findings below
-            autonomyBanner = new AutonomyBanner(true);
+            // The notices, floated over the bottom of the diagram when the findings are mounted below it
+            autonomyBanner = new AutonomyBanner();
 
             autonomyPanel.setBanner(autonomyBanner);
 
@@ -1920,15 +1920,12 @@ public class LayoutEditor extends PositionAwareJFrame
                         .replace(this.jScrollPane1, stack);
                 }
 
-                stack.add(this.jScrollPane1, BorderLayout.CENTER);
+                // The notices float over the bottom of the diagram, which keeps its size and place as they come, grow
+                // and go (OB-366)
+                stack.add(autonomyBanner.floatOver(this.jScrollPane1), BorderLayout.CENTER);
 
                 javax.swing.JPanel foot = new javax.swing.JPanel(new BorderLayout());
                 foot.setOpaque(false);
-
-                // UNDER THE DIAGRAM, THREE LINES TALL WHATEVER THEY SAY (OB-366; Adam: "making notices be below the
-                // diagram, and cap the height at 3 lines with a scrollbar").  A strip that changed height moved the
-                // diagram; this one never does, so the diagram keeps its place and its size as notices come and go.
-                foot.add(autonomyBanner, BorderLayout.NORTH);
 
                 javax.swing.JScrollPane list = autonomyPanel.getFindingsPanel();
 

@@ -3,17 +3,18 @@ package org.traincontrol.gui;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import javax.swing.BorderFactory;
-import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.Timer;
+import org.traincontrol.util.I18n;
 
 /**
- * A strip of autonomy notices: the message wrapped to the strip's width, at most three lines tall, and scrolled past
- * that (OB-366).
+ * A strip of autonomy notices: the message wrapped to the strip's width, as tall as it needs up to three lines, and
+ * scrolled past that (OB-366).  It is hidden while it has nothing to say.
  *
- * In the autonomy editor it sits under the diagram and keeps the height of three lines whatever it says, so a notice
- * coming, growing or going never moves the diagram.  Above the main window's diagram it is a header that grows to what
- * it says, up to the same three lines, and goes when it has nothing to offer.
+ * In the autonomy editor it floats over the bottom of the diagram (see floatOver), with an X that hides it until the
+ * next notice, so the diagram keeps its size and place whatever the strip says.  Above the main window's diagram it is
+ * a header that grows to what it says and has no X: what it says there is a state with a button to act on it, which a
+ * dismissed strip would leave nowhere to act.
  *
  * It is not a popup: a modal for "that tile is now one way" would be worse than saying nothing.
  *
@@ -32,7 +33,7 @@ public class AutonomyBanner extends JPanel
      *
      * Six seconds is right for a sentence and wrong for a list of a dozen stations and the reason each
      * one was refused - which is the same banner, and is an answer somebody asked for rather than a
-     * notice they happened to be near. The time now grows with the reading, up to this.
+     * notice they happened to be near. The time grows with the reading, up to this.
      */
     private static final int LINGER_MAX_MS = 30000;
 
@@ -46,11 +47,8 @@ public class AutonomyBanner extends JPanel
     private static final int MS_PER_CHARACTER = 90;
 
     /**
-     * A light grey, and no line around it.
-     *
-     * It was white with a single-line border, which is how a PANEL is drawn - and drawn that way at
-     * the top of a window full of other panels it read as an odd extra one rather than as a strip
-     * saying something.  Grey is quieter and needs no edge to be a distinct area.
+     * A light grey, and no line around it: grey is quiet and needs no edge to be a distinct area, where a white strip
+     * with a border reads as one more panel rather than as a strip saying something.
      */
     private static final Color PANEL_BACKGROUND = new Color(242, 242, 242);
 
@@ -66,8 +64,7 @@ public class AutonomyBanner extends JPanel
      *
      * FOURTEEN, which is what docs/UI-standards.md calls regular text (OB-151). Adam: "increase font
      * size of 'this layout has an autonomy' and 'this page is left out of autonomy' slightly, to match
-     * the standard size."  It was thirteen - close enough to look deliberate and not right, which is
-     * the exact failure that document was written after.
+     * the standard size."
      *
      * Changing it here moves the strip's notices too: the excluded-page label and the findings count
      * both take this font rather than naming a size of their own, which is why one number was enough.
@@ -78,14 +75,9 @@ public class AutonomyBanner extends JPanel
     /**
      * The message itself.
      *
-     * A JEditorPane rather than a JLabel, and in a scroll pane.
-     *
-     * The label was kept to ONE line, with nobr forced on so that a long message ran off the right
-     * edge rather than pushing the bar open and shoving the diagram down.  That is the right trade
-     * for "this tile is now one way".  It is the wrong one for the answer to "why is it not moving",
-     * which is a train, a dozen stations and the reason each one was refused - an answer somebody
-     * asked a question to get, and which was arriving with everything past the first few words off
-     * the side of the window with no way to reach it.
+     * A JEditorPane rather than a JLabel, and in a scroll pane.  A one-line label suits "this tile is
+     * now one way" and fails the answer to "why is it not moving", which is a train, a dozen stations
+     * and the reason each one was refused: an answer somebody asked a question to get.
      *
      * An editor pane wraps to the width it is given, which a label will not do without being told a
      * pixel count; the scroll pane caps how tall the bar can grow and hands over the rest.  So a
@@ -117,30 +109,23 @@ public class AutonomyBanner extends JPanel
     /** Holds the offer button, and is taken out of the layout with it - see the constructor. */
     private javax.swing.JPanel right;
 
-    /** Whether the strip keeps the height of its most lines whatever it says; see the constructor. */
-    private final boolean keepsItsHeight;
+    /** The right-hand column: the offer, and the X where the strip has one. */
+    private final javax.swing.JPanel east;
 
-    /**
-     * A header that grows to what it says, up to its most lines.
-     */
+    /** The X that hides the strip until the next notice, where floatOver gave it one; otherwise null. */
+    private javax.swing.JButton close;
+
+    /** Whether the user closed the notice showing.  The next notice clears it. */
+    private boolean dismissed;
+
+    /** Whether the message is empty, as it is before the first and after a timed one fades. */
+    private boolean blank = true;
+
     public AutonomyBanner()
     {
-        this(false);
-    }
-
-    /**
-     * @param keepsItsHeight true for the autonomy editor's notices, which are always as tall as their most lines so
-     *        that the diagram above them never moves; false for a header that grows to what it says
-     */
-    public AutonomyBanner(boolean keepsItsHeight)
-    {
-        this.keepsItsHeight = keepsItsHeight;
-
         setLayout(new BorderLayout());
 
-        // Padding, and nothing else.  A light grey strip is already a distinct area; giving it a line
-        // as well made it read as a panel that had been stuck on top of the interface rather than as
-        // part of it.  The colour that carries meaning stays where it belongs - on the text.
+        // Padding, and nothing else: the colour that carries meaning is on the text.
         setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
 
         setBackground(INFO_BACKGROUND);
@@ -161,17 +146,9 @@ public class AutonomyBanner extends JPanel
         scroller.setOpaque(false);
         scroller.getViewport().setOpaque(false);
 
-        // The scrollbar is the grey sliver that used to appear down the right-hand edge.
-        //
-        // AS_NEEDED means it arrives whenever a message runs to more than a couple of lines, and the
-        // look-and-feel draws it with its own track - a vertical grey bar against the banner, which
-        // looks like a rendering fault rather than a control.  Painted in the banner's own colour it
-        // is there when it is needed and invisible when it is not.
-        //
-        // Except when there is more to read than fits.  An invisible scrollbar on a one-line notice is
-        // tidiness; on the answer to "why is it not moving", which is a train and a dozen stations, it
-        // is a message that stops in the middle with nothing on screen saying there is any more of it.
-        // See setScrollbarVisible, called from show().
+        // The scrollbar is painted in the banner's own colour, so it is invisible while the message fits and a
+        // look-and-feel track down the edge does not read as a rendering fault; hold() makes it opaque whenever there
+        // is more to read than fits, so a long answer never stops in the middle with nothing saying there is more.
         scroller.getVerticalScrollBar().setOpaque(false);
         scroller.getVerticalScrollBar().setBorder(null);
 
@@ -185,33 +162,8 @@ public class AutonomyBanner extends JPanel
 
         scroller.getVerticalScrollBar().setUnitIncrement(16);
 
-        // CENTRED IN THE BAND, not resting on the top of it (OB-151), AND NEVER SHRUNK BELOW IT
-        // (OB-191).
-        //
-        // Adam: "center them vertically within their shaded backgrounds."  The band has a height floor
-        // so that messages coming and going do not move the diagram, and it is taller again while the
-        // offer button is showing - so a BorderLayout centre, which stretches its child to fill, left a
-        // one-line message resting on the top with the slack underneath it.
-        //
-        // THAT WAS FIRST DONE WITH `GridBagLayout`, and the comment here said "a long message still
-        // fills and still scrolls, because GridBag shrinks a child to the space available rather than
-        // letting it overflow."  It does shrink - but toward the child's MINIMUM, not to the space
-        // available, and a `JScrollPane`'s minimum is a few pixels.  Measured on a twelve-station
-        // answer to "why is it not moving", in the mounting `LayoutEditor` gives this banner: the strip
-        // was 879x260 with a band of 252, the scroll pane wanted 260, and `GridBagLayout` laid it out
-        // FIVE PIXELS TALL at y=123.  Five pixels of a 260-pixel document, taken from the top, is the
-        // document's own margin - so the strip stood open at its full height with nothing in it.
-        //
-        // Adam, 2026-09-08 (OB-191): "'why not moving' in the autonomy editor correctly paints the
-        // paths, but it does not show the list of reasons in the top banner - the banner expands, but I
-        // see no text."  The banner expanding IS the height cap being reached, and the cap being
-        // reached is exactly what makes the band shorter than the message wants.
-        //
-        // What is wanted cannot be said in a `GridBagConstraints` at all: it is `min(preferred, band)`,
-        // centred in whatever is left.  A fill of BOTH would give the whole band to a one-line notice
-        // and bring OB-151 back; a fill of HORIZONTAL is what this was.  So it is written out below
-        // instead, which also makes the two rules one statement rather than two settings that have to
-        // be read together to be understood.
+        // Centred in the band and never laid out taller than it (OB-151, OB-191); CentredButNeverTaller says why no
+        // GridBagConstraints can say both.
         javax.swing.JPanel centred = new javax.swing.JPanel(new CentredButNeverTaller());
 
         centred.setOpaque(false);
@@ -224,13 +176,8 @@ public class AutonomyBanner extends JPanel
         // the answer.  Hidden unless something has been offered, so an ordinary message is unchanged.
         action.setFocusable(false);
         action.setVisible(false);
-        // THE STANDARD'S BUTTON FONT (UIX-C3, closed by Adam 2026-09-20: *"align the buttons to the
-        // standard, make them 12 bold"*).
-        //
-        // This was `PLAIN, 12` from 2026-08-17, two days before `docs/UI-standards.md` was written, so
-        // it was not wrong when it was made - which is why the finding was put to him rather than
-        // swept.  It was briefly bold 11 on 2026-09-19 while he looked at it; the ruling above settles
-        // it at the table's own value, so the strip needs no exception in the standard.
+
+        // The standard's button font (UIX-C3)
         action.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12));
         action.setMargin(new java.awt.Insets(0, 10, 0, 10));
 
@@ -245,12 +192,147 @@ public class AutonomyBanner extends JPanel
         // is a few pixels of nothing on the right of every ordinary message.
         right.setVisible(false);
 
-        add(right, BorderLayout.EAST);
+        east = new javax.swing.JPanel(new BorderLayout());
+        east.setOpaque(false);
+        east.add(right, BorderLayout.CENTER);
 
-        // Height is settled by getPreferredSize below rather than fixed here
+        add(east, BorderLayout.EAST);
 
         clear = new Timer(LINGER_MS, e -> hold(" ", false));
         clear.setRepeats(false);
+
+        // Nothing to say yet
+        setVisible(false);
+    }
+
+    /**
+     * Floats this strip over the bottom of a diagram's visible area, inside its frame and just above its horizontal
+     * scrollbar, with an X at its top right that hides it until the next notice (OB-366; Adam: "I'd rather have the
+     * band float and have an x to dismiss each time it surfaces, so the user can be in control.").
+     *
+     * A JLayeredPane holds the two: the diagram fills it and is laid out as if the strip were not there, so it never
+     * moves for a notice, and the strip lies on a higher layer, which the layered pane paints again over whatever the
+     * diagram repaints or scrolls under it.
+     *
+     * @param diagram the diagram's scroll pane
+     * @return what to mount where the scroll pane was
+     */
+    public javax.swing.JLayeredPane floatOver(final javax.swing.JScrollPane diagram)
+    {
+        final javax.swing.JLayeredPane deck = new javax.swing.JLayeredPane();
+
+        deck.setLayout(new OverTheDiagram(diagram, this));
+
+        deck.add(diagram, javax.swing.JLayeredPane.DEFAULT_LAYER);
+        deck.add(this, javax.swing.JLayeredPane.PALETTE_LAYER);
+
+        // The scroll pane lays its own viewport out, narrower or shorter as its scrollbars come and go, without asking
+        // the deck; the strip follows the viewport's edges.
+        diagram.getViewport().addComponentListener(new java.awt.event.ComponentAdapter()
+        {
+            @Override
+            public void componentResized(java.awt.event.ComponentEvent e)
+            {
+                deck.revalidate();
+            }
+
+            @Override
+            public void componentMoved(java.awt.event.ComponentEvent e)
+            {
+                deck.revalidate();
+            }
+        });
+
+        // A click on the strip stays on it.  Swing hands a click to the topmost component under the pointer that
+        // listens for clicks, and without a listener of its own the strip's padding would pass it to a square below.
+        addMouseListener(new java.awt.event.MouseAdapter()
+        {
+        });
+
+        close = new javax.swing.JButton("×");
+
+        close.setName("dismissNotice");
+        close.setToolTipText(I18n.t("autosetup.ui.tooltipDismissNotice"));
+        close.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12));
+        close.setMargin(new java.awt.Insets(0, 4, 0, 4));
+        close.putClientProperty("JButton.buttonType", "toolBarButton");
+
+        // Reached with Tab and pressed with Space or Enter, but never given the keyboard by a click (OB-200): the
+        // editor's shortcuts are its window's.  While Tab has put the keyboard here, every other key goes on to the
+        // window's own handler, so Escape and the shortcuts do what they always do.
+        close.setRequestFocusEnabled(false);
+
+        close.addKeyListener(new java.awt.event.KeyAdapter()
+        {
+            @Override
+            public void keyPressed(java.awt.event.KeyEvent e)
+            {
+                if (e.getKeyCode() == java.awt.event.KeyEvent.VK_ENTER) close.doClick();
+                else if (e.getKeyCode() != java.awt.event.KeyEvent.VK_SPACE) toTheWindow(e);
+            }
+
+            @Override
+            public void keyReleased(java.awt.event.KeyEvent e)
+            {
+                if (e.getKeyCode() != java.awt.event.KeyEvent.VK_SPACE) toTheWindow(e);
+            }
+        });
+
+        close.addActionListener(e -> dismiss());
+
+        javax.swing.JPanel corner = new javax.swing.JPanel(new BorderLayout());
+        corner.setOpaque(false);
+        corner.add(close, BorderLayout.NORTH);
+
+        east.add(corner, BorderLayout.EAST);
+
+        return deck;
+    }
+
+    /**
+     * Hides the strip until the next notice; the timer is stopped with it, so nothing else changes.
+     */
+    private void dismiss()
+    {
+        dismissed = true;
+
+        clear.stop();
+
+        showOrHide();
+    }
+
+    /**
+     * Shown while it has something to say or to offer and the user has not closed it.
+     */
+    private void showOrHide()
+    {
+        boolean shown = !dismissed && (!blank || right.isVisible());
+
+        // The keyboard goes back to the window before the X holding it goes
+        if (!shown && close != null && close.isFocusOwner())
+        {
+            java.awt.Window window = javax.swing.SwingUtilities.getWindowAncestor(this);
+
+            if (window != null) window.requestFocusInWindow();
+        }
+
+        setVisible(shown);
+    }
+
+    /**
+     * A key the X does not use, handed to its window's own key handler.
+     */
+    private void toTheWindow(java.awt.event.KeyEvent e)
+    {
+        java.awt.Window window = javax.swing.SwingUtilities.getWindowAncestor(this);
+
+        if (window == null) return;
+
+        for (java.awt.event.KeyListener each : window.getKeyListeners())
+        {
+            if (e.getID() == java.awt.event.KeyEvent.KEY_PRESSED) each.keyPressed(e);
+            else if (e.getID() == java.awt.event.KeyEvent.KEY_RELEASED) each.keyReleased(e);
+        }
     }
 
     /**
@@ -340,12 +422,8 @@ public class AutonomyBanner extends JPanel
             action.setVisible(false);
             right.setVisible(false);
 
-            // And the banner itself goes when it has nothing to offer.
-            //
-            // The fixed height above is right where this is the only message channel - inside the editor,
-            // where a strip that appears and disappears would shove the diagram up and down on every
-            // click.  As a header it is wrong: with nothing to say it left an empty band across the top
-            // holding the checkbox down, which is a gap the user cannot act on or get rid of.
+            // And the banner itself goes when it has nothing to offer: as a header, an empty band would hold the
+            // checkbox under it down with a gap the user cannot act on or get rid of.
             setVisible(false);
 
             revalidate();
@@ -388,8 +466,8 @@ public class AutonomyBanner extends JPanel
     }
 
     /**
-     * Never taller than the most lines and the border; exactly that when the strip keeps its height, so nothing beside
-     * it moves.  A header grows from a one-line floor to fit its message or its button, whichever is taller.
+     * As tall as the message or the button, whichever is taller, from a one-line floor up to the most lines and the
+     * border; past that the message scrolls.
      */
     @Override
     public java.awt.Dimension getPreferredSize()
@@ -397,8 +475,6 @@ public class AutonomyBanner extends JPanel
         java.awt.Insets pad = getInsets();
 
         int most = mostHeight() + pad.top + pad.bottom;
-
-        if (keepsItsHeight) return new java.awt.Dimension(10, most);
 
         java.awt.Dimension natural = super.getPreferredSize();
 
@@ -420,7 +496,7 @@ public class AutonomyBanner extends JPanel
     }
 
     /**
-     * Tall enough for a line of text with room around it, whether or not there is any.
+     * Tall enough for a line of text with room around it.
      */
     private static final int MINIMUM_HEIGHT = 26;
 
@@ -435,10 +511,7 @@ public class AutonomyBanner extends JPanel
 
     private void hold(String text, boolean warning)
     {
-        // Wrapped, not cut off.  This used to force nobr and let a long message run off the right
-        // edge, on the reasoning that the front of a sentence is the part that carries it - true of
-        // a notice, and quite wrong for an answer somebody asked a question to get.  The bar grows to
-        // a few lines and scrolls past that, so nothing is lost and nothing is shoved out of shape.
+        // Wrapped, not cut off: the bar grows to a few lines and scrolls past that, so nothing is lost.
         String body = text == null || text.trim().isEmpty() ? "&nbsp;" : text;
 
         if (body.startsWith("<html>")) body = body.substring("<html>".length());
@@ -458,18 +531,21 @@ public class AutonomyBanner extends JPanel
         // Back to the top, so a second answer does not open halfway down where the first was left
         saying = body;
 
+        blank = text == null || text.trim().isEmpty();
+
         message.setCaretPosition(0);
+
+        // Every notice surfaces, even one saying what the dismissed one said (OB-366, "each time it surfaces")
+        dismissed = false;
+
+        showOrHide();
 
         javax.swing.SwingUtilities.invokeLater(() ->
         {
             scroller.getVerticalScrollBar().setValue(0);
 
-            // And the bar becomes visible when there is more than fits.
-            //
-            // Posted, because the answer depends on the height the message has just been laid out to,
-            // which it does not have until this pass is over.  Invisible on a one-line notice is
-            // tidiness; invisible on an answer that stops in the middle is a message with no way to
-            // tell there is more of it, which is what Adam met asking why a train was not moving.
+            // And the bar becomes visible when there is more than fits: posted, because that depends on the height
+            // the message has just been laid out to, which it does not have until this pass is over.
             boolean more = message.getPreferredSize().height > mostHeight();
 
             scroller.getVerticalScrollBar().setOpaque(more);
@@ -486,19 +562,75 @@ public class AutonomyBanner extends JPanel
     }
 
     /**
+     * Lays the diagram over the whole of its layered pane, as if nothing floated over it, and the strip over the
+     * bottom of the diagram's viewport: the viewport's width, the strip's own height up to the viewport's.
+     */
+    private static final class OverTheDiagram implements java.awt.LayoutManager
+    {
+        private final javax.swing.JScrollPane diagram;
+        private final AutonomyBanner band;
+
+        OverTheDiagram(javax.swing.JScrollPane diagram, AutonomyBanner band)
+        {
+            this.diagram = diagram;
+            this.band = band;
+        }
+
+        @Override
+        public void layoutContainer(java.awt.Container deck)
+        {
+            diagram.setBounds(0, 0, deck.getWidth(), deck.getHeight());
+
+            // Now, so the viewport's edges are this layout's and not the last one's
+            diagram.doLayout();
+
+            if (!band.isVisible()) return;
+
+            java.awt.Rectangle view = javax.swing.SwingUtilities.convertRectangle(diagram,
+                diagram.getViewport().getBounds(), deck);
+
+            // At the viewport's width first: how tall a wrapped message is depends on how wide it is
+            band.setBounds(view.x, band.getY(), view.width, Math.max(1, band.getHeight()));
+            band.validate();
+
+            int high = Math.min(band.getPreferredSize().height, view.height);
+
+            band.setBounds(view.x, view.y + view.height - high, view.width, high);
+        }
+
+        @Override
+        public java.awt.Dimension preferredLayoutSize(java.awt.Container deck)
+        {
+            return diagram.getPreferredSize();
+        }
+
+        @Override
+        public java.awt.Dimension minimumLayoutSize(java.awt.Container deck)
+        {
+            return diagram.getMinimumSize();
+        }
+
+        @Override
+        public void addLayoutComponent(String name, java.awt.Component comp)
+        {
+        }
+
+        @Override
+        public void removeLayoutComponent(java.awt.Component comp)
+        {
+        }
+    }
+
+    /**
      * Centres one child in its container, and never lays it out taller than the container is.
      *
-     * TWO RULES THAT HAVE TO BE ONE STATEMENT, which is why this exists rather than a constraint.
-     *
-     * - **Centred** (OB-151).  The strip has a height floor so that messages coming and going do not
-     *   move the diagram, and it is taller again while the offer button is showing.  A message shorter
-     *   than the band gets the leftover space split equally above and below it.
+     * - **Centred** (OB-151).  A message shorter than the band gets the leftover space split equally above and below
+     *   it, where the band is taller than the message: at its one-line floor, or beside the offer button.
      *
      * - **Never taller than the band** (OB-191).  A message LONGER than the band is given exactly the
      *   band.  That is what makes the scroll pane's viewport smaller than its own contents, which is
      *   the only condition under which an AS_NEEDED scrollbar appears - so the part that does not fit
-     *   becomes reachable rather than merely absent, which is what the banner's own comments about
-     *   that scrollbar have always assumed.
+     *   becomes reachable rather than merely absent.
      *
      * `GridBagLayout` can express neither half safely.  `BOTH` gives the whole band to a one-line
      * notice and loses the centring; `HORIZONTAL` keeps the preferred height and, when the band is
@@ -524,20 +656,10 @@ public class AutonomyBanner extends JPanel
 
             int wants = only.getPreferredSize().height;
 
-            // AND NEVER NOTHING, which is a third rule the other two do not imply - measured, after
-            // `min(preferred, band)` on its own left the strip at its floor with the message zero
-            // pixels tall.
-            //
-            // A text component reports its preferred height by laying its view out at the size it
-            // CURRENTLY has.  Given no height it has nothing to lay out, so it reports none - and being
-            // given `min(0, band)` next pass keeps it there.  Zero is an absorbing state, and the first
-            // pass of a banner whose message has never been laid out lands in it: at `pack()` the
-            // viewport has no extent yet and the message reports 0x0.  `GridBagLayout` never met this
-            // because it would not go below the child's MINIMUM - the same five pixels that made
-            // OB-191, doing the one useful thing they did.
-            //
-            // So a child that asks for nothing is given the band, which is the only size that lets it
-            // measure itself and answer properly on the pass after.
+            // AND NEVER NOTHING.  A text component reports its preferred height by laying its view out at the size it
+            // currently has, so one given no height reports none, and `min(0, band)` keeps it there pass after pass.
+            // The first pass of a message never laid out (at `pack()` the viewport has no extent) lands in that state.
+            // So a child that asks for nothing is given the band, which lets it measure itself on the next pass.
             int height = wants <= 0 ? band : Math.min(wants, band);
 
             only.setBounds(pad.left, pad.top + (band - height) / 2, width, height);
@@ -556,11 +678,8 @@ public class AutonomyBanner extends JPanel
         }
 
         /**
-         * Nothing, and that is the point.
-         *
-         * Reporting the child's own minimum is what let the message be shrunk to five pixels: a parent
-         * asking how small this may go and being told "five" is being offered somewhere to take space
-         * from.  This layout never needs any - it fits whatever it is given.
+         * Nothing, and that is the point: reporting the child's own minimum is what let the message be shrunk to five
+         * pixels.  This layout never needs any space taken from it; it fits whatever it is given.
          */
         @Override
         public java.awt.Dimension minimumLayoutSize(java.awt.Container parent)

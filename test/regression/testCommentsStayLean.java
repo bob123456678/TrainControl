@@ -65,7 +65,7 @@ public class testCommentsStayLean
     };
 
     /** Comment lines carrying a history marker, as they stand.  Lower it whenever some go; never raise it. */
-    private static final int HISTORY_ALLOWED = 343;
+    private static final int HISTORY_ALLOWED = 337;
 
     /** WHICH files carry them, so that a swap between files fails and names both.  Files at zero are not listed. */
     private static final String[] HISTORY_BY_FILE = {
@@ -97,7 +97,6 @@ public class testCommentsStayLean
         "src/org/traincontrol/gui/AddressLabel.java (1)",
         "src/org/traincontrol/gui/ArrivalSidePrompt.java (4)",
         "src/org/traincontrol/gui/AutoLocomotiveStatus.java (7)",
-        "src/org/traincontrol/gui/AutonomyBanner.java (6)",
         "src/org/traincontrol/gui/AutonomyEditorPanel.java (8)",
         "src/org/traincontrol/gui/AutonomyMenu.java (13)",
         "src/org/traincontrol/gui/AutonomyOverlayToggle.java (9)",
@@ -150,7 +149,7 @@ public class testCommentsStayLean
     };
 
     /** Runs of more than 15 `//` lines plus non-javadoc block comments over 15 lines, as they stand.  Never raise it. */
-    private static final int LONG_BLOCKS_ALLOWED = 55;
+    private static final int LONG_BLOCKS_ALLOWED = 54;
 
     /** WHICH files carry them.  Files at zero are not listed. */
     private static final String[] LONG_BLOCKS_BY_FILE = {
@@ -161,7 +160,6 @@ public class testCommentsStayLean
         "src/org/traincontrol/base/ConditionOutline.java (1)",
         "src/org/traincontrol/gui/AddLocomotive.java (1)",
         "src/org/traincontrol/gui/AutoLocomotiveStatus.java (2)",
-        "src/org/traincontrol/gui/AutonomyBanner.java (1)",
         "src/org/traincontrol/gui/AutonomyMenu.java (2)",
         "src/org/traincontrol/gui/AutonomyOverlayToggle.java (2)",
         "src/org/traincontrol/gui/DiagramExport.java (1)",
