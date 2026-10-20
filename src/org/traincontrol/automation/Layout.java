@@ -2838,17 +2838,15 @@ public class Layout
             // using the throat (a sensor is an endpoint of the edges that meet there and part of the path of none of
             // them).  See Edge.isLockHeld.
             //
-            // RAIL BEING RUN OVER, not rail that is merely held (OB-269; Adam: *"nothing should disturb the ability to
-            // go from bottominner to bottominnerotherside unless trains are crossing down, or passing through either of
-            // those stations."*).  **The write and the read each reach one hop, and together they reach two.**
-            // `setOccupied` marks every edge in each of a path's edges' `lockEdges`; this loop reads the flag off every
-            // edge in each CANDIDATE's `lockEdges`, so a candidate would be refused when some THIRD edge shared rail
-            // with it and, separately, with the running path, though the candidate and the path share no rail at all.
-            // `isRunOver` is the narrow question; `isLockHeld` is unchanged for everything else, because a held
-            // throat's accessories must stay protected whether the hold is direct or shared (`getActiveAccs`).  BOTH
-            // ORDERINGS OF AN ASYMMETRIC RELATION STILL REFUSE: a lock edge ON the path marks this candidate's
-            // `occupancy` through the write and the occupancy test above refuses it; a candidate NAMING an edge on the
-            // path is refused here.  Only the proxy-locked middle case is given up.
+            // RAIL BEING RUN OVER, not rail that is merely held (OB-269).  **The write and the read each reach one
+            // hop, and together they reach two.**  `setOccupied` marks every edge in each of a path's edges'
+            // `lockEdges`; this loop reads the flag off every edge in each CANDIDATE's `lockEdges`, so a candidate would
+            // be refused when some THIRD edge shared rail with it and, separately, with the running path, though it
+            // shares none with the path itself.  `isRunOver` is the narrow question; `isLockHeld` is unchanged, because
+            // a held throat's accessories must stay protected whether the hold is direct or shared (`getActiveAccs`).
+            // Both orderings of an asymmetric relation still refuse (a lock edge ON the path marks this candidate's
+            // `occupancy`, which the occupancy test above refuses; a candidate NAMING an edge on the path is refused
+            // here); only the proxy-locked middle case is given up.
             for (Edge e2 : e.getLockEdges())
             {
                 if (e2.isRunOver(loc))
@@ -5697,19 +5695,16 @@ public class Layout
                 // A PHYSICAL REFUSAL OUTRANKS A PREFERENCE (MT-262).  The standing bar above ("Set not to be chosen
                 // automatically.") is a statement about AUTONOMY, and an operator asking why a hand-driven send of a
                 // four-unit train into two units of track will not work must be told the length, not that.  A parking
-                // berth is spelled `autoDestination: false`, so the squares a person actually sends trains to by hand
-                // are exactly the ones this branch covers.  Only the LENGTH refusal is asked here, not the whole of
-                // `isPathClear`: the rest is about what is happening on the railway this minute and clears itself,
-                // while being too long for the berth does not, and it is as true of a hand-driven send as of an
-                // automatic one.  The grouping is untouched: this station is still reported among the ones autonomy
-                // will never choose.
+                // berth is spelled `autoDestination: false`, so the squares a person sends trains to by hand are exactly
+                // the ones this branch covers.  Only the LENGTH refusal is asked here, not the whole of `isPathClear`:
+                // the rest is about what is happening on the railway this minute and clears itself, while being too
+                // long for the berth does not.  The grouping is untouched: this station is still reported among the
+                // ones autonomy will never choose.
                 //
-                // NOT ON A HAND-DRIVEN SEND, WHERE THE REASON IS THE MENU'S OWN (AMV-C5).  A station set not to be
-                // chosen is a preference, and being too long for the berth is a fact, so the fact wins on autonomy's
-                // tier.  The bars this branch carries on Manual are the ones that keep a station OUT of the right-click
-                // menu (it excludes this train, or it is a terminus the train could not leave), and a station the
-                // operator is not offered at all is not one whose length is the answer: the operator sees the menu's
-                // reason.
+                // NOT ON A HAND-DRIVEN SEND, WHERE THE REASON IS THE MENU'S OWN (AMV-C5): the bars this branch carries
+                // on Manual are the ones that keep a station OUT of the right-click menu (it excludes this train, or it
+                // is a terminus the train could not leave), and a station the operator is not offered at all is not
+                // one whose length is the answer; the operator sees the menu's reason.
                 String cannotFit = byHand ? null : whyNoRouteFitsTo(loc, start, end);
 
                 if (cannotFit != null) reason = cannotFit;
@@ -7639,19 +7634,18 @@ public class Layout
                 // AND THEN THE TRACK GOES BACK (Adam: "Force a graceful stop, alert the user, then unlock."), in that
                 // order, which is what makes the third safe.  Keeping the path locked would not protect it: the handler
                 // above has already given up `activeLocomotives`, `locomotiveMilestones` and `clearedEdges`, which
-                // `getActiveAccs` reads to know which accessories a route must not throw, so it would be held and
-                // unprotected.  `stopLocomotives()` closes the gap that mattered: `running` is false, so autonomy
-                // dispatches no new path over this track (a person still can, from the right-click menu, which is why
-                // the message says to look at where that locomotive stands).
+                // `getActiveAccs` reads to know which accessories a route must not throw.  `stopLocomotives()` closes
+                // the gap that mattered: `running` is false, so autonomy dispatches no new path over this track (a
+                // person still can, from the right-click menu, which is why the message says to look at where that
+                // locomotive stands).
                 //
                 // Released the same way a finished path is released, and in the same ORDER (VD10-A1): `unlockPath`
                 // consults `releasedEarly` (GUI-A1), so it runs while that map still has the entries, and the clear
                 // follows it.  THE TRAIN ITSELF IS STOPPED FIRST (VD10-B1): the line below is the only thing that stops
-                // THIS train (`stopLocomotives()` only sets `running = false`), and the release is not instantaneous
-                // (`unlockPath` is synchronized on the layout monitor, which `configureAndLockPath` holds "for seconds
-                // on a long path"), so a hand dispatch at the same moment could keep this train running on track the
-                // model had just declared free.  Guarded so that a second failure here cannot replace the exception
-                // that explains what went wrong.
+                // THIS train, and the release is not instantaneous (`unlockPath` is synchronized on the layout monitor,
+                // which `configureAndLockPath` holds "for seconds on a long path"), so a hand dispatch at the same
+                // moment could keep this train running on track the model had just declared free.  Guarded so that a
+                // second failure here cannot replace the exception that explains what went wrong.
                 try
                 {
                     loc.setSpeed(0);
