@@ -3495,8 +3495,15 @@ public class testEditorSurfaceRules
      * Mutation this must fail: in `AutonomyEditorPanel.promptBlockingPoints`, put the check-box label
      * back to `session.getStore().getPointName(tile)`.  Run 2026-08-25: 1 of 14 tests in this class
      * fails, this one.  Second mutation: drop the `&& !already.contains(tile)` qualifier from the
-     * self-caption filter, which is FSR-C5 undone.  Run 2026-08-25: this test fails again, and nothing
-     * else in the class moves.
+     * self-caption filter (the `getCaptionTarget(tile)` line in EditorPrompts.promptBlockingPoints), which is FSR-C5 undone.
+     * Run 2026-10-19: this test fails on the self-caption assertion, and nothing else in the class moves.  (The run of
+     * 2026-08-25 that this note used to report was hollow: the qualifier text also sits in the stations-only filter, and the
+     * old needle matched that one, so the mutation stayed green until the needle became the whole statement.)  The stations-only
+     * filter's own qualifier is pinned separately and fails the same way.
+     *
+     * Why this is a source pin and not a drive of the dialog: the carried-entries loop below the two filters puts every stored
+     * entry back on the list, so the qualifier changes nothing the operator can see - the offered set is the same with and without
+     * it - and the filter is kept for the statement it makes, and for the day the carry loop is reworked.
      */
     @Test
     public void testTheBlockedPointsPickerCarriesAndNamesWhatIsStored() throws Exception
@@ -3530,7 +3537,17 @@ public class testEditorSurfaceRules
             + "already decides whether it is free, so watching itself makes it a station nothing can "
             + "be sent to (OB-083)");
 
-        assertTrue(body.contains("getCaptionTarget(tile)") && body.contains("!already.contains(tile)"),
+        // THE SELF-CAPTION FILTER'S OWN STATEMENT, whole (reviewer, 2026-10-19).  The qualifier `!already.contains(tile)` also
+        // appears in the isStation filter above it, so a needle of `getCaptionTarget(tile)` plus the bare qualifier was satisfied by
+        // that other line and the FSR-C5 mutation on this one stayed green.  Each filter is pinned by the statement that holds both
+        // halves; whitespace is collapsed so a re-wrap of the line does not read as a removal.
+        String flat = body.replaceAll("\\s+", " ");
+
+        assertTrue(flat.contains("!editor.session.getStore().isStation(tile) && !already.contains(tile)) continue;"),
+            "the stations-only filter is gone, or is no longer qualified by what is already stored: a stored entry that is not a "
+            + "station would be hidden, and the dialog is the only way to remove it (FSR-C5)");
+
+        assertTrue(flat.contains("station.equals(editor.session.getCaptionTarget(tile)) && !already.contains(tile)) continue;"),
             "the self-caption filter is gone, or is no longer qualified by what is already stored. "
             + "Unqualified it hides a stored entry, and this dialog is the only way to remove one - so "
             + "the restriction becomes permanent with nothing on screen saying it is there (FSR-C5). "
