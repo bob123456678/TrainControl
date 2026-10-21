@@ -74,7 +74,7 @@ public class testCommentsStayLean
     };
 
     /** Comment lines carrying a history marker, as they stand.  Lower it whenever some go; never raise it. */
-    private static final int HISTORY_ALLOWED = 336;
+    private static final int HISTORY_ALLOWED = 319;
 
     /** WHICH files carry them, so that a swap between files fails and names both.  Files at zero are not listed. */
     private static final String[] HISTORY_BY_FILE = {
@@ -106,7 +106,6 @@ public class testCommentsStayLean
         "src/org/traincontrol/gui/AddressLabel.java (1)",
         "src/org/traincontrol/gui/ArrivalSidePrompt.java (4)",
         "src/org/traincontrol/gui/AutoLocomotiveStatus.java (7)",
-        "src/org/traincontrol/gui/AutonomyEditorPanel.java (8)",
         "src/org/traincontrol/gui/AutonomyMenu.java (13)",
         "src/org/traincontrol/gui/AutonomyOverlayToggle.java (9)",
         "src/org/traincontrol/gui/AutonomyReport.java (3)",
@@ -119,7 +118,6 @@ public class testCommentsStayLean
         "src/org/traincontrol/gui/FacingPrompt.java (4)",
         "src/org/traincontrol/gui/GraphLocAssign.java (11)",
         "src/org/traincontrol/gui/HomeLocomotiveMenu.java (2)",
-        "src/org/traincontrol/gui/LayoutEditor.java (5)",
         "src/org/traincontrol/gui/LayoutEditorAddressPopup.java (3)",
         "src/org/traincontrol/gui/LayoutEditorReshape.java (1)",
         "src/org/traincontrol/gui/LayoutEditorRightclickMenu.java (3)",
@@ -139,7 +137,6 @@ public class testCommentsStayLean
         "src/org/traincontrol/gui/RightClickSelectorMenu.java (1)",
         "src/org/traincontrol/gui/StartupSplash.java (1)",
         "src/org/traincontrol/gui/TailCrossedPrompt.java (15)",
-        "src/org/traincontrol/gui/TrainControlUI.java (4)",
         "src/org/traincontrol/gui/UsageHistogram.java (2)",
         "src/org/traincontrol/marklin/MarklinControlStation.java (4)",
         "src/org/traincontrol/marklin/MarklinFeedback.java (1)",
@@ -195,14 +192,13 @@ public class testCommentsStayLean
     private static final Set<String> TRACKER_PREFIXES = new HashSet<>(java.util.Arrays.asList("OB", "MT", "FR"));
 
     /** Review ids in comments, as they stand.  Lower it whenever some go; never raise it. */
-    private static final int IDS_ALLOWED = 168;
+    private static final int IDS_ALLOWED = 68;
 
     /** WHICH files carry them, so that a swap between files fails and names both.  Files at zero are not listed. */
     private static final String[] IDS_BY_FILE = {
         "src/org/traincontrol/automation/Point.java (1)",
         "src/org/traincontrol/automationui/AutonomySession.java (5)",
         "src/org/traincontrol/gui/AutonomyBanner.java (1)",
-        "src/org/traincontrol/gui/LayoutEditor.java (100)",
         "src/org/traincontrol/gui/ManualReversalPrompt.java (10)",
         "src/org/traincontrol/gui/TrainControlUI.java (2)",
         "test/core/testACompulsoryTurnIsNotAQuestion.java (2)",

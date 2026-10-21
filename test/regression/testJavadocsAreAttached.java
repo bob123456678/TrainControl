@@ -75,7 +75,7 @@ public class testJavadocsAreAttached
     // declaration (PORTAL_ROUTE, LIVE), now one, which takes both files out of the list below.
     // 33 -> 26 on 2026-10-20: FR-136, the comment pass on GraphReducer and AutonomyBuilder put their seven stacked
     // javadocs onto the members they describe, which takes both files out of the list below.
-    private static final int ALLOWED = 26;
+    private static final int ALLOWED = 16;
 
     /**
      * WHICH files carry the orphans, not just how many.
@@ -98,13 +98,11 @@ public class testJavadocsAreAttached
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "gui" + File.separator + "DiagramTileRegistry.java (1)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
-            + "gui" + File.separator + "LayoutEditor.java (3)",
-        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "gui" + File.separator + "LayoutLabel.java (1)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "gui" + File.separator + "LayoutRightclickAutonomyMenu.java (2)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
-            + "gui" + File.separator + "TrainControlUI.java (11)",
+            + "gui" + File.separator + "TrainControlUI.java (4)",
     };
 
     @Test
