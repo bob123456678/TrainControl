@@ -4862,15 +4862,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             prefs.putBoolean(LAST_EDITOR_AUTONOMY_PREF, wantsAutonomy);
         }
 
-        // Where the trains actually are, folded into the setup before the editor can snapshot it (OB-144; Adam, critical: "run
-        // EN57-203 from BottomSecondary to BottomMainC.  Then, switch to track diagram page 2, click edit and save.  EN57-203 is now
-        // back at BottomSecondary.").  A run moves a locomotive and where it ended up lives in `Point.currentLoc` alone;
-        // `captureFromLayout` is the only thing that folds it into the setup and stopping autonomy is not one of its callers, so the
-        // editor would snapshot where the train STARTED, Save would write it back, and `rebuildRunningLayoutFromSetup` would
-        // regenerate every placement from the file.  BEFORE the constructor, because the constructor is where the undo point is taken
-        // (which also makes Cancel right).  Regardless of which editor is being opened, since the track editor can switch into
-        // autonomy mode without closing (`arriveAt` re-takes the undo point).  A no-op with no session, no active configuration, or
-        // a run in progress (refused above).
+        // Where the trains actually are, folded into the setup before the editor can snapshot it (OB-144; Adam,
+        // critical: "run EN57-203 from BottomSecondary to BottomMainC.  Then, switch to track diagram page 2, click
+        // edit and save.  EN57-203 is now back at BottomSecondary."): a run moves a locomotive and where it ended up
+        // lives in `Point.currentLoc` alone, and stopping autonomy does not call `captureFromLayout`, so the editor
+        // would snapshot where the train STARTED and Save would write it back.  BEFORE the constructor, which takes the
+        // undo point (which also makes Cancel right), and whichever editor is being opened, as the track editor can
+        // switch into autonomy mode without closing.  A no-op with no session, no active configuration, or a run in
+        // progress (refused above).
         captureRunningLayout();
 
         final org.traincontrol.automationui.AutonomySession opening = wantsAutonomy ? session : null;
@@ -4955,8 +4954,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The setup, if there is one there is any point opening: a configuration that is CHOSEN, not necessarily one that loaded,
-     * since a setup with blocking errors refuses to load and the editor is the only place those errors can be fixed.
+     * The setup, if there is one there is any point opening: a configuration that is CHOSEN, not necessarily one that
+     * loaded, since a setup with blocking errors refuses to load and the editor is the only place those errors can be
+     * fixed.
      *
      * @return the session, or null when there is nothing to set up
      */
@@ -4968,11 +4968,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Draws the setup itself on the track diagram - stations, and track that has been restricted.  Separate from monitoring,
-     * which only paints while trains are moving.  The same annotation the editor draws, minus anything to do with editing, so the
-     * two views agree by construction.
-     *
-     * @param show
+     * Draws the setup itself on the track diagram - stations, and track that has been restricted - separate from
+     * monitoring, which only paints while trains are moving: the same annotation the editor draws, minus anything to do
+     * with editing, so the two views agree.
      */
     public void showStaticAutonomyLayer(boolean show)
     {
@@ -5039,10 +5037,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private volatile boolean arrowsDrawnForARun = false;
 
     /**
-     * Redraws the track diagram's arrows once where the trains have started or stopped running since they were drawn, so they go
-     * as the spinner starts and come back as it stops (MT-686: "Should be the same gate as the spinner.").  Asked beside the
-     * spinner, of its gate - `theAutoTabWaits`, which holds through a Graceful Stop's coast-down - in
-     * `refreshWhatWaitsForTheTrains`.  Event thread: the gate reads a button.
+     * Redraws the track diagram's arrows once where the trains have started or stopped running since they were drawn,
+     * so they go as the spinner starts and come back as it stops (MT-686: "Should be the same gate as the spinner."):
+     * asked beside the spinner, of its gate `theAutoTabWaits`, which holds through a Graceful Stop's coast-down.  Event
+     * thread: the gate reads a button.
      */
     private void arrowsFollowTheRun()
     {
@@ -5057,13 +5055,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The station whose caption is drawn on a square, if any.
-     *
-     * Asked of the setup rather than read off the square’s label: a caption is autonomy’s, not
-     * the diagram’s, which is what stops it being a piece of text that has to match a name.
+     * The station whose caption is drawn on a square, if any: asked of the setup rather than read off the square's
+     * label, a caption being autonomy's and not the diagram's, which stops it being a piece of text that has to match a
+     * name.
      *
      * @param where the square the text would sit on
-     * @return the sensor’s square, or null when nothing is captioned there
+     * @return the sensor's square, or null when nothing is captioned there
      */
     public org.traincontrol.automationui.TileGraph.TileKey autonomyCaptionAt(
         org.traincontrol.automationui.TileGraph.TileKey where)
@@ -5077,27 +5074,25 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // NO LABEL ON A SQUARE THAT IS BOTH EMPTY AND SHUT (Adam), asked of the session below with the rest
         // (`isCaptionDrawn`): the setup check has to leave it alone too (OB-341).
 
-        // And one name per station per page, the offset one winning (MT-337, OB-341; Adam: "if a station has an offset label, the
-        // current home loc is shown twice (once on the tile itself, once on the offset label)").  The editor keeps one caption per
-        // station per page (behaviour.md, "One caption per station per page"), but the store can still hold more (a setup edited by
-        // hand, or a legacy "Point:" label migrated beside a station already captioned on its own square before OB-256), and a caption
-        // on another page is allowed (Adam: "The duplicate caption check should be per page.  It is OK to show on another page what
-        // is going on on another.").  A station captioned on its own square AND beside it on the same page is drawn ONCE, the beside
-        // one, because that is the one somebody placed (or `placeCaption` found room for): "Once - on the caption square when there
-        // is one, otherwise on the station square".  Only against ANOTHER square OF THE SAME PAGE: a station captioned only on itself
-        // keeps its caption, a caption on another page never takes it away, and two offset captions are both drawn - the setup check
-        // reports them as an ERROR and this does not choose.  The rule is the session's (`isCaptionDrawn`), so the check counts
-        // exactly what is drawn here.
+        // And one name per station per page, the offset one winning (MT-337, OB-341; Adam: "if a station has an offset
+        // label, the current home loc is shown twice (once on the tile itself, once on the offset label)"): the editor
+        // keeps one caption per station per page, but the store can still hold more (a setup edited by hand, or a
+        // legacy "Point:" label migrated beside a station already captioned on its own square), and a caption on
+        // another page is allowed (Adam: "The duplicate caption check should be per page.  It is OK to show on another
+        // page what is going on on another.").  A station captioned on its own square AND beside it on the same page is
+        // drawn ONCE, the beside one, as that is the one somebody placed.  Only against ANOTHER square OF THE SAME
+        // PAGE: a station captioned only on itself keeps its caption, a caption on another page never takes it away,
+        // and two offset captions are both drawn, the setup check reporting them as an ERROR rather than this choosing.
+        // The rule is the session's (`isCaptionDrawn`), so the check counts exactly what is drawn here.
         if (caption != null && !session.isCaptionDrawn(where)) return null;
 
         return caption;
     }
 
     /**
-     * The locomotive the SETUP puts on a square, which is not the same as the one standing there: until a configuration is
-     * started the editor shows what has been set up, not what is on the rails.
+     * The locomotive the SETUP puts on a square, which is not the one standing there: until a configuration is started
+     * the editor shows what has been set up, not what is on the rails.
      *
-     * @param station the sensor's square
      * @return the locomotive's name, or null when the setup puts none there
      */
     public String autonomyLocomotiveAt(org.traincontrol.automationui.TileGraph.TileKey station)
@@ -5111,10 +5106,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Which locomotive LIVES at a square, as opposed to which one is standing on it (MT-261 ruling 2); drawn because the home
-     * assignment was otherwise visible only one square's menu at a time.
+     * Which locomotive LIVES at a square, as opposed to which one is standing on it (MT-261 ruling 2); drawn because
+     * the home assignment was otherwise visible only one square's menu at a time.
      *
-     * @param station the square
      * @return the home locomotive's name, or null where the square has no home or there is no setup
      */
     public String autonomyHomeAt(org.traincontrol.automationui.TileGraph.TileKey station)
@@ -5130,11 +5124,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The CAPTION for a square the setup puts a locomotive on - what the diagram draws, not the name: bracketed and cut to length
-     * so every platform is the same width whatever is standing on it.  The facing comes from the SQUARE rather than from a
-     * running Point, because in the editor there may be no run at all.
+     * The CAPTION for a square the setup puts a locomotive on, as drawn: bracketed and cut to length so every platform
+     * is the same width whatever is standing on it.  The facing comes from the SQUARE rather than from a running Point,
+     * as in the editor there may be no run at all.
      *
-     * @param station the sensor's square
      * @return the caption, or null when the setup puts no locomotive there
      */
     public String autonomyCaptionTextAt(org.traincontrol.automationui.TileGraph.TileKey station)
@@ -5145,12 +5138,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Puts the application's icon on a window (OB-124; Adam: "the popup window for cropping images doesn't have the traincontrol
-     * icon in the title bar. add it back, and check for other popups with the same issue.").  Written once here, since a rule
-     * spelled out per window is one the next window does not get.  A dialog does not reliably inherit its owner's icon.  Failure
-     * is swallowed on purpose: a missing icon is cosmetic, and throwing would turn it into a window that does not open.
-     *
-     * @param window the window to mark
+     * Puts the application's icon on a window (OB-124; Adam: "the popup window for cropping images doesn't have the
+     * traincontrol icon in the title bar. add it back, and check for other popups with the same issue."), written once
+     * here as a rule spelled out per window is one the next window does not get; a dialog does not reliably inherit its
+     * owner's icon.  Failure is swallowed on purpose: a missing icon is cosmetic, and throwing would turn it into a
+     * window that does not open.
      */
     public static void applyWindowIcon(java.awt.Window window)
     {
@@ -5169,10 +5161,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * What to write on a caption when no train is standing there - the station’s own name.
-     *
-     * @param station the sensor’s square
-     * @return the name, or null when the square is not a Point of this setup
+     * What to write on a caption when no train is standing there - the station's own name; null when the square is not
+     * a Point of this setup.
      */
     public String autonomyStationNameAt(org.traincontrol.automationui.TileGraph.TileKey station)
     {
@@ -5182,12 +5172,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The running Point on a square, preferring one with a train on it: a square is several Points and only one holds the
-     * locomotive, so the occupied copy is the answer whenever there is one, and otherwise any copy will do.  By square, not by
-     * caption text: resolving a name against the running graph failed for a renamed station, a station split into copies none of
-     * which carry the plain name, and a caption left over from a configuration that no longer exists.
+     * The running Point on a square, preferring one with a train on it: a square is several Points and only one holds
+     * the locomotive, so the occupied copy is the answer whenever there is one, and otherwise any copy will do.  By
+     * square, not by caption text: resolving a name against the running graph fails for a renamed station, a station
+     * split into copies none of which carry the plain name, and a caption left over from a configuration that no longer
+     * exists.
      *
-     * @param station the sensor's square
      * @return the Point, or null if the running layout has nothing on that square
      */
     public org.traincontrol.automation.Point getAutonomyPointForTile(
@@ -5205,10 +5195,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Every locomotive standing on a square, in the order its copies were emitted.  More than one is not an error: two trains can
-     * be sent to one platform from opposite ends and each arrives on the copy facing its own way.
+     * Every locomotive standing on a square, in the order its copies were emitted: more than one is not an error, as
+     * two trains can be sent to one platform from opposite ends and each arrives on the copy facing its own way.
      *
-     * @param station the sensor's square
      * @return the occupied Points, empty when nothing is standing there
      */
     public java.util.List<org.traincontrol.automation.Point> getAutonomyOccupantsForTile(
@@ -5230,11 +5219,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Which way the train standing on a square is pointing, as one character.  A square is several Points, one per side a train
-     * can arrive by, so "there is a locomotive here" leaves out where it can go next.  Read from the setup rather than worked out
-     * from the running graph, which means building the naming to ask which copy a Point is, once per Point on every feedback event.
+     * Which way the train standing on a square is pointing, as one character: a square is several Points, one per side
+     * a train can arrive by, so "there is a locomotive here" leaves out where it can go next.  Read from the setup
+     * rather than worked out from the running graph, which would mean building the naming to ask which copy a Point is,
+     * once per Point on every feedback event.
      *
-     * @param square the sensor
      * @return an arrow, or "" when nobody has said which way
      */
     private String facingArrow(org.traincontrol.automationui.TileGraph.TileKey square)
@@ -5264,12 +5253,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The caption for a square with more than one train on it: every name, each cut short enough that the pair still fits where
-     * one name does (a label wide enough for two full names covers the track either side of it).  Cut hard rather than
-     * dropping a train.  The facing is per TRAIN here, since two trains on one platform almost always point opposite ways.
+     * The caption for a square with more than one train on it: every name, each cut short enough that the pair still
+     * fits where one name does (a label wide enough for two full names covers the track either side of it); cut hard
+     * rather than dropping a train.  The facing is per TRAIN here, as two trains on one platform almost always point
+     * opposite ways.
      *
-     * @param crowd the occupied Points, in emission order
-     * @param square their square
      * @return the caption text
      */
     private String crowdedLabel(java.util.List<Point> crowd,
@@ -5308,10 +5296,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Which way one particular train is pointing.  The copy a train is standing on IS its direction, so this is read off the
-     * Point rather than off the square, whose single stored facing describes only the last train placed there by hand.
+     * Which way one particular train is pointing: the copy a train is standing on IS its direction, so this is read off
+     * the Point rather than off the square, whose single stored facing describes only the last train placed there by
+     * hand.
      *
-     * @param at the copy the train is on
      * @param square its square, for the fallback
      * @return an arrow, or "" when nothing is known
      */
@@ -5355,10 +5343,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Writes the autonomy state of one Point onto the station labels the track diagram carries.  Gated on "is there a setup
-     * running", not on a graph window (never created on the diagram path).
-     *
-     * @param point the Point whose square's captions are written
+     * Writes the autonomy state of one Point onto the station labels the track diagram carries; gated on "is there a
+     * setup running", not on a graph window (never created on the diagram path).
      */
     private void updateStationLabels(Point point)
     {
@@ -5504,23 +5490,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Puts the window back the way a diagram edit leaves it, for the autonomy editor - which skips
-     * layoutEditingComplete entirely and so never reached the restore that lives at its end.
-     */
-    /**
-     * Whether a layout or autonomy editor currently has the diagram.
-     *
-     * The same question the Edit button answers, asked by anything that must not act while one is open.
-     * @return
-     */
-    /**
-     * Why autonomy may not start over this setup, or null - Start's half of `whyNoTrainMayBeSent`, in Start's own words.
-     *
-     * The button's enabled state is not enough on its own: it is computed when the tabs are built and when a configuration is
-     * loaded, and an error can appear long after (a page renamed, a tile deleted), so the affordance goes stale while the action
-     * stays live (OB-057: "after renaming a page, it says there are errors, but the start autonomy button is still visible.").
-     * There are three ways to press it: this button, the diagram strip's mirror, and the station right-click item.  Asked of
-     * the same check() the editor and the viewer panel show, so the count in the dialog is the count on screen.
+     * Why autonomy may not start over this setup, or null: Start's half of `whyNoTrainMayBeSent`, in Start's own words.
+     * The button's enabled state is not enough on its own: it is computed when the tabs are built and when a
+     * configuration is loaded, and an error can appear long after (a page renamed, a tile deleted; OB-057: "after
+     * renaming a page, it says there are errors, but the start autonomy button is still visible."), so the affordance
+     * goes stale while the action stays live.  There are three ways to press it (this button, the diagram strip's
+     * mirror, the station right-click item), all asked of the same check() the editor and the viewer panel show, so the
+     * count in the dialog is the count on screen.
      *
      * @return the sentence, or null
      */
@@ -5544,25 +5520,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Why Atomic Routes may not be switched off, or null when it may be.
-     *
-     * **WHAT MAKES IT UNSAFE.**  Non-atomic mode hands an edge back as soon as `Layout.tailHasProvablyPassed` says the tail has
-     * cleared it, and that is true - wrongly - in two states: a path with no measured edge anywhere, and a train whose length is
-     * 0 (a locomotive's length is 0 until somebody sets it).  In either, an edge is released with the train still lying over it
-     * and another train can be routed onto occupied track.  Atomic mode releases nothing until the run ends.  So there are TWO
-     * HALVES, track and train; the tooltip has always said "edge and train lengths".
-     *
-     * **THE QUESTION IS THE RAILWAY'S, NOT THE EDITOR'S**: it asks `Layout.unmeasuredTrackThatCouldBeReleased`
-     * and `Layout.trainsWithNoLength`, so the checkbox and the load door give one answer, and a railway with no diagram behind it
-     * is asked the same question as one built in the editor.  The editor's `squaresNeedingALength` refused a railway whose every
-     * edge is measured, and answered "nothing unmeasured" for a legacy setup, where the danger actually lives.
-     *
-     * **A WAY PAST, which this deliberately does not have.**  Adam would rather have no check than one that refuses something
-     * legal, and the usual shape is a confirmation; he asked for a refusal here (Adam: "can we simply refuse it now if there are
-     * unmeasured segments in what's walkable via the autonomy editor?  Limit it to logical edges that it prompts for, and on
-     * active pages only."), and the remedy is named in the message, rail by rail and train by train.  The FILE doors do not
-     * refuse - they write the safe setting and log it ("just enable the setting and show a warning in the log"); see
-     * `keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack`.
+     * Why Atomic Routes may not be switched off, or null when it may be.  **WHAT MAKES IT UNSAFE**: non-atomic mode
+     * hands an edge back as soon as `Layout.tailHasProvablyPassed` says the tail has cleared it, and that is true,
+     * wrongly, in two states: a path with no measured edge anywhere, and a train whose length is 0 (a locomotive's
+     * length is 0 until somebody sets it); in either an edge is released with the train still lying over it and another
+     * train can be routed onto occupied track.  Atomic mode releases nothing until the run ends.  **THE QUESTION IS THE
+     * RAILWAY'S, NOT THE EDITOR'S**: it asks `Layout.unmeasuredTrackThatCouldBeReleased` and
+     * `Layout.trainsWithNoLength`, so the checkbox and the load door give one answer and a railway with no diagram
+     * behind it is asked the same question as one built in the editor (the editor's `squaresNeedingALength` refuses a
+     * railway whose every edge is measured and answers "nothing unmeasured" for a legacy setup, where the danger
+     * lives).  **A WAY PAST, which this deliberately does not have**: Adam would rather have no check than one that
+     * refuses something legal, but he asked for a refusal here (Adam: "can we simply refuse it now if there are
+     * unmeasured segments in what's walkable via the autonomy editor?  Limit it to logical edges that it prompts for,
+     * and on active pages only."), and the remedy is named in the message, rail by rail and train by train.  The FILE
+     * doors do not refuse: they write the safe setting and log it ("just enable the setting and show a warning in the
+     * log"); see `keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack`.
      *
      * @return the sentence to show, or null when switching it off is safe
      */
@@ -5593,11 +5565,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * A few of a list, for a message that has to fit on a dialog: the count alone told how much was
-     * unmeasured and nothing about WHERE, so three names and an ellipsis is what a refusal can carry.
-     *
-     * @param names what was found
-     * @return up to three of them, comma-separated, with an ellipsis when there are more
+     * A few of a list, for a message that has to fit on a dialog: up to three names, comma-separated, with an ellipsis
+     * when there are more, as the count alone told how much was unmeasured and nothing about WHERE.
      */
     private static String someOf(java.util.List<String> names)
     {
@@ -5616,13 +5585,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * How much drivable track has no length - THE question, asked by the checkbox (`whyNonAtomicRoutesAreRefused`) and by the gate
-     * `keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack`, which every load and dispatch door calls.
-     *
+     * How much drivable track has no length: THE question, asked by the checkbox (`whyNonAtomicRoutesAreRefused`) and
+     * by the gate `keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack`, which every load and dispatch door calls.
      * `Layout.unmeasuredTrackThatCouldBeReleased` is the question in the form the hazard takes: the editor's
-     * `squaresNeedingALength` is non-empty whenever one switch square is unmeasured on a railway whose every edge is measured
-     * (where the unsafe escape cannot fire), and answers 0 with no session (the legacy railway).  The editor's count keeps its
-     * own job, the Unmeasured Track display and Mass Assign Lengths, which is about how far a tail reaches.
+     * `squaresNeedingALength` is non-empty whenever one switch square is unmeasured on a railway whose every edge is
+     * measured (where the unsafe escape cannot fire), and answers 0 with no session; the editor's count keeps its own
+     * job, the Unmeasured Track display and Mass Assign Lengths, which is about how far a tail reaches.
      *
      * @return the rails, empty when none could be released or there is no railway to ask
      */
@@ -5667,20 +5635,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * The railway does not get to run non-atomic while it could release track under a train.
      *
-     * **ENABLED, NOT REFUSED.**  The checkbox refuses the gesture because somebody is there to read the refusal and fix it; a FILE
-     * has nobody at it, and refusing the load would make a configuration he already has unopenable.  So the safe setting is
-     * written and the log says what happened and why (Adam: "just enable the setting and show a warning in the log").  Atomic
-     * mode releases nothing until a run ends, so turning it on can never be the unsafe answer.  The same holds at a dispatch,
-     * where the operator pressed Start, not "tell me about my train lengths".
+     * **ENABLED, NOT REFUSED.**  The checkbox refuses the gesture because somebody is there to read the refusal and fix
+     * it; a FILE has nobody at it, and refusing the load would make a configuration he already has unopenable.  So the
+     * safe setting is written and the log says what happened and why (Adam: "just enable the setting and show a warning
+     * in the log").  The same holds at a dispatch, where the operator pressed Start, not "tell me about my train
+     * lengths".
      *
-     * **FIVE CALLERS.**  The editor's own apply in `AutonomyViewerPanel` (the parse door); and the four
-     * dispatch doors: Start, Execute Timetable, Return Home, and `sendATrainByHand`, through which both hand dispatches go.  A
-     * train length is written on the LIVE layout long after a parse, so a door that dispatches without asking would run a
+     * **FIVE CALLERS.**  The editor's own apply in `AutonomyViewerPanel` (the parse door); and the four dispatch doors:
+     * Start, Execute Timetable, Return Home, and `sendATrainByHand`, through which both hand dispatches go.  A train
+     * length is written on the LIVE layout long after a parse, so a door that dispatches without asking would run a
      * zero-length train over track it hands back underneath itself.
-     * `ui.testNonAtomicRoutesNeedTheirLengths.testEveryDispatchDoorAsksTheGate` holds the four; if you add a fifth, add it there
-     * and correct the numbers here.
+     * `ui.testNonAtomicRoutesNeedTheirLengths.testEveryDispatchDoorAsksTheGate` holds the four; add a fifth there and
+     * correct the numbers here.
      *
-     * The control is put back in step with the railway afterwards, or the tick would show OFF while the layout runs atomic (OB-090).
+     * The control is put back in step with the railway afterwards, or the tick would show OFF while the layout runs
+     * atomic (OB-090).
      */
     public void keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack()
     {
@@ -5722,11 +5691,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Refuses to edit or delete a locomotive while a route that drives it is running, and says which route.  The
-     * autonomy refusal beside this one does not cover it: a route runs by hand, from its own button or an s88 trigger, with
-     * autonomy idle.  The route itself no longer breaks when its list is rewritten (it runs the list it began with), so this is
-     * what prevents the operator taking a locomotive out from under a road being set for it.
-     *
-     * Package-private for `LocomotiveActions`' edit and delete doors; event thread only, because it shows a dialog.
+     * autonomy refusal beside this one does not cover it: a route runs by hand, from its own button or an s88 trigger,
+     * with autonomy idle.  The route runs the list it began with, so this is what prevents taking a locomotive out from
+     * under a road being set for it.  Package-private for `LocomotiveActions`' edit and delete doors; event thread
+     * only, because it shows a dialog.
      *
      * @param source what to hang the dialog off
      * @param name the locomotive being edited or deleted
@@ -5746,8 +5714,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return true;
     }
     /**
-     * `refuseWhileARouteDrivesIt`, of each of these locomotives in turn: the first a running route drives is refused and
-     * said (OB-287, for a multi-unit and its members).
+     * `refuseWhileARouteDrivesIt`, of each of these locomotives in turn: the first a running route drives is refused
+     * and said (OB-287, for a multi-unit and its members).
      *
      * @param source what to hang the dialog off
      * @param names the locomotives
@@ -5764,9 +5732,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Refuses to change the locomotive database while autonomy is running (Adam, MT-141: "Never allow any modifications to a
-     * running layout.  This includes locomotive database, the track diagram, the autonomy config, or the locomotive placements.").
-     * Collected here so that a fifth door is one call rather than one more copy.
+     * Refuses to change the locomotive database while autonomy is running (Adam, MT-141: "Never allow any modifications
+     * to a running layout.  This includes locomotive database, the track diagram, the autonomy config, or the
+     * locomotive placements."), collected here so that a fifth door is one call rather than one more copy.
      *
      * @param source what to hang the dialog off, usually the menu item pressed
      * @return true when the caller must not proceed
@@ -5819,10 +5787,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Refuses an autonomy action while an editor holds the diagram, and says why.  The Autonomy menu gates itself by disabling
-     * its items; the banner cannot, being a single button drawn before the state it guards against is entered.  Loading saves the
-     * setup against a diagram somebody is still editing (discarding the names and captions of tiles they meant to Cancel), and
-     * both actions rebuild the main window underneath the open editor.
+     * Refuses an autonomy action while an editor holds the diagram, and says why.  The Autonomy menu gates itself by
+     * disabling its items; the banner cannot, being a single button drawn before the state it guards against is
+     * entered.  Loading saves the setup against a diagram somebody is still editing (discarding the names and captions
+     * of tiles they meant to Cancel), and both actions rebuild the main window underneath the open editor.
      *
      * @return true when the caller must not proceed
      */
@@ -5848,14 +5816,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * What stops a train being sent now, or null - the one question every door that sends a train asks: the Auto tab's list of
-     * paths and the diagram's destinations (through `sendATrainByHand`), Start, Execute Timetable and Return Home (Adam: "can all
-     * the checks go through a single door?").  Each door asked its own copy in its own order, and the Auto tab's had no editor
-     * question, so an editor opened at rest stayed open for the run it sent.
+     * What stops a train being sent now, or null: the one question every door that sends a train asks (the Auto tab's
+     * list of paths and the diagram's destinations through `sendATrainByHand`, Start, Execute Timetable and Return
+     * Home; Adam: "can all the checks go through a single door?").
      *
-     * In this order: an open editor holds the diagram the trains would run on, and no setup edit is made during a run (OB-047,
-     * MT-135); no route running, which a run waits for; a setup with errors sends nothing (MT-263); the power comes before any
-     * question about the journey.  What a door asks besides is its own action's - a hand send's path
+     * In this order: an open editor holds the diagram the trains would run on, and no setup edit is made during a run
+     * (OB-047, MT-135); no route running, which a run waits for; a setup with errors sends nothing (MT-263); the power
+     * comes before any question about the journey.  What a door asks besides is its own action's: a hand send's path
      * (`whyThisPathCannotBeTaken`), the trains already running for the three that start a run.
      *
      * @param startingAutonomy whether the door is Start, which refuses a broken setup in its own words
@@ -5883,8 +5850,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Whether a run started now would not move: TrainControl started in simulation, and Simulate not ticked in the autonomy
-     * settings, so the trains are sent and wait for sensors no simulation reports.
+     * Whether a run started now would not move: TrainControl started in simulation and Simulate not ticked in the
+     * autonomy settings, so the trains are sent and wait for sensors no simulation reports.
      *
      * @return whether it would not
      */
@@ -5895,9 +5862,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Asks before a run that would not move - see `wouldRunUnsimulated` - Start anyway or not, not the default (Adam: "adding a
-     * warning popup when you start autonomy when the app is in simulate, and simulate isn't checked").  Asked by the one gate
-     * once it has passed (`refusedToSendATrain`).  Not asked of a run nobody attends.
+     * Asks before a run that would not move (see `wouldRunUnsimulated`), Start anyway or not, not the default (Adam:
+     * "adding a warning popup when you start autonomy when the app is in simulate, and simulate isn't checked").  Asked
+     * by the one gate once it has passed (`refusedToSendATrain`), and not of a run nobody attends.
      *
      * @return true where the operator declined
      */
@@ -5911,9 +5878,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Refuses a train sent now where `whyNoTrainMayBeSent` says so, saying why over this window - on the event thread, as
-     * `refuseWhileEditorOpen` does.  Every door asks it on the event thread today; the posted branch is there so that a
-     * caller on a worker can never show a dialog off it.
+     * Refuses a train sent now where `whyNoTrainMayBeSent` says so, saying why over this window, on the event thread as
+     * `refuseWhileEditorOpen` does.  Every door asks it there today; the posted branch is there so that a caller on a
+     * worker can never show a dialog off it.
      *
      * @param startingAutonomy whether the door is Start
      * @return true when the door must not send it
@@ -5939,10 +5906,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Whether an editor holds the diagram or is on its way to it.  The editor is built in a task posted after it is
-     * asked for, so between the two its window does not exist yet and a door that asked only `isLayoutEditorOpen` sent a train.
-     * Package-visible for `TailCrossedPrompt.saveBeforeAsking`, which saves a placement before its tail question only while no
-     * editor holds the setup (OB-305).
+     * Whether an editor holds the diagram or is on its way to it: the editor is built in a task posted after it is
+     * asked for, so between the two its window does not exist yet and a door that asked only `isLayoutEditorOpen` sent
+     * a train.  Package-visible for `TailCrossedPrompt.saveBeforeAsking`, which saves a placement before its tail
+     * question only while no editor holds the setup (OB-305).
      *
      * @return true while an editor is open, or asked for and not yet shown
      */
@@ -5953,9 +5920,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Refuses to dispatch where an editor has come since the door's click, or a refresh of the diagram, or a route has
-     * begun (the gate's own question, `whyNoTrainMayBeSent`, asked again), and says so.  Asked by the run doors at their last
-     * event-thread moment before the dispatch: Start, Execute Timetable and Return Home, and a hand send after its
-     * questions.
+     * begun (the gate's own question, `whyNoTrainMayBeSent`, asked again), and says so.  Asked by the run doors at
+     * their last event-thread moment before the dispatch: Start, Execute Timetable and Return Home, and a hand send
+     * after its questions.
      *
      * @return true when the door must not dispatch
      */
@@ -5985,10 +5952,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Why this train cannot take this path whatever the minute, or null - the standing rules a hand send explains before it
-     * asks anything: the train's length (MT-262), a berth that cannot hold it, a loop into its own tail (OB-294).
-     * Each is the railway's own rule, which `isPathClear` asks at dispatch too, so a door and the railway cannot disagree;
-     * what clears itself in a minute - a busy sensor - is left to the dispatch, where it is not a dialog.
+     * Why this train cannot take this path whatever the minute, or null: the standing rules a hand send explains before
+     * it asks anything (the train's length, MT-262; a berth that cannot hold it; a loop into its own tail, OB-294).
+     * Each is the railway's own rule, which `isPathClear` asks at dispatch too, so a door and the railway cannot
+     * disagree; what clears itself in a minute, a busy sensor, is left to the dispatch, where it is not a dialog.
      *
      * @param railway the railway the path is on
      * @param path the path
@@ -6007,15 +5974,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Sends one train along one path by hand - the one door both hand doors go through: the Auto tab's list of paths and the
-     * diagram's destinations (one sequence, so that what one learns the other knows).
+     * Sends one train along one path by hand: the one door both hand doors go through (the Auto tab's list of paths and
+     * the diagram's destinations), one sequence so that what one learns the other knows.
      *
-     * In this order, on the event thread: whether a train may be sent at all (`refusedToSendATrain`); whether this path can take
-     * this train (`whyThisPathCannotBeTaken`); the reversal question, on departure itself so that nothing is dispatched before the
-     * answer; the last-moment question again (`refusedForAnEditorOnItsWay`), since the questions leave room for an editor, a
-     * refresh or a route to begin; the atomic-routes gate.  Then the dispatch on its own thread, since it
-     * holds the railway's monitor for the whole path (OB-192); a dispatch the railway turns down says so.  The graph hears where
-     * the run ends from `executePath` itself, which announces it when its thread count falls to zero.
+     * In this order, on the event thread: whether a train may be sent at all (`refusedToSendATrain`); whether this path
+     * can take this train (`whyThisPathCannotBeTaken`); the reversal question, on departure itself so that nothing is
+     * dispatched before the answer; the last-moment question again (`refusedForAnEditorOnItsWay`), since the questions
+     * leave room for an editor, a refresh or a route to begin; the atomic-routes gate.  Then the dispatch on its own
+     * thread, since it holds the railway's monitor for the whole path (OB-192); a dispatch the railway turns down says
+     * so.  The graph hears where the run ends from `executePath` itself, which announces it when its thread count falls
+     * to zero.
      *
      * @param railway the railway the path was offered on
      * @param path the path, as read where the operator chose it
@@ -6089,11 +6057,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Rebuilds the running layout from what the setup now says (OB-034).  The same thing autonomyEditorClosed does at the end,
-     * lifted out so an edit made from the DIAGRAM's own menu can ask for it too: renaming a station from the track diagram
-     * changes what the copies are CALLED, so the running layout would hold names the setup no longer knows and the caption
-     * would go blank.  Not while trains are moving, for the reason the original gives: rebuilding underneath a running railway
-     * is what prepareAutonomyReload exists to refuse.
+     * Rebuilds the running layout from what the setup now says (OB-034): what autonomyEditorClosed does at the end,
+     * lifted out so an edit made from the DIAGRAM's own menu can ask for it too, as renaming a station there changes
+     * what the copies are CALLED and the running layout would hold names the setup no longer knows, the caption going
+     * blank.  Not while trains are moving, as rebuilding underneath a running railway is what prepareAutonomyReload
+     * exists to refuse.
      */
     public void rebuildRunningLayoutFromSetup()
     {
@@ -6104,9 +6072,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Which locomotive is standing on which point, and which side it came in by (OB-183).  Read off the RUNNING layout, the only
-     * place a train's position lives once anything has moved it (`currentLoc` is not written back to the setup until something
-     * captures it).  By POINT NAME rather than by square, because on a split square which copy a train is on IS its direction.
+     * Which locomotive is standing on which point, and which side it came in by (OB-183), read off the RUNNING layout,
+     * the only place a train's position lives once anything has moved it (`currentLoc` is not written back to the setup
+     * until something captures it).  By POINT NAME rather than by square, because on a split square which copy a train
+     * is on IS its direction.
      *
      * @return locomotive name to {point name, arrival side}, the side possibly null
      */
@@ -6137,13 +6106,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * The same, over a layout handed in, so a rebuild can be tested without a window.
      *
-     * **And the road it came in on**, as `Layout.namesOfRoad` writes it: the rebuild regenerates every Point, so only the
-     * edges' names can be carried, which `putTheTrainsBack` looks up again on the layout it has just built.  **And the square and
-     * facing of the Point each stands on, and of each on its road**: a rebuild carries them by those, since a rename
-     * can hand a Point's name to another square.
+     * **And the road it came in on**, as `Layout.namesOfRoad` writes it: the rebuild regenerates every Point, so only
+     * the edges' names can be carried, which `putTheTrainsBack` looks up again on the layout it has just built.  **And
+     * the square and facing of the Point each stands on, and of each on its road**: a rebuild carries them by those, as
+     * a rename can hand a Point's name to another square.
      *
      * @param layout the running layout
-     * @return locomotive name to {point name, arrival side, road, square, facing, the road's squares}, all but the first
+     * @return locomotive name to {point name, arrival side, road, square, facing, the road's squares}, all but the
+     * first
      *         possibly null
      */
     public static java.util.Map<String, String[]> whereTheTrainsAre(org.traincontrol.automation.Layout layout)
@@ -6201,8 +6171,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The square and facing of each Point on a road, by name, as `whereTheTrainsAre` records it: what the
-     * road's names are carried by across a rebuild.
+     * The square and facing of each Point on a road, by name, as `whereTheTrainsAre` records it: what the road's names
+     * are carried by across a rebuild.
      *
      * @param road the rails a train came in along, or null
      * @return a JSON object of each Point name to [square, facing], or null
@@ -6229,8 +6199,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The destination turns the railway has made and not yet written into the setup.  DRAINED rather than copied,
-     * because the Layout this reads from is about to be thrown away; the pair with `putThePendingTurnsBack` is
+     * The destination turns the railway has made and not yet written into the setup, DRAINED rather than copied because
+     * the Layout this reads from is about to be thrown away; the pair with `putThePendingTurnsBack` is
      * `whereTheTrainsAre`/`putTheTrainsBack`.
      *
      * @return each locomotive against the Point it turned at, with that Point's square and facing, never null
@@ -6258,8 +6228,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Puts those turns onto whatever Layout the rebuild produced.  `restoreReversalsOnArrival` puts each back only IF
-     * ABSENT (stated on the Layout, where it is enforced), which makes this safe to do after the load: a train that has turned
-     * again on the new railway has a newer record, and this must not overwrite it with the square it has since left.
+     * ABSENT (stated on the Layout, where it is enforced), which makes this safe after the load: a train that has
+     * turned again on the new railway has a newer record that this must not overwrite with the square it has since
+     * left.
      *
      * @param turns what `takeThePendingTurns` drained, may be null or empty
      */
@@ -6287,12 +6258,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Puts each train back where it was standing before the rebuild (OB-183).
-     *
-     * **On the Point the rebuild gives the copy the train stood on**: by the name recorded, or where a square was
-     * renamed or its copies changed, by the name the session traces it to.  A train whose square is gone has no Point to go back
-     * on, and is left where the rebuild put it.  The arrival side goes back with the train, because `Point.setLocomotive` clears
-     * it when the occupant changes, and without it the tail blocking would switch itself off on every home change (OB-183).
+     * Puts each train back where it was standing before the rebuild (OB-183), **on the Point the rebuild gives the copy
+     * the train stood on**: by the name recorded, or where a square was renamed or its copies changed, by the name the
+     * session traces it to.  A train whose square is gone has no Point to go back on, and is left where the rebuild put
+     * it.  The arrival side goes back with the train, because `Point.setLocomotive` clears it when the occupant
+     * changes, and without it the tail blocking would switch itself off on every home change.
      *
      * @param standing what `whereTheTrainsAre` recorded
      * @param placementsJustEdited locomotives the setup was just given a new placement for, or null
@@ -6318,10 +6288,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * A train the rebuild could not put back where the railway had it, taken off wherever the rebuild put it and recorded
-     * in the setup where it stands, facing the way it faces.  The rebuild put it where the setup last had it -
-     * a square a run had moved it off - or nowhere, and the square it stands on read free: another train could be sent
-     * into it, and nothing in the setup check said so.  Recorded, the build stands it on no Point where no copy faces
+     * A train the rebuild could not put back where the railway had it, taken off wherever the rebuild put it and
+     * recorded in the setup where it stands, facing the way it faces: the rebuild put it where the setup last had it (a
+     * square a run had moved it off) or nowhere, and the square it stands on read free, so another train could be sent
+     * into it and nothing in the setup check said so.  Recorded, the build stands it on no Point where no copy faces
      * its way, and the setup check's error stops every send until it is turned, moved, or the track is put back.
      *
      * @param built the railway the rebuild produced
@@ -6386,8 +6356,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The same, over a layout handed in, so it can be tested without a window (MT-337): a source-shape guard on the order of
-     * `whereTheTrainsAre` and the load cannot say what the two statements do to a train.
+     * The same, over a layout handed in, so it can be tested without a window (MT-337): a source-shape guard on the
+     * order of `whereTheTrainsAre` and the load cannot say what the two statements do to a train.
      *
      * @param built the layout the rebuild just produced
      * @param standing what `whereTheTrainsAre` recorded before it
