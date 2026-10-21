@@ -20862,18 +20862,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The same, with the caller's continuation guaranteed to run.  `after` is what an editor uses to finish a page switch, and it is
-     * the last statement of a dozen, so anything throwing on the way skipped it and left the editor's switch latch raised, refusing
-     * every further page and mode change in silence for the life of the window.
-     *
-     * **The guarantee (a `finally`) is not in this method, and that is the whole point of the arrangement**.
-     * `layoutEditingComplete` is asynchronous: it lowers the button, reads a field and starts a thread, so a finally here covered
-     * those three statements and the continuation ran at once (the editor's `arriveAt` was queued on the EDT before the refresh was),
-     * and the refresh, arriving last, re-enabled the Edit Layout button with the editor still open.  It lives in
-     * `layoutRefreshComplete`, where the dozen statements are; what is left here is the case where there is no worker to reach it.  A
-     * reader who "simplified" this back to a finally here would put the defect back.
-     *
-     * @param after what to run when the refresh has finished, failed, or thrown
+     * The same, with the caller's continuation guaranteed to run: `after` is what an editor uses to finish a page
+     * switch, and anything throwing on the way would leave the editor's switch latch raised, refusing every further
+     * page and mode change in silence for the life of the window.  **The guarantee (a `finally`) is not in this method,
+     * and that is the whole point of the arrangement**: `layoutEditingComplete` is asynchronous (it lowers the button,
+     * reads a field and starts a thread), so a finally here would run the continuation at once, the editor's `arriveAt`
+     * would be queued on the EDT before the refresh, and the refresh, arriving last, would re-enable the Edit Layout
+     * button with the editor still open.  It lives in `layoutRefreshComplete`; what is left here is the case where
+     * there is no worker to reach it.  `after` runs when the refresh has finished, failed, or thrown.
      */
     public void layoutEditingCompleteThen(Runnable after)
     {
@@ -21412,23 +21408,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Why autonomy will not start, in the words the operator should read (MT-263).
-     *
-     * **Three doors ask this**: the greyed Start item's tooltip on the diagram menu, the scripting API's exception and the Start dialog.
-     * Two of them said *"one thing has to be dealt with first"* whenever `hasErrors()` was true and the error COUNT was zero, which is a
-     * graph that will not build, and with three such problems they said one (OB-090).  The wait-for-trains sentence is the right
-     * answer only when nothing is wrong with the setup at all; with a broken graph it tells the operator to wait for trains that are not
-     * running and never will be.
-     *
-     * Five answers, in the order they have to be asked:
-     *
-     *  - a layout that lives on the Central Station -> it needs one on this computer, the guard's own first reason;
-     *  - error findings -> name how many, because the editor can take them there;
-     *  - more than one blocking problem -> name how many, and point at the count along the top;
-     *  - exactly one, or a setup that will not run for any other reason -> the singular of the same sentence;
-     *  - nothing wrong with the setup -> wait for the trains, which is now the only way to reach it.
-     *
-     * @return the sentence, already translated
+     * Why autonomy will not start, in the words the operator should read (MT-263).  **Three doors ask this**: the
+     * greyed Start item's tooltip on the diagram menu, the scripting API's exception and the Start dialog.  A graph
+     * that will not build has `hasErrors()` true with an error COUNT of zero, and the wait-for-trains sentence is the
+     * right answer only when nothing is wrong with the setup at all (OB-090).  Five answers, in the order they have to
+     * be asked: a layout that lives on the Central Station -> it needs one on this computer, the guard's own first
+     * reason; error findings -> name how many, because the editor can take them there; more than one blocking problem
+     * -> name how many, and point at the count along the top; exactly one, or a setup that will not run for any other
+     * reason -> the singular of the same sentence; nothing wrong with the setup -> wait for the trains, which is now
+     * the only way to reach it.  Returns the sentence, already translated.
      */
     public String whyAutonomyWillNotStart()
     {
@@ -21480,15 +21468,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * The words for a refused hand send: the setup's own - *"This setup cannot be used yet"*, with however many things
-     * there are to deal with - and never Start's, which say AUTONOMY cannot start and would be about the wrong button.
-     *
-     * Through the Start rule rather than beside it, so each sentence is still chosen in one place: the error findings
-     * where there are any, since those are what the editor lists, and otherwise the problems that stop the setup
-     * being built.
-     *
-     * @param errors how many error findings the setup has
-     * @param blocking how many problems would stop it being built
-     * @return the sentence, already translated
+     * there are to deal with - and never Start's, which say AUTONOMY cannot start.  Through the Start rule rather than
+     * beside it, so each sentence is still chosen in one place: the error findings where there are any, since those are
+     * what the editor lists, and otherwise the problems that stop the setup being built (`errors` and `blocking` are
+     * the counts).  Returns the sentence, already translated.
      */
     public static String whyAHandSendIsRefused(int errors, int blocking)
     {
@@ -21496,15 +21479,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Start's sentence and the hand doors', from one reading of the setup: {why Start is refused, why a
-     * hand send is refused or null}.
-     *
-     * For the right-click menu, which shows both where Start is not offered.  Asked one after the other, the two rules
-     * walked the whole setup check four times between them - `check()` is not cached - on the event thread, while the
-     * operator is right-clicking to find out what is wrong.  The same rules as `whyAutonomyWillNotStart()` and
-     * `whyAHandSendIsRefused()`, over the same three numbers, read once.
-     *
-     * @return the two sentences, already translated
+     * Start's sentence and the hand doors', from one reading of the setup: {why Start is refused, why a hand send is
+     * refused or null}, for the right-click menu, which shows both where Start is not offered.  Asked one after the
+     * other, the two rules walked the whole setup check four times between them (`check()` is not cached) on the event
+     * thread, while the operator is right-clicking to find out what is wrong.  The same rules as
+     * `whyAutonomyWillNotStart()` and `whyAHandSendIsRefused()`, over the same three numbers, read once.
      */
     public String[] whyStartAndAHandSendAreRefused()
     {
@@ -22091,15 +22070,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Why the trains cannot be put on their homes now, or null (FR-129): the one question the Return Home menu's item is greyed by and
-     * the press is refused by, so the two cannot disagree.
-     *
-     * Not while anything runs - autonomy, a timetable, Return Home or a route, which `somethingIsRunning` asks and the Auto tab's own
-     * holds (`theAutoTabWaits`) - since no setup edit is made during a run (Adam: "There should be no setup edit possible during a
-     * run").  Not while an editor holds the setup, or the diagram is reloading, as the gate every train-sending door asks
-     * (`whyNoTrainMayBeSent`).  And not without a local setup, or with no home to put a train on.
-     *
-     * @return the sentence to show, or null where the placement may go ahead
+     * Why the trains cannot be put on their homes now, or null (FR-129): the one question the Return Home menu's item
+     * is greyed by and the press is refused by, so the two cannot disagree.  Not while anything runs (autonomy, a
+     * timetable, Return Home or a route, which `somethingIsRunning` asks and the Auto tab's own holds,
+     * `theAutoTabWaits`), since no setup edit is made during a run (Adam: "There should be no setup edit possible
+     * during a run").  Not while an editor holds the setup, or the diagram is reloading, as the gate every
+     * train-sending door asks (`whyNoTrainMayBeSent`).  And not without a local setup, or with no home to put a train
+     * on.
      */
     public String whyTheTrainsCannotBePlacedAtTheirHomes()
     {
@@ -22618,20 +22595,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Reloads the configuration that is running, if one is and it is safe to.
-     *
-     * For changes made outside the editor that the running layout has to be rebuilt from - leaving a
-     * page out, most of all, which otherwise leaves the interface saying a page is out of autonomy
-     * while the railway carries on routing trains to the stations on it.
-     */
-    /**
-     * The locomotives that are actually moving.
-     *
-     * Not the same question as isAutonomyBusy(), which is about whether the layout is driving itself.
-     * A train somebody is driving by hand is moving and autonomy is not busy, and anything about to
-     * stop everything needs to know about that train rather than about autonomy.
-     *
-     * @return the names of every locomotive with a speed above zero
+     * The locomotives that are actually moving: not the same question as isAutonomyBusy(), which is about whether the
+     * layout is driving itself.  A train somebody is driving by hand is moving and autonomy is not busy, and anything
+     * about to stop everything needs to know about that train.  Returns the names of every locomotive with a speed
+     * above zero.
      */
     public java.util.List<String> locomotivesMoving()
     {
@@ -22913,18 +22880,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The update question: "TrainControl vX is available (you have vY)." with Download, Download & Update and Cancel (FR-125; Adam:
-     * "when user clicks on the new version, they see a download, download & update, or cancel button", and "If no jar in current
-     * folder, it shouldn't be offered as a menu option") - so without a jar to replace there are two buttons, Download and Cancel.  The
-     * answer is read against the buttons that were shown, so the two layouts cannot be mistaken for each other.
-     *
-     * Download is the default, with a jar or without: Download & Update closes TrainControl, and a reflex Enter must not do that.
-     *
-     * @param parent what to show it over
-     * @param latest the new version
-     * @param running this version
-     * @param canInstall whether TrainControl runs from a jar it can replace
-     * @return the answer
+     * The update question: "TrainControl vX is available (you have vY)." with Download, Download & Update and Cancel
+     * (FR-125; Adam: "when user clicks on the new version, they see a download, download & update, or cancel button",
+     * and "If no jar in current folder, it shouldn't be offered as a menu option"), so without a jar to replace
+     * (`canInstall` false) there are two buttons, Download and Cancel.  The answer is read against the buttons that
+     * were shown, so the two layouts cannot be mistaken for each other.  Download is the default, with a jar or
+     * without: Download & Update closes TrainControl, and a reflex Enter must not do that.
      */
     public static UpdateChoice askAboutTheUpdate(Component parent, String latest, String running, boolean canInstall)
     {
@@ -22944,16 +22905,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Why an update cannot start now, or null (FR-125).  Download & Update ends by closing TrainControl, and an exit with trains running
-     * stops to ask whether to leave them running, which an update cannot answer for anybody, so it refuses first, while autonomy, a
-     * timetable, Return Home or a route is running, rather than downloading and backing up for an exit that would then stop.
-     * `isAutonomyRunning` covers autonomy, a timetable and a Return Home run; `returnHomePlanning` is the window's own flag for Return
-     * Home working out its plan, when nothing is running yet; a route runs by hand or from a sensor with autonomy idle, so it is asked
-     * separately, as the locomotive doors ask it.
-     *
-     * @param model the railway
-     * @param returnHomePlanning whether the window has Return Home under way
-     * @return the sentence to show, or null when an update may start
+     * Why an update cannot start now, or null (FR-125).  Download & Update ends by closing TrainControl, and an exit
+     * with trains running stops to ask whether to leave them running, which an update cannot answer for anybody, so it
+     * refuses first, while autonomy, a timetable, Return Home or a route is running, rather than downloading and
+     * backing up for an exit that would then stop.  `isAutonomyRunning` covers autonomy, a timetable and a Return Home
+     * run; `returnHomePlanning` is the window's own flag for Return Home working out its plan, when nothing is running
+     * yet; a route runs by hand or from a sensor with autonomy idle, so it is asked separately, as the locomotive doors
+     * ask it.
      */
     public static String whyAnUpdateMustWait(ViewListener model, boolean returnHomePlanning)
     {
@@ -24789,15 +24747,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     static final String CROP_VIEW_PREFIX = "view=";
 
     /**
-     * Asks how long a train is, and remembers the answer (FR-047; Adam: "allow the train length to be set both from the right click
-     * locomotive menu on the key mappings, and the right click menu in the locomotive database editor.").  Two doors, one implementation.
-     *
-     * The number matters because autonomy refuses a platform to a train too long for it; a train with no length is never refused anything
-     * (which FR-046 warns about), and this is somewhere to set it without opening the autonomy editor.  Zero means "not set", as it does
-     * everywhere else this number is used: a train of length zero and a train of unknown length are the same thing to the railway.
-     *
-     * @param l the locomotive
-     * @param evt where the click was, so the dialog opens near it, or null
+     * Asks how long a train is, and remembers the answer (FR-047; Adam: "allow the train length to be set both from the
+     * right click locomotive menu on the key mappings, and the right click menu in the locomotive database editor."):
+     * two doors, one implementation.  The number matters because autonomy refuses a platform to a train too long for
+     * it; a train with no length is never refused anything (which FR-046 warns about), and this is somewhere to set it
+     * without opening the autonomy editor.  Zero means "not set", as everywhere else this number is used.  `evt` is
+     * where the click was, so the dialog opens near it, or null.
      */
     public void promptTrainLength(Locomotive l, MouseEvent evt)
     {
@@ -24834,18 +24789,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Records a train's length, and tells everything that draws or refuses from it: everything the dialog above does once it has an answer,
-     * lifted out so that it can be driven (`promptTrainLength` opens a modal, and a test cannot answer one without a robot);
-     * `regression.testEditorSurfaceRules` pins the call site.
-     *
-     * **The grey on the diagram follows the number** (Adam: "yes, this greyout should appear at idle and be regenerated if a
-     * placement or train/track length is changed."): how far a standing train's tail reaches is `getTrainLength()` hops of measured track,
-     * which `Layout.edgesCoveredByStandingTrains` reads off the locomotive every time it is asked, so a length typed here changes what the
-     * railway refuses IMMEDIATELY with no rebuild in between, and the drawing had no way to know.  The other two gestures reach the marks
-     * by paths that already existed (a placement through `updateVisiblePoints`, a tile length through the setup rebuild).
-     *
-     * @param l the locomotive
-     * @param units how long the train is, where zero means "not set"
+     * Records a train's length, and tells everything that draws or refuses from it: everything the dialog above does
+     * once it has an answer, lifted out so that it can be driven (`promptTrainLength` opens a modal, and a test cannot
+     * answer one without a robot); `regression.testEditorSurfaceRules` pins the call site.  **The grey on the diagram
+     * follows the number** (Adam: "yes, this greyout should appear at idle and be regenerated if a placement or
+     * train/track length is changed."): how far a standing train's tail reaches is `getTrainLength()` hops of measured
+     * track, which `Layout.edgesCoveredByStandingTrains` reads off the locomotive every time it is asked, so a length
+     * typed here changes what the railway refuses IMMEDIATELY with no rebuild in between, and the drawing has no way to
+     * know.  The other two gestures reach the marks by paths that already exist (a placement through
+     * `updateVisiblePoints`, a tile length through the setup rebuild).  `units` of zero means "not set".
      */
     public void applyTrainLength(Locomotive l, int units)
     {
@@ -24917,15 +24869,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Notes, beside a crop, which picture it was cut out of (FR-032).  Re-cropping needs the ORIGINAL: cropping a crop can only ever go
-     * tighter, so "crop/pan without reselecting the source" would mean panning in one direction only.  A sidecar file rather than anything
-     * cleverer: a second field on Locomotive means the model, its copy constructor and its serialisation for something only the interface
-     * cares about; a preference keyed by locomotive name breaks on a rename; and PNG metadata survives none of the ordinary things a
-     * person does to a file.  Best-effort by design: if it cannot be written the crop still works and re-cropping falls back to the crop.
-     * Public, with `cropSourceOf`, so the round trip between them can be run without standing up a window.
-     *
-     * @param crop the crop that was just written
-     * @param source the picture it was cut from
+     * Notes, beside a crop, which picture it was cut out of (FR-032).  Re-cropping needs the ORIGINAL: cropping a crop
+     * can only ever go tighter.  A sidecar file rather than anything cleverer: a second field on Locomotive means the
+     * model, its copy constructor and its serialisation for something only the interface cares about; a preference
+     * keyed by locomotive name breaks on a rename; and PNG metadata survives none of the ordinary things a person does
+     * to a file.  Best-effort by design: if it cannot be written the crop still works and re-cropping falls back to the
+     * crop.  Public, with `cropSourceOf`, so the round trip between them can be run without standing up a window.
      */
     public void rememberCropSource(File crop, File source)
     {
@@ -25357,8 +25306,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * `getSecondsToNext` is in milliseconds and the cell shows it divided by 1000, so a change smaller than a second
      * moves this string and not the table.  A repaint is asked for whenever one is needed, and sometimes when it is
      * not; the redraw is the cheap half and the wrong direction to be wrong in.  Package-private for
-     * `TimetableTab.repaintTimetable`, which calls it from its invokeLater, so on the event thread.  Returns a key that
-     * changes when the drawing would.
+     * `TimetableTab.repaintTimetable` (event thread).
      */
     String timetableSignature(List<TimetablePath> timeTable)
     {
@@ -26032,16 +25980,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The same question, asked of a plain list so it can be exercised without a railway.
-     *
-     * EXACT MATCHES FIRST, and that order is the whole of it rather than a tidy-up. A layout with
-     * "Yard" and "Yard Bypass" on it makes "Yard" both an exact name and a substring of another - and
-     * a rule that looked for substrings first would call that ambiguous and refuse to find a route
-     * whose name the user typed in full.
-     *
-     * @param names every route there is
-     * @param wanted what was typed, already trimmed
-     * @return the one route this names, or null for none and for more than one
+     * The same question, asked of a plain list so it can be exercised without a railway.  EXACT MATCHES FIRST, and that
+     * order is the whole of it: a layout with "Yard" and "Yard Bypass" makes "Yard" both an exact name and a substring
+     * of another, and a rule that looked for substrings first would call that ambiguous and refuse to find a route
+     * whose name the user typed in full.  `wanted` is what was typed, already trimmed; returns the one route this
+     * names, or null for none and for more than one.
      */
     public static String routeNamedIn(List<String> names, String wanted)
     {
@@ -26049,21 +25992,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Every route this text could mean, best first.
-     *
-     * An exact name is not one candidate among several - it is the answer, so it comes back alone.
-     * Anything else comes back as the list of routes whose names contain the text, in the order the
-     * model lists them.
-     *
-     * Ambiguity is handled by ASKING rather than by guessing or refusing (MT-218). Adam: "let's
-     * support partial matching if there is no exact match as entered." Partial matching was already
-     * there; what it did when a fragment fitted several routes was give up, on the reasoning that
-     * landing silently on one of them is worse than saying no. That reasoning is right and refusing
-     * was still the wrong conclusion - the third option is to put the list in front of the user.
-     *
-     * @param names every route there is
-     * @param wanted what was typed, already trimmed
-     * @return the candidates, empty when nothing matches, exactly one when the answer is certain
+     * Every route this text could mean, best first.  An exact name is the answer, so it comes back alone; anything else
+     * comes back as the list of routes whose names contain the text, in the order the model lists them.  Ambiguity is
+     * handled by ASKING rather than by guessing or refusing (MT-218; Adam: "let's support partial matching if there is
+     * no exact match as entered."): landing silently on one of several is worse than saying no, and the third option is
+     * to put the list in front of the user.  Returns the candidates, empty when nothing matches, exactly one when the
+     * answer is certain.
      */
     public static List<String> routesMatchingIn(List<String> names, String wanted)
     {
@@ -26351,34 +26285,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
     
     /**
-     * Runs a refresh on the event thread in ONE pass, rather than posting a new one for it.
-     *
-     * Adam, 2026-09-04: "the main UI when the hourglass expires - it seems that some components
-     * appear faster than others.  Best to do a single pass."
-     *
-     * He is describing what several `invokeLater` calls in a row actually look like.  Each one is a
-     * separate event, each event is a separate layout and paint, and the window is shown between
-     * them - so the route list arrives, then the locomotive list, then the menus come back, in three
-     * visible steps.  Nothing was slow; it was simply done in installments.
-     *
-     * `invokeLater` posts unconditionally, so a caller ALREADY on the event thread cannot collect
-     * several refreshes into one pass by wrapping them - the wrapper is one event and each refresh
-     * inside it posts another.  This runs inline when there is already a pass to join, which is what
-     * makes the wrapping work.
-     *
-     * WHAT THIS DOES NOT COLLECT, and deliberately: `repaintLayout` and `repaintLoc` go through their
-     * own single-thread renderers before they reach the event thread, so they arrive in a later pass
-     * whatever this does.
-     *
-     * The reason is SERIALISATION, not thread separation, and the first version of this javadoc said
-     * otherwise - "because building the grid is the slow part of a sync and must not be done on it".
-     * That is not true of this source: the whole body submitted to `LayoutGridRenderer` is a single
-     * `invokeLater`, `new LayoutGrid(...)` included, so the grid IS built on the event thread and the
-     * renderer thread does nothing but post.  What the renderer buys is that two rebuilds cannot
-     * interleave.  Anyone widening this pass has to preserve that property - and would be reasoning
-     * from a false one if this had been left as written.
-     *
-     * @param body the refresh work
+     * Runs a refresh on the event thread in ONE pass, rather than posting a new one for it (Adam: "the main UI when the
+     * hourglass expires - it seems that some components appear faster than others.  Best to do a single pass."):
+     * several `invokeLater` calls in a row are separate events, each a separate layout and paint with the window shown
+     * between them, so the route list arrives, then the locomotive list, then the menus, in three visible steps.
+     * `invokeLater` posts unconditionally, so a caller ALREADY on the event thread cannot collect several refreshes
+     * into one pass by wrapping them (the wrapper is one event and each refresh inside it posts another); this runs
+     * inline when there is already a pass to join, which makes the wrapping work.  WHAT THIS DOES NOT COLLECT,
+     * deliberately: `repaintLayout` and `repaintLoc` go through their own single-thread renderers before they reach the
+     * event thread, so they arrive in a later pass whatever this does.  Those renderers buy serialisation, not thread
+     * separation: the whole body submitted to `LayoutGridRenderer` is a single `invokeLater`, `new LayoutGrid(...)`
+     * included, so the grid IS built on the event thread and the renderer thread only posts, but two rebuilds cannot
+     * interleave; anyone widening this pass has to preserve that.  `body` is the refresh work.
      */
     public static void singlePass(Runnable body)
     {
