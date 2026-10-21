@@ -29221,6 +29221,28 @@ text:
 | Validated by Claude, on your word of 2026-10-20: "Validate your fixes on the route work once finished (yourself, for efficiency)."  The editor was drawn in German with a command of every kind and an S88 condition: every setting cell and every dropdown reads in German (gerade/abzweigend, grün/rot, links/gerade/rechts, aus/ein, vorwärts/rückwärts), Reads as says "S88 #5 aus oder S88 #6 ein", and a dropdown choice is stored as the English word ("turn").  22 test classes on the route editor and its conditions are green.
 |
 
+[comment MT-802 1]
+who: Adam
+date: 2026-10-21
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-21 (triage).** Works.
+|
+| *Run against commit 9c8c30dc, in Dansk - build\classes, compiled 21 Oct 00:14 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-802 2]
+who: Claude
+date: 2026-10-21
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-21.**
+|
+| Validated on your *Works* of 2026-10-21.
+|
+
 [comment MT-803 0]
 who: Claude
 date: 2026-10-20
@@ -29230,4 +29252,26 @@ text:
 | **Claude, 2026-10-20.**
 |
 | Validated by Claude, on your word of 2026-10-20: "Validate your fixes on the route work once finished (yourself, for efficiency)."  The editor was drawn at each step: 1 or 2 or 3 and 4 typed flat (the and in red); sensors 1-3 selected and indented once gave (1 or 2 or 3) and 4 with nothing red and the lines still selected; 4 moved up gave 4 and (1 or 2 or 3) with every level kept; down and outdent undid each.  The claims for it turn red when the selection is not kept or the group move is taken out.
+|
+
+[comment MT-803 1]
+who: Adam
+date: 2026-10-21
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-21 (triage).** Works.
+|
+| *Run against commit 9c8c30dc, in Dansk - build\classes, compiled 21 Oct 00:14 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-803 2]
+who: Claude
+date: 2026-10-21
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-21.**
+|
+| Validated on your *Works* of 2026-10-21.
 |
