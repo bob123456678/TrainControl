@@ -382,6 +382,10 @@ public final class ConditionOutline
      * or C)" with B moved up is "B and (A or C)": the same sentence about different sensors, which
      * is what somebody pressing the arrow beside B means.
      *
+     * A condition whose neighbour at its own level is a whole group moves past the group instead
+     * (FR-144): "(A or B or C) and D" with D moved up is "D and (A or B or C)", the word staying
+     * between them and every line keeping its level.
+     *
      * @param rows the outline
      * @param line the row that was pressed
      * @param by -1 for up, 1 for down
@@ -392,6 +396,37 @@ public final class ConditionOutline
         List<Row> out = new ArrayList<>();
 
         if (rows != null) out.addAll(rows);
+
+        int[] group = groupBeside(out, line, by);
+
+        if (group != null)
+        {
+            List<Row> before = new ArrayList<>(out.subList(0, Math.min(line, group[0])));
+            List<Row> moving = new ArrayList<>(out.subList(group[0], group[1] + 1));
+            Row word = out.get(line + by);
+            Row condition = out.get(line);
+            List<Row> after = new ArrayList<>(out.subList(Math.max(line, group[1]) + 1, out.size()));
+
+            out.clear();
+            out.addAll(before);
+
+            if (by < 0)
+            {
+                out.add(condition);
+                out.add(word);
+                out.addAll(moving);
+            }
+            else
+            {
+                out.addAll(moving);
+                out.add(word);
+                out.add(condition);
+            }
+
+            out.addAll(after);
+
+            return out;
+        }
 
         int to = destination(out, line, by);
 
@@ -419,6 +454,53 @@ public final class ConditionOutline
     public static boolean canMove(List<Row> rows, int line, int by)
     {
         return destination(rows, line, by) >= 0;
+    }
+
+    /**
+     * Where the condition a move takes ends up, so the editor can keep it selected.
+     *
+     * @param rows the outline before the move
+     * @param line the row that was pressed
+     * @param by -1 for up, 1 for down
+     * @return its line after moved(), or the line itself where there is nowhere to go
+     */
+    public static int landing(List<Row> rows, int line, int by)
+    {
+        int[] group = groupBeside(rows, line, by);
+
+        if (group != null) return by < 0 ? group[0] : group[1];
+
+        int to = destination(rows, line, by);
+
+        return to < 0 ? line : to;
+    }
+
+    /**
+     * The group a condition would move past: the word beside it is at its own level, and the term past that
+     * word is nested deeper.
+     *
+     * @return {first, last} of the group's lines, or null where the neighbour is a single condition or nothing
+     */
+    private static int[] groupBeside(List<Row> rows, int line, int by)
+    {
+        if (rows == null || line < 0 || line >= rows.size() || by == 0 || rows.get(line).isJoiner()) return null;
+
+        int depth = rows.get(line).getDepth();
+        int word = line + by;
+        int start = word + by;
+
+        if (start < 0 || start >= rows.size() || !rows.get(word).isJoiner() || rows.get(word).getDepth() != depth)
+        {
+            return null;
+        }
+
+        if (rows.get(start).getDepth() <= depth) return null;
+
+        int end = start;
+
+        while (end + by >= 0 && end + by < rows.size() && rows.get(end + by).getDepth() > depth) end += by;
+
+        return new int[]{Math.min(start, end), Math.max(start, end)};
     }
 
     /**

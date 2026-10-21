@@ -1055,6 +1055,130 @@ public class testRouteEditorValidation
         }
     }
 
+    /**
+     * FR-144: "1 or 2 or 3 and 4" typed flat becomes "(1 or 2 or 3) and 4" by selecting the first three conditions and
+     * pressing indent once; 4 then moves up past the whole group to "4 and (1 or 2 or 3)" and back, every line keeping
+     * its level; and outdenting the selection undoes the indent.
+     *
+     * MUTATION: drop `ConditionTable.changeSelection`'s override, and the press collapses the selection to one line,
+     * so only sensor 1 moves in.
+     * MUTATION: drop the group branch of `ConditionOutline.moved`, and 4 trades places with 3 inside the group.
+     */
+    @Test
+    public void testSeveralConditionsIndentAtOnceAndOneMovesPastTheGroup() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+                frame.setConditionRowsForTest(flat(1, "OR", 2, "OR", 3, "AND", 4)));
+
+            assertFalse(org.traincontrol.base.ConditionOutline.problems(frame.conditionRowsForTest()).isEmpty(),
+                "precondition: 'or' and 'and' side by side at one level should be flagged");
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.indentConditionsForTest(0, 4, 1));
+
+            assertEquals(levels(frame), " 1:1 1OR 1:2 1OR 1:3 0AND 0:4",
+                "the three selected conditions and the words between them go one level in, the 'and' stays");
+
+            assertTrue(org.traincontrol.base.ConditionOutline.problems(frame.conditionRowsForTest()).isEmpty(),
+                "(1 or 2 or 3) and 4 is flagged: " + levels(frame));
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.moveConditionForTest(6, -1));
+
+            assertEquals(levels(frame), " 0:4 0AND 1:1 1OR 1:2 1OR 1:3",
+                "4 moved up past the whole group, with the 'and' between them and every level kept");
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.moveConditionForTest(0, 1));
+
+            assertEquals(levels(frame), " 1:1 1OR 1:2 1OR 1:3 0AND 0:4", "and moved back down past it");
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.indentConditionsForTest(0, 4, -1));
+
+            assertEquals(levels(frame), " 0:1 0OR 0:2 0OR 0:3 0AND 0:4", "outdenting the selection undoes it");
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
+    /**
+     * OB-367: a setting is shown in the user's language, in the cell and in "Reads as", and stored as the word the
+     * route file holds.
+     *
+     * MUTATION: in `greyWhatCannotBeEdited`, drop the `settingLabel` line, and the cells read "off" and "turn".
+     */
+    @Test
+    public void testTheSettingsAreShownInTheUsersLanguage() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final java.util.Locale was = org.traincontrol.util.I18n.getLocale();
+
+        try
+        {
+            final String[] cells = new String[3];
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                org.traincontrol.util.I18n.setLocale(java.util.Locale.GERMAN);
+
+                if (frame.commandRowCountForTest() == 0) frame.addCommandRowForTest();
+
+                frame.setCommandKindForTest(0, CommandRow.Kind.ACCESSORY);
+                frame.setCommandTargetForTest(0, "12");
+                frame.setCommandSettingForTest(0, "turn");
+                frame.setAutoFireForTest(true);
+
+                java.util.List<org.traincontrol.base.ConditionOutline.Row> rows = new java.util.ArrayList<>();
+
+                rows.add(org.traincontrol.base.ConditionOutline.Row.condition(0,
+                    org.traincontrol.base.RouteCommand.RouteCommandFeedback(5, false)));
+                rows.add(org.traincontrol.base.ConditionOutline.Row.joining(0,
+                    org.traincontrol.base.ConditionOutline.Joiner.OR));
+                rows.add(org.traincontrol.base.ConditionOutline.Row.condition(0,
+                    org.traincontrol.base.RouteCommand.RouteCommandFeedback(6, true)));
+
+                frame.setConditionRowsForTest(rows);
+
+                cells[0] = frame.conditionCellForTest(0, 6).getText();
+                cells[1] = ((javax.swing.JLabel) frame.commandCellForTest(0, 6)).getText();
+                cells[2] = frame.readsAsForTest();
+            });
+
+            assertEquals(cells[0], "aus", "the condition's setting cell in German");
+            assertEquals(cells[1], "abzweigend", "the command's setting cell in German");
+            assertTrue(cells[2].contains(">aus<") && cells[2].contains(">ein<"), "Reads as, in German: " + cells[2]);
+            assertEquals(shown(frame, 0), "FEEDBACK 5 off", "stored as before");
+            assertEquals(frame.commandRowForTest(0).getSetting(), "turn", "stored as before");
+        }
+        finally
+        {
+            org.traincontrol.util.I18n.setLocale(was);
+
+            close(frame);
+        }
+    }
+
+    /** Each line as depth and sensor, or depth and word: " 1:1 1OR 0:4". */
+    private static String levels(org.traincontrol.gui.RouteEditorFrame frame)
+    {
+        StringBuilder out = new StringBuilder();
+
+        for (org.traincontrol.base.ConditionOutline.Row row : frame.conditionRowsForTest())
+        {
+            out.append(" ").append(row.getDepth()).append(row.isJoiner() ? String.valueOf(row.getJoiner())
+                : ":" + CommandRow.of(row.getCommand()).getTarget());
+        }
+
+        return out.toString();
+    }
+
     /** A condition line's address and setting as stored, read the way the table reads them. */
     private static String shown(org.traincontrol.gui.RouteEditorFrame frame, int line)
     {

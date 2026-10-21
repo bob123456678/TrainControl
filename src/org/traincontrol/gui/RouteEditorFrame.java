@@ -945,6 +945,47 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
+     * A cell editor offering setting words: each is shown in the user's language and committed as the stored word.
+     *
+     * @param words the stored words
+     * @return the editor
+     */
+    private static javax.swing.table.TableCellEditor chooseSetting(String[] words)
+    {
+        JComboBox<String> box = new JComboBox<>();
+
+        for (String word : words) box.addItem(word);
+
+        box.setRenderer(new javax.swing.DefaultListCellRenderer()
+        {
+            @Override
+            public java.awt.Component getListCellRendererComponent(javax.swing.JList<?> list, Object value,
+                int index, boolean selected, boolean focused)
+            {
+                return super.getListCellRendererComponent(list,
+                    value instanceof String ? settingLabel((String) value) : value, index, selected, focused);
+            }
+        });
+
+        return new DefaultCellEditor(box);
+    }
+
+    /** The setting words a route stores, each with a `route.ui.setting.<word>` text in every bundle. */
+    private static final java.util.Set<String> SETTING_WORDS = new java.util.HashSet<>(java.util.Arrays.asList(
+        "straight", "turn", "green", "red", "on", "off", "forward", "backward", "left", "right"));
+
+    /**
+     * A stored setting word as the user reads it.
+     *
+     * @param word the stored word
+     * @return its text in the user's language, or the word itself when it is not a setting word (a number, a name)
+     */
+    static String settingLabel(String word)
+    {
+        return word != null && SETTING_WORDS.contains(word) ? I18n.t("route.ui.setting." + word) : word;
+    }
+
+    /**
      * The names to offer in a locomotive or route cell: the database's, and the name already in the cell.
      * A combo box cannot show a value it has not got: handed one, it keeps whatever was selected, so a route
      * naming a locomotive or route since deleted would have that cell rewritten to the first name in the list
@@ -1621,6 +1662,32 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
+     * For tests (FR-144): select these lines, as a Shift-click does, and press the indent or outdent mark on the
+     * first of them, through the same method the mouse uses.
+     *
+     * @param first the first line selected
+     * @param last the last line selected
+     * @param by 1 to indent, -1 to outdent
+     */
+    public void indentConditionsForTest(int first, int last, int by)
+    {
+        conditions.setRowSelectionInterval(first, last);
+        conditions.changeSelection(first, by > 0 ? INDENT : OUTDENT, false, false);
+        pressIndentMark(conditions, first, by > 0 ? INDENT : OUTDENT);
+    }
+
+    /**
+     * For tests (FR-144): press a condition's up or down arrow.
+     *
+     * @param line the condition
+     * @param by -1 for up, 1 for down
+     */
+    public void moveConditionForTest(int line, int by)
+    {
+        moveRow(conditions, line, by);
+    }
+
+    /**
      * The "Reads as" line exactly as the label holds it, markup included - for tests.
      *
      * @return the label's text
@@ -2146,6 +2213,9 @@ public class RouteEditorFrame extends JFrame
                 Object shown = which instanceof ConditionTable
                     ? ((ConditionTable) which).shownAs(row, column, value) : value;
 
+                // OB-367: the setting is stored as the English word and shown in the user's language
+                if (column == 6 && shown instanceof String) shown = settingLabel((String) shown);
+
                 java.awt.Component out = was.getTableCellRendererComponent(which, shown, selected,
                     focused, row, column);
 
@@ -2274,19 +2344,20 @@ public class RouteEditorFrame extends JFrame
             @Override
             public void mousePressed(java.awt.event.MouseEvent e)
             {
-                int row = table.rowAtPoint(e.getPoint());
-                int column = table.columnAtPoint(e.getPoint());
-
-                if (row < 0 || column < 0) return;
-
-                Object value = table.getValueAt(row, column);
-
-                if (locked) return;
-
-                if (INDENT_ROW.equals(value)) table.indent(row, 1);
-                else if (OUTDENT_ROW.equals(value)) table.indent(row, -1);
+                pressIndentMark(table, table.rowAtPoint(e.getPoint()), table.columnAtPoint(e.getPoint()));
             }
         });
+    }
+
+    /** What a press on an indent mark does: the mark's own value says whether it may. */
+    private void pressIndentMark(ConditionTable table, int row, int column)
+    {
+        if (row < 0 || column < 0 || locked) return;
+
+        Object value = table.getValueAt(row, column);
+
+        if (INDENT_ROW.equals(value)) table.indent(row, 1);
+        else if (OUTDENT_ROW.equals(value)) table.indent(row, -1);
     }
 
     /**
@@ -2418,7 +2489,7 @@ public class RouteEditorFrame extends JFrame
      */
     private static String setting(String word)
     {
-        String safe = marked(word);
+        String safe = marked(settingLabel(word));
 
         if ("on".equals(word) || "straight".equals(word) || "green".equals(word))
         {
@@ -2468,7 +2539,7 @@ public class RouteEditorFrame extends JFrame
                 marked(row.getTarget()), marked(row.getSetting()));
 
             case LOCOMOTIVE_DIRECTION: return I18n.f("route.reads.direction",
-                marked(row.getTarget()), marked(row.getSetting()));
+                marked(row.getTarget()), marked(settingLabel(row.getSetting())));
 
             case ROUTE: return I18n.f("route.reads.route", marked(row.getTarget()));
 
@@ -3901,7 +3972,7 @@ public class RouteEditorFrame extends JFrame
             {
                 String[] words = settingWords(rows.get(row).getRow());
 
-                if (words != null) return chooseFrom(words);
+                if (words != null) return chooseSetting(words);
             }
 
             // A number where a number is meant.  An address is a number and a delay is a number, and
@@ -4097,6 +4168,25 @@ public class RouteEditorFrame extends JFrame
             return line >= 0 && line < conditions.rows.size() && conditions.rows.get(line).isJoiner();
         }
 
+        /** A press on an indent mark inside a selection of several lines keeps it, so the mark acts on them all. */
+        @Override
+        public void changeSelection(int row, int column, boolean toggle, boolean extend)
+        {
+            if ((column == INDENT || column == OUTDENT) && !toggle && !extend && getSelectedRowCount() > 1
+                && isRowSelected(row)) return;
+
+            super.changeSelection(row, column, toggle, extend);
+        }
+
+        /** The marks of a selection depend on all of it, so every change of selection redraws them. */
+        @Override
+        public void valueChanged(javax.swing.event.ListSelectionEvent e)
+        {
+            super.valueChanged(e);
+
+            repaint();
+        }
+
         /**
          * What a cell shows, where that is more than what it holds (FR-141).
          *
@@ -4194,6 +4284,16 @@ public class RouteEditorFrame extends JFrame
                 // A word does not move by hand, and an arrow on one would have nothing to do.
                 if (column == UP) return ConditionOutline.canMove(rows, line, -1) ? MOVE_UP : "";
                 if (column == DOWN) return ConditionOutline.canMove(rows, line, 1) ? MOVE_DOWN : "";
+
+                int[] chosen = column == INDENT || column == OUTDENT ? chosenLines() : null;
+
+                if (chosen != null && line >= chosen[0] && line <= chosen[1])
+                {
+                    boolean in = column == INDENT;
+
+                    return block(chosen[0], chosen[1], in ? 1 : -1) != null
+                        ? (in ? INDENT_ROW : OUTDENT_ROW) : (in ? INDENT_LIMIT : OUTDENT_LIMIT);
+                }
 
                 if (column == INDENT)
                 {
@@ -4518,7 +4618,7 @@ public class RouteEditorFrame extends JFrame
             {
                 String[] words = settingWords(term);
 
-                if (words != null) return chooseFrom(words);
+                if (words != null) return chooseSetting(words);
 
                 if (CommandRow.asksWhereATrainIs(term.getKind())) return digitsOnly();
             }
@@ -4667,6 +4767,8 @@ public class RouteEditorFrame extends JFrame
         {
             if (!ConditionOutline.canMove(rows, line, by)) return;
 
+            int landed = ConditionOutline.landing(rows, line, by);
+
             List<ConditionOutline.Row> after = ConditionOutline.moved(rows, line, by);
 
             rows.clear();
@@ -4676,17 +4778,91 @@ public class RouteEditorFrame extends JFrame
             settle();
             model.fireTableDataChanged();
 
-            // Where the condition ended up, which is past the words rather than one line along
-            int to = line + by;
+            setRowSelectionInterval(landed, landed);
+        }
 
-            while (to >= 0 && to < rows.size() && rows.get(to).isJoiner()) to += by;
+        /**
+         * The selected lines when there are several, so the indent marks act on all of them (FR-144).
+         *
+         * @return {first, last}, or null for one line or none
+         */
+        int[] chosenLines()
+        {
+            int[] picked = getSelectedRows();
 
-            setRowSelectionInterval(to, to);
+            if (picked.length < 2) return null;
+
+            return new int[]{Math.min(picked[0], picked[picked.length - 1]),
+                Math.max(picked[0], picked[picked.length - 1])};
+        }
+
+        /**
+         * The lines a block indent would move, or null where it would break the outline.
+         *
+         * A word at either edge stays: it joins the block to what is outside it.  The lines nested under
+         * the last one come along, as they do for a single line.
+         *
+         * @param first the first chosen line
+         * @param last the last chosen line
+         * @param by 1 to indent, -1 to outdent
+         * @return {first, last} of the lines to move
+         */
+        int[] block(int first, int last, int by)
+        {
+            last = Math.min(last, rows.size() - 1);
+
+            while (first <= last && rows.get(first).isJoiner()) first++;
+            while (last >= first && rows.get(last).isJoiner()) last--;
+
+            if (first < 0 || first > last) return null;
+
+            int top = Integer.MAX_VALUE;
+
+            for (int at = first; at <= last; at++) top = Math.min(top, rows.get(at).getDepth());
+
+            while (last + 1 < rows.size() && rows.get(last + 1).getDepth() > top) last++;
+
+            if (by < 0 && top == 0) return null;
+
+            if (by > 0)
+            {
+                int most = first == 0 ? 1 : rows.get(first - 1).getDepth() + 1;
+
+                if (rows.get(first).getDepth() + 1 > most) return null;
+            }
+
+            return new int[]{first, last};
         }
 
         void indent(int line, int by)
         {
             if (line < 0 || line >= rows.size()) return;
+
+            int[] chosen = chosenLines();
+
+            if (chosen != null && line >= chosen[0] && line <= chosen[1])
+            {
+                int[] moving = block(chosen[0], chosen[1], by);
+
+                if (moving == null) return;
+
+                for (int at = moving[0]; at <= moving[1]; at++)
+                {
+                    rows.set(at, rows.get(at).atDepth(rows.get(at).getDepth() + by));
+                }
+
+                tidy();
+
+                settle();
+                model.fireTableDataChanged();
+
+                if (!rows.isEmpty())
+                {
+                    setRowSelectionInterval(Math.min(moving[0], rows.size() - 1), Math.min(moving[1], rows.size() - 1));
+                }
+
+                return;
+            }
 
             int was = rows.get(line).getDepth();
             int depth = was + by;

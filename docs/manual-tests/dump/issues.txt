@@ -556,6 +556,25 @@ text:
 | From MT-772 (FR-130), Adam 2026-10-19: "Confirmed, but 10% is hardly visible.  We may want to change this later."  The icon is drawn at 90% opacity in TileOverlay.paintTrain (ICON_ALPHA); a lower opacity is a one-constant change, with ui.testDiagramLooksRight's ten-per-cent claim moved with it.
 |
 
+[issue FR-144]
+ordinal: 37
+inbox: yes
+kind: feature request
+title: Route editor: indent several conditions at once, and move a condition past a whole group
+filed: 2026-10-20
+filed_at: 2026-10-20 23:25
+raised_from: Adam, in chat, 2026-10-20
+build: -
+text:
+| ### FR-144 - 2026-10-20 - Route editor: indent several conditions at once, and move a condition past a whole group
+|
+| **Kind:** feature request  
+| **Raised from:** Adam, in chat, 2026-10-20  
+| **Filed:** 2026-10-20 23:25
+|
+| Adam, 2026-10-20: "we need a way to mass indent everything so that a new condition can we wrapped around an existing long set of conditions.  for example, if current state is a or b or c, and i want to go to (a or b or c) and d, I would mass in dent a or b or c.  and when moving d, it should let me move it to the top d and (a or b or c) without messing the ranking."
+|
+
 [issue OB-324]
 ordinal: 19
 inbox: yes
@@ -776,4 +795,23 @@ text:
 | **Build:** commit 2cac0137, in English - build\classes, compiled 19 Oct 22:33 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
 |
 | in the autonomy editor, 2-line notices shift the track down.  fix this in 3.0.3 by making notices be below the diagram, and cap the height at 3 lines with a scrollbar.
+|
+
+[issue OB-367]
+ordinal: 36
+inbox: yes
+kind: bug
+title: Route editor: straight/turn (etc) are not translated
+filed: 2026-10-20
+filed_at: 2026-10-20 23:25
+raised_from: Adam, in chat, 2026-10-20
+build: -
+text:
+| ### OB-367 - 2026-10-20 - Route editor: straight/turn (etc) are not translated
+|
+| **Kind:** bug  
+| **Raised from:** Adam, in chat, 2026-10-20  
+| **Filed:** 2026-10-20 23:25
+|
+| Adam, 2026-10-20: "straight/turn (etc) are not translated in the route editor"
 |

@@ -486,6 +486,53 @@ public class testConditionOutline
     }
 
     /**
+     * FR-144: a condition whose neighbour at its own level is a group moves past the whole group.  "(1 or 2 or 3)
+     * and 4" with 4 moved up is "4 and (1 or 2 or 3)", every line at its level, and moving it down undoes that.
+     *
+     * MUTATION: drop the group branch of `moved`, and 4 trades places with 3 inside the group.
+     */
+    @Test
+    public void testAConditionMovesPastAWholeGroup()
+    {
+        List<ConditionOutline.Row> rows = outline(
+            condition(1, 1),
+            joining(1, ConditionOutline.Joiner.OR),
+            condition(1, 2),
+            joining(1, ConditionOutline.Joiner.OR),
+            condition(1, 3),
+            joining(0, ConditionOutline.Joiner.AND),
+            condition(0, 4));
+
+        List<ConditionOutline.Row> expected = outline(
+            condition(0, 4),
+            joining(0, ConditionOutline.Joiner.AND),
+            condition(1, 1),
+            joining(1, ConditionOutline.Joiner.OR),
+            condition(1, 2),
+            joining(1, ConditionOutline.Joiner.OR),
+            condition(1, 3));
+
+        assertEquals(ConditionOutline.landing(rows, 6, -1), 0, "4 lands on the first line");
+
+        List<ConditionOutline.Row> moved = ConditionOutline.moved(rows, 6, -1);
+
+        assertEquals(describe(ConditionOutline.toExpression(moved)),
+            describe(ConditionOutline.toExpression(expected)), "4 is now in front of the whole group");
+
+        for (int line = 0; line < expected.size(); line++)
+        {
+            assertEquals(moved.get(line).getDepth(), expected.get(line).getDepth(), "the level of line " + line);
+        }
+
+        assertTrue(ConditionOutline.problems(moved).isEmpty(), "nothing is flagged after the move");
+
+        assertEquals(ConditionOutline.landing(moved, 0, 1), 6, "and moving it down lands on the last line");
+
+        assertEquals(describe(ConditionOutline.toExpression(ConditionOutline.moved(moved, 0, 1))),
+            describe(ConditionOutline.toExpression(rows)), "moving it back down undoes the move");
+    }
+
+    /**
      * A joining word is not moved by hand, and neither is a condition with nowhere to go.
      */
     @Test

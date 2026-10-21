@@ -858,9 +858,9 @@ public class testMessageBundles
      * something is the other one**, and it had no test - a key renamed in the bundle and not at its
      * call site puts the raw key on screen, in the one place a person is being told what went wrong.
      *
-     * Literal calls only, which is all a textual rule can see.  Five families are built by
-     * concatenation - a route kind, a side, a facing, and two path preferences, each an enum name
-     * appended to a prefix - and they are listed here rather than skipped quietly, so that a sixth
+     * Literal calls only, which is all a textual rule can see.  Six families are built by
+     * concatenation - a route kind, a setting word, a side, a facing, and two path preferences, each a
+     * name appended to a prefix - and they are listed here rather than skipped quietly, so that a seventh
      * cannot be added without somebody noticing that this test would not see it.
      *
      * MUTATION this catches: renaming any key in `messages.properties` without its call site.
@@ -880,7 +880,7 @@ public class testMessageBundles
         assertTrue(english.size() > 1000, "the bundle did not parse: " + english.size() + " keys");
 
         java.util.List<String> built = Arrays.asList(
-            "route.kind.", "autosetup.ui.side", "autosetup.ui.facing",
+            "route.kind.", "route.ui.setting.", "autosetup.ui.side", "autosetup.ui.facing",
             "autolayout.ui.pathPreference", "autolayout.ui.tooltip.pathPreference");
 
         java.util.regex.Pattern call =
@@ -964,7 +964,7 @@ public class testMessageBundles
         Set<String> inConstants = new TreeSet<>();
 
         List<String> built = Arrays.asList(
-            "route.kind.", "autosetup.ui.side", "autosetup.ui.facing",
+            "route.kind.", "route.ui.setting.", "autosetup.ui.side", "autosetup.ui.facing",
             "autolayout.ui.pathPreference", "autolayout.ui.tooltip.pathPreference");
 
         List<File> sources = javaSources(new File("src"));
