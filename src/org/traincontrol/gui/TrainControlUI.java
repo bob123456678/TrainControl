@@ -23644,11 +23644,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                 continue;
                             }
 
-                            // AND NOT WHILE A ROUTE THAT DRIVES IT IS RUNNING.
-                            // The Central Station's own name proposal is the fourth door into
-                            // `renameLoc`, and it rewrites every route command naming the locomotive exactly as the
-                            // others do - and it may DELETE a locomotive of the target name first, so that one is
-                            // asked about too.
+                            // AND NOT WHILE A ROUTE THAT DRIVES IT IS RUNNING.  The Central Station's own name proposal
+                            // is the fourth door into `renameLoc`, and it rewrites every route command naming the
+                            // locomotive exactly as the others do; it may also DELETE a locomotive of the target name
+                            // first, so that one is asked about too.
                             if (refuseWhileARouteDrivesIt(this, currentName)) continue;
 
                             if (refuseWhileARouteDrivesIt(this, newName)) continue;
@@ -24069,27 +24068,27 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     private void startAutonomyActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_startAutonomyActionPerformed
 
-        // Nothing while an editor holds the diagram, and nothing while the setup has errors (MT-135; Adam: "I was also able to start
-        // autonomy while the editor was open.  This should not be possible."): the editor holds the pages the session is built from, so
-        // starting underneath it runs trains over a diagram still being changed.  Both are refused BEFORE the button is greyed below, since
-        // greying first and returning would leave it dead.  Through the one gate: the editor, the setup in Start's own words, and the power,
-        // asked here rather than by the worker; the Simulate warning is asked by the gate, once it has passed (see
-        // `refusedToSendATrain`).
+        // Nothing while an editor holds the diagram, and nothing while the setup has errors (MT-135; Adam: "I was also
+        // able to start autonomy while the editor was open.  This should not be possible."): starting underneath the
+        // editor runs trains over a diagram still being changed.  Both are refused BEFORE the button is greyed below,
+        // since greying first and returning would leave it dead.  Through the one gate (`refusedToSendATrain`): the
+        // editor, the setup in Start's own words, and the power, asked here rather than by the worker; the Simulate
+        // warning is asked by the gate once it has passed.
         if (refusedToSendATrain(true)) return;
 
         // A GRACEFUL STOP OF AN EARLIER RUN EXCUSES NOTHING IN THIS ONE, as Return Home's press says of its own
         this.gracefulStopRequested = false;
 
-        // And not non-atomic over a railway that could release track under a train.  THE THIRD DOOR, the one the other two cannot
-        // cover: an edge's length is only written by `parseAuto` (the file door re-asks this afterwards), but a TRAIN's length is written on
-        // the live layout by `applyTrainLength` (whose zero means "not set") and by `GraphLocAssign.commitChanges`, neither of which rebuilds
-        // anything, so a length cleared after the checkbox was unticked puts `behind >= trainLength` back to `0 >= 0`: every edge handed
-        // back as that train's head passes it, with the train still lying over it.  One of FIVE dispatch doors: the release
-        // lives in `executePathInternal`, which Execute Timetable, Return Home and the two hand dispatches reach without passing here, and
-        // every one asks now (`ui.testNonAtomicRoutesNeedTheirLengths.testEveryDispatchDoorAsksTheGate` is the list).  The remedy is the
-        // file door's rather than the checkbox's: the setting was chosen deliberately and the railway has changed under it, and there is
-        // nothing for the operator to answer.  Asked below, once the worker's refusals have passed: a press refused for the
-        // power or for having no trains should change nothing, and the gate writes the setting.
+        // And not non-atomic over a railway that could release track under a train.  THE THIRD DOOR, the one the other
+        // two cannot cover: an edge's length is only written by `parseAuto` (the file door re-asks this afterwards),
+        // but a TRAIN's length is written on the live layout by `applyTrainLength` (whose zero means "not set") and by
+        // `GraphLocAssign.commitChanges`, neither of which rebuilds anything, so a length cleared after the checkbox
+        // was unticked puts `behind >= trainLength` back to `0 >= 0`: every edge handed back as that train's head
+        // passes it, with the train still lying over it.  One of FIVE dispatch doors
+        // (`ui.testNonAtomicRoutesNeedTheirLengths.testEveryDispatchDoorAsksTheGate` is the list).  The remedy is the
+        // file door's rather than the checkbox's: the setting was chosen deliberately and the railway has changed under
+        // it, and there is nothing for the operator to answer.  Asked below, once the worker's refusals have passed, as
+        // a press refused for the power or for having no trains should change nothing.
 
         // Greyed here, on the EDT, before anything is dispatched: there are three ways to press it (this button, the diagram strip's mirror,
         // and the station right-click item), and while it stayed live until a worker several checks later disabled it, two quick presses
@@ -24156,12 +24155,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                     if (this.model.getAutoLayout().isValid() && !this.isAutonomyBusy())
                     {
-                        // THE ATOMIC ROUTES GATE, after every refusal and on the event thread, which the setting's
-                        // checkbox lives on.  A gate that fails stops Start: it is what keeps a run atomic over
-                        // unmeasured track, and the finally below gives the button back.
-                        // AND NO EDITOR COME SINCE THE CLICK.  This runs after whatever the event thread took in
-                        // between: an editor asked for after Start was pressed, with nothing running yet, is on its way or
-                        // built by now, and the run would begin under it.
+                        // THE ATOMIC ROUTES GATE, after every refusal and on the event thread, where the setting's
+                        // checkbox lives.  A gate that fails stops Start: it is what keeps a run atomic over unmeasured
+                        // track, and the finally below gives the button back.  AND NO EDITOR COME SINCE THE CLICK: this
+                        // runs after whatever the event thread took in between, and an editor asked for after Start was
+                        // pressed, with nothing running yet, is on its way or built by now.
                         final boolean[] editorCame = {false};
 
                         try
@@ -24207,12 +24205,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                 }
                                 finally
                                 {
-                                    // NOTHING STARTED: every train to run was skipped - its station out
-                                    // of service, its speed unset - and the railway cleared its own flag and only logged
-                                    // it, leaving Start greyed and Graceful Stop offered over nothing, and the Auto tab
-                                    // greyed with them.  Start comes back and Graceful Stop goes.  Asked of the whole
-                                    // railway, not its flag alone: a Graceful Stop pressed meanwhile leaves trains to
-                                    // coast, and its own worker gives Start back once they stop.
+                                    // NOTHING STARTED: every train to run was skipped (its station out of service, its
+                                    // speed unset) and the railway cleared its own flag and only logged it, which would
+                                    // leave Start greyed and Graceful Stop offered over nothing.  Start comes back and
+                                    // Graceful Stop goes.  Asked of the whole railway, not its flag alone: a Graceful
+                                    // Stop pressed meanwhile leaves trains to coast, and its own worker gives Start
+                                    // back once they stop.
                                     if (!starting.isRunning())
                                     {
                                         javax.swing.SwingUtilities.invokeLater(() ->
@@ -24311,13 +24309,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // Ensure list is updated after stopping a timetable run
                 this.repaintAutoLocListLite();
 
-                // stopLocomotives() clears the running flag and returns at once, and the trains it was driving keep going
-                // until each reaches its next station, so isRunning() (therefore isAutonomyBusy()) stays true for that whole coast-down.  Enabling
-                // Start here, synchronously, is what AutonomyOverlayToggle faithfully mirrored when it flipped the diagram strip from "Graceful Stop"
-                // to "Start Autonomous Operation" while trains were still moving (the strip picks its button from these two, and
-                // LayoutRightclickAutonomyMenu asks isAutonomyBusy() for the same choice).  Waited out here rather than polled elsewhere, because this
-                // thread already exists for exactly this transition: an unbounded wait, like every other wait in this file for a railway event rather
-                // than an acknowledgement.  Until its trains stop, or the model has let it go - Unload, another configuration.
+                // stopLocomotives() clears the running flag and returns at once, and the trains it was driving keep
+                // going until each reaches its next station, so isRunning() (therefore isAutonomyBusy()) stays true for
+                // that whole coast-down.  Enabling Start here, synchronously, would let AutonomyOverlayToggle flip the
+                // diagram strip from "Graceful Stop" to "Start Autonomous Operation" while trains are still moving (the
+                // strip picks its button from these two, and LayoutRightclickAutonomyMenu asks isAutonomyBusy() for the
+                // same choice).  Waited out here rather than polled elsewhere, because this thread exists for exactly
+                // this transition: an unbounded wait, like every other wait in this file for a railway event rather
+                // than an acknowledgement, until its trains stop or the model has let it go (Unload, another
+                // configuration).
                 while (stopping.isRunning() && this.model.getAutoLayoutIfLoaded() == stopping)
                 {
                     try
@@ -24459,31 +24459,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
     
     /**
-     * The blue this application picks things out in: FlatLightLaf's accent, written down rather than asked of UIManager, because the key
-     * that holds it has changed name between FlatLaf releases, and a badge that silently comes back null and paints nothing is worse
-     * than one that is a shade off after an upgrade.
+     * The blue this application picks things out in: FlatLightLaf's accent, written down rather than asked of
+     * UIManager, because the key that holds it has changed name between FlatLaf releases, and a badge that silently
+     * comes back null and paints nothing is worse than one a shade off.
      */
     private static final Color PAGE_BADGE_BLUE = new Color(0x26, 0x75, 0xBF);
 
     /**
-     * Draws the keyboard page number in the corner of the locomotive tab icon (Adam: "show the page number instead in a circle to the
-     * upper right of the locomotive, in blue bg color matching the theme and white font.  manage double digits.  hide it if the page
-     * number is 1.").
-     *
-     * **Page one wears nothing**: most people never leave page one, and a badge that is always there says nothing.  **More than one digit
-     * stretches the circle into a capsule** rather than shrinking the type (at this size the difference between a ten-point digit and an
-     * eight-point one is the difference between reading it and guessing).  Two digits is what `MAX_LOC_MAPPINGS` (fifty) enforces for
-     * pages added, but it is not written to NEED that: 100 and 999 both fit and stay legible, the capsule growing to about two thirds of
-     * the icon, so a state saved with more pages (not capped on load, see `addLocMappingPage`) still draws its page number.
-     * **Centred on the icon**: it covers part of the locomotive either way, since the drawing fills its square, and the middle is where
-     * the eye already is.
-     *
-     * The badge is drawn onto a COPY: the tab icon is a static shared between every use of it, and painting the number onto it would put
-     * page 4's badge on the locomotive panel and everywhere else the same image is drawn.
-     *
-     * @param icon the tab icon to badge, not modified
-     * @param page the keyboard page number
-     * @return a new image, or the one passed in when there is nothing to show
+     * Draws the keyboard page number in the corner of the locomotive tab icon (Adam: "show the page number instead in a
+     * circle to the upper right of the locomotive, in blue bg color matching the theme and white font.  manage double
+     * digits.  hide it if the page number is 1.").  **Page one wears nothing**: a badge that is always there says
+     * nothing.  **More than one digit stretches the circle into a capsule** rather than shrinking the type; it is not
+     * written to NEED two digits (`MAX_LOC_MAPPINGS` is fifty), so a state saved with more pages (not capped on load,
+     * see `addLocMappingPage`) still draws its number.  **Centred on the icon**, where the eye already is.  The badge
+     * is drawn onto a COPY: the tab icon is a static shared between every use of it, so painting on it would put page
+     * 4's badge everywhere else the same image is drawn.  Returns a new image, or `icon` (not modified) when there is
+     * nothing to show.
      */
     private BufferedImage withPageBadge(BufferedImage icon, int page)
     {
@@ -24536,10 +24527,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The hover crop mark drawn over locIcon (FR-032); null until the window is built.  DECLARED HERE, not in the generated variables
-     * block: `cropOverlay` is not a form component (TrainControlUI.form has never heard of it), so every time NetBeans regenerates that
-     * block from the form - whenever the designer is used for anything - the field is simply not written back out, as happened twice and
-     * took the build with it.
+     * The hover crop mark drawn over locIcon (FR-032); null until the window is built.  DECLARED HERE, not in the
+     * generated variables block: `cropOverlay` is not a form component, so NetBeans regenerating that block from the
+     * form would not write the field back out, and the build would break.
      */
     private javax.swing.JLabel cropOverlay;
 
@@ -24556,14 +24546,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JLabel iconRevert;
 
     /**
-     * Puts the hover crop mark on the big locomotive picture (FR-032; Adam: "can you add a hover crop icon to the upper-right of the big
-     * locomotive image when hovered?").  Built here rather than in the designer, which owns `locIcon` and whose generated block is not
-     * ours to edit; a JLabel has no layout of its own, so it is given one, and the label goes on painting its picture underneath.
-     *
-     * **Only when there is something to re-crop**: hidden when the locomotive has no local icon at all, since there would be nothing for
-     * it to open; the right-click that sets one in the first place is unchanged.  The hover test is `getMousePosition(true)` and the
-     * `true` is the whole of it: moving the pointer onto a CHILD fires mouseExited on its parent, so the obvious version hides the mark
-     * at the moment the user reaches for it.
+     * Puts the hover crop mark on the big locomotive picture (FR-032; Adam: "can you add a hover crop icon to the
+     * upper-right of the big locomotive image when hovered?").  Built here rather than in the designer, which owns
+     * `locIcon` and whose generated block is not ours to edit; a JLabel has no layout of its own, so it is given one,
+     * and the label goes on painting its picture underneath.  **Only when there is something to re-crop**: hidden when
+     * the locomotive has no local icon at all.  The hover test is `getMousePosition(true)` and the `true` is the whole
+     * of it: moving the pointer onto a CHILD fires mouseExited on its parent, so the obvious version hides the mark at
+     * the moment the user reaches for it.
      */
     private void buildCropOverlay()
     {
@@ -24581,11 +24570,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 if (activeLoc == null) return;
 
-                // LEFT re-crops; RIGHT does what the picture underneath does (C7): the mark has a listener of its own, so Swing targets IT and never
-                // passes the event on to locIcon, and `locIconMouseReleased` (which opens "set icon") does not run over these fifteen pixels.  A guard
-                // that returned on a right click removed the wrong behaviour without putting the right one back: a fifteen-pixel hole where
-                // right-clicking the locomotive did nothing.  The hole moves with the mark, so this passthrough matters wherever "there"
-                // currently is.
+                // LEFT re-crops; RIGHT does what the picture underneath does: the mark has a listener of its own, so
+                // Swing targets IT and never passes the event on to locIcon, and `locIconMouseReleased` (which opens
+                // "set icon") would not run over these fifteen pixels.  A guard that returned on a right click would
+                // leave a fifteen-pixel hole where right-clicking the locomotive does nothing; the hole moves with the
+                // mark.
                 if (SwingUtilities.isLeftMouseButton(evt))
                 {
                     recropLocIcon(activeLoc, TrainControlUI.this);
@@ -24683,11 +24672,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         iconWrench.addMouseListener(hover);
         iconRevert.addMouseListener(hover);
 
-        // The plain pointer now, over the picture (FR-104; Adam: "change the cover icon for the loc icon from the hand to regular"), and no
-        // sentence about right-clicking: the wrench and the crop mark are what can be pressed, and they keep the hand.  (It was a hand so
-        // that the picture looked like something you can act on, since a tooltip is only read by somebody who already suspects there is
-        // something to read; right-clicking here still opens the icon chooser.)  Set here rather than in the form, because the form's block
-        // is regenerated.
+        // The plain pointer now, over the picture (FR-104; Adam: "change the cover icon for the loc icon from the hand
+        // to regular"), and no sentence about right-clicking: the wrench and the crop mark are what can be pressed, and
+        // they keep the hand.  Right-clicking here still opens the icon chooser.  Set here rather than in the form,
+        // because the form's block is regenerated.
         locIcon.setCursor(java.awt.Cursor.getDefaultCursor());
         locIcon.setToolTipText(null);
         cropOverlay.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
@@ -24765,12 +24753,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * `settleAbsentPages`, for the window's collaborators in this package.
-     *
-     * @param layoutList the pages that are actually loaded
-     * @param renamedFromTo old name -&gt; new name, whose old names are not absences
-     * @param deliberatelyRemoved names being removed on purpose, which are not absences either
-     * @return the names to keep in the index, or null when the index must not be written
+     * `settleAbsentPages`, for the window's collaborators in this package: `layoutList` is the pages actually loaded,
+     * and the old names in `renamedFromTo` (old name -&gt; new name) and the names in `deliberatelyRemoved` are not
+     * absences.  Returns the names to keep in the index, or null when the index must not be written.
      */
     java.util.Collection<String> settleTheAbsentPages(java.util.List<String> layoutList,
         java.util.Map<String, String> renamedFromTo, java.util.Collection<String> deliberatelyRemoved)
@@ -24779,10 +24764,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Whether the picture's tools - the wrench and the crop mark - are offered at all: over a locomotive, and only with the power off
-     * (MT-591; Adam: "hide hover edit controls when the power is on").
-     *
-     * @return true when hovering may show them
+     * Whether the picture's tools (the wrench and the crop mark) are offered at all: over a locomotive, and only with
+     * the power off (MT-591; Adam: "hide hover edit controls when the power is on").
      */
     private boolean offersTheIconTools()
     {
@@ -24796,13 +24779,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Whether a revert stands beside the wrench (MT-591; Adam: "if there is a cs icon and we switched to a local icon or cropped it,
-     * replace the wrench icon with a revert icon (circular arrow symbol) that has the same function as "clear local locomotive icon"."):
-     * a Central Station picture, with one of this computer's shown over it.  With no Central Station picture there is nothing to go
-     * back to.
-     *
-     * @param l the locomotive on show
-     * @return true for the revert
+     * Whether a revert stands beside the wrench (MT-591; Adam: "if there is a cs icon and we switched to a local icon
+     * or cropped it, replace the wrench icon with a revert icon (circular arrow symbol) that has the same function as
+     * "clear local locomotive icon"."): a Central Station picture with one of this computer's shown over it; with none
+     * there is nothing to go back to.
      */
     private static boolean revertsInstead(Locomotive l)
     {
@@ -24812,8 +24792,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * The picture's tools made to fit the power: while it is on, the sentence saying to turn it off (MT-591: *"Add a
-     * tooltip (if power is on) saying turn power off to manage icon."*).  Set on the picture before the pointer arrives,
-     * so the tooltip is there to show.  The wrench and the revert are each their own mark, and always the same one.
+     * tooltip (if power is on) saying turn power off to manage icon."*), set on the picture before the pointer arrives
+     * so the tooltip is there to show.  The wrench and the revert are each their own mark.
      */
     private void fitTheIconTools()
     {
@@ -24853,11 +24833,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Whether the crop mark is offered over this locomotive's picture: one of this computer's, or the Central Station's (FR-104; Adam:
-     * "make central station supplied icons croppable locally.") - anything but the placeholder, which is no picture at all.
-     *
-     * @param l the locomotive on show
-     * @return true when it has a picture to crop
+     * Whether the crop mark is offered over this locomotive's picture: one of this computer's, or the Central Station's
+     * (FR-104; Adam: "make central station supplied icons croppable locally."), anything but the placeholder.
      */
     static boolean offersACrop(Locomotive l)
     {
@@ -24865,19 +24842,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * What is appended to a crop's own name to make the name of the note beside it (FR-032).
-     *
-     * Deliberately not a picture extension: `Util.isLocIconFile` and the file chooser's filter both
-     * work by extension, and a note that looked like an image would turn up as one.
+     * What is appended to a crop's own name to make the name of the note beside it (FR-032): deliberately not a picture
+     * extension, as `Util.isLocIconFile` and the file chooser's filter work by extension and a note that looked like an
+     * image would turn up as one.
      */
     static final String CROP_SOURCE_SUFFIX = ".source";
 
     /**
-     * What the second line of a crop's note starts with, when it has one (OB-125).
-     *
-     * Prefixed rather than positional so that a note whose second line is something else - an older
-     * format, a stray newline, a file half-written by something that died - is ignored rather than
-     * parsed into a view.
+     * What the second line of a crop's note starts with, when it has one (OB-125): prefixed rather than positional so
+     * that a note whose second line is something else (an older format, a stray newline, a file half-written by
+     * something that died) is ignored rather than parsed into a view.
      */
     static final String CROP_VIEW_PREFIX = "view=";
 
@@ -24974,11 +24948,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         javax.swing.SwingUtilities.invokeLater(() ->
         {
-            // FR-022.  A crop of our own is only ever referenced by the locomotive it was made for,
-            // so clearing that reference is the moment it becomes unreachable.  Without this the
-            // folder would grow by one file for every icon the user ever set and never shrink, and
-            // there is nothing in the interface that would let them tidy it.  Only files inside our
-            // own folder qualify - the user's original picture is never ours to delete.
+            // FR-022: a crop of our own is only ever referenced by the locomotive it was made for, so clearing that
+            // reference is the moment it becomes unreachable; without this the folder would grow by one file for every
+            // icon the user ever set.  Only files inside our own folder qualify: the user's original picture is never
+            // ours to delete.
             String superseded = l.getLocalImageURL();
 
             l.setLocalImageURL(null);
@@ -25361,14 +25334,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Gives the timetable its columns, whether or not there is anything to put in them (Adam: "the timetable entry has default table
-     * heading when blank.  make sure these are always set."): the form designer starts every JTable off with four columns called "Title 1"
-     * to "Title 4", and until an autonomy configuration existed the Timetable tab showed that placeholder, which is the whole time the
-     * operator is setting autonomy up.  Called from the constructor as well, which is why it is separate: repaintTimetable's first act is
-     * to ask the running Layout for a snapshot, and at construction there is none.  Idempotent, on the column count, because both callers
-     * may run in either order.
-     *
-     * Package-private for `TimetableTab.repaintTimetable`, which calls it from its invokeLater, so on the event thread; it touches the table.
+     * Gives the timetable its columns, whether or not there is anything to put in them (Adam: "the timetable entry has
+     * default table heading when blank.  make sure these are always set."): the form designer starts every JTable off
+     * with four columns called "Title 1" to "Title 4", which the Timetable tab would show the whole time the operator
+     * is setting autonomy up.  Called from the constructor as well, because repaintTimetable's first act is to ask the
+     * running Layout for a snapshot, and at construction there is none.  Idempotent, on the column count, as both
+     * callers may run in either order.  Package-private for `TimetableTab.repaintTimetable`, which calls it from its
+     * invokeLater, so on the event thread; it touches the table.
      */
     void prepareTimetableColumns()
     {
@@ -25445,17 +25417,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * What the timetable table would SHOW, as one string (MT-149): the redraw is skipped when this has not changed, and it has to be built
-     * from the text rather than the objects, because a locomotive hashes by identity, so renaming one changes every row and no hash.
-     * Everything the table draws is in here (the order, the locomotive, the two stations, whether the entry has run, its execution time and
-     * its countdown), but not the other way round: `getSecondsToNext` is in milliseconds and the cell shows it divided by
-     * 1000, so a change smaller than a second moves this string and not the table.  A repaint is asked for whenever one is needed, and
-     * sometimes when it is not; the redraw is the cheap half and the wrong direction to be wrong in.
-     *
-     * @param timeTable the snapshot about to be drawn
-     * Package-private for `TimetableTab.repaintTimetable`, which calls it from its invokeLater, so on the event thread.
-     *
-     * @return a key that changes when the drawing would
+     * What the timetable table would SHOW, as one string (MT-149): the redraw is skipped when this has not changed, and
+     * it is built from the text rather than the objects, because a locomotive hashes by identity, so renaming one
+     * changes every row and no hash.  Everything the table draws is in here (the order, the locomotive, the two
+     * stations, whether the entry has run, its execution time and its countdown), but not the other way round:
+     * `getSecondsToNext` is in milliseconds and the cell shows it divided by 1000, so a change smaller than a second
+     * moves this string and not the table.  A repaint is asked for whenever one is needed, and sometimes when it is
+     * not; the redraw is the cheap half and the wrong direction to be wrong in.  Package-private for
+     * `TimetableTab.repaintTimetable`, which calls it from its invokeLater, so on the event thread.  Returns a key that
+     * changes when the drawing would.
      */
     String timetableSignature(List<TimetablePath> timeTable)
     {
@@ -25491,12 +25461,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 if (this.model.getAutoLayout().getPoints().isEmpty()) return;
 
-                // Throttled, not suppressed: this must not return outright while autonomy is running with anything active, or every arrival during a
-                // run is dropped and the panels sit frozen until the last train stops.  What made suppression look necessary was cost, and that is
-                // now paid elsewhere (the Lite refresh does its searching off the event thread and marshals only the drawing back); what remains is
-                // coalescing, which the flag and the pause below are for - a burst of arrivals collapses into one repaint.  A flag rather than a list
-                // of Futures: the list was scanned for "any not done", so a task that never completed suppressed every later refresh for the rest of
-                // the session (a latch with no way back); this one is cleared in a finally, so a refresh that throws cannot take the display with it.
+                // Throttled, not suppressed: returning outright while autonomy is running with anything active would
+                // drop every arrival during a run and leave the panels frozen until the last train stops.  What made
+                // suppression look necessary was cost, now paid elsewhere (the Lite refresh does its searching off the
+                // event thread and marshals only the drawing back); what remains is coalescing, which the flag and the
+                // pause below are for.  A flag rather than a list of Futures, which suppressed every later refresh for
+                // the rest of the session once a task never completed; this one is cleared in a finally, so a refresh
+                // that throws cannot take the display with it.
                 if (!this.autoRefreshInFlight.compareAndSet(false, true)) return;
 
                 try
@@ -25648,11 +25619,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // Active first, then paused, then the trains on stations out of use, each group by name (FR-126)
             List<Locomotive> locs = autoTabOrder(shown, shown.getLocomotivesToRun());
 
-            // The panels are built here, on the event thread, where Swing components belong, but the search each one would do in its own
-            // constructor is not done here: AutoLocomotiveStatus's constructor calls updateState, which calls getPossiblePaths (synchronized on the
-            // Layout, walking the whole graph once per locomotive), and on the EDT that stalls the interface; the Lite path was moved off for
-            // exactly this reason and its twin here was reached from every manual placement and removal.  Built empty and filled in afterwards:
-            // the panels appear at once, and each takes its routes when the worker has them.
+            // The panels are built here, on the event thread, where Swing components belong, but the search each one
+            // would do in its own constructor is not: AutoLocomotiveStatus's constructor calls updateState, which calls
+            // getPossiblePaths (synchronized on the Layout, walking the whole graph once per locomotive), and on the
+            // EDT that stalls the interface, as on the Lite path moved off for this reason.  Built empty and filled in
+            // afterwards: the panels appear at once, and each takes its routes when the worker has them.
             final java.util.List<AutoLocomotiveStatus> panels = new java.util.LinkedList<>();
 
             for (Locomotive loc : locs)
@@ -25708,15 +25679,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * The order the Auto tab lays its cards in (FR-126; Adam: "show active first, then inactive, then ones on inactive
-     * stations (as currently), sorted alphabetically within those groups"): the trains on active stations that are going,
-     * then those paused, then those on stations out of use, then any standing nowhere - each group by name with capitals
-     * ignored, and by exact name after that, so the order does not depend on how the trains were collected.
-     *
-     * Where a train stands is asked once per train, not once per comparison.
-     *
-     * @param shown the railway the cards show
-     * @param trains the trains
-     * @return the trains in the order due, in a new list
+     * stations (as currently), sorted alphabetically within those groups"): the trains on active stations that are
+     * going, then those paused, then those on stations out of use, then any standing nowhere, each group by name with
+     * capitals ignored and by exact name after that, so the order does not depend on how the trains were collected.
+     * Where a train stands is asked once per train, not once per comparison.  Returns the trains in a new list.
      */
     static List<Locomotive> autoTabOrder(Layout shown, java.util.Collection<Locomotive> trains)
     {
@@ -25739,9 +25705,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Lays the Auto tab's cards out again in the order due (FR-126), the cards themselves left as they are: moved, not
-     * built again, so nothing flickers and no route is searched for.  Left alone when they already stand in that order.
-     * On the event thread.
+     * Lays the Auto tab's cards out again in the order due (FR-126), moved rather than built again, so nothing flickers
+     * and no route is searched for; left alone when they already stand in that order.  On the event thread.
      */
     private void resortAutoLocList()
     {
@@ -25904,13 +25869,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
          
 
     /**
-     * The routes whose play button is currently a spinner (FR-043).
-     *
-     * A name rather than a Route, because the table is rebuilt from the model constantly and the object
-     * in a cell is not the object the run was started against - `refreshRouteList` maps names to Routes
-     * afresh every time, so holding the object would leave a spinner attached to a discarded copy.
-     *
-     * Concurrent: written from the route threads and read by the renderer on the event thread.
+     * The routes whose play button is currently a spinner (FR-043), by name rather than Route: the table is rebuilt
+     * from the model constantly and the object in a cell is not the object the run was started against
+     * (`refreshRouteList` maps names to Routes afresh every time).  Concurrent: written from the route threads and read
+     * by the renderer on the event thread.
      */
     final java.util.Set<String> routesExecuting =
         java.util.concurrent.ConcurrentHashMap.newKeySet();
@@ -25930,29 +25892,23 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * When each running route was marked, so the debug line can say how long it lasted.
-     *
-     * The number that settles whether a state nobody saw was never set or merely brief.
+     * When each running route was marked, so the debug line can say how long it lasted: the number that settles whether
+     * a state nobody saw was never set or merely brief.
      */
     private final java.util.Map<String, Long> startedRunningAt =
         new java.util.concurrent.ConcurrentHashMap<>();
 
     /**
-     * The play button: the glyph's size, and the strip of cell that presses it.  Adam asked for a mark "about the same height as the
-     * text", which is Segoe UI 14 here, so the GLYPH stays that size; but the target is not the glyph: a thirteen-pixel square eight in
-     * from the right edge of a row thirty tall is about one and a half percent of the cell ("play buttons not clickable"), and missing it
-     * opened the right-click menu.  So the pressable part is a strip the full height of the row with the glyph drawn in the middle of it,
-     * which also keeps the text off the icon (OB-146): the renderer reserves it as a border inset, so a long route name runs out of room
-     * before the glyph.
+     * The play button: the glyph's size, and the strip of cell that presses it.  Adam asked for a mark "about the same
+     * height as the text" (Segoe UI 14 here), so the GLYPH stays that size, but the target is a strip the full height
+     * of the row with the glyph in the middle ("play buttons not clickable": a thirteen-pixel square is about one and a
+     * half percent of a thirty-tall cell, and missing it opened the right-click menu).  The renderer reserves the strip
+     * as a border inset, so a long route name runs out of room before the glyph (OB-146).
      */
     private static final int ROUTE_PLAY_SIZE = 13;
     private static final int ROUTE_PLAY_STRIP = 30;
 
-    /**
-     * Marks a route as running and starts the animation.
-     *
-     * @param route the route's name
-     */
+    /** Marks a route as running (`route` is its name) and starts the animation. */
     void routeStarted(String route)
     {
         if (route == null) return;
@@ -25976,22 +25932,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The route's button comes back, once the grey has been on screen long enough.  Reached milliseconds after the press,
-     * not when the route ends on the railway: that is `View.routeFinished`, which is what a thing waiting for the route
-     * to be over asks.
-     *
-     * @param route the route's name
+     * The route's button comes back, once the grey has been on screen long enough.  Reached milliseconds after the
+     * press, not when the route ends on the railway (that is `View.routeFinished`, which is what a thing waiting for
+     * the route to be over asks).
      */
     void releaseTheRoutePlayButton(String route)
     {
         if (route == null) return;
 
-        // Later of the two: when the route ended, or when the grey has been on screen long enough.  A route finishes fast enough that the button
-        // was put back before the grey could be seen, so the state was correct, brief and invisible (the CLEAR was the problem, not the
-        // drawing).  A floor rather than a fixed hold, though on today's code the two are the same: `execRoute` starts a thread and
-        // returns, so `releaseTheRoutePlayButton` is reached milliseconds after `routeStarted` and `showFor` is always about the whole minimum.
-        // The floor makes the grey VISIBLE; it is not what keeps it honest about a slow route, and nothing here is.  If execution ever becomes
-        // synchronous the floor is already right and a fixed hold would not be.
+        // Later of the two: when the route ended, or when the grey has been on screen long enough.  A route finishes
+        // fast enough that the button would be put back before the grey could be seen.  A floor rather than a fixed
+        // hold, though on today's code the two are the same: `execRoute` starts a thread and returns, so
+        // `releaseTheRoutePlayButton` is reached milliseconds after `routeStarted` and `showFor` is always about the
+        // whole minimum.  The floor makes the grey VISIBLE; it is not what keeps it honest about a slow route, and
+        // nothing here is.  If execution ever becomes synchronous the floor is already right and a fixed hold would not
+        // be.
         Long since = startedRunningAt.get(route);
 
         long showFor = since == null ? 0
@@ -26015,18 +25970,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * How long a pressed play button stays grey at the very least, in milliseconds.
-     *
-     * Long enough to register as a state rather than a flicker; short enough that firing several
-     * routes one after another does not feel gated by an animation.
+     * How long a pressed play button stays grey at the very least, in milliseconds: long enough to register as a state
+     * rather than a flicker; short enough that firing several routes one after another does not feel gated by an
+     * animation.
      */
     private static final int ROUTE_MINIMUM_VISIBLE_MS = 600;
 
-    /**
-     * Puts the button back, now.
-     *
-     * @param route the route's name
-     */
+    /** Puts the button back, now (`route` is the route's name). */
     private void clearRunningRoute(String route)
     {
         routesExecuting.remove(route);
@@ -26099,37 +26049,29 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The route Find Route last landed on, drawn highlighted until something else happens (FR-044).
-     *
-     * A name rather than a cell, because the table is rebuilt constantly and re-sorted by preference -
-     * a row and column would point at whatever moved into that square afterwards. It is also why the
-     * highlight survives a refresh: the route is still that route wherever it has been put.
+     * The route Find Route last landed on, drawn highlighted until something else happens (FR-044).  A name rather than
+     * a cell, because the table is rebuilt constantly and re-sorted by preference, so a row and column would point at
+     * whatever moved into that square afterwards; it is also why the highlight survives a refresh.
      */
     private String foundRoute;
 
     /**
-     * The wash behind a route Find Route has just landed on.
-     *
-     * A pale yellow rather than the selection blue: this is the application pointing at something, not
-     * the user having selected it, and a cell that looks selected invites the next click to be about
-     * that selection.
+     * The wash behind a route Find Route has just landed on: a pale yellow rather than the selection blue, as this is
+     * the application pointing at something, not the user having selected it, and a cell that looks selected invites
+     * the next click to be about that selection.
      */
     private static final Color FOUND_BACKGROUND = new Color(255, 246, 190);
 
     /**
-     * The wash behind a route that is running.
-     *
-     * Grey rather than a colour, because this is the cell saying "not just now" - the same thing the
-     * greyed triangle says, at a size that is noticed rather than looked for.
+     * The wash behind a route that is running: grey rather than a colour, as this is the cell saying "not just now",
+     * the same thing the greyed triangle says, at a size that is noticed rather than looked for.
      */
     private static final Color RUNNING_BACKGROUND = new Color(226, 226, 226);
 
     /**
-     * Adds Find Route to the routes menu.
-     *
-     * Hand-mounted, like the layout menu's headings and for the same reason: anything declared inside
-     * a GEN-BEGIN block is deleted the next time the form is regenerated. Guarded so that being called
-     * twice cannot mount it twice.
+     * Adds Find Route to the routes menu.  Hand-mounted, like the layout menu's headings and for the same reason:
+     * anything declared inside a GEN-BEGIN block is deleted the next time the form is regenerated.  Guarded so that
+     * being called twice cannot mount it twice.
      */
     private void mountFindRoute()
     {
@@ -26217,11 +26159,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return found;
     }
 
-    /**
-     * Brings the route list up, scrolls to a route and highlights it.
-     *
-     * @param name the route's name, as the model spells it
-     */
+    /** Brings the route list up, scrolls to a route (`name`, as the model spells it) and highlights it. */
     void showRouteInTheList(String name)
     {
         foundRoute = name;
@@ -26293,21 +26231,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         private boolean paintingExecuting;
 
         /**
-         * Draws the cell, then the play button on the right of it (FR-043).
-         *
-         * Adam: "there is a green play button (execute) icon on the right side of each cell.  make it
-         * be about the same height as the text... when the execute button is pressed, convert it to a
-         * spinner animation that reverts back to the button once the route execution is finished."
-         *
-         * Painted rather than added, because a table cell is not a live component - it is this one
-         * renderer, configured and stamped once per cell. That is also why the spinner needs the timer
-         * in the window: nothing here animates on its own.
-         *
-         * A TURNING ARC rather than the hourglass the rest of the application waits behind. The
-         * hourglass is the mark for a modal wait with nothing else to do; this is a small busy mark
-         * inside a list that stays usable, and Adam asked for "a spinner animation" in those words.
-         * The 60ms frame is shared with LoadingSpinner even so, because two marks turning at visibly
-         * different rates read as two different kinds of waiting.
+         * Draws the cell, then the play button on the right of it (FR-043; Adam: "there is a green play button
+         * (execute) icon on the right side of each cell.  make it be about the same height as the text... when the
+         * execute button is pressed, convert it to a spinner animation that reverts back to the button once the route
+         * execution is finished.").  Painted rather than added, because a table cell is not a live component: it is
+         * this one renderer, configured and stamped once per cell.
          */
         @Override
         protected void paintComponent(java.awt.Graphics g)
@@ -26330,15 +26258,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 java.awt.Rectangle box = routePlayGlyphBox(strip);
 
-                // GREY WHILE IT RUNS, GREEN WHEN IT DOES NOT (MT-217).
-                //
-                // Adam: "there is no animation / change in state while it is running.  It should gray
-                // out and then become reenabled once the route finishes."
-                //
-                // This was a turning arc, and the timer that drove it is gone with it. A disabled
-                // button needs two repaints in its whole life rather than sixteen a second, and it is
-                // a state that is either true or false rather than one you have to catch happening -
-                // which matters for a route that finishes in under a second.
+                // GREY WHILE IT RUNS, GREEN WHEN IT DOES NOT (MT-217; Adam: "there is no animation / change in state
+                // while it is running.  It should gray out and then become reenabled once the route finishes."): a
+                // disabled button needs two repaints in its whole life, and is a state that is either true or false
+                // rather than one you have to catch happening, which matters for a route that finishes in under a
+                // second.
                 boolean running = routesExecuting.contains(paintingRoute);
 
                 g2.setColor(running ? new java.awt.Color(170, 170, 170) : new java.awt.Color(0, 150, 0));
@@ -26369,21 +26293,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // Hover effect
             JLabel j = (JLabel) c;
             
-            // FOUND FIRST, then hover, then plain (FR-044).
-            //
-            // A found route outranks the pointer resting on something: Find Route exists to show you
-            // where a route is, and the answer disappearing because the mouse happens to be elsewhere
-            // would be the feature undoing itself. It is cleared by the next find, by a click, or by
-            // anything that rebuilds the table.
+            // FOUND FIRST, then hover, then plain (FR-044): a found route outranks the pointer resting on something, as
+            // Find Route exists to show where a route is and the answer disappearing because the mouse happens to be
+            // elsewhere would be the feature undoing itself.  Cleared by the next find, by a click, or by anything that
+            // rebuilds the table.
             if (value != null && routesExecuting.contains(((Route) value).getName()))
             {
-                // THE WHOLE CELL, not just the triangle (MT-217, third attempt).
-                //
-                // Adam has reported twice that nothing changes when he presses a play button. The
-                // triangle greying is a thirteen-pixel shape changing hue at the end of a cell nobody
-                // is looking at; a cell that washes grey is seen without being looked for. If this is
-                // still not visible then the mark is not being set at all, which is what the debug
-                // lines in routeStarted and releaseTheRoutePlayButton are there to say.
+                // THE WHOLE CELL, not just the triangle (MT-217): the triangle greying is a thirteen-pixel shape
+                // changing hue at the end of a cell nobody is looking at; a cell that washes grey is seen without being
+                // looked for.  If this is still not visible then the mark is not being set at all, which the debug
+                // lines in routeStarted and releaseTheRoutePlayButton say.
                 j.setBackground(RUNNING_BACKGROUND);
             }
             else if (value != null && ((Route) value).getName().equals(foundRoute))
@@ -26418,20 +26337,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             j.setFont(new Font("Segoe UI", Font.PLAIN, 14));
 
-            // THE STRIP IS RESERVED FROM THE TEXT (OB-146).
-            //
-            // Adam: "play icons in routes can be on top of text - make the text (route titles) wrap
-            // before hitting them."  A long name ran the full width of the cell and the glyph was
-            // painted on top of whatever was there.
-            //
-            // Reserved as an inset rather than policed by the drawing, so the label lays its own text
-            // out inside a narrower box and ellipsises when it runs out - the text cannot reach the
-            // icon because the space is not the text's to use.
-            //
-            // NOT wrapped, which is the letter of what he asked. A JLabel wraps only as HTML, and the
-            // rows here are a fixed thirty pixels: two lines of Segoe UI 14 need about thirty-eight,
-            // so wrapping would hide the second line rather than show it. Wrapping wants a taller row,
-            // which changes the look of the whole table - his call, and asked in MT-217.
+            // THE STRIP IS RESERVED FROM THE TEXT (OB-146; Adam: "play icons in routes can be on top of text - make the
+            // text (route titles) wrap before hitting them.").  Reserved as an inset rather than policed by the
+            // drawing, so the label lays its own text out inside a narrower box and ellipsises when it runs out: the
+            // text cannot reach the icon because the space is not the text's to use.  NOT wrapped, which is the letter
+            // of what he asked: a JLabel wraps only as HTML, and the rows are a fixed thirty pixels, so two lines of
+            // Segoe UI 14 (about thirty-eight) would hide the second line rather than show it.  Wrapping wants a taller
+            // row, which changes the look of the whole table - his call (MT-217).
             j.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(top, left, bottom, right, new Color(208,208,208)),
                 BorderFactory.createEmptyBorder(0, 0, 0, ROUTE_PLAY_STRIP)));
@@ -27039,10 +26951,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Says which layout the application is on - a folder of this computer's, or "" for the Central Station's - and
      * remembers a folder as the last of this computer's, which switching to the Central Station's does not forget
-     * (OB-308).  Every writer of the layout preference in this window comes through here.  The control station's
-     * fall-back to the Central Station's layout writes "" itself, which forgets nothing, since "" is never remembered.
-     *
-     * @param path the folder, or "" for the Central Station's layout
+     * (OB-308).  Every writer of the layout preference in this window comes through here; the control station's
+     * fall-back writes "" itself, which forgets nothing, since "" is never remembered.
      */
     static void layoutFolderIs(String path)
     {
@@ -27052,13 +26962,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * A chooser for a layout folder, opening beside this computer's last one (OB-308; Adam: "layouts -> open layout should default to the
-     * last used local layout folder.  this seems like a regression").  It opened at the layout preference, which the switch to the Central
-     * Station's layout empties, and a chooser opened at nothing opens in Documents.  BESIDE the folder rather than inside it: inside, the
-     * chooser shows the folder's own subfolders, and the folder itself cannot be chosen without first going up a level.
-     *
-     * @param selectIt whether the last folder is selected - Open Layout's case; Create New Layout wants a new one
-     * @return the chooser, for folders only
+     * A chooser for a layout folder, opening beside this computer's last one (OB-308; Adam: "layouts -> open layout
+     * should default to the last used local layout folder.  this seems like a regression"), as the layout preference is
+     * emptied by the switch to the Central Station's layout and a chooser opened at nothing opens in Documents.  BESIDE
+     * the folder rather than inside it, as inside the chooser shows the folder's own subfolders and the folder itself
+     * cannot be chosen without first going up a level.  `selectIt`: whether the last folder is selected (Open Layout;
+     * Create New Layout wants a new one).
      */
     JFileChooser layoutFolderChooser(boolean selectIt)
     {
@@ -27117,13 +27026,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
     
     /**
-     * The folder the local layout lives in, or null when the layout is not a local one (OB-127).  NULL FOR THE EMPTY STRING, which is what
-     * switching to a Central Station layout stores: handing the stored empty string back would disagree with `isLocalLayout` about
-     * the one value the switch writes, and `new File("")` is the working directory, where `readLayoutIndexIds` would then look for an index
-     * (with the layout list just cleared, every page it lists comes back as absent).  A value that has to be defended at eight call sites
-     * belongs behind one.
-     *
-     * @return the folder, or null when there is no local layout
+     * The folder the local layout lives in, or null when the layout is not a local one (OB-127).  NULL FOR THE EMPTY
+     * STRING, which is what switching to a Central Station layout stores: handing it back would disagree with
+     * `isLocalLayout`, and `new File("")` is the working directory, where `readLayoutIndexIds` would look for an index
+     * (with the layout list just cleared, every page it lists comes back as absent).  A value that has to be defended
+     * at eight call sites belongs behind one.
      */
     private String getLocalLayoutPath()
     {
@@ -27132,11 +27039,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return path == null || path.isEmpty() ? null : path;
     }
 
-    /**
-     * `getLocalLayoutPath`, for the window's collaborators in this package.
-     *
-     * @return the folder, or null when there is no local layout
-     */
+    /** `getLocalLayoutPath`, for the window's collaborators in this package. */
     String localLayoutPath()
     {
         return getLocalLayoutPath();
@@ -27215,13 +27118,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         javax.swing.SwingUtilities.invokeLater(() ->
         {
-            // Nothing that needs a Central Station is offered without one (OB-098, OB-100; Adam: "switch to cs layout is possible even when not
-            // connected to a cs", "download central station layout files should also be greyed out when not connected to a cs"): both items fetch
-            // over the network the moment they are pressed, and Switch replaces the layout in use with one it cannot then read (how OB-103 gets to
-            // say "no layout loaded").  getNetworkCommState is the connection, not the power (`on` and `powerState` are separate fields).  Connected
-            // AND not simulating (OB-098): getNetworkCommState alone reports whether the last SYNC succeeded, and a sync reads through CS2File,
-            // which reads a local layout folder happily, so a SIMULATED session calls itself connected and offers to switch to a Central Station
-            // that does not exist (Adam: "switch to central station layout is NOT greyed out in debug/simulate mode.").
+            // Nothing that needs a Central Station is offered without one (OB-098, OB-100; Adam: "switch to cs layout
+            // is possible even when not connected to a cs", "download central station layout files should also be
+            // greyed out when not connected to a cs"): both items fetch over the network the moment they are pressed,
+            // and Switch replaces the layout in use with one it cannot then read.  getNetworkCommState is the
+            // connection, not the power (`on` and `powerState` are separate fields).  Connected AND not simulating:
+            // getNetworkCommState alone reports whether the last SYNC succeeded, and a sync reads through CS2File,
+            // which reads a local layout folder happily, so a SIMULATED session calls itself connected (Adam: "switch
+            // to central station layout is NOT greyed out in debug/simulate mode.").
             final boolean connected = isCentralStationConnected();
 
             // Manage Pages is NOT set here any more: it decided from `isLocalLayout()` alone (half the question - a local folder with nothing
