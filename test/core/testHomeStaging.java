@@ -6012,20 +6012,13 @@ public class testHomeStaging
     /**
      * The parity audit is silent about a station FR-001 is holding back.
      *
-     * This used to be a DIVERGENCE the audit had to be taught to ignore, and an exemption stood in
-     * `auditAgainstRuntime` to do it: the runtime's copy of the rule is fenced behind autonomy and
-     * this audit runs at rest, while the planner's copy applied always, so on every layout using the
-     * setting the instrument accused the planner of a defect for applying the rule it was supposed to
-     * apply.
+     * Both sides apply the rule in every tier, at rest too (Adam: "enforce the occupancy ruling in all modes and then rely
+     * on isPathClear."): the runtime through `isPathClear`, the planner through its path search and `canRest`, all by
+     * `Point.heldBackBy`.  So neither offers HS C while HS B is occupied, and the audit has nothing to report; a count
+     * above zero means one side has stopped applying it.
      *
-     * Since 2026-09-09 the two agree because neither applies it - Adam's ruling that an occupancy
-     * restriction belongs to full autonomy alone - so the exemption went with the rule. That is the
-     * better shape of the same silence: an exemption is a hole in the one instrument that exists to
-     * find real divergence, and this one skipped every destination the RAILWAY would hold back.
-     *
-     * The assertion is unchanged, and it is what stops either half coming back on its own: a count
-     * above zero here means the planner has started reading `getBlockedBy` again, or the runtime has
-     * started reading it at rest.
+     * MUTATION: make `Layout.blockingOccupantOf` answer null, or take FR-001 out of both the planner's path search and
+     * `canRest`, and this fails.  Taking it out of `canRest` alone does not: the path search already refuses the square.
      */
     @Test
     public void testTheParityAuditIsSilentAboutAStationHeldBackByAnOccupiedSquare() throws Exception
@@ -6041,15 +6034,13 @@ public class testHomeStaging
         assertEquals(layout.getPoint("HS B").getCurrentLocomotive(), loc(LOC_B),
             "precondition: somebody has to be standing on the watched square");
 
-        // The divergence itself, stated rather than implied: the runtime offers HS C to LOC_A at rest
-        // BECAUSE its copy of the rule is off, and that is the whole reason the exemption exists.
+        // At rest, which is when the audit runs: the runtime applies FR-001 there too.
         assertFalse(layout.isAutoRunning(),
-            "precondition: the audit's oracle is only at-rest getPossiblePaths while autonomy is not "
-            + "running, which is when the runtime does not apply FR-001 at all");
+            "precondition: the audit's oracle is at-rest getPossiblePaths, so autonomy must not be running");
 
         assertEquals(HomeStaging.snapshot(layout).auditAgainstRuntime(), 0,
-            "a station held back by an occupied square is not a planner defect - the planner is "
-            + "applying the rule it is supposed to apply, and the at-rest oracle simply is not");
+            "the audit reports a station held back by an occupied square, so the planner or the runtime "
+            + "has stopped applying FR-001 at rest");
     }
 
     /**

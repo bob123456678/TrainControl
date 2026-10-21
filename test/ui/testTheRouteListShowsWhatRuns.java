@@ -634,10 +634,12 @@ public class testTheRouteListShowsWhatRuns
             assertEquals(answering.asked().get(0), org.traincontrol.util.I18n.f(
                 "route.ui.promptEnterSearchStringWithS88State", org.traincontrol.util.I18n.t("ui.stateEnabled")));
 
-            assertTrue(waitFor(() -> model.getRoute(match).isEnabled(), 30000), "Bulk Enable did not arm the route"
+            assertTrue(waitFor(() -> armed(match, true), 30000), "Bulk Enable did not arm the route"
                 + " whose name matches");
 
             settle();
+
+            assertTrue(waitFor(() -> model.getRoute(unmatched) != null, 10000), "the unmatched route is gone");
 
             assertFalse(model.getRoute(unmatched).isEnabled(), "Bulk Enable armed a route whose name does not match");
         }
@@ -727,10 +729,12 @@ public class testTheRouteListShowsWhatRuns
             assertEquals(answering.asked().get(0), org.traincontrol.util.I18n.f(
                 "route.ui.promptEnterSearchStringWithS88State", org.traincontrol.util.I18n.t("ui.stateDisabled")));
 
-            assertTrue(waitFor(() -> !model.getRoute(match).isEnabled(), 30000), "Bulk Disable did not disarm the route"
+            assertTrue(waitFor(() -> armed(match, false), 30000), "Bulk Disable did not disarm the route"
                 + " whose name matches");
 
             settle();
+
+            assertTrue(waitFor(() -> model.getRoute(unmatched) != null, 10000), "the unmatched route is gone");
 
             assertTrue(model.getRoute(unmatched).isEnabled(), "Bulk Disable disarmed a route whose name does not match");
         }
@@ -1793,6 +1797,17 @@ public class testTheRouteListShowsWhatRuns
         }
 
         return false;
+    }
+
+    /**
+     * Whether the route exists and is armed as asked.  Bulk Enable and Bulk Disable delete a route and add it back, so for
+     * a moment it is not there at all: that moment answers false rather than throwing.
+     */
+    private static boolean armed(String name, boolean enabled)
+    {
+        org.traincontrol.marklin.MarklinRoute route = model.getRoute(name);
+
+        return route != null && route.isEnabled() == enabled;
     }
 
     private static boolean waitFor(BooleanSupplier condition, long millis)

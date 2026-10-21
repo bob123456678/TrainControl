@@ -12,6 +12,7 @@ import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.traincontrol.automation.Edge;
 import org.traincontrol.automation.Layout;
@@ -95,15 +96,7 @@ public class testThePlaceDoorsKeepTheHeading
             if (point.getCurrentLocomotive() != null) railway().moveLocomotive(null, point.getName(), true);
         }
 
-        // THE ACTIVE LOCOMOTIVE, as the window makes one: mapped to the key button in use.
-        ui.mapLocToCurrentButton(HIS_TRAIN);
-
-        for (long end = System.currentTimeMillis() + 10000; (ui.getActiveLoc() == null
-            || !HIS_TRAIN.equals(ui.getActiveLoc().getName())) && System.currentTimeMillis() < end; ) pump();
-
-        assertNotNull(ui.getActiveLoc(), "precondition: " + HIS_TRAIN + " could not be made the active locomotive");
-
-        assertEquals(ui.getActiveLoc().getName(), HIS_TRAIN, "precondition: another train is the active locomotive");
+        hisTrainIsActive();
 
         // EVERY QUESTION A PLACEMENT MAY ASK, answered as the steps answer it: where the tail lies is not said (Cancel).
         TailCrossedPrompt.answerForTests(TailCrossedPrompt.DISMISSED);
@@ -122,6 +115,27 @@ public class testThePlaceDoorsKeepTheHeading
         {
             if (sandbox != null) sandbox.close();
         }
+    }
+
+    /**
+     * The active locomotive, as the window makes one: mapped to the key button in use, and checked before every claim.
+     *
+     * Set, never toggled: `mapLocToCurrentButton` takes a train OFF a button that already holds it, and the run's copy
+     * of the operator's UIState.data may already have this train under the button in use.
+     */
+    @BeforeMethod
+    public static void hisTrainIsActive() throws Exception
+    {
+        pump();
+
+        if (ui.getActiveLoc() == null || !HIS_TRAIN.equals(ui.getActiveLoc().getName())) ui.mapLocToCurrentButton(HIS_TRAIN);
+
+        for (long end = System.currentTimeMillis() + 10000; (ui.getActiveLoc() == null
+            || !HIS_TRAIN.equals(ui.getActiveLoc().getName())) && System.currentTimeMillis() < end; ) pump();
+
+        assertNotNull(ui.getActiveLoc(), "precondition: " + HIS_TRAIN + " could not be made the active locomotive");
+
+        assertEquals(ui.getActiveLoc().getName(), HIS_TRAIN, "precondition: another train is the active locomotive");
     }
 
     /** Nothing left open for the next claim: a claim that fails with a question up leaves it modal on the screen. */

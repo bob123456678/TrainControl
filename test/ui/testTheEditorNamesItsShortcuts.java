@@ -2940,6 +2940,13 @@ public class testTheEditorNamesItsShortcuts
         final String was = TrainControlUI.getPrefs().get(key, null);
         final boolean onTopWas = ui.isAlwaysOnTop();
 
+        final java.lang.reflect.Field itemField = TrainControlUI.class.getDeclaredField("windowAlwaysOnTopMenuItem");
+
+        itemField.setAccessible(true);
+
+        final javax.swing.JCheckBoxMenuItem item = (javax.swing.JCheckBoxMenuItem) itemField.get(ui);
+        final boolean tickedWas = item.isSelected();
+
         final LayoutEditor first = editor;
 
         SwingUtilities.invokeAndWait(() -> first.dispose());
@@ -2949,8 +2956,11 @@ public class testTheEditorNamesItsShortcuts
 
         try
         {
-            // THE OPERATOR WANTS IT ON TOP
-            TrainControlUI.getPrefs().putBoolean(key, true);
+            // THE OPERATOR WANTS IT ON TOP, said as he says it: the Window menu's tick, which the closing paths read back into
+            // the setting.  Set, never toggled: the run's copy of his settings for this folder may have it either way.
+            SwingUtilities.invokeAndWait(() -> { if (!item.isSelected()) item.doClick(); });
+
+            assertTrue(TrainControlUI.getPrefs().getBoolean(key, false), "precondition: ticking the menu item did not set the setting");
 
             SwingUtilities.invokeAndWait(() -> ui.setAlwaysOnTop(true));
 
@@ -3008,6 +3018,8 @@ public class testTheEditorNamesItsShortcuts
             }
 
             settleTheEditor();
+
+            SwingUtilities.invokeAndWait(() -> item.setSelected(tickedWas));
 
             if (was == null) TrainControlUI.getPrefs().remove(key);
             else TrainControlUI.getPrefs().put(key, was);

@@ -700,10 +700,8 @@ public final class HomeStaging
                 // stations the planner's canRest correctly refuses.
                 if (p.excludes(loc)) continue;
 
-                // AND NO FR-001 EXEMPTION.  The runtime's copy of the rule is fenced behind autonomy and this audit
-                // runs at rest, but the planner has no copy of its own, so at rest the two agree; an exemption that
-                // skips every destination the RAILWAY would hold back would be a hole in the one instrument that exists
-                // to find real divergence.
+                // AND NO FR-001 EXEMPTION: both sides apply it in every tier, at rest too, so they agree; an exemption
+                // would be a hole in the one instrument that exists to find real divergence.
 
                 if (!plannerSays.contains(p))
                 {

@@ -1693,12 +1693,11 @@ public class testAutonomyDiagramMonitor
      * choose this one": a station autonomy will not pick is still somewhere trains pass through and stop at.  A
      * reversing point that is switched off must not keep the mark for "every train turns here".
      *
-     * The three assertions are the three claims: the flag changes the drawing, the new mark is lighter
-     * than the one it replaces (a cross is an absence beside a filled shape), and a switched-off
-     * STATION is untouched - somebody turned it off and can turn it back on, so it keeps being a place.
+     * Switching a reversing point off changes its badge, and switching a station off does too (the editor's "out of
+     * service" leaves the station flag set, so a rule that skipped stations would miss almost every square the mode is
+     * used on).  Both draw the same cross, neither draws a grey block, and parking alone does not draw it.
      *
-     * MUTATION: making isImpassable ignore `shut` fails the first; making it ignore `station` fails
-     * the third.
+     * MUTATION: make `Badge.isImpassable` answer false, or answer `parking`, and the first assertion fails.
      */
     @Test
     @support.DrawsFR118Icons

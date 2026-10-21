@@ -48,6 +48,9 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
     private static AutonomySession session;
     private static LayoutDiagram page;
 
+    /** The run's own copy of "remember window location" for this folder, put back at the end. */
+    private static String rememberedWas;
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {
@@ -57,6 +60,12 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
         }
 
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("single-switch"));
+
+        // THE EDITOR AT ITS OWN SIZE, NOT THE OPERATOR'S: the run copies his settings for this folder, and with "remember window
+        // location" on, the editor opens at his saved bounds, where nothing may lie under the band.  Set, never toggled.
+        rememberedWas = TrainControlUI.getPrefs().get(org.traincontrol.gui.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION, null);
+
+        TrainControlUI.getPrefs().putBoolean(org.traincontrol.gui.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION, false);
 
         model = support.TestStationAddress.withNoStation(
             () -> MarklinControlStation.init(null, true, false, false, true));
@@ -88,6 +97,9 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
         }
         finally
         {
+            if (rememberedWas == null) TrainControlUI.getPrefs().remove(org.traincontrol.gui.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION);
+            else TrainControlUI.getPrefs().put(org.traincontrol.gui.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION, rememberedWas);
+
             if (sandbox != null) sandbox.close();
         }
     }
