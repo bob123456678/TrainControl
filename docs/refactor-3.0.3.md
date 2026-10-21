@@ -457,31 +457,40 @@ at Phase 4, Phase 6, the comment trims and the Layout pilot; what follows is the
 - **FR-138**, the API examples.
 
 **Comments, to the strict rule** (CLAUDE.md, "Comments stay lean")
-- The pilot on Layout.java (`88856f02`..`d5bd4235`): 11,876 lines to 9,897, comment lines 4,519 to 2,542 (44%), its
-  434 review ids gone, bytecode identical.  Next, one file per worker in this order: AutonomySession,
-  AutonomyEditorPanel, TrainControlUI, then LayoutEditor (which also holds the last 100 review ids not on Adam's
-  lines).
-- Four questions for Adam before those passes:
-  - May a lock-order or thread note run to about 5 lines?  The pilot kept four such private javadocs at 4-5 lines.
+- Done in 3.0.3, all comment-only with identical bytecode:
+  - the pilot on Layout.java (`88856f02`..`d5bd4235`, Opus): 11,876 lines to 9,897, comment lines cut 44%, its 434
+    review ids gone;
+  - AutonomySession, AutonomyEditorPanel, LayoutEditor and TrainControlUI (`f671a519`..`043ef48b`, one Sonnet worker,
+    on Adam's word of 2026-10-21): comment lines cut 28%, 19%, 13% and 10%; LayoutEditor's 100 review ids gone.  The
+    cuts are smaller than the pilot's: Sonnet kept more of the why, and about 12,800 of TrainControlUI's lines are
+    Adam's own, which the rule leaves alone.
+- Next: a harsher pass, Opus as in the pilot, on the blocks of 10 lines or more that are not Adam's and still stand:
+  AutonomySession 62, TrainControlUI 38, AutonomyEditorPanel 35, LayoutEditor 25.
+- Questions for Adam before it:
+  - Lock-order and thread notes were allowed about 5 lines in both passes; confirm, or hold them to 3.
   - Seven of Adam's commits carry no Claude trailer but read as Claude-written (`902c647c`, `47147436`, `28ef127a`
     and others).  The rule leaves their comments alone; Adam can name the ones that are really Claude's.
-  - The 67 review ids on Adam's own lines (ManualReversalPrompt 10, AutonomySession 5 and 21 test files) stay
-    pinned unless he says they may go.
-  - Commit the pilot's guarded edit helper (`lean.py`: edits only comment lines, refuses code and Adam-owned lines)
-    to `docs/tools/`, so every worker uses it.
+  - The 67 review ids left are on Adam's own lines (ManualReversalPrompt 10, AutonomySession 5, TrainControlUI 2 and
+    test files) and stay pinned unless he says they may go.
+  - Commit the guarded edit helper both passes used (`lean.py`: edits only comment lines, refuses code and Adam-owned
+    lines) to `docs/tools/`, so every worker uses it.
 - Every pass that drops a dead id lowers `DEAD_CITATIONS` and takes the id off the roll (`triagedb.load_dead`, then
-  `render_findings`).  Once LayoutEditor is cleared, check `testEveryCitationResolves`'s `cited.size() > 300`, a
-  staleness floor that counts ids in code and strings as well as comments; lower it to what remains.
+  `render_findings`).  `testEveryCitationResolves`'s `cited.size() > 300` (ids in code and strings as well as
+  comments) still holds with LayoutEditor cleared; lower it if a later pass takes the count under.
+- Found by the test pass (issue 28): `HomeStaging.canRest`'s FR-001 check never decides anything, because the
+  planner's path search already refuses a held-back square.  Left as it is: removing a rule's second copy needs
+  Adam's word.
 
 **Ratchets as they stand at 3.0.3** (each may only go down)
-- `testCommentsStayLean`: history 336, long blocks 54, review ids 168.
-- `testJavadocsAreAttached`: 26.
+- `testCommentsStayLean`: history 319, long blocks 54, review ids 67.
+- `testJavadocsAreAttached`: 16.
 - `testEveryCitationResolves`: 20 dead citations.
 
-**The next test pass** (`docs/refactor-3.0.3-for-adam.md`, issues 25 and 27-30)
-- 25: the Bulk Enable claim's NullPointerException under a deliberate delay.
-- 27-29: three test javadocs that say the opposite of what their tests assert.
-- 30: three classes red in the main checkout and green in a worktree; pin what they read from the folder.
+**Tests**
+- The test pass of issues 25 and 27-30 is done (`d9021d99`, `docs/refactor-3.0.3-for-adam.md`).  Issue 30's three
+  classes read the operator's own state for the main folder (his saved keys, his always-on-top setting, his
+  remembered window size); a class that copies his settings sets what it needs, never toggles it.
+- Issue 24 (the main window not put back on top, once under lanes in a worktree) is still unexplained.
 
 **Measurement**
 - A JaCoCo rerun (stopped on Adam's word of 2026-10-20), outside the repository as before; the 2026-10-19 run gave

@@ -177,7 +177,7 @@ public class AutonomyBanner extends JPanel
         action.setFocusable(false);
         action.setVisible(false);
 
-        // The standard's button font (UIX-C3)
+        // The standard's button font
         action.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12));
         action.setMargin(new java.awt.Insets(0, 10, 0, 10));
 
