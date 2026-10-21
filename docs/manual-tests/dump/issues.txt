@@ -558,7 +558,7 @@ text:
 
 [issue FR-144]
 ordinal: 37
-inbox: yes
+inbox: no
 kind: feature request
 title: Route editor: indent several conditions at once, and move a condition past a whole group
 filed: 2026-10-20
@@ -799,7 +799,7 @@ text:
 
 [issue OB-367]
 ordinal: 36
-inbox: yes
+inbox: no
 kind: bug
 title: Route editor: straight/turn (etc) are not translated
 filed: 2026-10-20

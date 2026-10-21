@@ -3962,3 +3962,19 @@ kind: bug
 what: The autonomy editor's notices float over the bottom of the diagram, three lines at most, with an X to dismiss each one; the diagram never moves (`07bb2e90`).
 state: -
 became: MT-801
+
+[receipt OB-367]
+seq: 495
+filed: 2026-10-20
+kind: bug
+what: The route editor shows every setting (switch, signal, three-way, sensor, function, direction) in the user's language in the cells, the dropdowns and Reads as, and stores the same words as before (`295c7e1a`).
+state: -
+became: MT-802
+
+[receipt FR-144]
+seq: 496
+filed: 2026-10-20
+kind: feature request
+what: Shift-selected conditions indent and outdent together; a condition beside a group at its own level moves past the whole group (`295c7e1a`).
+state: -
+became: MT-803

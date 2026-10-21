@@ -31617,3 +31617,81 @@ body:
 tail:
 | ---
 |
+
+[test MT-802]
+ordinal: 801
+anchor: mt-802
+date: 2026-10-20
+title: OB-367: the route editor shows switch, signal, sensor, function and direction settings in your language
+disposition: fixed validated
+from: OB-367
+written: 2026-10-20
+reopened: no
+body:
+| <a id="mt-802"></a>
+| ### MT-802 - 2026-10-20 - OB-367: the route editor shows switch, signal, sensor, function and direction settings in your language
+|
+| **Disposition:** fixed validated
+| **From:** OB-367
+|
+| **Written:** 2026-10-20
+|
+| **Steps**
+|
+| 1. Set the language to German (or any language but English) and restart.
+| 2. Open a route for editing.  Add a command for a switch, a signal, a three-way switch, a function and a locomotive direction, and a condition on an S88 sensor.
+| 3. Open each Setting dropdown.
+| 4. Tick Automatically Fire and add a second condition, so Reads as shows.
+| 5. Save the route, open it again, and export it.
+|
+| **Expected**
+|
+| - Steps 2-3: every setting reads in the chosen language (in German: gerade / abzweigend, grün / rot, links / gerade / rechts, aus / ein, vorwärts / rückwärts), in the cells and in the dropdowns.
+| - Step 4: Reads as names the settings in the same words, green for on, straight and green, red for off, turn and red.
+| - Step 5: the route opens unchanged, and the exported file still says straight, turn, on, off and so on, so it reads the same in every language.
+|
+| *What this is:* OB-367 (`295c7e1a`): the settings are stored as before and only shown translated.  `ui.testRouteEditorValidation.testTheSettingsAreShownInTheUsersLanguage` checks the cells, Reads as and what is stored.
+|
+tail:
+| ---
+|
+
+[test MT-803]
+ordinal: 802
+anchor: mt-803
+date: 2026-10-20
+title: FR-144: several conditions indent at once, and a condition moves past a whole group
+disposition: fixed validated
+from: FR-144
+written: 2026-10-20
+reopened: no
+body:
+| <a id="mt-803"></a>
+| ### MT-803 - 2026-10-20 - FR-144: several conditions indent at once, and a condition moves past a whole group
+|
+| **Disposition:** fixed validated
+| **From:** FR-144
+|
+| **Written:** 2026-10-20
+|
+| **Steps**
+|
+| 1. Open a route for editing and type four conditions flat: sensor 1 or sensor 2 or sensor 3 and sensor 4.  The "and" shows in red.
+| 2. Click sensor 1's line, Shift-click sensor 3's line, and press the indent arrow on any of the selected lines.
+| 3. Press the up arrow beside sensor 4.
+| 4. Press the down arrow beside sensor 4.
+| 5. Select sensor 1 to sensor 3 again and press the outdent arrow.
+|
+| **Expected**
+|
+| - Step 2: sensors 1 to 3 and the two "or" words between them move one level in together; the "and" stays at the outer level and is no longer red; Reads as says (1 or 2 or 3) and 4.  The lines stay selected.
+| - Step 3: sensor 4 moves to the top, past the whole group: 4 and (1 or 2 or 3), every line at its level.
+| - Step 4: it goes back below the group.
+| - Step 5: everything is flat again, and the "and" is red again.
+| - Inside a group, the arrows still swap two conditions as before.
+|
+| *What this is:* FR-144 (`295c7e1a`).  `ui.testRouteEditorValidation.testSeveralConditionsIndentAtOnceAndOneMovesPastTheGroup` and `core.testConditionOutline.testAConditionMovesPastAWholeGroup` check every step.
+|
+tail:
+| ---
+|

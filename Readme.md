@@ -405,8 +405,13 @@ Tab icons provided by Freepik.
 * v3.0.3
     - Locomotive Control
         - The window for choosing a locomotive's icon now has a `Clear Local Locomotive Icon` button, so the icon can be cleared where it is set.
+    - Routes
+        - In the route editor, several conditions can now be indented or outdented together: select them with Shift-click and press an indent arrow, so a new condition can be wrapped around an existing group.
+        - Moving a condition up or down now takes it past a whole bracketed group beside it, so `(A or B or C) and D` becomes `D and (A or B or C)`.
     - Track Diagram
         - The autonomy locomotive icon is now slightly see-through, so a label under it can still be made out.
+    - Route Bug Fixes
+        - The route editor now shows switch, signal, sensor, function and direction settings (such as straight, turn, on and off) in your language.
     - Autonomy Bug Fixes
         - Opening another layout, creating a new one or loading the Central Station's layout no longer keeps the previous railway's trains standing in memory; your locomotives stay in the database, and choosing the same layout again keeps its trains.
         - Pasting a train on the Track Diagram onto a square that is not a station now says a train can only be placed at a station, instead of asking which way it faces.
