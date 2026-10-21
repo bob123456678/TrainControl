@@ -31623,7 +31623,7 @@ ordinal: 801
 anchor: mt-802
 date: 2026-10-20
 title: OB-367: the route editor shows switch, signal, sensor, function and direction settings in your language
-disposition: fixed validated
+disposition: needs test
 from: OB-367
 written: 2026-10-20
 reopened: no
@@ -31631,7 +31631,7 @@ body:
 | <a id="mt-802"></a>
 | ### MT-802 - 2026-10-20 - OB-367: the route editor shows switch, signal, sensor, function and direction settings in your language
 |
-| **Disposition:** fixed validated
+| **Disposition:** needs test
 | **From:** OB-367
 |
 | **Written:** 2026-10-20
@@ -31661,7 +31661,7 @@ ordinal: 802
 anchor: mt-803
 date: 2026-10-20
 title: FR-144: several conditions indent at once, and a condition moves past a whole group
-disposition: fixed validated
+disposition: needs test
 from: FR-144
 written: 2026-10-20
 reopened: no
@@ -31669,7 +31669,7 @@ body:
 | <a id="mt-803"></a>
 | ### MT-803 - 2026-10-20 - FR-144: several conditions indent at once, and a condition moves past a whole group
 |
-| **Disposition:** fixed validated
+| **Disposition:** needs test
 | **From:** FR-144
 |
 | **Written:** 2026-10-20
