@@ -180,7 +180,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public static final String LAYOUT_OVERRIDE_PATH_PREF = "LayoutOverridePath" + Conversion.getFolderHash(10);
 
     /**
-     * This computer's last layout folder, which switching to the Central Station's layout does not forget (OB-308) - see
+     * This computer's last layout folder, which switching to the Central Station's layout does not forget (OB-308); see
      * `layoutFolderChooser`.
      */
     public static final String LAST_LOCAL_LAYOUT_PREF = "LastLocalLayoutFolder" + Conversion.getFolderHash(10);
@@ -202,9 +202,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public static final String DIAGRAM_ALLOWED_DIRECTIONS = "DiagramAllowedDirections";
 
     /**
-     * How many locomotive mapping pages this installation has - see numLocMappings.  Per FOLDER, like every preference that
-     * describes one: the pages it counts live in that folder's own UIState.data, and a count shared by every working
-     * directory would disagree with the file and skip the restore of the page names and the saved position.
+     * How many locomotive mapping pages this installation has (see numLocMappings), per FOLDER like every preference
+     * that describes one: the pages it counts live in that folder's own UIState.data, and a count shared by every
+     * working directory would disagree with the file and skip the restore of the page names and the saved position.
      */
     public static final String LOC_MAPPING_PAGES_PREF = "LocMappingPages" + Conversion.getFolderHash(10);
 
@@ -226,24 +226,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public static final String ECHO_COMMANDS_PREF = "EchoSentCommandsWhenSimulating";
 
     /**
-     * Whether the diagram shows the captions of stations autonomy cannot choose.  On by default, so somebody who has not
+     * Whether the diagram shows the captions of stations autonomy cannot choose: on by default, so somebody who has not
      * asked sees their railway as they drew it; off, only the stations autonomy can send a train to keep their names.
-     * Stored in the preferences, so it survives a restart.
      */
     public static final String SHOW_INACTIVE_LABELS_PREF = "ShowInactiveLabels";
 
     public static final boolean SHOW_INACTIVE_LABELS_DEFAULT = true;
 
-    // Removed settings have no constant, because nothing reads them: ShowCoordinates (OB-179), and HideReversingEdges,
-    // ShowHomeLocomotives, HideReversing, HideInactive and ShowStationLength.  Their stored values stay in the
-    // preferences store, since clearing a key cannot be undone and a stale value must not come back if a key is reused.
-    // The diagram's column and row numbers follow the grid preference alone: `LayoutGrid.coordinatesVisible`, key
-    // `EDITOR_GRID_PREF`.
+    // Keys no longer read have no constant (ShowCoordinates, HideReversingEdges, ShowHomeLocomotives, HideReversing,
+    // HideInactive, ShowStationLength): their stored values stay in the preferences store, so a key must not be reused
+    // for another meaning.  The diagram's column and row numbers follow `EDITOR_GRID_PREF` alone
+    // (`LayoutGrid.coordinatesVisible`, OB-179).
     public static final String LAST_USED_FOLDER = "LastUsedFolder";
     public static final String LAST_USED_ICON_FOLDER = "LastUsedIconFolder";
 
     /**
-     * FR-022 - whether the icon file chooser should offer to crop the picture that is picked.  Remembered, and OFF until
+     * FR-022: whether the icon file chooser should offer to crop the picture that is picked; remembered, and OFF until
      * asked for, so no dialog appears between picking a file and seeing the result.
      */
     public static final String CROP_LOC_ICON_PREF = "CropLocIcon";
@@ -330,16 +328,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private static final int MIN_LOC_MAPPINGS = 2;
 
     /**
-     * The most locomotive mapping pages that may be ADDED.  Adam: "add a cap of 50 pages for now (not 99)."
-     * Not applied when LOADING - see `addLocMappingPage`.
+     * The most locomotive mapping pages that may be ADDED (Adam: "add a cap of 50 pages for now (not 99)."); not
+     * applied when LOADING, see `addLocMappingPage`.
      */
     public static final int MAX_LOC_MAPPINGS = 50;
 
     /**
-     * How many pages THIS installation has: read once at startup, written whenever a page is added or deleted.  Grown, never
-     * truncated, when a saved state holds more pages than this says - see setViewListener.
-     *
-     * Package-private for `LocomotiveActions.findSimilarLocs`, which reads it on the event thread to list the pages; a plain field, no lock.
+     * How many pages THIS installation has: read once at startup, written whenever a page is added or deleted, grown
+     * and never truncated when a saved state holds more pages than this says (see setViewListener).  Package-private
+     * for `LocomotiveActions.findSimilarLocs`, which reads it on the event thread; a plain field, no lock.
      */
     int numLocMappings = DEFAULT_LOC_MAPPINGS;
     
@@ -351,14 +348,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     // the locomotive list can say the same thing in the same colour
     public static final Color COLOR_AT_HOME = new Color(0, 200, 210);
 
-    /**
-     * The Interface menu's switch for grey station captions (FR-031).  Built by hand - see where.
-     */
+    /** The Interface menu's switch for grey station captions (FR-031), built by hand. */
     private javax.swing.JCheckBoxMenuItem greyStationLabelsMenuItem;
 
     /**
      * The Preferences menu's Locomotive submenu's switch for the page number before the page name on the line over the
-     * locomotive's name (FR-128).  Built by hand - see where.
+     * locomotive's name (FR-128), built by hand.
      */
     private javax.swing.JCheckBoxMenuItem showPageNumbersMenuItem;
 
@@ -378,9 +373,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     // asked it to is not reported as a failure.  Volatile: written on the EDT, read on the run thread.
     private volatile boolean gracefulStopRequested = false;
 
-    // True from the moment a return-home run is committed until its worker has finished.
-    // isRunning() cannot stand in for it: it is false during the planning phase, so every enablement surface re-offered
-    // the action under way, and a second press started a second worker over the first one's staging plan.
+    // True from the moment a return-home run is committed until its worker has finished.  isRunning() cannot stand in
+    // for it: it is false during the planning phase, so every enablement surface would re-offer the action under way,
+    // and a second press would start a second worker over the first one's staging plan.
     private volatile boolean stagingFlowActive = false;
 
     /**
@@ -390,9 +385,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     final SelfUpdate.HandOver updateHandOver = new SelfUpdate.HandOver();
 
-    /**
-     * Help > Download Update, and Download & Update (FR-125).
-     */
+    /** Help > Download Update, and Download & Update (FR-125). */
     private final UpdateFlow updateFlow = new UpdateFlow(this);
 
     /**
@@ -415,8 +408,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     // Page where the current button was selected
     private int currentButtonlocMappingNumber;
 
-    // The line over the active locomotive's name, drawn as a keycap and two pills (FR-128).  Sits inside CurrentKeyLabel,
-    // which stays the slot it always was.
+    // The line over the active locomotive's name, drawn as a keycap and two pills (FR-128), inside CurrentKeyLabel.
     private CurrentKeyRow currentKeyRow;
     
     private final HashMap<Integer, javax.swing.JButton> buttonMapping;
@@ -443,7 +435,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     // Decodes/scales layout tile images off the EDT so the diagram can paint while tiles load
     private ExecutorService TileImageLoader = Executors.newFixedThreadPool(Math.max(2, Runtime.getRuntime().availableProcessors()));
     /**
-     * What syncWithCS2 answers when it turned a caller away because one was already running.  A value of its own, because -1
+     * What syncWithCS2 answers when it turned a caller away because one was already running: a value of its own, as -1
      * means "the sync FAILED" and every caller reads it that way.
      */
     public static final int SYNC_ALREADY_RUNNING = -2;
@@ -452,8 +444,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private final java.util.concurrent.atomic.AtomicBoolean syncInFlight =
         new java.util.concurrent.atomic.AtomicBoolean(false);
 
-    // Whether an autonomy panel refresh is already on its way: coalesces a burst of arrivals into one repaint.  Cleared in a
-    // finally by the task that set it, so a failed refresh cannot leave the panels frozen.
+    // Whether an autonomy panel refresh is already on its way: coalesces a burst of arrivals into one repaint; cleared
+    // in a finally by the task that set it, so a failed refresh cannot leave the panels frozen.
     private final java.util.concurrent.atomic.AtomicBoolean autoRefreshInFlight =
         new java.util.concurrent.atomic.AtomicBoolean(false);
 
@@ -485,8 +477,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private static final int SAVE_KEY_ACTIVE_BUTTON = -2;
 
     /**
-     * The page names, without the two sentinels stored beside them.  `saveState` puts the active page number and
-     * the active button's key code into `pageNames` under the negative keys above, so "is this a page name" must skip them.
+     * The page names, without the two sentinels stored beside them: `saveState` puts the active page number and the
+     * active button's key code into `pageNames` under the negative keys above, so "is this a page name" must skip them.
      *
      * @return the names, trimmed, as a set
      */
@@ -531,38 +523,37 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private AddLocomotive adder;
     private LocomotiveStats stats;
     /**
-     * Set when a setup edit could not be applied because autonomy was running.
-     *
-     * The edit reached the file and not the running layout, so the configuration on disk is NEWER than the layout for at
-     * least one point, and the save on the way out folds the layout back over it; this stops that save from deleting the edit.
-     * Cleared by a rebuild that replaces the running layout: a rebuild covers every point, the edit included.
+     * Set when a setup edit could not be applied because autonomy was running: the edit reached the file and not the
+     * running layout, so the configuration on disk is NEWER than the layout for at least one point, and the save on the
+     * way out folds the layout back over it; this stops that save from deleting the edit.  Cleared by a rebuild that
+     * replaces the running layout, which covers every point, the edit included.
      */
     private boolean setupEditDeclinedDuringRun;
 
     /**
-     * The configuration whose name the last reset forgot, while its layout is still the one in the model.
-     * A load that carries the trains across (while an edit waits, or a train is under way) carries them from the
-     * configuration running, and with the name forgotten it read "nothing running".  Unload, a deleted setup and a switch of
+     * The configuration whose name the last reset forgot, while its layout is still the one in the model: a load that
+     * carries the trains across (while an edit waits, or a train is under way) carries them from the configuration
+     * running, and with the name forgotten it would read "nothing running".  Unload, a deleted setup and a switch of
      * railway forget it too (`forgetTheRailway`).
      */
     private String forgottenByTheReset;
 
     /**
-     * The layout source the railway came from - the local folder, or none for the Central Station's - so that a switch
-     * of source can tell another railway from the same one chosen again.  Null until the window is given its
-     * model, and then a switch forgets the railway whatever it is.
+     * The layout source the railway came from (the local folder, or none for the Central Station's), so that a switch
+     * of source can tell another railway from the same one chosen again.  Null until the window is given its model, and
+     * then a switch forgets the railway whatever it is.
      */
     private String railwaySource;
 
-    /** The route editor, the only one; the old text-based editor has been deleted. */
+    /** The route editor, the only one. */
     RouteEditorFrame routeEditor;
 
     /**
-     * Whether every window holding unsaved work is willing to be closed - the exit's first question.
-     * `WindowClosed` ends in `System.exit`, so this is the part that decides, lifted out so
-     * `core.testLayoutTiles.testTheExitAsksEveryOpenWindow` can ask it with a dirty route editor open (the editors answer
-     * with their own modal question, which a test answers through `RouteEditorFrame`'s test hook).
-     * The layout editor is asked first (OB-070): it is the window most likely to be open.
+     * Whether every window holding unsaved work is willing to be closed: the exit's first question.  `WindowClosed`
+     * ends in `System.exit`, so this is the part that decides, lifted out so
+     * `core.testLayoutTiles.testTheExitAsksEveryOpenWindow` can ask it with a dirty route editor open (the editors
+     * answer with their own modal question, which a test answers through `RouteEditorFrame`'s test hook).  The layout
+     * editor is asked first (OB-070): it is the window most likely to be open.
      *
      * @return true when the exit may carry on
      */
@@ -576,9 +567,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Whether an open route editor is holding work the exit would throw away.  The same question as the exit's
-     * `maySettleBeforeExit` without the modal dialog, so `core.testLayoutTiles.testTheExitKnowsTheRouteEditorHasUnsavedWork`
-     * can ask it on both sides of a typed change.
+     * Whether an open route editor is holding work the exit would throw away: the exit's `maySettleBeforeExit` question
+     * without the modal dialog, so `core.testLayoutTiles.testTheExitKnowsTheRouteEditorHasUnsavedWork` can ask it on
+     * both sides of a typed change.
      *
      * @return true when the route editor is open and has unsaved work
      */
@@ -592,11 +583,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     // So we can track locomotive (autonomy) locations on track diagrams
     /**
-     * The diagram labels showing each station, keyed by the station's SQUARE and not its name: a name had to match a Point's,
-     * and a square is what a caption points at and what a Point is derived from.
+     * The diagram labels showing each station, keyed by the station's SQUARE and not its name: a name had to match a
+     * Point's, and a square is what a caption points at and what a Point is derived from.  Concurrent because it is not
+     * only the EDT's: written during grid builds on the EDT, and read by updateVisiblePoints, which is reached from raw
+     * worker threads (the one that starts autonomy, the one that runs a path from the diagram menu).
      */
-    // Concurrent because it is not only the EDT's: written during grid builds on the EDT, and read by updateVisiblePoints,
-    // which is reached from raw worker threads (the one that starts autonomy, the one that runs a path from the diagram menu).
     private final Map<org.traincontrol.automationui.TileGraph.TileKey, Set<JLabel>> layoutStations
         = new java.util.concurrent.ConcurrentHashMap<>();
          
@@ -624,31 +615,30 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         I18n.t("ui.cancel")
     };
         
-    /** The dots per inch an unscaled display has (96): 120 dpi is a scale of 1.25 and 144 dpi 1.5.  Named so `dpi / 96.0` does not read as a magic number. */
+    /** The dots per inch an unscaled display has: 120 dpi is a scale of 1.25 and 144 dpi 1.5. */
     private static final int REFERENCE_DPI = 96;
 
     /**
-     * The interface scale, or empty to take it from the display.
-     *
-     * FlatLaf scales the whole interface (fonts, insets, button padding) by a factor it computes ONCE while installing, and
-     * its own automatic answer depends on what had touched AWT first (1.25 or 1.0 on the same machine).  So empty means the
-     * display is asked here (`dpi / 96`), and the answer is the same however `installLookAndFeel` is reached.
-     * "1.25" forces the larger interface, "1" the smaller.
+     * The interface scale, or empty to take it from the display.  FlatLaf scales the whole interface (fonts, insets,
+     * button padding) by a factor it computes ONCE while installing, and its own automatic answer depends on what had
+     * touched AWT first (1.25 or 1.0 on the same machine), so empty means the display is asked here (`dpi / 96`) and
+     * the answer is the same however `installLookAndFeel` is reached.  "1.25" forces the larger interface, "1" the
+     * smaller.
      */
     public static final String UI_SCALE = "";
 
     /**
-     * Whether the menu bar is drawn INSIDE the window title bar, FlatLaf-style.  True is Adam's: "toggle the window title
-     * menubar so I can preview that version"; set it to false for the plain bar and nothing else has to change.  Stated here
-     * so that it does not depend on whether the look and feel is installed before the frame is built.
+     * Whether the menu bar is drawn INSIDE the window title bar, FlatLaf-style.  True is Adam's ("toggle the window
+     * title menubar so I can preview that version"); false gives the plain bar and nothing else has to change.  Stated
+     * here so that it does not depend on whether the look and feel is installed before the frame is built.
      */
     public static final boolean MENUS_IN_THE_TITLE_BAR = true;
 
     /**
-     * How much larger the menus are than the rest of the interface.  Zero: the menu font shrank only when FlatLaf began
-     * drawing the bar inside the title bar (above), so turning that off restores the size on its own.
-     * One has a measured price: `testEveryLanguageFits` reports the French, Spanish and Italian menu bars overflowing the
-     * window at one point larger.
+     * How much larger the menus are than the rest of the interface.  Zero: the menu font shrinks only because FlatLaf
+     * draws the bar inside the title bar (above), so turning that off restores the size on its own.  One has a measured
+     * price: `testEveryLanguageFits` reports the French, Spanish and Italian menu bars overflowing the window at one
+     * point larger.
      */
     public static final int MENU_FONT_STEP = 0;
 
@@ -656,7 +646,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * The interface scale the application states for a display of this many dots per inch: the UI_SCALE override if
      * there is one, otherwise the display's resolution over the 96 dpi baseline, or 1 where it reports none.
      *
-     * @param dpi the display's resolution
      * @return the scale, as the text the look and feel reads
      */
     private static String uiScaleFor(int dpi)
@@ -666,32 +655,32 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Installs the application's look and feel.  A method rather than constructor lines, because a window is not the only
-     * thing that needs it: `MarklinControlStation.init` with `showUI` false (the test suite) builds no `TrainControlUI`, and
-     * every dialog a test opened was then drawn in Metal, so `testEveryLanguageFits` measured the wrong typeface.
-     *
-     * Idempotent - `FlatLightLaf.setup()` may be called again - so `init` calling it before the constructor costs nothing.
+     * Installs the application's look and feel.  A method rather than constructor lines, because a window is not the
+     * only thing that needs it: `MarklinControlStation.init` with `showUI` false (the test suite) builds no
+     * `TrainControlUI`, so every dialog a test opened would be drawn in Metal and `testEveryLanguageFits` measure the
+     * wrong typeface.  Idempotent: `FlatLightLaf.setup()` may be called again, so `init` calling it before the
+     * constructor costs nothing.
      */
     public static void installLookAndFeel()
     {
-        // Already installed is done: every window asks for this before it builds itself, so one built cold (as a test does)
-        // looks like the running program's.  Asking twice must be free, because re-installing a look and feel mid-session
-        // replaces the UIManager defaults under windows already on screen.  The work below runs once per process.
+        // Already installed is done: every window asks for this before it builds itself, so one built cold (as a test
+        // does) looks like the running program's.  Asking twice must be free, because re-installing a look and feel
+        // mid-session replaces the UIManager defaults under windows already on screen.
         if (javax.swing.UIManager.getLookAndFeel() instanceof FlatLightLaf) return;
 
         // A headless JVM has no screen to ask about and the query below throws there; this also keeps the method safe to call
         // from a static initialiser.
         if (java.awt.GraphicsEnvironment.isHeadless()) return;
 
-        // The UI scale is asked of the display, not left to whatever ran first.  FlatLaf works out one scale when it installs
-        // itself and caches it for the process, and multiplies every font, inset and button padding by it; its automatic answer
-        // depended on AWT state (a Swing component built first gave 1.25, a look-and-feel query first gave 1.0, on a 120-dpi
-        // display).  So the answer is stated: 96 dpi is the unscaled baseline (120 is 1.25, 144 is 1.5), which reproduces
-        // FlatLaf's own automatic answer wherever this is called from.
+        // The UI scale is asked of the display, not left to whatever ran first: FlatLaf works out one scale when it
+        // installs itself, caches it for the process, and multiplies every font, inset and button padding by it, and
+        // its automatic answer depends on AWT state (a Swing component built first gave 1.25, a look-and-feel query
+        // first gave 1.0, on a 120-dpi display).  So the answer is stated: 96 dpi is the unscaled baseline, which
+        // reproduces FlatLaf's own automatic answer wherever this is called.
         int dpi = java.awt.Toolkit.getDefaultToolkit().getScreenResolution();
 
-        // AND IT CAN BE OVERRIDDEN, which is what UI_SCALE is for.  A system property rather than a UI
-        // default because FlatLaf reads it while installing.
+        // AND IT CAN BE OVERRIDDEN, which is what UI_SCALE is for: a system property rather than a UI default, because
+        // FlatLaf reads it while installing.
         System.setProperty("flatlaf.uiScale", uiScaleFor(dpi));
 
         // BEFORE setup(), because FlatLaf reads these when it installs itself - afterwards is too late
@@ -705,9 +694,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         FlatLightLaf.setup();
         //FlatIntelliJLaf.setup();
 
-        // AND AGAIN AS A UI DEFAULT.  The system properties above are read at install time; this key is
-        // what a re-installed look and feel consults, and `setup()` may be called more than once - init
-        // asks for it, and so does the constructor.
+        // AND AGAIN AS A UI DEFAULT: the system properties above are read at install time; this key is what a
+        // re-installed look and feel consults, and `setup()` may be called more than once (init asks for it, and so
+        // does the constructor).
         javax.swing.UIManager.put("TitlePane.menuBarEmbedded", MENUS_IN_THE_TITLE_BAR);
 
         // Makes tabs narrower
@@ -721,10 +710,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Swing's own words - the popups' titles and buttons, the file chooser's buttons, labels, tooltips and column headings -
-     * from TrainControl's bundles, so they are in the language the rest of the window is in (OB-318).  Swing takes them from
-     * its own resources, chosen by the computer's language, and has none for Danish, Dutch or Polish.  Put as developer
-     * defaults, which outrank the look and feel's and survive its being installed again.
+     * Swing's own words (the popups' titles and buttons, the file chooser's buttons, labels, tooltips and column
+     * headings) from TrainControl's bundles, so they are in the language the rest of the window is in (OB-318): Swing
+     * takes them from its own resources, chosen by the computer's language, and has none for Danish, Dutch or Polish.
+     * Put as developer defaults, which outrank the look and feel's and survive its being installed again.
      */
     static void swingSpeaksOurLanguage()
     {
@@ -821,9 +810,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public TrainControlUI()
     {
-        // The look and feel is already in: `PositionAwareJFrame`'s static initialiser installs it before this class is ever
-        // instantiated (its constructor creates the root pane, so asking here would be too late); `init` asks as well, for
-        // when no window is built at all.
+        // The look and feel is already in: `PositionAwareJFrame`'s static initialiser installs it before this class is
+        // instantiated (its constructor creates the root pane, so asking here would be too late); `init` asks as well,
+        // for when no window is built.
         initComponents();
 
         installCurrentKeyRow();
@@ -842,21 +831,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // button changes no selection and so sorts nothing: the card stays under the pointer.
         this.locCommandPanels.addChangeListener(change -> sortTheCommandsTabIfShown());
 
-        // The log is something to read (MT-362): a JTextArea is editable by default, and typed text would sit among the program's
-        // own messages.  Set here and not in the form, because `debugArea` belongs to the generated block.  Still selectable and
-        // copyable.
+        // The log is something to read (MT-362): a JTextArea is editable by default, and typed text would sit among the
+        // program's own messages.  Set here and not in the form, because `debugArea` belongs to the generated block.
+        // Still selectable and copyable.
         this.debugArea.setEditable(false);
 
-        // THE MENU BAR'S TOOLTIPS, WRAPPED WHERE A LINE WILL NOT HOLD THEM (FR-112).  Set in the generated block, which is
-        // not ours to edit, and Swing draws a tooltip on one line however long it is - so a long one ran across the
-        // window.  Before the hand-built items join the bar; they wrap their own.
+        // THE MENU BAR'S TOOLTIPS, WRAPPED WHERE A LINE WILL NOT HOLD THEM (FR-112): set in the generated block, which
+        // is not ours to edit, and Swing draws a tooltip on one line however long it is.  Before the hand-built items
+        // join the bar; they wrap their own.
         AutonomyEditorPanel.wrapTheTooltips(this.mainMenuBar);
 
         // Set internationalized options
 
-        // The Utilities menu heading, set here because the generated block holds a hard-coded "Utilities" that is not ours to
-        // edit.  A key of its own, not the old `ui.main.toolbar.functions` ("Functions" was a different menu); the
-        // translations say tools rather than functions: Werkzeuge, Utilitaires, Hulpmiddelen.
+        // The Utilities menu heading, set here because the generated block holds a hard-coded "Utilities"; a key of its
+        // own, as the old `ui.main.toolbar.functions` ("Functions") was a different menu, and the translations say
+        // tools: Werkzeuge, Utilitaires, Hulpmiddelen.
         this.functionsMenu.setText(I18n.t("ui.main.menu.utilities"));
 
         // The autonomy menu's slot, held from the first frame (OB-202): the real menu is built from the configurations on disk,
@@ -1141,10 +1130,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.toggleMenuBar.setSelected(prefs.getBoolean(MENUBAR_SETTING_PREF, true));
         this.activeLocInTitle.setSelected(prefs.getBoolean(ACTIVE_LOC_IN_TITLE, true));
         this.checkForUpdates.setSelected(prefs.getBoolean(CHECK_FOR_UPDATES, true));
-        // Defaulted ON: a layout with a setup on it otherwise opens with the setup not loaded (station names as plain text, no
-        // sensor shown as a Point, only a banner offering to load it).  Loading is not running - it builds the graph and draws
-        // it, and starting trains is a separate press; a layout with no setup is unaffected.  A loaded, idle configuration still
-        // puts locomotives onto Points, and several rules ask whether a Point holds one.
+        // Defaulted ON: a layout with a setup on it otherwise opens with the setup not loaded (station names as plain
+        // text, no sensor shown as a Point, only a banner offering to load it).  Loading is not running: it builds the
+        // graph and draws it, and starting trains is a separate press.  A loaded, idle configuration still puts
+        // locomotives onto Points, and several rules ask whether a Point holds one.
         this.AutoLoadAutonomyMenuItem.setSelected(prefs.getBoolean(AUTO_LOAD_AUTONOMY, true));
         this.enhancedPathValidationMenuItemCheckbox.setSelected(prefs.getBoolean(ENHANCED_PATH_VALIDATION, true));
         Layout.PATH_INTEGRITY_VALIDATION = this.enhancedPathValidationMenuItemCheckbox.isSelected();
@@ -1329,18 +1318,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Drops every caption label a retired grid registered.
-     *
-     * addLayoutStation prunes lazily, and only when a SUCCESSOR for the same square is registered by the same owner, so a
-     * cleared caption would leave its label behind for ever: a child of the retired container, which keeps the whole previous
-     * grid alive while updateStationLabels goes on writing into a label nobody can see.  Called from LayoutGrid.discard, the
-     * one moment something knows a grid is finished with.
-     *
-     * Exactly the labels that grid built, not everything registered against its panel: the main window uses ONE panel for
-     * every page, so forgetting by panel forgets every page's captions.  And only when the grid is really finished with: a
-     * retired grid whose container sits in the page cache is not ("detached is not dead"), because switching back re-attaches
-     * the container and builds nothing, so its captions would stay blank.  The cache is this window's, so this is the only
-     * place that can tell.
+     * Drops every caption label a retired grid registered: addLayoutStation prunes lazily, and only when a SUCCESSOR
+     * for the same square is registered by the same owner, so a cleared caption would leave its label behind for ever,
+     * a child of the retired container, which keeps the whole previous grid alive while updateStationLabels goes on
+     * writing into a label nobody can see.  Called from LayoutGrid.discard, the one moment something knows a grid is
+     * finished with.  Exactly the labels that grid built, not everything registered against its panel (the main window
+     * uses ONE panel for every page), and only when the grid is really finished with: a retired grid whose container
+     * sits in the page cache is not ("detached is not dead"), because switching back re-attaches the container and
+     * builds nothing, so its captions would stay blank.  The cache is this window's, so this is the only place that can
+     * tell.
      *
      * @param labels the caption labels the retired grid registered
      * @param container the panel that grid built, or null if it never got that far
@@ -1378,12 +1364,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Whether the caption on a square should be shown at all.  Two independent reasons to hide one, asked together so every
-     * caller gets both: the overlay switch, which hides all of them, and Show Inactive Labels, which hides the ones autonomy
-     * will never choose.  "Cannot be chosen" is asked of the running layout, not the setup: a square can be a station in the
-     * setup and still be somewhere no train will be sent.  With no running layout nothing is inactive yet.
+     * Whether the caption on a square should be shown at all: two independent reasons to hide one, asked together so
+     * every caller gets both (the overlay switch, which hides all of them, and Show Inactive Labels, which hides the
+     * ones autonomy will never choose).  "Cannot be chosen" is asked of the running layout, not the setup: a square can
+     * be a station in the setup and still be somewhere no train will be sent.  With no running layout nothing is
+     * inactive yet.
      *
-     * @param station the sensor's square
      * @return whether its caption belongs on screen
      */
     private boolean captionShouldShow(org.traincontrol.automationui.TileGraph.TileKey station)
@@ -1394,11 +1380,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Whether this square is one autonomy can actually use, for Show Inactive Labels.  Split from captionShouldShow so that a
-     * caller that already knows the overlay's state (the static layer) can ask this half alone, without the overlay being
-     * consulted twice with two possible answers mid-toggle.
+     * Whether this square is one autonomy can actually use, for Show Inactive Labels: split from captionShouldShow so a
+     * caller that already knows the overlay's state (the static layer) can ask this half alone, without the overlay
+     * being consulted twice with two possible answers mid-toggle.
      *
-     * @param station the sensor's square
      * @return whether its caption belongs on screen, ignoring the overlay switch
      */
     private boolean captionIsActive(org.traincontrol.automationui.TileGraph.TileKey station)
@@ -1407,10 +1392,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (station == null || this.model == null || !this.model.hasAutoLayout()) return true;
 
-        // And the SESSION, where the answer actually comes from: `getAutonomyPointsForTile` below reads the autonomySession
-        // FIELD and returns nothing when it is null, and `resetAutonomySession` nulls it without touching the model, so between a
-        // reset and the rebuild the loop would find no Points and hide EVERY caption.  An unanswerable question is not grounds for
-        // hiding anything: the same answer `mayRestHere` gives.
+        // And the SESSION, where the answer comes from: `getAutonomyPointsForTile` reads the autonomySession FIELD and
+        // returns nothing when it is null, and `resetAutonomySession` nulls it without touching the model, so between a
+        // reset and the rebuild the loop would find no Points and hide EVERY caption.  An unanswerable question is not
+        // grounds for hiding anything, as `mayRestHere`.
         if (this.autonomySession == null) return true;
 
         // The railway is not asked here: `Layout.isChoosableByAutonomy` is `synchronized` on the `Layout`, a dispatch holds
@@ -1425,15 +1410,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Every Point standing for a square, occupied or not.  getAutonomyOccupantsForTile answers about TRAINS; this answers
-     * about the square, which is what deciding whether to draw its name needs.
-     *
-     * Handed the railway and the setup rather than reading the fields, because the only caller is `workOutCaptionVisibility`
-     * on a worker thread and the two must be the pair that ask was made with (the capture is in `refreshCaptionVisibility`).
+     * Every Point standing for a square, occupied or not: getAutonomyOccupantsForTile answers about TRAINS, this about
+     * the square, which is what deciding whether to draw its name needs.  Handed the railway and the setup rather than
+     * reading the fields, because the only caller is `workOutCaptionVisibility` on a worker thread and the two must be
+     * the pair that ask was made with (the capture is in `refreshCaptionVisibility`).
      *
      * @param railway the running layout, captured by the ask
      * @param session the setup, captured by the same ask
-     * @param station the sensor's square
      * @return the Points, empty when the square is not in the running layout
      */
     static java.util.List<org.traincontrol.automation.Point> autonomyPointsForTile(
@@ -1509,21 +1492,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Which grid a caption label was built into.  A client property rather than a map, so it cannot
-     * outlive the label it describes.
+     * Which grid a caption label was built into: a client property rather than a map, so it cannot outlive the label it
+     * describes.
      */
     private static final String LAYOUT_STATION_OWNER = "tcLayoutStationOwner";
 
     /**
-     * Which build of a grid a caption label came from, so a build does not evict its own.  Set by the grid as it
-     * registers each caption; a client property for the reason `LAYOUT_STATION_OWNER` is one.
+     * Which build of a grid a caption label came from, so a build does not evict its own; set by the grid as it
+     * registers each caption, a client property for the reason `LAYOUT_STATION_OWNER` is one.
      */
     public static final String LAYOUT_STATION_BUILD = "tcLayoutStationBuild";
 
     /**
-     * The page a caption label is drawn on (OB-341).  Set by the grid as it registers each caption, beside
-     * `LAYOUT_STATION_BUILD`; a label with none is of no page in particular, and takes another such label's place as
-     * before.
+     * The page a caption label is drawn on (OB-341), set beside `LAYOUT_STATION_BUILD`; a label with none is of no page
+     * in particular.
      */
     public static final String LAYOUT_STATION_PAGE = "tcLayoutStationPage";
     
@@ -1536,9 +1518,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Whether the page showing now could be deleted.  It has to be EMPTY, because a page is deleted by index and everything
-     * after it shifts up, so deleting a full one throws away mappings that are not on screen; and there has to be a page left
-     * over the minimum afterwards.
+     * Whether the page showing now could be deleted: it has to be EMPTY, because a page is deleted by index and
+     * everything after it shifts up, so deleting a full one throws away mappings that are not on screen; and there has
+     * to be a page left over the minimum afterwards.
      */
     public boolean canDeleteCurrentPage()
     {
@@ -1566,12 +1548,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Adds a page at the end and goes to it.  At the end rather than after the current one, because the pages are reached by
-     * NUMBER (the digit keys) and inserting in the middle renumbers every page after it.
-     *
-     * Capped at MAX_LOC_MAPPINGS, and capped HERE ONLY.  `setViewListener` grows the count past it without asking, on purpose:
-     * clamping on load would throw away the mappings on every page past the fiftieth, the data loss `canDeleteCurrentPage`
-     * refuses one page at a time.  Nothing is lost by refusing to ADD, so that is the only side that refuses.
+     * Adds a page at the end and goes to it: at the end rather than after the current one, because the pages are
+     * reached by NUMBER (the digit keys) and inserting in the middle renumbers every page after it.  Capped at
+     * MAX_LOC_MAPPINGS, and capped HERE ONLY: `setViewListener` grows the count past it without asking, on purpose, as
+     * clamping on load would throw away the mappings on every page past the fiftieth, the data loss
+     * `canDeleteCurrentPage` refuses one page at a time.
      */
     public void addLocMappingPage()
     {
@@ -1601,10 +1582,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Deletes the page showing now, if it is empty and is not the last one that may be deleted.
-     *
-     * Its NAME goes with it, and the names of the pages after it move up - they are stored by page
-     * number, so leaving them would put each name on the page below its own.
+     * Deletes the page showing now, if it is empty and is not the last one that may be deleted.  Its NAME goes with it,
+     * and the names of the pages after it move up: they are stored by page number, so leaving them would put each on
+     * the page below its own.
      */
     public void deleteCurrentLocMappingPage()
     {
@@ -1657,12 +1637,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The caption on a locomotive mapping page's tab.
-     *
-     * Worded by `CurrentKeyRow.pageWords`, the one rule the line over the locomotive's name and the page label follow too
-     * (FR-128): "Page 5" for a page with no name, the name for a page with one, and "5. " in front of the name when
-     * Preferences > Locomotive Control > Show Page Numbers is ticked.  Only the NAME is cut, to `MAX_PAGE_NAME_LENGTH_TAB`
-     * letters; the "Page 5" and the "5. " never are.
+     * The caption on a locomotive mapping page's tab, worded by `CurrentKeyRow.pageWords`, the one rule the line over
+     * the locomotive's name and the page label follow too (FR-128): "Page 5" for a page with no name, the name for a
+     * page with one, and "5. " in front when Preferences > Locomotive Control > Show Page Numbers is ticked.  Only the
+     * NAME is cut, to `MAX_PAGE_NAME_LENGTH_TAB` letters.
      *
      * @param tabNumber the page, counting from 1
      * @return what to write on the tab
@@ -1827,9 +1805,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
         
     /**
-     * Whether the ordinary track diagram should draw one-way arrows (FR-037).  Asked at the moment a square is described, like
-     * `stationLabelsAreGrey`, rather than read once into a field.  This answers only the PREFERENCE: `refreshDiagramAnnotations`
-     * clears every annotation when autonomy is not showing, so a railway driven by hand shows no restrictions however this is set.
+     * Whether the ordinary track diagram should draw one-way arrows (FR-037), asked at the moment a square is described
+     * like `stationLabelsAreGrey` rather than read once into a field.  This answers only the PREFERENCE:
+     * `refreshDiagramAnnotations` clears every annotation when autonomy is not showing, so a railway driven by hand
+     * shows no restrictions however this is set.
      *
      * @return whether the option is on
      */
@@ -1886,9 +1865,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
     
     /**
-     * Writes a line to the log when a save left the setup alone because a page is not loaded.  For the save doors
-     * that fire constantly (an edit, a placement), where a dialog would be unusable.  The refusal is correct - it stops a page
-     * whose file has not hydrated costing its settings - but it must not be silent.
+     * Writes a line to the log when a save left the setup alone because a page is not loaded, for the save doors that
+     * fire constantly (an edit, a placement), where a dialog would be unusable.  The refusal is correct (it stops a
+     * page whose file has not hydrated costing its settings) but must not be silent.
      *
      * @param report what the save returned; null and clean reports say nothing
      */
@@ -1937,8 +1916,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The file a stored image URL names, or null when it does not name one.  A locomotive's local image is stored as a URL
-     * string, so `new File(...)` on it would keep the scheme on the front and never exist (UI review, C4).
+     * The file a stored image URL names, or null when it does not name one: a locomotive's local image is stored as a
+     * URL string, so `new File(...)` on it would keep the scheme on the front and never exist.
      *
      * @param url the stored value
      * @return the file, or null for anything that is not a readable file: URL
@@ -1962,9 +1941,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Whether there is a real Central Station on the other end of the wire.  The one definition, shared by the Layouts menu
-     * and the Autonomy menu's download offer (UI review, C1).  Both halves are needed: `getNetworkCommState` reports whether
-     * the last SYNC succeeded, and a sync through CS2File reads a local layout folder happily, so a simulated session on a
+     * Whether there is a real Central Station on the other end of the wire: the one definition, shared by the Layouts
+     * menu and the Autonomy menu's download offer.  Both halves are needed: `getNetworkCommState` reports whether the
+     * last SYNC succeeded, and a sync through CS2File reads a local layout folder happily, so a simulated session on a
      * machine with a local layout would call itself connected.
      *
      * @return true when a Central Station is reachable and this is not a simulation
@@ -1975,18 +1954,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Settles what happens to pages the layout index holds that nothing can see (FR-018).
-     *
-     * Writing the index retires the id of any page not in the list it is given, which stops a later page inheriting a deleted
-     * page's settings (the MT-135 loss) - but it cannot tell that from a page whose file merely will not read (`CS2File` skips
-     * one that will not parse or is not there: an unhydrated OneDrive placeholder, a file a sync client holds open), whose
-     * settings would then attach to nothing when it came back.  So nothing is pruned: such a page's settings are always kept.
+     * Settles what happens to pages the layout index holds that nothing can see (FR-018).  Writing the index retires
+     * the id of any page not in the list it is given, which stops a later page inheriting a deleted page's settings
+     * (the MT-135 loss) but cannot tell that from a page whose file merely will not read (`CS2File` skips one that will
+     * not parse or is not there: an unhydrated OneDrive placeholder, a file a sync client holds open), whose settings
+     * would then attach to nothing when it came back.  So nothing is pruned: such a page's settings are always kept.
      *
      * @param layoutList the pages that are actually loaded
      * @param renamedFromTo old name -&gt; new name, whose old names are not absences
      * @param deliberatelyRemoved names being removed on purpose, which are not absences either
-     * @return the names to keep in the index, and null when the index must not be written at all: there is no local layout to
-     *         reconcile against (OB-127), or the index could not be read.  All three callers treat null as "do not proceed".
+     * @return the names to keep in the index, and null when the index must not be written at all: there is no local
+     * layout to
+     *         reconcile against (OB-127), or the index could not be read.  All three callers treat null as "do not
+     * proceed".
      */
     private java.util.Collection<String> settleAbsentPages(java.util.List<String> layoutList,
         java.util.Map<String, String> renamedFromTo,
@@ -2019,20 +1999,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
 
         // Nothing is pruned (Adam: "drop it"): the settings of a page whose file will not read are simply kept, always.
-        // Every page named in the index comes back, as itself or as a blank stand-in, so `layoutList` always covers the
-        // index; a stand-in is a file that is missing right now, which is not a page that is gone.
-        // `AutonomyCompanionStore.forgetHeldPages` stays, with its own tests, as the mechanism a deliberate "forget this page's
-        // settings" would use.
+        // Every page named in the index comes back, as itself or as a blank stand-in (a file missing right now, not a
+        // page that is gone), so `layoutList` always covers the index.  `AutonomyCompanionStore.forgetHeldPages` is the
+        // mechanism a deliberate "forget this page's settings" would use.
         return absent;
     }
 
     /**
-     * The floor `writeLayoutIndex` must not issue a fresh page id at or below.
-     *
-     * The index remembers a retired id for exactly one write and hands it out again afterwards.  Harmless for a DELETED page,
-     * whose settings deletePage forgets first; not for a page whose FILE was merely absent when the index was written: its
-     * settings are still in the autonomy setup under the old number, and the next new page would collect a stranger's
-     * stations, lengths and exclusions.  The setup is the thing that remembers, so it is asked; zero with no session or setup.
+     * The floor `writeLayoutIndex` must not issue a fresh page id at or below.  The index remembers a retired id for
+     * exactly one write and hands it out again afterwards: harmless for a DELETED page, whose settings deletePage
+     * forgets first; not for a page whose FILE was merely absent when the index was written, whose settings are still
+     * in the autonomy setup under the old number, so the next new page would collect a stranger's stations, lengths and
+     * exclusions.  The setup is the thing that remembers, so it is asked; zero with no session or setup.
      *
      * @return the highest page id the autonomy setup has ever recorded, or 0
      */
@@ -2067,13 +2045,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The same, with the session capture said separately from where the files go.  The archive (FR-015) must hold
-     * the state as it is NOW, so it writes live; but a capture lifts the running layout back into the active configuration,
+     * The same, with the session capture said separately from where the files go.  The archive (FR-015) must hold the
+     * state as it is NOW, so it writes live; but a capture lifts the running layout back into the active configuration,
      * from a backup's thread and without the editor's Cancel being able to take it back, which a copy must never do.
      *
      * @param backup true to write timestamped copies into the backup folder rather than over the live files
-     * @param captureSession whether to lift the running layout back into the active configuration first.  False for anything
-     *     that is taking a COPY: the session belongs to the event thread, and a copy should not commit anything.
+     * @param captureSession whether to lift the running layout back into the active configuration first.  False for
+     * anything that is
+     *     taking a COPY: the session belongs to the event thread, and a copy should not commit anything.
      */
     public void saveState(boolean backup, boolean captureSession)
     {
@@ -2105,11 +2084,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Save page names
         l.add(this.pageNames);
         
-        // A file that would not READ is copied aside before it is written over: one transient read failure at startup plus an
-        // ordinary exit destroyed everything the user had set up (as the locomotive database learned), and writing atomically is
-        // no protection, since a complete write of nothing is not a partial write.  Once, and the save still happens - but not
-        // over a file whose copy could not be made: the mark is cleared only once the copy is known to exist, and the next save
-        // tries again.
+        // A file that would not READ is copied aside before it is written over: one transient read failure at startup
+        // plus an ordinary exit would destroy everything the user had set up, and writing atomically is no protection,
+        // since a complete write of nothing is not a partial write.  Once, and the save still happens, but not over a
+        // file whose copy could not be made: the mark is cleared only once the copy is known to exist, and the next
+        // save tries again.
         if (!backup && this.uiStateLoadFailed)
         {
             try
@@ -2143,10 +2122,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             ? Util.getBackupPath(prefix + TrainControlUI.DATA_FILE_NAME)
             : Util.dataPath(prefix + TrainControlUI.DATA_FILE_NAME);
 
-        // Staged and moved into place, as the locomotive database is: this is the only automatic save of the UI state, so a write
-        // interrupted part way must leave the old file.  try-with-resources inside matters, since without close() the final
-        // buffered block never reaches the staging file.  Not at all while an unreadable file is here whose copy could not be made
-        // (see above); the rest of the save (the session's capture below) goes on, since it writes other files.
+        // Staged and moved into place, as the locomotive database is: this is the only automatic save of the UI state,
+        // so a write interrupted part way must leave the old file; try-with-resources inside matters, as without
+        // close() the final buffered block never reaches the staging file.  Not while an unreadable file is here whose
+        // copy could not be made (see above); the rest of the save goes on, since it writes other files.
         if (backup || !this.uiStateLoadFailed)
         {
             try
@@ -2174,14 +2153,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         }
 
-        // When the running layout came from the diagram, what was changed while it ran - placements, homes, settings - is lifted
-        // back into the configuration it came from, so it is what loads next time.  autonomy.json is not written (OB-254, below).
-        // Not on backup: backups run this method from their own thread, and the session is an event thread object.
-        // Not all of it after a declined setup edit: `captureFromLayout` writes what the running layout knows
-        // over the configuration and removes what it does not carry, which is exactly wrong once an edit has reached the file
-        // without reaching the layout.  So while the setup is newer the exit writes only what the railway owns: where the trains
-        // stand, and the settings and timetable it changed since it was built.
-        // Asked once: the conditions are not restated above, since two predicates that have to agree will not.
+        // When the running layout came from the diagram, what was changed while it ran (placements, homes, settings) is
+        // lifted back into the configuration it came from, so it is what loads next time; autonomy.json is not written
+        // (OB-254, below).  Not on backup: backups run this method from their own thread, and the session is an event
+        // thread object.  Not all of it after a declined setup edit: `captureFromLayout` writes what the running layout
+        // knows over the configuration and removes what it does not carry, which is exactly wrong once an edit has
+        // reached the file without reaching the layout, so while the setup is newer the exit writes only what the
+        // railway owns: where the trains stand, and the settings and timetable it changed since it was built.  Asked
+        // once: two predicates that have to agree will not if restated.
         boolean wouldCapture = captureSession && this.activeDiagramConfiguration != null
             && this.model.hasAutoLayout()
             && this.model.getAutoLayout().isValid()
@@ -2368,10 +2347,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * @return 
      */
     /**
-     * Whether the UI state file was there and could not be read.
-     *
-     * Not the same as "there was no file", which is an ordinary first launch.  Only the read sets it
-     * and only the next real save clears it, after keeping a copy of what it is about to replace.
+     * Whether the UI state file was there and could not be read (not "there was no file", an ordinary first launch);
+     * only the read sets it and only the next real save clears it, after keeping a copy of what it replaces.
      */
     private boolean uiStateLoadFailed = false;
 
@@ -2379,10 +2356,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         List<Map<Integer,String>> instance = new ArrayList<>();
         
-        // The stream in its own resource, because the one wrapping it can throw before it exists: ObjectInputStream's
-        // constructor reads the stream header and throws on a corrupt file, so with a single resource the variable is never
-        // assigned, try-with-resources closes nothing and the FileInputStream stays open.  Then the keep-aside-and-write-fresh
-        // recovery fails, because `writeAtomically` ends in Files.move(REPLACE_EXISTING) and Windows will not replace an open file.
+        // The stream in its own resource: ObjectInputStream's constructor throws on a corrupt header, so with a single
+        // resource the FileInputStream stays open, and the keep-aside-and-write-fresh recovery fails as Windows will
+        // not replace an open file.
         try (java.io.FileInputStream file_in =
                 new java.io.FileInputStream(Util.dataPath(TrainControlUI.DATA_FILE_NAME));
             ObjectInputStream obj_in = new ObjectInputStream(file_in))
@@ -2433,9 +2409,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * @return
      */
     /**
-     * Whether autonomy can be set up at all.  It needs a local copy of the track diagram: the setup lives in files beside the
-     * diagram, and a diagram read straight from the Central Station has nowhere to put them.  The menu is disabled with the
-     * reason on it, so "why is there no autonomy here" is answered where somebody looks for autonomy.
+     * Whether autonomy can be set up at all: it needs a local copy of the track diagram, as the setup lives in files
+     * beside it.  The menu is disabled with the reason on it, so "why is there no autonomy here" is answered where
+     * somebody looks.
      *
      * @return true when there is a local layout folder to keep a setup in
      */
@@ -2447,18 +2423,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Why the autonomy setup on this computer would not read, in words - or null when it read, or there is none to read.
-     * Worked out afresh by `getAutonomySession` at every attempt to build the session.
+     * Why the autonomy setup on this computer would not read, or null; worked out afresh by `getAutonomySession` at
+     * every attempt.
      */
     private String autonomySetupUnreadable;
 
     /**
-     * Why the autonomy setup on this computer would not read, in words - or null when it read, or there is none.
-     *
-     * `getAutonomySession` hands back null for two different things: a layout with no folder to keep a setup in, and a setup
-     * that is there and would not read (a setup.json that is not JSON, one written by a newer TrainControl, a configuration
-     * that will not parse).  This tells the two apart and carries the reason for the doors to show.  It offers nothing more: a
-     * setup that would not read is left exactly as it is.
+     * Why the autonomy setup on this computer would not read, in words, or null when it read or there is none:
+     * `getAutonomySession` hands back null both for a layout with no folder to keep a setup in and for a setup that is
+     * there and would not read (not JSON, written by a newer TrainControl, a configuration that will not parse); this
+     * tells the two apart.  A setup that would not read is left exactly as it is.
      *
      * @return the reason, or null
      */
@@ -2468,9 +2442,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * A failure to open the autonomy setup, in words somebody can act on.  The store's refusal of a setup written by
-     * a newer TrainControl arrives as its message KEY with the two version numbers after it (`AutonomyCompanionStore.ERROR_VERSION
-     * + " (3 > 2)"`), because the store writes no sentences; it is translated here, numbers kept.  Anything else arrives in words.
+     * A failure to open the autonomy setup, in words somebody can act on: the store's refusal of a setup written by a
+     * newer TrainControl arrives as its message KEY with the two version numbers after it (the store writes no
+     * sentences), translated here, numbers kept; anything else arrives in words.
      *
      * @param failure what opening the session threw
      * @return the reason, never null
@@ -2487,9 +2461,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The autonomy setup for the layout currently loaded, or null if there is none.  Created on demand from the local layout
-     * folder, because autonomy is local-layout only: a layout read from the Central Station has nowhere to put its files
-     * until it is downloaded.
+     * The autonomy setup for the layout currently loaded, or null if there is none: created on demand from the local
+     * layout folder, as autonomy is local-layout only and a layout read from the Central Station has nowhere to put its
+     * files until downloaded.
      *
      * @return the session, or null when this layout cannot hold one
      */
@@ -2521,13 +2495,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             session.open(pages);
 
-            // A setup left mid-edit is put back to how it was before that edit started (OB-108).  Nothing to do on almost every start:
-            // the note only survives when the last run died with the layout editor open, and then disk holds a setup keyed to squares
-            // the user dragged and page files with the track still where it was, which the next reconciling save would prune.
-            // After open, so the pages are known; before anything can save.  And NOT while the layout editor is open:
-            // `resetAutonomySession` throws the session away and the next caller rebuilds it, and the note that editor wrote on the way
-            // in would be acted on mid-edit, undoing the work in progress.  `openEditor != null && isDisplayable()` is the question the
-            // other places that ask "is an editor open" already ask.
+            // A setup left mid-edit is put back to how it was before that edit started (OB-108).  Almost never
+            // anything: the note survives only when the last run died with the layout editor open, and then disk holds
+            // a setup keyed to squares the user dragged and page files with the track still where it was, which the
+            // next reconciling save would prune.  After open, so the pages are known; before anything can save.  NOT
+            // while the layout editor is open: `resetAutonomySession` throws the session away and the next caller
+            // rebuilds it, and the note that editor wrote on the way in would be acted on mid-edit.
             boolean editorOpen = openEditor != null && openEditor.isDisplayable();
 
             if (!editorOpen && session.revertUnfinishedEdit())
@@ -2541,11 +2514,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.model.logf("autosetup.log.unfinishedEditNoteUnusable");
             }
 
-            // And the pages it did rewrite: this edits files the user owns - a `Point:` name typed onto their track diagram is
-            // taken into the setup and emptied out of the `.cs2`, one-way, so somebody who opens an older version finds their station
-            // captions gone.  `saveChanges` keeps a `.cs2.bak` the FIRST time it rewrites a page, which makes them recoverable by hand
-            // but only helps a reader who knows it exists, hence "the first time this version rewrote it".  The log rather than
-            // a dialog: it happens once, as a record of something already done.
+            // And the pages it did rewrite: this edits files the user owns (a `Point:` name typed onto their track
+            // diagram is taken into the setup and emptied out of the `.cs2`, one-way), so somebody who opens an older
+            // version finds their station captions gone.  `saveChanges` keeps a `.cs2.bak` the FIRST time it rewrites a
+            // page, recoverable by hand but only for a reader who knows it exists, hence "the first time this version
+            // rewrote it".  The log rather than a dialog: a record of something done.
             if (!session.getMigratedPages().isEmpty())
             {
                 // N counts what was removed, so it is attached to the removal: the setup is saved before any page is written, so
@@ -2561,10 +2534,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.model.log(line);
             }
 
-            // Captions written into the layout file by an earlier version are brought into the setup
-            // when it opens.  A page that could not be rewritten leaves its old labels behind, and the
-            // migration simply runs again next time - but the user is told, because until it succeeds
-            // that page carries text the editor no longer manages.
+            // Captions written into the layout file by an earlier version are brought into the setup when it opens.  A
+            // page that could not be rewritten leaves its old labels behind and the migration runs again next time, but
+            // the user is told, as until it succeeds that page carries text the editor no longer manages.
             if (!session.getMigrationFailures().isEmpty())
             {
                 final String pagesLeft = String.join(", ", session.getMigrationFailures());
@@ -2585,10 +2557,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return null;
         }
 
-        // How the session finds out how long a train is (FR-046): autonomy refuses a platform to a train too long for it, and the
-        // checks want to warn when either half of the comparison is missing.  The station's maximum is a point property the session
-        // holds; the train's length is on the Locomotive in the model.  A function and not a copied map, so there is no second
-        // record of a number the model owns.
+        // How the session finds out how long a train is (FR-046): autonomy refuses a platform to a train too long for
+        // it, and the checks warn when either half of the comparison is missing.  The station's maximum is a point
+        // property the session holds, the train's length is on the Locomotive in the model; a function and not a copied
+        // map, so there is no second record of a number the model owns.
         session.setTrainLengthSource(name ->
         {
             org.traincontrol.base.Locomotive loc =
@@ -2608,11 +2580,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Sets whether the setup is newer than the railway (see `isSetupNewerThanTheRunningLayout`), and says so on the track
-     * diagram's strip, briefly (Adam: "Add the setup notice, but make it brief"): the railway there is the last that built.
-     * The one door the flag is set by.
-     *
-     * @param newer whether an edit the railway could not take yet waits
+     * Sets whether the setup is newer than the railway (see `isSetupNewerThanTheRunningLayout`), and says so on the
+     * track diagram's strip, briefly (Adam: "Add the setup notice, but make it brief"): the railway there is the last
+     * that built.  The one door the flag is set by.
      */
     private void setupNewerThanTheRailway(boolean newer)
     {
@@ -2628,10 +2598,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Whether the setup on disk is newer than the running layout: a setup edit made as a run started was written to the
-     * file and not to the running layout, and no rebuild has carried it since.  Every fold of the
-     * running layout back into the setup asks this first, since folding would take that edit away.
-     *
-     * @return true while such an edit waits
+     * file and not to the running layout, and no rebuild has carried it since.  Every fold of the running layout back
+     * into the setup asks this first, since folding would take that edit away.
      */
     boolean isSetupNewerThanTheRunningLayout()
     {
@@ -2649,10 +2617,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Forgets the railway that was loaded, at the doors that replace it with another or with none: Unload, a deleted
-     * setup, a switch of railway.  An edit waiting for its rebuild belonged to that railway's setup, and a
-     * load afterwards has nothing of it to carry - it carried the previous railway's trains across by Point name onto
-     * stations of the new one that shared a name.
+     * Forgets the railway that was loaded, at the doors that replace it with another or with none (Unload, a deleted
+     * setup, a switch of railway): an edit waiting for its rebuild belonged to that railway's setup, and a load
+     * afterwards would carry the previous railway's trains across by Point name onto stations of the new one that
+     * shared a name.
      */
     private void forgetTheRailway()
     {
@@ -2662,10 +2630,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The switch-of-source rule, at every door that changes the layout source.  Where the source is another railway, the
-     * railway loaded is forgotten and its autonomy layout leaves memory as Unload clears it, so none of its
-     * trains stands or claims track under the next one's pages; its locomotives stay in the database (OB-363).  Not where
-     * the source in use is chosen again, which reloads the same railway, whose trains are carried as any reload carries
+     * The switch-of-source rule, at every door that changes the layout source.  Where the source is another railway,
+     * the railway loaded is forgotten and its autonomy layout leaves memory as Unload clears it, so none of its trains
+     * stands or claims track under the next one's pages; its locomotives stay in the database (OB-363).  Not where the
+     * source in use is chosen again, which reloads the same railway, whose trains are carried as any reload carries
      * them.
      *
      * @param source the layout source now in use - a folder, or empty for the Central Station's
@@ -2685,10 +2653,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The layout source is now the folder the Central Station's layout was downloaded into.  The Download door
-     * reloads the pages itself and never reaches `initializeTrackDiagram`, where every other switch of source meets the
-     * rule, so the source remembered stayed the Central Station's - and choosing that folder again read as a switch to
-     * another railway, and forgot the one shown.
+     * The layout source is now the folder the Central Station's layout was downloaded into.  The Download door reloads
+     * the pages itself and never reaches `initializeTrackDiagram`, where every other switch of source meets the rule,
+     * so without this choosing that folder again would read as a switch to another railway and forget the one shown.
      *
      * @param path the folder
      */
@@ -2701,12 +2668,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Runs a load while a setup edit a run declined waits for its rebuild, carrying where every train stands across it.
-     * The running layout is then the older of the two, so no door folds all of it into the setup (the folds
-     * made meanwhile take what the railway owns alone) and where its trains stand is still the railway's to say
-     * (OB-183): they are recorded before the load replaces it and put back after, with the turns they were due, as
-     * `rebuildRunningLayoutFromSetup` does for the editor doors; once a valid layout carries the edit the flag comes down.
-     * Unlike that rebuild this runs whatever `isAutonomyBusy` says: it is reached after `prepareAutonomyReload` has
-     * stopped the run, and a train stopped between sensors keeps the old layout reading busy until something replaces it.
+     * The running layout is then the older of the two, so no door folds all of it into the setup (the folds made
+     * meanwhile take what the railway owns alone) and where its trains stand is still the railway's to say (OB-183):
+     * they are recorded before the load replaces it and put back after, with the turns they were due, as
+     * `rebuildRunningLayoutFromSetup` does for the editor doors; once a valid layout carries the edit the flag comes
+     * down.  Unlike that rebuild this runs whatever `isAutonomyBusy` says: it is reached after `prepareAutonomyReload`
+     * has stopped the run, and a train stopped between sensors keeps the old layout reading busy until something
+     * replaces it.
      *
      * @param load the load, which replaces the running layout or leaves it
      * @return whether a valid layout now carries the edit
@@ -2746,10 +2714,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Runs a load that folds the running layout, keeping the destination turns the railway has made and not yet written
-     * into the setup.  A turn is written only while the railway is idle, so during a run every one made since
-     * it started is still owed; the fold writes where each train stands, not which way it has been turned, and the load
-     * replaced the railway with the records on it.  Put back on whatever railway the load leaves, as the carry and the
-     * rebuild put them back.
+     * into the setup: a turn is written only while the railway is idle, so during a run every one made since it started
+     * is still owed, and the fold writes where each train stands, not which way it has been turned.  Put back on
+     * whatever railway the load leaves, as the carry and the rebuild put them back.
      *
      * @param load the load
      */
@@ -2768,19 +2735,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Folds what the running layout knows back into the configuration, and writes it.
-     *
-     * A run moves locomotives, and where they ended up lives in the running Layout until a fold writes it into the setup: this
-     * one, behind the reset after a diagram edit and the editor doors; the save on the way out; the one
-     * `AutonomyViewerPanel.load` makes as it chooses a configuration; and the one an old file's import into the configuration
-     * in use makes before it writes.  Stopping autonomy does not capture.  Each asks `isSetupNewerThanTheRunningLayout` first.
-     *
-     * The capture happens BEFORE a page changes, while the naming and the store still agree, and `renamePage` then
-     * rekeys what was captured.  Refused after a run (run, stop, rename), it would discard every placement the run produced; and
-     * occupancy is derived from placements (`Point.isOccupied` is `currentLoc != null`, `isPathClear` never consults the s88), so
-     * the rebuilt configuration would put trains where they were before the run, and Start could route one into an occupied block.
-     *
-     * Written, not reconciled - see the caller in resetAutonomySession for why that matters on the editor path.
+     * Folds what the running layout knows back into the configuration, and writes it.  A run moves locomotives, and
+     * where they ended up lives in the running Layout until a fold writes it into the setup: this one (behind the reset
+     * after a diagram edit and the editor doors), the save on the way out, the one `AutonomyViewerPanel.load` makes as
+     * it chooses a configuration, and the one an old file's import makes before it writes.  Stopping autonomy does not
+     * capture.  Each asks `isSetupNewerThanTheRunningLayout` first.  The capture happens BEFORE a page changes, while
+     * the naming and the store still agree, and `renamePage` then rekeys what was captured; refused after a run (run,
+     * stop, rename) it would discard every placement the run produced, and as occupancy is derived from placements
+     * (`Point.isOccupied` is `currentLoc != null`, `isPathClear` never consults the s88) the rebuilt configuration
+     * would put trains where they were before the run, and Start could route one into an occupied block.  Written, not
+     * reconciled: see the caller in resetAutonomySession for why that matters on the editor path.
      */
     void captureRunningLayout()
     {
@@ -2788,10 +2752,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The same, told whether a railway that holds a path is folded too, each train under way written on the one point it
-     * is kept at: Unload's fold, made after its Yes has stopped the trains, as a reload's is.  Every
-     * other door here is refused while autonomy runs, or is the reset after one, and keeps the rule that a railway
-     * reading busy is not folded.
+     * The same, told whether a railway that holds a path is folded too, each train under way written on the one point
+     * it is kept at: Unload's fold, made after its Yes has stopped the trains, as a reload's is.  Every other door here
+     * is refused while autonomy runs, or is the reset after one, and keeps the rule that a railway reading busy is not
+     * folded.
      *
      * @param underWayToo whether to fold a railway that holds a path
      */
@@ -2805,11 +2769,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return;
         }
 
-        // While a setup edit waits for a load, what the railway owns and nothing of the setup's.  An
-        // edit the railway could not take yet is in the configuration and not in the running layout: folding the whole running
-        // layout wrote the older layout over it, and folding nothing lost where the run left the trains and the timetable
-        // it captured.  So every door that folds makes this one then: where the trains stand, and the settings the
-        // railway changed since it was built.  The rebuild or load that replaces the running layout clears the flag.
+        // While a setup edit waits for a load, what the railway owns and nothing of the setup's: an edit the railway
+        // could not take yet is in the configuration and not in the running layout, so folding the whole running layout
+        // would write the older layout over it, and folding nothing would lose where the run left the trains and the
+        // timetable it captured.  The rebuild or load that replaces the running layout clears the flag.
         try
         {
             // Each train under way on the one point it is kept at; a railway at rest keeps none
@@ -2838,17 +2801,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Drops the autonomy setup, so the next request reads it again.  Called when the layout changes
-     * underneath it - a session holding pages that are no longer loaded would describe a diagram nobody
-     * is looking at.
+     * Drops the autonomy setup, so the next request reads it again; called when the layout changes underneath it, as a
+     * session holding pages that are no longer loaded would describe a diagram nobody is looking at.
      */
     public void resetAutonomySession()
     {
-        // Save what this session knows BEFORE forgetting it: nulling activeDiagramConfiguration first made the exit-path capture
-        // (gated on it) skip everything, so a re-download silently threw away every placement, home and setting made since the last
-        // save.  And while an edit waits, what the railway owns: Open Layout on the folder in use and Combine Linked Pages
-        // keep the railway and leave no configuration running, so nothing folded it after; a switch of railway writes it into the
-        // railway's own file, which it leaves - not onto the next one.
+        // Save what this session knows BEFORE forgetting it: nulling activeDiagramConfiguration first would make the
+        // exit-path capture (gated on it) skip everything, and a re-download would silently throw away every placement,
+        // home and setting made since the last save.  And while an edit waits, what the railway owns: Open Layout on
+        // the folder in use and Combine Linked Pages keep the railway and leave no configuration running, so nothing
+        // folded it after; a switch of railway writes it into the railway's own file, which it leaves, not onto the
+        // next one.
         captureRunningLayout();
 
         autonomySession = null;
@@ -2888,10 +2851,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Greys the Layout menu while an editor has the diagram, and offers the way back (OB-033).  The rule the Autonomy menu
-     * already followed: every item here saves the layout or rebuilds the main window, and with an editor open both are unsafe
-     * (saving commits edits the editor has not saved, so its Cancel has nothing to take back).  Applied when the menu is
-     * opened, because no single moment "an editor opened" is known to this menu and asking when somebody looks is always right.
+     * Greys the Layout menu while an editor has the diagram, and offers the way back (OB-033), the rule the Autonomy
+     * menu already followed: every item here saves the layout or rebuilds the main window, and with an editor open both
+     * are unsafe (saving commits edits the editor has not saved, so its Cancel has nothing to take back).  Applied when
+     * the menu is opened, since no single moment "an editor opened" is known to this menu and asking when somebody
+     * looks is always right.
      */
     private void guardLayoutMenu()
     {
@@ -2909,12 +2873,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // loop must not switch it back on when no editor is open.
             if (child == localHeading || child == centralStationHeading) continue;
 
-            // Taken away, never handed back: these three are owned by `repaintPathLabel`, which greys them when no Central
-            // Station is reachable (OB-098, OB-100), and that greying IS the guard - switchCSLayoutMenuItemActionPerformed has no
-            // connection check of its own and clears the layout path preference and every page when pressed (the state OB-127 was filed
-            // from).  An open editor may still take them away; only their owner may give them back.  initializeLocalLayoutMenuItem
-            // is in the list for the same reason - its action listener disables it before createAndApplyEmptyLayout runs off the EDT,
-            // and only that flow's completion callback re-enables it.
+            // Taken away, never handed back: these three are owned by `repaintPathLabel`, which greys them when no
+            // Central Station is reachable (OB-098, OB-100), and that greying IS the guard
+            // (switchCSLayoutMenuItemActionPerformed has no connection check of its own and clears the layout path
+            // preference and every page when pressed, the state OB-127 was filed from).  An open editor may still take
+            // them away; only their owner may give them back.  initializeLocalLayoutMenuItem is in the list for the
+            // same reason: its listener disables it before createAndApplyEmptyLayout runs off the EDT, and only that
+            // flow's completion callback re-enables it.
             if (child == switchCSLayoutMenuItem || child == downloadCSLayoutMenuItem
                 || child == initializeLocalLayoutMenuItem)
             {
@@ -3003,13 +2968,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private static final String GREYED_FOR_THE_RUN = "greyedForTheRun";
 
     /**
-     * Greys a Layout menu item while autonomy runs, with the reason as its tooltip, and gives its tooltip back once the run is
-     * over - and whether it was live, where `guardLayoutMenu` leaves that to the item's owner.
+     * Greys a Layout menu item while autonomy runs, with the reason as its tooltip, and gives its tooltip back once the
+     * run is over (and whether it was live, where `guardLayoutMenu` leaves that to the item's owner).
      *
-     * @param item the item
-     * @param running whether autonomy is running
      * @param owned whether something else decides when the item is live, so the state it had is given back too
-     * @param why the sentence saying why, while it runs
      * @return true when the item was given back just now
      */
     private static boolean greyForTheRun(javax.swing.JMenuItem item, boolean running, boolean owned, String why)
@@ -3048,12 +3010,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JMenuItem centralStationHeading;
 
     /**
-     * Preferences > Debug, in debug and simulation only: an ordinary submenu, like Startup beside it.
-     *
-     * **Echo Sent Commands** is `MarklinControlStation.DEBUG_SIMULATE_PACKETS`: with it on, a simulation answers every command
-     * as a Central Station would, which is what lets the window follow a throttle reversal (MT-488), a switch or a function there.
-     *
-     * **The stored choice is the operator's, not a test's.**  A test run is unattended and sets the flag in code for what it
+     * Preferences > Debug, in debug and simulation only: an ordinary submenu, like Startup beside it.  **Echo Sent
+     * Commands** is `MarklinControlStation.DEBUG_SIMULATE_PACKETS`: with it on, a simulation answers every command as a
+     * Central Station would, which lets the window follow a throttle reversal (MT-488), a switch or a function there.
+     * **The stored choice is the operator's, not a test's**: an unattended test sets the flag in code for what it
      * needs, so there the choice is neither read into the flag nor written from it.
      */
     private void mountDebugMenu()
@@ -3102,11 +3062,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * A label on a menu, in the shape this project already uses for one: disabled and bold, as LayoutRightclickAutonomyMenu
-     * does it, because a greyed item that is NOT a label looks like an action that happens to be unavailable.
-     *
-     * @param text what the section is
-     * @return the label, ready to be inserted
+     * A label on a menu, in the shape this project already uses: disabled and bold, as LayoutRightclickAutonomyMenu
+     * does it, as a greyed item that is NOT a label looks like an action that happens to be unavailable.
      */
     private javax.swing.JMenuItem menuHeading(String text)
     {
@@ -3119,9 +3076,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Says which half of the Layout menu is which: one half works on a folder of the user's and the other talks to the station.
-     * Inserted by looking items up rather than by counting, because everything above them moves (the per-page submenu is mounted
-     * under Manage Pages, the export is placed after the pop-out, an open editor adds an item at the top).
+     * Says which half of the Layout menu is which: one half works on a folder of the user's and the other talks to the
+     * station.  Inserted by looking items up rather than by counting, as everything above them moves.
      */
     private void mountLayoutHeadings()
     {
@@ -3157,9 +3113,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Collapses runs of separators on the Layout menu, and drops any left leading or trailing.  Taking the pop-out out from
-     * between two of them leaves two rules side by side.  Done by walking the children rather than by naming `jSeparator8` and
-     * `jSeparator24`: those are generated fields the designer renumbers whenever the form is touched.
+     * Collapses runs of separators on the Layout menu, and drops any left leading or trailing; walks the children
+     * rather than naming `jSeparator8` and `jSeparator24`, generated fields the designer renumbers whenever the form is
+     * touched.
      */
     private void tidyLayoutMenuSeparators()
     {
@@ -3211,11 +3167,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Empties the track diagram panel, for when there is no longer a diagram (OB-128).
-     *
-     * A greyed tab that still holds the last railway is worse than an empty one: it looks live. The
-     * cache is left alone - those grids belong to pages that may come back, and dropping them would
-     * throw away the captions attached to them.
+     * Empties the track diagram panel, for when there is no longer a diagram (OB-128): a greyed tab that still holds
+     * the last railway is worse than an empty one, as it looks live.  The cache is left alone: those grids belong to
+     * pages that may come back, and dropping them would throw away the captions attached to them.
      */
     private void clearLayoutPanel()
     {
@@ -3227,12 +3181,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Names the current data source on the menu item that opens it (FR-040): Adam asked for "Data Source: Central Station /
-     * Local / None", since the answer is known the moment the menu opens.  Asked from `guardLayoutMenu`, the moment somebody
-     * looks being the only one where the answer is certainly current.
-     *
-     * Order matters: a local layout whose pages are not loaded (where a failed switch to a Central Station layout leaves things)
-     * is None rather than Local, since naming the folder a preference still points at would describe a railway not on screen.
+     * Names the current data source on the menu item that opens it (FR-040; Adam asked for "Data Source: Central
+     * Station / Local / None"), asked from `guardLayoutMenu` as the moment somebody looks is the only one where the
+     * answer is certainly current.  Order matters: a local layout whose pages are not loaded (where a failed switch to
+     * a Central Station layout leaves things) is None rather than Local, since naming the folder a preference still
+     * points at would describe a railway not on screen.
      */
     private void refreshDataSourceLabel()
     {
@@ -3260,11 +3213,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * "Edit Layout Page..." on the Layouts menu, listing the pages.
-     *
-     * The counterpart to the Autonomy menu's own edit item: managing pages is adding, renaming, duplicating and deleting them,
-     * and opening one to work on is not that.  Each entry opens the editor on that page in whichever mode was last used, which
-     * is what the Edit button does - naming a PAGE is not naming a mode.  Rebuilt whole on every mount, because the pages change.
+     * "Edit Layout Page..." on the Layouts menu, listing the pages: the counterpart to the Autonomy menu's own edit
+     * item, as managing pages is adding, renaming, duplicating and deleting them and opening one to work on is not
+     * that.  Each entry opens the editor on that page in whichever mode was last used, as the Edit button does (naming
+     * a PAGE is not naming a mode).  Rebuilt whole on every mount, because the pages change.
      */
     private void mountEditPageMenu()
     {
@@ -3311,9 +3263,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JMenu editPageMenu;
 
     /**
-     * Drops separators that no longer separate anything (OB-021).  Taking an item off a menu built by the form leaves the
-     * dividers around it side by side.  Swept rather than removed by index, because an index is a fact about the generated form
-     * and moves when somebody adds an item in the designer.  Leading and trailing separators go too.
+     * Drops separators that no longer separate anything (OB-021): taking an item off a menu built by the form leaves
+     * the dividers around it side by side.  Swept rather than removed by index, because an index is a fact about the
+     * generated form and moves when somebody adds an item in the designer.  Leading and trailing separators go too.
      *
      * @param menu the menu to tidy, or null
      */
@@ -3353,18 +3305,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private AutonomyMenu autonomyMenu;
 
     /**
-     * Whether the autonomy menu can be opened, asked in one place (OB-202).
-     *
-     * Two conditions, each of which has already been a defect: a layout, asked of `isLayoutLoaded` rather than of the list
-     * (the live question was asked at eighteen places, each catching a different moment of a rebuild); and not while
-     * the connecting notice still holds the bar (OB-187).
-     *
-     * NOT WHETHER THE LAYOUT IS LOCAL (Adam: "open the autonomy menu with everything but those 2 greyed"): a diagram read
-     * straight from the Central Station has nowhere to keep a setup, but the menu's offer to download the layout (OB-093) and
-     * its Documentation must stay pressable.  Whether autonomy can be USED is `canUseAutonomy`, and every autonomy action asks that.
-     *
-     * Here rather than in `AutonomyMenu` because the placeholder that holds its slot during start-up asks the same question,
-     * and two copies would be two answers (`guard-and-affordance-same-question`).
+     * Whether the autonomy menu can be opened, asked in one place (OB-202).  Two conditions, each of which has been a
+     * defect: a layout, asked of `isLayoutLoaded` rather than of the list (the live question was asked at eighteen
+     * places, each catching a different moment of a rebuild); and not while the connecting notice still holds the bar
+     * (OB-187).  NOT WHETHER THE LAYOUT IS LOCAL (Adam: "open the autonomy menu with everything but those 2 greyed"): a
+     * diagram read straight from the Central Station has nowhere to keep a setup, but the menu's offer to download the
+     * layout (OB-093) and its Documentation must stay pressable; whether autonomy can be USED is `canUseAutonomy`,
+     * which every autonomy action asks.  Here rather than in `AutonomyMenu` because the placeholder that holds its slot
+     * during start-up asks the same question, and two copies would be two answers.
      *
      * @return whether the menu should be enabled
      */
@@ -3374,9 +3322,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Why autonomy cannot be used here, as a sentence for the autonomy menu's tooltip, or null when it can.  On a Central
-     * Station layout the menu opens anyway (`autonomyMenuIsUsable`), and this says why nothing in it but the download and the
-     * guide can be chosen.  Disabled rather than hidden, with the reason on the tooltip: a menu that vanishes teaches nothing.
+     * Why autonomy cannot be used here, as a sentence for the autonomy menu's tooltip, or null when it can: on a
+     * Central Station layout the menu opens anyway (`autonomyMenuIsUsable`), and this says why nothing in it but the
+     * download and the guide can be chosen.  Disabled rather than hidden, with the reason on the tooltip: a menu that
+     * vanishes teaches nothing.
      *
      * @return the tooltip, or null
      */
@@ -3390,9 +3339,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Brings whatever is currently standing in the autonomy slot into line with the answer above.  Two things can be in that
-     * slot, one at a time: `autonomyTopMenu` while the window is starting up, and the real `AutonomyMenu` once
-     * `mountAutonomyControls` has built it.
+     * Brings whatever is standing in the autonomy slot into line with the answer above: `autonomyTopMenu` while the
+     * window is starting up, and the real `AutonomyMenu` once `mountAutonomyControls` has built it.
      */
     public void refreshAutonomyAnchor()
     {
@@ -3412,11 +3360,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Puts the autonomy menu in the bar, once, in the slot the placeholder was holding (OB-202).  The placeholder is in the
-     * form, immediately after Layouts, and dressed at construction with this menu's own heading, so the bar has an Autonomy
-     * menu from the first frame and this swap only makes it usable (appending made the heading appear part-way through
-     * start-up).  Beside Layouts either way, because a setup belongs to a layout; the fallback keeps that true if the
-     * placeholder is ever taken out of the form.
+     * Puts the autonomy menu in the bar, once, in the slot the placeholder was holding (OB-202).  The placeholder is in
+     * the form, immediately after Layouts, and dressed at construction with this menu's own heading, so the bar has an
+     * Autonomy menu from the first frame and this swap only makes it usable; beside Layouts either way, because a setup
+     * belongs to a layout, and the fallback keeps that true if the placeholder is ever taken out of the form.
      */
     public void mountAutonomyMenu()
     {
@@ -3463,19 +3410,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Everything the diagram shows about autonomy, brought back into agreement with the setup, after any menu action.
-     *
-     * The one place.  What draws autonomy lives in two caches that nothing owned between them: the tile registry holds the
-     * station badges (annotations SURVIVE a grid rebuild and are re-applied to each label as it registers), and
-     * `layoutStations` holds the caption labels (these do NOT survive: a caption created since the last build has no label to
-     * write to until the grid is rebuilt).  Refreshing the badges left the names blank and rebuilding the grid left the badges
-     * stale, each being reached from a different handler.
-     *
-     * Order matters: the annotations are refreshed FIRST so that the rebuild below hands each new label a badge that already
-     * describes the current setup, and repaintLayout rebuilds the grid and then writes what every caption says.
-     *
-     * Call this after ANY change to the setup - loading, importing, deleting, unloading, excluding a page, naming a station.
-     * Nothing else in this class should be refreshing these by hand.
+     * Everything the diagram shows about autonomy, brought back into agreement with the setup, after any menu action:
+     * what draws autonomy lives in two caches (the tile registry holds the station badges, which SURVIVE a grid
+     * rebuild, and `layoutStations` the caption labels, which do NOT: a caption created since the last build has no
+     * label until the grid is rebuilt).  The annotations are refreshed FIRST so the rebuild hands each new label a
+     * badge that already describes the current setup.  Call this after ANY change to the setup; nothing else in this
+     * class should refresh these by hand.
      */
     public void autonomySetupChanged()
     {
@@ -3490,11 +3430,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // rebuild them.
         repaintAutoLocList(false);
 
-        // The grid itself only where its captions changed (MT-670; Adam: "every click I make in the autonomy editor makes the viewer
-        // diagram flicker.  Necessary?").  A rebuild takes every square of the page down and draws it again for the one thing a
-        // grid cannot be told once built: which squares carry a caption, and the name each gives.  An arrow, a length or a
-        // direction changes neither, so there the captions are written again in place; a station added, renamed, shut or moved
-        // still rebuilds.
+        // The grid itself only where its captions changed (MT-670; Adam: "every click I make in the autonomy editor
+        // makes the viewer diagram flicker.  Necessary?"): a rebuild redraws every square of the page for the one thing
+        // a grid cannot be told once built, which squares carry a caption and the name each gives.  An arrow, a length
+        // or a direction changes neither, so there the captions are written again in place; a station added, renamed,
+        // shut or moved still rebuilds.
         if (javax.swing.SwingUtilities.isEventDispatchThread() && theShownDiagramHasItsCaptions())
         {
             // AND THE OTHER PAGES KEPT FOR THE PAGE LIST FORGOTTEN, as the rebuild emptied the cache
@@ -3513,11 +3453,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Draws again the pop-up diagrams whose captions are not the setup's any more (OB-341).  A pop-up's caption labels are
-     * registered under its own window, so the main window's rebuild never lets go of them: a caption moved or taken off went
-     * on showing there (Stop Showing is the remedy the duplicate-caption error asks for).  Only the ones that differ
-     * (`captionsAreAsBuilt`), so an arrow or a length changed makes none flicker, and the size and place the operator gave each
-     * window are kept.
+     * Draws again the pop-up diagrams whose captions are not the setup's any more (OB-341): a pop-up's caption labels
+     * are registered under its own window, so the main window's rebuild never lets go of them.  Only the ones that
+     * differ (`captionsAreAsBuilt`), so an arrow or a length changed makes none flicker, and the size and place the
+     * operator gave each window are kept.
      */
     private void refreshPopupsWhoseCaptionsChanged()
     {
@@ -3535,11 +3474,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Whether the track diagram on screen is the grid of the page and size chosen, and the setup still gives its squares
-     * the captions it was built with (MT-670).
-     *
-     * @return false wherever it cannot tell - nothing shown, a page still loading, another page or size chosen, a tile
-     *         the registry has let go
+     * Whether the track diagram on screen is the grid of the page and size chosen, and the setup still gives its
+     * squares the captions it was built with (MT-670); false wherever it cannot tell.
      */
     private boolean theShownDiagramHasItsCaptions()
     {
@@ -3559,10 +3495,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The folders the file choosers open in, for their icons to be fetched ahead (MT-692's note): Open Layout's - the
-     * folder above the last layout - and the last folder a file was chosen in.
-     *
-     * @return the folders, any of them missing
+     * The folders the file choosers open in, for their icons to be fetched ahead (MT-692): Open Layout's (the folder
+     * above the last layout) and the last folder a file was chosen in; any may be missing.
      */
     private java.io.File[] theFoldersChoosersOpenIn()
     {
@@ -3578,12 +3512,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Whether a page the page cache keeps is still wired - every tile its grid registered still registered, and every caption
-     * it registered still in the station map - so putting it back on screen shows a page that follows the railway (RSA39).
-     * Each registration is kept by its square, the same at both sizes, and one not on screen gives way to another for the
-     * square: drawing the same page at the other size while this one was put away took them all.
+     * Whether a page the page cache keeps is still wired: every tile its grid registered still registered, and every
+     * caption it registered still in the station map, so putting it back on screen shows a page that follows the
+     * railway.  Each registration is kept by its square, the same at both sizes, and one not on screen gives way to
+     * another for the square.
      *
-     * @param cached the page's panel
      * @return false for a panel that is no grid's, or one with anything let go
      */
     private boolean theCachedPageIsStillWired(JPanel cached)
@@ -3609,12 +3542,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Forgets every page the page cache keeps but the one on screen, as the rebuild a setup change now skips did: a
-     * page drawn before the change and kept for the page list would come back as it was drawn (a page put back into autonomy
-     * with none of its captions, a station added with none, a station renamed with its old name).  The page on screen keeps
-     * its grid.
-     *
-     * @param shown the container on screen
+     * Forgets every page the page cache keeps but the one on screen, since a page drawn before a setup change and kept
+     * for the page list would come back as it was drawn (a page put back into autonomy with none of its captions, a
+     * station added with none, a station renamed with its old name).  The page on screen keeps its grid.
      */
     private void forgetTheCachedPagesButTheShownOne(java.awt.Component shown)
     {
@@ -3652,12 +3582,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private org.traincontrol.automationui.AutonomySession autonomySession;
 
     /**
-     * What keeps the diagram showing where the trains are.
-     *
-     * Created on demand and kept for the life of the window: it survives configurations being loaded and
-     * pages being switched, because tearing it down and rebuilding it would leave a window in which
-     * movement went unnoticed.
-     * @return
+     * What keeps the diagram showing where the trains are: created on demand and kept for the life of the window, as
+     * tearing it down and rebuilding it on a configuration load or page switch would leave a window in which movement
+     * went unnoticed.
      */
     public DiagramMonitorDriver getDiagramMonitorDriver()
     {
@@ -3672,11 +3599,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private DiagramMonitorDriver diagramMonitorDriver;
 
     /**
-     * Wires up the autonomy controls for the layout that is open: the Layout menu's own additions and the Autonomy menu for
-     * every layout, and - for a layout stored on this computer - the page menus that act on its setup.
-     *
-     * A layout with no local copy gets no autonomy setup (OB-254; Adam: "Remove it, require a local copy for autonomy."): the
-     * Autonomy menu opens there onto the offer to download the layout and Documentation, and nothing else in it can be chosen.
+     * Wires up the autonomy controls for the layout that is open: the Layout menu's own additions and the Autonomy menu
+     * for every layout, and for a layout stored on this computer the page menus that act on its setup.  A layout with
+     * no local copy gets no autonomy setup (OB-254; Adam: "Remove it, require a local copy for autonomy."): the
+     * Autonomy menu opens there onto the offer to download the layout and Documentation only.
      */
     public void mountAutonomyControls()
     {
@@ -3728,12 +3654,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Re-attaches the panels that describe a running railway to the layout that is running it.  The timetable and the locomotive
-     * status panel describe path starts and path ends and nothing else, so they redraw when the layout says one has happened and
-     * at no other time (OB-097: "a route finished, but the loc status panel still indicated an active route").
-     *
-     * Called after EVERY parseAuto, because parseAuto replaces the Layout object and callbacks live on the object; the diagram
-     * monitor is re-bound beside it for the same reason.
+     * Re-attaches the panels that describe a running railway to the layout that is running it: the timetable and the
+     * locomotive status panel describe path starts and ends and nothing else, so they redraw when the layout says one
+     * has happened (OB-097).  Called after EVERY parseAuto, which replaces the Layout object, and callbacks live on the
+     * object; the diagram monitor is re-bound beside it for the same reason.
      *
      * @param layout the layout just built, or null
      */
@@ -3744,15 +3668,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             this.repaintTimetable();
             this.repaintAutoLocListLite();
 
-            // And the graph, whenever a run ends: `updateVisiblePoints()` is the only route to `reconcileFacingWhenIdle`, the
-            // only thing that writes a reversal the railway made at a destination into the setup.  It refuses while anything is moving,
-            // on purpose, so it needs a refresh AFTER the railway has gone idle.  The door every run passes through is
-            // `Layout.announceRunFinished()` (fired when the last locomotive thread goes; a timetable announces again once its
-            // completion wait has seen the railway stop), not a copy at each caller (`fix-one-site-sweep-the-siblings`, OB-189).
-            // Cheap enough to sit beside the two above: `DiagramMonitorDriver` already calls this on the event thread every monitor
-            // tick.  It takes no Layout monitor, but not because `getPoints()` is unsynchronized (OB-192): `updateVisiblePoints` also
-            // calls `refreshCoveredTrack`, whose covered marks are worked out on a worker, so the event thread never queues on
-            // `Layout.edgesCoveredByStandingTrains` (the AB-BA that `Layout.getEdges`'s comment describes).
+            // And the graph, whenever a run ends: `updateVisiblePoints()` is the only route to
+            // `reconcileFacingWhenIdle`, the only thing that writes a reversal the railway made at a destination into
+            // the setup, and it refuses while anything is moving, so it needs a refresh AFTER the railway has gone
+            // idle.  The door every run passes through is `Layout.announceRunFinished()` (fired when the last
+            // locomotive thread goes; a timetable announces again once its completion wait has seen the railway stop),
+            // not a copy at each caller (OB-189).  Cheap enough to sit beside the two above: `DiagramMonitorDriver`
+            // already calls this on the event thread every monitor tick.  It takes no Layout monitor:
+            // `updateVisiblePoints` also calls `refreshCoveredTrack`, whose covered marks are worked out on a worker,
+            // so the event thread never queues on `Layout.edgesCoveredByStandingTrains` (OB-192).
             this.updateVisiblePoints();
         });
     }
@@ -3783,8 +3707,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Pauses every one of these trains or sets every one going (FR-126), for the Bulk Tools' Activate All Trains and
-     * Deactivate All Trains: what `setLocomotiveActive` does for one train, done for all of them with one save, one redraw
-     * of the diagram and one rebuild of the Auto tab's cards.
+     * Deactivate All Trains: what `setLocomotiveActive` does for one train, for all with one save, one redraw and one
+     * rebuild of the Auto tab's cards.
      *
      * @param setup the setup the tool belongs to, or null where there is none: the trains alone
      * @param trains the trains
@@ -3824,11 +3748,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.model.log(cannotSave);
             }
 
-            // And the railway's settings as built, for THESE TRAINS ONLY (OB-343).  The tick changed these trains on the
-            // railway and in the setup together, so for them the two agree; left as it was built, a press of the Auto tab's pause button
-            // afterwards (which changes the railway alone) read to the next rebuild's fold as no change, and the rebuild undid the
-            // button.  Not for the other trains this call names but leaves as they were: a press made BEFORE this call has not reached
-            // the setup, so writing it as built made the fold find nothing the railway had changed (see `notePausesAsBuilt`).
+            // And the railway's settings as built, for THESE TRAINS ONLY (OB-343): the tick changed these trains on the
+            // railway and in the setup together, so for them the two agree; left as it was built, a press of the Auto
+            // tab's pause button afterwards (which changes the railway alone) would read to the next rebuild's fold as
+            // no change, and the rebuild would undo the button.  Not for the other trains this call names but leaves as
+            // they were: a press made BEFORE this call has not reached the setup, so writing it as built would make the
+            // fold find nothing the railway had changed (see `notePausesAsBuilt`).
             notePausesAsBuilt(changed);
         }
 
@@ -3840,14 +3765,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Writes these trains' pauses into the railway's settings as built, for a door that changed them on the railway
-     * and in the setup together - as `keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack` writes atomic routes.  Only
-     * for the railway the settings were read off.
-     *
-     * **ONLY THE TRAINS THE DOOR CHANGED (OB-343).**  The settings as built are what the railway was built with, and the fold
-     * takes whatever the railway has that these do not.  The Auto tab's pause button changes a train on the railway alone, so
-     * writing the railway's whole list as built would hide that pause from the fold, and the rebuild would take the setup's
-     * older list as the word on every train.  The trains the door did not change are left as built.
+     * Writes these trains' pauses into the railway's settings as built, for a door that changed them on the railway and
+     * in the setup together, as `keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack` writes atomic routes; only for the
+     * railway the settings were read off.  **ONLY THE TRAINS THE DOOR CHANGED (OB-343)**: the settings as built are
+     * what the railway was built with and the fold takes whatever the railway has that these do not, so writing the
+     * railway's whole list as built would hide a pause made by the Auto tab's button (which changes a train on the
+     * railway alone), and the rebuild would take the setup's older list as the word on every train.
      *
      * @param changed the trains the door has just changed, on the railway and in the setup
      */
@@ -3953,13 +3876,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Notes the record of how the railway was built, for a door that takes a snapshot of the setup it may put back (OB-343): the
-     * old-file import, whose rollback is the whole of its undo.  (The editor's Cancel is not this: it keeps what the railway
-     * changed alone, which the session holds - see `AutonomySession.beginEditSession`.)
-     *
-     * **THE RECORD IS WHAT THE RAILWAY AND THE SETUP LAST AGREED ON, so a rollback that puts the setup back puts the record back
-     * with it.**  A fold takes what the railway changed into the setup and into the record (`captureTheRailwaysSettings`); a
-     * setup put back without the record would let the next rebuild take nothing from it, and what the railway had changed
+     * Notes the record of how the railway was built, for a door that takes a snapshot of the setup it may put back
+     * (OB-343): the old-file import, whose rollback is the whole of its undo (the editor's Cancel keeps what the
+     * railway changed alone, which the session holds, see `AutonomySession.beginEditSession`).  **THE RECORD IS WHAT
+     * THE RAILWAY AND THE SETUP LAST AGREED ON, so a rollback that puts the setup back puts the record back with it**:
+     * a setup put back without it would let the next rebuild take nothing from it, and what the railway had changed
      * alone (a timetable entry, an Auto tab setting, a card's pause) would go with the rollback.
      *
      * @return the note, or null where this window does not know how the running railway was built
@@ -3974,9 +3895,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Puts the record back as a note has it, for a door that has put the setup back to the snapshot it took beside the note.
-     * Only for the railway the note was taken from: a railway built since has a record of its own, made from the setup it was
-     * built from.
+     * Puts the record back as a note has it, for a door that has put the setup back to the snapshot it took beside the
+     * note; only for the railway the note was taken from, as a railway built since has a record of its own.
      *
      * @param noted what `noteSettingsAsBuilt` returned, or null
      */
@@ -4002,15 +3922,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // train somebody was driving keeps rolling while the new layout thinks everything is parked
         this.refreshRouteList();
 
-        // On an interactive load only, which is what `resumed` has always been for: the stop is for CHOOSING A DIFFERENT
-        // RAILWAY (the layout is replaced under a train nobody told), and does not reach an edit to the setup this railway is
-        // already running - `setupChanged` puts every such edit through here, and typing a link's display name or a tile length
-        // stopped every locomotive on the layout.  `resumed` is `!interactive`; the two interactive callers are the autonomy menu
-        // and the Configurations dialog, somebody deliberately switching railways.
-        // A third non-interactive caller is `autonomyEditorClosed()`, which reloads through `getAutonomyViewerPanel().load(wasRunning,
-        // false)` after the TRACK DIAGRAM EDITOR closes.  Adam ruled that closing that editor does NOT stop the trains: the
-        // boundary is not "has the layout been replaced" but whether the OPERATOR asked for a different railway, and finishing an
-        // edit to the one already running is not that, however much of the layout object it rebuilds.
+        // On an interactive load only (`resumed` is `!interactive`): the stop is for CHOOSING A DIFFERENT RAILWAY (the
+        // layout is replaced under a train nobody told), and does not reach an edit to the setup this railway is
+        // already running, which `setupChanged` puts through here, as typing a link's display name or a tile length
+        // would stop every locomotive.  The interactive callers are the autonomy menu and the Configurations dialog,
+        // somebody deliberately switching railways.  A third non-interactive caller is `autonomyEditorClosed()`, which
+        // reloads through `getAutonomyViewerPanel().load(wasRunning, false)` after the TRACK DIAGRAM EDITOR closes:
+        // Adam ruled that closing that editor does NOT stop the trains, the boundary being whether the OPERATOR asked
+        // for a different railway, not whether the layout object has been replaced.
         if (!resumed)
         {
             AltEmergencyStopActionPerformed(null);
@@ -4097,12 +4016,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Whether an autonomy configuration is actually LOADED, rather than merely possible.  Adam: "only show these options if
-     * autonomy is fully loaded, not just if it's available."  `hasAutoLayout()` is true whenever a graph object exists, which
-     * includes a layout whose setup nobody has loaded.
-     *
-     * This is the application's own answer: `activeDiagramConfiguration` is what the diagram strip is told through setLoaded
-     * and what decides whether it offers Start, so the menus, the ticks and the strip cannot drift into three ideas of "loaded".
+     * Whether an autonomy configuration is actually LOADED, rather than merely possible (Adam: "only show these options
+     * if autonomy is fully loaded, not just if it's available."): `hasAutoLayout()` is true whenever a graph object
+     * exists, which includes a layout whose setup nobody has loaded.  This is the application's own answer:
+     * `activeDiagramConfiguration` is what the diagram strip is told through setLoaded and what decides whether it
+     * offers Start, so the menus, the ticks and the strip cannot drift into three ideas of "loaded".
      *
      * @return true when a configuration is loaded
      */
@@ -4160,22 +4078,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Settles the Auto tab against what autonomy is actually doing.
-     *
-     * One place that decides, called from everywhere that can change the answer - the two ends of
-     * setAutonomyDependentTabs, every menu action, and startup.  Deciding it at each of those
-     * separately is how it came to be right on three paths and wrong on the fourth.
+     * Settles the Auto tab against what autonomy is actually doing: one place that decides, called from everywhere that
+     * can change the answer (the two ends of setAutonomyDependentTabs, every menu action, and startup).
      */
     public void refreshAutonomyTabState()
     {
         boolean valid = this.model != null && this.model.hasAutoLayout()
             && this.model.getAutoLayout().isValid();
 
-        // Valid is not the same as loaded: a layout can hold a valid auto layout left over from a blank default, so on the diagram
-        // path the question is whether a configuration is RUNNING.  And the legacy user's tab stays shut until they import (Adam,
-        // MT-244: "The tab should stay shut until they import."): nothing at start-up parses or activates `autonomy.json` any more
-        // (the only `parseAuto` caller in `src` is the diagram path, OB-254), so leaving the tab open would offer a route into a
-        // model the rest of the application has moved off.  The import is the way across (`testTheRoutingChoiceSurvivesTheUpgrade`).
+        // Valid is not loaded: a layout can hold a valid auto layout left over from a blank default, so on the diagram
+        // path the question is whether a configuration is RUNNING.  The legacy user's tab stays shut until they import
+        // (Adam, MT-244: "The tab should stay shut until they import."): nothing at start-up parses or activates
+        // `autonomy.json` (the only `parseAuto` caller in `src` is the diagram path, OB-254), so an open tab would
+        // offer a route into a model the rest of the application has moved off; the import is the way across
+        // (`testTheRoutingChoiceSurvivesTheUpgrade`).
         boolean loaded = getAutonomySession() == null
             || this.activeDiagramConfiguration != null;
 
@@ -4254,41 +4170,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The autonomy editor, held without a window, only so its right-click menu can be borrowed: the menu a square offers is four
-     * hundred lines of items hanging off thirty private helpers on that panel, and asking the panel that owns it is one copy
-     * instead of two to keep in step.  Never shown, never laid out; built lazily, and rebuilt whenever the session behind it is
-     * replaced, since a panel still holding the old one would quietly edit a setup nobody is looking at.
+     * The autonomy editor, held without a window, only so its right-click menu can be borrowed: the menu a square
+     * offers is four hundred lines of items hanging off thirty private helpers on that panel, and asking the panel that
+     * owns it is one copy instead of two.  Never shown, never laid out; built lazily, and rebuilt whenever the session
+     * behind it is replaced, as a panel still holding the old one would quietly edit a setup nobody is looking at.
      */
     private AutonomyEditorPanel autonomyTileMenus;
 
     private org.traincontrol.automationui.AutonomySession autonomyTileMenusFor;
 
     /**
-     * The autonomy setup menu for one square of the track diagram.  Saved as it goes, unlike in the editor: this window has no
-     * Save and no Cancel, so an edit that waited would sit in memory with nothing to commit it.
-     *
-     * @param tile the square, on its page
-     * @return the menu, or null when there is no setup to edit or the square has nothing to offer
-     */
-    /**
-     * The "{loc} Is Facing..." submenu for a square, for the track diagram's own right-click menu.  Built by the same panel
-     * that builds the deep menu, so one place knows which facings a square offers.
-     *
-     * @param tile the square
-     * @return the submenu, or null when the square has no locomotive or only one facing
-     */
-    /**
-     * A sensor changed, and the route editor may be capturing.  The accessory half of this rides on repaintSwitch, but feedback
-     * tiles redraw themselves, so sensors reached the view through nothing and capturing a CONDITION did nothing for them.
-     * Throttled the same way as repaintSwitch: a sensor a train stands on reports itself repeatedly.
-     *
-     * @param name the feedback's name
-     * @param state whether it is now occupied
-     */
-    /**
-     * Follows a locomotive's new name into every autonomy configuration, and saves.  The setup lives here rather than in the
-     * model, so the model asks for this (see View).  Saved on the spot because the repair only helps if it is still there after
-     * a restart, and a configuration naming a locomotive that no longer exists invalidates the whole layout when it is chosen.
+     * Follows a locomotive's new name into every autonomy configuration, and saves on the spot: the setup lives here
+     * rather than in the model, so the model asks for this (see View), and the repair only helps if it is still there
+     * after a restart, as a configuration naming a locomotive that no longer exists invalidates the whole layout when
+     * it is chosen.
      *
      * @param from the old name
      * @param to the new name
@@ -4390,12 +4285,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 openEditor.autonomyLocomotiveRenamed(from, to);
             }
 
-            // And the window, which is still showing the old name (MT-153; Adam: "I renamed MY 1106 to MY Y1106.  It vanished from
-            // autonomy, with MY 1106 still placed and at location ???? in the UI."): everything above repairs the DATA, but nothing tells
-            // anything to redraw - the station labels are written by updateVisiblePoints and the locomotive panel by
-            // repaintAutoLocListLite, which run only when called.  Posted rather than called: this runs on the event thread inside a
-            // rename dialog, and updateVisiblePoints is synchronized on this window and reaches into the layout - taking both locks in
-            // that order from here is a deadlock.
+            // And the window, which is still showing the old name (MT-153; Adam: "I renamed MY 1106 to MY Y1106.  It
+            // vanished from autonomy, with MY 1106 still placed and at location ???? in the UI."): everything above
+            // repairs the DATA, but the station labels are written by updateVisiblePoints and the locomotive panel by
+            // repaintAutoLocListLite, which run only when called.  Posted rather than called: this runs on the event
+            // thread inside a rename dialog, and updateVisiblePoints is synchronized on this window and reaches into
+            // the layout, so taking both locks in that order from here is a deadlock.
             javax.swing.SwingUtilities.invokeLater(() ->
             {
                 updateVisiblePoints();
@@ -4414,6 +4309,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }
 
+    /**
+     * A sensor changed, and the route editor may be capturing: the accessory half rides on repaintSwitch, but feedback
+     * tiles redraw themselves, so sensors reached the view through nothing and capturing a CONDITION did nothing for
+     * them.  Throttled as repaintSwitch is: a sensor a train stands on reports itself repeatedly.
+     */
     @Override
     public void feedbackChanged(String name, boolean state)
     {
@@ -4460,6 +4360,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private String lastCapturedFeedbackCommand;
     private long lastCapturedFeedbackCommandTime;
 
+    /**
+     * The "{loc} Is Facing..." submenu for a square, for the track diagram's own right-click menu, built by the same
+     * panel that builds the deep menu so one place knows which facings a square offers.
+     *
+     * @param tile the square
+     * @return the submenu, or null when the square has no locomotive or only one facing
+     */
     public javax.swing.JMenu buildAutonomyFacingMenu(
         org.traincontrol.automationui.TileGraph.TileKey tile)
     {
@@ -4486,6 +4393,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return autonomyTileMenus == null ? null : autonomyTileMenus.buildFacingMenu(tile);
     }
 
+    /**
+     * The autonomy setup menu for one square of the track diagram, saved as it goes, unlike in the editor: this window
+     * has no Save and no Cancel, so an edit that waited would sit in memory with nothing to commit it.
+     *
+     * @param tile the square, on its page
+     * @return the menu, or null when there is no setup to edit or the square has nothing to offer
+     */
     public javax.swing.JPopupMenu buildAutonomyTileMenu(
         org.traincontrol.automationui.TileGraph.TileKey tile)
     {
@@ -4501,8 +4415,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The panel the live setup is edited through from outside the editor - the track diagram's menu and the Return Home
-     * button's (FR-129) - brought up to date with the session behind it.
+     * The panel the live setup is edited through from outside the editor (the track diagram's menu and the Return Home
+     * button's, FR-129), brought up to date with the session behind it.
      *
      * @return the panel, or null when there is no local setup to edit or an editor holds it
      */
@@ -4510,11 +4424,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (!this.isLocalLayout()) return null;
 
-        // Not while an editor holds the setup (OB-076): the editor's Cancel restores autonomyAsOpened and saves it, so an edit made
-        // from THIS menu while the editor is open would be silently reverted.  Refused rather than repaired, since the snapshot is
-        // repaired for locomotive renames only and doing the same for every setup edit would mean keeping two live editors in step
-        // (the trap that made the editors mutually exclusive).  No menu at all rather than a greyed one, because this menu IS the
-        // autonomy surface here.
+        // Not while an editor holds the setup (OB-076): the editor's Cancel restores autonomyAsOpened and saves it, so
+        // an edit made from THIS menu while the editor is open would be silently reverted.  Refused rather than
+        // repaired, as the snapshot is repaired for locomotive renames only and doing the same for every setup edit
+        // would mean keeping two live editors in step (the trap that made the editors mutually exclusive).  No menu at
+        // all rather than a greyed one, because this menu IS the autonomy surface here.
         if (isLayoutEditorOpen()) return null;
 
         final org.traincontrol.automationui.AutonomySession session = getAutonomySession();
@@ -4587,8 +4501,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Opens the diagram editor in autonomy mode on the page a tile is on, and reveals that tile: what makes a finding actionable,
-     * since "no train can leave Platform 3" is half an answer and the other half is being taken to the square it is about.
+     * Opens the diagram editor in autonomy mode on the page a tile is on, and reveals that tile: what makes a finding
+     * actionable, since "no train can leave Platform 3" is half an answer and the other half is being taken to the
+     * square it is about.
      *
      * @param tile the square to go to, or null just to open the editor on the current page
      */
@@ -4611,9 +4526,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Selects the page being edited, for an editor that is switching to it in place: the line openLayoutEditor runs before it
-     * builds a window ("the editor edits one page, so the page has to be selected before it is opened"), reachable by an editor
-     * that is not being built because it never closed.
+     * Selects the page being edited, for an editor switching to it in place: the line openLayoutEditor runs before it
+     * builds a window (the editor edits one page, so the page has to be selected before it is opened).
      *
      * @param page the page name
      */
@@ -4623,9 +4537,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Whether the Edit button may be pressed.  One editor at a time is enforced by this button being disabled while one is open,
-     * and both teardowns hand it back because for every caller they ever had an editor really had closed.  An editor switching
-     * page or mode runs the same teardown and does NOT close, so it puts the button back the way it was.
+     * Whether the Edit button may be pressed.  One editor at a time is enforced by this button being disabled while one
+     * is open, and both teardowns hand it back as an editor really had closed; an editor switching page or mode runs
+     * the same teardown and does NOT close, so it puts the button back the way it was.
      *
      * @param enabled
      */
@@ -4640,11 +4554,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Lights or greys everything that edits the track diagram, from both halves of the question.  Adam: "edit layout and manage
-     * layout... these must be greyed when using a CS layout or when there is no layout loaded."  Both open a layout that lives in
-     * a folder of the user's, which a layout fetched from the Central Station does not have.  Called on every transition that can
-     * change the answer as well as from the setter, because switching to the CS layout changes it without any editor opening or
-     * closing.
+     * Lights or greys everything that edits the track diagram, from both halves of the question (Adam: "edit layout and
+     * manage layout... these must be greyed when using a CS layout or when there is no layout loaded."): both open a
+     * layout that lives in a folder of the user's, which a layout fetched from the Central Station does not have.
+     * Called on every transition that can change the answer as well as from the setter, as switching to the CS layout
+     * changes it without any editor opening or closing.
      */
     void applyLayoutEditingAvailability()
     {
@@ -4656,11 +4570,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Manage Pages goes with it: it is the same permission, asked about the same folder.
         if (this.modifyLocalLayoutMenu != null) this.modifyLocalLayoutMenu.setEnabled(live);
 
-        // The button on the autonomy settings panel goes with it (C9): both open the same editor and ask the same guard (the settings
-        // one delegates through `editLayoutButton.isEnabled()`), but it stayed lit while an editor was open and answered a click with
-        // a dialog saying no.  Adam's rule (OB-057, OB-090): the control that offers an action asks the guard's own predicate.  Set
-        // HERE rather than beside each of the four places that enable the layout button, since a rule applied at four points of use
-        // has four chances to be forgotten.
+        // The button on the autonomy settings panel goes with it: both open the same editor and ask the same guard (the
+        // settings one delegates through `editLayoutButton.isEnabled()`), so it must not stay lit while an editor is
+        // open and answer a click with a dialog saying no (Adam's rule, OB-057, OB-090: the control that offers an
+        // action asks the guard's own predicate).  Set HERE rather than beside each of the four places that enable the
+        // layout button, since a rule applied at four points of use has four chances to be forgotten.
         if (this.editAutonomyFromSettings != null)
         {
             this.editAutonomyFromSettings.setEnabled(live);
@@ -4668,9 +4582,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Whether there is a track diagram of the user's own to edit (OB-126).  A layout read from the Central Station is not
-     * editable here (it belongs to the CS, there is no folder behind it, and the editor writes files), and with no layout loaded
-     * there is nothing to open - the state after a failed switch, when the offer is at its most misleading.
+     * Whether there is a track diagram of the user's own to edit (OB-126): a layout read from the Central Station is
+     * not editable here (it belongs to the CS, there is no folder behind it, and the editor writes files), and with no
+     * layout loaded there is nothing to open, the state after a failed switch, when the offer is at its most
+     * misleading.
      *
      * @return whether the editing controls mean anything right now
      */
@@ -4680,9 +4595,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Whether a track diagram is loaded (OB-127, OB-128).  Stored rather than worked out on demand, because working it out on
-     * demand is the defect (Adam: "the system thinks no layout is loaded, and keeps asking me to create a new one every several
-     * seconds"): `getLayoutList().isEmpty()` was asked at sixteen places, each at whatever moment its own code ran.  Volatile
+     * Whether a track diagram is loaded (OB-127, OB-128): stored rather than worked out on demand, which is the defect
+     * (Adam: "the system thinks no layout is loaded, and keeps asking me to create a new one every several seconds"):
+     * `getLayoutList().isEmpty()` is asked at sixteen places, each at whatever moment its own code ran.  Volatile
      * because the answer is set on the event thread and read from the workers that rebuild the grid.
      */
     private volatile boolean layoutLoaded = false;
@@ -4709,10 +4624,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Whether the application has never run here before.  PRESENT, not readable: a database file that exists and will not load
-     * is not a first launch but a machine whose state we have just failed to read, and acting as though it were empty is how a
-     * setup gets replaced by a blank one (`restoreState` draws the same line; `testUiStateIsNotLostWhenUnreadable`).  So this
-     * asks `exists()` and never `databaseLoadFailed`.  Static and taking its files so it can be exercised at all.
+     * Whether the application has never run here before.  PRESENT, not readable: a database file that exists and will
+     * not load is not a first launch but a machine whose state we have just failed to read, and acting as though it
+     * were empty is how a setup gets replaced by a blank one (`restoreState` draws the same line;
+     * `testUiStateIsNotLostWhenUnreadable`), so this asks `exists()` and never `databaseLoadFailed`.  Static and taking
+     * its files so it can be exercised at all.
      *
      * @param uiState the saved window state
      * @param locomotives the locomotive database
@@ -4723,11 +4639,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return !uiState.exists() && !locomotives.exists();
     }
 
-    /**
-     * The same, asked of this installation.
-     *
-     * @return whether neither database file is present in the working directory
-     */
+    /** The same, asked of this installation: whether neither database file is present in the working directory. */
     private boolean isFirstLaunch()
     {
         return isFirstLaunch(new File(Util.dataPath(TrainControlUI.DATA_FILE_NAME)),
@@ -4735,10 +4647,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Why the Edit Layout button is grey, as a message key - or null when it is not (OB-126).  The button has three causes (an
-     * editor already open, no layout loaded, a Central Station layout), each with its own message.  Asked in
-     * `layoutCanBeEdited`'s own order and paired with it deliberately: a guard and the explanation of that guard have to ask the
-     * same question or they drift, the commonest defect in this window's history (hence `whyAutonomyEditorCannotOpen` next door).
+     * Why the Edit Layout button is grey, as a message key, or null when it is not (OB-126): an editor already open, no
+     * layout loaded, or a Central Station layout, each with its own message.  Asked in `layoutCanBeEdited`'s own order
+     * and paired with it, as a guard and the explanation of that guard must ask the same question or they drift (hence
+     * `whyAutonomyEditorCannotOpen` next door).
      *
      * @return the key of the reason, or null when the layout can be edited
      */
@@ -4772,9 +4684,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private boolean noEditorOpen = true;
 
     /**
-     * Remembers which editor the user last chose, for a switch made from the sidebar.  Picking a mode there is the user saying
-     * which editor they want, as openLayoutEditor records when passed remember.  Not called for a mode forced back to the track:
-     * a fallback is not a choice, and writing one down turns a week of setting autonomy up into "you last used the track editor".
+     * Remembers which editor the user last chose, for a switch made from the sidebar: picking a mode there is the user
+     * saying which editor they want, as openLayoutEditor records when passed remember.  Not called for a mode forced
+     * back to the track, as a fallback is not a choice and writing one down turns a week of setting autonomy up into
+     * "you last used the track editor".
      *
      * @param autonomy whether the setup editor was chosen
      */
@@ -4784,13 +4697,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Why the autonomy editor would refuse to open right now, as a message key - or null for "it would open".
-     *
-     * FR-026 put a shortcut to the full editor on the diagram's right-click menu, to "deactivate when inappropriate": an item that
-     * offers an action has to ask the question the action itself asks, or the two drift.  So this is openLayoutEditor's four
-     * refusals, in its order, handing back the SAME message key each shows in its dialog; `testEditorSurfaceRules` reads both
-     * methods and fails if a refusal exists over there with no answer here.  An editor that is already open is not a refusal when
-     * there is a window to bring forward, because that is what pressing the button does.
+     * Why the autonomy editor would refuse to open right now, as a message key, or null for "it would open" (FR-026: a
+     * shortcut to the full editor on the diagram's right-click menu, to "deactivate when inappropriate"): an item that
+     * offers an action asks the question the action itself asks, or the two drift.  So this is openLayoutEditor's four
+     * refusals, in its order, handing back the SAME message key each shows in its dialog (`testEditorSurfaceRules`
+     * reads both and fails if a refusal exists over there with no answer here).  An editor already open is not a
+     * refusal when there is a window to bring forward, which is what pressing the button does.
      *
      * @return the key of the reason, or null when the editor would open
      */
@@ -4821,8 +4733,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * A refusal `whyAutonomyEditorCannotOpen` handed back, as the sentence to show.  Every refusal there is a message
-     * key shown as it stands but one: a setup that is there and would not read is said with the reason it would not
+     * A refusal `whyAutonomyEditorCannotOpen` handed back, as the sentence to show: every refusal there is a message
+     * key shown as it stands but one, a setup that is there and would not read, said with the reason it would not
      * (`whyTheSetupCannotBeRead`), which only this window holds.
      *
      * @param why a key `whyAutonomyEditorCannotOpen` returned
@@ -4845,8 +4757,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Opens the layout editor, on a page, in a mode.  The one way in: the Edit button, the autonomy menu and the finding jump
-     * each had their own copy of the guards and drifted, and the window can also reopen ITSELF on another page or mode.
+     * Opens the layout editor, on a page, in a mode: the one way in, as the Edit button, the autonomy menu and the
+     * finding jump each with their own copy of the guards would drift, and the window can also reopen ITSELF on another
+     * page or mode.
      *
      * @param page the page to open, or null for whichever the main window is showing
      * @param autonomy TRUE for the setup, FALSE for the track, or null for whichever was used last
