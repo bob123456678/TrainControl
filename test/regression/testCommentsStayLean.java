@@ -192,34 +192,12 @@ public class testCommentsStayLean
     private static final Set<String> TRACKER_PREFIXES = new HashSet<>(java.util.Arrays.asList("OB", "MT", "FR"));
 
     /** Review ids in comments, as they stand.  Lower it whenever some go; never raise it. */
-    private static final int IDS_ALLOWED = 67;
+    private static final int IDS_ALLOWED = 7;
 
     /** WHICH files carry them, so that a swap between files fails and names both.  Files at zero are not listed. */
     private static final String[] IDS_BY_FILE = {
-        "src/org/traincontrol/automation/Point.java (1)",
         "src/org/traincontrol/automationui/AutonomySession.java (5)",
-        "src/org/traincontrol/gui/ManualReversalPrompt.java (10)",
         "src/org/traincontrol/gui/TrainControlUI.java (2)",
-        "test/core/testACompulsoryTurnIsNotAQuestion.java (2)",
-        "test/core/testAPastedTrainKeepsItsDirection.java (2)",
-        "test/core/testATrainCoversTheTrackBehindIt.java (1)",
-        "test/core/testATrainTooLongIsRefusedTheBerth.java (1)",
-        "test/core/testAdvancedRoutes.java (6)",
-        "test/core/testAutonomySimulationSanity.java (3)",
-        "test/core/testHomeStaging.java (2)",
-        "test/core/testInvalidInput.java (5)",
-        "test/core/testLayoutPickPath.java (1)",
-        "test/core/testLayoutRenameKeys.java (2)",
-        "test/core/testLocomotive.java (4)",
-        "test/core/testNonReversibleTrains.java (9)",
-        "test/core/testParseCS2Layout.java (1)",
-        "test/core/testParseCS3Loks.java (1)",
-        "test/core/testRoutes.java (1)",
-        "test/core/testTheAutoTierScopeMatchesTheRuntime.java (1)",
-        "test/regression/testARunSurvivesADiagramEdit.java (2)",
-        "test/regression/testEditorSurfaceRules.java (1)",
-        "test/regression/testPageIdsAreDurable.java (3)",
-        "test/ui/testDismissingTheReversalPromptKeepsTheDirection.java (1)",
     };
 
     @Test
