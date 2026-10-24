@@ -1186,12 +1186,13 @@ public class testTheTrackEditorByHand
     /**
      * The track editor's Text Labels box says whether the page's text is shown, after the autonomy editor has hidden it.
      *
-     * DEFECT, so out of the battery (FR-136 Phase 6, for filing): the box is built ticked whatever the page says.  The
-     * autonomy editor's own Text Labels box, unticked (its default), hides the text of the page it is on (FR-133), and
-     * closing it leaves the page's text hidden.  The next track editor on that page then shows no text under a ticked
-     * box, and the first press of the box or of Control+L only brings the text back, leaving the box as it was.
+     * The autonomy editor's unticked Text Labels box hides the page's text (FR-133) and closing it leaves it hidden, so
+     * the next track editor must open with its box unticked too (OB-364).
+     *
+     * MUTATION: drop the `showTextCheckbox.setSelected(!l.getEditHideText())` line in the LayoutEditor constructor and
+     * the box opens ticked over hidden text.
      */
-    @Test(enabled = false)
+    @Test
     public void testTheTextLabelsBoxAgreesWithThePageAfterTheAutonomyEditor() throws Exception
     {
         TrainControlUI.getPrefs().putBoolean(TrainControlUI.LAST_EDITOR_AUTONOMY_PREF, true);

@@ -622,6 +622,10 @@ public class LayoutEditor extends PositionAwareJFrame
             // Mirror address preference
             this.showAddressCheckbox.setSelected(l.getShowAddress());
 
+            // The page may arrive with its text hidden (the autonomy editor's Text Labels box does that, FR-133), so
+            // the box says what the page shows, not the ticked state initComponents builds it with (OB-364)
+            this.showTextCheckbox.setSelected(!l.getEditHideText());
+
             mountGridToggle();
         
             this.setFocusable(true);
@@ -4479,6 +4483,8 @@ public class LayoutEditor extends PositionAwareJFrame
             this.previousLayoutComponentsRedo.clear();
 
             this.layout = arriving;
+
+            this.showTextCheckbox.setSelected(!arriving.getEditHideText());
 
             // Leaving the mode BEFORE the new diagram is drawn: setAutonomyMode(null) takes the setup panel and its
             // banner out of the window, and run after the grid it would be tearing down controls that the new grid has
