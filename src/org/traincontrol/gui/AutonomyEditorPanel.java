@@ -183,14 +183,56 @@ public class AutonomyEditorPanel extends JPanel
      * How much of the direction information is drawn: all of it, only what is shut, only what is open, none, or only
      * where trains may pull in; one control, as the answers are exclusive.
      */
-    private final javax.swing.JComboBox<String> directions = new javax.swing.JComboBox<>(new String[]
+    private final javax.swing.JComboBox<String> directions = new javax.swing.JComboBox<String>(new String[]
     {
         I18n.t("autosetup.ui.directionsAll"),
         I18n.t("autosetup.ui.directionsRestrictions"),
         I18n.t("autosetup.ui.directionsAllowed"),
         I18n.t("autosetup.ui.directionsNone"),
         I18n.t("autosetup.ui.directionsArrivals")
-    });
+    })
+    {
+        private boolean laidOut;
+
+        @Override
+        public void doLayout()
+        {
+            laidOut = true;
+
+            try
+            {
+                super.doLayout();
+            }
+            finally
+            {
+                laidOut = false;
+            }
+        }
+
+        /** The popup takes its width from this call; the box's own layout and painting keep the real width. */
+        @Override
+        public java.awt.Dimension getSize()
+        {
+            java.awt.Dimension size = super.getSize();
+
+            if (!laidOut)
+            {
+                int widest = 0;
+
+                for (int i = 0; i < getItemCount(); i++)
+                {
+                    widest = Math.max(widest, getFontMetrics(getFont()).stringWidth(getItemAt(i)));
+                }
+
+                size.width = Math.max(size.width, widest + POPUP_PADDING);
+            }
+
+            return size;
+        }
+    };
+
+    /** Room beyond the widest phrase for the list's border, cell insets and a scroll bar. */
+    private static final int POPUP_PADDING = 32;
 
     /**
      * The view that shows nothing but where trains may pull in: its own entry, as it wants the diagram to itself (the

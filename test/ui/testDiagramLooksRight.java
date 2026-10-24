@@ -1402,6 +1402,105 @@ public class testDiagramLooksRight
         }
     }
 
+    /**
+     * The Track Directions box is as wide as the Station Labels box above it in every language, and its
+     * widest item does not widen the editor (OB-368).
+     *
+     * Danish has the longest direction phrase; the popup list may be wider than the box.
+     *
+     * MUTATION: dropping the `choice.setMaximumSize` line in LayoutEditor fails the width assertion.
+     *
+     * @throws Exception from the editor
+     */
+    @Test
+    public void testTheDirectionsBoxKeepsTheLabelsBoxWidthInEveryLanguage() throws Exception
+    {
+        final org.traincontrol.automationui.AutonomySession session = ui.getAutonomySession();
+
+        assertNotNull(session, "precondition: no autonomy setup in the fixture layout");
+
+        String pageName = null;
+
+        for (org.traincontrol.automationui.TileGraph.TileKey station : session.getLabelledStationTiles())
+        {
+            if (pageName == null) pageName = station.getPage();
+        }
+
+        assertNotNull(pageName, "precondition: no station in the fixture layout");
+
+        final LayoutDiagram page = model.getLayout(pageName);
+
+        final java.util.Locale was = java.util.Locale.getDefault();
+
+        final int[] english = editorWidths(page, new java.util.Locale("en"));
+
+        try
+        {
+            final int[] danish = editorWidths(page, new java.util.Locale("da"));
+
+            assertEquals(english[1], english[0], "precondition: the two boxes differ in English");
+
+            assertEquals(danish[1], danish[0], "the Track Directions box is not as wide as the Station Labels"
+                + " box above it in Danish, so its widest phrase stretches the column");
+
+            assertEquals(danish[2], english[2], "the editor window is wider in Danish than in English");
+
+            assertTrue(danish[3] > danish[1], "the popup is no wider than the box, so a long phrase cannot be read in full");
+        }
+        finally
+        {
+            java.util.Locale.setDefault(was);
+            org.traincontrol.util.I18n.setLocale(was);
+        }
+    }
+
+    /**
+     * Opens the autonomy editor in a language and returns the Station Labels box width, the Track Directions
+     * box width, the packed window width and the width the Track Directions popup takes.
+     */
+    private int[] editorWidths(LayoutDiagram page, java.util.Locale locale) throws Exception
+    {
+        java.util.Locale.setDefault(locale);
+        org.traincontrol.util.I18n.setLocale(locale);
+
+        final org.traincontrol.automationui.AutonomySession session = ui.getAutonomySession();
+
+        final org.traincontrol.gui.LayoutEditor[] editor = new org.traincontrol.gui.LayoutEditor[1];
+
+        final int[] widths = new int[4];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            editor[0] = new org.traincontrol.gui.LayoutEditor(page, 30, ui, 0);
+            editor[0].render();
+            editor[0].setAutonomyMode(session);
+        });
+
+        try
+        {
+            settleTheEditor();
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                editor[0].pack();
+                editor[0].validate();
+
+                org.traincontrol.gui.AutonomyEditorPanel panel = editor[0].getAutonomyPanel();
+
+                widths[0] = panel.getCaptionChoice().getWidth();
+                widths[1] = panel.getShowDirections().getWidth();
+                widths[2] = editor[0].getWidth();
+                widths[3] = panel.getShowDirections().getSize().width;
+            });
+
+            return widths;
+        }
+        finally
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() -> editor[0].dispose());
+        }
+    }
+
     /** Lets an editor's posted builds and its tiles finish. */
     private void settleTheEditor() throws Exception
     {

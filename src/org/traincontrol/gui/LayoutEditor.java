@@ -1748,7 +1748,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 javax.swing.JComboBox<String> captionChoice = autonomyPanel.getCaptionChoice();
                 captionChoice.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
 
-                // PREFERRED as well as maximum, and narrower than the Track Directions box below: BoxLayout caps the
+                // PREFERRED as well as maximum: BoxLayout caps the
                 // WIDTH at the maximum, but the column still takes its preferred width from its widest child, and this
                 // combo prefers whatever "Parked Locomotives" needs plus the arrow.  The option text is shortened to
                 // "Locs" (Adam: "use Locs if shorter text is needed in the dropdown") so 150 is a width the words fit
@@ -1771,7 +1771,11 @@ public class LayoutEditor extends PositionAwareJFrame
 
                 javax.swing.JComboBox<String> choice = autonomyPanel.getShowDirections();
                 choice.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
-                choice.setMaximumSize(new java.awt.Dimension(200, 24));
+
+                // The Station Labels box's width in every language (OB-368): a phrase longer than it clips in the
+                // box and reads in full in the popup, instead of widening the column and the window.
+                choice.setPreferredSize(captionChoice.getPreferredSize());
+                choice.setMaximumSize(captionChoice.getMaximumSize());
 
                 visibility.add(choice);
 
