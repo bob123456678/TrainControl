@@ -570,7 +570,7 @@ public class testATrainCoversTheTrackBehindIt
     }
 
     /**
-     * A tail blocks the rail in BOTH directions, because a tail is not directional (VAL8-A1).
+     * A tail blocks the rail in BOTH directions, because a tail is not directional.
      *
      * The graph encodes facing as one-way edges, so one piece of rail is often two `Edge` objects.
      * A train lying across it fouls it whichever way traffic runs - `behaviour.md` 5c says so - but

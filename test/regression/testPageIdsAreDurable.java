@@ -636,16 +636,16 @@ public class testPageIdsAreDurable
 
         assertNotNull(after.get("Zulu"), "the new page was not added.  Got: " + after);
 
-        // AND THE ACCENTED PAGE KEEPS ITS ID ACROSS THE WRITE, which is the half `TA-A1` found
+        // AND THE ACCENTED PAGE KEEPS ITS ID ACROSS THE WRITE, which is the half the guard was
         // missing and the half that costs the operator something.
         //
         // The read is asserted twenty lines up.  A write is where the loss actually happens: if the
         // name comes back mangled, `writeLayoutIndex`'s lookup of the existing entry misses it, the
         // page is issued a FRESH id, and every stored setting keyed to the old one reattaches to
-        // whatever now holds that number.  That is SV-B1 - the loss this class documents at length -
+        // whatever now holds that number.  That is the loss this class documents at length,
         // and it was reproducible with this guard green.
         //
-        // WHAT IS AND IS NOT PROVEN HERE, because claiming more would be the shape TA-A1 reported.
+        // WHAT IS AND IS NOT PROVEN HERE, because claiming more would repeat the guard's blind spot.
         //
         // The finding's mutation - swapping the ISO-8859-1 fallback for a UTF-8 decode - now turns
         // this class RED, which it did not when the finding was written.  But the assertion that

@@ -1918,7 +1918,7 @@ public class testRoutes
     }
 
     /**
-     * UC-C6: executing an unknown route name must be a no-op, not an NPE.
+     * Executing an unknown route name must be a no-op, not an NPE.
      *
      * execRoute is routeDB.getByName(name).execRoute(false) - null dereference.  The UI passes
      * names from live lists, but the programmatic API reaches this directly, and

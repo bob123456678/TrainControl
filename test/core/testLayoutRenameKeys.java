@@ -291,7 +291,7 @@ public class testLayoutRenameKeys
     }
 
     /**
-     * UC-C5: renaming a point onto an existing name must be refused by the model.
+     * Renaming a point onto an existing name must be refused by the model.
      *
      * renamePoint checks only that the OLD name exists.  points.put(newName, p) overwrites the
      * existing point, and the edge-key rebuild below it drops colliding edges - graph corruption.
@@ -327,7 +327,7 @@ public class testLayoutRenameKeys
     }
 
     /**
-     * UC-C18: a rename is refused while the staging planner is at work, not only while trains run.
+     * A rename is refused while the staging planner is at work, not only while trains run.
      *
      * The first guard tested the bare running flag, which the staging planning window passes - yet
      * the planner runs bfs over exactly the structures a rename mutates, with nothing dispatched at

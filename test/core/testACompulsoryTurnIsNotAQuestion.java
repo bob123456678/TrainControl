@@ -22,7 +22,7 @@ import support.SourceOf;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * A square the railway turns every train at is never put to the operator (REG6-A1).
+ * A square the railway turns every train at is never put to the operator.
  *
  * **This one could have derailed a train, so it is worth being exact about.**  The prompt's
  * `asksAbout` used to begin `if (at.isReversing()) return true;`.  For a MUST-reverse square,
@@ -173,7 +173,7 @@ public class testACompulsoryTurnIsNotAQuestion
         //
         // Every named square here builds to one copy and the builder cannot split any of them, so a
         // compulsory turn produces no turning copy and `isReversing()` stays false. That means the
-        // exact shape REG6-A1 needs - a `reversing` copy that is a MUST-turn - cannot be constructed
+        // exact shape the defect needs - a `reversing` copy that is a MUST-turn - cannot be constructed
         // on this railway, and the assertion below, while true, is not exercising the clause that was
         // removed.  Said out loud rather than left as a green tick: `test-green-is-not-no-failures`.
         //

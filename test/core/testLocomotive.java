@@ -781,7 +781,7 @@ public class testLocomotive
     }
 
     /**
-     * UC-B1: converting a decoder type downward must not leave a stale arrival/departure function.
+     * Converting a decoder type downward must not leave a stale arrival/departure function.
      *
      * setAddress resizes the function arrays and shrinks numF, but never revisits arrivalFunc or
      * departureFunc - so an MFX locomotive with arrival function 20, converted to MM2 (5 functions),
@@ -821,7 +821,7 @@ public class testLocomotive
     }
 
     /**
-     * UC-B1, the other unguarded writer: the full-state constructor restores arrival/departure
+     * The other unguarded writer: the full-state constructor restores arrival/departure
      * without validation, so a stale value survives restarts via the locomotive database.  The
      * setter refuses out-of-range values; the constructor must not be the way around it.
      */
@@ -851,7 +851,7 @@ public class testLocomotive
     }
 
     /**
-     * UC-C12: clearing the local icon must not wipe the Central Station image URL.
+     * Clearing the local icon must not wipe the Central Station image URL.
      *
      * setLocalImageURL assigns imageURL first and copies it to localImageURL, so clearing the local
      * override also destroys the CS-provided image.  The caller compensates with an immediate
@@ -879,7 +879,7 @@ public class testLocomotive
                 "the Central Station image must survive clearing the local override - offline "
                 + "there is no syncWithCS2 to bring it back");
 
-            // UC-C17, the restore ordering: after a restart the override exists FIRST (restored from
+            // The restore ordering: after a restart the override exists FIRST (restored from
             // the locomotive database) and the CS image arrives second, from a sync that now adopts
             // it unconditionally - the old guard skipped adopting while an override existed, which
             // starved the fallback and reopened the same offline gap one restart later.  The sync

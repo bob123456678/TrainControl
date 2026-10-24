@@ -802,7 +802,7 @@ public class testAutonomySimulationSanity
                 }
 
                 // Let the final detached clear threads settle before the next iteration resets state.
-                // Belt and braces since the CP-C1 fence: constructing the next iteration's Layout
+                // Belt and braces since the stand-down fence: constructing the next iteration's Layout
                 // retires this one, so its stragglers stand down on their own.
                 Thread.sleep(300);
             }
@@ -815,12 +815,13 @@ public class testAutonomySimulationSanity
     }
 
     /**
-     * CP-C1: a clear-behind that outlives its Layout must not clear a sensor the NEXT run needs.
+     * A clear-behind that outlives its Layout must not clear a sensor the NEXT run needs.
      *
      * The clear is spawned detached after a delay of up to maxDelay SECONDS, so a run can end - and its
      * Layout be replaced by a reload - with clears still pending.  The epoch map is per instance, so an
      * orphan clear consults a map the new run never bumps: it passes its own stand-down check and
-     * clears the sensor anyway.  That is the SF-B1 wedge, one Layout boundary later.
+     * clears the sensor anyway.  That is the same stale-clear wedge the epoch guard fixes within one Layout,
+     * one Layout boundary later.
      *
      * Deterministic, unlike its sibling: the delay makes the clear provably still pending when the
      * Layout is retired, and the precondition below asserts exactly that - so if the timing margin were

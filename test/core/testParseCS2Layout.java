@@ -625,7 +625,7 @@ public class testParseCS2Layout
     }
 
     /**
-     * RS-C2: a page name carrying a path separator must not decide where the file is written.
+     * A page name carrying a path separator must not decide where the file is written.
      *
      * downloadCS2Layout writes each page to new File(layoutsDir, layoutName + ".cs2") with layoutName
      * taken verbatim from the fetched index.  The REMOTE url is built through sanitizeURL for exactly

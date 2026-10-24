@@ -25,7 +25,7 @@ import support.SourceOf;
  * Adam, filed as critical: "from current config, run EN57-203 from BottomSecondary to BottomMainC.
  * Then, switch to track diagram page 2, click edit and save. EN57-203 is now back at BottomSecondary."
  *
- * **This is DW-A1 again, through a different door.** The rename door was fixed by an ORDER - capture
+ * **This is the rename-path loss again, through a different door.** The rename door was fixed by an ORDER - capture
  * the running layout into the setup before the gesture that rekeys it - and the editor door was never
  * given the same treatment. The mechanism is identical and so is the consequence:
  *
@@ -114,7 +114,7 @@ public class testARunSurvivesADiagramEdit
      *
      * Bounded to `openLayoutEditor`'s body. Both terms are proved present before they are compared,
      * because an absent term's index is -1, which is less than every real one and would make a
-     * reversed call pass silently - the vacuous-ordering-scan failure TST-B7 found.
+     * reversed call pass silently - the vacuous-ordering-scan failure.
      *
      * MUTATION this catches: move the `captureRunningLayout();` call below `new LayoutEditor(`. Both
      * substrings are still present, so only the ordering assertion goes red. Deleting either line

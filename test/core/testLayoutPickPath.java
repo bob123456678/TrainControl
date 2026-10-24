@@ -360,7 +360,7 @@ public class testLayoutPickPath
     }
 
     /**
-     * RV-C2: the yield probe must also refuse a locomotive whose only route out crosses a berth.
+     * The yield probe must also refuse a locomotive whose only route out crosses a berth.
      *
      * The probe was aligned with pickPath so the two could not disagree, and then berths were barred
      * as intermediates in pickPath alone - so they disagreed again, one commit later, in exactly the

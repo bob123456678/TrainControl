@@ -97,7 +97,7 @@ public class testTheAutoTierScopeMatchesTheRuntime
 
         int stations = 0;
 
-        // PER SQUARE, NOT PER POINT (CONF-B6).
+        // PER SQUARE, NOT PER POINT.
         //
         // The first version of this compared each Point against the diagram's answer about its
         // SQUARE, and those are different questions once a square is split.  A may-reverse station

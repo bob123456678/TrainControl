@@ -35,7 +35,7 @@ import org.testng.annotations.Test;
  *  - Multi-units reached through a route.  `MarklinLocomotive.setF` and `setSpeed` fan out to
  *    `linkedLocomotives`, so a route command naming a consist head silently commands every member.
  *    Nothing asserted that, and the fan-out map was rebuilt three separate times during the July 2026
- *    cycle (INT-A1, INT-A2, RR-C1).
+ *    cycle.
  *
  * These run against the real trigger path - a monitor thread woken by an s88 transition - rather than
  * calling execRoute directly, because the point is the combination, not the pieces.  That makes them
@@ -502,7 +502,7 @@ public class testAdvancedRoutes
      * A route speed command naming the head reaches the members too.
      *
      * The multiplier is 1.0 here, so the member should match the head exactly.  Speed is the fan-out
-     * that IND-M1 found silently desynchronising above a threshold, so it is worth an explicit check
+     * that silently desynchronised above a threshold, so it is worth an explicit check
      * that a route - not just a throttle - drives the whole consist.
      */
     @Test
@@ -545,7 +545,7 @@ public class testAdvancedRoutes
     }
 
     /**
-     * UC-C4: a JSON-origin condition tree must mean the same thing after the editor round trip.
+     * A JSON-origin condition tree must mean the same thing after the editor round trip.
      *
      * The text parser applies stacked operators LIFO, so text-origin trees are right-nested - a bare
      * binary node can never be a LEFT child.  Hand-written JSON can build exactly that shape,
@@ -600,7 +600,7 @@ public class testAdvancedRoutes
     }
 
     /**
-     * UC-C20: a condition tree restored from the locomotive database is normalized too.
+     * A condition tree restored from the locomotive database is normalized too.
      *
      * The locomotive database Java-serializes condition trees and restores them without running any
      * parser - so a bare cross-operator tree imported from hand-written JSON before normalization

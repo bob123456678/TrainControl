@@ -488,7 +488,7 @@ public class testNonReversibleTrains
      * Adam, 2026-09-07: **"It is unnecessary to prompt on intermediates.  We care about the reversal
      * if it's the destination, since that dictates where the train can go, and where it is facing."**
      *
-     * **This dissolved `REG7-A1` rather than working around it.**  That finding was a journey routed
+     * **This dissolved the problem rather than working around it.**  The problem was a journey routed
      * through a turning copy the operator was asked about and could decline - "keep direction" being
      * the default, the Escape answer and the cannot-ask answer.  The fix before this one refused such
      * journeys before they started, which was correct and was a whole extra mechanism.  Asking only
@@ -574,7 +574,7 @@ public class testNonReversibleTrains
     }
     /**
      * A policy that overrides `asksAbout` is what the doors actually hand over - and until now, what
-     * nothing had ever run (CONF2-B2).
+     * nothing had ever run.
      *
      * **This is the gap that let one defect survive a fix, a review and a confirming pass.**  Every
      * behavioural case in this class hands `shouldReverseAt` a `(train, where) -> ...` lambda, and a
@@ -911,7 +911,7 @@ public class testNonReversibleTrains
 
         // AND THE TRAIN IS STOPPED WHERE IT IS GOING TO BE TURNED.
         //
-        // This began as DIR-A1 - "stopped before anybody is asked" - because the dialog was modal, had
+        // This began as "stopped before anybody is asked", because the dialog was modal, had
         // no time limit, and everything that stopped the train sat inside the branch the answer
         // decides: measured at line speed when the question was put, and still at line speed five
         // seconds later.
@@ -920,7 +920,7 @@ public class testNonReversibleTrains
         // question to departure, so nobody is asked mid-journey any more and there is no dialog to
         // outrun.  What is left is the turn itself, which still needs the train standing.
         //
-        // `mayReverseAt` is the wrong test for that and was reported twice (SPEC-A2, REG6-B3): blocks
+        // `mayReverseAt` is the wrong test for that and was reported twice: blocks
         // are per-square, so it is true at the PLAIN copy of a split square as well as the turning
         // one, and autonomy - which reaches this line through ALWAYS_REVERSE - stopped dead and
         // re-accelerated at plain copies it used to pass at line speed.  `current.isReversing()` is
@@ -928,7 +928,7 @@ public class testNonReversibleTrains
         //
         // Pinned as source because there is no way to observe a stop that does not happen without
         // driving a train, and a test that drives one through `executePath` hangs this suite.
-        // THE STOP IS THE GATE'S OWN ANSWER, so the two cannot disagree (CONF-A2).
+        // THE STOP IS THE GATE'S OWN ANSWER, so the two cannot disagree.
         //
         // Three versions of this: two expressions meant to agree and which did not; then one shared
         // predicate, which agreed by construction but still had to be kept in step by hand as the gate
@@ -936,16 +936,16 @@ public class testNonReversibleTrains
         // exactly when it is about to be turned.
         //
         // Only safe because `df584d0b` moved the question to departure - while the policy could put a
-        // modal dialog up from inside the run, asking before stopping was the whole of DIR-A1.
+        // modal dialog up from inside the run, asking before stopping was the whole problem.
         assertTrue(flat.contains(
             "if (isCurrentLayout() && shouldReverseAt(current, path.get(path.size() - 1).getEnd(), "
             + "loc, reversals)) { loc.setSpeed(0).waitForSpeedBelow(1);"),
             "the stop and the gate are two expressions again, so a train can be turned somewhere it "
             + "was not stopped, or stopped somewhere it will not be turned (CONF-A2, REG6-B4)");
 
-        // AND A COMPULSORY TURN NEVER REACHES A POLICY (CONF-A1).
+        // AND A COMPULSORY TURN NEVER REACHES A POLICY.
         //
-        // Removing REG6-A1's prompt left the OUTCOME behind: the rule fell through to shouldReverse,
+        // Removing the prompt at compulsory turns left the OUTCOME behind: the rule fell through to shouldReverse,
         // which for a manual policy answers "keep direction", so the turn was skipped unconditionally
         // and the hazard went from "if the operator presses the default" to "always".
         //

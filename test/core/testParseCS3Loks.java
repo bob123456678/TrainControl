@@ -305,7 +305,7 @@ public class testParseCS3Loks
     }
 
     /**
-     * RS-C1: a multi-unit member whose name contains an equals sign must survive parsing.
+     * A multi-unit member whose name contains an equals sign must survive parsing.
      *
      * parseFileContents handles two line shapes.  The ordinary one (" .key=value") splits with a limit
      * of two, and its comment says why: a route or locomotive name may contain an equals sign.  The

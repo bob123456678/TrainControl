@@ -180,7 +180,7 @@ public class testEditorSurfaceRules
             + "keeps Points the setup no longer has, and everything that goes through their "
             + "names quietly stops working (TD-1)");
 
-        // TWO, AND THE SECOND IS NOT A MENU (REG6-B5).
+        // TWO, AND THE SECOND IS NOT A MENU.
         //
         // This counted `session.setFacing(` in the whole file, so it could not tell a second copy of the
         // facing menu - the thing it exists to catch - from a placement door that records a heading.

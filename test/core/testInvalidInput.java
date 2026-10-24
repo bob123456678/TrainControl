@@ -636,7 +636,7 @@ public class testInvalidInput
     }
 
     /**
-     * UC-C1: the update check must survive a release name with a non-numeric version component.
+     * The update check must survive a release name with a non-numeric version component.
      *
      * parseReleaseVersion returns everything after the first "v"; compareVersions then parses every
      * dotted component as an integer.  The current beta is literally named
@@ -664,7 +664,7 @@ public class testInvalidInput
     }
 
     /**
-     * UC-C2: a space after the comma in a feedback line must not silently flip the state.
+     * A space after the comma in a feedback line must not silently flip the state.
      *
      * The feedback branch tests "1".equals(token) untrimmed, so "Feedback 3, 1" - one space - parses
      * as state CLEAR, and a condition waits for the opposite sensor edge.  The locfunc branch trims;
@@ -684,7 +684,7 @@ public class testInvalidInput
     }
 
     /**
-     * UC-C3: a typo'd direction must be an error, not a silent reversal.
+     * A typo'd direction must be an error, not a silent reversal.
      *
      * The locdir branch maps every string that is not exactly "forward" to backward - "forwards",
      * "fwd", any typo - and executes it.  Every other malformed field in this parser produces the
@@ -713,7 +713,7 @@ public class testInvalidInput
     }
 
     /**
-     * UC-C11: Point must fail where the mistake is made, not at save time.
+     * Point must fail where the mistake is made, not at save time.
      *
      * The public constructor accepts any string as an s88, and toJSON later does
      * Integer.valueOf(s88) - so new Point("x", true, "1a") explodes with an unchecked
@@ -734,7 +734,7 @@ public class testInvalidInput
     }
 
     /**
-     * UC-C11, the other trap: setMaxTrainLength(null) passes an inert assert, stores null, and
+     * The other trap: setMaxTrainLength(null) passes an inert assert, stores null, and
      * validateTrainLength later NPEs unboxing it.  Null must mean "no limit", like 0 does.
      */
     @Test

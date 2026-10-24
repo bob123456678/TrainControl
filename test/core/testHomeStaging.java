@@ -884,7 +884,7 @@ public class testHomeStaging
      *
      * Without this the station stays spoken for by something that no longer exists, and nothing placed
      * there afterwards could ever have a home - the same leak that outlived deleted locomotives in the
-     * exclusion sets until it was found as IND-M4.
+     * exclusion sets until it was found.
      */
     @Test
     public void testDeletingALocomotiveReleasesItsHome() throws Exception
@@ -5021,7 +5021,7 @@ public class testHomeStaging
     }
 
     /**
-     * UC-C21: a cornered search never buys a plan by moving a locomotive off its launch pad.
+     * A cornered search never buys a plan by moving a locomotive off its launch pad.
      *
      * Free agents exist to break deadlocks, and the A* expansion generates moves for every
      * locomotive in the state - so a locomotive still standing on its pad could be relocated when

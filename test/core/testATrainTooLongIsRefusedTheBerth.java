@@ -201,7 +201,7 @@ public class testATrainTooLongIsRefusedTheBerth
      * has enforced it all along, called from `isPathClear`; a grep for `getMaxTrainLength()` missed it
      * because it reads the field directly. A duplicate rule was written, tested, and only caught when
      * the mutation that should have reddened this test did not - the refusal was coming from the copy
-     * that was already there. `DR-B3` in miniature, committed by the person who had just removed one.
+     * that was already there. A duplicated rule in miniature, committed by the person who had just removed one.
      *
      * So this test now covers the EXISTING rule, which had no direct test of its own.
      *

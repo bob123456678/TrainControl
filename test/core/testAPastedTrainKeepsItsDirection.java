@@ -122,7 +122,7 @@ public class testAPastedTrainKeepsItsDirection
     /**
      * The heading survives the paste, at every station the rule can be asked about.
      *
-     * SPEC-A1: the version of this test that shipped this morning could not fail.  Its `putDown`
+     * The version of this test that shipped this morning could not fail.  Its `putDown`
      * helper re-implemented the door rather than calling it, and then handed in the same `Side` it
      * went on to assert - so it agreed with itself whatever the program did.  The file's own javadoc
      * said as much and it still read as covering the defect.  `assert-the-variable-not-the-control`,
@@ -236,7 +236,7 @@ public class testAPastedTrainKeepsItsDirection
     /**
      * And an unholdable heading is cleared rather than replaced with an arbitrary one.
      *
-     * This is SPEC-A1 itself: the shipped version recorded the copy the running layout had landed on,
+     * This is the original defect itself: the shipped version recorded the copy the running layout had landed on,
      * and `StationIndex.speakerAt` says that on an empty square "any copy will do".  Recording copy 0
      * presents a direction nobody chose as one somebody did - and it survives a reload, which is why
      * Adam saw the dropdown disagree with the train.

@@ -11,7 +11,7 @@ import org.testng.annotations.Test;
 import support.SourceOf;
 
 /**
- * Pressing Escape on the reversal prompt does not turn a train (ACC4-1).
+ * Pressing Escape on the reversal prompt does not turn a train.
  *
  * Adam's ruling was **"a yes/no keep direction, with no meaning change, and yes being default"**, and
  * for half a day the code did the opposite of its own comment.
