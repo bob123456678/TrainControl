@@ -421,7 +421,7 @@ do
 
     # NO UPDATE CHECK: support.NoUpdateCheck turns it off in this run's preference node before any test (FR-136)
     "$JAVA" $JAVA_FLAGS $EXTRA -Dtraincontrol.batteryRun="$RUN_ID" \
-        -cp "$BUILD;$CP" org.testng.TestNG -listener support.NoUpdateCheck $TARGS -d "$S/oneout" > "$RUN_OUT" 2>&1 &
+        -cp "$BUILD;$CP" org.testng.TestNG -listener support.NoUpdateCheck,support.WindowsNotOnTop $TARGS -d "$S/oneout" > "$RUN_OUT" 2>&1 &
 
     JVM=$!
 

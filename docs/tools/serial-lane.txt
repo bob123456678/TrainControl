@@ -1,6 +1,6 @@
 # Test classes that need the machine to themselves (FR-136 Phase 1a).
 #
-# A battery with lanes runs these first, one at a time, holding every test slot; one.sh takes every slot to run
+# A battery with lanes runs these last, one at a time, holding every test slot; one.sh takes every slot to run
 # any of them.  Everything else may run beside other test JVMs, each with its own data folder, preference node and
 # temp folder.  These cannot, because what they check belongs to the whole desktop rather than to one JVM: which
 # window has the keyboard, and what is on the system clipboard.  Another JVM's window shown at the wrong moment

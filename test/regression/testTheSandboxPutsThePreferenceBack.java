@@ -212,4 +212,21 @@ public class testTheSandboxPutsThePreferenceBack
 
         return (File) where.invoke(null);
     }
+
+    /**
+     * A test run opens its windows not on top: the runners' `support.WindowsNotOnTop` turns the setting off in the run's
+     * own node, under the window's own key, and the windows then read it there.
+     *
+     * MUTATION: build `WindowsNotOnTop.ON_TOP_KEY` from another name, or leave it out of the runners' `-listener`, and
+     * this fails.
+     */
+    @Test
+    public void testATestRunsWindowsAreNotOnTop()
+    {
+        assertEquals(support.WindowsNotOnTop.ON_TOP_KEY, TrainControlUI.ONTOP_SETTING_PREF,
+            "the listener turns off a key the window does not read");
+
+        assertFalse(TrainControlUI.getPrefs().getBoolean(TrainControlUI.ONTOP_SETTING_PREF, true),
+            "this run's windows read Always on Top as on, so they open over whatever Adam is using");
+    }
 }

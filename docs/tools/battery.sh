@@ -10,8 +10,9 @@
 #     TC_SCRATCH=/path/to/scratch bash docs/tools/battery.sh
 #
 # LANES (FR-136 Phase 1a): TC_LANES=auto, or a number, runs the classes in that many JVMs at once, each with a data
-# folder, a preference node and a temp folder of its own.  The classes in serial-lane.txt run first, alone, holding
-# every test slot; then each lane holds one slot, and at least one stays free for a worker's one.sh.  TC_DURATIONS
+# folder, a preference node and a temp folder of its own.  Each lane holds one slot, and at least one stays free for a
+# worker's one.sh.  The classes in serial-lane.txt run last, alone, once the run has every slot back (Adam, 2026-10-24:
+# "At the end of each battery"): they need the keyboard focus, so they come to the front of the screen.  TC_DURATIONS
 # names a tng-run folder whose timings order the classes longest first (default: this scratch's own, from the last
 # run).  Without TC_LANES the run is what it always was: one class at a time, in name order, holding every slot.
 #
@@ -444,7 +445,7 @@ fi
 
 if [ "$LANES" -gt 1 ]
 then
-    echo "lanes: $LANES, after the serial lane ($SLOTS test slots on this machine)"
+    echo "lanes: $LANES, then the serial lane ($SLOTS test slots on this machine)"
     echo ""
 
     # A temp folder of its own as well (see one.sh): LayoutSandbox keeps its repair marker under a fixed name there.
@@ -575,7 +576,7 @@ run_class()
     fi
 
     # NO UPDATE CHECK: support.NoUpdateCheck turns it off in the lane's preference node before any test (FR-136)
-    "$JAVA" $2 $extra -cp "$CP" org.testng.TestNG -listener support.NoUpdateCheck -testclass "$cls" \
+    "$JAVA" $2 $extra -cp "$CP" org.testng.TestNG -listener support.NoUpdateCheck,support.WindowsNotOnTop -testclass "$cls" \
         -d "$S/tng-run/$cls" > "$RUN_OUT" 2>&1 &
 
     local JVM=$!
@@ -819,19 +820,17 @@ then
         run_class "$RUN_ID" "$JAVA_FLAGS" "$cls"
     done
 else
-    # THE SERIAL LANE FIRST, while this run still holds every slot: the classes that need the keyboard focus or the
-    # clipboard, one at a time and alone.
+    # THE SERIAL LANE IS SET ASIDE, to run last (below): the classes that need the keyboard focus or the clipboard.
     SERIAL_LANE=$(serial_lane_classes)
 
     : > "$WORK/rest"
+    : > "$WORK/serial"
 
     for cls in $(cat "$WORK/classes")
     do
         if echo "$SERIAL_LANE" | grep -qxF "$cls"
         then
-            echo "serial lane: $cls"
-
-            run_class "$RUN_ID" "$JAVA_FLAGS" "$cls"
+            echo "$cls" >> "$WORK/serial"
         else
             echo "$cls" >> "$WORK/rest"
         fi
@@ -880,6 +879,37 @@ else
     wait $LANE_PIDS
 
     LANE_PIDS=""
+
+    # THE SERIAL LANE LAST, one class at a time and alone, so the windows that take the front of the screen do it once,
+    # at the end.  The spare slots went back to workers above; this waits for each to come free, and its marker holds
+    # off new single-slot runs meanwhile (slots.sh).
+    if [ -s "$WORK/serial" ]
+    then
+        k=$((LANES + 1))
+
+        while [ "$k" -le "$SLOTS" ]
+        do
+            until clear_if_stale "$(slot_file "$k")" >/dev/null && take_lock_file "$(slot_file "$k")"
+            do
+                leave_waiting_marker >/dev/null
+
+                sleep 10
+            done
+
+            HELD_SLOTS="$HELD_SLOTS $k"
+
+            k=$((k + 1))
+        done
+
+        clear_waiting_marker
+
+        for cls in $(cat "$WORK/serial")
+        do
+            echo "serial lane: $cls"
+
+            run_class "$RUN_ID" "$JAVA_FLAGS" "$cls"
+        done
+    fi
 fi
 
 # THE COUNT, in name order, from the verdicts: the summary reads as it always did.
