@@ -8344,7 +8344,7 @@ public class AutonomySession
     }
 
     /**
-     * Whether a train standing anywhere on this square could move at all (SPEC-B5).
+     * Whether a train standing anywhere on this square could move at all.
      *
      * **The question is about the SQUARE, not one copy**: a square is several Points and `getNeighbors` on whichever
      * comes to hand answers about that copy only, so a platform with a dead copy and a live one would be refused or
@@ -8630,8 +8630,8 @@ public class AutonomySession
      * @param keep the heading the train had before it was moved, or null when that is not known
      * @param landedOn the copy the running layout chose - accepted and deliberately NOT used, because
      *        `StationIndex.speakerAt` says that on an empty square "any copy will do", so it is copy 0
-     *        and evidence of nothing.  Recording it was SPEC-A1.  Kept in the signature so that a
-     *        caller reaching for it finds this sentence rather than the idea (CONF-C2)
+     *        and evidence of nothing.  Recording it was a bug.  Kept in the signature so that a
+     *        caller reaching for it finds this sentence rather than the idea
      * @return the side to record, or null to record nothing
      */
     public static Side facingAfterAPaste(Map<String, Side> held, Side keep, String landedOn)
@@ -8666,7 +8666,7 @@ public class AutonomySession
     }
 
     /**
-     * The same, asking the running layout first (CONF-B1).
+     * The same, asking the running layout first.
      *
      * **The setup names the square a train SET OFF FROM until `captureFromLayout` writes the arrival back** (as for
      * `flipFacing`): for a train run and then placed by hand, the heading read "before the move" is the one it had at
@@ -8740,7 +8740,7 @@ public class AutonomySession
     }
 
     /**
-     * Records a facing AND stands the train on the copy that faces that way (SPEC-B4).
+     * Records a facing AND stands the train on the copy that faces that way.
      *
      * **The setup and the railway are two places**: Adam's ruling that `flipFacing` should also update the running
      * layout holds from the other end too, the operator choosing a direction by hand.
