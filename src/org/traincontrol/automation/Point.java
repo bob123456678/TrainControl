@@ -628,7 +628,7 @@ public class Point
         // reservation clears the signal with it.
         if (this.layout != null) this.layout.refreshProtectingSignal(this);
 
-        // AND THE TAIL BELONGS TO THE TRAIN THAT LEFT (VAL8-B4).
+        // AND THE TAIL BELONGS TO THE TRAIN THAT LEFT.
         //
         // `arrivedFrom` describes which way the occupant came in.  A different occupant did not come
         // in that way, and an empty platform has no tail at all - so leaving the old value standing

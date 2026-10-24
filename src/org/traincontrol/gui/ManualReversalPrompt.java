@@ -71,7 +71,7 @@ public final class ManualReversalPrompt
 
         Point first = null;
 
-        // A JOURNEY THAT ENDS AT A TERMINUS IS NOT ASKED ABOUT AT ALL (SPEC-B1 / REG6-B1).
+        // A JOURNEY THAT ENDS AT A TERMINUS IS NOT ASKED ABOUT AT ALL.
         //
         // `Layout.shouldReverseAt` answers a journey to a terminus from the flag and ignores any
         // policy - and it is right to: the reversal on the way is how a train backs into a terminus,
@@ -109,7 +109,7 @@ public final class ManualReversalPrompt
         // destination, since that dictates where the train can go, and where it is facing."**
         //
         // This used to name the destination when it qualified and fall back to the first may-turn
-        // square on the route otherwise.  That was the source of `REG7-A1`: a journey could depend on
+        // square on the route otherwise.  That was the defect: a journey could depend on
         // a turn at an intermediate, the operator was asked about it, and "keep direction" - the
         // default, the Escape answer and the cannot-ask answer - stranded the train off its path.
         //
@@ -186,13 +186,13 @@ public final class ManualReversalPrompt
                 // WHICH SQUARES THE OPERATOR HAS A SAY OVER - not which ones the answer acts on.
                 //
                 // This briefly returned `turn && asking.asksAbout(at)`, to stop a journey nobody was
-                // turning from braking at every may-turn square on it (REG6-B4).  That made the
+                // turning from braking at every may-turn square on it.  That made the
                 // answer change the QUESTION, and `Layout.shouldReverseAt` reads this to tell a
                 // compulsory turn from a may-reverse one: a reversing copy nobody is asked about is a
                 // compulsory turn.  So "keep direction" made every may-reverse turning copy look
                 // compulsory, and the train turned against the operator's explicit no.
                 //
-                // REG6-B4 is fixed where it belongs instead: the stop now asks `shouldReverseAt`
+                // That braking is fixed where it belongs instead: the stop now asks `shouldReverseAt`
                 // itself, so no stop happens where no turn happens, and this answer can go back to
                 // being about the railway rather than about what was said.
                 return at == asked && asking.asksAbout(at);
@@ -280,7 +280,7 @@ public final class ManualReversalPrompt
             {
                 if (at == null) return false;
 
-                // REG6-A1: THE `at.isReversing()` CLAUSE THAT USED TO BE HERE PROMPTED ON
+                // THE `at.isReversing()` CLAUSE THAT USED TO BE HERE PROMPTED ON
                 // COMPULSORY TURNS, AND DECLINING ONE DRIVES A TRAIN OFF ITS PATH.
                 //
                 // For a must-reverse square `AutonomyBuilder` emits ONLY turning copies and flags
@@ -351,15 +351,15 @@ public final class ManualReversalPrompt
      *
      * It first claimed the train was stopped when it was not: everything that stopped it was inside
      * the branch the answer decides, so it ran past the point at line speed for as long as the dialog
-     * stood there - measured at 30 when the question was put and still 30 five seconds later
-     * (`DIR-A1`).  Then `executePathInternal` was made to stop at any reversing point first, and the
+     * stood there - measured at 30 when the question was put and still 30 five seconds later.
+     * Then `executePathInternal` was made to stop at any reversing point first, and the
      * sentence became true.  Then the stop was collapsed into the rule itself - a train is stopped
      * exactly when it is about to be turned - and the rule is evaluated BEFORE the stop, so it is
-     * false again (`CONF2-B1`).
+     * false again.
      *
      * It is safe today only because nothing calls this from inside a run: both doors ask at departure
      * and hand `executePath` a constant answer.  `forOperator` is public, and a future caller that
-     * hands it straight to `executePath` gets `DIR-A1` back in full.  A comment asserting the
+     * hands it straight to `executePath` gets the first failure back in full.  A comment asserting the
      * comfortable version of what the code does is how the first one survived being written and
      * reviewed.
      *
@@ -407,7 +407,7 @@ public final class ManualReversalPrompt
                 // Index 0 is Yes, and it is the default: keeping the direction changes nothing on the
                 // railway, so dismissing this dialog with the keyboard is safe.
                 //
-                // ACC4-1: AND IT WAS NOT, FOR HALF A DAY.  The line below read `chose != 0`, and
+                // AND IT WAS NOT, FOR HALF A DAY.  The line below read `chose != 0`, and
                 // `showOptionDialog` answers -1 for a dialog closed with Escape or the X - so -1 was
                 // not 0, and dismissing this turned the train at every asking square on the journey.
                 // The comment three lines up promised the opposite in the same commit that broke it.
