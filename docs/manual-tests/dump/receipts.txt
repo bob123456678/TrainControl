@@ -3978,3 +3978,19 @@ kind: feature request
 what: Shift-selected conditions indent and outdent together; a condition beside a group at its own level moves past the whole group (`295c7e1a`).
 state: -
 became: MT-803
+
+[receipt OB-364]
+seq: 497
+filed: 2026-10-19
+kind: bug
+what: The track editor's Text Labels box says what the page shows when it opens and when it switches page (`08ad5caa`).
+state: -
+became: MT-804
+
+[receipt OB-368]
+seq: 498
+filed: 2026-10-23
+kind: bug
+what: The Track Directions dropdown keeps the Station Labels dropdown's width in every language, and its list shows long phrases in full (`d84b9ea5`).
+state: -
+became: MT-805

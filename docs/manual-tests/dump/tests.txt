@@ -31695,3 +31695,77 @@ body:
 tail:
 | ---
 |
+
+[test MT-804]
+ordinal: 803
+anchor: mt-804
+date: 2026-10-24
+title: OB-364: the track editor's Text Labels box says what the page shows when it opens
+disposition: needs test
+from: OB-364
+written: 2026-10-24
+reopened: no
+body:
+| <a id="mt-804"></a>
+| ### MT-804 - 2026-10-24 - OB-364: the track editor's Text Labels box says what the page shows when it opens
+|
+| **Disposition:** needs test
+| **From:** OB-364
+|
+| **Written:** 2026-10-24
+|
+| **Steps**
+|
+| 1. Open the autonomy editor on a page, leave its Text Labels box unticked, and close it.
+| 2. Open the track editor on the same page.
+| 3. Press the Text Labels box (or Control+L).
+| 4. In the track editor, switch to another page whose text is hidden.
+|
+| **Expected**
+|
+| - Step 2: the page's text is hidden and the Text Labels box is unticked: the box says what the page shows.
+| - Step 3: the text appears and the box ticks, on the first press.
+| - Step 4: the box is unticked there too.
+|
+| *What this is:* OB-364 (`08ad5caa`): the track editor reads the page's own setting into its Text Labels box when it opens and when it switches page.  `ui.testTheTrackEditorByHand` checks it.
+|
+tail:
+| ---
+|
+
+[test MT-805]
+ordinal: 804
+anchor: mt-805
+date: 2026-10-24
+title: OB-368: the Track Directions dropdown keeps the Station Labels dropdown's width in every language
+disposition: needs test
+from: OB-368
+written: 2026-10-24
+reopened: no
+body:
+| <a id="mt-805"></a>
+| ### MT-805 - 2026-10-24 - OB-368: the Track Directions dropdown keeps the Station Labels dropdown's width in every language
+|
+| **Disposition:** needs test
+| **From:** OB-368
+|
+| **Written:** 2026-10-24
+|
+| **Steps**
+|
+| 1. Set TrainControl's language to Dansk and open the autonomy editor.
+| 2. Look at the two dropdowns on the right: Station Labels, and Track Directions below it.
+| 3. Open the Track Directions list.
+| 4. Repeat steps 1 to 3 in German, and once in English.
+|
+| **Expected**
+|
+| - Step 2: the two dropdowns are the same width and line up, and the window is as wide as in English.
+| - Step 3: the list opens wider than the box when a phrase is long, so every phrase reads in full; a long phrase chosen shows shortened with "..." in the box.
+| - Step 4: the same in every language.
+|
+| *What this is:* OB-368 (`d84b9ea5`): the Track Directions dropdown keeps the Station Labels dropdown's width, and its list sizes to its longest phrase.  `ui.testDiagramLooksRight` checks it in English and Danish.
+|
+tail:
+| ---
+|

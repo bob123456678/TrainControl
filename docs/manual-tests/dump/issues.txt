@@ -727,7 +727,7 @@ text:
 
 [issue OB-364]
 ordinal: 31
-inbox: yes
+inbox: no
 kind: bug
 title: The track editor's Text Labels box opens ticked while the page's text is hidden (after the autonomy editor hid it)
 filed: 2026-10-19
@@ -818,7 +818,7 @@ text:
 
 [issue OB-368]
 ordinal: 38
-inbox: yes
+inbox: no
 kind: bug
 title: directions dropdown width in the autonomy editor
 filed: 2026-10-23
