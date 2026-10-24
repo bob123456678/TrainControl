@@ -815,3 +815,23 @@ text:
 |
 | Adam, 2026-10-20: "straight/turn (etc) are not translated in the route editor"
 |
+
+[issue OB-368]
+ordinal: 38
+inbox: yes
+kind: bug
+title: directions dropdown width in the autonomy editor
+filed: 2026-10-23
+filed_at: 2026-10-23 01:50
+raised_from: noticed while testing - not from a particular test
+build: commit 36997b1e, in Dansk - build\classes, compiled 22 Oct 23:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+text:
+| ### OB-368 - 2026-10-23 - directions dropdown width in the autonomy editor
+|
+| **Kind:** bug  
+| **Raised from:** noticed while testing - not from a particular test  
+| **Filed:** 2026-10-23 01:50  
+| **Build:** commit 36997b1e, in Dansk - build\classes, compiled 22 Oct 23:48 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+|
+| in some languages, wide phrases in the directions dropdown (bottom one) make the window wider.  match the width of the two dropdown so that the width of the bottom one doesn't stretch past what it starts at.
+|
