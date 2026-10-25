@@ -13,19 +13,14 @@ import javax.swing.filechooser.FileSystemView;
 import org.traincontrol.util.I18n;
 
 /**
- * A file chooser whose Look In list is asked of Windows once, ahead of time, rather than every time (OB-323; Adam,
- * 2026-10-05: *"there is an odd (brief but noticeable) delay before the file chooser opens for Layouts -> Open
- * Layout... (half a second to one second or so)"*; and *"we don't want to sacrifice UX"*).
+ * A file chooser whose Look In list is asked of Windows once, ahead of time, rather than every time (OB-323): *"we
+ * don't want to sacrifice UX"*.
  *
- * Swing's chooser lists the Desktop and This PC through the shell - over COM, item by item - for that list, when it is
- * built and again at every change of folder.  Measured on Adam's PC, with a Desktop of 71 items in OneDrive: 1.0 to 1.8 s
- * each, so Open Layout's chooser cost two of them before it showed, and every step up a folder inside it another.
- *
- * The list is the same one: the shell's own answer - Recent Items, Desktop, Documents, This PC and its drives, Network,
- * Libraries and the user's folders - asked off the event thread as the window opens, and kept until a drive comes or goes
- * or a Desktop folder changes, when the next chooser asks again.  Swing asks the shell itself only for a chooser on the shell's own view of the files,
- * so this one carries a view of its own, which hands Swing the answer among its roots; everything else - the files, their
- * names and icons, which folder is above which - is the shell's as before.
+ * Swing's chooser lists the Desktop and This PC through the shell, over COM item by item, when it is built and at every
+ * change of folder: 1.0 to 1.8 s each on a Desktop of 71 items in OneDrive.  The list is the same one, the shell's own
+ * answer, asked off the event thread as the window opens and kept until a drive comes or goes or a Desktop folder
+ * changes.  Swing asks the shell itself only for a chooser on the shell's own view, so this one carries a view of its
+ * own that hands Swing the answer among its roots; the files, names, icons and parentage are the shell's as before.
  *
  * Every chooser in TrainControl is one of these - `testSwingSpeaksOurLanguage` looks.
  *
@@ -75,11 +70,9 @@ public class QuickFileChooser extends javax.swing.JFileChooser
     }
 
     /**
-     * The folder as the shell's own, and a shortcut's target in place of the shortcut: what Swing does
-     * itself for a chooser on the shell's view, and this one is not on it.  Followed, a shortcut to a folder - in Recent
-     * Items, or the user's own - opens the folder, where it threw on the event thread and left the chooser listing the
-     * folder before; and the shell's folder is what gives the details view the shell's columns - name, date, type and
-     * size - for the shell's values, which came under Swing's three headings out of step with them.
+     * The folder as the shell's own, and a shortcut's target in place of the shortcut, as Swing does for a chooser on
+     * the shell's view (this one is not on it).  Followed, a shortcut to a folder opens it instead of throwing on the
+     * event thread, and the shell's folder gives the details view the shell's columns.
      *
      * @param dir the folder
      */
@@ -100,8 +93,7 @@ public class QuickFileChooser extends javax.swing.JFileChooser
 
     /**
      * The same, and the icons of what is in these folders too, so a chooser opening in one paints from the kept icons
-     * rather than asking the shell for each on the event thread (MT-692's note: *"before the selector opens, the UI
-     * briefly freezes"* - measured, half of a third of a second, each icon fetched as the dialog first painted).
+     * rather than asking the shell for each on the event thread (MT-692).
      *
      * @param folders the folders the choosers open in; any that is no folder is passed over
      */
@@ -210,10 +202,9 @@ public class QuickFileChooser extends javax.swing.JFileChooser
     }
 
     /**
-     * What says the shell's answer may have changed, each read without asking the shell: the drives, and the folders on
-     * each Desktop - most of the list is the Desktop's own folders, and a folder made on it, removed or renamed
-     * was not followed while the drives stayed the same.  Its folders, not when it last changed: a file saved
-     * to the Desktop changes that, and the list holds no files, so the next chooser waited on the shell for nothing.
+     * What says the shell's answer may have changed, each read without asking the shell: the drives, and the names of
+     * the folders on each Desktop (most of the list).  Its folders, not when it last changed: a file saved to the
+     * Desktop changes that, and the list holds no files.
      *
      * @return the drives, then the names of each Desktop's folders
      */
@@ -376,8 +367,8 @@ public class QuickFileChooser extends javax.swing.JFileChooser
         }
 
         /**
-         * The icon the shell gives a file, kept once given (MT-692's note): a chooser asked the shell for each item's icon
-         * on the event thread as it first painted, and every chooser asked again.
+         * The icon the shell gives a file, kept once given (MT-692): asked per item on the event thread as it first
+         * painted, and every chooser asked again.
          *
          * @param f a file or folder, or null
          * @return its icon, or null
