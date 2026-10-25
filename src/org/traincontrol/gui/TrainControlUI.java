@@ -2084,18 +2084,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             try
             {
-                File existing = new File(Util.dataPath(TrainControlUI.DATA_FILE_NAME));
+                File kept = Util.keepUnreadableCopy(TrainControlUI.DATA_FILE_NAME);
 
-                if (existing.exists())
-                {
-                    File kept = new File(Util.getBackupPath(Util.unreadableCopyName(System.currentTimeMillis(),
-                        TrainControlUI.DATA_FILE_NAME)));
-
-                    java.nio.file.Files.copy(existing.toPath(), kept.toPath(),
-                        java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-
-                    this.model.logf("ui.uiStateUnreadableKept", kept.getAbsolutePath());
-                }
+                if (kept != null) this.model.logf("ui.uiStateUnreadableKept", kept.getAbsolutePath());
 
                 // Kept - or nothing is left to keep
                 this.uiStateLoadFailed = false;

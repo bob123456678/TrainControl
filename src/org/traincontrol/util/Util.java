@@ -213,6 +213,26 @@ public class Util
     }
 
     /**
+     * Copies a data file that would not read aside, under {@link #unreadableCopyName}, before a save writes over it.
+     *
+     * @param fileName the data file's own name
+     * @return the copy, or null when there is no file to keep
+     * @throws IOException when the copy could not be made
+     */
+    public static File keepUnreadableCopy(String fileName) throws IOException
+    {
+        File existing = new File(dataPath(fileName));
+
+        if (!existing.exists()) return null;
+
+        File kept = new File(getBackupPath(unreadableCopyName(System.currentTimeMillis(), fileName)));
+
+        Files.copy(existing.toPath(), kept.toPath(), StandardCopyOption.REPLACE_EXISTING);
+
+        return kept;
+    }
+
+    /**
      * Returns the file a cropped locomotive icon should be written to, creating
      * {@link #LOC_ICON_FOLDER} if it is not there yet.
      *

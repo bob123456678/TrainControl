@@ -2057,18 +2057,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
         {
             try
             {
-                File existing = new File(Util.dataPath(MarklinControlStation.DATA_FILE_NAME));
+                File kept = Util.keepUnreadableCopy(MarklinControlStation.DATA_FILE_NAME);
 
-                if (existing.exists())
-                {
-                    File kept = new File(Util.getBackupPath(Util.unreadableCopyName(System.currentTimeMillis(),
-                        MarklinControlStation.DATA_FILE_NAME)));
-
-                    java.nio.file.Files.copy(existing.toPath(), kept.toPath(),
-                        java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-
-                    this.logf("log.databaseUnreadableKept", kept.getAbsolutePath());
-                }
+                if (kept != null) this.logf("log.databaseUnreadableKept", kept.getAbsolutePath());
 
                 // Kept - or nothing is left to keep
                 this.databaseLoadFailed = false;
