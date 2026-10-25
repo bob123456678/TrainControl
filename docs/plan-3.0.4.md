@@ -23,6 +23,11 @@ trim comments elsewhere in the UI that we haven't trimmed yet."
 - `gui.layouteditor`: LayoutEditor and its five helpers.
 - Stay in gui: RouteEditorFrame, RightClickRouteMenu, TrainControlUI, and AutonomyEditorPanel (its preferences line is
   left alone).
+- Later the same day, asked whether the Editor* classes and the small helpers move too, Adam chose to pin the
+  preferences node and move them: "I want the clean way in 3.0.4".  AutonomyEditorPanel keeps its preferences under
+  the gui package's node, then moves with EditorMassAssign, EditorPrompts, EditorSignals, EditorTileMenus and EditorWhy
+  into `gui.autonomyeditor`.  CaptionVisibility, CoalescedAsk, CoveredTrackView and SettledQuestion go with them where
+  the count of members made public stays small.  This runs after the UI comment pass is merged.
 - The move also anchors `AutoLocomotiveStatus`'s `resources/info.gif` on TrainControlUI, makes the four checks that
   list the gui folder recurse, and updates the path-keyed baselines.
 
