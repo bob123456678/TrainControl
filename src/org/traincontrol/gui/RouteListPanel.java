@@ -32,13 +32,12 @@ final class RouteListPanel
      */
     void executeRoute(String route)
     {
-        // The same answer at all three doors.  Not protection against two threads throwing one route's
-        // accessories at once: `Route.setExecuting()` is a synchronized re-entrancy guard on the model's own funnel, so a second attempt has
-        // always returned immediately.  What it IS: the play button grays itself while `routesExecuting` holds the name, and the other two
-        // doors (the row click with its confirmation, and the right-click menu) did not ask, so the same gesture was refused at one door and
-        // accepted at two (the OB-057/OB-090 shape).  The window is short: `execRoute` returns as soon as it has spawned the route thread,
-        // so the name is cleared 600 ms later whatever the route is still doing - a debounce, not a lock.  Logged rather than silent,
-        // because unlike the grayed button these two doors say nothing on their own, and the operator confirmed a dialog and is owed a reason.
+        // The same answer at all three doors: the play button grays itself while `routesExecuting` holds the name, and
+        // the other two (the row click with its confirmation, and the right-click menu) did not ask, so one gesture was
+        // refused at one door and accepted at two (the OB-057/OB-090 shape).  A debounce, not a lock: `execRoute`
+        // returns once it has spawned the route thread, so the name is cleared 600 ms later, and `Route.setExecuting()`
+        // already stops two threads.  Logged rather than silent, because the operator confirmed a dialog and is owed a
+        // reason.
         if (route != null && this.ui.routesExecuting.contains(route))
         {
             this.ui.getModel().log(I18n.f("route.ui.infoAlreadyRunning", route));
@@ -46,28 +45,28 @@ final class RouteListPanel
             return;
         }
 
-        // Marked before the thread starts, so the spinner is up by the time the pointer leaves the button (FR-043).  Every door that runs a
-        // route comes through here, including the right-click menu's own Execute (Adam: "executing the route from there should also start
-        // the spinner.").
+        // Marked before the thread starts, so the spinner is up by the time the pointer leaves the button (FR-043).
+        // Every door that runs a route comes through here, including the right-click menu's own Execute (Adam:
+        // "executing the route from there should also start the spinner.").
         this.ui.routeStarted(route);
 
         new Thread(() ->
         {
             runAndTimeTheRoute(route, () ->
             {
-                // Asked here rather than inside the model, which has no business showing a dialog - and
-                // asked BEFORE the run, so the answer is about the route the operator picked.
-                // The model is held as a ViewListener, whose getRoute is typed as the base Route; only a
-                // MarklinRoute knows about the autonomy graph, and every route the station holds is one.
+                // Asked here rather than inside the model, which has no business showing a dialog, and before the run,
+                // so the answer is about the route the operator picked.  Every route the station holds is a
+                // MarklinRoute, the only kind that knows the autonomy graph (the model is held as a ViewListener, whose
+                // getRoute is typed as the base Route).
                 org.traincontrol.base.Route found = this.ui.getModel().getRoute(route);
 
                 org.traincontrol.marklin.MarklinRoute picked =
                     found instanceof org.traincontrol.marklin.MarklinRoute
                     ? (org.traincontrol.marklin.MarklinRoute) found : null;
 
-                // Asked once, and the answer decides HOW it runs (A3): the conflict must not be checked here and again inside, since one that cleared
-                // between the two comes back as "yes, override" and runs the route with every guard off.  Three answers, and only the operator's own
-                // yes overrides anything.
+                // Asked once, and the answer decides how it runs (A3): a conflict checked here and again inside, one
+                // that cleared between, comes back as "yes, override" and runs the route with every guard off.  Only
+                // the operator's own yes overrides anything.
                 if (picked != null)
                 {
                     TrainControlUI.RouteConflict answer = this.ui.askAboutRouteConflict(picked, this.ui, null);
@@ -81,12 +80,11 @@ final class RouteListPanel
                         return;
                     }
 
-                    // Said out loud, as the midway door says it: MT-247 made the two doors agree that a cancel ends the route, but this one
-                    // returned in silence while the midway one logs two lines; the operator confirmed a dialog and is owed a reason why nothing
-                    // happened.  The two cancels are not the same size: a REFUSED here happens BEFORE the route starts, so not one command goes out,
-                    // whereas the midway question is answered from inside `MarklinRoute.execRoute`'s command loop, so every earlier command has gone
-                    // out and stands (a stop obeyed, an accessory thrown); `execRoute` says so where it happens, and behaviour.md section 7a carries
-                    // both halves.
+                    // Said out loud, as the midway door says it (MT-247): the operator confirmed a dialog and is owed a
+                    // reason why nothing happened.  The two cancels differ in size: a REFUSED here happens before the
+                    // route starts, so not one command goes out, whereas the midway question is answered inside
+                    // `MarklinRoute.execRoute`'s command loop, so every earlier command has gone out and stands;
+                    // behaviour.md section 7a carries both halves.
                     if (answer == TrainControlUI.RouteConflict.REFUSED)
                     {
                         this.ui.getModel().logf("route.cancelledByOperator", picked.getName());
@@ -109,10 +107,10 @@ final class RouteListPanel
     }
 
     /**
-     * The three ways out of executeRoute's thread, wrapped so all of them are timed.  Left as a wrapper rather than a try/finally
-     * around the body because the body returns early twice (an overridden conflict and a refused one), and a measurement that misses
-     * those two measures the happy path only.  It puts the button back on the last line of the finally, through
-     * `releaseTheRoutePlayButton`, which holds the gray for a minimum time first.
+     * The three ways out of executeRoute's thread, wrapped so all of them are timed: a try/finally around the body
+     * would miss the two early returns (an overridden conflict and a refused one) and measure the happy path only.  It
+     * puts the button back on the last line of the finally, through `releaseTheRoutePlayButton`, which holds the gray
+     * for a minimum time.
      *
      * @param route the route's name
      * @param work what to run
@@ -127,9 +125,9 @@ final class RouteListPanel
         }
         finally
         {
-            // What this measures is the dialog and the spawn, not the route: `work.run()` ends at `model.execRoute(route)`, which
-            // starts a thread, so this returns milliseconds later whatever the route is still doing.  It answers "did the press get through and
-            // how long did the asking take", not "how long did the route take".
+            // What this measures is the dialog and the spawn, not the route: `work.run()` ends at
+            // `model.execRoute(route)`, which starts a thread, so this returns milliseconds later whatever the route is
+            // still doing.
             if (this.ui.getModel() != null && this.ui.getModel().isDebug())
             {
                 this.ui.getModel().log("Route " + route + " finished executing in "
@@ -149,17 +147,16 @@ final class RouteListPanel
         {  
             Route asked = routeName == null ? null : this.ui.getModel().getRoute(routeName);
 
-            // LOOKED UP ONCE.  This tested one lookup and then dereferenced a second, so a
-            // route deleted between the two threw on a worker with nothing to catch it.
+            // Looked up once: testing one lookup and dereferencing a second let a route deleted between the two throw
+            // on a worker.
             if (asked != null)
             {
                 {
                     Route currentRoute = asked;
                     
-                    // Realized on the EDT.  Everything above - the model lookups, toCSV - belongs
-                    // off it and stays off it, but constructing, packing and showing a JFrame is not
-                    // thread safe, and the command-capture path then writes this window's document
-                    // from the EDT while it is still being built on another thread.
+                    // Realized on the EDT: the model lookups and toCSV stay off it, but constructing, packing and
+                    // showing a JFrame is not thread safe, and the command-capture path writes this window's document
+                    // from the EDT while it is still being built.
                     final String title = I18n.f(
                         "route.ui.dialogEditRouteWithId",
                         routeName,
@@ -170,9 +167,9 @@ final class RouteListPanel
 
                     javax.swing.SwingUtilities.invokeLater(() ->
                     {
-            // Checked on the EDT, immediately before constructing, so the two cannot be separated: with the check on the worker and the
-            // construction posted, two quick clicks both saw a null field, both posted, and two editors opened, with captured commands going to
-            // the one assigned last while the user typed in the other.  The model reads above stay off the EDT; only the decision moves.
+            // Checked on the EDT, immediately before constructing, so the two cannot be separated: with the check on
+            // the worker and the construction posted, two quick clicks both saw a null field and opened two editors,
+            // with captured commands going to the one assigned last.
                         if (this.ui.routeEditor != null && this.ui.routeEditor.isVisible())
                         {
                             JOptionPane.showMessageDialog(
@@ -186,15 +183,12 @@ final class RouteListPanel
                             return;
                         }
 
-                        // The route itself, rather than its name to look up again: this window is
-                        // handed what it is to show, which is what makes its read-only behavior
-                        // testable without a control station on the network.
+                        // The route itself, rather than its name to look up again: this window is handed what it is to
+                        // show, which makes its read-only behavior testable without a control station on the network.
                         this.ui.routeEditor = new RouteEditorFrame(this.ui, routeName, currentRoute);
 
-                        // Not over a locked route's own title.  A route from the Central Station
-                        // opens with every control grayed and its title is the only thing that says
-                        // why; overwriting it with the ordinary edit-route title left a window full
-                        // of dead controls and no explanation.
+                        // Not over a locked route's own title: a route from the Central Station opens with every
+                        // control grayed and its title is the only thing that says why.
                         if (!this.ui.routeEditor.isLocked()) this.ui.routeEditor.setTitle(title);
                         this.ui.routeEditor.setVisible(true);
                     });
@@ -228,9 +222,9 @@ final class RouteListPanel
                     this.ui.getModel().newRoute(String.format(proposedName, i), currentRoute.getRoute(), 
                             currentRoute.getS88(), currentRoute.getTriggerType(), false, currentRoute.getConditions()); 
 
-                    // The list first, and again after the sync: the copy exists the moment newRoute returns, so that is when the user should see it, and
-                    // the sync is a network round trip that, off the event thread, is a plain call that can throw (a station not answering ended this
-                    // worker on a stack trace nobody sees and the refresh never ran).
+                    // The list first, and again after the sync: the copy exists the moment newRoute returns, and the
+                    // sync is a network round trip that can throw off the event thread (a station not answering ended
+                    // this worker before the refresh ran).
                     refreshRouteList();
 
                     try
@@ -255,10 +249,9 @@ final class RouteListPanel
      */
     void BulkEnableOrDisable(boolean enable)
     {
-        // The question is asked on the event thread: a modal JOptionPane raised inside `new Thread(...)` (both callers had started a
-        // thread of their own) pumps events from a thread Swing does not expect to, and can come up behind the window or not at all.  An
-        // action handler already runs on the event thread.  The thread below stays for what it was really for - a write per route and one
-        // station sync - and the two calls after it marshal themselves.
+        // The question is asked on the event thread: a modal JOptionPane raised inside `new Thread(...)` pumps events
+        // from a thread Swing does not expect and can come up behind the window or not at all.  The thread below stays
+        // for what it was really for, a write per route and one station sync.
         String searchString = JOptionPane.showInputDialog(
             this.ui,
             I18n.f(
@@ -282,11 +275,10 @@ final class RouteListPanel
     void RouteListMouseClicked(java.awt.event.MouseEvent evt)
     {
 
-        // Three answers, one for each way of clicking a route (FR-043, revised at MT-217; Adam: "if play button is hit, route executes
-        // without confirming.  If route is left-clicked elsewhere, pop up the confirmation first.  If right-clicked, then show the right
-        // click menu."): the confirmation was removed when a left click ANYWHERE ran the route and the dialog was the only thing between a
-        // stray click and a train moving; having to AIM, which only the button asks, makes it unnecessary.  The highlight has answered its
-        // question by the time somebody clicks in this table.
+        // Three answers, one for each way of clicking a route (FR-043, MT-217; Adam: "if play button is hit, route
+        // executes without confirming.  If route is left-clicked elsewhere, pop up the confirmation first.  If
+        // right-clicked, then show the right click menu."): the confirmation was removed when a left click anywhere ran
+        // the route, and having to aim, which only the button asks, makes it unnecessary.
         this.ui.clearFoundRoute();
 
         Route route = this.ui.getRouteAtCursor(evt);
@@ -302,10 +294,9 @@ final class RouteListPanel
 
         if (isOverTheRoutePlayButton(evt))
         {
-            // Disabled means disabled (MT-217): the button grays while its route runs, and a grayed button that still fires is a lie, and would
-            // start the same route twice.  Asked in executeRoute now, not here: this was the only door that asked, and the two that do
-            // not (the row click with its confirmation, and the right-click menu) reach the same method; one guard on the funnel is the
-            // OB-057/OB-090 shape, where two copies, one per door, is how the other two came to be missing.
+            // Disabled means disabled (MT-217): a grayed button that still fired would start the same route twice.
+            // Asked in executeRoute now: this was the only door that asked, and one guard on the funnel is the
+            // OB-057/OB-090 shape's answer.
             executeRoute(route.getName());
 
             return;
@@ -345,12 +336,9 @@ final class RouteListPanel
     }
 
     /**
-     * Whether a click landed on a cell's play button rather than on the cell.
-     *
-     * The button is painted by the renderer at the right-hand end of the cell, so its box is worked out
-     * the same way here - from the cell's own rectangle - rather than from anything the renderer
-     * remembers. A renderer is one component reused for every cell; asking it where it last drew would
-     * be asking about whichever cell was painted most recently.
+     * Whether a click landed on a cell's play button rather than on the cell.  The button's box is worked out from the
+     * cell's own rectangle, as the renderer paints it at the right-hand end, not from anything the renderer remembers:
+     * it is one component reused for every cell, so it would answer for whichever cell was painted last.
      *
      * @param evt the click
      * @return true if the pointer is over the button of a cell that has one
@@ -373,24 +361,18 @@ final class RouteListPanel
     }
 
     /**
-     * Asks for a route by name and goes to it (FR-044).
-     *
-     * Adam: "'Find Route' popup that asks the user for the route name.  system jumps to the route page
-     * and highlights the matched cell (scrolling to it if needed), otherwise shows a notice that it
-     * doesn't exist."
-     *
-     * Matched case-insensitively, and on a unique CONTAINS when nothing matches exactly - somebody who
-     * types "yard" and has one route with that in its name meant that route, and refusing them on
-     * exactness would be pedantry. Ambiguity is not resolved by guessing: two matches is treated as no
-     * match, because landing on the wrong one silently is worse than being told to be specific.
+     * Asks for a route by name and goes to it (FR-044).  Adam: "'Find Route' popup that asks the user for the route
+     * name.  system jumps to the route page and highlights the matched cell (scrolling to it if needed), otherwise
+     * shows a notice that it doesn't exist."  Matched case-insensitively, and on a unique CONTAINS when nothing matches
+     * exactly; ambiguity is never resolved by guessing (MT-218 asks).
      */
     void findRoute()
     {
         String asked = JOptionPane.showInputDialog(this.ui, I18n.t("route.ui.promptFindRoute"),
             I18n.t("route.ui.menuFindRoute"), JOptionPane.PLAIN_MESSAGE);
 
-        // Cancel returns null, which is not the same as an empty search - and neither is worth a
-        // "no such route" complaint about a question nobody answered.
+        // Cancel returns null, not an empty search, and neither is worth a "no such route" complaint about an
+        // unanswered question.
         if (asked == null || asked.trim().isEmpty()) return;
 
         String wanted = asked.trim();
@@ -406,10 +388,7 @@ final class RouteListPanel
 
         String found = matches.get(0);
 
-        // MORE THAN ONE: ASK, rather than guess or refuse (MT-218).
-        //
-        // The key this asks with was already in all eight bundles and used by nothing - written for
-        // this and never wired up.
+        // More than one: ask, rather than guess or refuse (MT-218).
         if (matches.size() > 1)
         {
             found = (String) JOptionPane.showInputDialog(this.ui,
