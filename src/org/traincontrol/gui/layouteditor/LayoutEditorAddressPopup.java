@@ -16,9 +16,7 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
     private final TrainControlUI tcui;
     private final LayoutDiagramComponent lc;
 
-    /**
-     * The page this square is on, so a link cannot be offered it (Adam, 2026-09-10).  May be null.
-     */
+    /** The page this square is on, so a link cannot be offered it.  May be null. */
     private final String onPage;
 
     /**
@@ -36,8 +34,7 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
      *
      * @param lc the square being edited
      * @param tcui the window
-     * @param onPage the name of the page this square is on, so a link is not offered it.  Null to offer
-     *        every page, which is the old behavior and is what a caller that does not know gets
+     * @param onPage the name of the page this square is on, so a link is not offered it; null to offer every page
      */
     public LayoutEditorAddressPopup(LayoutDiagramComponent lc, TrainControlUI tcui, String onPage)
     {
@@ -59,14 +56,9 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
                 I18n.t("layout.ui.helpSelectPageLink")
             );
 
-            // EVERY PAGE BUT THIS ONE (Adam, 2026-09-10): *"make sure links can only go to other
-            // pages, not themselves."*  An arrow to the page it is drawn on is a square that looks like
-            // a way somewhere and is not.
-            //
-            // Which means the combo's own index is no longer the page's index, and the two used to be
-            // the same number - so the selection is mapped through the page NAME in both directions
-            // below.  That is also the more durable of the two: a name is what every other part of this
-            // program identifies a page by.
+            // Every page but this one (Adam: "make sure links can only go to other pages, not themselves."): an arrow
+            // to the page it is drawn on looks like a way somewhere and is not.  The combo's own index is then not the
+            // page's index, so the selection is mapped through the page NAME in both directions below.
             this.addressSelector.setModel(
                 new DefaultComboBoxModel<>(this.pagesThatCanBeLinkedTo().toArray(new String[0]))
             );
@@ -154,8 +146,8 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
             }
             else if (lc.isLink())
             {
-                // `addr` is the page's place in the FULL list, one-based, which is what
-                // getLogicalAddress hands out - and the combo no longer holds the full list.
+                // `addr` is the page's place in the FULL list, one-based, which is what getLogicalAddress hands out;
+                // the combo no longer holds the full list.
                 List<String> all = tcui.getModel().getLayoutList();
 
                 int at = Integer.parseInt(addr) - 1;
@@ -217,16 +209,10 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
 
                 if (chosen == null) return Integer.toString(lc.getLogicalAddress());
 
-                // "No page" is zero, which is what getLogicalAddress reports for a link holding -1; the
-                // caller turns it back into -1 rather than pushing it through setLogicalAddress, which
-                // refuses a negative.
-                //
-                // BY REFERENCE, which is what the constant's own comment always claimed.
-                // `NO_PAGE.equals(chosen.toString())` is value equality, so a page named exactly the
-                // localized label read as "(none)" and had its arrow set to -1. The entry the combo
-                // holds IS the constant - `pagesThatCanBeLinkedTo` puts that very object in - so this
-                // is the comparison the comment describes, and it makes the collision impossible
-                // rather than documented.
+                // "No page" is zero, which is what getLogicalAddress reports for a link holding -1; the caller turns it
+                // back into -1 rather than pushing it through setLogicalAddress, which refuses a negative.  Compared BY
+                // REFERENCE: `equals` would read a page named exactly the localized label as "(none)" and set its arrow
+                // to -1, and the combo holds this very object (`pagesThatCanBeLinkedTo` puts it in).
                 if (chosen == NO_PAGE) return "0";
 
                 int at = tcui.getModel().getLayoutList().indexOf(chosen.toString());
@@ -249,15 +235,10 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
     {
         List<String> out = new java.util.ArrayList<>();
 
-        // "NO PAGE" FIRST, AND IT IS A REAL CHOICE.
-        //
-        // An arrow whose page was deleted carries -1 - Adam's ruling, so that it resolves to nothing and
-        // the operator re-aims it when they next edit the square.  Without an entry for that, opening
-        // this popup on such an arrow selected nothing, a populated combo shows its first item anyway,
-        // and pressing OK silently aimed the arrow at the first page in the alphabet.  The next edit
-        // chose for them, which is what the ruling exists to prevent.
-        //
-        // It also gives them a way to BREAK a link on purpose, which there was none of before.
+        // "No page" first, and it is a real choice: an arrow whose page was deleted carries -1, so that it resolves to
+        // nothing and the operator re-aims it.  Without an entry for that, opening this popup on such an arrow selected
+        // the first item anyway and OK silently aimed the arrow at the first page in the alphabet.  It also gives a way
+        // to BREAK a link on purpose.
         out.add(NO_PAGE);
 
         for (String page : tcui.getModel().getLayoutList())
@@ -271,12 +252,8 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
     }
 
     /**
-     * The combo entry that means a link points at no page.
-     *
-     * Compared BY REFERENCE where it is read, so a page cannot collide with it by being called
-     * "(none)" - the combo is given this very object, and no page name can be it. The comparison was
-     * `equals` for a while under this same sentence, which is the shape of comment that hides
-     * a defect rather than explaining one: it described the design and not the code.
+     * The combo entry that means a link points at no page.  Compared BY REFERENCE where it is read, so a page cannot
+     * collide with it by being called "(none)": the combo is given this very object.
      */
     private static final String NO_PAGE = I18n.t("autosetup.ui.labelNone");
 
