@@ -341,12 +341,10 @@ public class testInvalidInput
      * A locomotive entry with no name, and the same locomotive placed at two points at once - a broken file,
      * refused whole.
      *
-     * **A locomotive the database does not have is NOT in this list any more.**  This claim used to require that
-     * too, and Adam overruled it on 2026-09-16: *"drop the train and keep the rest."*  What a rename or a
-     * deletion leaves behind is a file that has outlived its fleet, not a broken one, so the placement is dropped
-     * with a log line and the configuration loads - asserted below as the opposite of what stood here, and in full
-     * by `core.testHomeStaging.testAPlacementForALocomotiveNotInTheDatabaseDropsOnlyThePlacement`.  Changed because
-     * the RULING changed, not to make a red go away.
+     * **A locomotive the database does not have is NOT in this list** (Adam: *"drop the train and keep the rest."*).
+     * What a rename or a deletion leaves behind is a file that has outlived its fleet, not a broken one, so the
+     * placement is dropped with a log line and the configuration loads - asserted below, and in full by
+     * `core.testHomeStaging.testAPlacementForALocomotiveNotInTheDatabaseDropsOnlyThePlacement`.
      */
     @Test
     public void testUnusableLocomotivePlacementsAreRejected()
@@ -756,7 +754,7 @@ public class testInvalidInput
     }
 
     /**
-     * A setup refused for several reasons keeps every one of them, first first (OB-266; Adam, 2026-10-08: *"fix 266 to
+     * A setup refused for several reasons keeps every one of them, first first (OB-266; Adam: *"fix 266 to
      * report all reason"*).  A refusal usually happens once for its cause and again for what follows from it, and the
      * reason kept - the one repeated in the log when a train is sent on the refused railway - was the last of them, a
      * consequence rather than the cause.
