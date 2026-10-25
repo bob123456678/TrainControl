@@ -553,6 +553,12 @@ AutonomyEditorPanel 99, LayoutEditor 47): a member used across a new package lin
   switch" and "the two menus NAME a square alike" were not confirmed done.  DD-A1, DD-C6, DD-C7 and DD-C8 stay in
   OB-331 for 3.1.0.
 
+**Next release: FR-109, the layout editor's page items** (Adam, 2026-10-24: "will we fold this into the 3.0.4
+release?").  The pre/post-compaction experiment built FR-109 four times (branches `exp-pre-haiku`, `exp-post-haiku`,
+`exp-pre-sonnet`, `exp-post-sonnet`; none merged).  Take the build the Opus grader ranks best, preferring a post build,
+as those sit on 3.0.3's code; rebase it onto dev after 3.0.3 ships, fix what the grader found (untested autonomy-mode
+path, the run refusal through the editor, the unsaved-work wording), then the usual review, Readme line and MT.
+
 **Next release: from the 3.0.3 validator (RSA76)**
 - C5: the editor's Test a Path still starts a station facing every way, while DD-B9's findings start from its stopping
   copies only, so at a station whose stopping copy cannot leave it can draw a path the findings say is not there.  Make
