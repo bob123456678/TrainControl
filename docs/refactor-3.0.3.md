@@ -486,6 +486,13 @@ learnings.  Also, we should use US English.")
     event thread (57), recording a placement in both stores (96), keeping an unreadable file aside (99), a string or
     an array field (35), the arrival suffix (81), a station choosable by any copy (138), `fileOf` (152), starting a
     detached process (192).
+  - OB-373 (found merging cluster 96): the track diagram's Place saves a placement with no facing.
+  - The six held back, on Adam's word of 2026-10-24 ("Do them all, I agree with the sentences."), pre-2.7.0 code
+    included: the refusal while a run holds the setup, at 36 sites with 7 messages, in `RunGates` with two sentences
+    ("Edits are not allowed while autonomy or routes are running." for an edit, "Wait for the active locomotives to
+    stop." for a door that must wait) (45); the coalesced worker of CoveredTrackView, CaptionVisibility and
+    ReturnHomeController (61, 80); a red switch key's look (43); the CS2 function list parse (38); the ordered JSON
+    object (18); the image chooser's types (224).
 
 **For the next release, on Adam's word of 2026-10-24** ("Move JaCoCo to the next release, along with the
 behavior.md split, and tooling."): the behaviour.md split below, the JaCoCo rerun under Measurement, and the builder
@@ -493,6 +500,11 @@ tooling the study suggested (`newtest.py` for a new test class's bookkeeping, `r
 green in one run, `env.sh` for a worker's environment).
 
 **Next release: duplicated code to review** (from the 3.0.3 scan; rerun `dupscan.py` first, as the numbers move):
+- A ratchet test (Adam, 2026-10-24: "add the ratchet to the plan"): a `regression` class, in the shape of
+  `testCommentsStayLean`, that counts copy groups of 60 tokens or more in `src/` and fails when a new one appears or a
+  group grows, so every builder sees a new copy, not only the merge check.  Port `dupscan.py`'s tokenizer to Java (it
+  is about 60 lines) rather than call Python from a test.  Since 3.0.3 the orchestrator runs `docs/tools/dupcheck.py`
+  on each branch before merging it: PARTIAL (some copies of a group changed, not the others) and NEW (a new copy).
 - Same rule, in code from before v2.7.0, so each needs Adam's word: the "a run holds the setup" refusal at 11 sites,
   which belongs in `RunGates` (45); the ordered JSON object built by reflection in 7 places (18); the CS2 function
   list parse (38); the switch key's colors (43); the image chooser (224).
