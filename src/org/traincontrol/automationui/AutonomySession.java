@@ -1687,21 +1687,45 @@ public class AutonomySession
         return all.isEmpty() ? null : all.get(0);
     }
 
-    /** The way one named locomotive faces on a square, read off the copy the running layout has it on, or null. */
-    private Side facingOfTrainOnTheRailway(TileKey tile, String locomotive, org.traincontrol.automation.Layout running)
+    /** The copy of a square on the RAILWAY holding a train (the named one, or any for null), or null. */
+    private org.traincontrol.automation.Point copyHoldingATrain(TileKey square, String locomotive,
+        org.traincontrol.automation.Layout running)
     {
-        if (tile == null || running == null || locomotive == null || getStationIndex() == null) return null;
+        if (square == null || running == null || getStationIndex() == null) return null;
 
-        for (String name : getStationIndex().pointNamesAt(tile))
+        for (String name : getStationIndex().pointNamesAt(square))
         {
             org.traincontrol.automation.Point copy = running.getPoint(name);
 
             if (copy == null || copy.getCurrentLocomotive() == null) continue;
 
-            if (locomotive.equals(copy.getCurrentLocomotive().getName())) return getStationIndex().facingsAt(tile).get(name);
+            if (locomotive == null || locomotive.equals(copy.getCurrentLocomotive().getName())) return copy;
         }
 
         return null;
+    }
+
+    /**
+     * Which way a train on a square faces on the RAILWAY (the named one, or any for null): the copy it is on IS its
+     * direction, and on its way the copy it will stand on (OB-314).  Null when no copy holds it.
+     */
+    private Side facingOfTheTrainOn(TileKey square, String locomotive, org.traincontrol.automation.Layout running)
+    {
+        org.traincontrol.automation.Point copy = copyHoldingATrain(square, locomotive, running);
+
+        if (copy == null) return null;
+
+        // On its way, the copy it will stand on, or a train sent to turn reads backwards all journey.
+        org.traincontrol.automation.Point standing = running.copyItWillStandOn(copy.getCurrentLocomotive());
+
+        if (standing != null && standing != copy && standing.isSamePlaceAs(copy))
+        {
+            Side will = getStationIndex().facingsAt(square).get(standing.getName());
+
+            if (will != null) return will;
+        }
+
+        return getStationIndex().facingsAt(square).get(copy.getName());
     }
 
     /**
@@ -1870,7 +1894,7 @@ public class AutonomySession
         for (final TileKey tile : candidates)
         {
             // Its facing on the railway (the copy IS its facing); the setup's answers only where the railway does not.
-            Side recorded = facingOfTrainOnTheRailway(tile, locomotive, running);
+            Side recorded = facingOfTheTrainOn(tile, locomotive, running);
 
             if (recorded == null) recorded = getFacing(tile);
 
@@ -7657,16 +7681,9 @@ public class AutonomySession
      */
     public String trainOnTheRailway(TileKey square, org.traincontrol.automation.Layout running)
     {
-        if (square == null || running == null || getStationIndex() == null) return null;
+        org.traincontrol.automation.Point copy = copyHoldingATrain(square, null, running);
 
-        for (String name : getStationIndex().pointNamesAt(square))
-        {
-            org.traincontrol.automation.Point copy = running.getPoint(name);
-
-            if (copy != null && copy.getCurrentLocomotive() != null) return copy.getCurrentLocomotive().getName();
-        }
-
-        return null;
+        return copy == null ? null : copy.getCurrentLocomotive().getName();
     }
 
     /**
@@ -7722,28 +7739,7 @@ public class AutonomySession
     public Side facingOnTheRailway(TileKey square,
         org.traincontrol.automation.Layout running)
     {
-        if (square == null || running == null || getStationIndex() == null) return null;
-
-        for (String name : getStationIndex().pointNamesAt(square))
-        {
-            org.traincontrol.automation.Point copy = running.getPoint(name);
-
-            if (copy == null || copy.getCurrentLocomotive() == null) continue;
-
-            // On its way, the copy it will stand on (OB-314), or a train sent to turn reads backwards all journey.
-            org.traincontrol.automation.Point standing = running.copyItWillStandOn(copy.getCurrentLocomotive());
-
-            if (standing != null && standing != copy && standing.isSamePlaceAs(copy))
-            {
-                Side will = getStationIndex().facingsAt(square).get(standing.getName());
-
-                if (will != null) return will;
-            }
-
-            return getStationIndex().facingsAt(square).get(name);
-        }
-
-        return null;
+        return facingOfTheTrainOn(square, null, running);
     }
 
     /**
