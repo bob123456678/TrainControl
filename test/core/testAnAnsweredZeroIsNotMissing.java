@@ -534,8 +534,8 @@ public class testAnAnsweredZeroIsNotMissing
     }
 
     /**
-     * An approach answered 0 throughout is measured, and holds no train: the berth rule judges it, where it used to
-     * decline as though nothing was known.  TunnelLongPark, a parking berth, with every square of its approach from
+     * An approach answered 0 throughout is measured, and holds no train: the berth rule judges it rather than declining
+     * as though nothing was known.  TunnelLongPark, a parking berth, with every square of its approach from
      * BottomMainA answered 0 - its own 2 included - refuses a train of 1, whose tail reaches the road the approach
      * shares.
      *
