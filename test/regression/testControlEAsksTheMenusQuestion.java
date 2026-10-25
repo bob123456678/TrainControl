@@ -16,33 +16,13 @@ import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 
 /**
- * Control+E has to act on the square the right-click menu would act on, and only where it offers to.
+ * Control+E has to act on the square the right-click menu would act on, and only where it offers to (FR-066).
  *
- * FR-066 added the key on 2026-09-09.  `AutonomyEditorPanel.promptLengthFor`'s javadoc states the
- * contract in the strongest form this project has: *"It asks the menu's own question, which is
- * `isIgnored` ... A key that acts where the menu offers nothing is the shape of MT-313, where
- * Control+S named plain track because it asked only whether the tile was null."*
- *
- * **`isIgnored` is not the menu's question.**  `buildTileMenu` asks three things before it reaches
- * `Set Length...`, and the key asks one of them:
- *
- *   1. the null guard - the key has it, spelled identically;
- *   2. `pageOf(tile) != null && (onPage == null || onPage.isText())`, which sends a TEXT square to
- *      `buildTextMenu` - a menu with no length item on it at all - and the key does not have it;
- *   3. `isIgnored(tile)` - the key has it;
- *
- * and then it acts on `leaderOf(tile)` rather than on `tile`, which the key also does not have.
- *
- * So the two doors disagree twice, and both tests below are of the SAME shape the javadoc names: the
- * guard and the affordance asking different questions.
- *
- *   - **On a text label** the menu offers no length and the key opens the dialog, because
- *     `componentType.TEXT` is in neither `TilePorts.DISQUALIFIED` nor `TilePorts.TRANSPARENT` and is
- *     not `LAMP`, so `isIgnored` answers false - while `TileGraph` stores every component, text
- *     included, so the square is not blank either.
- *   - **On a run of plain track** the menu writes the run leader's length and the key writes the
- *     hovered tile's.  Lengths are consumed per tile and summed along an edge, so the two doors put
- *     the same number in two different places and using both on one run counts it twice.
+ * `AutonomyEditorPanel.promptLengthFor` asks the menu's own question, but `isIgnored` is not all of it.
+ * `buildTileMenu` also sends a text square to `buildTextMenu` (no length item at all) and acts on `leaderOf(tile)`
+ * rather than on `tile`; the key did neither.  On a text label the key opened the dialog where the menu offers nothing;
+ * on plain track it wrote the hovered tile's length, not the run leader's, so using both on one run counted it twice.
+ * Both tests hold the shape the javadoc names: the guard and the affordance asking one question.
  *
  * Read-only: it builds its own diagram in a temporary folder and never touches a real railway.
  *
@@ -51,14 +31,8 @@ import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 public class testControlEAsksTheMenusQuestion
 {
     /**
-     * A page with a text label on it, and a run of plain track beside it.
-     *
-     * The track is what makes the label's page one the session knows: `buildTileMenu`'s text branch is
-     * fenced on `pageOf(tile) != null`, so a page with nothing on it would take a different road.
-     *
-     * @param name the page name
-     * @return the page
-     * @throws java.io.IOException from the diagram
+     * A page with a text label on it, and a run of plain track beside it.  The track is what makes the label's page one
+     * the session knows: the text branch is fenced on `pageOf(tile) != null`.
      */
     private static LayoutDiagram aPageWithALabelAndARun(String name) throws java.io.IOException
     {
@@ -75,8 +49,7 @@ public class testControlEAsksTheMenusQuestion
 
         page.addComponent(componentType.FEEDBACK, 6, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
 
-        // And a label, which is the one thing on a diagram that carries no track and is still the
-        // user's to click.
+        // And a label, the one thing on a diagram that carries no track and is still the user's to click.
         page.addComponent(componentType.TEXT, 3, 3, 0, 0, 0, 0, accessoryDecoderType.MM2, "Yard");
 
         page.setPageId(name);
@@ -84,11 +57,7 @@ public class testControlEAsksTheMenusQuestion
         return page;
     }
 
-    /**
-     * The key opens the length dialog on a text label, where the menu offers no such item.
-     *
-     * @throws Exception from the panel or the reflection
-     */
+    /** The key opens the length dialog on a text label, where the menu offers no such item. */
     @Test
     public void testTheKeyDoesNotActOnASquareTheMenuOffersNothingOn() throws Exception
     {
@@ -114,7 +83,7 @@ public class testControlEAsksTheMenusQuestion
 
             AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
 
-            // WHAT THE MENU OFFERS on that square.
+            // What the menu offers on that square.
             javax.swing.JPopupMenu menu = panel.buildTileMenu(label, null);
 
             assertNotNull(menu, "no menu opened on the label at all, so there is nothing to compare"
@@ -129,9 +98,8 @@ public class testControlEAsksTheMenusQuestion
                 "the menu on a text label now offers Set Length - " + itemNames(menu) + " - so the"
                 + " premise of this test has moved and the key is no longer the wider door");
 
-            // AND WHAT THE KEY ASKS.  `promptLengthFor` opens a modal dialog, so what a test can
-            // put beside the menu is the predicate it acts on - which is the point of that predicate
-            // being public rather than a private one a test has to reach through reflection.
+            // And what the key asks.  `promptLengthFor` opens a modal dialog, so what a test can put beside the menu is
+            // the public predicate it acts on.
             assertFalse(panel.offersALength(label),
                 "Control+E acts on the text label at " + label + " and opens the length dialog on a"
                 + " square whose right-click menu offers " + itemNames(menu) + " and no length at"
@@ -143,8 +111,7 @@ public class testControlEAsksTheMenusQuestion
                 "the key names " + panel.squareTheLengthWouldGoOn(label) + " as the square it would"
                 + " measure, on a label the menu offers no length for");
 
-            // AND THE CONTROL: the predicate has not simply started answering false everywhere.
-            // Without this the claim above passes on a panel that offers nothing about any square.
+            // And the control: the predicate has not simply started answering false everywhere.
             TileKey track = new TileKey("main", 4, 1);
 
             assertTrue(panel.offersALength(track),
@@ -158,11 +125,7 @@ public class testControlEAsksTheMenusQuestion
         }
     }
 
-    /**
-     * The key and the menu write the length to the same square.
-     *
-     * @throws Exception from the panel or the reflection
-     */
+    /** The key and the menu write the length to the same square. */
     @Test
     public void testTheKeyMeasuresTheSquareTheMenuWouldMeasure() throws Exception
     {
@@ -178,8 +141,7 @@ public class testControlEAsksTheMenusQuestion
 
             Map<TileKey, TileKey> leaders = session.runLeaders();
 
-            // A tile of a run that is NOT the tile that speaks for it.  Without one of those the two
-            // doors cannot disagree and this test would pass on a railway offering nothing.
+            // A tile of a run that is not the tile that speaks for it; without one the two doors cannot disagree.
             TileKey follower = null;
 
             for (Map.Entry<TileKey, TileKey> each : leaders.entrySet())
@@ -198,9 +160,8 @@ public class testControlEAsksTheMenusQuestion
 
             AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
 
-            // `buildTileMenu` binds its Set Length item to `applyLength(leaderOf(tile))`, and
-            // `runLeaders` is the same map read from the session - so the menu's target is public
-            // knowledge, and the key's has to match it.
+            // `buildTileMenu` binds its Set Length item to `applyLength(leaderOf(tile))`, and `runLeaders` is the same
+            // map read from the session, so the key's target has to match it.
             assertEquals(panel.squareTheLengthWouldGoOn(follower), leaders.get(follower),
                 "right-clicking " + follower + " sets the length of " + leaders.get(follower)
                 + " - the menu binds its item to `applyLength(leaderOf(tile))` - and Control+E over"
@@ -209,8 +170,7 @@ public class testControlEAsksTheMenusQuestion
                 + " the run twice, and the dialog opens showing 0 on a run that is measured."
                 + "  The key has to take the leader, exactly as the menu does");
 
-            // AND THE CONTROL: the leader is not the square that was clicked, so the assertion above
-            // is a comparison rather than an identity that would hold whatever the key did.
+            // And the control: the leader is not the clicked square, so the assertion above is a comparison.
             assertFalse(follower.equals(leaders.get(follower)),
                 "the fixture's follower at " + follower + " leads its own run, so the two doors"
                 + " cannot disagree here and the claim above would pass unchanged");
@@ -222,20 +182,12 @@ public class testControlEAsksTheMenusQuestion
     }
 
     /**
-     * Over every square of the page: the menu offers a length exactly where the key acts.
-     *
-     * The two claims above name two squares each.  This one names none - it walks the whole page and
-     * compares the two doors square by square, which is the only form in which "they ask one question"
-     * is checkable rather than a hope about two expressions that happen to be typed the same.
-     *
-     * It is what would have caught the original defect on its own, and it is what catches the NEXT
-     * condition somebody adds to `buildTileMenu` and forgets to add to the key - which is exactly how
-     * the first one arrived.
+     * Over every square of the page: the menu offers a length exactly where the key acts.  Walking the whole page is
+     * the only form in which "they ask one question" is checkable, and it catches the next condition somebody adds to
+     * `buildTileMenu` and forgets in the key.
      *
      * MUTATION: gating the menu's Set Length item on anything `offersALength` does not ask - a review
      * used `isPoint` - fails this on every plain-track square, and left both claims above green.
-     *
-     * @throws Exception from the panel
      */
     @Test
     public void testTheTwoDoorsAgreeAboutEverySquareOnThePage() throws Exception
@@ -288,7 +240,7 @@ public class testControlEAsksTheMenusQuestion
                 + " inside `if (offersALength(tile))` - so a disagreement is a second copy having"
                 + " grown back");
 
-            // AND BOTH ANSWERS HAPPEN ON THIS PAGE, or the agreement above is between two constants.
+            // And both answers happen on this page, or the agreement above is between two constants.
             assertTrue(offered > 0,
                 "no square on this page offers a length at all, so the comparison above is between two"
                 + " predicates that both answer false everywhere");
@@ -304,20 +256,10 @@ public class testControlEAsksTheMenusQuestion
     }
 
     /**
-     * And the predicate's CONTENT, named off the fixture rather than read off itself.
-     *
-     * The whole-page comparison above asks `buildTileMenu` on one side and `offersALength` on the
-     * other, and since the menu adds its item inside `if (offersALength(tile))` those are the same
-     * call.  That comparison is still worth having - it is what catches a second copy of the guard
-     * growing back, which is how the original defect arrived - but a wrong predicate cannot redden it,
-     * and neither can the floors, which come from the same predicate.
-     *
-     * These two cases come from the fixture: a **text label** carries no track to measure, and a
-     * square on an **excluded page** is one autonomy takes no notice of.  Both are states the key
-     * acted on before the menu's three early returns were asked, and both are named here rather than
-     * derived, so the claim survives the predicate being rewritten.
-     *
-     * @throws Exception from the panel
+     * And the predicate's content, named off the fixture rather than read off itself: the whole-page comparison cannot
+     * redden on a wrong predicate, since the menu adds its item inside `if (offersALength(tile))`.  A text label
+     * carries no track to measure, and a square on an excluded page is one autonomy takes no notice of; both are named
+     * here, so the claim survives the predicate being rewritten.
      */
     @Test
     public void testTheKeyRefusesTheTwoSquaresTheMenuOffersNoLengthFor() throws Exception
@@ -345,7 +287,7 @@ public class testControlEAsksTheMenusQuestion
                 "Control+E acts on the text label at " + label + ", whose right-click menu is about"
                 + " what is WRITTEN on the square and carries no length item at all");
 
-            // AND A SQUARE ON A PAGE AUTONOMY IS TOLD TO IGNORE.
+            // And a square on a page autonomy is told to ignore.
             session.setPageExcluded("main", true);
 
             try
@@ -370,12 +312,7 @@ public class testControlEAsksTheMenusQuestion
         }
     }
 
-    /**
-     * The labels of every item on a menu, submenus included.
-     *
-     * @param menu the menu
-     * @return what it offers
-     */
+    /** The labels of every item on a menu, submenus included. */
     private static java.util.List<String> itemNames(javax.swing.JPopupMenu menu)
     {
         java.util.List<String> out = new java.util.ArrayList<>();
@@ -391,9 +328,7 @@ public class testControlEAsksTheMenusQuestion
         return out;
     }
 
-    /**
-     * `AutonomyEditorPanel` builds real Swing components, so this needs a display.
-     */
+    /** `AutonomyEditorPanel` builds real Swing components, so this needs a display. */
     private static void needsADisplay()
     {
         if (java.awt.GraphicsEnvironment.isHeadless())
@@ -403,11 +338,7 @@ public class testControlEAsksTheMenusQuestion
         }
     }
 
-    /**
-     * A temporary directory and everything under it.
-     *
-     * @param file what to remove
-     */
+    /** A temporary directory and everything under it. */
     private static void deleteRecursively(java.io.File file)
     {
         java.io.File[] children = file.listFiles();
