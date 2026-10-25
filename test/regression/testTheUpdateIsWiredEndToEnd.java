@@ -18,7 +18,7 @@ import org.traincontrol.util.SelfUpdate;
 import support.SourceOf;
 
 /**
- * One-click updates are wired together end to end (FR-125, the validation of 2026-10-13).
+ * One-click updates are wired together end to end (FR-125).
  *
  * `core.testTheUpdaterSwapsTheJar` hands the updater its launcher, mover and starter, so it says nothing about the
  * real ones or about the places that call them; every one of these could be broken with those claims green:
@@ -34,11 +34,11 @@ import support.SourceOf;
  * - one backup at a time, the menu's and the update's;
  * - the Java options carried into the restart, less a debugger.
  *
- * **Two kinds of claim.**  The real launcher and starter are run, against plain JVMs of `support.ReportsStarted` -
- * nothing of TrainControl's but `SelfUpdate`, no jar, nothing outside a temporary folder.  The places that call them
- * cannot be run without starting TrainControl or ending this JVM, so their order is read from the source, as
- * `regression.testEditorSurfaceRules` reads `WindowClosed`'s.  Those are pinned only by reading: a claim that reads
- * the order catches a line moved or dropped, not one that behaves differently at the same place.
+ * Two kinds of claim.  The real launcher and starter are run against plain JVMs of `support.ReportsStarted` (nothing of
+ * TrainControl's but `SelfUpdate`, no jar, nothing outside a temporary folder).  The places that call them cannot be
+ * run without starting TrainControl or ending this JVM, so their order is read from the source, as
+ * `regression.testEditorSurfaceRules` reads `WindowClosed`'s: that catches a line moved or dropped, not one that
+ * behaves differently at the same place.
  */
 public class testTheUpdateIsWiredEndToEnd
 {
