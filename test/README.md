@@ -4,10 +4,11 @@ Four folders, by what a test is FOR rather than by what it happens to import.
 
 | Folder | What lives there | How many |
 |---|---|---|
-| `core/` | The model, the protocol, the files, the graph. What the program **is**. | 147 |
+| `core/` | The model, the protocol, the files, the graph. What the program **is**. | 148 |
 | `ui/` | Drives a window or a Swing component. Needs a display, or tests view logic. | 54 |
 | `regression/` | Written for one named defect, to stop it coming back. | 140 |
 | `support/` | Not tests. Fixtures the others use. | 13 |
+| `examples/` | Not tests. Sample programs for the Java API, which `core/testTheApiExamplesRun` runs and AutomationAPI.md points to. | 7 files |
 | `layouts/` | Not tests either. Checked-in **railways**, one folder per shape - see below. | 5 |
 
 **Counted 2026-10-19.**  The 2026-09-09 figures (88/31/70/5/3) had gone stale: core 147, ui 54, regression 140,

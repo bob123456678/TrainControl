@@ -825,6 +825,10 @@ public class testSwitchingToACentralStationLayout
         {
             if (f.getName().equals("LayoutSandbox.java")) continue;
 
+            // A sample program's helper, not a test: it opens the simulated station for a user's own program, and the
+            // one test that calls it (core.testTheApiExamplesRun) opens its sandbox first (FR-138).
+            if (f.getName().equals("SimulatedStation.java")) continue;
+
             String raw = new String(java.nio.file.Files.readAllBytes(f.toPath()),
                 java.nio.charset.StandardCharsets.UTF_8);
 

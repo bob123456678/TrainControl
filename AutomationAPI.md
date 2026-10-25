@@ -38,6 +38,19 @@ Note that as of v2.3.2, all TrainControl code has been moved into the org.trainc
 
 For class and method details, read the Javadoc comments in the source: most public classes and methods carry one.
 
+### More examples
+
+Besides the two programs above, the folder [`test/examples`](test/examples) holds six short ones, each for one job you may want to do.  They are built with the program and a test runs every one of them, so they keep working as the program changes.
+
+* [`KnowYourStation`](test/examples/KnowYourStation.java): lists the locomotives, shows how fast the station answers, switches the track power and reads the stored routes.
+* [`DriveALocomotive`](test/examples/DriveALocomotive.java): sets direction, speed, lights and other functions of one locomotive, and keeps and restores its favourite settings.
+* [`SwitchesSignalsAndSensors`](test/examples/SwitchesSignalsAndSensors.java): sets switches and signals by name and by address, reads sensors, and stores and runs a route.
+* [`BuildAGraph`](test/examples/BuildAGraph.java): builds the two-station layout below in code, asks it questions, changes it, and saves and reloads it.
+* [`RunTrainsOnAGraph`](test/examples/RunTrainsOnAGraph.java): lets the layout drive a train, and shows where the train started, which sensors it passed and when it arrived.
+* [`ReactToEvents`](test/examples/ReactToEvents.java): switches something when a train trips a sensor, starts a stored route from a sensor, and counts the commands the program sends.
+
+Each program has a `run` method that takes the station as its only argument, so you can hand it your own.  Its `main` method uses a simulated station that sends nothing, so running one by itself is safe.  To use one on your railway, call `run` with the station you get from `MarklinControlStation.init("192.168.1.10", false, false, true, false)`, with your Central Station's address in place of the sample one.
+
 ## Sample Layout
 
 Let's consider a minimal layout with two stations.
