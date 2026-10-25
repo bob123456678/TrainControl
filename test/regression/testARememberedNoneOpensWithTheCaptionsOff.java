@@ -19,29 +19,23 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * A remembered **None** opens with the captions actually gone (MT-292).
+ * A remembered **None** opens with the captions actually gone (MT-292): "none is shown in the dropdown, but station
+ * names are still drawn."
  *
- * Adam, 2026-09-12: *"none is shown in the dropdown, but station names are still drawn."*
+ * `AutonomyEditorPanel` restores the remembered caption mode while it is being CONSTRUCTED.  Half of applying it is
+ * local (the two tick boxes behind the dropdown); the other half is the diagram's own text switch, reached through
+ * `owner()`, which is null until the panel has been added to the editor.
  *
- * **The mechanism.** `AutonomyEditorPanel` restores the remembered caption mode while it is being
- * CONSTRUCTED and applies it there. Half of applying it is local - the two tick boxes behind the
- * dropdown - and the other half is the diagram's own text switch, reached through `owner()`, which is
- * `SwingUtilities.getWindowAncestor(this)` and is null until the panel has been added to the editor. So
- * the dropdown said None over a diagram still drawing every station name, which is the state the four
- * exclusive options exist to make impossible.
+ * Three openings, because one proves nothing: Station Names, then None, then Station Names again.  The middle one is
+ * the claim and the two around it are the controls (a window that draws no captions for its own reasons satisfies
+ * None alone, and so does a switch that latches off).
  *
- * **Three openings, because one proves nothing.** A window that draws no captions for its own reasons
- * satisfies the None claim on any code at all, and a switch that latches off satisfies it for ever
- * after. So the editor is opened with **Station Names** first, then with **None**, then with Station
- * Names again, and the middle one is the claim while the two around it are the controls.
+ * The dropdown is four options and the Text Labels box is the fifth state's home (FR-133): the box shows the writing
+ * on the diagram, the dropdown only decides the station captions, and a remembered 4 (the old Labels Only) opens as
+ * Station Names with the box ticked.
  *
- * MUTATION: remove `applyRememberedCaptionMode` from `LayoutEditor.setAutonomyMode` and the None
- * opening draws every caption the Station Names ones do.
- *
- * **The dropdown is four options and the Text Labels box is the fifth state's home (FR-133).** Adam:
- * *"move the "labels only" setting currently in the dropdown to a Text Labels checkbox below Show Trains."*
- * The box shows the writing on the diagram, the dropdown only decides the station captions, and a remembered
- * 4 (the old Labels Only) opens as Station Names with the box ticked.
+ * MUTATION: remove `applyRememberedCaptionMode` from `LayoutEditor.setAutonomyMode` and the None opening draws every
+ * caption the Station Names ones do.
  *
  * @author Adam
  */
@@ -130,12 +124,9 @@ public class testARememberedNoneOpensWithTheCaptionsOff
     private static String textWas;
 
     /**
-     * The preference the panel restores from, named here rather than reached through the panel.
-     *
-     * `AutonomyEditorPanel.VIEW_PREFS` is private, and it is the same node: both are keyed by TrainControlUI, so
-     * this also fails if the editor's settings leave `/org/traincontrol/gui`. Writing it from outside is what makes
-     * this test about a REMEMBERED setting: setting the dropdown by hand exercises the listener, which
-     * is the path that already worked.
+     * The preference the panel restores from, named here: `AutonomyEditorPanel.VIEW_PREFS` is private but the same
+     * node.  Writing it from outside makes this about a REMEMBERED setting; setting the dropdown by hand exercises only
+     * the listener, which already worked.
      */
     private static java.util.prefs.Preferences prefs()
     {
@@ -230,11 +221,7 @@ public class testARememberedNoneOpensWithTheCaptionsOff
         }
     }
 
-    /**
-     * The claim: with None remembered, the editor opens with no captions on the diagram.
-     *
-     * @throws Exception from Swing
-     */
+    /** The claim: with None remembered, the editor opens with no captions on the diagram. */
     @Test
     public void testNoneOpensWithNothingDrawn() throws Exception
     {
@@ -249,14 +236,7 @@ public class testARememberedNoneOpensWithTheCaptionsOff
             + " dropdown and the diagram disagree even where no caption happens to be drawn");
     }
 
-    /**
-     * The control before it: Station Names really does draw something on this page.
-     *
-     * Without this the claim above is satisfied by a fixture that draws no captions at all, which is
-     * the way it would most easily pass for no reason.
-     *
-     * @throws Exception from Swing
-     */
+    /** The control before it: Station Names really does draw something, or a fixture with no captions would pass. */
     @Test
     public void testStationNamesDrawsSomethingToBeginWith() throws Exception
     {
@@ -264,9 +244,8 @@ public class testARememberedNoneOpensWithTheCaptionsOff
             "the editor drew no captions with Station Names remembered either, so this page states"
             + " nothing about captions and the None claim beside it means nothing");
 
-        // THE SWITCH IS OFF UNDER STATION NAMES NOW, and the captions are drawn anyway (OB-272): the switch is the
-        // writing's own, and captions follow the dropdown.  Until 2026-09-23 this asserted the switch was ON here,
-        // which was FR-061's coupling - None being that switch turned off.
+        // THE SWITCH IS OFF UNDER STATION NAMES (OB-272): the switch is the writing's own, and captions follow the
+        // dropdown.
         assertTrue(hiddenAfterNamedFirst,
             "the diagram's text switch was on under Station Names, so his own writing is drawn beside the captions -"
             + " OB-272: hide the text labels unless that option is selected");
@@ -275,11 +254,7 @@ public class testARememberedNoneOpensWithTheCaptionsOff
             "Station Names drew writing that is not a caption: " + ownUnderNamedFirst);
     }
 
-    /**
-     * And the control after it: the captions come back, so None did not simply latch.
-     *
-     * @throws Exception from Swing
-     */
+    /** And the control after it: the captions come back, so None did not simply latch. */
     @Test
     public void testTheCaptionsComeBackWhenTheModeDoes() throws Exception
     {
@@ -288,18 +263,15 @@ public class testARememberedNoneOpensWithTheCaptionsOff
             + " opening drew " + namedFirst.size() + ". A switch that goes off and stays off satisfies"
             + " the None claim for ever after without ever being right");
 
-        // The captions came back without the switch (OB-272): it stays off under a caption mode, and the count
-        // above is what says None did not latch.
+        // The captions came back without the switch (OB-272); the count above says None did not latch.
         assertTrue(hiddenAfterNamedAgain,
             "the text switch came on with Station Names, so his own writing is drawn beside the captions (OB-272)");
     }
 
     /**
-     * A remembered 4, which was Labels Only, opens as Station Names with the Text Labels box ticked (FR-133).
-     *
-     * The dropdown lost its fifth option and the box took its job; Station Names is the default the dropdown opens on
-     * (Adam: *"make sure Station Names is default"*).  The page carries writing of his own - "Inner Loop" and the rest - so
-     * this is not satisfied by a page with nothing to show; None, beside it, draws none of it.
+     * A remembered 4, which was Labels Only, opens as Station Names with the Text Labels box ticked (FR-133).  The page
+     * carries writing of his own ("Inner Loop" and the rest), so a page with nothing to show would not satisfy this;
+     * None, beside it, draws none of it.
      */
     @Test
     public void testARememberedFourOpensAsStationNamesWithTheBoxTicked()
@@ -319,10 +291,7 @@ public class testARememberedNoneOpensWithTheCaptionsOff
         assertEquals(ownUnderNone.size(), 0, "Hide drew writing that is not a caption: " + ownUnderNone);
     }
 
-    /**
-     * The caption dropdown is in the same font as the Track Directions one (FR-133: *"the same smaller font as under
-     * Track Directions, e.g. "Show All""*).
-     */
+    /** The caption dropdown is in the same font as the Track Directions one (FR-133). */
     @Test
     public void testTheCaptionDropdownHasTheTrackDirectionsFont()
     {
@@ -330,9 +299,7 @@ public class testARememberedNoneOpensWithTheCaptionsOff
             "the caption dropdown is not in the font of the Track Directions dropdown");
     }
 
-    /**
-     * The dropdown is Station Names, Standing Locs, Home Locs and Hide - exactly four, Hide last (FR-133).
-     */
+    /** The dropdown is Station Names, Standing Locs, Home Locs and Hide: exactly four, Hide last (FR-133). */
     @Test
     public void testTheDropdownIsFourOptionsWithHideLast()
     {
@@ -344,9 +311,7 @@ public class testARememberedNoneOpensWithTheCaptionsOff
         assertEquals(boxOff.lastItem, "Hide", "the last option does not read Hide");
     }
 
-    /**
-     * The Text Labels box sits directly below Show Trains (FR-133: *"a Text Labels checkbox below Show Trains"*).
-     */
+    /** The Text Labels box sits directly below Show Trains (FR-133). */
     @Test
     public void testTheBoxSitsBelowShowTrains()
     {
@@ -401,9 +366,8 @@ public class testARememberedNoneOpensWithTheCaptionsOff
     }
 
     /**
-     * Control+L steps the dropdown's four options and wraps, and never touches the box (FR-133; OB-272 had it step the
-     * dropdown's options plus Labels Only).  Pressed through the editor's own key handler, so the key and the option are
-     * asked together.
+     * Control+L steps the dropdown's four options and wraps, and never touches the box (FR-133).  Pressed through the
+     * editor's own key handler, so the key and the option are asked together.
      */
     @Test
     public void testControlLStepsThroughTheFourAndWraps()
@@ -428,12 +392,9 @@ public class testARememberedNoneOpensWithTheCaptionsOff
     private static List<String> movableUnderNamedFirst;
 
     /**
-     * A caption can still be dragged under Station Names, with the text switch off (OB-272).
-     *
-     * The drag (FR-035) is installed only where the caption is drawn - OB-139 - and asked the TEXT switch whether it
-     * was.  That switch is off under every caption mode since OB-272, so reading it would take the drag off every
-     * caption the moment the captions and the writing were separated.  Every caption drawn must carry the move cursor
-     * the drag puts on it.
+     * A caption can still be dragged under Station Names, with the text switch off (OB-272): the drag is installed only
+     * where the caption is drawn, and once asked the TEXT switch, which is off under every caption mode.  Every caption
+     * drawn must carry the move cursor the drag puts on it.
      */
     @Test
     public void testACaptionCanStillBeDraggedWithTheTextSwitchOff()
@@ -503,9 +464,7 @@ public class testARememberedNoneOpensWithTheCaptionsOff
         hiddenWhileCycling = hidden;
     }
 
-    /**
-     * Opens Station Names with the box unticked, clicks the box, then moves the diagram's own text switch back.
-     */
+    /** Opens Station Names with the box unticked, clicks the box, then moves the diagram's own text switch back. */
     private static Clicked clickTheBox() throws Exception
     {
         prefs().putInt(PREF_CAPTION_MODE, AutonomyEditorPanel.CAPTIONS_STATIONS);
@@ -565,9 +524,7 @@ public class testARememberedNoneOpensWithTheCaptionsOff
         return captions ? drawn.size() : own.size();
     }
 
-    /**
-     * Opens the editor in autonomy mode with this caption mode REMEMBERED, and reads what it drew.
-     */
+    /** Opens the editor in autonomy mode with this caption mode REMEMBERED, and reads what it drew. */
     private static List<String> openWith(int mode) throws Exception
     {
         return openWith(mode, false);
@@ -636,10 +593,7 @@ public class testARememberedNoneOpensWithTheCaptionsOff
     }
 
     /**
-     * Every caption the container holds.
-     *
-     * `StationCaption` only - the window's own labels are ordinary JLabels, and counting those would
-     * make this a test about the sidebar.
+     * Every caption the container holds: `StationCaption` only, or counting the window's own JLabels tests the sidebar.
      */
     private static void collect(java.awt.Container container, List<String> into, List<String> own,
         List<String> movable)
@@ -650,8 +604,7 @@ public class testARememberedNoneOpensWithTheCaptionsOff
             {
                 String text = ((StationCaption) child).getText();
 
-                // A caption is a pill; the user's own writing is not (FR-028) - and the two are counted apart
-                // since OB-272 made them two settings.
+                // A caption is a pill; the user's own writing is not (FR-028), and the two are counted apart (OB-272).
                 if (text != null && !text.trim().isEmpty())
                 {
                     if (((StationCaption) child).isPill()) into.add(text);
@@ -668,10 +621,7 @@ public class testARememberedNoneOpensWithTheCaptionsOff
     }
 
     /**
-     * Waits for the tiles, and then for the posted work the editor's own posted work starts.
-     *
-     * `setAutonomyMode` ends by posting a redraw which itself posts an annotation refresh, so one turn
-     * of the queue is not enough to see the finished window.
+     * Waits for the tiles, then for the posted work the editor starts: one turn of the queue does not see the finish.
      */
     private static void settle() throws Exception
     {
