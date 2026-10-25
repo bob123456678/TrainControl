@@ -18,20 +18,12 @@ import org.traincontrol.util.I18n;
 
 public class AddLocomotive extends javax.swing.JFrame
 {
-    // THE APPLICATION'S LOOK AND FEEL, BEFORE THIS CLASS CAN BE INSTANTIATED (Adam, 2026-09-11).
-    //
-    // **A static block rather than the first line of the constructor, and the difference was measured.**
-    // `JFrame`'s own constructor runs before any constructor body here, and it creates the ROOT PANE -
-    // whose UI comes from whatever look and feel is installed at that instant. So installing inside the
-    // constructor is too late for the window's own chrome. Built cold, which is what a test does, this
-    // window came out with a `MetalRootPaneUI` and an operating-system title bar while the same window in
-    // the running program gets `FlatRootPaneUI`, FlatLaf's own title bar and the menu bar drawn inside it:
-    // 166x77 against 166x49 for the identical window, measured 2026-09-11.
-    //
-    // Class initialization always finishes before the first instance is created, so this is early enough.
-    //
-    // Headless-guarded because a static initializer that throws leaves the class unusable for the rest of
-    // the process, which is a worse failure than a window in the wrong font.
+    // THE APPLICATION'S LOOK AND FEEL, BEFORE THIS CLASS CAN BE INSTANTIATED.  A static block rather than the first
+    // line of the constructor: `JFrame`'s own constructor runs before any constructor body here and creates the ROOT
+    // PANE, whose UI comes from whatever look and feel is installed at that instant.  Built cold, as a test does, the
+    // window came out with a `MetalRootPaneUI` and an operating-system title bar instead of FlatLaf's (166x77 against
+    // 166x49).  Class initialization finishes before the first instance, so this is early enough.  Headless-guarded
+    // because a static initializer that throws leaves the class unusable for the rest of the process.
     static
     {
         if (!java.awt.GraphicsEnvironment.isHeadless()) TrainControlUI.installLookAndFeel();
@@ -277,24 +269,11 @@ public class AddLocomotive extends javax.swing.JFrame
                     return;
                 }
 
-                // THE FIFTH DOOR, and the only one that never asked (MT-270).
-                //
-                // Adam, 2026-09-06: **"I added a locomotive named a,P[)(] and it went trough.  So,
-                // make sure this doesn't blow things up elsewhere."**
-                //
-                // `RouteCommand.isNameUsable`'s own rule is that the doors which set a locomotive's
-                // name have to agree, and four of them do: the rename dialog, both route-editor doors,
-                // and the one that applies a name the Central Station proposes.  Every one of those
-                // RENAMES.  Nothing checked the name a locomotive is BORN with - so the character the
-                // other four exist to keep out could simply be typed in here instead.
-                //
-                // What it costs is not this locomotive: it is every route that later mentions it.
-                // Routes store locomotives by name in a comma-separated format, so a name containing a
-                // comma re-parses as two commands - and the route that names it was legal when it was
-                // written.
-                //
-                // Brackets are Adam's own ruling and are allowed: "bracketed loc names should just be
-                // allowed."  A comma is not, and `a,P[)(]` is refused for the comma alone.
+                // THE FIFTH DOOR, and the only one that never asked (MT-270): `RouteCommand.isNameUsable`'s rule is
+                // that the doors which set a locomotive's name agree, and the other four RENAME; nothing checked the
+                // name a locomotive is BORN with.  What it costs is every route that later mentions it: routes store
+                // locomotives by name in a comma-separated format, so a name containing a comma re-parses as two
+                // commands.  Brackets are allowed ("bracketed loc names should just be allowed"); a comma is not.
                 if (!org.traincontrol.base.RouteCommand.isNameUsable(locName))
                 {
                     javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
@@ -336,15 +315,8 @@ public class AddLocomotive extends javax.swing.JFrame
 
                 locAddress = Math.abs(locAddress);
 
-                // The model's own rule, asked rather than re-stated.
-                //
-                // This used to test each decoder type in its own if, against the upper bound ONLY -
-                // so with the abs() above, address 0 passed all three and made a locomotive the model
-                // itself would have refused: validateNewAddress requires address > 0 for every type.
-                // MULTI_UNIT had no branch at all, which was survivable only because this dialog does
-                // not offer it, and would have stopped being survivable the day it did.
-                //
-                // One rule, one place.  The message still names the type, because "out of range" with
+                // The model's own rule, asked rather than re-stated: `validateNewAddress` requires address > 0 for
+                // every type and has a branch for each.  The message still names the type, because "out of range" with
                 // no range in it is not much of a message.
                 if (!org.traincontrol.marklin.MarklinLocomotive.validateNewAddress(type, locAddress))
                 {
@@ -481,9 +453,9 @@ public class AddLocomotive extends javax.swing.JFrame
 
             if (locAddress > 0)
             {
-                // Asked of every address in use, not of the duplicate list.  That list has every
-                // address with a single locomotive removed, so it answered "free" for precisely the
-                // address somebody is about to collide with.
+                // Asked of every address in use, not of the duplicate list, which has every address with a single
+                // locomotive removed and so answered "free" for precisely the address somebody is about to collide
+                // with.
                 if (this.model.getLocAddresses().containsKey(locAddress))
                 {
                     message = I18n.t("loc.errorAddressInUse");
