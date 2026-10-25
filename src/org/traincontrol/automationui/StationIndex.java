@@ -227,25 +227,7 @@ public final class StationIndex
     {
         if (name == null) return "";
 
-        if (!name.endsWith(")")) return name;
-
-        int open = name.lastIndexOf(" (");
-
-        if (open <= 0) return name;
-
-        String inside = name.substring(open + 2, name.length() - 1);
-
-        // "northbound", or "northbound, reverse" - see AutonomyBuilder.nodeName
-        int comma = inside.indexOf(',');
-
-        String heading = comma < 0 ? inside : inside.substring(0, comma);
-
-        for (String known : new String[]{"northbound", "southbound", "eastbound", "westbound"})
-        {
-            if (known.equals(heading)) return name.substring(0, open);
-        }
-
-        return name;
+        return org.traincontrol.automation.Layout.withoutArrivalSuffix(name);
     }
 
     /**

@@ -3085,15 +3085,27 @@ public class Layout
 
     /**
      * A Point's name as a place, without the builder's arrival suffix (Adam: "the whole copy thing needs to be masked
-     * from the user").  Mirrors StationIndex.withoutArrivalSuffix, which this package cannot call; a name ending in
-     * anything but AutonomyBuilder.heading's four words, "Yard (old)" say, is left alone.
+     * from the user").
      */
     static String placeNameOf(Point point)
     {
         if (point == null) return "";
 
-        String name = point.getName();
+        return withoutArrivalSuffix(point.getName());
+    }
 
+    /** The words `AutonomyBuilder.heading` names a square's copies by, which this package cannot call. */
+    private static final String[] ARRIVAL_HEADINGS = {"northbound", "southbound", "eastbound", "westbound"};
+
+    /**
+     * An emitted Point name without the builder's arrival suffix: " (northbound)", or " (northbound, reverse)", at the
+     * very end.  A name ending in anything else, "Yard (old)" say, is left alone.
+     *
+     * @param name an emitted Point name, or null
+     * @return the square's name, as far as it can be recovered; null for null
+     */
+    public static String withoutArrivalSuffix(String name)
+    {
         if (name == null || !name.endsWith(")")) return name;
 
         int open = name.lastIndexOf(" (");
@@ -3106,7 +3118,7 @@ public class Layout
 
         String heading = comma < 0 ? inside : inside.substring(0, comma);
 
-        for (String known : new String[]{"northbound", "southbound", "eastbound", "westbound"})
+        for (String known : ARRIVAL_HEADINGS)
         {
             if (known.equals(heading)) return name.substring(0, open);
         }
