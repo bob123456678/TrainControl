@@ -9,48 +9,26 @@ import org.testng.annotations.Test;
 import org.traincontrol.gui.autonomy.AutonomyBanner;
 
 /**
- * OB-191: "why not moving" painted the paths and then said nothing.
+ * OB-191: "why not moving" painted the paths and then said nothing.  Adam: *"when i click on DRG 06 001, 'why not
+ * moving' in the autonomy editor correctly paints the paths, but it does not show the list of reasons in the top
+ * banner - the banner expands, but I see no text."*
  *
- * Adam, 2026-09-08: *"when i click on DRG 06 001, 'why not moving' in the autonomy editor correctly
- * paints the paths, but it does not show the list of reasons in the top banner - the banner expands,
- * but I see no text."*
+ * The paths are painted and the banner EXPANDS, so the message was composed, handed over and made room for: the fault
+ * is in the LAYING OUT.  The banner puts its scroll pane in a `GridBagLayout` with `fill = HORIZONTAL` and
+ * `anchor = CENTER`, so a short message sits in the middle of the strip (OB-151, Adam: *"center them vertically within
+ * their shaded backgrounds"*).  `GridBagLayout` imposes the cell's height on a child only for `BOTH` or `VERTICAL`;
+ * with `HORIZONTAL` the child keeps its PREFERRED height and `CENTER` places it at
+ * `(cellHeight - preferredHeight) / 2`, negative for any message taller than the strip (capped at three lines,
+ * `MOST_LINES`, OB-366).  So the scroll pane hangs above the strip, shows a slice of its middle, never gets a
+ * scrollbar, and `hold`'s `setValue(0)` does nothing.
  *
- * **THREE THINGS IN THAT SENTENCE, AND THEY NARROW IT TO ONE PLACE.**  The paths are painted, so
- * `AutonomyEditorPanel.applyWhy` reached its loop and `Layout.explainDestinations` answered - the
- * traces and the reasons come out of ONE pass over ONE map there, so an answer that draws a path has
- * an entry for every station it refused.  The banner EXPANDS, so `AutonomyBanner.hold` ran, `saying`
- * was set, and `getPreferredSize` grew the strip to fit something it had been given.  And there is no
- * text.  A message composed, handed over, and made room for, and still not readable, is not a fault in
- * the composing - it is a fault in the LAYING OUT.
+ * Measured in the mounting the editor uses: `LayoutEditor` floats this banner over the bottom of the diagram's
+ * viewport (`AutonomyBanner.floatOver`), which gives it the viewport's width and its own preferred height; a test that
+ * set that height itself would be choosing the answer.  And asserted in ink: the geometry says WHY, the pixels are
+ * what Adam is looking at.
  *
- * **WHAT IT IS.**  The banner puts its scroll pane in a `GridBagLayout` with `fill = HORIZONTAL` and
- * `anchor = CENTER`, so that a short message sits in the middle of the strip rather than on top of it
- * (OB-151, Adam: *"center them vertically within their shaded backgrounds"*).  The comment there
- * claims "a long message still fills and still scrolls, because GridBag shrinks a child to the space
- * available rather than letting it overflow", and that is not what `GridBagLayout` does.  It imposes
- * the cell's height on a child only when the fill is `BOTH` or `VERTICAL`; with `HORIZONTAL` the child
- * keeps its PREFERRED height, and `CENTER` then places it at `(cellHeight - preferredHeight) / 2` -
- * negative for any message taller than the strip.  The strip is capped at three lines (`MOST_LINES`, OB-366), so
- * every answer longer than the cap is taller than it.
- *
- * So the scroll pane is laid out taller than the strip and hung above it, and the strip shows a slice
- * out of its middle.  Its viewport is then never smaller than its own contents, so it never gets a
- * scrollbar - and `hold`'s `setValue(0)` and `setCaretPosition(0)`, which exist to put a second answer
- * back at the top, have nothing to scroll and do nothing.  Where the slice lands depends on how much
- * taller the pane is than the strip.
- *
- * **MEASURED IN THE MOUNTING THE EDITOR USES**, not in a bare panel: `LayoutEditor` floats this banner over the
- * bottom of the diagram's viewport (`AutonomyBanner.floatOver`), which gives it the viewport's width and its own
- * preferred height.  That height is the number this defect turns on, so a test that set it itself would be choosing
- * the answer.
- *
- * **AND ASSERTED IN INK.**  The geometry says WHY; the pixels are what Adam is looking at.  A change
- * that put the scroll pane back inside the strip and still drew nothing would pass a geometry
- * assertion on its own - which is the argument `support.Rendered` makes about the diagram, one
- * component over.
- *
- * MUTATION: put `middle.fill = java.awt.GridBagConstraints.HORIZONTAL` back in `AutonomyBanner`'s
- * constructor and the first two go red - the first quoting the five pixels, the second reporting no ink at all.
+ * MUTATION: put `middle.fill = java.awt.GridBagConstraints.HORIZONTAL` back in `AutonomyBanner`'s constructor and the
+ * first two go red - the first quoting the five pixels, the second reporting no ink at all.
  *
  * @author Adam
  */
@@ -58,16 +36,10 @@ public class testTheWhyAnswerIsOnScreen
 {
 
     /**
-     * The application's look and feel, before this class stands anything up.
-     *
-     * Adam, 2026-09-11: *"I still see tests popping up with the small font in the menu bar."*
-     *
-     * Every window the APPLICATION owns asks for this in its own constructor, so a test that builds one
-     * gets it for free. This class builds a bare Swing window instead - a `JFrame`, a `JDialog`, a
-     * `JOptionPane` - and those are nobody's to fix but this one's. Without it the window is drawn in
-     * Metal: different font, different insets, and not the window the operator sees.
-     *
-     * `regression.testEveryWindowWearsTheApplicationsLook` holds this in place for every such class.
+     * The application's look and feel, before this class stands anything up.  Adam: *"I still see tests popping up with
+     * the small font in the menu bar."*  This class builds a bare Swing window, which is nobody's to fix but this
+     * one's; without it the window is drawn in Metal, not the window the operator sees.
+     * `regression.testEveryWindowWearsTheApplicationsLook` holds this in place.
      */
     @BeforeClass
     public static void theApplicationsLookAndFeel()
@@ -77,19 +49,13 @@ public class testTheWhyAnswerIsOnScreen
             org.traincontrol.gui.TrainControlUI.installLookAndFeel();
         }
     }
-    /**
-     * How wide the strip is, which is the diagram viewport's width.  Wide enough that the answer wraps
-     * to several lines rather than a hundred, which is the real case.
-     */
+    /** How wide the strip is (the diagram viewport's width): wide enough that the answer wraps to several lines. */
     private static final int WIDTH = 900;
 
     /**
-     * A real answer to "why is this train not moving", in the shape `applyWhy` composes.
-     *
-     * The same pieces: `autosetup.ui.whyReport` is `<b>{0}</b>: {1}{2}`, `{1}` is `whyCanGo` or
-     * `whyNowhere`, and `{2}` is one `<br>station: reason` per refused destination.  A dozen is what
-     * his railway answers with - `live-snapshot` carries thirty-six station squares - and a dozen is
-     * what overflows the cap.
+     * A real answer to "why is this train not moving", in the shape `applyWhy` composes (`autosetup.ui.whyReport`, then
+     * one `<br>station: reason` per refused destination); a dozen is what his railway answers with and what overflows
+     * the cap.
      */
     private static final String ANSWER = answer(12);
 
@@ -108,10 +74,8 @@ public class testTheWhyAnswerIsOnScreen
     // ---------------------------------------------------------------- the claim
 
     /**
-     * The message sits inside the strip that was made for it.
-     *
-     * The strip's height is `getPreferredSize`, capped; whatever holds the message has to fit inside
-     * that, at a non-negative offset.  Anything else is a slice out of the middle of a taller thing.
+     * The message sits inside the strip that was made for it: within the capped `getPreferredSize`, at a non-negative
+     * offset.
      */
     @Test
     public void testALongAnswerIsGivenTheWholeBand() throws Exception
@@ -141,11 +105,8 @@ public class testTheWhyAnswerIsOnScreen
     }
 
     /**
-     * And there is something to read in it.
-     *
-     * The geometry above says why; this is what Adam is looking at.  Painted rather than reasoned
-     * about, because every other assertion available here answers identically with the defect present
-     * and with it gone.
+     * And there is something to read in it: painted rather than reasoned about, as every other assertion here answers
+     * identically with the defect present and gone.
      */
     @Test
     public void testTheAnswerHasInkInIt() throws Exception
@@ -169,13 +130,8 @@ public class testTheWhyAnswerIsOnScreen
     }
 
     /**
-     * A one-line notice is still centered in the strip, and still readable.
-     *
-     * THE CONTROL, and it is a control in both directions.  Without it, giving the scroll pane the
-     * whole band would pass the two above and bring OB-151 straight back - the short notice resting on
-     * the top of a taller strip, which is what the centring was added to stop.  The ink half is what
-     * says the two tests above are about long answers rather than about the banner drawing nothing at
-     * all.
+     * A one-line notice is still centered in the strip, and still readable: the control in both directions, without
+     * which giving the scroll pane the whole band would bring OB-151 back.
      */
     @Test
     public void testAShortNoticeIsStillCentredAndVisible() throws Exception
@@ -204,27 +160,13 @@ public class testTheWhyAnswerIsOnScreen
 
     // ---------------------------------------------------------------- the fixture
 
-    /**
-     * How much ink one line of this text puts on the strip.
-     *
-     * A floor rather than an exact count: font rendering differs between machines, and the question
-     * being asked is "is there anything there", which does not need a pixel-exact answer.  Measured at
-     * roughly 1500 for the twelve-station answer and roughly 400 for the one-line notice.
-     */
+    /** A floor on the ink one line of this text puts on the strip: font rendering differs between machines. */
     private static final int INK_FOR_A_LINE = 150;
 
     /**
-     * A banner in the mounting `LayoutEditor` gives it, saying something, laid out.
-     *
-     * Floated over a scroll pane by `floatOver`, as the editor does (OB-366): the layout gives it the viewport's width
-     * and its own `getPreferredSize().height`, and that height is the number this defect turns on.
-     *
-     * LAID OUT EMPTY FIRST, then given the message, then laid out again.  That is the order the editor
-     * meets: the banner has been on screen since the window opened, so the message arrives at a strip
-     * that already knows how wide it is - and how tall the message wraps to depends on that width.
-     *
-     * @param message what to say
-     * @return the banner, sized and laid out
+     * A banner in the mounting `LayoutEditor` gives it, saying something, laid out: floated over a scroll pane by
+     * `floatOver` (OB-366).  Laid out EMPTY first, then given the message, then laid out again, as the editor meets
+     * it: the message arrives at a strip that already knows how wide it is.
      */
     private static AutonomyBanner mounted(final String message) throws Exception
     {
@@ -244,10 +186,8 @@ public class testTheWhyAnswerIsOnScreen
 
             frame.setContentPane(around);
 
-            // PACKED, not merely sized.  `validate()` on a window that has never been made displayable
-            // does nothing at all - the first run of this test measured a 1x1 banner inside a band of
-            // -8px, which is not a defect, it is a component that was never laid out.  `pack()` gives
-            // it a peer and a first layout; the size after it is this test's own.
+            // PACKED, not merely sized: `validate()` on a window never made displayable does nothing (a 1x1 banner in
+            // a band of -8px); `pack()` gives it a peer and a first layout.
             frame.pack();
             frame.setSize(WIDTH, 600);
             frame.validate();
@@ -276,14 +216,8 @@ public class testTheWhyAnswerIsOnScreen
     }
 
     /**
-     * Where the message sits inside the strip.
-     *
-     * Found by walking the banner rather than by naming a field, so a fix is free to rearrange what
-     * holds the message as long as something still scrolls it.
-     *
-     * @param banner the banner
-     * @return its top relative to the strip's inside, its height, the strip's inside height, and the
-     *         height the message wanted
+     * Where the message sits inside the strip, found by walking the banner: its top relative to the strip's inside, its
+     * height, the strip's inside height, and the height the message wanted.
      */
     private static int[] messageWithin(final AutonomyBanner banner) throws Exception
     {
@@ -308,10 +242,8 @@ public class testTheWhyAnswerIsOnScreen
     }
 
     /**
-     * The scroll pane's top and height, in the banner's own coordinates.
-     *
-     * @param in what to look in
-     * @return top, height and preferred height, or null when there is no scroll pane below here
+     * The scroll pane's top and height, in the banner's own coordinates, or null when there is no scroll pane below
+     * here.
      */
     private static int[] locate(java.awt.Container in)
     {
@@ -338,12 +270,7 @@ public class testTheWhyAnswerIsOnScreen
         return null;
     }
 
-    /**
-     * The strip as it appears on screen.
-     *
-     * @param banner the banner
-     * @return its pixels
-     */
+    /** The strip as it appears on screen. */
     private static BufferedImage painted(final AutonomyBanner banner) throws Exception
     {
         final BufferedImage[] shot = new BufferedImage[1];
@@ -366,13 +293,8 @@ public class testTheWhyAnswerIsOnScreen
     }
 
     /**
-     * How much ink there is.
-     *
-     * The strip is a light gray band and the message is dark blue; anything much darker than the band
-     * is a letter.  Counted rather than sampled, because where the text is is exactly what is in doubt.
-     *
-     * @param image the strip
-     * @return how many pixels are text
+     * How many pixels are text: the strip is a light gray band and the message dark blue; counted, because where the
+     * text is is what is in doubt.
      */
     private static int darkPixels(BufferedImage image)
     {
@@ -391,12 +313,7 @@ public class testTheWhyAnswerIsOnScreen
         return dark;
     }
 
-    /**
-     * An answer with this many refused destinations in it.
-     *
-     * @param stations how many
-     * @return the HTML `applyWhy` would hand over
-     */
+    /** An answer with this many refused destinations in it, as the HTML `applyWhy` would hand over. */
     private static String answer(int stations)
     {
         StringBuilder out = new StringBuilder(
@@ -411,12 +328,7 @@ public class testTheWhyAnswerIsOnScreen
         return out.toString();
     }
 
-    /**
-     * The windows this class opened, so none is left behind.
-     *
-     * A frame with a peer keeps the AWT threads alive, and a class that leaves one poisons every class
-     * after it in a runner that shares a JVM.
-     */
+    /** The windows this class opened, so none is left behind: a frame with a peer keeps the AWT threads alive. */
     private static final java.util.List<javax.swing.JFrame> OPENED = new java.util.ArrayList<>();
 
     @org.testng.annotations.AfterClass(alwaysRun = true)
