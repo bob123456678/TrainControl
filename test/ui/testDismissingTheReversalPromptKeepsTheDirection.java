@@ -37,7 +37,7 @@ public class testDismissingTheReversalPromptKeepsTheDirection
     /**
      * The application's look and feel, before this class stands anything up.
      *
-     * Adam, 2026-09-11: *"I still see tests popping up with the small font in the menu bar."*
+     * Adam: *"I still see tests popping up with the small font in the menu bar."*
      *
      * Every window the APPLICATION owns asks for this in its own constructor, so a test that builds one
      * gets it for free. This class builds a bare Swing window instead - a `JFrame`, a `JDialog`, a
