@@ -28,7 +28,8 @@ dropdown is in the same font as the Track Directions one. In the track editor Co
 **Control+E asks the menu's own question and writes where the menu writes.** `offersALength` is `buildTileMenu`'s three
 early returns in one place (a page the session knows, not a text label, not an ignored square), and the menu adds its
 item inside it, so the guard and the affordance are one expression. The length lands on `squareTheLengthWouldGoOn`, the
-**run leader**, where both doors write, so measuring a run through both does not count it twice.
+**run leader**: a run of plain track has one square that speaks for it, and both doors write there, so measuring a run
+through both does not count it twice.
 
 **Control plus any other letter does nothing in the main window** (OB-197).
 `regression.testNoTwoShortcutsShareAKey` reads both windows' handlers on every run and prints what is free in both.

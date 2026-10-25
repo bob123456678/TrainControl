@@ -146,7 +146,8 @@ Part of the behavior reference: [`../behaviour.md`](../behaviour.md) is the inde
   FEEDBACK_DOUBLE_CURVE and OVERPASS are grouped per ROAD instead, and a train on one road leaves the other free.
   `core.testTheDiagramDrawsWhatTrainsMayDo.testEachArcOfADoubleCurveIsItsOwnPieceOfMetal`.
 - **But only over the part of it the train is actually lying on** (OB-207; Adam: *"75 407
-  DB cannot go from Tunnel to BottomMainA even though it should be able to"*, at a train length of one). The build
+  DB cannot go from Tunnel to BottomMainA even though it should be able to"*, at a train length of one). A one-unit train
+  parked at the end of a twelve-tile run must not foul every road sharing any tile of it. The build
   writes each edge's **places** (the location identifiers the lock relation is derived from, in order, each with what it
   measures); the tail walk spends the train's length across them, and the shared-metal rule asks whether the tail lies
   on metal *this* edge runs over.
@@ -172,7 +173,8 @@ Part of the behavior reference: [`../behaviour.md`](../behaviour.md) is the inde
   the setup notice, but make it brief").
 - A train is drawn as an **orange line along the track it is standing on**, **on the track diagram viewer only**, and
   while it runs along the track its length still covers, over its route (FR-106). An editor is where the railway is
-  arranged; what stands on it right now is not part of the drawing.
+  arranged, and what happens to be standing on it while you arrange it is a fact about right now rather than about the
+  drawing.
 - Blocked track is drawn by **fading the square itself to 40%**, **whether or not anything is running**, so a blocked
   curve is still legibly a curve. Adam: *"I want the shading to instead be the same tile with more transparency exactly like
   what happens when edges are locked in autonomy mode."* The fade is a composite set before `super.paintComponent`,
@@ -401,8 +403,8 @@ counted once, not once per direction.
 as measures, so non-atomic should be allowed"*). The checkbox, the load door, the dispatch doors and the escape all ask
 `Edge.isMeasured` (a length, or every square answered 0; a route tile counts as answered). Such a path gets no escape,
 so its edges are held until the measured track after them covers the train, or to the end of the route: the safe
-direction. **Every other length rule asks the same question** (§5b), or a platform would admit a train whose tail lies
-past the 0 on track nothing claims.
+direction. **Every other length rule asks the same question** (§5b): the gate and the escape have to ask one question, and so
+do the route in and the tail walk, or a platform admits a train whose tail lies past the 0 on track nothing claims.
 
 So the Unmeasured Track display in the editor is **not** the list to work from (it is about how far a tail reaches): the
 refusal's own list is, in alphabetical order because the message shows only the first three. `MT-470` is the hands-on

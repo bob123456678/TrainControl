@@ -47,7 +47,7 @@ Part of the behavior reference: [`../behaviour.md`](../behaviour.md) is the inde
 - **A train that cannot reverse is turned on the way only to go home** (Adam: *"this should
   only be allowed if the train is going to reverse into its berth on the next turn"*). Every leg ends with the train
   turned if it stops at a terminus or a reversing point, so a plan may stop such a train on one only when its next move
-  takes it home; a train already standing on one moves as before. Otherwise the answer is `NO_PLAN_FOUND`.
+  takes it home; a train the railway already had standing on one moves as before. Otherwise the answer is `NO_PLAN_FOUND`.
   `core.testHomeStaging.testATrainThatCannotReverseIsTurnedOnTheWayOnlyToGoHome`.
 - **And not turned in the middle of a move either.** A route may turn a train at a reversing point and carry on, which
   for a train that cannot reverse means running on backwards; that is allowed only where the move ends somewhere the turn

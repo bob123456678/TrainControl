@@ -36,8 +36,8 @@ compatible with its own member), or the platform reads as empty with the train o
 first, before it is placed.
 
 **The graying on the menu is not this guard.** Items are grayed when the popup *opens* and the action fires when it is
-*clicked*; autonomy started from another window in between leaves a live item over a running railway. The refusal is in
-the method, and the menu asks the same question.
+*clicked*; autonomy started from another window in between leaves a live item over a running railway. The refusal has to be
+in the method, and the menu asks the same question so the two agree.
 
 > *"Where a train IS is a fact, and where the file thinks it is is a record."* - Adam (OB-183)
 

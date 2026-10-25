@@ -45,7 +45,8 @@ offered. Such a square with more than one way out is one copy per way out; with 
   `core.testACurvedPlatformRecordsASideTheBuildUses`, on the `curve-into-platform` scenario with a straight platform
   as the control.
 - It can be **set** afterwards from the **"<locomotive> is facing"** menu, in the editor and on the track diagram, under
-  its own heading in the same menu, because the two are opposite ends of one train.
+  its own heading in the same menu, because the two are opposite ends of one train, and because a second submenu is
+  what would give the editor a setting the viewer did not have.
 - **The sides offered are the ones the BUILD splits on**, not the compass direction of the neighboring point: a reduced
   edge can run several tiles and turn corners, so a rail leaving north and curving east reaches a neighbor lying east.
 - Not knowing is a legitimate answer, and it does **not** mean nothing is blocked: where the geometry leaves only one
@@ -92,7 +93,8 @@ ignorance.
 > randomly from the allowed departure destinations."* — Adam
 
 **The railway is walked**: which way a train ends up facing is decided by the track between the two platforms and by
-which way it set off. A square with one copy has one answer, which at a terminus is the reversal.
+which way it set off: one that leaves southbound round a loop is northbound one square away. A square with one copy
+has one answer, which at a terminus is the reversal.
 
 **The walk answers with the nearest copy a train could be STANDING on**, and the same paste twice gives the same
 railway. `Layout.getNeighbors` shuffles on purpose (*"Randomize order to allow for variation in paths"*, right for
