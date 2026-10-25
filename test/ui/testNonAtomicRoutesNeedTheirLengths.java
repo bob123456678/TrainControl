@@ -509,7 +509,7 @@ public class testNonAtomicRoutesNeedTheirLengths
         {
             {"TrainControlUI", "private void startAutonomyActionPerformed(", "runLocomotives();"},
             {"TrainControlUI", "private void executeTimetableActionPerformed(", "executeTimetable();"},
-            {"TrainControlUI", "public void requestReturnToHome()", "executeTimetable("},
+            {"ReturnHomeController", "    void requestReturnToHome()", "executeTimetable("},
             // THE TWO HAND DOORS ARE ONE since 2026-09-29: both send through `sendATrainByHand`, which dispatches through
             // `executePathByHand` since round 61
             {"TrainControlUI", "void sendATrainByHand(", "executePathByHand("},
@@ -590,7 +590,7 @@ public class testNonAtomicRoutesNeedTheirLengths
     {
         String gate = "keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack()";
 
-        String returnHome = SourceOf.declaration("public void requestReturnToHome()");
+        String returnHome = SourceOf.declaration("    void requestReturnToHome()");
 
         int homeBusy = returnHome.indexOf("HomeStaging.Outcome.LOCOMOTIVES_RUNNING");
 
@@ -645,7 +645,7 @@ public class testNonAtomicRoutesNeedTheirLengths
 
         String[][] doors = {
             {"Start", "private void startAutonomyActionPerformed(", null},
-            {"Return Home", "public void requestReturnToHome()", null},
+            {"Return Home", "    void requestReturnToHome()", null},
             {"Execute Timetable", "private void executeTimetableActionPerformed(", "this.executeTimetable.setEnabled(true);"}};
 
         for (String[] door : doors)

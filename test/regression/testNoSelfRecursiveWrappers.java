@@ -132,6 +132,8 @@ public class testNoSelfRecursiveWrappers
         { "whyAnswers", "src/org/traincontrol/gui/EditorWhy.java", "EditorWhy", AUTONOMY_EDITOR,
             "AutonomyEditorPanel", "editor." },
         { "RunGates", "src/org/traincontrol/gui/RunGates.java", "RunGates", WINDOW, "TrainControlUI", "ui." },
+        { "returnHomeController", "src/org/traincontrol/gui/ReturnHomeController.java", "ReturnHomeController", WINDOW,
+            "TrainControlUI", "ui." },
     };
 
     /**

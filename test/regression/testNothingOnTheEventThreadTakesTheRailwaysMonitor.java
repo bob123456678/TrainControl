@@ -182,11 +182,11 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
         ALLOWED.put("CaptionVisibility.java#workOutCaptionVisibility",
             "OFF THE EVENT THREAD: CoveredTrackRenderer, and the answer is painted by an invokeLater");
 
-        ALLOWED.put("TrainControlUI.java#workOutReturnHomeTriage",
+        ALLOWED.put("ReturnHomeController.java#workOutReturnHomeTriage",
             "OFF THE EVENT THREAD: ReturnHomeTriageRenderer, and the answer is painted by an"
             + " invokeLater");
 
-        ALLOWED.put("TrainControlUI.java#requestReturnToHome",
+        ALLOWED.put("ReturnHomeController.java#requestReturnToHome",
             "OFF THE EVENT THREAD: asked at the end of a staging run from inside the `new Thread` this"
             + " method has already started - the same thread that has been blocking on executeTimetable");
 
@@ -213,7 +213,7 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
             + " and the alternative is a lock-free copy of isOfferableToOperator, which is a second"
             + " answer to the question OB-205 exists to make there be one of (Adam, 2026-09-12)");
 
-        ALLOWED.put("TrainControlUI.java#namesWithHomes",
+        ALLOWED.put("ReturnHomeController.java#namesWithHomes",
             "OFF THE EVENT THREAD: reached only through describeStagingOutcome's IMPOSSIBLE branch,"
             + " and only describeStagingPlan passes a blocked list - which is called from inside the"
             + " Return Home worker thread, where the plan itself was made.  Every other caller of"

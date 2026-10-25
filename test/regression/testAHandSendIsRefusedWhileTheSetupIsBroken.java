@@ -121,7 +121,7 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
     {
         for (String[] door : new String[][] {
             {"private void executeTimetableActionPerformed(", "this.executeTimetable.setEnabled(false);", "Execute Timetable"},
-            {"public void requestReturnToHome()", "loadReturnToHomeTimetable(", "Return Home"}})
+            {"    void requestReturnToHome()", "loadReturnToHomeTimetable(", "Return Home"}})
         {
             String body = code(door[0]);
 

@@ -143,7 +143,7 @@ public class testTheRefusalsAreAskedAtTheDoors
         // THE FOUR 38ccbfc8 WAS FILED FOR.
         {"private void executeTimetableActionPerformed(", GATE,
             "a timetable starts trains, and an editor holds the diagram they would run on"},
-        {"public void requestReturnToHome(", GATE,
+        {"    void requestReturnToHome(", GATE,
             "Return Home is a timetable by another name and starts trains the same way"},
         {"private void switchCSLayoutMenuItemActionPerformed(", SETUP + "|" + EDITOR,
             "it replaces the whole diagram - during a run the capture is skipped BECAUSE trains are "
@@ -658,7 +658,7 @@ public class testTheRefusalsAreAskedAtTheDoors
     @Test
     public void testTheDoorsCarryTheStopsCountedWhereTheyChose() throws Exception
     {
-        String home = code("public void requestReturnToHome(");
+        String home = code("    void requestReturnToHome(");
 
         assertTrue(home.contains(".executeTimetable(stopsAtPress)"), "Return Home runs its plan with the stops counted"
             + " when it starts running, not when it was pressed - a Yes while it plans does not end it (RSA2-C1)");
