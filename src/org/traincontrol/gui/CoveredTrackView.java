@@ -5,7 +5,7 @@ package org.traincontrol.gui;
  * `CoveredTrackRenderer`, never on the event thread (OB-192), coalesced so the last ask always lands, and a bounded
  * wait for them to have landed.
  *
- * The marks, the flags, the ask and the worker stay on `TrainControlUI`; this holds the machine that drives them.
+ * The marks, the flags and the pool stay on `TrainControlUI`; the ask and the loop are `CoalescedAsk`'s.
  */
 final class CoveredTrackView extends SettledQuestion
 {

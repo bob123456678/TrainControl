@@ -545,6 +545,9 @@ AutonomyEditorPanel 99, LayoutEditor 47): a member used across a new package lin
   Before v2.7.0: point keys typed and checked (8), the popup listeners (30), the right-click items (69), the text
   canvas (71), the system command bytes (74), the focus-timer field (131), the tile refresh registry (209).
 - The 152 clusters below rank 80 with all their copies in one file were not read.
+- No claim covers the stale-answer discard in CaptionVisibility and ReturnHomeController: removing it from both
+  survived (the coalesced-worker merge's mutation M4, 2026-10-24).  A claim that an answer for a subject that has
+  since moved is not painted.
 - Left by `open-questions.md` (retired in 3.0.3): Adam asked to keep an eye on route choice not being reproducible
   between runs (behaviour.md §5a states the fact; nothing watches it); its §2b's "one fixture with a curve and a
   switch" and "the two menus NAME a square alike" were not confirmed done.  DD-A1, DD-C6, DD-C7 and DD-C8 stay in
