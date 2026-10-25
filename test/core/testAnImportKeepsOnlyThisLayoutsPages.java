@@ -22,21 +22,19 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 /**
  * Importing an export brings in only the pages this layout has, and says which it left out.
  *
- * Adam, MT-380, 2026-09-13, on importing into a one-page layout: *"the 'the setup was left alone' popup
- * shows twice (once at first import, once again when import is completed).  Then, it shows up after
- * every time the autonomy editor is opened."*  His ruling: **"keep only the pages, and alert the user."**
+ * Adam, MT-380, on importing into a one-page layout: "the 'the setup was left alone' popup shows twice (once at first
+ * import, once again when import is completed).  Then, it shows up after every time the autonomy editor is opened."
+ * His ruling: "keep only the pages, and alert the user."
  *
- * **What happened.**  `importBundle` took the exporter's whole page record, so an export of his
- * five-page railway gave `random_test_layout` five page names it will never have.  The store keeps the
- * names of absent pages deliberately - a OneDrive page still downloading must not be pruned - so every
- * save found five pages it could not load and refused to tidy.  The settings the export carried for
- * those pages were held for them too, and written back on every save.
+ * `importBundle` took the exporter's whole page record, so an export of his five-page railway gave a one-page layout
+ * five page names it will never have.  The store keeps the names of absent pages deliberately (a OneDrive page still
+ * downloading must not be pruned), so every save found pages it could not load and refused to tidy, and the settings
+ * held for them were written back on every save.
  *
- * **What this pins.**  After the import, `pagesNotLoaded` - the question every save asks - names none of
- * the exporter's extra pages; their settings are not in the file a save writes; the settings for the page
- * this layout does have came across; and the pages left out are reported.  And the control that keeps the
- * protection honest: a page this layout ALREADY knew and cannot load right now is still reported missing,
- * because an import has no business deciding a OneDrive page is gone.
+ * After the import, `pagesNotLoaded` (the question every save asks) names none of the exporter's extra pages; their
+ * settings are not in the file a save writes; the settings for the page this layout does have came across; and the
+ * pages left out are reported.  The control: a page this layout ALREADY knew and cannot load right now is still
+ * reported missing, since an import has no business deciding a OneDrive page is gone.
  *
  * Built on the store alone, in temporary folders - no window, no railway, no Preferences.
  *
@@ -61,11 +59,7 @@ public class testAnImportKeepsOnlyThisLayoutsPages
         delete(mine);
     }
 
-    /**
-     * A page the exporter had and this layout does not is left out: not recorded, not held, reported.
-     *
-     * @throws IOException from the temporary folders
-     */
+    /** A page the exporter had and this layout does not is left out: not recorded, not held, reported. */
     @Test
     public void testThePagesThisLayoutDoesNotHaveAreLeftOut() throws IOException
     {
@@ -117,13 +111,8 @@ public class testAnImportKeepsOnlyThisLayoutsPages
     }
 
     /**
-     * A page this layout already knew and cannot load right now is NOT dropped by an import.
-     *
-     * The control, and the protection the store exists to give: a OneDrive page that has not downloaded
-     * yet is absent in exactly the way a foreign page is, and only the person who knows may say it is
-     * gone. An import that pruned it would be a new way to lose a page's settings.
-     *
-     * @throws IOException from the temporary folders
+     * A page this layout already knew and cannot load right now is NOT dropped by an import: a OneDrive page not yet
+     * downloaded looks like a foreign page, and only the person who knows may say it is gone.
      */
     @Test
     public void testAPageThisLayoutAlreadyKnewIsStillProtected() throws IOException
@@ -167,16 +156,9 @@ public class testAnImportKeepsOnlyThisLayoutsPages
     }
 
     /**
-     * A foreign page that happens to carry the same id as one of this layout's pages is left out, and
-     * none of its settings land on the local page.
-     *
-     * Page ids are numbered from the same start on every railway, so an export of a five-page layout into
-     * a one-page one almost always has an id in common with it.  The page record merges by id and a key
-     * is resolved by id when its recorded name is unknown here - so the exporter's "Yard", id 1, was read
-     * straight onto this layout's "Main", id 1, while the import dialog said Yard's settings "were left
-     * out, because there is nothing here for them to belong to".
-     *
-     * @throws IOException from the temporary folders
+     * A foreign page that happens to carry the same id as one of this layout's pages is left out, and none of its
+     * settings land on the local page.  Page ids are numbered from the same start on every railway and the page record
+     * merges by id, so the exporter's "Yard", id 1, was read straight onto this layout's "Main", id 1.
      */
     @Test
     public void testAForeignPageWithAnIdInCommonIsLeftOutAndNotMergedOntoThisOne() throws IOException
@@ -214,12 +196,7 @@ public class testAnImportKeepsOnlyThisLayoutsPages
             "the page this layout does not have was not reported as left out");
     }
 
-    /**
-     * The control: the exporter's copy of a page this layout has lands on it whatever id either side
-     * gave it.
-     *
-     * @throws IOException from the temporary folders
-     */
+    /** The control: the exporter's copy of a page this layout has lands on it whatever id either side gave it. */
     @Test
     public void testAPageThisLayoutHasLandsOnItUnderAnyId() throws IOException
     {
@@ -244,14 +221,9 @@ public class testAnImportKeepsOnlyThisLayoutsPages
     }
 
     /**
-     * Their page carrying the id of one of this layout's UNLOADED pages lands on its own name, and the
-     * unloaded page keeps its settings and its protection.
-     *
-     * The page record merged "theirs wins per id", so their "Main" with id 7 overwrote this layout's record
-     * that id 7 is "Away" - a OneDrive page still downloading.  Away's held settings then resolved to Main
-     * and were read onto it, and Away stopped being reported as a page that is merely not loaded.
-     *
-     * @throws IOException from the temporary folders
+     * Their page carrying the id of one of this layout's UNLOADED pages lands on its own name, and the unloaded page
+     * keeps its settings and its protection: the page record merged "theirs wins per id", so their "Main" with id 7
+     * overwrote "7 is Away" (a OneDrive page still downloading), and Away's held settings were read onto Main.
      */
     @Test
     public void testTheirIdForAnotherPageDoesNotTakeOverAnUnloadedOne() throws IOException
@@ -305,10 +277,8 @@ public class testAnImportKeepsOnlyThisLayoutsPages
     }
 
     /**
-     * Their copy of a page this layout has but cannot load right now is held for that page, not put on the
-     * loaded page that happens to share their id for it.
-     *
-     * @throws IOException from the temporary folders
+     * Their copy of a page this layout has but cannot load right now is held for that page, not put on the loaded page
+     * that shares their id for it.
      */
     @Test
     public void testTheirUnloadedPagesSettingsWaitForItNotForTheIdHere() throws IOException
@@ -352,10 +322,8 @@ public class testAnImportKeepsOnlyThisLayoutsPages
     }
 
     /**
-     * A list naming a foreign square loses that member only, and a value that merely looks like a page id
-     * is not a page.
-     *
-     * @throws IOException from the temporary folders
+     * A list naming a foreign square loses that member only, and a value that merely looks like a page id is not a
+     * page.
      */
     @Test
     public void testOnlyTheForeignPiecesAreLeftOut() throws IOException
@@ -391,15 +359,9 @@ public class testAnImportKeepsOnlyThisLayoutsPages
     }
 
     /**
-     * With NO page loaded - every page still downloading - an import still translates by the record this
-     * setup was written with, and a page's settings stay on that page.
-     *
-     * The translation ran only when the store had an index, and a OneDrive start where every page is still
-     * a placeholder has none: the exporter's page record was adopted "theirs wins per id" again, the save
-     * wrote their "7 is Main" over "7 is Away", and on the next ordinary open Away's settings were read onto
-     * Main.
-     *
-     * @throws IOException from the temporary folders
+     * With NO page loaded - every page still downloading - an import still translates by the record this setup was
+     * written with, and a page's settings stay on that page: the translation ran only when the store had an index, and
+     * a OneDrive start with every page a placeholder has none, so "7 is Main" was written over "7 is Away".
      */
     @Test
     public void testAnImportWithNoPageLoadedStillKeepsEachPagesSettings() throws IOException
@@ -447,11 +409,7 @@ public class testAnImportKeepsOnlyThisLayoutsPages
             "Away's setting was read onto Main after an import made while no page was loaded (TDR-C6)");
     }
 
-    /**
-     * A field this version does not model is not saved in the exporter's page numbering.
-     *
-     * @throws IOException from the temporary folders
-     */
+    /** A field this version does not model is not saved in the exporter's page numbering. */
     @Test
     public void testAnUnmodelledFieldIsNotSavedInTheirNumbering() throws IOException
     {
@@ -486,12 +444,7 @@ public class testAnImportKeepsOnlyThisLayoutsPages
 
     // Fixtures
 
-    /**
-     * An export from a railway with two pages, carrying a setting on each.
-     *
-     * @return the parsed bundle
-     * @throws IOException from the temporary folder
-     */
+    /** An export from a railway with two pages, carrying a setting on each. */
     private org.json.JSONObject anExportOfTwoPages() throws IOException
     {
         AutonomyCompanionStore source = new AutonomyCompanionStore(theirs);
