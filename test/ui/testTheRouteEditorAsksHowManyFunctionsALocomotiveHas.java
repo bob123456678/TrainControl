@@ -22,30 +22,22 @@ import org.testng.annotations.Test;
 /**
  * The route editor refuses a function number the locomotive has not got (MT-464).
  *
- * Adam, 2026-09-21: *"there is no validation of the function count on mm2 locomotives in the route
- * view, F32 was accepted"*.  An MM2 decoder has five functions - `MarklinLocomotive.MM2_NUM_FN`, which
- * is what `getMaxNumF` hands the constructor and what `getNumF` reports - so F32 on one is a command
- * that saves cleanly and does nothing on the rails.
+ * Adam: "there is no validation of the function count on mm2 locomotives in the route view, F32 was accepted".  An MM2
+ * decoder has five functions (`MarklinLocomotive.MM2_NUM_FN`, what `getNumF` reports), so F32 saves cleanly and does
+ * nothing on the rails.
  *
- * **Why this class exists rather than another claim in `testRouteEditorValidation`.** That class builds
- * its editors as `new RouteEditorFrame(null, null)` - no parent window, so no model - and `problemsWith`
- * returns at `if (parent == null || parent.getModel() == null)` before it reaches any per-row rule.  Its
- * own javadoc says so in as many words: no row-level complaint is reachable from that fixture, not the
- * address, not "no such locomotive", and not this one.  So the function-range rule has never been
- * exercised anywhere.  This one pays for a real window and a real locomotive database to ask it.
+ * It is not another claim in `testRouteEditorValidation`: that class builds `new RouteEditorFrame(null, null)`, and
+ * `problemsWith` returns at `if (parent == null || parent.getModel() == null)` before any per-row rule, so the
+ * function-range rule was never exercised.  This one pays for a real window and a real locomotive database.
  *
- * **Through the CELL, not through a built row**, because the cell is what Adam typed into and because
- * the two halves of a function command live in two columns and one stored value: column 5 rebuilds the
- * setting as `number + ":" + state`, and a row assembled directly would be testing this test's
- * arithmetic instead of the editor's.
+ * Through the CELL, not a built row: column 5 rebuilds the setting as `number + ":" + state`, and a row assembled
+ * directly would test this test's arithmetic instead of the editor's.
  *
- * **The command table DOES mark now** (OB-246, Adam 2026-09-22: *"yes"*), and the third claim below is
- * about that.  It did not when this class was written, and this paragraph said so; the mark is the same
- * answer `everythingWrong` gives at Save, said while the choice is still in front of the user.
+ * The command table also marks the row (OB-246, Adam: "yes"); the mark is the same answer `everythingWrong` gives at
+ * Save, said while the choice is still in front of the user, and the third claim below is about it.
  *
- * MUTATION: drop `|| number >= loco.getNumF()` from the FUNCTION rule in `problemsWith` and the first
- * claim goes red; drop the whole rule and the control below still passes, which is what makes the pair
- * worth having.
+ * MUTATION: drop `|| number >= loco.getNumF()` from the FUNCTION rule in `problemsWith` and the first claim goes red;
+ * drop the whole rule and the control below still passes, which is what makes the pair worth having.
  *
  * @author Adam
  */
@@ -63,11 +55,8 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
     private static final int ADDRESS = 63;
 
     /**
-     * A locomotive whose name holds a COMMA, which is the one name a route cannot store.
-     *
-     * `RouteCommand.isNameUsable` refuses it because a command line is comma-separated - brackets are
-     * allowed (Adam, 2026-09-04: *"bracketed loc names should just be allowed"*), and only the comma
-     * is left.  A real database can hold one: nothing on the locomotive doors asks.
+     * A locomotive whose name holds a COMMA, the one name a route cannot store: `RouteCommand.isNameUsable` refuses it
+     * because a command line is comma-separated (brackets are allowed).  A real database can hold one.
      */
     private static final String LOC_COMMA = "Probe, Comma";
 
@@ -182,26 +171,17 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
     }
 
     /**
-     * A row Save would refuse is marked as it is typed, and a row Save accepts is not.
+     * A row Save would refuse is marked as it is typed, and a row Save accepts is not (OB-246).
      *
-     * **Adam, 2026-09-22, ruling on OB-246:** *"yes"*.  The target column offers every locomotive in
-     * the database, and one of them may hold a COMMA - which `RouteCommand.isNameUsable` refuses,
-     * because a command line is comma-separated.  So the dropdown offered it, the operator picked it,
-     * and Save refused with *"that name cannot be used in a route"*; the only way out was to rename
-     * the locomotive.
+     * The target column offers every locomotive in the database, one of which may hold a COMMA that
+     * `RouteCommand.isNameUsable` refuses, so the operator picked it and Save refused; the only way out was renaming
+     * the locomotive.  Marked rather than hidden, since dropping a name would refuse a legal selection with nothing
+     * shown: the row is drawn in the refusal ink with the reason on its tooltip (the OB-057 / OB-090 rule: the control
+     * that offers an action asks the question the guard asks).
      *
-     * **Marked rather than hidden.**  Dropping the name from the list would refuse a legal selection
-     * with nothing shown, which is the failure mode Adam has ruled against before.  The row is drawn
-     * in the refusal ink with the reason on its tooltip: the choice stays, and the editor says what
-     * Save will say.  That is the OB-057 / OB-090 rule - the control that offers an action asks the
-     * question the guard asks - met by making the offer honest rather than by removing it.
-     *
-     * **Asserted through the table's own renderer**, because what is claimed is what the user SEES.
-     * A claim that asked `problemsWith` would pass with the mark not drawn at all, which is exactly
-     * how this editor came to have a Save gate and no marking for a month.
-     *
-     * **And the mark is the SAME answer as the gate**, which the third assertion pins by name: a mark
-     * that said something of its own would be a second rule to keep in step with this one.
+     * Asserted through the table's own renderer, because what is claimed is what the user SEES; a claim on
+     * `problemsWith` would pass with the mark not drawn.  The third assertion pins the mark as the SAME answer as the
+     * gate by name.
      *
      * MUTATION: have `settle` record nothing and the first claim fails, the row drawn in ordinary ink
      * while Save still refuses it.  Mark on the answer alone - drop the `named` clause - and the
@@ -225,9 +205,8 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
                 frame[0].appendCommand(
                     RouteCommand.RouteCommandFunction(LOC, 1, true).toLine(null).trim());
 
-                // NOTHING SELECTED.  A selected row is painted in the look-and-feel's selection ink
-                // and the renderer leaves the foreground alone there, so a test that rendered the
-                // selected row would read the same color whatever the rule said.
+                // NOTHING SELECTED: a selected row is painted in the look-and-feel's selection ink, which hides the
+                // rule.
                 frame[0].clearCommandSelectionForTest();
             });
 
@@ -263,9 +242,8 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
                 "the row is marked for something Save does not refuse, so the mark and the gate"
                 + " disagree.  What Save said: " + frame[0].problemsForTest());
 
-            // AND THE + ROW UNDER IT SAYS NOTHING.  It returned before the tooltip was set, and
-            // this renderer is one recycled component for the whole table - so the line that adds a
-            // command wore the refusal of the row drawn a moment before it.
+            // AND THE + ROW UNDER IT SAYS NOTHING: this renderer is one recycled component, so it wore the refusal of
+            // the row drawn before it.
             final int plus = frame[0].commandRowCountForTest();
             final String[] onPlus = new String[1];
 
@@ -304,10 +282,6 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
 
     /**
      * The ink the table draws a command row's target cell in.
-     *
-     * @param frame the editor
-     * @param row which row
-     * @return its foreground
      */
     private static java.awt.Color inkOf(RouteEditorFrame frame, int row) throws Exception
     {
@@ -320,10 +294,6 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
 
     /**
      * The reason the table hangs on a command row's target cell, if any.
-     *
-     * @param frame the editor
-     * @param row which row
-     * @return its tooltip, or null
      */
     private static String tooltipOf(RouteEditorFrame frame, int row) throws Exception
     {
@@ -343,21 +313,15 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
     /**
      * The function column offers that locomotive's functions, and keeps a number already in the row.
      *
-     * **The other half of what Adam saw.**  The gate above refuses F32 at Save; nothing refused it as he
-     * typed it, because the command table has no live mark and column 5 was a plain digits-only cell.
-     * The rule this project has paid for repeatedly is that the control which OFFERS a value asks the
-     * question the guard asks (OB-057, OB-090), and the OLD route editor did exactly that by building
-     * its list from the locomotive - the note at the Save gate says so, in the sentence explaining what
-     * was given up when this editor started taking a typed number.
+     * The control which OFFERS a value asks the question the guard asks (OB-057, OB-090): the old route editor built
+     * its list from the locomotive, and the typed-number editor gave that up, with no live mark and a digits-only cell.
      *
-     * **A NUMBER ALREADY IN THE ROW IS OFFERED TOO, out of range or not.**  A combo box handed a value
-     * it has not got keeps whatever was selected, so a route already carrying F32 on a five-function
-     * locomotive would have that cell rewritten to F0 by a click and a click away - and F0 is the
-     * lights.  A cell that changes a command by being looked at is worse than the typo it was guarding.
+     * A NUMBER ALREADY IN THE ROW IS OFFERED TOO, out of range or not: a combo box handed a value it has not got keeps
+     * whatever was selected, so a route carrying F32 on a five-function locomotive would be rewritten to F0 (the
+     * lights) by a click and a click away.
      *
-     * **And where the target is not a locomotive this database has, there is nothing to ask** and a
-     * typed number is still taken - the editor must stay usable for a route whose locomotive is not on
-     * this railway, which is the whole reason it takes a typed number in the first place.
+     * Where the target is not a locomotive this database has, there is nothing to ask and a typed number is still
+     * taken, so the editor stays usable for a route whose locomotive is not on this railway.
      *
      * MUTATION: put `column == 5` back on the `digitsOnly()` line and the first claim goes red; drop
      * the "keep what is there" clause from `functionsOffered` and the second does.
@@ -421,11 +385,10 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
     }
 
     /**
-     * A name the database no longer has stays in the cell that holds it (Adam, 2026-10-08: *"Fix b5, 253"*).
-     * The locomotive and route columns, and a condition's locomotive, offered only the names the database has; a combo box
-     * handed a value it has not got keeps its own selection, so one click into a route naming a deleted locomotive and one
-     * click away rewrote the command to the first locomotive in the list - and the Save gate, which names "a locomotive
-     * nobody owns", was then satisfied.  The function column already kept a number in its cell (MT-464, above).
+     * A name the database no longer has stays in the cell that holds it (Adam: "Fix b5, 253").  A combo box handed a
+     * value it has not got keeps its own selection, so one click into a route naming a deleted locomotive and one away
+     * rewrote the command to the first locomotive in the list, which satisfied the Save gate.  The function column
+     * already kept a number in its cell (MT-464, above).
      *
      * MUTATION: offer only the database's names again, and this fails.
      *
@@ -598,10 +561,6 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
 
     /**
      * Whether the editor's save gate names this problem.
-     *
-     * @param editor the window
-     * @param problem the message it should carry
-     * @return whether any line of it contains that message
      */
     private static boolean complains(RouteEditorFrame editor, String problem)
     {
