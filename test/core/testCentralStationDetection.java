@@ -11,19 +11,14 @@ import support.SourceOf;
 /**
  * MT-060: a Central Station that answers slowly once is still found.
  *
- * Adam, 2026-08-27, on the real railway: "it works 9 out of 10 times.  sometimes I see this without a
- * positive detection: 192.168.50.25 is reachable .......... and then it just goes on.  if I try again,
- * it gets redetected."
+ * Adam, on the real railway: "it works 9 out of 10 times.  sometimes I see this without a positive detection:
+ * 192.168.50.25 is reachable .......... and then it just goes on.  if I try again, it gets redetected."
  *
- * That message is printed the moment a PING succeeds, so the host was there and answered; everything
- * after it is the web check. The ping was retried `PING_RETRY` times and the web request was not, so
- * one 500ms timeout - while ten threads are pinging the subnet - threw away a station that had just
- * proved it existed, and the scan walked past it.
- *
- * The station in these tests is a real HTTP server on a real socket that behaves the way his did: slow
- * the first time, fine the second. `checkWebServer` is asked directly rather than through the whole
- * subnet scan, because the scan needs a network with a Central Station on it and this needs to run on
- * a laptop.
+ * That message is printed the moment a PING succeeds, so everything after it is the web check.  The ping was retried
+ * `PING_RETRY` times and the web request was not, so one 500ms timeout while ten threads ping the subnet threw away a
+ * station that had just proved it existed.  The station here is a real HTTP server on a real socket that is slow the
+ * first time and fine the second; `checkWebServer` is asked directly rather than through the subnet scan, which needs a
+ * network with a Central Station on it.
  *
  * @author Adam
  */
@@ -85,11 +80,8 @@ public class testCentralStationDetection
     }
 
     /**
-     * And one attempt still means one attempt.
-     *
-     * The guard on the other side: a retry that could not be turned off would make the scan take as
-     * many times longer as it retries, on every address that answers a ping and is not a Central
-     * Station - a printer, a NAS, anything with a web interface.
+     * And one attempt still means one attempt: a retry that could not be turned off would make the scan take as many
+     * times longer as it retries on every address that answers a ping and is not a Central Station (a printer, a NAS).
      *
      * MUTATION: ignoring the `attempts` argument fails this.
      */
@@ -126,10 +118,8 @@ public class testCentralStationDetection
     }
 
     /**
-     * The scan and the explicit address check both go through the retrying version.
-     *
-     * The retry was put INSIDE the name both callers already use rather than beside it, so that there
-     * was no new call site anybody had to remember. This is what says so: two callers, no third method.
+     * The scan and the explicit address check both go through the retrying version: the retry sits INSIDE the name both
+     * callers already use, so there is no new call site to remember.  Two callers, no third method.
      *
      * MUTATION: giving `detectCentralStation` its own single-shot call fails this.
      */
@@ -147,9 +137,7 @@ public class testCentralStationDetection
             + "without meaning to");
     }
 
-    /**
-     * A local HTTP server on a free port, answering the Central Station path however it is told to.
-     */
+    /** A local HTTP server on a free port, answering the Central Station path however it is told to. */
     private HttpServer serving(com.sun.net.httpserver.HttpHandler handler) throws Exception
     {
         // Port 0: the operating system picks a free one.  A fixed port races the battery, which runs
