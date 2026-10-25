@@ -20,22 +20,17 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * Change ONE thing on a normally-running railway, and it is still there afterwards.
  *
- * Adam, 2026-09-08: **"we need more tests that just run the layout normally, change one thing, and
- * confirm that sticks. this is how I caught all the recent bugs..."**
+ * Adam: "we need more tests that just run the layout normally, change one thing, and confirm that sticks. this is how I
+ * caught all the recent bugs..."
  *
- * He is describing his own method, and it has a much better record than the suite's. The defects he
- * has found this way - the arrival side wiped when the train was placed on top of it, the
- * facing that came back as a different copy's, the caption mode remembered as a word and not as an
- * effect, the tail left on a square whose occupant had changed - are all the same
- * shape. Nothing REFUSED the change. It was accepted, it looked right, and it was gone by the time
- * anybody looked again, because something downstream rebuilt over it.
+ * The defects found this way (the arrival side wiped when the train was placed on top of it, the facing that came back
+ * as a different copy's, the caption mode remembered as a word and not as an effect, the tail left on a square whose
+ * occupant had changed) are all one shape: nothing REFUSED the change; it was accepted, looked right, and was gone by
+ * the time anybody looked again, because something downstream rebuilt over it.  A test that sets a value and reads it
+ * back cannot see that; what does is the round trip an operator makes: write it, then save, build, run, capture, save
+ * again, reload from disk, and ask whether it is still what you said.
  *
- * A test that sets a value and reads it straight back cannot see any of that, and the suite has plenty
- * of those. What catches it is the round trip an operator actually makes: **write it, then do the
- * ordinary things - save, build, run, capture, save again, reload from disk - and ask whether it is
- * still what you said.**
- *
- * The four steps are all load-bearing and each has eaten a value at least once:
+ * The steps are all load-bearing and each has eaten a value at least once:
  *
  * | | |
  * |---|---|
@@ -44,9 +39,8 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * | **capture** | folds the running layout back over the setup - where a departed train left its tail |
  * | **reload** | a fresh `AutonomySession` off the disk - where nothing that was never written survives |
  *
- * **Every property is checked and they are all reported together.** A loop that fails on the first one
- * hides the rest, and which of them survive is the whole diagnosis: one lost value is a bug in one
- * setter, and five lost values is a bug in the round trip.
+ * Every property is checked and all are reported together: one lost value is a bug in one setter, and five lost values
+ * is a bug in the round trip.
  *
  * MUTATION: making any of the setters write only to the running layout, or making the capture drop a
  * key it does not itself carry, fails this and names the property.
@@ -64,15 +58,10 @@ public class testOneChangeSticks
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        // OB-111: the sandbox is opened BEFORE the model is built, so nothing reaches Adam's railway.
-        // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111, and `test/layouts/live-snapshot`).
-        //
-        // The SHAPE is what this class is about, and the shape is the same in both.  Where his trains
-        // are standing, how long they are and which side they came in by are not, and reading those
-        // off the live folder is how `testTheLengthGuardsOnTheRealLayout` came to assert that the
-        // 2-8-4 stood at BottomMainB - it is at BottomMainA now, and that class was red for a reason
-        // that had nothing to do with any guard.  A fixture that moves while nobody is looking makes
-        // every class over it say something different every week.
+        // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111), opened BEFORE the model is built.  The SHAPE is
+        // what this class is about; where his trains stand, how long they are and which side they came in by are not,
+        // and reading those off the live folder is how `testTheLengthGuardsOnTheRealLayout` came to assert the 2-8-4 at
+        // BottomMainB when it is at BottomMainA now.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
         model = support.TestStation.simulated();
@@ -88,11 +77,7 @@ public class testOneChangeSticks
         if (sandbox != null) sandbox.close();
     }
 
-    /**
-     * One property at a time, through the whole round trip.
-     *
-     * @throws Exception on a failure to build
-     */
+    /** One property at a time, through the whole round trip. */
     @Test
     public void testEveryAuthoredValueSurvivesTheRoundTrip() throws Exception
     {
@@ -116,13 +101,9 @@ public class testOneChangeSticks
     }
 
     /**
-     * The arrival side, which is the one that has been lost twice.
-     *
-     * Kept apart from the table above because it is not a plain point property: it is written by the
-     * arrival, by three operator doors and by nothing else, and the old defect was the build applying it
-     * BEFORE placing the locomotive, so placing the train wiped the side that had just been set.
-     *
-     * @throws Exception on a failure to build
+     * The arrival side, which is the one that has been lost twice.  Kept apart because it is written by the arrival, by
+     * three operator doors and by nothing else, and the old defect was the build applying it BEFORE placing the
+     * locomotive, so placing the train wiped the side that had just been set.
      */
     @Test
     public void testTheArrivalSideSurvivesTheRoundTrip() throws Exception
@@ -137,9 +118,8 @@ public class testOneChangeSticks
 
         String recorded = null;
 
-        // A side the square can actually be entered by, where the build knows one - and any side at all
-        // where it does not, because what is being tested is whether the VALUE survives, not whether it
-        // is a sensible one.
+        // A side the square can actually be entered by, where the build knows one; any side at all where it does not,
+        // since the VALUE surviving is what is tested.
         for (org.traincontrol.automationui.TilePorts.Side side : session.arrivalSides(station))
         {
             recorded = side.name();
@@ -149,13 +129,9 @@ public class testOneChangeSticks
 
         if (recorded == null) recorded = sides.get(0);
 
-        // A TRAIN STANDING THERE, which is the only state a side is ever written in (2026-09-15).
-        //
-        // The arrival writes it for the train that arrived, and the three operator doors for the train they just
-        // placed; the menu offers it only where a train stands.  The capture reads a side from the copy
-        // carrying the train, so a side left on an empty square - which this set before it placed nothing - is dropped
-        // like the departed train's tail it is.  What this claim is about is unchanged: a side written for a
-        // standing train survives the save, the build, the capture and the reload.
+        // A TRAIN STANDING THERE, the only state a side is ever written in: the arrival writes it for the train that
+        // arrived and the three operator doors for the train they just placed.  The capture reads a side from the copy
+        // carrying the train, so a side left on an empty square is dropped like a departed train's tail.
         String standing = model.getLocList().get(0);
 
         session.placeLocomotive(station, standing);
@@ -171,11 +147,7 @@ public class testOneChangeSticks
             + " cost is that the track behind a standing train stops being blocked");
     }
 
-    /**
-     * A home assignment, which is authored and has no other source.
-     *
-     * @throws Exception on a failure to build
-     */
+    /** A home assignment, which is authored and has no other source. */
     @Test
     public void testAHomeSurvivesTheRoundTrip() throws Exception
     {
@@ -197,15 +169,7 @@ public class testOneChangeSticks
 
     // ---------------------------------------------------------------- the round trip itself
 
-    /**
-     * Writes one property and reports it if the round trip loses it.
-     *
-     * @param lost where to record a loss
-     * @param station the square
-     * @param key the property
-     * @param value what to set it to
-     * @throws Exception on a failure to build
-     */
+    /** Writes one property and reports it if the round trip loses it. */
     private void check(List<String> lost, TileKey station, String key, Object value) throws Exception
     {
         session.setPointProperty(station, key, value);
@@ -220,11 +184,7 @@ public class testOneChangeSticks
         }
     }
 
-    /**
-     * Everything the application does between one edit and the next look.
-     *
-     * @throws Exception on a failure to build
-     */
+    /** Everything the application does between one edit and the next look. */
     private void roundTrip() throws Exception
     {
         session.save();
@@ -239,13 +199,8 @@ public class testOneChangeSticks
     }
 
     /**
-     * The setup as it is on disk, read fresh.
-     *
-     * A getter on the live session would answer from memory, and memory is exactly what a reload is
-     * meant to be independent of.
-     *
-     * @return a session opened on the same folder
-     * @throws Exception on a failure to open
+     * The setup as it is on disk, read fresh: a getter on the live session would answer from memory, which a reload
+     * must be independent of.
      */
     private AutonomySession reopened() throws Exception
     {
@@ -256,11 +211,7 @@ public class testOneChangeSticks
         return fresh;
     }
 
-    /**
-     * A station this railway actually has.
-     *
-     * @return its square, or null
-     */
+    /** A station this railway actually has: its square, or null. */
     private TileKey aNamedStation()
     {
         for (TileKey square : session.getReducer().getPoints().keySet())
