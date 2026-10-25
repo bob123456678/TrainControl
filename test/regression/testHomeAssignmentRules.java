@@ -9,32 +9,20 @@ import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import support.SourceOf;
 
 /**
- * The three rules about a station's home locomotive.
+ * The three rules about a station's home locomotive (MT-112).
  *
- * MT-112, from OB-022. All three were code that existed, was commented, was believed to work -
- * and had lost every caller that ran it. The review put it plainly: `HomeLocomotiveMenu` lost four of
- * its five callers, "two safety warnings are now unreachable and their tests still pass".
- *
- * That is the reason these are tested here as RULES rather than as dialogs. A test that drives a window
- * proves the window; what went wrong was that nothing drove the window at all, and a rule with no
- * caller passes every test written about the rule.
- *
- * So two of the three are pure functions now, tested directly, and the third is checked where it is
- * decided. Each test also asserts the rule is still WIRED - the failure being guarded against is a
- * correct rule nobody asks.
+ * `HomeLocomotiveMenu` lost four of its five callers, so two safety warnings were unreachable while their tests passed.
+ * A test that drives a window proves the window, and a rule with no caller passes every test written about the rule, so
+ * two of the three are pure functions tested directly and the third is checked where it is decided.  Each test also
+ * asserts the rule is still wired: the failure guarded against is a correct rule nobody asks.
  *
  * @author Adam
  */
 public class testHomeAssignmentRules
 {
     /**
-     * Rule 1: the list keeps a home naming a locomotive autonomy no longer runs.
-     *
-     * "It must still show the old name, not None. Press Cancel and the home must be unchanged."
-     *
-     * A non-editable combo cannot preselect a value its model does not hold, so leaving the name out
-     * made the existing assignment the one thing that could not be chosen: the dialog opened showing
-     * "None", and pressing OK cleared the station's home without anyone asking for it.
+     * Rule 1: the list keeps a home naming a locomotive autonomy no longer runs.  A non-editable combo cannot preselect
+     * a value its model does not hold, so leaving the name out opened the dialog on "None" and OK cleared the home.
      */
     @Test
     public void testTheHomeListKeepsAHomeAutonomyNoLongerRuns()
@@ -58,9 +46,7 @@ public class testHomeAssignmentRules
             "the locomotives autonomy runs were reordered or lost");
     }
 
-    /**
-     * And it does not list a home twice when autonomy does run it.
-     */
+    /** And it does not list a home twice when autonomy does run it. */
     @Test
     public void testAHomeStillInAutonomyIsNotListedTwice()
     {
@@ -72,12 +58,7 @@ public class testHomeAssignmentRules
             + "twice and the user cannot tell the entries apart");
     }
 
-    /**
-     * With nothing placed and no home, there is nothing to choose but "None".
-     *
-     * The dialog says so rather than opening on a list of one - checked here because the emptiness is
-     * what the caller tests to decide that.
-     */
+    /** With nothing placed and no home, there is nothing to choose but "None"; the caller tests the emptiness. */
     @Test
     public void testWithNothingToOfferTheListHoldsOnlyNone()
     {
@@ -86,10 +67,7 @@ public class testHomeAssignmentRules
     }
 
     /**
-     * Rule 3: excluding a locomotive from the station it is homed at is a contradiction, and is named.
-     *
-     * Not forbidden - somebody may mean it - but shown, rather than left to be discovered when a train
-     * has nowhere to go at the end of a run.
+     * Rule 3: excluding a locomotive from the station it is homed at is a contradiction, and is named, not forbidden.
      */
     @Test
     public void testExcludingALocomotiveFromItsOwnHomeIsReported()
@@ -121,13 +99,7 @@ public class testHomeAssignmentRules
             "an allow-only list that names the home was reported as breaking it");
     }
 
-    /**
-     * And all three rules are actually ASKED.
-     *
-     * This is the half that matters. Every one of these rules already existed, was commented, and was
-     * believed to work; what had gone was the caller. A rule with no caller passes every test written
-     * about the rule, which is exactly how two safety warnings sat unreachable with their tests green.
-     */
+    /** And all three rules are actually asked: what had gone was the caller. */
     @Test
     public void testEachRuleIsStillWiredToSomething() throws Exception
     {
@@ -142,15 +114,10 @@ public class testHomeAssignmentRules
             "nothing asks homeBrokenBy about a station's actual home, so the exclusion warning is "
             + "unreachable - which is the exact fault DD-A6 found");
 
-        // whyNotAHome, not canBeHome.
-        //
-        // canBeHome answers false for two unrelated reasons and this panel is about one of them.
-        // Rolling them together made it warn "no train can come to rest here" about a square whose
-        // problem is that it is two places - and that dialog is warn-and-proceed, so agreeing walked
-        // into a throw and a second dialog contradicting the first.
-        //
-        // The message key is named as well as the method, because the method alone is satisfied by a
-        // panel that consults it and then acts on the wrong half.
+        // whyNotAHome, not canBeHome: canBeHome answers false for two unrelated reasons, and rolling them together
+        // warned "no train can come to rest here" about a square that is two places.  The message key is named as well
+        // as the method, because the method alone is satisfied by a panel that consults it and then acts on the wrong
+        // half.
         assertTrue(source.contains("HomeStaging.whyNotAHome"),
             "rule 2's warning - a home the locomotive cannot reach - is decided by "
             + "HomeStaging.whyNotAHome, and nothing in the panel consults it any more");
@@ -160,17 +127,10 @@ public class testHomeAssignmentRules
             + "warning about whichever reason came back - including the one the model refuses "
             + "outright, which is what LD-9 was");
 
-        // The CALL SITES, not only the bodies.
-        //
-        // The three checks above search for tokens that live inside private helpers, so they prove
-        // the helper still exists - not that anything reaches it. Deleting `mayRestHere`'s single
-        // caller leaves every one of them satisfied and rule 2 unreachable, which is exactly the
-        // shape: "a rule with no caller passes every test written about the rule". Demonstrated by
-        // mutation, 5 of 5 green with the caller gone.
-        //
-        // A private helper cannot be reached from this package, so this is the same source read one
-        // level up rather than a real invocation. It is not proof that the path executes; it is proof
-        // that the path is still written down, which is one more link of the chain than before.
+        // The call sites, not only the bodies: the checks above find tokens inside private helpers, so deleting
+        // `mayRestHere`'s single caller leaves them satisfied and rule 2 unreachable.  A private helper cannot be
+        // reached from this package, so this reads the source one level up: proof the path is written down, not that it
+        // runs.
         assertTrue(source.contains("mayRestHere(tile, picked)"),
             "nothing calls mayRestHere, so rule 2's warning - a home the locomotive cannot reach - "
             + "cannot be produced however correct the helper is. The token check above passes on the "
