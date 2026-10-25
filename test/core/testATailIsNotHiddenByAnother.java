@@ -18,20 +18,15 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * One train's tail claim does not hide another train's on the same place.
+ * One train's tail claim does not hide another train's on the same place.  The walk that claims the track behind every
+ * standing train records ONE train per place, the one walked last, in the order of the railway's map of Points.  Two
+ * tails that foul one switch from its two legs both claim its square; when the one recorded is the train being routed
+ * (its own tail is never an obstacle to it, behaviour.md 5c) the other's claim is gone and a route leaving over its own
+ * tail is cleared into the other train.
  *
- * The walk that claims the track behind every standing train records ONE train per place, and the train walked last
- * wins - in the order of the railway's map of Points, which nobody chose.  Two tails that foul one switch from its two
- * legs both claim the switch's square, and only one of them is recorded there.  When the one recorded is the train
- * being routed - its own tail is never an obstacle to it (behaviour.md 5c) - the other train's claim on that square is
- * gone, and a route leaving over its own tail through the switch is cleared into the other train.
- *
- * The fixture is the smallest one with the shape: a switch square S, two berths behind its two legs, a train in each
- * that came in over S and now faces back out over it.  Each train's way out is asked about with the other standing -
- * whichever of the two the walk records on S, one of them is the train being routed.
- *
- * A third train stands on a rail of its own, unmoved, so a record that blamed every train for every tail has somebody to
- * blame.
+ * The fixture is the smallest with the shape: a switch square S, two berths behind its two legs, a train in each that
+ * came in over S and faces back out over it, each asked about with the other standing.  A third train on a rail of its
+ * own gives a record that blamed every train for every tail somebody to blame.
  *
  * MUTATION: walk the train being routed along with the others in `isPathClear`, and
  * `testTheRailwayAsksAboutEveryTailOnThePlace` fails; give each train Return Home's whole record of the starting tails
@@ -81,8 +76,7 @@ public class testATailIsNotHiddenByAnother
 
         layout = new Layout(model);
 
-        // J - the switch - with a berth behind each leg.  The switch's square S is on both legs; each leg has a square of
-        // its own, a and b.  Every rail is written both ways, as the build writes rail.
+        // J - the switch - with a berth behind each leg; S is on both legs, each leg has a square of its own, a and b.
         junction = point("A1_J", false);
         berthOne = point("A1_BERTH_ONE", true);
         berthTwo = point("A1_BERTH_TWO", true);
@@ -194,9 +188,7 @@ public class testATailIsNotHiddenByAnother
         berthOne.setLocomotive(one);
     }
 
-    /**
-     * The railway refuses each train's way out through the switch while the other's tail lies across it.
-     */
+    /** The railway refuses each train's way out through the switch while the other's tail lies across it. */
     @Test
     public void testTheRailwayAsksAboutEveryTailOnThePlace()
     {
@@ -222,11 +214,7 @@ public class testATailIsNotHiddenByAnother
         }
     }
 
-    /**
-     * Return Home asks the same: its record of the tails at the start of a plan keeps every train on a place.
-     *
-     * @throws Exception from the reflection
-     */
+    /** Return Home asks the same: its record of the tails at the start of a plan keeps every train on a place. */
     @Test
     @SuppressWarnings("unchecked")
     public void testReturnHomeAsksAboutEveryTailOnThePlace() throws Exception
@@ -270,12 +258,8 @@ public class testATailIsNotHiddenByAnother
     }
 
     /**
-     * Return Home keeps the switch's sensor shut while EITHER train still lies across it: each train accounts
-     * for the end of the rail its own tail reaches, so the first to move does not free the sensor under the other.
-     *
-     * The switch's sensor reads occupied, as tails hold sensors, with no train standing on its square.
-     *
-     * @throws Exception from the reflection
+     * Return Home keeps the switch's sensor shut while EITHER train still lies across it (tails hold sensors, with no
+     * train standing on its square): the first to move does not free the sensor under the other.
      */
     @Test
     @SuppressWarnings("unchecked")
