@@ -18,31 +18,21 @@ import org.traincontrol.marklin.MarklinLocomotive;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * A train that was sent somewhere and has not arrived says so.  A route waiting on its sensor does not.
+ * A train that was sent somewhere and has not arrived says so.  A route waiting on its sensor does not (MT-037:
+ * shrink the quota, put a train on a station with two or more sensors between it and its target, trigger the first by
+ * hand, wait past the quota, and look at the log; simulation OFF for autonomy, because a simulated run triggers the
+ * sensors for you).
  *
- * MT-037, written to Adam's specification: shrink the quota, put a train on a station with two or more
- * sensors between it and its target, trigger the first by hand, wait past the quota, and look at the
- * log.  Debug and simulate on for the application; simulation OFF for autonomy, because a simulated run
- * triggers the sensors for you and the train is then never stuck.
+ *  - It must fire: a train sent onto a path it never completes (lifted off, power cut, a sensor that failed to make)
+ *    otherwise waits silently and for ever.
+ *  - It must not fire for a route: a route's trigger monitor sits on its sensor for as long as the layout runs, through
+ *    the same wait, on a locomotive called "Dummy Loc"; an advisory inside the wait announced a phantom stuck train per
+ *    enabled route every five minutes.
  *
- * Both halves matter, and they pull in opposite directions:
- *
- *  - **It must fire.**  A train sent onto a path that it never completes - lifted off, power cut at the
- *    locomotive, a sensor that failed to make - waits for its next sensor silently and for ever.  That
- *    is by design, and the design is right; what was missing was anybody saying so out loud.
- *  - **It must not fire for a route.**  A route's trigger monitor sits on its sensor for as long as the
- *    layout runs, and it does that through the same wait, on a locomotive called "Dummy Loc" that
- *    exists only to borrow these utilities.  When the advisory was first written it went inside the
- *    wait, so every enabled route in the layout announced a phantom stuck train every five minutes.
- *
- * That is why the quota is passed in by the CALLER rather than read inside the wait: "this train was
- * dispatched and is on its way" is a fact the dispatch loop has and the wait does not.  These tests
- * cover both sides of that split, and the second one is the regression test for the leak.
- *
- * The quota is a second rather than Adam's ten.  Nothing about what is asserted depends on the number -
- * it is the same code either way - and FEEDBACK_ADVISORY_MS is a public volatile field precisely so
- * that a test can shrink it.  His ten seconds is the right number for doing this by hand, where the
- * point is to watch a real railway do nothing for a while.
+ * So the quota is passed in by the CALLER rather than read inside the wait: "this train was dispatched and is on its
+ * way" is a fact the dispatch loop has and the wait does not.  The quota is a second rather than Adam's ten, which
+ * only matters for watching a real railway by hand; FEEDBACK_ADVISORY_MS is a public volatile field so a test can
+ * shrink it.
  */
 public class testStuckTrainAdvisory
 {
@@ -54,14 +44,14 @@ public class testStuckTrainAdvisory
 
     private static long quotaWas;
 
-    /** Long enough to be sure the wait has had its chance, short enough not to pad the battery */
+    /** Long enough to be sure the wait has had its chance, short enough not to pad the battery. */
     private static final long QUOTA_MS = 1000;
 
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        // Simulate and debug, as Adam's procedure says - this is the application's simulation, which
-        // only stops it talking to a Central Station that is not there
+        // Simulate and debug, as Adam's procedure says; the application's simulation only stops it talking to a Central
+        // Station.
         model = support.TestStation.simulatedInDebug();
 
         model.stop();
@@ -70,8 +60,8 @@ public class testStuckTrainAdvisory
 
         Locomotive.FEEDBACK_ADVISORY_MS = QUOTA_MS;
 
-        // Everything the model logs, captured where it goes: log(String) writes to this logger, and
-        // to the view when there is one.  There is no view here.
+        // Everything the model logs, captured where it goes: log(String) writes to this logger, and to the view when
+        // there is one.
         listener = new Handler()
         {
             @Override
@@ -102,12 +92,8 @@ public class testStuckTrainAdvisory
     }
 
     /**
-     * A train dispatched over two sensors, stopped after the first, is named in the log.
-     *
-     * The whole path, not the wait on its own: the advisory is asked for by the dispatch loop, and the
-     * defect this file exists for was twice about which CALLER asks.  So this drives a real Layout with
-     * a real path and stops the train where a real one stops - between sensors, with the first one made
-     * and the second one never coming.
+     * A train dispatched over two sensors, stopped after the first, is named in the log.  The whole path, not the wait
+     * on its own: the advisory is asked for by the dispatch loop, and the defect was twice about which CALLER asks.
      */
     @Test
     public void testATrainThatStopsBetweenSensorsIsNamed() throws Exception
@@ -116,8 +102,7 @@ public class testStuckTrainAdvisory
 
         Layout layout = threeStations("MT37");
 
-        // Autonomy simulation OFF, which is the point of the whole procedure: with it on, the sensors
-        // are triggered for us a moment after each edge and no train is ever stuck
+        // Autonomy simulation OFF: with it on, the sensors are triggered for us and no train is ever stuck.
         layout.setSimulate(false);
 
         MarklinLocomotive loc = model.getLocByName(model.getLocList().get(0));
@@ -135,16 +120,14 @@ public class testStuckTrainAdvisory
         dispatch.setDaemon(true);
         dispatch.start();
 
-        // Under way FIRST.  The dispatch checks the whole path is clear before it takes it, so making
-        // a sensor before that check refuses the path for being occupied - which is the same railway
-        // saying something completely different, and is what this test did on its first run.
+        // Under way FIRST: the dispatch checks the whole path is clear before it takes it, so a sensor made before that
+        // refuses the path for being occupied.
         assertTrue(startedMoving(loc), "the train never started: " + logged);
 
         // The first sensor makes, by hand - the train has reached the middle station
         occupy(layout, "MT37_B");
 
-        // And the second never does.  Past the quota, plus enough for the dispatch loop to have got
-        // there and settled.
+        // And the second never does: past the quota, plus enough for the dispatch loop to have settled.
         Thread.sleep(QUOTA_MS * 4);
 
         String said = find("has not reached");
@@ -164,11 +147,8 @@ public class testStuckTrainAdvisory
     }
 
     /**
-     * And a route's trigger monitor, waiting on its sensor for ever, says nothing at all.
-     *
-     * The regression test.  MarklinRoute watches its trigger sensor through this same wait, on a
-     * locomotive it invents called "Dummy Loc" - so an advisory built into the wait rather than asked
-     * for by the caller announced a stuck train, once per enabled route, for ever.
+     * And a route's trigger monitor, waiting on its sensor for ever, says nothing at all: `MarklinRoute` waits on its
+     * trigger through this same wait, on "Dummy Loc".
      */
     @Test
     public void testARouteWaitingOnItsSensorSaysNothing() throws Exception
@@ -191,12 +171,8 @@ public class testStuckTrainAdvisory
 
         Thread.sleep(QUOTA_MS * 4);
 
-        // The precondition that makes the two assertions below mean anything.
-        //
-        // They are both assertNull, so a thread that threw on its first line - and a bare Thread
-        // swallows that - would pass them while nothing had ever waited on anything.  This is the
-        // regression test for "every enabled route announces a phantom stuck train", so a version of it
-        // that cannot fail is worse than not having it.
+        // The precondition that makes the two assertNull below mean anything: a bare Thread swallows a throw on its
+        // first line, and a regression test that cannot fail is worse than none.
         assertTrue(watching.isAlive(),
             "the watching thread is not running, so nothing waited and the assertions below prove "
             + "nothing");
@@ -212,12 +188,7 @@ public class testStuckTrainAdvisory
         watching.interrupt();
     }
 
-    /**
-     * The advisory is said once, not every time round the loop.
-     *
-     * A message repeated every wake-up is a message nobody reads, and this wait wakes as often as the
-     * quota until it has spoken.
-     */
+    /** The advisory is said once, not every time round the loop. */
     @Test
     public void testItIsSaidOnce() throws Exception
     {
@@ -249,9 +220,7 @@ public class testStuckTrainAdvisory
         waiting.interrupt();
     }
 
-    /**
-     * Three stations in a line, so a train sent from one end crosses two sensors to reach the other.
-     */
+    /** Three stations in a line, so a train sent from one end crosses two sensors to reach the other. */
     private static Layout threeStations(String prefix) throws Exception
     {
         Layout layout = new Layout(model);
@@ -275,20 +244,12 @@ public class testStuckTrainAdvisory
     }
 
     /**
-     * A sensor that makes and lets go does not restart the clock.
+     * A sensor that makes and lets go does not restart the clock.  The wait starts again on a flicker, and the elapsed
+     * time in the advisory must still be measured from when the train was SENT; the restart carried a REMAINDER of the
+     * quota instead of the origin, so a train missing for five and a half minutes was announced after "0 minutes".
      *
-     * The flicker case: a tile that bounces, or a bogie that bridges a gap.  The wait starts again -
-     * correctly, since a train that has not really arrived must not be treated as though it had - and
-     * the elapsed time in the advisory must still be measured from when the train was SENT.
-     *
-     * It was not.  The restart carried a REMAINDER of the quota rather than the origin, so the clock
-     * began again with it and a train missing for five and a half minutes was announced as stuck after
-     * "0 minutes".
-     *
-     * This watches the number the hook is handed rather than the sentence it produces, because the
-     * sentence rounds to whole minutes and every number in a test this short rounds to zero.  The first
-     * version of this test asserted on the sentence, and a build with the defect deliberately put back
-     * passed it - which is the whole reason to mutate a test before believing it.
+     * This watches the number the hook is handed rather than the sentence, because the sentence rounds to whole
+     * minutes and every number in a test this short rounds to zero.
      */
     @Test
     public void testAFlickerDoesNotRestartTheClock() throws Exception
@@ -335,12 +296,7 @@ public class testStuckTrainAdvisory
         waiting.interrupt();
     }
 
-    /**
-     * A locomotive that writes down what the advisory hook was handed.
-     *
-     * waitedTooLongFor is protected, which is exactly what it is for: the base class calls it, the
-     * Marklin subclass logs it, and a test can watch the number without the message having to carry it.
-     */
+    /** A locomotive that writes down what the advisory hook was handed (`waitedTooLongFor` is protected, for this). */
     private static final class Watcher extends MarklinLocomotive
     {
         volatile long reported = -1;
@@ -357,11 +313,7 @@ public class testStuckTrainAdvisory
         }
     }
 
-    /**
-     * Waits until the dispatch has actually set the train going.
-     *
-     * @return whether it did, within a few seconds
-     */
+    /** Waits until the dispatch has actually set the train going, within a few seconds. */
     private static boolean startedMoving(MarklinLocomotive loc) throws Exception
     {
         for (int waited = 0; waited < 60; waited++)
@@ -374,10 +326,7 @@ public class testStuckTrainAdvisory
         return false;
     }
 
-    /**
-     * Makes a station's sensor by hand, which is how Adam tests this: clicking the s88 on the track
-     * diagram rather than running a train over it.
-     */
+    /** Makes a station's sensor by hand, as Adam tests this: clicking the s88 on the track diagram. */
     private static void occupy(Layout layout, String point)
     {
         String sensor = layout.getPoint(point).getS88();
@@ -387,7 +336,7 @@ public class testStuckTrainAdvisory
         model.setFeedbackState(sensor, true);
     }
 
-    /** The sensor a station's Point is watching, as the advisory names it */
+    /** The sensor a station's Point is watching, as the advisory names it. */
     private static String waitingFor(Layout layout, String point)
     {
         return layout.getPoint(point).getS88();
