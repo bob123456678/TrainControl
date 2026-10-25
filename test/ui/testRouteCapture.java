@@ -14,16 +14,11 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * Capturing a route by working the railway, which is the route editor's most useful trick.
- *
- * Rather than looking up addresses, the user ticks a box, throws the switches and signals in the order
- * they want them, and watches the route write itself.  What actually happens is that every accessory
- * change produces a setting line, and the open editor is handed it to parse.
- *
- * There are two editors now, and both take that same line - so what has to hold is that the line an
- * accessory produces is one the parser understands, and that the new editor turns it into the right
- * row.  A capture that silently produced nothing, or the wrong address, would be a route that looks
- * built and does something else.
+ * Capturing a route by working the railway, which is the route editor's most useful trick: the user ticks a box, throws
+ * the switches and signals in the order they want, and every accessory change produces a setting line that the open
+ * editor is handed to parse.  Both editors take that same line, so what has to hold is that the line an accessory
+ * produces is one the parser understands and the new editor turns into the right row; a capture that silently produced
+ * nothing, or the wrong address, would be a route that looks built and does something else.
  */
 public class testRouteCapture
 {
@@ -36,10 +31,8 @@ public class testRouteCapture
     private static MarklinControlStation model;
 
     /**
-     * THE OPERATOR'S RAILWAY IS NOT THIS TEST'S TO OPEN (OB-111).
-     *
-     * init() reads the layout preference and loads whatever it names, which on his machine is his
-     * live layout.  This class never had a sandbox before now.
+     * THE OPERATOR'S RAILWAY IS NOT THIS TEST'S TO OPEN (OB-111): init() loads the layout preference, which on his
+     * machine is his live layout.
      */
     private static support.LayoutSandbox sandbox;
 
@@ -59,11 +52,9 @@ public class testRouteCapture
     }
 
     /**
-     * What a thrown accessory produces is what the parser reads.
-     *
-     * The seam capture rests on.  Both editors are handed toAccessorySettingString and both call
-     * fromLine on it, so if those two ever stop agreeing, capture silently stops working - the box
-     * stays ticked, switches get thrown, and nothing appears.
+     * What a thrown accessory produces is what the parser reads: the seam capture rests on.  Both editors are handed
+     * toAccessorySettingString and call fromLine on it, so if the two stop agreeing the box stays ticked, switches get
+     * thrown, and nothing appears.
      */
     @Test
     public void testAThrownAccessoryProducesALineTheParserUnderstands() throws Exception
@@ -88,10 +79,8 @@ public class testRouteCapture
     }
 
     /**
-     * A captured line becomes a row the new editor can show.
-     *
-     * The new editor keeps commands as rows rather than text, so a captured line has to survive one
-     * more step than it used to.  If it does not, capture appears to do nothing.
+     * A captured line becomes a row the new editor can show: it keeps commands as rows rather than text, so a captured
+     * line has to survive one more step than it used to.
      */
     @Test
     public void testACapturedLineBecomesAnEditableRow() throws Exception
@@ -118,10 +107,8 @@ public class testRouteCapture
     }
 
     /**
-     * The new editor's own capture: a line goes in, a row comes out.
-     *
-     * Needs a display, because the frame is a window.  Skipped rather than failed without one - the
-     * two tests above cover the part that can go wrong headlessly.
+     * The new editor's own capture: a line goes in, a row comes out.  Needs a display, because the frame is a window;
+     * skipped rather than failed without one.
      */
     @Test
     public void testTheNewEditorAppendsACapturedCommand() throws Exception
@@ -211,9 +198,7 @@ public class testRouteCapture
         javax.swing.SwingUtilities.invokeAndWait(() -> frame[0].dispose());
     }
 
-    /**
-     * A line that means nothing is ignored rather than ending the capture.
-     */
+    /** A line that means nothing is ignored rather than ending the capture. */
     @Test
     public void testRubbishDoesNotBreakACapture() throws Exception
     {
