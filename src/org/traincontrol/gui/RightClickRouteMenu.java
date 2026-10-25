@@ -1,18 +1,18 @@
 package org.traincontrol.gui;
 
 import java.awt.Color;
-import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import org.traincontrol.base.Route;
+import org.traincontrol.gui.widgets.PopupListener;
 import org.traincontrol.util.I18n;
 
 /**
  * This class represents a right-click menu with various utility functions displayed when any route entry is right-clicked
  * @author Adam
  */
-public class RightClickRouteMenu extends MouseAdapter
+public class RightClickRouteMenu extends PopupListener
 {    
     protected TrainControlUI ui;
     
@@ -22,18 +22,7 @@ public class RightClickRouteMenu extends MouseAdapter
     }
     
     @Override
-    public void mousePressed(MouseEvent e)
-    {
-        if (e.isPopupTrigger()) showPopup(e);
-    }
-
-    @Override
-    public void mouseReleased(MouseEvent e)
-    {
-        if (e.isPopupTrigger()) showPopup(e);
-    }
-
-    private void showPopup(MouseEvent e)
+    protected void showPopup(MouseEvent e)
     {
         openFor(ui, e);
     }

@@ -1,20 +1,20 @@
 package org.traincontrol.gui.autonomy;
 
 import java.awt.Color;
-import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import org.traincontrol.gui.AutonomyEditorPanel;
 import org.traincontrol.gui.RunGates;
 import org.traincontrol.gui.TrainControlUI;
+import org.traincontrol.gui.widgets.PopupListener;
 import org.traincontrol.util.I18n;
 
 /**
  * This class represents a right-click menu with various utility functions displayed when any timetable entry is right-clicked
  * @author Adam
  */
-public class RightClickTimetableMenu extends MouseAdapter
+public class RightClickTimetableMenu extends PopupListener
 {    
     protected TrainControlUI ui;
     
@@ -24,18 +24,7 @@ public class RightClickTimetableMenu extends MouseAdapter
     }
     
     @Override
-    public void mousePressed(MouseEvent e)
-    {
-        if (e.isPopupTrigger()) showPopup(e);
-    }
-
-    @Override
-    public void mouseReleased(MouseEvent e)
-    {
-        if (e.isPopupTrigger()) showPopup(e);
-    }
-
-    private void showPopup(MouseEvent e)
+    protected void showPopup(MouseEvent e)
     {
         if (ui.getTimetableEntryAtCursor(e) != null)
         {

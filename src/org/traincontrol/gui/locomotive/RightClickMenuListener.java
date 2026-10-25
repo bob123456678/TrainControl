@@ -1,20 +1,20 @@
 package org.traincontrol.gui.locomotive;
 
 import java.awt.Color;
-import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import javax.swing.JButton;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import org.traincontrol.gui.TrainControlUI;
+import org.traincontrol.gui.widgets.PopupListener;
 import org.traincontrol.util.I18n;
 
 /**
  * This class represents a right-click menu with various utility functions displayed when any locomotive button is right-clicked
  * @author Adam
  */
-public class RightClickMenuListener extends MouseAdapter
+public class RightClickMenuListener extends PopupListener
 {    
     protected TrainControlUI ui;
     protected JButton source;
@@ -26,18 +26,7 @@ public class RightClickMenuListener extends MouseAdapter
     }
     
     @Override
-    public void mousePressed(MouseEvent e)
-    {
-        if (e.isPopupTrigger()) showPopup(e);
-    }
-
-    @Override
-    public void mouseReleased(MouseEvent e)
-    {
-        if (e.isPopupTrigger()) showPopup(e);
-    }
-
-    private void showPopup(MouseEvent e)
+    protected void showPopup(MouseEvent e)
     {
         RightClickMenu menu = new RightClickMenu(ui);
         menu.show(e.getComponent(), e.getX(), e.getY());
