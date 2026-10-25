@@ -4112,8 +4112,8 @@ seq: 513
 filed: 2026-10-25
 kind: bug
 what: Record the outgoing local layout when another is opened
-state: pending
-became: -
+state: needs test
+became: MT-833
 
 [receipt FR-146]
 seq: 514

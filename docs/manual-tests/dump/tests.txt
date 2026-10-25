@@ -32845,3 +32845,40 @@ body:
 tail:
 | ---
 |
+
+[test MT-833]
+ordinal: 832
+anchor: mt-833
+date: 2026-10-25
+title: Recent Layouts lists the layout open at start-up
+disposition: needs test
+from: OB-378
+written: 2026-10-25
+reopened: no
+body:
+| <a id="mt-833"></a>
+| ### MT-833 - 2026-10-25 - Recent Layouts lists the layout open at start-up
+|
+| **Disposition:** needs test
+| **From:** OB-378
+|
+| **Written:** 2026-10-25
+|
+| **Steps**
+|
+| 1. Start TrainControl on cs2_sample_layout.
+| 2. `Layouts` > `Open Layout...` and open another layout, B.
+| 3. Open `Layouts` > `Recent Layouts`.
+| 4. Click cs2_sample_layout, then open `Recent Layouts` again.
+|
+| **Expected**
+|
+| - Step 3: cs2_sample_layout is listed, though it was only ever opened at start-up.
+| - Step 4: cs2_sample_layout opens, and B is listed.
+|
+| *What this is:* OB-378, from MT-830.  Adam: "When I had cs2_sample_layout open and switched to another (call it B),
+| cs2_sample_layout wasn't in the menu."
+|
+tail:
+| ---
+|
