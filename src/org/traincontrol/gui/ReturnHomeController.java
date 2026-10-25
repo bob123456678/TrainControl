@@ -368,20 +368,20 @@ final class ReturnHomeController extends SettledQuestion
      * holds across a `CONFIGURE_SLEEP` per accessory of a path (OB-192), so the event thread may wait on it, bounded.
      */
     @Override
-    public Object settledLock()
+    protected Object settledLock()
     {
         return this.ui.returnHomeTriageSettled;
     }
 
     /** The triage is outstanding while a worker is on it or an ask has not been picked up. */
     @Override
-    public boolean outstanding()
+    protected boolean outstanding()
     {
         return this.ui.returnHomeTriageInFlight.get() || this.ui.returnHomeTriageDirty.get();
     }
 
     @Override
-    public void giveUp()
+    protected void giveUp()
     {
         this.ui.returnHomeTriageInFlight.set(false);
     }

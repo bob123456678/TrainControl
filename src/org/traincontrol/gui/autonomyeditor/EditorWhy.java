@@ -320,20 +320,20 @@ final class EditorWhy extends SettledQuestion
     }
 
     @Override
-    public Object settledLock()
+    protected Object settledLock()
     {
         return editor.whySettled;
     }
 
     /** Counted, not coalesced: every ask started is its own question until its worker gives it up. */
     @Override
-    public boolean outstanding()
+    protected boolean outstanding()
     {
         return editor.whyWorking.get() > 0;
     }
 
     @Override
-    public void giveUp()
+    protected void giveUp()
     {
         editor.whyWorking.decrementAndGet();
     }

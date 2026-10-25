@@ -3,18 +3,19 @@ package org.traincontrol.gui;
 /**
  * A question answered off the event thread whose caller can wait for the answer to settle: the settle and the bounded
  * await, on a monitor the owner keeps (FR-136).  The answer and what counts as outstanding stay with each user; the
- * ask and its loop are `CoalescedAsk`'s.
+ * ask and its loop are `CoalescedAsk`'s.  The three hooks are protected, so outside the package only `settle` and
+ * `awaitSettled` call them, under the lock.
  */
 public abstract class SettledQuestion
 {
     /** The owner's monitor, the one `settle` and `awaitSettled` must agree on. */
-    public abstract Object settledLock();
+    protected abstract Object settledLock();
 
     /** Whether an ask is still outstanding; read under the lock. */
-    public abstract boolean outstanding();
+    protected abstract boolean outstanding();
 
     /** Gives the job up; called under the lock, just before the waiters are woken. */
-    public abstract void giveUp();
+    protected abstract void giveUp();
 
     /**
      * Gives the job up and wakes anybody waiting, both under the one monitor `awaitSettled` waits on, so a waiter

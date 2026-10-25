@@ -116,7 +116,7 @@ final class CoveredTrackView extends SettledQuestion
     }
 
     @Override
-    public Object settledLock()
+    protected Object settledLock()
     {
         return this.ui.coveredTrackSettled;
     }
@@ -126,13 +126,13 @@ final class CoveredTrackView extends SettledQuestion
      * two moments, which anything that READS `coveredTrack` or `blockedTrack` right after asking (in practice a test) bridges.
      */
     @Override
-    public boolean outstanding()
+    protected boolean outstanding()
     {
         return this.ui.coveredTrackInFlight.get() || this.ui.coveredTrackDirty.get();
     }
 
     @Override
-    public void giveUp()
+    protected void giveUp()
     {
         this.ui.coveredTrackInFlight.set(false);
     }
