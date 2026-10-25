@@ -4120,5 +4120,5 @@ seq: 514
 filed: 2026-10-25
 kind: feature request
 what: Duplicate and Combine in the editor's Manage Pages; main menu hidden behind Manage Pages...
-state: pending
-became: -
+state: needs test
+became: MT-834

@@ -410,7 +410,7 @@ Tab icons provided by Freepik.
         - `File` > `Restore from Backup` puts back a backup made with `Backup TrainControl Data`: your locomotives and routes, the window state and keyboard pages, cropped locomotive icons and the layout folder.  It shows what will be replaced first, saves your current data as a backup whose name ends in `before-restore` (restore that file to undo), and then closes TrainControl; start it again to use the restored data.
         - The `Layouts` menu has `Recent Layouts`, the last five layouts you opened, for quick switching.
     - Track Diagram
-        - The layout editor has a `Manage Pages` menu to add a blank page, or rename or delete the page being edited, without leaving the editor.
+        - The layout editor has a `Manage Pages` menu to add a blank page, rename, duplicate or delete the page being edited, or combine it with the pages it links to, without leaving the editor.  `Layouts` > `Manage Pages...` opens the editor with that menu showing, in place of the old `Manage Pages` submenu.
         - `Save Current Track Diagram as a Picture...` now offers Small, Medium and Large, the same sizes as the pop-out window, without spelling out pixel counts.
     - Autonomy Bug Fixes
         - In the autonomy editor, `Test a Path` now starts a train the way it stands at the station, so it no longer draws a route the setup check says a train there cannot take.

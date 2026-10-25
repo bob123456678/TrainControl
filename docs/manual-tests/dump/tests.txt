@@ -32882,3 +32882,49 @@ body:
 tail:
 | ---
 |
+
+[test MT-834]
+ordinal: 833
+anchor: mt-834
+date: 2026-10-25
+title: Duplicate and combine pages from the layout editor, opened from Layouts > Manage Pages...
+disposition: needs test
+from: FR-146
+written: 2026-10-25
+reopened: no
+body:
+| <a id="mt-834"></a>
+| ### MT-834 - 2026-10-25 - Duplicate and combine pages from the layout editor, opened from Layouts > Manage Pages...
+|
+| **Disposition:** needs test
+| **From:** FR-146
+|
+| **Written:** 2026-10-25
+|
+| **Steps**
+|
+| 1. `File` > `Backup TrainControl Data` first.  Open a local layout with at least two pages, one of which has links to other pages.  In the main window's page list, pick a page with links, A.
+| 2. Open the `Layouts` menu and look at it.  Then choose `Manage Pages...`.
+| 3. In the menu that is open, choose `Duplicate Current Page`.
+| 4. Turn a square in the editor so it has unsaved work.  `Manage Pages` > `Duplicate Current Page` again, and answer Cancel when asked about the unsaved work.
+| 5. In the editor, go back to page A (the sidebar).  `Manage Pages` > `Combine Linked Pages...`, type a new name, OK.
+| 6. In the editor, go to a page with no links, and choose `Manage Pages` > `Combine Linked Pages...`.
+| 7. Leave the editor open, click the main window, and choose `Layouts` > `Manage Pages...` again.
+| 8. Close the editor.  Start a route, and open the `Layouts` menu.  Hover over `Manage Pages...`.  Stop the route.
+|
+| **Expected**
+|
+| - Throughout: the editor window stays open, without closing, reopening or flashing, and every question appears over the editor.
+| - Step 2: the `Layouts` menu shows `Manage Pages...` where the `Manage Pages` submenu used to be, just above `Edit Layout Page`, and the old submenu is gone.  Choosing it opens the layout editor on page A, in front of the main window, with its own `Manage Pages` menu already dropped down, listing Add Blank Page, Rename Current Page, Duplicate Current Page, Combine Linked Pages... and Delete Current Page.
+| - Step 3: nothing is asked.  The editor shows the new page "A copy", with A's squares.
+| - Step 4: only the unsaved-work question is asked.  After Cancel, no new page is made and the editor is as it was, with the turned square.
+| - Step 5: the name is asked for over the editor.  The editor then shows the new combined page, holding A and the pages it links to.
+| - Step 6: one message says there is nothing linked from this page, and the editor stays on that page.
+| - Step 7: no second editor opens.  The open editor comes to the front, on the page it was on, with its `Manage Pages` menu dropped down.
+| - Step 8: `Manage Pages...` is grayed while the route runs, and its tooltip says why.  It is available again once the route stops.
+|
+| *What this is:* FR-146.  Adam: "Fold in the duplicate and combine options from the main UI's menu, then disable the main UI's menu (keep it hidden for now in case we want to revert) and replace it with Manage Pages... option that opens the layout editor on top of the main window and pops open its JMenu."
+|
+tail:
+| ---
+|
