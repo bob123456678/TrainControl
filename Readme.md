@@ -419,6 +419,7 @@ Tab icons provided by Freepik.
         - Pasting a train on the Track Diagram onto a square that is not a station now says a train can only be placed at a station, instead of asking which way it faces.
         - Notices in the autonomy editor no longer push the diagram down: they float over its bottom edge, at most three lines with a scrollbar, and an X hides each one until the next.
         - In some languages, long phrases in the autonomy editor's `Track Directions` dropdown no longer make the window wider; the open list still shows them in full.
+        - While autonomy or a route is running, the Layouts menu's page and layout items (such as `Create New Layout`, `Rename Current Page` and `Open Layout...`) now say "Edits are not allowed while autonomy or routes are running." instead of a message about locomotives.
         - The setup check's warning that no train can reach a station now also finds stations whose only way in is from a side where arrivals are refused.
     - Automation API Bug Fixes
         - The full autonomy example in the API guide now gives each train a preferred speed and starts the trains it chose, so it runs as written.

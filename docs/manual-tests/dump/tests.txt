@@ -32108,3 +32108,41 @@ body:
 tail:
 | ---
 |
+
+[test MT-814]
+ordinal: 813
+anchor: mt-814
+date: 2026-10-24
+title: Layout menu items refused during a run say edits are not allowed (OB-370)
+disposition: needs test
+from: OB-370
+written: 2026-10-24
+reopened: no
+body:
+| <a id="mt-814"></a>
+| ### MT-814 - 2026-10-24 - Layout menu items refused during a run say edits are not allowed (OB-370)
+|
+| **Disposition:** needs test
+| **From:** OB-370
+|
+| **Written:** 2026-10-24
+|
+| **Steps**
+|
+| 1. Before you start, File > Backup TrainControl Data.  Open your railway's layout and start autonomy with a train running.
+| 2. In the Layouts menu, try each of `Create New Layout`, `Open Layout...`, `Switch to Central Station Layout`, `Rename Current Page`, `Duplicate Current Page`, `Delete Current Page` and `Combine Linked Pages...`.
+| 3. Stop autonomy, then start a route, and while it runs try the same seven items again.
+| 4. Start autonomy again and try a locomotive edit: `Add Locomotive`, or right-click a locomotive and choose `Edit Name/Address/Decoder`.
+| 5. Stop everything and try `Rename Current Page`, then cancel it.
+|
+| **Expected**
+|
+| - Steps 2 and 3: each item shows "Edits are not allowed while autonomy or routes are running." and changes nothing.
+| - Step 4: the locomotive edit still says "Cannot edit locomotives while autonomy is running."
+| - Step 5: the item asks for the new name as before.
+|
+| *What this is:* OB-370.  The Layouts menu's items named locomotives when they were refused during a run; they now give one sentence for autonomy and routes alike.
+|
+tail:
+| ---
+|

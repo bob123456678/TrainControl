@@ -4002,3 +4002,11 @@ kind: bug
 what: Fixed in 4b013b52 on Adam's choice (a), docs only: AutomationAPI.md's sample and FullAutonomyExample set each train's preferred speed and call setLocomotivesToRun and runLocomotives(), as test/examples/RunTrainsOnAGraph does; core.testTheApiExamplesRun runs that pattern.
 state: fixed validated
 became: -
+
+[receipt OB-370]
+seq: 500
+filed: 2026-10-24
+kind: bug
+what: The Layouts menu's page and layout items refused while autonomy or a route runs say "Edits are not allowed while autonomy or routes are running." (new key ui.main.errorNoEditsWhileRunning in 8 bundles); locomotive edits keep their sentence (`62d9fe37` on ob370).
+state: -
+became: MT-814

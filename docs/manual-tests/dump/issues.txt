@@ -857,7 +857,7 @@ text:
 
 [issue OB-370]
 ordinal: 40
-inbox: yes
+inbox: no
 kind: bug
 title: for 3.0.3: layout actions refused while autonomy runs say "Cannot edit locomotives while autonomy is running."
 filed: 2026-10-24
