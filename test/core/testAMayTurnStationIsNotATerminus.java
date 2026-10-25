@@ -476,7 +476,7 @@ public class testAMayTurnStationIsNotATerminus
 
             assertTrue(took < 12 * 2000, "twelve asks took " + took + " ms");
 
-            // And Why Not Moving? by hand has nothing against any of them - it used to blame the conflict
+            // And Why Not Moving? by hand has nothing against any of them
             java.util.Map<String, String> why = layout.explainDestinations(train, true);
 
             for (String lower : new String[] {"LowerBack", "LowerFront (eastbound)", "LowerFront (eastbound, reverse)",
