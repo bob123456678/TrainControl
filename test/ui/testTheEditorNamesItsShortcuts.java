@@ -25,16 +25,12 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * The autonomy editor's keyboard shortcuts are named where their actions are offered.
  *
- * Adam, OB-214, 2026-09-13: *"in the autonomy editor, Set Segment Length needs a tooltip that says
- * 'Control+E'.  change for other missing tooltip hints."*
+ * Adam, OB-214: *"in the autonomy editor, Set Segment Length needs a tooltip that says 'Control+E'.  change for other
+ * missing tooltip hints."*
  *
- * **Which keys were missing**, read off `LayoutEditor`'s key handler against every tooltip: Control+E
- * (Segment Length), Control+S (Rename), Control+H (Home) and Control+G (Track Lengths).  Control+L, D and K
- * were already on their toggles, and Control+B on Max Train Length since 2026-09-12.
- *
- * **Asked of the real menu**, through `buildTileMenu` - the method the right-click calls - on a station of
- * the frozen railway, and of the item that carries each action rather than of the menu as a whole, so a
- * hint put on the wrong item fails.
+ * Asked of the real menu, through `buildTileMenu` - the method the right-click calls - on a station of the frozen
+ * railway, and of the item that carries each action rather than of the menu as a whole, so a hint put on the wrong item
+ * fails.
  *
  * MUTATION: delete `lengthItem.setToolTipText(SHORTCUT_LENGTH)` and the first claim fails.
  *
@@ -118,18 +114,14 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * Nothing in the autonomy editor's window takes the keyboard from it (OB-200; Adam, 2026-09-12: *"when items in the
-     * list of issues are selected, hotkeys on the track diagram stop working, and there is no way to regain focus.  just
-     * send the commands through with the list of issues panel selected."*).
+     * Nothing in the autonomy editor's window takes the keyboard from it (OB-200; Adam: *"when items in the list of
+     * issues are selected, hotkeys on the track diagram stop working, and there is no way to regain focus.  just send
+     * the commands through with the list of issues panel selected."*).
      *
-     * The shortcuts are the window's own key handler, and its controls are kept from taking the keyboard so that the
-     * window keeps it (OB-019); the findings list and the directions box were not, so one click on either and every key
-     * went to it.  Asked of every control a click would give the keyboard to, in the whole window, so one added later is
-     * asked too.
+     * The shortcuts are the window's own key handler, so its controls are kept from taking the keyboard (OB-019).
+     * Asked of every control a click would give the keyboard to, in the whole window, so one added later is asked too.
      *
      * MUTATION: let the findings list or the directions box take the keyboard again, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testNothingInTheAutonomyEditorTakesTheKeyboard() throws Exception
@@ -153,9 +145,8 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * Every visible control in a container that a click would give the keyboard to, by its class and its words; and every
-     * visible control a click could, into `asked`.  Visible, not showing, so the answer does not depend on the window
-     * being on a screen.
+     * Collects every visible control in a container that a click would give the keyboard to, by its class and its
+     * words.  Visible, not showing, so the answer does not depend on the window being on a screen.
      */
     private static void controlsTakingTheKeyboard(java.awt.Container in, java.util.List<String> out,
         java.util.List<java.awt.Component> asked)
@@ -184,14 +175,11 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * A page switch in the autonomy editor never shows the track editor's title (MT-669; Adam, 2026-10-04: *"when
-     * switching pages, the autonomy editor window title briefly shows the layout editor (not autonomy editor) title for a
-     * split second, before being updated."*).  The switch set the track editor's title and left the autonomy editor's to
-     * a posted step; it is now the arriving mode's from the start.
+     * A page switch in the autonomy editor never shows the track editor's title (MT-669; Adam: *"when switching pages,
+     * the autonomy editor window title briefly shows the layout editor (not autonomy editor) title for a split second,
+     * before being updated."*).  The title is the arriving mode's from the start.
      *
      * MUTATION: set the track editor's title on the way into autonomy mode again, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testAPageSwitchShowsOnlyTheAutonomyEditorsTitle() throws Exception
@@ -267,20 +255,17 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * Both editors' titles name the configuration that is loaded, beside the page, and follow it (FR-127; Adam: *"the current
-     * autonomy configuration name (not just the page name) in the autonomy/layout editor and layout popups. (if active)"*).
+     * Both editors' titles name the configuration that is loaded, beside the page, and follow it (FR-127; Adam: *"the
+     * current autonomy configuration name (not just the page name) in the autonomy/layout editor and layout popups. (if
+     * active)"*).
      *
-     * The window starts with the setup's configuration loaded (the start-up resume).  An editor open while it is unloaded,
-     * loaded, switched, renamed and unloaded is asked for its title after each.  The track editor names the configuration
-     * LOADED, and with nothing loaded its title is today's; the autonomy editor names the configuration it EDITS, which is
-     * the setup's chosen one, loaded or not - so after Stop Using Autonomy it still says which one is being fixed, and an
-     * autonomy editor opened then names it from the start.
-     * Run last (priority 1) because unloading rebuilds the session the other claims share, which is taken afresh at the end.
+     * An editor open while the configuration is unloaded, loaded, switched, renamed and unloaded is asked for its title
+     * after each.  The track editor names the configuration LOADED, and with nothing loaded its title is the page's;
+     * the autonomy editor names the configuration it EDITS, the setup's chosen one, loaded or not.  Run last (priority
+     * 1) because unloading rebuilds the session the other claims share, which is taken afresh at the end.
      *
      * MUTATION: build the title from the page alone, leave a rename or an unload out of the places that set it again, or
      * name the autonomy editor's configuration by what is loaded and not what is chosen, and this fails.
-     *
-     * @throws Exception from the event thread or the store
      */
     @Test(priority = 1)
     public void testTheEditorTitlesNameTheLoadedConfiguration() throws Exception
@@ -398,8 +383,7 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * The configuration the start-up resume loaded, waited for: it is posted to the event thread behind the window's
-     * set-up, and a claim run on its own reaches it before the resume has.
+     * The configuration the start-up resume loaded, waited for: the resume is posted behind the window's set-up.
      *
      * @return its name, or null if nothing loaded in fifteen seconds
      * @throws Exception from the event thread
@@ -486,8 +470,8 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * The autonomy editor's title for a page: the configuration it edits - the setup's chosen one - stands beside the page
-     * name (FR-127).
+     * The autonomy editor's title for a page: the configuration it edits, the setup's chosen one, beside the page name
+     * (FR-127).
      *
      * @param page the page
      * @return the title
@@ -503,12 +487,10 @@ public class testTheEditorNamesItsShortcuts
     /**
      * Select by Dragging a Box has a key, named on its item in the track diagram editor's right-click menu (FR-107).
      *
-     * Adam, 2026-10-03: *"make a hotkey, with a tool tip for select by dragging a box in the track diagram editor"*.  The
-     * item's tooltip names the key, and the key does what the item does: one box, then back to normal.
+     * Adam: *"make a hotkey, with a tool tip for select by dragging a box in the track diagram editor"*.  The item's
+     * tooltip names the key, and the key does what the item does: one box, then back to normal.
      *
      * MUTATION: take the key out of the editor's key handler, or its name off the item, and this fails.
-     *
-     * @throws Exception from the event thread or reflection
      */
     @Test
     public void testSelectByDraggingABoxHasAKey() throws Exception
@@ -625,9 +607,9 @@ public class testTheEditorNamesItsShortcuts
             assertTrue(once.getBoolean(track[0]), LayoutEditor.SHORTCUT_SELECT_BY_DRAGGING + " did not start Select by"
                 + " Dragging a Box");
 
-            // AND IT SHOWS, as the pointer (MT-661's note; Adam, 2026-10-03: "there is no indicator that we have entered
-            // this mode when control M is pressed", and "I'd rather not have text popping up, why not just change the
-            // cursor?"): a crosshair over the diagram while picking - the square already under the pointer included
+            // AND IT SHOWS, as the pointer (MT-661; Adam: "there is no indicator that we have entered this mode when
+            // control M is pressed", and "I'd rather not have text popping up, why not just change the cursor?"): a
+            // crosshair over the diagram while picking - the square already under the pointer included
             assertEquals(grid.getContainer().getCursor().getType(), java.awt.Cursor.CROSSHAIR_CURSOR, "the pointer over the"
                 + " diagram is not a crosshair while picking");
 
@@ -723,15 +705,12 @@ public class testTheEditorNamesItsShortcuts
     /**
      * Escape that drops a tile picked up to move takes its red outline with it.
      *
-     * The red outline is the track editor's "this tile is picked up".  Escape let go of the tile but put back only the
-     * palette's borders, so the outline - and the pointer's blue one - stayed on the diagram until the pointer entered
-     * another square, saying of a tile that it was picked up when it was not.
+     * The red outline is the track editor's "this tile is picked up".  Escape must put back more than the palette's
+     * borders, or the outline - and the pointer's blue one - says a tile is picked up when it is not.
      *
      * A track tile clicked to pick it up, a hover so the outline is drawn, then Escape through the editor's own keys.
      *
      * MUTATION: let Escape put back only the palette again, and this fails.
-     *
-     * @throws Exception from the event thread or reflection
      */
     @Test
     public void testEscapeTakesThePickedUpOutlineWithIt() throws Exception
@@ -843,14 +822,12 @@ public class testTheEditorNamesItsShortcuts
     /**
      * A square the pointer is over shows its hover outline while squares are picked.
      *
-     * Every hover over a selection redrew the picked squares and the grip, and that redraw put every square back first -
-     * the one under the pointer included - so while anything was picked no square ever showed the pointer was over it.
+     * The redraw of the picked squares and the grip puts every square back first, the one under the pointer included,
+     * so it must draw the hover back.
      *
      * Three squares picked, then a hover over another.
      *
      * MUTATION: let the selection's redraw leave the hover out again, and this fails.
-     *
-     * @throws Exception from the event thread or reflection
      */
     @Test
     public void testTheHoverShowsOverASelection() throws Exception
@@ -920,16 +897,13 @@ public class testTheEditorNamesItsShortcuts
     /**
      * Escape pressed while a box is being drawn drops the box too.
      *
-     * Escape is how a half-made gesture is dropped (behaviour.md 6a, FR-065), and the track editor's list left out the box
-     * being drawn: with picking on, the release then picked the box with picking off; with nothing else held, Escape closed
-     * the editor with the button still down.
+     * Escape is how a half-made gesture is dropped (behaviour.md 6a, FR-065), so the box being drawn is in the track
+     * editor's list: otherwise the release picks it with picking off, or Escape closes the editor with the button down.
      *
      * A box dragged with the button down - once with Control+M's picking, once with Shift and nothing else held - then
      * Escape, then the release.
      *
      * MUTATION: leave the box out of what Escape drops again, and this fails.
-     *
-     * @throws Exception from the event thread or reflection
      */
     @Test
     public void testEscapeDropsABoxBeingDrawn() throws Exception
@@ -1025,15 +999,12 @@ public class testTheEditorNamesItsShortcuts
     /**
      * The hover outline is not drawn back on a square the pointer has left.
      *
-     * Round 53 drew it back on the keys' square, which is never forgotten - so once the pointer had left the diagram for
-     * its margin, the next redraw of the selection put the blue back on the last square entered.  It goes back now only on
-     * the square that wore it.
+     * The keys' square is never forgotten, so it is not where the hover goes back once the pointer has left the diagram
+     * for its margin: only the square that wore it.
      *
      * Three squares picked, a hover over another, the margin entered, then Escape.
      *
      * MUTATION: draw the hover back on the keys' square again, and this fails.
-     *
-     * @throws Exception from the event thread or reflection
      */
     @Test
     public void testTheHoverIsNotDrawnBackWhereThePointerLeft() throws Exception
@@ -1111,14 +1082,12 @@ public class testTheEditorNamesItsShortcuts
     /**
      * Escape between a box's press and its release stops the click that follows too.
      *
-     * A press that never left its square ends in a click, and Escape dropped the box but not the click: with Shift the
-     * square was picked; with Control+M's picking the tile was picked up to move.
+     * A press that never left its square ends in a click: with Shift it would pick the square, with Control+M's picking
+     * pick the tile up to move.
      *
      * A press, Escape, the release and the click, on one square - with Shift and nothing else held, then with Control+M.
      *
      * MUTATION: let the click after a dropped box through again, and this fails.
-     *
-     * @throws Exception from the event thread or reflection
      */
     @Test
     public void testEscapeStopsTheClickOfADroppedBox() throws Exception
@@ -1188,14 +1157,12 @@ public class testTheEditorNamesItsShortcuts
     /**
      * A box being drawn keeps its outline when the pointer enters a square.
      *
-     * The hover's pass put every square back and redrew the selection only when squares were picked, so the box being
-     * drawn - nothing picked yet - lost its outline on each square entered, until the next drag event.
+     * The hover's pass puts every square back, so it must redraw the box being drawn too (nothing picked yet), not only
+     * picked squares.
      *
      * A box pressed, a square entered and one drag event, then the posted work run.
      *
      * MUTATION: redraw only for picked squares again, and this fails.
-     *
-     * @throws Exception from the event thread or reflection
      */
     @Test
     public void testABoxKeepsItsOutlineAsThePointerEntersASquare() throws Exception
@@ -1352,18 +1319,15 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * A page switch forgets the square under the pointer (Adam, 2026-10-04: *"on page switch - yes, clear the active
-     * square"*).
+     * A page switch forgets the square under the pointer (Adam: *"on page switch - yes, clear the active square"*).
      *
-     * Delete and the other keys that act on the square under the pointer asked the old page's coordinates on the new page
-     * until the pointer moved: the track editor's `lastHoveredX/Y`, and the autonomy editor's `autonomyHover`, whose
-     * square is read against the page now showing.
+     * Delete and the other keys that act on the square under the pointer must not ask the old page's coordinates on the
+     * new page: the track editor's `lastHoveredX/Y`, and the autonomy editor's `autonomyHover`, whose square is read
+     * against the page now showing.
      *
      * A square hovered, the autonomy editor's square set as its hover sets it, then a switch to another page.
      *
      * MUTATION: let a switch keep either square, and this fails.
-     *
-     * @throws Exception from the event thread or reflection
      */
     @Test
     public void testAPageSwitchForgetsTheSquareUnderThePointer() throws Exception
@@ -1405,9 +1369,9 @@ public class testTheEditorNamesItsShortcuts
 
             arrive.setAccessible(true);
 
-            // THE HOVER, THE SWITCH AND THE READING IN ONE EVENT: this class shows the editor, and a real pointer resting
-            // over it moves the keys' square between events - over the palette, to -1 - which once passed this claim with
-            // the fix taken out
+            // THE HOVER, THE SWITCH AND THE READING IN ONE EVENT: this class shows the editor, and a real pointer
+            // resting over it moves the keys' square between events - over the palette, to -1 - so the claim could pass
+            // without the fix
             final Object[] read = new Object[4];
 
             SwingUtilities.invokeAndWait(() ->
@@ -1453,15 +1417,13 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * Two requests to redraw the diagram, made before the first is drawn, draw it once (speed, 2026-10-04).
+     * Two requests to redraw the diagram, made before the first is drawn, draw it once.
      *
-     * A request made while a redraw was pending queued another one after it, though the pending one had not yet read
-     * anything and so would draw the latest state anyway.  Opening autonomy mode made exactly this pair - the remembered
-     * caption mode's redraw, then the one meant to follow it - and drew the grid three times instead of twice.
+     * A request made while a redraw is pending must not queue another, since the pending one reads the latest state.
+     * Opening autonomy mode makes exactly this pair: the remembered caption mode's redraw, then the one meant to
+     * follow.
      *
      * MUTATION: queue a second redraw for a request made before the first has started, and this fails.
-     *
-     * @throws Exception from the event thread or reflection
      */
     @Test
     public void testTwoRedrawRequestsBeforeTheFirstIsDrawnDrawOnce() throws Exception
@@ -1521,16 +1483,14 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * A click that changes a switch's directions refreshes the autonomy editor once (speed, 2026-10-04).
+     * A click that changes a switch's directions refreshes the autonomy editor once.
      *
-     * The switch's own step refreshed - a whole setup check, the list, the strip - and the click refreshed again straight
-     * after it, as it does for every click.
+     * The switch's own step refreshes (a whole setup check, the list, the strip), and the click refreshes again after
+     * it as it does for every click: only one may.
      *
      * A panel with a counting listener, and one click on a square with more than one route.
      *
      * MUTATION: let the switch's step refresh as well again, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testAClickOnASwitchRefreshesOnce() throws Exception
@@ -1572,19 +1532,15 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * The square under the pointer keeps its hover outline through Escape though it wore another outline, and a square the
-     * pointer left for the palette does not get it back.
+     * The square under the pointer keeps its hover outline through Escape though it wore another outline, and a square
+     * the pointer left for the palette does not get it back.
      *
-     * Round 54 drew the blue back on the square that last WORE it - and a square under the pointer can be wearing another
-     * outline (a tile picked up, picked, the grip), so it got none; while the square the pointer left for the palette,
-     * which nothing takes the blue off, got it back.  It is drawn now on the square the pointer is over, while it is over
-     * the grid.
+     * The blue is drawn on the square the pointer is over, while it is over the grid: a square can be wearing another
+     * outline (a tile picked up, picked, the grip), and nothing takes the blue off a square left for the palette.
      *
      * A click picks up the tile under the pointer, then Escape; and two squares picked, a hover, the palette, then Escape.
      *
      * MUTATION: draw the blue back from the record again, or wherever the pointer was last, and this fails.
-     *
-     * @throws Exception from the event thread or reflection
      */
     @Test
     public void testTheHoverFollowsThePointerThroughEscape() throws Exception
@@ -1660,16 +1616,14 @@ public class testTheEditorNamesItsShortcuts
     /**
      * A box Escape dropped after its drag left the square it started on leaves that square's next click alone.
      *
-     * A press whose drag leaves its square ends in no click, so the click round 54 set aside to ignore waited for whatever
-     * click came to that square next - a middle click that turns the tile, a right-click's menu.  It is forgotten at a
-     * release off the square, and only a left click is ever ignored.
+     * A press whose drag leaves its square ends in no click, so the click set aside to ignore must be forgotten at a
+     * release off the square, or it waits for that square's next click - a middle click that turns the tile, a
+     * right-click's menu.  Only a left click is ever ignored.
      *
      * Control+M, a box from a track square dragged two squares on, Escape, the release, then a middle click on the first
      * square: the tile turns.
      *
      * MUTATION: keep the click to ignore past a release off its square again, and this fails.
-     *
-     * @throws Exception from the event thread or reflection
      */
     @Test
     public void testADroppedBoxsDragLeavesTheNextClickAlone() throws Exception
@@ -1856,17 +1810,14 @@ public class testTheEditorNamesItsShortcuts
 
     /**
      * An undo in the track diagram editor puts the page's tiles back still tied to their switches, signals, sensors and
-     * route buttons (found by RSA36, outside its rounds).
+     * route buttons.
      *
-     * Every undo state is a copy of each tile, and the copy kept the address but not what the address was tied to when
-     * the page was read: after one Control+Z every switch and signal of the page had no accessory until the page was read
-     * again - a switch clicked on the main window's diagram did nothing, and the setup counted every one as unaddressed.
+     * Every undo state is a copy of each tile, and the copy must keep what the address was tied to when the page was
+     * read, or after one Control+Z every switch and signal has no accessory and the setup counts each as unaddressed.
      *
      * A tile turned, then undone: every tie the page had before, it has after, to the same accessory, sensor or route.
      *
      * MUTATION: let the copy leave out the accessory, or the sensor, and this fails.
-     *
-     * @throws Exception from the event thread or reflection
      */
     @Test
     public void testAnUndoKeepsTheTilesTiedToTheirAccessories() throws Exception
@@ -1923,13 +1874,10 @@ public class testTheEditorNamesItsShortcuts
     /**
      * Control+K keeps the picked squares, the selection's grip and the pointer's blue outline.
      *
-     * The grid's own redraw - Control+K and the Grid box, through `setShowGrid` - took every outline off until the pointer
-     * entered another square, the sibling of the undo's redraw.  Turned off and on again, so the setting
-     * ends as it began.
+     * The grid's own redraw (Control+K and the Grid box, through `setShowGrid`) must draw the outlines back as the
+     * undo's redraw does.  Turned off and on again, so the setting ends as it began.
      *
      * MUTATION: end `setShowGrid` without drawing the outlines back, and this fails.
-     *
-     * @throws Exception from the event thread or reflection
      */
     @Test
     public void testControlKKeepsTheGripAndThePointersOutline() throws Exception
@@ -2018,18 +1966,15 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * The pointer gone off the squares takes its blue outline with it, wherever it went, and a move onto the next square
-     * does not; and the margin keeps the selection's grip (Adam, 2026-10-06: *"Fix them"*, on RSA45's notes).
+     * The pointer gone off the squares takes its blue outline with it, wherever it went, and a move onto the next
+     * square does not; and the margin keeps the selection's grip.
      *
-     * A square heard nothing when the pointer left it, so only the margin took the blue off - and a pointer can go
-     * straight from a square onto the tools column, the Grid box beside the squares, crossing no margin.  The blue stayed
-     * on the last square, and the Grid box, which draws the outlines back since round 76, drew it there again.  And the
-     * margin took the grip off with the blue, until the pointer was on a square again.
+     * A pointer can go straight from a square onto the tools column, the Grid box beside the squares, crossing no
+     * margin: the blue must not stay on the last square for the Grid box's redraw to draw again, and the margin must
+     * not take the grip off with the blue.
      *
      * MUTATION: leave the blue where the pointer went off the squares, take it off on a move to the next square, or have
      * the margin take the grip off, and this fails.
-     *
-     * @throws Exception from the window or reflection
      */
     @Test
     public void testThePointerOffTheSquaresTakesItsOutlineWithIt() throws Exception
@@ -2191,20 +2136,17 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * The pointer gone off the squares from what covers one - an accessory's address label, or a menu that closed over the
-     * tools column - takes its blue outline with it too; so does a square entered and left in one go, and a square left for
-     * the grid's padding (Adam, 2026-10-06: *"Do fix C1, C2"*).
+     * The pointer gone off the squares from what covers one - an accessory's address label, or a menu that closed over
+     * the tools column - takes its blue outline with it too; so does a square entered and left in one go, and a square
+     * left for the grid's padding.
      *
-     * An address label passed a square its entry but not its exit; a menu takes the square's exit while the pointer is
-     * still over the square, and nothing asked again when it closed.  The Grid box then drew the blue back on a square
-     * the pointer had left.  The pass that takes the outline off is posted, behind the one the last square's hover
-     * posted; and the padding beside the last column is no square.
+     * An address label passes a square its entry but not its exit; a menu takes the square's exit while the pointer is
+     * still over it, and nothing asks again when it closes.  The pass that takes the outline off is posted, behind the
+     * one the last square's hover posted; and the padding beside the last column is no square.
      *
      * MUTATION: let an address label keep the square's exit to itself, let the window not hear the pointer arrive off the
      * squares, take the outline off at once rather than after the hover's pass, or count the padding as a square - and this
      * fails.
-     *
-     * @throws Exception from the window or reflection
      */
     @Test
     public void testThePointerOffTheSquaresFromWhatCoversThemTakesItsOutline() throws Exception
@@ -2256,7 +2198,7 @@ public class testTheEditorNamesItsShortcuts
 
             for (java.awt.Component c : squares.getComponents())
             {
-                // the address label itself (it was a plain label holding HTML until round 102 gave it a halo)
+                // the address label itself
                 if (c instanceof org.traincontrol.gui.widgets.AddressLabel)
                 {
                     for (java.awt.Component s : squares.getComponents())
@@ -2412,15 +2354,12 @@ public class testTheEditorNamesItsShortcuts
      * from a square cut by it - and not by an arrival in a dialog over the square.  The watch is on the toolkit while the
      * window is, and gone with it.
      *
-     * A menu takes the square's exit where the pointer still is, and while it was open the watch left the outline alone;
-     * nothing asked again when it closed.  The window's own entry, which AWT hands on only where nothing listens, was
-     * asked whose window it was in, and a window is in none.  And a square half scrolled out of sight counted as a square
-     * all the way across.
+     * While a menu is open the watch leaves the outline alone, so it must ask again when the menu closes.  The window's
+     * own entry, which AWT hands on only where nothing listens, counts as inside the window; and a square half scrolled
+     * out of sight counts only for the part in view.
      *
      * MUTATION: ask nothing when the menu closes, leave the window's own entry out, count the hidden half of a square,
      * act on an arrival in another window, or leave the watch on the toolkit after dispose - and this fails.
-     *
-     * @throws Exception from the windows or reflection
      */
     @Test
     public void testThePointerIsFoundOffTheSquaresWhereverItGoes() throws Exception
@@ -2731,10 +2670,8 @@ public class testTheEditorNamesItsShortcuts
      * next opening through the main window says it again.
      *
      * Adam, on MT-697: *"Stop showing it after the user has clicked any square"*, and then *"have that tooltip tracking
-     * state reset after the editor is closed"*.  A finding or a notice on another page, and a link's other end, change page
-     * by closing the window and opening another - the user closed nothing, so the click goes with them; and the opening
-     * after the user closes the editor is on the same main window and setup, where a later change would be likeliest to
-     * keep the click.
+     * state reset after the editor is closed"*.  A finding, a notice or a link changes page by closing the window and
+     * opening another - the user closed nothing, so the click goes with them.
      *
      * The class's own editor is put away for this, so the main window opens its own, and built again after.
      *
@@ -2743,8 +2680,6 @@ public class testTheEditorNamesItsShortcuts
      *
      * MUTATION: let a page switch, or any of the editor's three own reopenings, forget the click or hand on one nobody
      * made; or keep it in the main window past the editor's closing - and this fails.
-     *
-     * @throws Exception from the windows or reflection
      */
     @Test(timeOut = 300000)
     public void testTheClickLineIsForTheVisit() throws Exception
@@ -2922,15 +2857,13 @@ public class testTheEditorNamesItsShortcuts
 
     /**
      * While an editor window is open the main window is not kept on top of it, even when the editor switches page in
-     * place, and closing the editor puts the operator's setting back (Adam, 2026-10-06: "when opening the autonomy
-     * editor, temporarily turn off 'always on top' in the main window, then restore it ... seems to have regressed").
+     * place, and closing the editor puts the operator's setting back (Adam: "when opening the autonomy editor,
+     * temporarily turn off 'always on top' in the main window, then restore it ... seems to have regressed").
      *
-     * Opening did take it off.  But a page or mode switch inside the editor runs the refresh a closing editor runs, and
-     * that refresh put the setting back with the editor still open - the main window came up over it.
+     * A page or mode switch inside the editor runs the refresh a closing editor runs; it must not put the setting back
+     * with the editor still open.
      *
      * MUTATION: let the refresh apply the setting whatever is open, or not apply it when the editor goes, and this fails.
-     *
-     * @throws Exception from the windows or reflection
      */
     @Test(timeOut = 300000)
     public void testTheMainWindowStaysBelowAnOpenEditor() throws Exception
@@ -2998,12 +2931,11 @@ public class testTheEditorNamesItsShortcuts
             // CLOSED BY THE USER: the setting back
             closeAsTheUserDoes(a);
 
-            // WAITED FOR, NOT SLEPT FOR (2026-10-19).  The restore is posted work: `dispose` asks the main window to apply the setting
-            // from `editorWindowClosed`, and the Window menu's handler applies it again from the posted `autonomyEditorClosed`.  A fixed
-            // settle is a guess about when a loaded event thread gets to it, and this claim failed once in a laned battery (it passed 29
-            // of 29 alone).  The condition that ends the wait is the thing being claimed, on the event thread that owns the flag, with a
-            // deadline long enough that only a restore that never comes fails it.  The two claims above are the opposite kind - the
-            // flag must STAY down - and cannot be waited for; they read it after the settle, as before.
+            // WAITED FOR, NOT SLEPT FOR: the restore is posted work (`dispose` and the Window menu's posted
+            // `autonomyEditorClosed` both apply it), and a fixed settle is a guess about when a loaded event thread
+            // gets to it.  The wait's condition is the thing claimed, on the event thread that owns the flag, with a
+            // deadline long enough that only a restore that never comes fails.  The two claims above need the flag to
+            // STAY down and cannot be waited for; they read it after the settle.
             assertTrue(alwaysOnTopWithin(true, 30000), "after the editor closed, the main window is not put back on top as the"
                 + " operator's setting asks");
         }
@@ -3272,17 +3204,14 @@ public class testTheEditorNamesItsShortcuts
     /**
      * An undo's redraw keeps the selection's grip and the pointer's blue outline.
      *
-     * The redraw a Control+Z asks for ended with a pass that took every outline down and put back only the picked squares'
-     * yellow: the grip that moves the group and the square under the pointer went gray until the pointer next moved,
-     * though both still acted - after five rounds (52 to 56) of making exactly these outlines right through every gesture,
-     * and Control+Z is pressed with the mouse still.
+     * The redraw a Control+Z asks for must not end with a pass that takes every outline down and puts back only the
+     * picked squares' yellow: the grip and the pointer's square would go gray until the pointer next moved, and
+     * Control+Z is pressed with the mouse still.
      *
      * A tile turned so there is something to undo, two squares picked, the pointer over a third, Control+Z: the grip and
      * the blue are still drawn on the squares the grid now holds.
      *
      * MUTATION: end the redraw with the border pass alone again, and this fails.
-     *
-     * @throws Exception from the event thread or reflection
      */
     @Test
     public void testAnUndoKeepsTheGripAndThePointersOutline() throws Exception
@@ -3416,9 +3345,9 @@ public class testTheEditorNamesItsShortcuts
      * A box Escape dropped and released on its own square after the pointer moved with the button down leaves that square's
      * next click alone.
      *
-     * AWT makes no click of a press and release with any movement between - out and back, or a pixel within the square -
-     * so the click set aside to ignore waited for that square's next click, of any button: a right-click's menu, a middle
-     * click's turn, a Shift click's pick.
+     * AWT makes no click of a press and release with any movement between - out and back, or a pixel within the square
+     * - so the click set aside to ignore must be forgotten there, or it swallows that square's next click of any
+     * button.
      *
      * Control+M, a press on a track square, the pointer moved within it - and, the second time, out to a square two along
      * and back - Escape, the release there, then a left click: the tile is picked up.  A LEFT click, because only the
@@ -3426,8 +3355,6 @@ public class testTheEditorNamesItsShortcuts
      * in one event, so a real pointer resting over the shown editor cannot move the hover between the steps.
      *
      * MUTATION: keep the click to ignore past a release after the pointer moved, and this fails.
-     *
-     * @throws Exception from the event thread or reflection
      */
     @Test
     public void testAPressThatMovedLeavesTheNextClickAlone() throws Exception
@@ -3538,17 +3465,14 @@ public class testTheEditorNamesItsShortcuts
     /**
      * Only the release's own left click is ignored: any other click that comes first acts, and takes the record with it.
      *
-     * A press and release on one square with the pointer held still make a left click, and that is the click set aside.
-     * A click that is not it - another button - is not that click, so it acts, and the record goes: the left click after
-     * it acts too.
+     * A press and release on one square with the pointer held still make a left click, and that is the click set aside;
+     * a click of another button acts, and the record goes, so the left click after it acts too.
      *
      * Control+M, a press on a track square held still, Escape, the release there, then a middle click and a left click on
      * that square in the same event: the tile turns, and is picked up.
      *
      * MUTATION: ignore a click of any button again, or keep the record past a click that was not the one set aside, and
      * this fails.
-     *
-     * @throws Exception from the event thread or reflection
      */
     @Test
     public void testOnlyTheReleasesOwnClickIsIgnored() throws Exception
@@ -3652,12 +3576,10 @@ public class testTheEditorNamesItsShortcuts
     /**
      * A palette piece held across a page switch leaves the palette's red outline behind with it.
      *
-     * The switch drops the tool, and the palette went on showing the piece armed - the editor's sign for what the next
-     * click does - so the next click on track picked that track up instead of placing anything.
+     * The switch drops the tool, so the palette must not go on showing the piece armed: the next click on track would
+     * pick it up instead of placing anything.
      *
      * MUTATION: let a switch drop the tool without the palette's outline again, and this fails.
-     *
-     * @throws Exception from the event thread or reflection
      */
     @Test
     public void testAPageSwitchTakesTheArmedPiecesOutline() throws Exception
@@ -3752,10 +3674,9 @@ public class testTheEditorNamesItsShortcuts
     {
         for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
 
-        // OUT FROM UNDER THE REAL POINTER (round 80).  The editor windows these claims open are shown on the screen, and a
-        // pointer resting where one appears tells the window the pointer has arrived over it - over a part nothing listens
-        // on, that is the pointer off the squares, and it took a simulated hover's outline off part way through
-        // a claim.  Off the screen, no real pointer reaches them.
+        // OUT FROM UNDER THE REAL POINTER.  The editor windows these claims open are shown on the screen, and a pointer
+        // resting where one appears is told it has arrived over a part nothing listens on, which takes a simulated
+        // hover's outline off part way through a claim.  Off the screen, no real pointer reaches them.
         SwingUtilities.invokeAndWait(() ->
         {
             for (java.awt.Window window : java.awt.Window.getWindows())
@@ -3847,8 +3768,6 @@ public class testTheEditorNamesItsShortcuts
 
     /**
      * A station's right-click menu names Control+E, Control+S and Control+H on the items they do.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testTheStationMenuNamesItsKeys() throws Exception
@@ -3926,8 +3845,6 @@ public class testTheEditorNamesItsShortcuts
 
     /**
      * The Track Lengths toggle names Control+G, as the three toggles beside it name theirs.
-     *
-     * @throws Exception from the event thread or reflection
      */
     @Test
     public void testTheTrackLengthsToggleNamesItsKey() throws Exception
@@ -3981,16 +3898,12 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * The exit brings a minimized track editor back before it asks about its unsaved work (the popups sweep, on Adam's
-     * MT-703 note): the question is owned by the editor, and a minimized window hides what it owns - so closing
-     * TrainControl with the editor in the taskbar asked Save, Discard or Cancel where nobody could see it, and the exit
-     * waited on it.  The editor has a turned square unsaved, so the exit does ask, and the editor is read while the
-     * question shows (an editor with nothing unsaved asked nothing, and the claim saw only that the exit
-     * restored it).
+     * The exit brings a minimized track editor back before it asks about its unsaved work (MT-703): the question is
+     * owned by the editor, and a minimized window hides what it owns, so the exit would wait on a question nobody can
+     * see.  The editor has a turned square unsaved, so the exit does ask, and the editor is read while the question
+     * shows.
      *
      * MUTATION: ask without bringing the editor back, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheExitBringsAMinimisedEditorBackBeforeItAsks() throws Exception
