@@ -28,12 +28,11 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
  * Where a train on the frozen copy of Adam's railway may be sent, read where the steps read it: the track diagram's
- * right-click list of destinations, and the autonomy editor's Why not Moving? (Adam, 2026-09-25: automated tests
- * supersede the MTs they answer).
+ * right-click list of destinations, and the autonomy editor's Why not Moving?
  *
  * MT-517 is a train that cannot reverse and a terminus; MT-584 a square closed while a train stands on the one it
- * watches, set through the editor's own Unavailable While Occupied window; MT-495 a train turned at Tunnel and another's
- * tail across its way out.  His own trains, from the run's copy of his locomotive data.
+ * watches, set through the editor's own Unavailable While Occupied window; MT-495 a train turned at Tunnel and
+ * another's tail across its way out.  His own trains, from the run's copy of his locomotive data.
  *
  * @author Adam
  */
@@ -114,13 +113,10 @@ public class testWhereHisTrainsMayBeSent
      * A send the right-click refuses says why in a message that belongs to the main window: with the power off, "-> a
      * station" on his train's right-click tells him to turn the power on, in front of the window he is using.
      *
-     * The refusals were parented on the popup menu, which has left the window by the time its item runs, so the message
-     * belonged to Swing's hidden frame - and with Window Always on Top ticked, the default, it opened beneath the main
-     * window and held every window with nothing to show why.
+     * A refusal parented on the popup menu belongs to Swing's hidden frame, and with Window Always on Top ticked (the
+     * default) it opens beneath the main window and holds every window with nothing to show why.
      *
      * MUTATION: parent the refusal on the menu again, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testARefusedSendSaysSoInFrontOfTheWindow() throws Exception
@@ -188,17 +184,13 @@ public class testWhereHisTrainsMayBeSent
     }
 
     /**
-     * No message on either right-click menu - the diagram's autonomy menu, or the track-diagram editor's - belongs to the
-     * menu itself, and none on the autonomy viewer panel to the panel.  The setup's
-     * tidy report is a message too.
+     * No message on either right-click menu (the diagram's autonomy menu, the track-diagram editor's) belongs to the
+     * menu itself, and none on the autonomy viewer panel to the panel; the setup's tidy report is a message too.
      *
-     * The claim above drives one refusal; the rest are read here.  A menu has left its window by the time its item runs,
-     * so a message parented on it belongs to Swing's hidden frame and, with Window Always on Top, opens beneath the
-     * window it holds.
+     * The claim above drives one refusal; the rest are read here.  A message parented on a menu or on a never-shown
+     * panel belongs to Swing's hidden frame and, with Window Always on Top, opens beneath the window it holds.
      *
      * MUTATION: put `this` back as any one of their owners, a tidy report's included, and this fails naming the line.
-     *
-     * @throws Exception from the files
      */
     @Test
     public void testNoMessageOnARightClickMenuBelongsToTheMenu() throws Exception
@@ -245,14 +237,11 @@ public class testWhereHisTrainsMayBeSent
     }
 
     /**
-     * EN57-947, which cannot reverse, at BottomSecondary: Why not Moving? on Manual lists BottomMainC under the stations
-     * it cannot be sent to right now, saying a terminus is not allowed because it is not reversible - and the right-click
-     * list does not offer BottomMainC (MT-517).
+     * EN57-947, which cannot reverse, at BottomSecondary: Why not Moving? on Manual lists BottomMainC under the
+     * stations it cannot be sent to right now, saying a terminus is not allowed because it is not reversible, and the
+     * right-click list does not offer BottomMainC (MT-517).
      *
-     * MUTATION: offer a terminus to a train that cannot reverse, or drop its reason from the Manual answer, and this
-     * fails.
-     *
-     * @throws Exception from the window
+     * MUTATION: offer a terminus to a train that cannot reverse, or drop its reason from the Manual answer.
      */
     @Test
     public void testATerminusIsRefusedToATrainThatCannotReverse() throws Exception
@@ -261,8 +250,8 @@ public class testWhereHisTrainsMayBeSent
 
         final Locomotive en57 = train(CANNOT_REVERSE);
 
-        // THE ENTRY'S PREMISE, MADE TRUE: in his locomotive data of 2026-09-25 EN57-947 is marked as able to reverse, so
-        // it is marked unable here, as the locomotive window marks it, and put back after.
+        // THE ENTRY'S PREMISE, MADE TRUE: his locomotive data marks EN57-947 able to reverse, so it is marked unable
+        // here, as the locomotive window marks it, and put back after.
         final boolean couldReverse = en57.isReversible();
 
         en57.setReversible(false);
@@ -324,8 +313,6 @@ public class testWhereHisTrainsMayBeSent
      * (MT-584).
      *
      * MUTATION: let a train standing on the watched square hold nothing back, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testATrainOnTheWatchedSquareClosesBottomMainAPre() throws Exception
@@ -394,17 +381,13 @@ public class testWhereHisTrainsMayBeSent
     }
 
     /**
-     * A train turned at Tunnel - come in from the south, facing south - is not offered any way south through the points a
-     * three-unit train in TunnelRightPark lies across; with that train one unit long, it is (MT-495, as its comment of
-     * 2026-09-24 says to read it: the right-click on the turned train).
+     * A train turned at Tunnel (come in from the south, facing south) is not offered any way south through the points a
+     * three-unit train in TunnelRightPark lies across; with that train one unit long, it is (MT-495).
      *
-     * Read off the right-click's own list of routes - every path it offers, in the menu and under its More item -
-     * because BottomMainAPre, the square the way south runs through, is no station, and so no destination is named after
-     * it.
+     * Read off the right-click's own list of routes, every path it offers in the menu and under its More item, because
+     * BottomMainAPre, the square the way south runs through, is no station and so no destination is named after it.
      *
      * MUTATION: stop the turned train's way out at its own tail, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testATurnedTrainIsNotOfferedTheWayAcrossAParkedTail() throws Exception
@@ -456,16 +439,11 @@ public class testWhereHisTrainsMayBeSent
 
     /**
      * On 1 - Main with three of his trains standing on it, Why not Moving? outlines every square with a train on it and
-     * no other while it waits; a click on one answers, and the outlines that marked where to click go (MT-570, step 2 as
-     * its comment of 2026-09-24 says it more exactly).
+     * no other while it waits; a click on one answers, and the outlines that marked where to click go (MT-570).
      *
-     * Asked of every square of the page, from the running railway, which is where the outlines are read since that
-     * entry's third comment.
+     * Asked of every square of the page, from the running railway, which is where the outlines are read.
      *
-     * MUTATION: outline a square without a train, miss one with a train, or keep the waiting outlines after the click,
-     * and this fails.
-     *
-     * @throws Exception from the window
+     * MUTATION: outline a square without a train, miss one with a train, or keep the waiting outlines after the click.
      */
     @Test
     public void testWhyNotMovingOutlinesHisTrainsWhileItWaits() throws Exception
@@ -589,18 +567,15 @@ public class testWhereHisTrainsMayBeSent
     }
 
     /**
-     * With the stretch between BottomSecondary and TunnelPre answered 0 in the editor, 75 407 DB - 5 long - placed at
-     * RampDown facing south is offered Tunnel and goes there; standing there, the track held behind it reaches back past
-     * TunnelPre and BottomSecondary onto the track towards RampDown (MT-586).
+     * With the stretch between BottomSecondary and TunnelPre answered 0 in the editor, 75 407 DB (5 long) placed at
+     * RampDown facing south is offered Tunnel and goes there; standing there, the track held behind it reaches back
+     * past TunnelPre and BottomSecondary onto the track towards RampDown (MT-586).
      *
-     * The 0 is given as the steps give it: the squares of that stretch selected with Shift-click in the autonomy editor on
-     * 1 - Main, then Segment Length... on one of them, 0 and OK; the running railway is then rebuilt, as closing the editor
-     * saving the change rebuilds it.  The train is sent with the right-click's "-> Tunnel" and driven in simulation.  The
-     * gray behind a standing train is the track the railway holds for it, read here from the railway.
+     * The 0 is given as the steps give it (Shift-click the stretch on 1 - Main, Segment Length..., 0, OK); the running
+     * railway is then rebuilt, as closing the editor saving the change rebuilds it.  The gray behind a standing train
+     * is the track the railway holds for it, read here from the railway.
      *
      * MUTATION: stop the measured way in at the stretch answered 0, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testAStretchAnsweredZeroLetsHisTrainIntoTunnel() throws Exception
