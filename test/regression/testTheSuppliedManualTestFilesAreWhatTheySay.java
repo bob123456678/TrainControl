@@ -17,27 +17,21 @@ import org.traincontrol.marklin.MarklinControlStation;
 /**
  * Every sample file shipped for a manual test still demonstrates the thing its entry says it does.
  *
- * **Adam, 2026-09-22:** *"Make sure all the MTs have clear, step by step tests to run, and that sample
- * files are supplied where needed."*  A file is supplied so that a step gets RUN rather than skipped -
- * `MT-470`'s step 7 said *"a legacy setup, if you have one to hand"* for a week, which is a step nobody
- * runs.  The cost of supplying one is this: a sample file that has quietly stopped showing what it was
- * made to show is worse than no file at all, because the step is then run and passes for the wrong
- * reason.
+ * Adam: "Make sure all the MTs have clear, step by step tests to run, and that sample files are supplied where needed."
+ * A file is supplied so that a step gets RUN rather than skipped (MT-470's step 7 said "a legacy setup, if you have one
+ * to hand" for a week); a sample file that has quietly stopped showing what it was made to show is worse than none,
+ * because the step is then run and passes for the wrong reason.
  *
- * **What this holds is the FILE, not the door.**  Whether unticking Atomic Routes is refused is
+ * What this holds is the FILE, not the door: whether unticking Atomic Routes is refused is
  * `ui.testNonAtomicRoutesNeedTheirLengths`'s business, and whether an import gap-fills is
- * `core.testASecondImportFillsGapsAndDoesNotOverwrite`'s.  This asks one question of each file: does
- * it still carry the state its entry sends Adam to look at?  A rule that changes what counts as
- * unmeasured would leave the doors' own tests green and make MT-470 step 7 meaningless, and nothing
- * would say so.
+ * `core.testASecondImportFillsGapsAndDoesNotOverwrite`'s.  This asks of each file whether it still carries the state
+ * its entry sends Adam to look at.  Read as bytes wherever it can be, because a file parsed by the thing it is testing
+ * cannot testify about it; the two MT-470 files are the exception, since what they claim IS what
+ * `unmeasuredTrackThatCouldBeReleased` answers about them.
  *
- * **Read as bytes wherever it can be**, because a file that has to be parsed by the thing it is testing
- * cannot testify about the thing it is testing.  The two `MT-470` files are the exception: what they
- * claim IS what `unmeasuredTrackThatCouldBeReleased` answers about them, so that is what is asked.
- *
- * MUTATION: swap the two MT-470 file names in the claim below and both assertions fail, each naming
- * the file it read - the measured one is asserted to have nothing unmeasured and the unmeasured one to
- * have some, so a pair that had stopped differing could not pass either way round.
+ * MUTATION: swap the two MT-470 file names in the claim below and both assertions fail, each naming the file it read -
+ * the measured one is asserted to have nothing unmeasured and the unmeasured one to have some, so a pair that had
+ * stopped differing could not pass either way round.
  *
  * @author Adam
  */
@@ -74,13 +68,8 @@ public class testTheSuppliedManualTestFilesAreWhatTheySay
     }
 
     /**
-     * Every file an entry names is there, and no file is shipped that no entry names.
-     *
-     * Both directions, because they fail differently: a named file that is absent is a step that
-     * cannot be run, and a shipped file nobody names is one nobody will ever open - and the second is
-     * how a file comes to be stale without anybody noticing.
-     *
-     * @throws Exception from reading the records
+     * Every file an entry names is there, and no file is shipped that no entry names: a named file that is absent is a
+     * step that cannot be run, and a shipped file nobody names is one nobody will open, which is how it goes stale.
      */
     @Test
     public void testEveryShippedFileIsNamedByItsEntryAndEveryNamedFileIsThere() throws Exception
@@ -110,16 +99,9 @@ public class testTheSuppliedManualTestFilesAreWhatTheySay
     }
 
     /**
-     * MT-470's two legacy setups still differ in exactly the one thing the step turns on.
-     *
-     * Step 7 loads each and expects opposite answers: the unmeasured file refused at both doors, the
-     * measured one accepted at both.  A pair that had stopped differing would pass the step whichever
-     * file he loaded, and the step would be checking nothing.
-     *
-     * Both carry `atomicRoutes` false, which is the state the step says to load them in - loading one
-     * that already had atomic routes on would not exercise the load door at all.
-     *
-     * @throws Exception from reading the files
+     * MT-470's two legacy setups still differ in exactly the one thing the step turns on: step 7 loads each and expects
+     * opposite answers (the unmeasured file refused at both doors, the measured one accepted), so a pair that had
+     * stopped differing would check nothing.  Both carry `atomicRoutes` false, the state the step says to load them in.
      */
     @Test
     public void testTheTwoLegacySetupsForAtomicRoutesStillDisagree() throws Exception
@@ -149,8 +131,7 @@ public class testTheSuppliedManualTestFilesAreWhatTheySay
             + " as a rule that refuses whatever the railway looks like, which is the failure Adam's"
             + " standing rule is about.  Still unmeasured: " + hasNone);
 
-        // AND THEY ARE THE SAME RAILWAY OTHERWISE, or the pair proves nothing about measurement: two
-        // files differing in their track as well would be two different tests wearing one number.
+        // AND THEY ARE THE SAME RAILWAY OTHERWISE, or the pair proves nothing about measurement.
         assertEquals(measured.getPoints().size(), unmeasured.getPoints().size(),
             "the two MT-470 files describe railways of different sizes, so the difference step 7 sees"
             + " is not the one it is about");
@@ -161,12 +142,9 @@ public class testTheSuppliedManualTestFilesAreWhatTheySay
     }
 
     /**
-     * MT-452's and MT-453's files still carry the one broken thing each entry sends him to look at.
-     *
-     * Read as text rather than parsed: both files exist to be REFUSED in one particular way by the
-     * loader, so asking the loader what it thinks of them would be asking the accused.
-     *
-     * @throws Exception from reading the files
+     * MT-452's and MT-453's files still carry the one broken thing each entry sends him to look at.  Read as text
+     * rather than parsed: both exist to be REFUSED in one particular way by the loader, and asking the loader would be
+     * asking the accused.
      */
     @Test
     public void testTheTwoBrokenConfigurationsAreStillBroken() throws Exception
@@ -234,14 +212,10 @@ public class testTheSuppliedManualTestFilesAreWhatTheySay
     /**
      * The two shipped LAYOUT folders are still shaped the way the steps that name them assume.
      *
-     * MT-380 sends Adam to a ONE-page layout with nothing set up, and the whole point of its import
-     * step is that four of the export's five pages have no home here.  A second page appearing in it -
-     * or an autonomy setup - would make the step pass with nothing left out and nothing to warn about.
-     *
-     * MT-244's is the five-page one the other was trimmed from, and its step needs it to have no
-     * autonomy setup inside the layout folder either.
-     *
-     * @throws Exception from reading the folders
+     * MT-380 sends Adam to a ONE-page layout with nothing set up, and its import step relies on four of the export's
+     * five pages having no home here; a second page, or an autonomy setup, would make the step pass with nothing left
+     * out.  MT-244's is the five-page one the other was trimmed from, and needs no autonomy setup inside the layout
+     * folder.
      */
     @Test
     public void testTheTwoShippedLayoutsStillHaveTheShapeTheirStepsAssume() throws Exception
@@ -270,9 +244,9 @@ public class testTheSuppliedManualTestFilesAreWhatTheySay
             "MT-380's layout index still names several pages, so the arrows on the page it kept index"
             + " into a list that is not there.  The index and the folder must agree");
 
-        // NO ARROWS, because one holds a page's POSITION in the name-sorted list (behaviour.md 8) and
-        // a one-page layout has nowhere for one to point.  The application re-aims them when the set
-        // of pages changes; this folder was trimmed with a text editor, so it cannot.
+        // NO ARROWS, because one holds a page's POSITION in the name-sorted list (behaviour.md 8) and a one-page layout
+        // has nowhere for one to point; the application re-aims them when the set of pages changes, but this folder was
+        // trimmed with a text editor.
         String only = text("MT-380-one-page-layout" + File.separator + "layout" + File.separator
             + "config" + File.separator + "gleisbilder" + File.separator + drawn.get(0));
 
@@ -292,14 +266,10 @@ public class testTheSuppliedManualTestFilesAreWhatTheySay
     }
 
     /**
-     * Every manual-test entry's text, every comment on one, and every Inbox item: the store's text dump.
-     *
-     * The record is `docs/manual-tests/triage.db` (FR-136 Phase 1c), and there is no SQLite driver on
-     * this project's classpath, so it is read from the dump `triagedb.py` writes beside the store on
-     * every write.  A file can be named in an entry's steps or in a comment on it, so both are read.
-     *
-     * @return the dump's text, run together
-     * @throws Exception from reading it
+     * Every manual-test entry's text, every comment on one, and every Inbox item: the store's text dump.  There is no
+     * SQLite driver on the classpath, so it is read from the dump `triagedb.py` writes beside
+     * `docs/manual-tests/triage.db` on every write; a file can be named in an entry's steps or in a comment on it, so
+     * both are read.
      */
     private static String entries() throws Exception
     {
@@ -320,11 +290,7 @@ public class testTheSuppliedManualTestFilesAreWhatTheySay
         return all.toString();
     }
 
-    /**
-     * @param text what to look in
-     * @param needle what to look for
-     * @return how many times it occurs
-     */
+    /** How many times the needle occurs in the text. */
     private static int count(String text, String needle)
     {
         int n = 0;
@@ -337,13 +303,7 @@ public class testTheSuppliedManualTestFilesAreWhatTheySay
         return n;
     }
 
-    /**
-     * Reads one of the shipped configurations as a Layout.
-     *
-     * @param name the file
-     * @return the layout it describes
-     * @throws Exception from reading it
-     */
+    /** Reads one of the shipped configurations as a Layout. */
     private static Layout read(String name) throws Exception
     {
         Layout layout = Layout.fromJSON(text(name), model);
@@ -357,11 +317,7 @@ public class testTheSuppliedManualTestFilesAreWhatTheySay
         return layout;
     }
 
-    /**
-     * @param name the file
-     * @return its contents
-     * @throws Exception when it is not there
-     */
+    /** The contents of a shipped file; fails when it is not there. */
     private static String text(String name) throws Exception
     {
         File file = new File(FILES, name);
