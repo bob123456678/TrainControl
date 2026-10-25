@@ -43,10 +43,9 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     /**
      * @param deferSearch true to skip the route search this normally does while being built.
      *
-     * The search is synchronized on the Layout and walks the whole graph, so doing it per panel while
-     * the list is rebuilt stalls the event thread and can block it on a monitor a driving thread holds.
-     * A caller that passes true is promising to call findPaths off the event thread and hand the result
-     * back through updateState - which is what the full list repaint does.
+     * The search is synchronized on the Layout and walks the whole graph, so doing it per panel while the list is
+     * rebuilt stalls the event thread and can block it on a monitor a driving thread holds.  A caller passing true
+     * promises to call findPaths off the event thread and hand the result back through updateState.
      */
     public AutoLocomotiveStatus(Locomotive loc, TrainControlUI parent, boolean deferSearch)
     {
@@ -99,27 +98,15 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     }
 
     /**
-     * The "there is a reason, hover me" mark.
-     *
-     * An image rather than a character.  It was written as U+24D8 CIRCLED LATIN SMALL LETTER I, which
-     * the UI font on Adam's machine has no glyph for, so Swing drew the missing-glyph box - Adam,
-     * OB-063: "the status page says No Available Paths [] - not sure what that [] is doing in the UI."
-     * It was never a [] at all; it was a character with nowhere to be drawn from.
-     *
-     * Asking the font whether it can display it was the first fix and is not good enough: it makes what
-     * the user sees depend on which machine they are on, and the fallback is uglier than either. An
-     * icon looks the same everywhere and is what the rest of this application already does for its
-     * track tiles.
-     *
-     * Loaded once. A null icon is harmless to setIcon, so a missing resource costs the mark rather than
-     * the panel.
+     * The "there is a reason, hover me" mark: an image rather than a character, as U+24D8 has no glyph in the UI font
+     * on some machines (OB-063) and a font fallback makes what the user sees depend on the machine.  Loaded once; a
+     * null icon is harmless to setIcon.
      */
     private static final javax.swing.ImageIcon INFO_ICON = loadInfoIcon();
 
     /**
-     * This tab's blue, for a card's station badge and its text: the darker blue the window's own labels are written in
-     * (Adam, 2026-10-09: "On the Autonomy Locomotive Commands tab, match the color of the text and pills to the darker
-     * blue used on text labels").  The track diagram's captions and badges keep their brighter blue, `StationCaption.PILL`.
+     * This tab's blue, for a card's station badge and its text: the darker blue the window's own labels are written in.
+     * The track diagram's captions and badges keep their brighter blue, `StationCaption.PILL`.
      */
     static final Color TAB_BLUE = AutonomyViewerPanel.HEADING_COLOUR;
 
@@ -133,39 +120,25 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     /**
      * The " -" suffix marking a station full autonomy will never send this locomotive to.
      *
-     * Several reasons, one meaning to the operator.  The station may exclude this particular
-     * locomotive, be switched off, be a reversing station, or be marked as somewhere autonomy does not
-     * choose - a parking berth, left to a route picked by hand or to "return home".  They all answer
-     * the same question, which is why they share a marker rather than accumulating a symbol each: this
-     * list offers the berth, because you may still choose it yourself, and the dash says autonomy will
-     * not.
-     *
-     * **A PARKING BERTH IS SPELLED `autoDestination:false`** in anything the builder has emitted since,
-     * and that limb was not here at all - so the one case this marker was written for was the
-     * one it got wrong, for as long as it has existed. `!isActive()` was missing with it.
+     * Several reasons, one meaning to the operator: the station may exclude this locomotive, be switched off, be a
+     * reversing station, or be marked as somewhere autonomy does not choose (a parking berth, `autoDestination:false`).
+     * They share a marker rather than a symbol each: this list offers the berth because you may still choose it
+     * yourself, and the dash says autonomy will not.
      *
      * Reversing NON-stations never appear here - getPossiblePaths only enumerates destinations - so
      * the full predicate is spelled out to match the rule in Layout rather than relying on that.
+     * A TERMINUS THIS TRAIN CANNOT BACK INTO IS THE THIRD REASON (the rule lives in `pickPath`,
+     * `hasAutonomousDestination` and `barredFromAutonomy`).
      *
-     * **A TERMINUS THIS TRAIN CANNOT BACK INTO IS THE THIRD REASON**.  `280ff08b` moved that
-     * rule out of `isPathClear` into `pickPath`, `hasAutonomousDestination` and `barredFromAutonomy`,
-     * and this fourth mirror was missed - so before the move a terminus never reached
-     * `getPossiblePaths` for a non-reversible locomotive, and after it, one is listed with no dash.
-     *
-     * **Why this is a copy at all**, which is a fair question in a codebase that keeps paying for
-     * copies: `Layout.barredFromAutonomy` is the rule, and every public way in to it is `synchronized`
-     * on the Layout.  This runs on the event thread, three times per repaint, and this class exists
-     * because taking that monitor here froze the interface for as long as a path was being configured.
-     * So the copy is deliberate and lock-free, and `testTheDashAgreesWithTheRule` is what keeps it
-     * honest.
+     * Why this is a copy at all: `Layout.barredFromAutonomy` is the rule, but every public way in is `synchronized` on
+     * the Layout and this runs on the event thread, three times per repaint, so the copy is deliberate and lock-free;
+     * `testTheDashAgreesWithTheRule` keeps it honest.
      */
     private static String notChosenByAutonomy(Point p, Locomotive loc)
     {
         if (p == null) return "";
 
-        // ALL FIVE LIMBS, in the rule's order.  Two were missing and the guard could not say
-        // so - it built the terminus case and claimed to catch "removing any limb", which a test that
-        // constructs one case cannot do for a limb that was never written.
+        // ALL FIVE LIMBS, in the rule's order.
         return !p.isActive()
             || (p.isReversing() && p.isDestination())
             || !p.isAutoDestination()
@@ -178,15 +151,9 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
      * @param someLoc 
      */
     /**
-     * The path search, on its own, so it can be done off the event thread.
-     *
-     * getPossiblePaths is synchronized on the Layout and searches it whole, once per locomotive panel,
-     * on every arrival and departure.  Run on the EDT that stalls the interface for as long as it
-     * takes - and worse, it lets the EDT block on the Layout's monitor while a driving thread holds
-     * it, which is a deadlock the application could not have before.
-     *
-     * Safe off the EDT because it touches no Swing state: it asks the layout a question and returns
-     * the answer, and the caller decides what to draw.
+     * The path search, on its own so it can be done off the event thread: getPossiblePaths is synchronized on the
+     * Layout and searches it whole, once per locomotive panel, and on the EDT that stalls the interface and can block
+     * on a monitor a driving thread holds.  Touches no Swing state.
      *
      * @return the paths worth showing, or null when the layout is busy and the list is not shown
      */
@@ -218,16 +185,10 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     }
 
     /**
-     * The timetable's starting point for this locomotive, read when the paths were.
-     *
-     * getTimetableStartingPoint is synchronized on the Layout, and this panel reads it three times per
-     * repaint.  A map lookup costs nothing, but TAKING that monitor on the event thread can cost
-     * everything: configureAndLockPath holds it across its per-command sleeps, half a second to two
-     * seconds per path, and the interface is frozen for as long as it does.  Moving the path search off
-     * the event thread and leaving these behind would have left the stall in place and made it look
-     * fixed.
-     *
-     * Null when nothing was gathered, in which case the reads happen inline as before.
+     * The timetable's starting point for this locomotive, read when the paths were: getTimetableStartingPoint is
+     * synchronized on the Layout, which `configureAndLockPath` holds across its per-command sleeps, so taking it on the
+     * event thread (three reads per repaint) can freeze the interface.  Null when nothing was gathered, in which case
+     * the reads happen inline.
      */
     private Point gatheredTimetableStart;
 
@@ -286,9 +247,8 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 locStation.setForeground(Color.WHITE);
                 locStation.setBorder(new FlatLineBorder(new Insets(0,2,0,2), Color.LIGHT_GRAY, 1, 999));
             }
-            // STANDING ON ITS HOME STATION IS A HOUSE BESIDE THE SECOND LINE, NOT A TEAL BADGE (MT-709; Adam, 2026-10-10:
-            // "on the autonomy commands page, instead of making home locations teal, put a little house icon below it (in
-            // the same spot as the (i))") - the badge the tab's blue as for any other station, and `markFor` below.
+            // STANDING ON ITS HOME STATION IS A HOUSE BESIDE THE SECOND LINE, NOT A TEAL BADGE (MT-709): the badge is
+            // the tab's blue as for any other station, and `markFor` below draws the house.
             else
             {
                 this.locName.setForeground(Color.BLACK);
@@ -318,18 +278,13 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
             {
                 List<Point> milestones = layout.getReachedMilestones(locomotive);
                 
-                // Named as the diagram names them.  Edge.pathToString spells out the Points, and on a
-                // derived graph a station is several of those - so a panel reading "BottomMainA
-                // (eastbound) -> Tunnel (southbound)" is telling the user about the arrival-side split,
-                // which is machinery they never asked to see and cannot act on.  The log keeps the
-                // Point names, where they are worth having.
+                // Named as the diagram names them: Edge.pathToString spells out the Points, and on a derived graph a
+                // station is several, so it would show the arrival-side split.  The log keeps the Point names.
                 this.locDest.setText(describePath(layout.getActiveLocomotives().get(locomotive)));
                 
-                // Guarded, because the two maps this reads are not written under one lock: the driver
-                // clears the active locomotives and the milestones in sequence, so a refresh landing
-                // between the two finds a locomotive that is still "running" with no milestones at
-                // all.  The NPE lands on the EDT inside the loop that refreshes every panel, so every
-                // panel after this one is left showing what it showed last time.
+                // Guarded, because the two maps this reads are not written under one lock: a refresh landing between
+                // the driver clearing the active locomotives and the milestones finds a "running" locomotive with no
+                // milestones, and the NPE would leave every later panel showing what it showed last time.
                 this.locStation.setText(milestones == null || milestones.isEmpty() ? ""
                     : "@" + stationName(milestones.get(milestones.size() - 1)));
                 
@@ -357,9 +312,8 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
             // Layout is standing by.  Show the list.
             else
             {                
-                // Already searched, if somebody did it off the EDT for us.  Searching here is the
-                // fallback for the callers that have no worker to do it on, and it is the reason this
-                // method still can.
+                // Already searched, if somebody did it off the EDT; searching here is the fallback for callers with no
+                // worker.
                 //
                 // haveFound means "the caller has an answer, do not search".  It is NOT the same as
                 // "the caller called findPaths": findPaths returns null when it did not search - the
@@ -391,9 +345,6 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 else if (layout.getLocomotiveLocation(locomotive) != null)
                 {                    
                     // With the info mark, because a tooltip nobody knows about explains nothing.
-                    // This label has said "No available paths" for years and the reasons behind it
-                    // are new - there is no way to guess that resting the pointer here now answers
-                    // the question the text raises.
                     this.locDest.setText(I18n.t("autolayout.ui.noAvailPaths"));
 
                     // And WHY, on hover.  A FLAG here, and the reasons worked out when the pointer
@@ -671,49 +622,27 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     private boolean noPathsNow;
 
     /**
-     * The whole list of stations and why each one is unavailable, in a window (FR-017).
-     *
-     * Worked out OFF the event thread, for the reason this file records twice already:
-     * `explainDestinations` walks every candidate route to every station and takes the Layout's
-     * monitor, and a dispatch holds that monitor across its per-command sleeps.  Computing it before
-     * showing the window would freeze the application for the length of a configuration phase with
-     * nothing on screen to say why - which is worse than the hover version was, because a click
-     * expects an answer.
-     *
-     * So the window opens at once saying it is working, and fills itself in when the answer arrives.
-     * The dialog being modal is what lets that work: a modal dialog runs its own event pump, so the
-     * invokeLater below is delivered while this call is still blocked inside it.
+     * The whole list of stations and why each one is unavailable, in a window (FR-017).  Worked out OFF the event
+     * thread: `explainDestinations` takes the Layout's monitor, which a dispatch holds across its per-command sleeps.
+     * So the window opens at once saying it is working and fills in when the answer arrives; the dialog being modal
+     * runs its own event pump, which delivers the invokeLater below.
      */
     private void showWhyNot()
     {
-        // A styled pane rather than a plain text area, so the two headings can be bold (Adam,
-        // MT-160 and MT-163: "increase the font size to match the standard size of all other windows.
-        // Make the headings (could choose / never choose) bold.").
+        // A styled pane rather than a plain text area, so the two headings can be bold (MT-160, MT-163).
         final javax.swing.JTextPane area = new javax.swing.JTextPane();
 
         area.setEditable(false);
         area.setMargin(new java.awt.Insets(6, 6, 6, 6));
 
-        // FlatLaf derives a non-editable JTextPane's background from the panel behind it - a gray,
-        // not the white every other text area in the app uses (OB-096, Adam: "make the text area of
-        // 'no available paths window' with the text be white"). White is set explicitly here, the same
-        // way the rest of the app does it (e.g. AutonomyViewerPanel's `findings` list and RouteEditorFrame's
-        // panels all call setBackground(Color.WHITE) rather than trust the look and feel's default).
+        // FlatLaf derives a non-editable JTextPane's background from the panel behind it, a gray, so white is set
+        // explicitly as the rest of the app does (OB-096).
         area.setBackground(Color.WHITE);
 
-        // The look and feel's font FAMILY, at the size the rest of this application actually uses.
-        //
-        // Asking the L&F for "Label.font" and using it whole was the previous attempt at "the standard
-        // size of all other windows", and it is why Adam asked for the same thing twice: FlatLaf's
-        // label font is smaller than the size this application sets on its own components, so taking it
-        // whole made this window smaller than its neighbors rather than the same.
-        //
-        // The number is not invented. Ninety-eight components in the gui package are built with a
-        // Segoe UI font at size 14, against a single one at 12, so 14 IS the standard in this
-        // application and matching it is what MT-160 and MT-163 asked for.
-        //
-        // The FAMILY still comes from the look and feel, so a theme with different typography is
-        // followed; only the size is pinned to what the rest of the window uses.
+        // The look and feel's font FAMILY, at the size the rest of this application uses: FlatLaf's label font is
+        // smaller than the 14 that most Segoe UI components in the gui package are built with, so taking it whole made
+        // this window smaller than its neighbors (MT-160, MT-163).  The family still comes from the look and feel, so a
+        // theme's typography is followed.
         java.awt.Font standard = javax.swing.UIManager.getFont("Label.font");
 
         if (standard == null) standard = new javax.swing.JLabel().getFont();
@@ -731,17 +660,9 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
 
             javax.swing.SwingUtilities.invokeLater(() ->
             {
-                // No guard on which locomotive this is about, and the one that used to stand here was
-                // worse than nothing.
-                //
-                // It captured `locomotive` into a local and compared the two, under a comment saying
-                // "the panel is reused as trains are placed and cleared". The field is final and
-                // assigned once in the constructor: a panel is built for one locomotive and thrown
-                // away with it, so the comparison could not fail and the sentence described a design
-                // this class does not have. A reader trusting it would go looking for the reassignment.
-                //
-                // What is actually true is smaller: this window may be closed before the answer
-                // arrives, and writing to a text area nobody is looking at costs nothing.
+                // No guard on which locomotive this is about: the field is final and a panel belongs to one locomotive
+                // for its whole life.  What is true is smaller: the window may be closed before the answer arrives, and
+                // writing to a text area nobody is looking at costs nothing.
                 write(area, report);
                 area.setCaretPosition(0);
             });
@@ -753,17 +674,9 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     }
 
     /**
-     * Puts the report into the pane, with the group headings in bold.
-     *
-     * Adam, on MT-160 and MT-163: "make the headings (could choose / never choose) bold". They are the
-     * only thing in the window that is not a station, and without them the two groups run together -
-     * which matters here more than it looks, because the whole point of the grouping is that the first
-     * list is worth waiting for and the second is not.
-     *
-     * A heading is recognized by position rather than by matching its text: the report writes each one
-     * on its own line immediately before an indented block, and the lines that are not indented and
-     * not blank are exactly the headings and the opening sentence. Matching the translated text would
-     * mean this working in English and quietly doing nothing in the other seven bundles.
+     * Puts the report into the pane, with the group headings in bold (MT-160, MT-163).  A heading is recognized by
+     * position rather than by matching its text: each is on its own line immediately before an indented block, and
+     * matching translated text would work in English and quietly do nothing in the other seven bundles.
      *
      * @param pane the window's text
      * @param report what whyNotReport produced
@@ -796,21 +709,11 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     }
 
     /**
-     * Every station, grouped by whether autonomy could ever choose it, with the reason for each.
-     *
-     * Adam: "Order them by ones that can be chosen autonomously and ones that cannot, with the
-     * autonomous ones first."  The first group is the actionable one - those become available when a
-     * train moves or a route clears - and the second is a description of how the railway is set up,
-     * which is worth seeing but is not news.
-     *
-     * The grouping comes from the Layout rather than from matching the reason strings.  Two of the
-     * standing bars are translated sentences that would have to be compared by value, and this window
-     * would then be a second answer to "can autonomy pick this station" - drifting from the one the
-     * search itself uses is exactly how the reason and the grouping would come to disagree.
-     *
-     * Arrival-side copies are collapsed to the station a person would recognize, the same way the
-     * tooltip does it.  A station counts as choosable if ANY of its copies is: one reachable from one
-     * side and barred from the other is a station autonomy can choose.
+     * Every station, grouped by whether autonomy could ever choose it, with the reason for each; the choosable group
+     * first, as it is the actionable one.  The grouping comes from the Layout rather than from matching reason strings,
+     * which would be a second answer to "can autonomy pick this station" that could drift from the search's.
+     * Arrival-side copies are collapsed to the station a person would recognize, and a station counts as choosable if
+     * ANY of its copies is.
      *
      * @return the report, never null
      */
@@ -834,9 +737,8 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
             // reasons are the ones a hand-driven send meets, as the diagram's Why not Moving? gives them on Manual.
             boolean byHand = !layout.isAutoRunning();
 
-            // Whatever stops the train itself moving comes first and on its own.  When a locomotive
-            // cannot start, a list of stations explains nothing - every one of them is unavailable for
-            // the same reason, which is not about them.
+            // Whatever stops the train itself moving comes first and on its own: a list of stations would give one
+            // reason that is not about them.
             String cannotStart = layout.explainCannotStart(locomotive, byHand);
 
             if (cannotStart != null)
@@ -844,13 +746,8 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 return out.append("\n").append(cannotStart).append("\n").toString();
             }
 
-            // Both halves under ONE acquisition of the Layout monitor.
-            //
-            // Asked separately, the reasons and the grouping could be computed against two different
-            // states - a train arrives, or a station is switched off, between the two calls - and a
-            // line would sit under the wrong heading for one opening of the window. Transient, and it
-            // contradicted the reason this was built with a single barredFromAutonomy in the first
-            // place: so that the reason and the group it is printed under cannot disagree.
+            // Both halves under ONE acquisition of the Layout monitor: asked separately, the reasons and the grouping
+            // could be computed against two states, and a line would sit under the wrong heading.
             Layout.Destinations destinations = layout.explainDestinationsGrouped(locomotive, byHand);
 
             java.util.Map<String, String> reasons = destinations.getReasons();
@@ -886,9 +783,8 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     }
 
     /**
-     * One headed block of "station - reason" lines, skipped entirely when the group is empty.
-     *
-     * An empty heading is worse than no heading: it reads as a group whose contents failed to load.
+     * One headed block of "station - reason" lines, skipped entirely when the group is empty (an empty heading reads as
+     * a failed load).
      */
     private void appendGroup(StringBuilder out, String heading, java.util.Map<String, String> lines)
     {
@@ -914,12 +810,8 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
         this.locDest.addMouseListener(new java.awt.event.MouseAdapter()
         {
             /**
-             * FR-017: the whole list, in a window that stays put and can be scrolled.
-             *
-             * Adam: "let us also make it clickable and show the notes in a popup with a scrollable
-             * text area with the whole list of stations."  A tooltip cannot be scrolled and goes away
-             * while it is being read, and the hover version shows twelve stations and then an
-             * ellipsis - on a real railway the interesting one is often below that line.
+             * FR-017: the whole list, in a window that stays put and can be scrolled; a tooltip cannot be scrolled and
+             * shows twelve stations then an ellipsis.
              */
             @Override
             public void mouseClicked(java.awt.event.MouseEvent e)
@@ -941,38 +833,19 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                     return;
                 }
 
-                // Worked out OFF the event thread (OB-079).
-                //
-                // explainDestinations walks every candidate route to every station and takes the
-                // Layout's monitor to do it - and a dispatch holds that monitor across its per-command
-                // sleeps. So hovering this label while a train was being dispatched froze the whole
-                // window for the length of the configuration phase, seconds at a time.
-                //
-                // The same mistake this file already records one paragraph up, where the reasons were
-                // moved OUT of updateState for exactly this reason: "that is the freeze this file's
-                // own comments say must never happen, reintroduced by the feature meant to explain
-                // it". Moving them to a hover put them back on the event thread by another door.
-                //
-                // The tooltip arrives a moment later, which is what a tooltip does anyway. Nothing is
-                // shown while it is being worked out rather than a placeholder, because a tooltip that
-                // changes under the pointer reads as a glitch.
+                // Worked out OFF the event thread (OB-079): explainDestinations takes the Layout's monitor, which a
+                // dispatch holds across its per-command sleeps, so hovering while a train was being dispatched froze
+                // the window.  The tooltip arrives a moment later, and nothing is shown meanwhile because a tooltip
+                // that changes under the pointer reads as a glitch.
                 new Thread(() ->
                 {
                     final String why = whyNotToolTip();
 
                     javax.swing.SwingUtilities.invokeLater(() ->
                     {
-                        // Still in the STATE the answer was about, which is the half of this guard that
-                        // was ever real.
-                        //
-                        // It used to also check that the locomotive had not changed under it. It cannot:
-                        // the field is final and a panel belongs to one locomotive for its whole life.
-                        // The check was dead and the comment beside it described a reuse pattern that
-                        // does not exist.
-                        //
-                        // noPathsNow does change. A train can be dispatched while the reasons are being
-                        // worked out, and a tooltip explaining why there are no paths does not belong on
-                        // a label that has since started showing one.
+                        // Still in the STATE the answer was about: noPathsNow changes when a train is dispatched while
+                        // the reasons are worked out, and a tooltip explaining why there are no paths does not belong
+                        // on a label showing one.
                         if (noPathsNow) locDest.setToolTipText(why);
                     });
                 }).start();
@@ -1097,25 +970,12 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     }
 
     /**
-     * Drops the destinations this train may not be sent to at all (Adam, 2026-09-12).
-     *
-     * *"why can non-reversible EN57-947 be manually sent from BottomSecondary to BottomMainC
-     * (terminus, train is non reversible, not a berth)?"*  Because `OB-205` put that rule in
-     * `Layout.isOfferableToOperator` and only the track diagram's menu was asking it.  This list had a
-     * DASH for it - `notChosenByAutonomy` carries the terminus limb - and a dash is a label, not a
-     * refusal: the row was still there and still executed on a double click.
-     *
-     * **The dash and this filter are not the same question, and both are wanted.**  The dash says
-     * *autonomy will not choose this*, which is true of a parking berth the operator may perfectly
-     * well pick by hand - the reason this list offers berths at all.  This says *you may not send this
-     * train here*, which is true of a terminus it could not leave again.  Adam drew that line himself
-     * in `OB-205`: a square autonomy never chooses stays offered, an ordinary terminus does not.
-     *
-     * **The rule, not a copy of it.**  `notChosenByAutonomy` beside this is a deliberate lock-free
-     * copy because it runs on the event thread three times per repaint; this runs where the path
-     * search already runs, which is off the event thread for every caller that has a worker and on it
-     * only for the fallback that was already taking the monitor through `getPossiblePaths`.  So there
-     * is nothing here to fall out of step.
+     * Drops the destinations this train may not be sent to at all: `OB-205` put that rule in
+     * `Layout.isOfferableToOperator` and only the track diagram's menu asked it.  The dash and this filter are not the
+     * same question and both are wanted: the dash says autonomy will not choose this (true of a parking berth the
+     * operator may pick by hand), this says you may not send this train here (a terminus it could not leave again).
+     * This is the rule itself, not a copy: it runs where the path search runs, so nothing here can fall out of step,
+     * unlike the lock-free `notChosenByAutonomy` beside it.
      *
      * @param paths the paths the search returned
      * @return the ones the operator may actually choose
@@ -1151,11 +1011,9 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 // Double-click detected
                 int index = list.locationToIndex(evt.getPoint());
 
-                // locationToIndex answers with the LAST row for a click anywhere past the end of the
-                // list, and this one stretches to fill its viewport - so a near-miss double-click in
-                // the blank space under a short list executed the last path.  No race needed.  The
-                // sibling list in GraphLocExclude has carried this guard, with a comment naming the
-                // trap, since before this class existed.
+                // locationToIndex answers with the LAST row for a click anywhere past the end of the list, which
+                // stretches to fill its viewport, so a near-miss double-click in the blank space executed the last path
+                // (as GraphLocExclude guards).
                 if (index < 0 || !list.getCellBounds(index, index).contains(evt.getPoint())) return;
 
                 // NOR WHILE RETURN HOME OWNS THE RAILWAY: autonomy's flag is down while it plans, and a train
@@ -1164,18 +1022,16 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 // send trains more clearly.").
                 if (!layout.isAutoRunning() && !layout.isStagingInProgress() && !this.paths.isEmpty())
                 {
-                    // Read here, on the EDT, where the operator chose it.  updateState reassigns this list whenever any
-                    // locomotive arrives or departs - dispatching one train recomputes another's paths - so a list that
-                    // changed between the click and the dispatch sent this locomotive to whatever had moved into that index.
-                    // The movement was valid and locked, which is exactly why nothing reported it.
+                    // Read here, on the EDT, where the operator chose it: updateState reassigns this list whenever any
+                    // locomotive arrives or departs, so a list that changed between click and dispatch sent this
+                    // locomotive to whatever had moved into that index.
                     if (index >= this.paths.size()) return;
 
                     final List<Edge> chosen = this.paths.get(index);
 
-                    // THROUGH THE ONE DOOR both hand doors send through (Adam, 2026-09-29: "can all the checks go through
-                    // a single door?"): whether a train may be sent at all - the editor, which this copy did not ask,
-                    // the setup, the power - this path's standing rules, the reversal question, the
-                    // last-moment question again, the atomic-routes gate and the dispatch, in that order.
+                    // THROUGH THE ONE DOOR both hand doors send through: whether a train may be sent at all (the
+                    // editor, the setup, the power), this path's standing rules, the reversal question, the last-moment
+                    // question again, the atomic-routes gate and the dispatch, in that order.
                     this.parent.sendATrainByHand(this.layout, chosen, locomotive);
                 }
             } 
@@ -1212,9 +1068,9 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     private void pauseButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_pauseButtonActionPerformed
         locomotive.setAutonomyPaused(pauseButton.isSelected());
 
-        // AND ITS ICON ON THE DIAGRAM (FR-117), gray while paused.  The train alone: this button is pressed while trains
-        // run, when the setup is not edited (Adam, 2026-09-28), and the fold takes it into the setup with the rest of this
-        // tab's settings.
+        // AND ITS ICON ON THE DIAGRAM (FR-117), gray while paused.  The train alone: this button is pressed while
+        // trains run, when the setup is not edited, and the fold takes it into the setup with the rest of this tab's
+        // settings.
         parent.trainsPausedChanged();
     }//GEN-LAST:event_pauseButtonActionPerformed
 
