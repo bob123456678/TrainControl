@@ -19,26 +19,19 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.file.CS2File;
 
 /**
- * A layout folder that is not perfect, and what TrainControl does about it.
+ * A layout folder that is not perfect, and what TrainControl does about it, from hands-on tests 39, 40 and 38: a page
+ * whose name will not go into a filename, a page the index promises and the folder does not hold, and a setup file
+ * that cannot be read.
  *
- * Written at Adam's request, from hands-on tests 39, 40 and 38 - the three that are about a folder in a
- * state nobody intended: a page whose name will not go into a filename, a page the index promises and
- * the folder does not hold, and a setup file that cannot be read.
- *
- * The rule behind all three is the same one: **what TrainControl cannot understand it must not throw
- * away, and must not stop for.**  A layout is somebody's railway, drawn over years, and the failure mode
- * that matters is not a crash - it is the quiet one, where nine pages load, the tenth does not, nothing
- * says so, and the next save writes the nine back.
+ * The rule behind all three: **what TrainControl cannot understand it must not throw away, and must not stop for.**
+ * The failure mode that matters is the quiet one, where nine pages load, the tenth does not, nothing says so, and the
+ * next save writes the nine back.
  */
 public class testLayoutFolderRobustness
 {
     /**
-     * A page named with a slash in it comes back after a save.
-     *
-     * "Up/Down" is an ordinary name for a page on a two-level railway and an impossible one for a file.
-     * The reader finds a page by taking the name out of the index and sanitizing it, so a writer that
-     * does not sanitize produces a file the reader will never look for - and resolveSibling reads the
-     * slash as a directory, so the page went into a folder of its own and vanished from the layout.
+     * A page named with a slash in it comes back after a save: the reader sanitizes the name out of the index, so a
+     * writer that does not produces a file it never looks for, and resolveSibling reads the slash as a directory.
      */
     @Test
     public void testAPageNamedWithASlashSurvivesASave() throws Exception
@@ -54,8 +47,8 @@ public class testLayoutFolderRobustness
             // The page knows where it lives by its URL, which is what getFilePath resolves
             File placeholder = new File(pages, "placeholder.cs2");
 
-            // The page it is renaming FROM has to be there: saving a page under a new name writes the
-            // new file and removes the old one
+            // The page it is renaming FROM has to be there: saving under a new name writes the new file and removes the
+            // old
             write(placeholder, "[gleisbildseite]\nversion\n .major=1\n");
 
             LayoutDiagram page = new LayoutDiagram("Up/Down", 8, 6,
@@ -84,11 +77,8 @@ public class testLayoutFolderRobustness
     }
 
     /**
-     * A page the index promises and the folder does not hold does not stop the others.
-     *
-     * The index and the pages are separate files, and they get out of step: a page deleted by hand, a
-     * folder half-copied, a sync that dropped one.  Nine pages loading and the tenth being named in the
-     * log is a layout somebody can work with; an exception on the way in is not.
+     * A page the index promises and the folder does not hold does not stop the others: nine pages loading and the tenth
+     * named in the log is a layout somebody can work with.
      */
     @Test
     public void testAMissingPageDoesNotStopTheOthers() throws Exception
@@ -139,14 +129,10 @@ public class testLayoutFolderRobustness
     }
 
     /**
-     * A setup file that cannot be read leaves the layout alone.
-     *
-     * Adam: "make a similar test to ensure autonomy is unloaded (or regenerated, if the app is running)
-     * gracefully if its config files are corrupt or manually removed."
-     *
-     * The store reads before it clears, so a file it cannot parse leaves the previous contents in place
-     * and reports the failure - rather than emptying itself and handing the caller a live, blank setup
-     * that the next save would write over the top of the real one.
+     * A setup file that cannot be read leaves the layout alone.  Adam: "make a similar test to ensure autonomy is
+     * unloaded (or regenerated, if the app is running) gracefully if its config files are corrupt or manually removed."
+     * The store reads before it clears, so a file it cannot parse leaves the previous contents in place and reports the
+     * failure, instead of handing the caller a blank setup that the next save would write over the real one.
      */
     @Test
     public void testACorruptSetupFileIsRefusedRatherThanEmptied() throws Exception
@@ -194,16 +180,9 @@ public class testLayoutFolderRobustness
     }
 
     /**
-     * A page that will not read does not cost the sensors that only appear on it.
-     *
-     * syncLayouts deletes every s88 in the database that no LOADED page mentions.  That was safe while
-     * one bad page took the whole parse down with it; the per-page guard the tests above are about made
-     * it unsafe, because four pages of five now load and the loop reads that as "the railway", so every
-     * sensor whose only appearance was on the fifth is deleted - permanently, and into LocDB.data on
-     * exit.  The autonomy points watching them lose them too.
-     *
-     * The existing guard, `!feedbackAddresses.isEmpty()`, covers only TOTAL failure.  That is why the
-     * total case was safe and the partial case, which is the likely one, was not.
+     * A page that will not read does not cost the sensors that only appear on it: syncLayouts deletes every s88 that no
+     * LOADED page mentions, and with the per-page guard four pages of five now load and the loop reads that as "the
+     * railway".  The existing guard, `!feedbackAddresses.isEmpty()`, covers only TOTAL failure.
      */
     @Test
     public void testAnUnreadablePageDoesNotDeleteTheSensorsOnlyItHad() throws Exception
@@ -245,10 +224,8 @@ public class testLayoutFolderRobustness
     }
 
     /**
-     * A folder that reads completely still prunes - the control.
-     *
-     * Without this, "do not prune when a page failed" is satisfied by never pruning at all, and the
-     * stale-sensor cleanup the loop exists for is silently gone.
+     * A folder that reads completely still prunes - the control: without it "do not prune when a page failed" is
+     * satisfied by never pruning at all.
      */
     @Test
     public void testAFolderThatReadsCompletelyStillPrunes() throws Exception
@@ -286,15 +263,10 @@ public class testLayoutFolderRobustness
     }
 
     /**
-     * A folder where every page fails still throws, so the fallback runs.
-     *
-     * The revert to the Central Station lives in a catch around syncLayouts, so it needs a throw.  One
-     * bad page used to provide it; with the per-page guard an all-bad folder returns an empty list
-     * instead, the catch never runs, and the user gets an empty diagram with no message and the
-     * override preference kept - so the same nothing happens at every launch.
-     *
-     * And it must throw BEFORE clearing, or the fallback is handed a window that has already been
-     * emptied.
+     * A folder where every page fails still throws, so the fallback runs: the revert to the Central Station lives in a
+     * catch around syncLayouts, and with the per-page guard an all-bad folder would return an empty list, the catch
+     * would never run, and the same nothing would happen at every launch.  It must throw BEFORE clearing, or the
+     * fallback is handed a window that has already been emptied.
      */
     @Test
     public void testAFolderWhereEveryPageFailsStillFails() throws Exception
@@ -342,14 +314,9 @@ public class testLayoutFolderRobustness
     }
 
     /**
-     * An EMPTY folder is not a failed one, and must not revert anything.
-     *
-     * The throw is gated on pages having FAILED, not on the list coming back empty - and
-     * the difference matters: syncLayoutsFromConfiguredSource answers a throw by clearing the user’s
-     * layout-path preference and reverting to the Central Station.  A folder that simply holds no
-     * pages must not trigger that.
-     *
-     * Nothing asserted it, so dropping the count clause from the guard left every test green.
+     * An EMPTY folder is not a failed one, and must not revert anything: the throw is gated on pages having FAILED, not
+     * on the list coming back empty, because syncLayoutsFromConfiguredSource answers a throw by clearing the user's
+     * layout-path preference and reverting to the Central Station.
      */
     @Test
     public void testAnEmptyFolderIsNotAFailedOne() throws Exception
@@ -363,9 +330,8 @@ public class testLayoutFolderRobustness
 
             assertTrue(pages.mkdirs(), "could not build the fixture");
 
-            // An index that promises nothing at all.
-            // Built without an escape sequence, so that no backslash has to survive the script that
-            // writes this file.
+            // An index that promises nothing at all, built without an escape sequence so no backslash has to survive
+            // the script that writes this file.
             String nl = new String(new char[] { 10 });
 
             write(new File(config, "gleisbild.cs2"),
@@ -457,11 +423,8 @@ public class testLayoutFolderRobustness
     }
 
     /**
-     * Points the model's parser at a folder and runs the real sync.
-     *
-     * Reflective because both the parser field and syncLayouts are private, and standing in for either
-     * would test the stand-in: the pruning loop and the empty-parse decision are IN syncLayouts, and
-     * the whole finding is about what that method concludes from a partial read.
+     * Points the model's parser at a folder and runs the real sync, reflectively: both the parser field and syncLayouts
+     * are private, and a stand-in would test the stand-in.
      */
     private static void syncFrom(MarklinControlStation model, File folder) throws Exception
     {
@@ -491,10 +454,8 @@ public class testLayoutFolderRobustness
     }
 
     /**
-     * And a setup folder that has been deleted by hand is simply a layout with no setup.
-     *
-     * The other half of Adam's request.  Nothing to recover and nothing to complain about: a folder with
-     * no autonomy in it is the state every layout starts in.
+     * And a setup folder that has been deleted by hand is simply a layout with no setup; the other half of Adam's
+     * request.
      */
     @Test
     public void testARemovedSetupIsJustALayoutWithoutOne() throws Exception
