@@ -22,32 +22,6 @@ import org.traincontrol.util.I18n;
  */
 public class LocomotiveFunctionAssign extends javax.swing.JPanel
 {
-    /**
-     * The file a stored image URL names, or null when it does not name one.
-     *
-     * A locomotive's local image is stored as a URL string, so `new File(...)` on it is wrong.
-     *
-     * @param url the stored value
-     * @return the file, or null for anything that is not a readable file: URL
-     */
-    private static File fileOf(String url)
-    {
-        if (url == null) return null;
-
-        try
-        {
-            java.net.URI uri = new java.net.URI(url);
-
-            if (!"file".equalsIgnoreCase(uri.getScheme())) return null;
-
-            return new File(uri);
-        }
-        catch (java.net.URISyntaxException | IllegalArgumentException notAFileUrl)
-        {
-            return null;
-        }
-    }
-
 
     Locomotive loc;
     TrainControlUI parent;
@@ -669,7 +643,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
             // opened where the current icon lives - a silent no-op since the day it was written.
             // The identical mistake was fixed in TrainControlUI's locomotive-icon chooser; this is
             // its twin, one class over.
-            File currentIcon = fileOf(this.loc.getLocalFunctionImageURL(this.fNo.getSelectedIndex()));
+            File currentIcon = TrainControlUI.fileOf(this.loc.getLocalFunctionImageURL(this.fNo.getSelectedIndex()));
 
             if (currentIcon != null && currentIcon.exists())
             {
