@@ -38683,12 +38683,12 @@ status_note: Fixed in 2179b67d (the sample uses its own layout) - 3.0.3 validati
 line: 44
 severity: C
 title: OB-366's three-line cap also shortens the main window's autonomy strip
-disposition: Open
+disposition: Not a defect - executed: the main window's strip shows two texts, and each fits one line in all 8 languages at the window's narrowest width.
 evidence: AutonomyBanner.java:408
 commit_id: 07bb2e90
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: Refuted by execution - 3.0.3 validation round 1, RSA76 (b6f3dfcb..ab54c48b; 0 A, 2 B, 14 C) (2026-10-24)
 
 [finding RSA76-C10 in RSA76.md]
 line: 126
@@ -38727,12 +38727,12 @@ status_note: Fixed in 2179b67d (US English, line 44) - 3.0.3 validation round 1,
 line: 162
 severity: C
 title: The Readme's v3.0.3 list has no line for FR-138's six API examples
-disposition: Open: Adam's call
+disposition: Fixed - the Readme's v3.0.3 Automation API line for the six examples (Adam, 2026-10-24: *"proceed with C13"*).
 evidence:
 commit_id:
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: Fixed (the Readme line), Adam 2026-10-24 "proceed with C13" - 3.0.3 validation round 1, RSA76 (b6f3dfcb..ab54c48b; 0 A, 2 B, 14 C) (2026-10-24)
 
 [finding RSA76-C14 in RSA76.md]
 line: 170
@@ -38749,34 +38749,34 @@ status_note: Fixed in 74450314 (comment-only trim) - 3.0.3 validation round 1, R
 line: 54
 severity: C
 title: Each entry into autonomy mode adds a viewport listener that is never removed
-disposition: Open
+disposition: Fixed - `e615a9af`: leaving autonomy mode removes the strip's viewport listener (AutonomyBanner.letGoOfTheDiagram); claim in ui.testTheTrackEditorByHand, red then green.
 evidence: AutonomyBanner.java:231
 commit_id:
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: Fixed in e615a9af (the listener is removed) - 3.0.3 validation round 1, RSA76 (b6f3dfcb..ab54c48b; 0 A, 2 B, 14 C) (2026-10-24)
 
 [finding RSA76-C3 in RSA76.md]
 line: 62
 severity: C
 title: OB-368 makes the Track Directions box narrower in English too
-disposition: Open
+disposition: Not a defect - executed: in English every Track Directions item fits the closed 150 px box (widest, Restrictions only, 110 of 126 px).
 evidence: AutonomyEditorPanel.java:186
 commit_id: d84b9ea5
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: Refuted by execution - 3.0.3 validation round 1, RSA76 (b6f3dfcb..ab54c48b; 0 A, 2 B, 14 C) (2026-10-24)
 
 [finding RSA76-C4 in RSA76.md]
 line: 72
 severity: C
 title: The OB-368 claim reads the override's own answer
-disposition: Open
+disposition: Fixed - `e615a9af`: the claim reads the opened popup's viewport width.  It cannot go red by undoing the getSize override: under FlatLaf the popup is wider than the box without it (159 against 160 px), so the override looks redundant.
 evidence:
 commit_id: d84b9ea5
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: Fixed in e615a9af (the claim reads the popup) - 3.0.3 validation round 1, RSA76 (b6f3dfcb..ab54c48b; 0 A, 2 B, 14 C) (2026-10-24)
 
 [finding RSA76-C5 in RSA76.md]
 line: 80
@@ -38804,34 +38804,34 @@ status_note: Follow-up for the next release (plan section 8) - 3.0.3 validation 
 line: 102
 severity: C
 title: OB-370's sentence names autonomy or routes when Return Home, a hand send or a graceful stop holds the setup, and it drops the remedy
-disposition: Open: Adam's call (the sentence names autonomy or routes when Return Home, a hand send or a graceful stop holds the setup, and has no remedy). The tracker receipt's 62d9fe37 is on branch ob370; dev has the same patch as 3e00f243.
+disposition: Ruled - kept (Adam, 2026-10-24: *"Leave C7 as is"*).
 evidence: RunGates.java:72
 commit_id: 3e00f243
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: Ruled: kept, Adam 2026-10-24 "Leave C7 as is" - 3.0.3 validation round 1, RSA76 (b6f3dfcb..ab54c48b; 0 A, 2 B, 14 C) (2026-10-24)
 
 [finding RSA76-C8 in RSA76.md]
 line: 110
 severity: C
 title: The OB-364 claim has no precondition that the page hides its text
-disposition: Open
+disposition: Fixed - `e615a9af`: the precondition that the page hides its text.
 evidence: LayoutEditor.java:3858
 commit_id:
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: Fixed in e615a9af (precondition) - 3.0.3 validation round 1, RSA76 (b6f3dfcb..ab54c48b; 0 A, 2 B, 14 C) (2026-10-24)
 
 [finding RSA76-C9 in RSA76.md]
 line: 118
 severity: C
 title: Cluster 27's rewritten source claim asks the same thing twice
-disposition: Open
+disposition: Fixed - `e615a9af`: the duplicate assertion removed; the grey call is asserted at its own line.
 evidence: testATrainCoversTheTrackBehindIt.java:1062
 commit_id: 0e5c1525
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: Fixed in e615a9af (duplicate removed) - 3.0.3 validation round 1, RSA76 (b6f3dfcb..ab54c48b; 0 A, 2 B, 14 C) (2026-10-24)
 
 [finding RSA76-D1 in RSA76.md]
 line: 191

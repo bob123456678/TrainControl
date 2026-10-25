@@ -65,7 +65,7 @@ final class CoveredTrackView extends SettledQuestion
     }
 
     /**
-     * One pass of the old body of `refreshCoveredTrack`, on a worker thread.
+     * One pass of `refreshCoveredTrack`'s work, on a worker thread.
      *
      * @see #refreshCoveredTrack()
      */

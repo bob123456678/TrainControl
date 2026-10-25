@@ -1103,10 +1103,9 @@ public final class CS2File
 
         String[] data = functionList.replace("{", "").replace("}", "").split("\\|");
 
-        // Collected first, because the function number is the INDEX in the returned array while the
-        // entry count only bounds how many are listed.  A CS2 file may list functions sparsely, and
-        // indexing an entry-count-sized array by function number then threw - which escaped
-        // parseLocomotives and aborted the entire Central Station sync for one bad locomotive.
+        // Collected first: the function number is the index in the returned array, and a CS2 file may list functions
+        // sparsely, so the array is sized by the highest number, not the entry count.  An out-of-range index here would
+        // escape parseLocomotives and abort the whole Central Station sync for one locomotive.
         Map<Integer, Integer> parsed = new HashMap<>();
         int highest = -1;
 
@@ -1148,7 +1147,7 @@ public final class CS2File
             }
         }
 
-        // At least data.length, so a contiguous list returns exactly what it always did
+        // At least data.length, so a contiguous list gives one slot per entry
         int[] output = new int[Math.max(data.length, highest + 1)];
 
         for (Map.Entry<Integer, Integer> function : parsed.entrySet())
