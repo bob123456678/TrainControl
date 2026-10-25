@@ -17677,7 +17677,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         restoreDataMenuItem = new javax.swing.JMenuItem(I18n.t("ui.main.toolbar.restoreData"));
 
-        restoreDataMenuItem.setToolTipText(I18n.t("ui.main.toolbar.tooltip.restoreData"));
+        restoreDataMenuItem.setToolTipText(AutonomyEditorPanel.wrappedIfLong(I18n.t("ui.main.toolbar.tooltip.restoreData")));
 
         restoreDataMenuItem.addActionListener(e ->
         {
@@ -23059,7 +23059,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         recentLayoutsMenu = new javax.swing.JMenu(I18n.t("ui.main.toolbar.recentLayouts"));
 
-        recentLayoutsMenu.setToolTipText(I18n.t("ui.main.toolbar.tooltip.recentLayouts"));
+        recentLayoutsMenu.setToolTipText(AutonomyEditorPanel.wrappedIfLong(I18n.t("ui.main.toolbar.tooltip.recentLayouts")));
 
         int open = indexOnLayoutMenu(chooseLocalDataFolderMenuItem);
 

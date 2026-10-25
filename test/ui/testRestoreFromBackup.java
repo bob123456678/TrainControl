@@ -54,6 +54,7 @@ public class testRestoreFromBackup
 
     private static support.LayoutSandbox sandbox;
 
+    private static boolean dataKept;
     private static byte[] locomotivesWere;
     private static byte[] windowStateWas;
     private static String lastLocalWas;
@@ -76,12 +77,9 @@ public class testRestoreFromBackup
                 + " (one.sh and battery.sh give it one)");
         }
 
-        // A backup takes these from the working directory, and a restore would write them back there
-        assertFalse(new File(TrainControlUI.AUTONOMY_FILE_NAME).exists() || new File(Util.LOC_ICON_FOLDER).exists(),
-            "precondition: the working directory holds autonomy.json or tc_loc_icons, which a restore would write");
-
         locomotivesWere = bytesIfThere(MarklinControlStation.DATA_FILE_NAME);
         windowStateWas = bytesIfThere(TrainControlUI.DATA_FILE_NAME);
+        dataKept = true;
         lastLocalWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_LOCAL_LAYOUT_PREF, null);
         recentWas = TrainControlUI.getPrefs().get(TrainControlUI.RECENT_LAYOUTS_PREF, null);
 
@@ -93,8 +91,12 @@ public class testRestoreFromBackup
     {
         try
         {
-            putBack(new File(Util.dataPath(MarklinControlStation.DATA_FILE_NAME)), locomotivesWere);
-            putBack(new File(Util.dataPath(TrainControlUI.DATA_FILE_NAME)), windowStateWas);
+            // Only what was read: a class that failed first must not delete the run's data files
+            if (dataKept)
+            {
+                putBack(new File(Util.dataPath(MarklinControlStation.DATA_FILE_NAME)), locomotivesWere);
+                putBack(new File(Util.dataPath(TrainControlUI.DATA_FILE_NAME)), windowStateWas);
+            }
 
             putBack(TrainControlUI.LAST_LOCAL_LAYOUT_PREF, lastLocalWas);
             putBack(TrainControlUI.RECENT_LAYOUTS_PREF, recentWas);
@@ -180,7 +182,7 @@ public class testRestoreFromBackup
         Files.write(added.toPath(), "added".getBytes(StandardCharsets.UTF_8));
         Files.write(changed.toPath(), "changed".getBytes(StandardCharsets.UTF_8), java.nio.file.StandardOpenOption.APPEND);
 
-        List<String> said = restore(archive, I18n.t("ui.restoreButton"), 2);
+        List<String> said = restore(archive, I18n.t("ui.restoreButton"), 2, 1000);
 
         assertTrue(Components.waitFor(() -> guard.exits().contains(0), 30000), "TrainControl did not close after the"
             + " restore.  Asked: " + said);
@@ -270,7 +272,7 @@ public class testRestoreFromBackup
 
                 writeZip(zip, each.getValue());
 
-                List<String> said = restore(zip, I18n.t("ui.restoreButton"), 1);
+                List<String> said = restore(zip, I18n.t("ui.restoreButton"), 1, 2000);
 
                 assertEquals(said, Collections.singletonList(expected.get(each.getKey())), each.getKey() + " was not"
                     + " refused with its reason before anything was asked");
@@ -336,7 +338,10 @@ public class testRestoreFromBackup
 
             byte[] locomotives = Files.readAllBytes(new File(Util.dataPath(MarklinControlStation.DATA_FILE_NAME)).toPath());
 
-            List<String> said = restore(zip, I18n.t("ui.cancel"), 1);
+            // Long enough for a backup to be taken and the restore to end, were Cancel to go ahead
+            List<String> said = restore(zip, I18n.t("ui.cancel"), 1, 20000);
+
+            assertEquals(said.size(), 1, "something was asked after Cancel: " + said);
 
             String to = new File(Util.dataPath("FR-124 elsewhere")).getAbsolutePath();
 
@@ -384,14 +389,17 @@ public class testRestoreFromBackup
 
         assertTrue(model.getRoute(PROBE).setExecuting(), "precondition: the probe route would not run");
 
-        List<String> said = restore(new File(backupFolder(), "none.zip"), I18n.t("ui.restoreButton"), 1);
+        List<String> said = restore(new File(backupFolder(), "none.zip"), I18n.t("ui.restoreButton"), 1, 2000);
 
         assertEquals(said, Collections.singletonList(I18n.t("ui.main.errorNoEditsWhileRunning")), "Restore from Backup"
             + " did not refuse, before asking anything, while a route runs");
     }
 
-    /** Clicks Restore from Backup, picks `archive`, answers its question with `button`, and the rest with their first. */
-    private List<String> restore(File archive, String button, int questions) throws Exception
+    /**
+     * Clicks Restore from Backup, picks `archive`, answers its question with `button`, and the rest with their first.
+     * After the questions expected it waits `quietMillis` more, so one asked later (a backup's end) is seen too.
+     */
+    private List<String> restore(File archive, String button, int questions, long quietMillis) throws Exception
     {
         AbstractButton item = Components.withText(ui, I18n.t("ui.main.toolbar.restoreData"));
 
@@ -403,6 +411,8 @@ public class testRestoreFromBackup
             Components.press(item);
 
             assertTrue(answering.awaitAsked(questions, 120000), "the restore asked " + answering.asked());
+
+            answering.awaitAsked(questions + 1, quietMillis);
 
             Components.settle();
 
@@ -424,7 +434,19 @@ public class testRestoreFromBackup
 
         for (String name : backupFolder().list())
         {
-            if (!before.contains(name) && name.endsWith(".zip")) return new File(backupFolder(), name);
+            if (!before.contains(name) && name.endsWith(".zip"))
+            {
+                File archive = new File(backupFolder(), name);
+
+                // These come from the working directory, where a restore would write them back
+                for (String entry : entriesOf(archive).keySet())
+                {
+                    assertFalse(entry.startsWith(Util.LOC_ICON_FOLDER + "/") || entry.equals(TrainControlUI.AUTONOMY_FILE_NAME),
+                        "precondition: the working directory holds " + entry + ", which the restore would write back");
+                }
+
+                return archive;
+            }
         }
 
         throw new AssertionError("the backup wrote no archive into " + backupFolder());
