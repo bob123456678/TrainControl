@@ -98,7 +98,7 @@ public class RouteEditorFrame extends JFrame
     private final Integer loadedId;
 
     private final JTextField nameField = new JTextField(24);
-    private final JTextField s88Field = digitsOnlyField(6);
+    private final JTextField s88Field = AutonomyEditorPanel.digitsOnlyField(null, 6, 0);
     private final JComboBox<String> triggerBox = new JComboBox<>();
     private final JCheckBox enabledBox = new JCheckBox(I18n.t("route.ui.frameEnabled"));
 
@@ -842,49 +842,6 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * A text field that will only accept digits.
-     *
-     * @param columns how wide
-     * @return the field
-     */
-    private static JTextField digitsOnlyField(int columns)
-    {
-        JTextField field = new JTextField(columns);
-
-        ((javax.swing.text.AbstractDocument) field.getDocument()).setDocumentFilter(
-            new javax.swing.text.DocumentFilter()
-        {
-            @Override
-            public void insertString(FilterBypass bypass, int offset, String text,
-                javax.swing.text.AttributeSet attributes) throws javax.swing.text.BadLocationException
-            {
-                if (digits(text)) super.insertString(bypass, offset, text, attributes);
-            }
-
-            @Override
-            public void replace(FilterBypass bypass, int offset, int length, String text,
-                javax.swing.text.AttributeSet attributes) throws javax.swing.text.BadLocationException
-            {
-                if (digits(text)) super.replace(bypass, offset, length, text, attributes);
-            }
-
-            private boolean digits(String text)
-            {
-                if (text == null) return true;
-
-                for (int at = 0; at < text.length(); at++)
-                {
-                    if (!Character.isDigit(text.charAt(at))) return false;
-                }
-
-                return true;
-            }
-        });
-
-        return field;
-    }
-
-    /**
      * A cell editor that will only accept digits.
      *
      * Refused as it is typed rather than at Save. A cell that takes "twelve" and complains later produces a
@@ -894,39 +851,7 @@ public class RouteEditorFrame extends JFrame
      */
     private static javax.swing.table.TableCellEditor digitsOnly()
     {
-        JTextField box = new JTextField();
-
-        ((javax.swing.text.AbstractDocument) box.getDocument()).setDocumentFilter(
-            new javax.swing.text.DocumentFilter()
-        {
-            @Override
-            public void insertString(FilterBypass bypass, int offset, String text,
-                javax.swing.text.AttributeSet attributes) throws javax.swing.text.BadLocationException
-            {
-                if (isDigits(text)) super.insertString(bypass, offset, text, attributes);
-            }
-
-            @Override
-            public void replace(FilterBypass bypass, int offset, int length, String text,
-                javax.swing.text.AttributeSet attributes) throws javax.swing.text.BadLocationException
-            {
-                if (isDigits(text)) super.replace(bypass, offset, length, text, attributes);
-            }
-
-            private boolean isDigits(String text)
-            {
-                if (text == null) return true;
-
-                for (int at = 0; at < text.length(); at++)
-                {
-                    if (!Character.isDigit(text.charAt(at))) return false;
-                }
-
-                return true;
-            }
-        });
-
-        return new DefaultCellEditor(box);
+        return new DefaultCellEditor(AutonomyEditorPanel.digitsOnlyField(null, 0, 0));
     }
 
     /**

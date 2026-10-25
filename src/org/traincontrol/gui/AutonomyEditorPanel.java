@@ -3843,9 +3843,20 @@ public class AutonomyEditorPanel extends JPanel
      */
     javax.swing.JTextField digitsOnly(String initial)
     {
-        javax.swing.JTextField field = new javax.swing.JTextField(initial, 8);
-
         // Three digits, 0 to 999 (OB-048).
+        return digitsOnlyField(initial, 8, MAX_LENGTH_DIGITS);
+    }
+
+    /**
+     * A text field that takes only digits, typed or pasted; the route editor's number fields and cells too.
+     * @param initial what it shows to start with, or null; not filtered
+     * @param columns how wide
+     * @param maxDigits the most digits it holds once an edit is applied, or 0 for no limit
+     * @return the field
+     */
+    static javax.swing.JTextField digitsOnlyField(String initial, int columns, final int maxDigits)
+    {
+        javax.swing.JTextField field = new javax.swing.JTextField(initial, columns);
 
         ((javax.swing.text.AbstractDocument) field.getDocument()).setDocumentFilter(
             new javax.swing.text.DocumentFilter()
@@ -3864,15 +3875,16 @@ public class AutonomyEditorPanel extends JPanel
                     if (fits(fb, length, text)) super.replace(fb, offset, length, text, attr);
                 }
 
-                /** Digits, at most three once this edit is applied. */
                 private boolean fits(FilterBypass fb, int replacing, String text)
                 {
                     if (!digits(text)) return false;
 
+                    if (maxDigits <= 0) return true;
+
                     int after = fb.getDocument().getLength() - replacing
                         + (text == null ? 0 : text.length());
 
-                    return after <= MAX_LENGTH_DIGITS;
+                    return after <= maxDigits;
                 }
 
                 private boolean digits(String text)
