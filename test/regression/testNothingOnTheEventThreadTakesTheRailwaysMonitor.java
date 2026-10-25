@@ -15,47 +15,30 @@ import org.testng.annotations.Test;
 /**
  * Every door from a user-interface class onto the railway's monitor is written down here.
  *
- * **THE RULE, ONCE, INSTEAD OF ONCE PER DOOR.**  `Layout` has two dozen `synchronized` methods, and
- * they all take the same monitor: the one a driving thread holds for the whole of
- * `configureAndLockPath` - a `CONFIGURE_SLEEP` per edge and again per accessory, "several seconds on a
- * six-edge path" (`Layout.java`) - and the one `AutoLocomotiveStatus.findPaths` holds for a whole-graph
- * search on every panel refresh with nothing running at all.  A user interface class runs on the event
- * thread unless it has gone to some trouble not to.  So the event thread queues on that monitor, and
- * what the operator sees is a window that does not repaint and controls that do not answer while the
- * trains go on running.  That is OB-192, which Adam has now reported twice:
+ * `Layout` has two dozen `synchronized` methods, and they all take the one monitor that a driving thread holds for the
+ * whole of `configureAndLockPath` (a `CONFIGURE_SLEEP` per edge and again per accessory) and that
+ * `AutoLocomotiveStatus.findPaths` holds for a whole-graph search on every panel refresh.  A user-interface class runs
+ * on the event thread unless it has gone to some trouble not to, so the event thread queues on that monitor and the
+ * operator sees a window that does not repaint while the trains go on running.  That is OB-192, which Adam reported
+ * twice:
  *
  * *"starting autonomous operation from the current track state ... makes the UI unresponsive.  Trains
  * still run, but nothing is repainted, and controls are stuck."*
  *
- * **IT HAS BEEN FIXED AT SEVEN DOORS IN TWO ROUNDS, EACH TIME BY FINDING ONE MORE CALLER**, because
- * the rule lived as prose at the call sites: `Layout.getEdges`'s comment, `refreshCoveredTrack`'s
- * javadoc, `behaviour.md` §5c.  A comment written on 2026-08-24 forbidding exactly this was read, four
- * days later, as being about something else, and a refresh was added underneath it with a comment
- * proving it safe - "`getPoints()` is deliberately unsynchronized, so this takes no Layout monitor" -
- * which was false when it was written, because the method's other half reached
- * `edgesCoveredByStandingTrains`.  Eight hours later it was Adam's every-run freeze.
+ * The rule once lived as prose at the call sites and was fixed one more caller at a time.  This class is the guard with
+ * the *list of `synchronized` `Layout` methods*; the narrow guard that pinned one method name (`triageReturnToHome`) is
+ * deleted, since two guards for one rule come to disagree.
  *
- * **AND THE TRIPWIRE THAT EXISTED PINNED ONE INSTANCE.**
- * `testTheDiagramRefreshDoesNotWaitOnTheRailway` grew a source guard for this, and it grepped `gui/`
- * for one method name - `triageReturnToHome` - while the sentence in its own failure message was
- * general.  It reported clean about every door it had never heard of, and there were four.  This class
- * is that guard with the *list of `synchronized` `Layout` methods* in place of the one name, and the
- * narrow one has been deleted rather than kept beside it: two guards for one rule is how the two come
- * to disagree.
+ * What it cannot see: source cannot tell which thread a line runs on.  This is an INVENTORY, not a proof: every call
+ * from a user-interface class to one of these methods must appear in the list below, saying which thread it is on and,
+ * on the event thread, why that is accepted.  A NEW door cannot be added without somebody reading this and answering
+ * the question.  `testTheDiagramRefreshDoesNotWaitOnTheRailway` MEASURES the two doors that matter most, with a monitor
+ * actually held; that is the proof, and this is the census.
  *
- * **WHAT IT CANNOT SEE, SAID OUT LOUD.**  Source cannot tell which thread a line runs on.  This is
- * therefore an INVENTORY, not a proof: every call from a user-interface class to one of these methods
- * must appear in the list below, saying which thread it is on and - where it is on the event thread -
- * why that is accepted.  Its value is that a NEW door cannot be added without somebody reading this
- * and answering the question, which is one more reading than the seven doors this defect was made of
- * ever got.  `testTheDiagramRefreshDoesNotWaitOnTheRailway` still MEASURES the two doors that matter
- * most, with a monitor actually held; that is the proof, and this is the census.
- *
- * **THE WAY PAST IS A LINE**, and it has to be, because there are legitimate calls: a question already
- * asked on a worker, a change of state made from a thread the method itself started, a menu item the
- * operator has just clicked.  A check with no way past is one people delete.  What the line may not be
- * is silent: every entry says `OFF THE EVENT THREAD` with the thread named, or `ON THE EVENT THREAD`
- * with the reason, and `testEveryAllowanceSaysWhichThreadItIsOn` holds that shape.
+ * The way past is a line, because there are legitimate calls (a question already asked on a worker, a change of state
+ * made from a thread the method itself started, a menu item the operator has just clicked) and a check with no way past
+ * is one people delete.  What the line may not be is silent: every entry says `OFF THE EVENT THREAD` with the thread
+ * named, or `ON THE EVENT THREAD` with the reason, and `testEveryAllowanceSaysWhichThreadItIsOn` holds that shape.
  *
  * MUTATION: put `layout.getPossiblePaths(locomotive, true)` back in
  * `LayoutRightclickAutonomyMenu`'s constructor, or `isChoosableByAutonomy` back in
@@ -70,11 +53,8 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
     private static final File LAYOUT = new File("src/org/traincontrol/automation/Layout.java");
 
     /**
-     * The packages that draw the application.
-     *
-     * `gui` is where the event thread lives.  `automationui` is included because the window asks the
-     * session constantly and from the event thread, so a new question added there is a new door by one
-     * remove - which is exactly the shape the covered marks arrived by.
+     * The packages that draw the application: `gui` is where the event thread lives, and `automationui` is included
+     * because the window asks the session constantly and from the event thread.
      */
     private static final String[] SURFACES =
     {
@@ -85,28 +65,20 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
     /**
      * Methods that are not themselves `synchronized` but reach one, so a call to them is a door too.
      *
-     * `Layout.triageReturnToHome` is the one the narrow tripwire was written for: it builds a
-     * `HomeStaging.snapshot`, which calls `Layout.getHomeStations` - `synchronized`.  Naming it here is
-     * what lets that tripwire be deleted rather than kept.
+     * The scanner reads `synchronized` METHOD DECLARATIONS, so it cannot see a member that takes the same monitor with
+     * a `synchronized (this)` BLOCK, or reaches it through a call: `executePath` on the event thread would pass in
+     * silence while holding the monitor for a whole dispatch, which is OB-192's shape.  `Layout.triageReturnToHome`
+     * builds a `HomeStaging.snapshot`, which calls the `synchronized` `Layout.getHomeStations`.
      *
-     * **SIX MORE SINCE 2026-09-10, and they are the ones the UI touches.**  A review traced
-     * this class's blind spots: it reads `synchronized` METHOD DECLARATIONS, so it cannot see a member
-     * that takes the same monitor with a `synchronized (this)` BLOCK, and it cannot see one that
-     * reaches the monitor through a call.  Twelve `Layout` members do the second, five of them already
-     * called from this application - all five correctly, on workers - which means `executePath` on the
-     * event thread would have passed this guard in silence while holding the monitor for a whole
-     * dispatch.  That is precisely OB-192's shape.
+     *   - `executePath`, `executeTimetable`, `runLocomotives` reach it through `isPathClear` and
+     * `configureAndLockPath`,
+     *     each holding it for a dispatch or a run.
+     *   - `configureAndLockPath`, `getPathValidationFailureCount`, `hasShownPathValidationAlert` use `synchronized
+     * (this)`
+     *     blocks; the last two are the shape a status panel or a tooltip reads from `actionPerformed`.
      *
-     *   - `executePath`, `executeTimetable`, `runLocomotives` - reach it through `isPathClear` and
-     *     `configureAndLockPath`, and each holds it for the length of a dispatch or a run.
-     *   - `configureAndLockPath` - `synchronized (this)` block, `Layout.java:3180`.
-     *   - `getPathValidationFailureCount`, `hasShownPathValidationAlert` - `synchronized (this)`
-     *     blocks, and a public `int` and `boolean`: exactly the shape a status panel or a tooltip
-     *     reads from `actionPerformed`.
-     *
-     * This list cannot be derived from the source the way the `synchronized` ones can - it would need a
-     * call graph - so it grows by hand when somebody finds another.  That is a weakness, and it is why
-     * the list above it is the one that does the work.
+     * This list cannot be derived from the source (it would need a call graph), so it grows by hand when somebody finds
+     * another.
      */
     private static final String[] REACHES_THE_MONITOR =
     {
@@ -135,15 +107,9 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
         // ------------------------------------------------------------ off the event thread
 
         // ------------------------------------------------------- the five dispatch doors
-        //
-        // These reach the monitor through `isPathClear` and `configureAndLockPath` rather than by
-        // being `synchronized` themselves, so the scanner above could not see them and this guard was
-        // silent about them until 2026-09-10.  All five were already on workers - what they were not
-        // was written down, which is what makes a sixth one indistinguishable from them.
-        //
-        // `executePath` holds the monitor for a whole dispatch, across a CONFIGURE_SLEEP per accessory
-        // of the path.  On the event thread that is OB-192 exactly: a frozen interface with trains
-        // still running.
+        // These reach the monitor through `isPathClear` and `configureAndLockPath` rather than by being `synchronized`
+        // themselves, so the scanner above could not see them.  `executePath` holds the monitor for a whole dispatch,
+        // across a CONFIGURE_SLEEP per accessory of the path: on the event thread that is OB-192 exactly.
         ALLOWED.put("TrainControlUI.java#sendATrainByHand",
             "OFF THE EVENT THREAD: the one door both hand doors send through (2026-09-29) dispatches the run on"
             + " a `new Thread`, and a refusal is put back on the event thread with invokeLater.");
@@ -220,12 +186,9 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
             + " describeStagingOutcome passes LOCOMOTIVES_RUNNING with a null list and never reaches"
             + " this (OB-206)");
 
-        // THE GRAY'S OWN ANSWER, BACK (OB-208).  `tilesBlockedByStandingTrains` left this list when the two
-        // marks were made one, and a permission left behind for a member that had stopped calling would have
-        // been one for whatever was written into it next.  Adam's ruling of 2026-09-23 - *"orange shows where
-        // the train is, gray shows what's blocked"* - gave the gray its own answer again, so the railway is
-        // asked once more, by `routesBlockedByStandingTrains`, on the same worker: the places it claims
-        // (OB-280), where OB-208 asked for the covered edges.
+        // THE GRAY'S OWN ANSWER (OB-208).  Adam: *"orange shows where the train is, gray shows what's blocked"*, so the
+        // railway is asked by `routesBlockedByStandingTrains`, on the same worker: the places it claims (OB-280), where
+        // OB-208 asked for the covered edges.
         ALLOWED.put("AutonomySession.java#routesBlockedByStandingTrains",
             "OFF THE EVENT THREAD: reached only from CoveredTrackView.workOutCoveredTrack, on"
             + " CoveredTrackRenderer - the covered set's sibling, asked in the same pass");
@@ -296,11 +259,7 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
             "ON THE EVENT THREAD: capturing the running layout into the setup, on an explicit gesture");
     }
 
-    /**
-     * Every call from a user-interface class to a method that takes the railway's monitor is listed.
-     *
-     * @throws Exception on a failure to read the tree
-     */
+    /** Every call from a user-interface class to a method that takes the railway's monitor is listed. */
     @Test
     public void testEveryDoorOntoTheRailwaysMonitorIsWrittenDown() throws Exception
     {
@@ -343,13 +302,9 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
     /**
      * The guard knows what it is guarding.
      *
-     * A source scanner that silently matches nothing reports clean about everything, which is how a
-     * headline number in this repository turned out to be false by thirty squares of fifty-eight.  So
-     * the parsed list is checked against a handful of names read out of `Layout.java` by eye - if a
-     * change to how those declarations are written stops the pattern matching them, this says so
-     * instead of the census going quietly empty.
-     *
-     * @throws Exception on a failure to read the railway
+     * A source scanner that silently matches nothing reports clean about everything, so the parsed list is checked
+     * against a handful of names read out of `Layout.java` by eye: if a change to how those declarations are written
+     * stops the pattern matching them, this says so instead of the census going quietly empty.
      */
     @Test
     public void testTheGuardCanStillFindTheSynchronizedMethods() throws Exception
@@ -382,9 +337,8 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
     /**
      * Nothing is allowed without saying which thread it is on.
      *
-     * The way past this guard is a line, and a line that says only "fine" is the silent exemption the
-     * whole class is written against.  Two prefixes, so that reading the list answers the only question
-     * that matters about a door: is it on the thread that draws the window.
+     * A line that says only "fine" is the silent exemption this class is written against.  Two prefixes, so that
+     * reading the list answers the only question that matters about a door: is it on the thread that draws the window.
      */
     @Test
     public void testEveryAllowanceSaysWhichThreadItIsOn()
@@ -402,12 +356,8 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
     /**
      * Every allowance is still a door.
      *
-     * An allowlist rots in the direction that matters: a member that stops calling the railway leaves
-     * its line behind, and the line then licenses whatever is written into that member next.  The
-     * covered-track fix moved four calls in one commit; without this, four permissions would have
-     * stayed.
-     *
-     * @throws Exception on a failure to read the tree
+     * An allowlist rots in the direction that matters: a member that stops calling the railway leaves its line behind,
+     * and the line then licenses whatever is written into that member next.
      */
     @Test
     public void testEveryAllowanceIsStillADoor() throws Exception
@@ -448,12 +398,8 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
     /**
      * The narrow tripwire this generalizes is gone.
      *
-     * Two guards for one rule is how the two come to disagree - the narrow one pinned
-     * `triageReturnToHome` while its own failure message stated the rule generally, and it reported
-     * clean about four doors.  Stated as a property so that restoring it, rather than adding to this,
-     * is caught.
-     *
-     * @throws Exception on a failure to read the test
+     * Two guards for one rule come to disagree.  Stated as a property so that restoring the narrow one, rather than
+     * adding to this, is caught.
      */
     @Test
     public void testTheOneMethodTripwireHasNotComeBack() throws Exception
@@ -475,12 +421,8 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
     // ---------------------------------------------------------------- reading the source
 
     /**
-     * Every method whose call takes the railway's monitor.
-     *
-     * The `synchronized` methods of `Layout`, read out of its source, plus the handful that reach one.
-     *
-     * @return their names
-     * @throws Exception on a failure to read the railway
+     * The methods whose call takes the railway's monitor: the `synchronized` ones of `Layout`, read out of its source,
+     * plus the handful that reach one.
      */
     private static Set<String> doorsOntoTheMonitor() throws Exception
     {
@@ -491,9 +433,8 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
 
         String code = withoutComments(read(LAYOUT));
 
-        // A DECLARATION, never a `synchronized (x)` block: the modifier may come before or after the
-        // access one - both spellings are in this file - and what follows it is a return type and a
-        // name, which a block's parenthesis cannot be.
+        // A DECLARATION, never a `synchronized (x)` block: the modifier may come before or after the access one, and a
+        // return type and a name follow it, which a block's parenthesis cannot be.
         Matcher declared = Pattern.compile(
             "(?m)^[ \\t]*(?:(?:public|private|protected|static|final|abstract)[ \\t]+)*"
             + "synchronized[ \\t]+(?:(?:public|private|protected|static|final)[ \\t]+)*"
@@ -506,12 +447,7 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
         return out;
     }
 
-    /**
-     * Every source file of the packages that draw the application.
-     *
-     * @return the files
-     * @throws java.io.IOException if a folder cannot be walked
-     */
+    /** Every source file of the packages that draw the application. */
     private static List<File> surfaceSources() throws java.io.IOException
     {
         List<File> out = new ArrayList<>();
@@ -540,18 +476,11 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
     /**
      * The class member a position in the source is inside.
      *
-     * Members of these classes are declared at exactly four spaces of indent and their bodies are
-     * deeper, so the nearest such line above a call is the member it is in - and an anonymous class or
-     * a lambda inside a member is stepped over rather than named, which is what the allowlist wants: a
-     * listener built in a constructor belongs to that constructor.
-     *
-     * A field initializer is not a member declaration for this purpose - it has an `=` before its
-     * parenthesis - so a call inside one is attributed to the member above it.  That is wrong, and it
-     * is harmless: the failure message quotes the file and the line, so the reader finds it anyway.
-     *
-     * @param code the source, comments already out
-     * @param at where the call is
-     * @return the member's name, or `?` where there is none above it
+     * Members are declared at exactly four spaces of indent and their bodies are deeper, so the nearest such line above
+     * a call is the member it is in; an anonymous class or a lambda inside a member is stepped over, so a listener
+     * built in a constructor belongs to that constructor.  A field initializer has an `=` before its parenthesis, so a
+     * call inside one is attributed to the member above it: wrong, and harmless, since the failure message quotes the
+     * file and line.
      */
     private static String memberAround(String code, int at)
     {
@@ -573,12 +502,7 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
         }
     }
 
-    /**
-     * The name a class-member declaration declares, or null where this line is not one.
-     *
-     * @param line one line of source, comments already out
-     * @return the member's name, or null
-     */
+    /** The name a class-member declaration declares, or null where this line is not one. */
     private static String declaredName(String line)
     {
         if (line.length() < 6) return null;
@@ -612,13 +536,7 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
         return name;
     }
 
-    /**
-     * The line a call is on, for a message somebody can act on.
-     *
-     * @param code the source
-     * @param at where the call is
-     * @return that line, trimmed
-     */
+    /** The line a call is on, for a message somebody can act on. */
     private static String lineAround(String code, int at)
     {
         int from = code.lastIndexOf('\n', at) + 1;
@@ -628,27 +546,15 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
         return code.substring(from, to < 0 ? code.length() : to).trim();
     }
 
-    /**
-     * A file, as text.
-     *
-     * @param source the file
-     * @return its content
-     * @throws Exception on a failure to read it
-     */
+    /** A file, as text. */
     private static String read(File source) throws Exception
     {
         return new String(java.nio.file.Files.readAllBytes(source.toPath()), "UTF-8");
     }
 
     /**
-     * The same source with its comments taken out.
-     *
-     * Necessary rather than tidy: this rule is written out at length in the javadoc of every method
-     * that used to break it, and half of those javadocs name the very methods scanned for here.
-     * Counting raw occurrences would count the explanations.
-     *
-     * @param code the source
-     * @return the code alone
+     * The same source with its comments taken out, since the javadoc of the methods that used to break this rule names
+     * the very methods scanned for here.
      */
     private static String withoutComments(String code)
     {
