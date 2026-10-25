@@ -13,16 +13,14 @@ import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
 
 /**
- * A route refusal names the square, not the direction copy the builder made of it.
+ * A route refusal names the square, not the direction copy the builder made of it (Adam: the whole "copy" business
+ * "needs to be masked from the user").  EN57-947 was refused BottomMainB with "Disallowed because 75 407 DB is
+ * standing across Tunnel (southbound) -> BottomMainAPre (eastbound)": the headings are how the builder tells the
+ * directions of one square apart, and nothing on the diagram carries them.
  *
- * Adam's ruling on the translations: the whole "copy" business *"needs to be masked from the user"*.  On
- * his own railway, on 2026-09-13, EN57-947 was refused BottomMainB with *"Disallowed because 75 407 DB is
- * standing across Tunnel (southbound) -> BottomMainAPre (eastbound)"* - the headings are how the builder
- * tells the directions of one square apart, and nothing on the diagram carries them.
- *
- * **Named the way the builder names copies**, so the claims are about the words a person would actually
- * read: a station switched out of service at the end of a route, and one part-way along it.  And a control
- * that a name which only LOOKS like a copy - a parenthesis that is not a heading - keeps its parenthesis.
+ * Named the way the builder names copies, so the claims are about the words a person would read: a station out of
+ * service at the end of a route, and one part-way along it.  And a control: a name that only LOOKS like a copy (a
+ * parenthesis that is not a heading) keeps its parenthesis.
  *
  * @author Adam
  */
@@ -49,11 +47,7 @@ public class testARefusalNamesTheSquare
         if (sandbox != null) sandbox.close();
     }
 
-    /**
-     * A destination out of service is named by its square.
-     *
-     * @throws Exception from the railway
-     */
+    /** A destination out of service is named by its square. */
     @Test
     public void testAnInactiveStationIsNamedWithoutItsHeading() throws Exception
     {
@@ -77,11 +71,7 @@ public class testARefusalNamesTheSquare
             + " user\"");
     }
 
-    /**
-     * A square out of service part-way along the route is named by its square too.
-     *
-     * @throws Exception from the railway
-     */
+    /** A square out of service part-way along the route is named by its square too. */
     @Test
     public void testAnInactivePointOnTheWayIsNamedWithoutItsHeading() throws Exception
     {
@@ -105,11 +95,7 @@ public class testARefusalNamesTheSquare
             + said + "\"");
     }
 
-    /**
-     * A station too short for the train is named by its square too (the length refusals).
-     *
-     * @throws Exception from the railway
-     */
+    /** A station too short for the train is named by its square too (the length refusals). */
     @Test
     public void testAStationTooShortIsNamedWithoutItsHeading() throws Exception
     {
@@ -141,11 +127,7 @@ public class testARefusalNamesTheSquare
         }
     }
 
-    /**
-     * The same track held the other way names squares too (the opposite-direction refusal).
-     *
-     * @throws Exception from the railway
-     */
+    /** The same track held the other way names squares too (the opposite-direction refusal). */
     @Test
     public void testTheOppositeDirectionHeldIsNamedBySquares() throws Exception
     {
@@ -167,11 +149,7 @@ public class testARefusalNamesTheSquare
             "the refusal for track held the other way names the builder's copies: \"" + said + "\"");
     }
 
-    /**
-     * Track between two copies of ONE square is named as that square, once.
-     *
-     * @throws Exception from the railway
-     */
+    /** Track between two copies of ONE square is named as that square, once. */
     @Test
     public void testTrackWithinOneSquareIsNamedOnce() throws Exception
     {
@@ -196,11 +174,7 @@ public class testARefusalNamesTheSquare
             + said + "\"");
     }
 
-    /**
-     * The control: a name with a parenthesis that is not a heading keeps it.
-     *
-     * @throws Exception from the railway
-     */
+    /** The control: a name with a parenthesis that is not a heading keeps it. */
     @Test
     public void testAParenthesisThatIsNotAHeadingIsKept() throws Exception
     {
