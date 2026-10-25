@@ -124,8 +124,6 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
 
     /**
      * F32 typed against a five-function locomotive is refused, and F3 is not.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testAFunctionPastTheEndIsRefusedAndOneInRangeIsNot() throws Exception
@@ -188,8 +186,6 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
      * fourth claim fails: a row nobody has filled in yet is red the moment it is added, and a mark
      * that is always there is a mark nobody reads.  Stop `unshaded` clearing the tooltip and the + row
      * claim fails: that row wears the refusal of the row drawn before it.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testARowSaveWouldRefuseIsMarkedAsItIsTyped() throws Exception
@@ -325,8 +321,6 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
      *
      * MUTATION: put `column == 5` back on the `digitsOnly()` line and the first claim goes red; drop
      * the "keep what is there" clause from `functionsOffered` and the second does.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testTheFunctionCellOffersWhatThatLocomotiveHas() throws Exception
@@ -391,8 +385,6 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
      * already kept a number in its cell (MT-464, above).
      *
      * MUTATION: offer only the database's names again, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testANameTheDatabaseNoLongerHasStaysInItsCell() throws Exception
@@ -438,8 +430,6 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
      * never fire, and nothing said so - a sensor condition is refused it (`frameNotASensor`), this one was not.
      *
      * MUTATION: drop the sensor check and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testAnAutoLocomotiveConditionNeedsASensor() throws Exception
@@ -483,8 +473,6 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
      * refuse.
      *
      * MUTATION: offer the database's whole list again and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testARouteIsNotOfferedToItself() throws Exception
@@ -525,8 +513,6 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
      * still wrote the first locomotive in the list.  Only a routes file edited by hand carries such a name.
      *
      * MUTATION: offer the cell's name trimmed again, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testAPaddedNameStaysInItsCellAsItStands() throws Exception

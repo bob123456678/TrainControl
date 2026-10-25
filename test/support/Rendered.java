@@ -86,8 +86,6 @@ public final class Rendered
     /**
      * Paints the grid as it stands now.  The tiles decode their images on a worker, so this waits for them to settle
      * first, or the first snapshot is a picture of a grid that has not finished arriving.
-     *
-     * @throws Exception if Swing cannot paint it
      */
     public BufferedImage snapshot() throws Exception
     {
@@ -260,8 +258,6 @@ public final class Rendered
      * By hue rather than against `LayoutLabel.TRAIN_MARK`: a check reading production's own constant would agree with
      * any value it was changed to, gray included.  `paint` and not `printAll`: both of the others begin with an
      * isShowing() check and do nothing for a component that is not on screen.
-     *
-     * @throws Exception if Swing cannot paint it
      */
     public static boolean showsTheTrainMark(final java.awt.Component tile) throws Exception
     {

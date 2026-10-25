@@ -286,8 +286,6 @@ public class testTimetableCaptureThroughARealRun
      * `stopLocomotives` stops trains gracefully, at their next station, so it returns long before the railway is quiet.
      * The locomotives belong to the MODEL, so a second configuration parsed over a still-running one asks a fleet
      * somebody else is driving: nothing can be dispatched and the test waits until its ceiling.
-     *
-     * @throws Exception if interrupted
      */
     private static void quiesce() throws Exception
     {

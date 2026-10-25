@@ -678,8 +678,6 @@ public class testAPasteDoesNotTurnTheTrainRound
      *     remembered heading it cannot hold must not be forced on it;
      *   - the SHAPE of the branch: all three conditions are still in it, notably "and only while the train is actually
      *     off the railway", which a later edit would drop.
-     *
-     * @throws Exception from reading the source
      */
     @Test
     public void testTheClipboardHeadingIsOnlyTakenWhileTheTrainIsLifted() throws Exception

@@ -347,8 +347,6 @@ public class testTheGreyDoesNotRebuildTheDiagram
      * train's icon is (MT-642).
      *
      * MUTATION: repaint the parent again, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testATileThatChangesRedrawsItsNeighbourhoodOnly() throws Exception
@@ -446,8 +444,6 @@ public class testTheGreyDoesNotRebuildTheDiagram
      * second); a caption that changes revalidates and repaints itself.
      *
      * MUTATION: revalidate the captions' parent again, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testACaptionRefreshThatChangesNothingLaysNothingOut() throws Exception
@@ -515,8 +511,6 @@ public class testTheGreyDoesNotRebuildTheDiagram
      * - with the layer showing, the main window's own squares are among them.
      *
      * MUTATION: clear every mark first again, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test(priority = 1)
     public void testAStaticLayerThatChangesNothingRedrawsNothing() throws Exception

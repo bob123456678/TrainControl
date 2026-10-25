@@ -105,8 +105,6 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
      * yet".
      *
      * MUTATION: take the refusal out of either run door, and this fails naming it.
-     *
-     * @throws Exception from the files
      */
     @Test
     public void testTheRunDoorsAskItToo() throws Exception
@@ -133,8 +131,6 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
      * claims above green while no hand send was ever refused.
      *
      * MUTATION: invert the window's guard, or have it answer nothing, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testABrokenSetupIsRefusedAndAMendedOneIsNot() throws Exception
@@ -313,8 +309,6 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
      * written over.
      *
      * MUTATION: forget the reason in `getAutonomySession`'s catch, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testASetupThatWillNotReadIsNotCalledMissing() throws Exception
@@ -422,8 +416,6 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
      * setup has no errors, so the sentence is then null without asking.
      *
      * MUTATION: have the item ask the setup itself again, and this fails.
-     *
-     * @throws Exception from the files
      */
     @Test
     public void testTheMenuAsksTheSetupOnceWhereStartIsOffered() throws Exception
@@ -465,8 +457,6 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
      * with "check the log" in place of the sentence naming the longest train that goes (MT-262).
      *
      * MUTATION: take the own-tail block out of either door, and this fails naming it.
-     *
-     * @throws Exception from the files
      */
     @Test
     public void testBothHandDoorsSayWhenATrainWouldMeetItsOwnTail() throws Exception
@@ -516,8 +506,6 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
      *
      * MUTATION: take the refusal out of Return Home or Execute Timetable, hand Return Home's item Start's sentence, offer
      * Start's item live, or have Start's press say something other than its tooltip, and this fails naming it.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testTheEntriesBreakIsRefusedAtEveryDoor() throws Exception

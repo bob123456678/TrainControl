@@ -613,8 +613,6 @@ public class testTheTailCrossedQuestion
      * at, so R is emitted as a plain copy and a turning one for each side, and two of them leave east over the same
      * rail towards Q.  Every square measured at one unit: a three-unit train at Q has its tail across R, the first hop;
      * a five-unit train at A has it across Q and R, the same two copies one hop further back.
-     *
-     * @throws Exception from the build
      */
     @Test
     public void testTwoCopiesLeavingByOneRailAreOneRoadBack() throws Exception

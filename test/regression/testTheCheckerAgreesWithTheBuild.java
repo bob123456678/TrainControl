@@ -667,8 +667,6 @@ public class testTheCheckerAgreesWithTheBuild
      *
      * MUTATION: let `BuiltReach.bySquare` start from every copy of a station, or let `BuiltReach` pass a Point switched
      * off, and this fails.
-     *
-     * @throws Exception from a scenario
      */
     @Test
     public void testEveryScenarioIsReachedAsItsBuiltRailwayIs() throws Exception

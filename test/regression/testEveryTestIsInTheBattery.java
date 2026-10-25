@@ -133,8 +133,6 @@ public class testEveryTestIsInTheBattery
      *
      * MUTATION: writing `parser.parseLayout(new LinkedList<MarklinAccessory>())` in any test outside the excused list
      * fails this.
-     *
-     * @throws Exception on a failure to read the tests
      */
     @Test
     public void testNoTestParsesALayoutWithoutWiringIt() throws Exception
