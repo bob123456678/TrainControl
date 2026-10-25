@@ -22,7 +22,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * Unavailable While Occupied is answered with stations, by the list and by a click alike.
  *
- * Adam, MT-376, 2026-09-13, twice: *"works, but exclude non-station points from the list entirely"*, and
+ * Adam, MT-376, twice: *"works, but exclude non-station points from the list entirely"*, and
  * then *"if there are no stations on the diagram yet, the 'choose on diagram' button should be greyed out
  * to match the message."*
  *
