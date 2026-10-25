@@ -293,6 +293,14 @@ def apply(spec):
     lines = text.split('\n')
     com, code = classify(text)
     adam = owners()
+    generated = [False] * len(lines)
+    inside = False
+    for i, l in enumerate(lines):
+        if '//GEN-BEGIN' in l:
+            inside = True
+        generated[i] = inside
+        if '//GEN-END' in l:
+            inside = False
     hunks.sort(key=lambda h: h[0])
     prev = 0
     bad = []
@@ -303,8 +311,10 @@ def apply(spec):
         for i in range(a - 1, b):
             if code[i]:
                 bad.append('line %d has code: %s' % (i + 1, lines[i].strip()[:80]))
-            if adam[i] and lines[i].strip():
+            if adam[i]:
                 bad.append('line %d is Adam-owned: %s' % (i + 1, lines[i].strip()[:80]))
+            if generated[i]:
+                bad.append('line %d is in a GEN-BEGIN..GEN-END region' % (i + 1))
         for l in new:
             s = l.strip()
             if s and not (s.startswith('//') or s.startswith('/*') or s.startswith('*')):
