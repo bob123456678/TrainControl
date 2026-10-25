@@ -21,9 +21,6 @@ public abstract class PopupListener extends MouseAdapter
         if (e.isPopupTrigger()) showPopup(e);
     }
 
-    /**
-     * Shows this listener's menu for a popup trigger.
-     * @param e the trigger
-     */
+    /** Shows this listener's menu for a popup trigger. */
     protected abstract void showPopup(MouseEvent e);
 }
