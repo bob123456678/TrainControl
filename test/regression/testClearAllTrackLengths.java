@@ -23,29 +23,24 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * FR-069: Clear All Track Lengths, on the Bulk Tools menu.
  *
- * Adam, 2026-09-10: **"to autonomy bulk tools menu, add 'clear all track lengths' - this should clear
- * the segment lengths across all pages, after the user confirms in a popup."**
+ * Adam: **"to autonomy bulk tools menu, add 'clear all track lengths' - this should clear the segment lengths across
+ * all pages, after the user confirms in a popup."**
  *
- * **Across all pages is the load-bearing half**, and it is what this class measures: lengths are keyed
- * by a square that names its own page, so the fixture measures squares on more than one page and the
- * claim is that none survives. A per-page clear would pass a test that only looked at one.
+ * Across all pages is the load-bearing half: lengths are keyed by a square that names its own page, so the fixture
+ * measures squares on more than one page and the claim is that none survives; a per-page clear would pass a test that
+ * only looked at one.
  *
- * **The dialog itself is not asserted here** - a modal cannot be opened from a test without a robot
- * driving it - so what stands in for it is the pair the menu already keeps: the item's tooltip is the
- * same sentence the confirmation shows, from the same builder, which is the arrangement OB-194 put
- * there precisely so the two cannot drift. If the tooltip says it, the dialog says it.
+ * The dialog itself is not asserted (a modal cannot be opened from a test without a robot).  What stands in for it is
+ * the pair the menu already keeps: the item's tooltip is the same sentence the confirmation shows, from the same
+ * builder (OB-194).  The guard is asserted as well as the graying: the item disables itself when nothing is measured,
+ * and `clearAllTileLengths` refuses again when pressed (OB-057, OB-090); only the first is reachable from here, the
+ * second through the session door it calls.
  *
- * **And the guard is asserted as well as the graying.** The item disables itself when nothing is
- * measured, and `clearAllTileLengths` refuses again when it is pressed - `guard-and-affordance-same-
- * question`, and what OB-057 and OB-090 were both instances of. Only the first is reachable from here;
- * the second is asserted through the session door it calls.
+ * ON THE FROZEN RAILWAY, never `cs2_sample_layout` (OB-111), which carries no lengths of its own, so every length here
+ * is one this class set.
  *
- * ON THE FROZEN RAILWAY, never `cs2_sample_layout` (OB-111) - and that railway carries no lengths of
- * its own since 2026-09-10, so every length here is one this class set.
- *
- * MUTATION: make `clearEveryTileLength` clear only the active page's squares and
- * `testItClearsEveryPage` fails; take the count out of the message and
- * `testTheTooltipSaysHowMuchItWillForget` does.
+ * MUTATION: make `clearEveryTileLength` clear only the active page's squares and `testItClearsEveryPage` fails; take
+ * the count out of the message and `testTheTooltipSaysHowMuchItWillForget` does.
  *
  * @author Adam
  */
@@ -129,8 +124,6 @@ public class testClearAllTrackLengths
 
     /**
      * Every measured square on every page is forgotten, and the count is what was there.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testItClearsEveryPage() throws Exception
@@ -169,8 +162,6 @@ public class testClearAllTrackLengths
 
     /**
      * With nothing measured, the item is grayed and says why.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testItIsGreyedWhenThereIsNothingToClear() throws Exception
@@ -190,11 +181,8 @@ public class testClearAllTrackLengths
     }
 
     /**
-     * And with squares measured, the tooltip says how many it will forget - the short form of the sentence the
-     * dialog will show, through the builder that picks that sentence (FR-112: it was the whole sentence, and Adam asked
-     * for the menus' tooltips to be concise).
-     *
-     * @throws Exception from the event thread
+     * And with squares measured, the tooltip says how many it will forget: the short form of the sentence the dialog
+     * will show, through the builder that picks that sentence (FR-112).
      */
     @Test
     public void testTheTooltipSaysHowMuchItWillForget() throws Exception
@@ -223,11 +211,7 @@ public class testClearAllTrackLengths
             "the menu label does not carry the count: " + item.getText());
     }
 
-    /**
-     * Measures three squares, on more than one page where the railway has more than one.
-     *
-     * @return the squares measured
-     */
+    /** Measures three squares, on more than one page where the railway has more than one. */
     private static List<TileKey> measureAcrossPages()
     {
         session.clearEveryTileLength();
@@ -256,12 +240,7 @@ public class testClearAllTrackLengths
         return squares;
     }
 
-    /**
-     * The pages a set of squares is spread over.
-     *
-     * @param squares the squares
-     * @return the distinct page names
-     */
+    /** The distinct page names a set of squares is spread over. */
     private static List<String> pagesOf(List<TileKey> squares)
     {
         List<String> out = new ArrayList<>();
@@ -275,13 +254,8 @@ public class testClearAllTrackLengths
     }
 
     /**
-     * Clear All Track Lengths, off the Bulk Tools menu as the right-click menu builds it.
-     *
-     * Through `buildBulkMenuForTest`, which calls `bulkTools()` itself: a second construction could
-     * agree with itself while the real one is wrong.
-     *
-     * @return the item, or null when the menu does not carry one
-     * @throws Exception from the event thread
+     * Clear All Track Lengths, off the Bulk Tools menu as the right-click menu builds it (through
+     * `buildBulkMenuForTest`, which calls `bulkTools()` itself); null when the menu does not carry one.
      */
     private static javax.swing.JMenuItem theItem() throws Exception
     {
