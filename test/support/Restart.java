@@ -148,8 +148,7 @@ public final class Restart
      */
     private static MarklinControlStation start() throws Exception
     {
-        MarklinControlStation started = TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, true, false, true));
+        MarklinControlStation started = TestStation.simulatedWithWindowInDebug();
 
         final TrainControlUI ui = (TrainControlUI) started.getGUI();
 

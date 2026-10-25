@@ -829,6 +829,9 @@ public class testSwitchingToACentralStationLayout
             // one test that calls it (core.testTheApiExamplesRun) opens its sandbox first (FR-138).
             if (f.getName().equals("SimulatedStation.java")) continue;
 
+            // The station's own helper: its callers are counted, each against its own sandbox.
+            if (f.getName().equals("TestStation.java")) continue;
+
             String raw = new String(java.nio.file.Files.readAllBytes(f.toPath()),
                 java.nio.charset.StandardCharsets.UTF_8);
 
@@ -840,7 +843,7 @@ public class testSwitchingToACentralStationLayout
             // became 77 with nothing having changed in the suite.
             String code = withoutStringsAndComments(raw);
 
-            int builds = earliest(code, "MarklinControlStation.init(", "= init(null");
+            int builds = earliest(code, "MarklinControlStation.init(", "= init(null", "TestStation.simulated");
 
             if (builds < 0) continue;
 

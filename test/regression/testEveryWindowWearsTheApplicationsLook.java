@@ -279,7 +279,7 @@ public class testEveryWindowWearsTheApplicationsLook
 
             // Calling init is the application's own door and installs it; so is asking directly.
             if (code.contains("installLookAndFeel") || code.contains("MarklinControlStation.init(")
-                || code.contains("= init(")) continue;
+                || code.contains("= init(") || code.contains("TestStation.simulated")) continue;
 
             bare.add(source.getName());
         }

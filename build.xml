@@ -159,6 +159,7 @@
         <test-one-class class="testLockEdgesSurviveTheFile"/>
         <test-one-class class="testEveryLanguageFits"/>
         <test-one-class class="testTheStationGoingAwayDoesNotJamSwitching"/>
+        <test-one-class class="testTheTestStationIsSimulated"/>
         <test-one-class class="testARenameReachesTheTimetableOnScreen"/>
         <test-one-class class="testALocomotiveDoesNotEvictItself"/>
         <test-one-class class="testThePlaceholderLocomotive"/>

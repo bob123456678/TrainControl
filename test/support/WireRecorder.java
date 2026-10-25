@@ -25,7 +25,7 @@ import org.traincontrol.util.Conversion;
  * exactly what would have gone down the cable, and nothing in production changes to allow it.
  *
  * **The model has to be in debug**, because that branch only logs while debugging:
- * `init(null, true, false, false, true)`.  A recorder attached to a model built any other way hears
+ * `TestStation.simulatedInDebug()`.  A recorder attached to a model built any other way hears
  * nothing, which is why `size()` is worth asserting before anything else.
  *
  * **Marks, because the interesting window is the ARRIVAL and not the journey.**  Dispatch sets a
