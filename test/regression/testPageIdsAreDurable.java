@@ -18,19 +18,11 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.LayoutDiagram;
 
 /**
- * A page's id is its identity, and it survives what happens to other pages.
+ * A page's id is its identity, and it survives what happens to other pages: nothing one page does can change another
+ * page's id (MT-135).
  *
- * The autonomy setup is keyed by page ID on disk, and those ids used to be nothing but each page's
- * place in a list - a list that arrives sorted, so really its place in the alphabet. Anything that
- * changed the set of names therefore renumbered other pages, and every setting they held was silently
- * reattached to whatever page had taken the number.
- *
- * Adam, MT-135: "Immediately after rename, all stations are gone." He lost 19 point names, 14 stations,
- * 22 tile directions and 15 captions to one rename on 2026-08-23, and renaming the page back could not
- * bring them back - the following save had already pruned them as squares that no longer exist.
- *
- * So the rule these tests hold is not "the fix works" but the property the fix exists to give: nothing
- * one page does can change another page's id.
+ * The autonomy setup is keyed by page ID on disk, and ids once were each page's place in a sorted list, so any change
+ * to the set of names renumbered other pages and reattached their settings to whatever page took the number.
  *
  * @author Adam
  */
@@ -53,15 +45,8 @@ public class testPageIdsAreDurable
     }
 
     /**
-     * Deleting a page leaves every other page's id alone.
-     *
-     * The id of the deleted page is retired rather than handed on. Before, the list closed up and every
-     * page below moved up one - so on the next load the setup of page 3 was read as belonging to page
-     * 2, whose coordinates it does not fit, and reconcile deleted the difference.
-     *
-     * Worse than losing them: nothing looks wrong. And the renumber could not even be REPORTED, because
-     * the test for one is whether the old name still exists somewhere - and after a delete it does not,
-     * which is exactly what a rename looks like.
+     * Deleting a page leaves every other page's id alone.  Its id is retired, not handed on; a renumber after a delete
+     * could not even be reported, because the old name is gone, which is also what a rename looks like.
      */
     @Test
     public void testDeletingAPageDoesNotRenumberTheOthers() throws IOException
@@ -80,21 +65,14 @@ public class testPageIdsAreDurable
     }
 
     /**
-     * And a renamed page keeps its id, which is the one case only the caller can know about.
-     *
-     * The index is read back by NAME, so after a rename the page is a name nothing has seen before. Told
-     * about the rename it keeps its number; not told, it would take a fresh one and leave its entire
-     * setup keyed to an id no page holds any more.
+     * A renamed page keeps its id: the index is read back by NAME, so only the caller can say it was a rename.
      */
     @Test
     public void testARenamedPageKeepsItsId() throws IOException
     {
         write("Alpha", "Bravo");
 
-        // Renamed to something that sorts FIRST, which is the case that bit: the page list arrives
-        // sorted, so a rename that changes a page's place in the alphabet used to change its id and
-        // everybody else's. Adam renamed "1 - Main and neighbours" to "1 - Main", which moved it from
-        // last to first.
+        // Renamed to sort FIRST: the page list arrives sorted, so this used to change every page's id (MT-135).
         Map<String, String> renamed = new LinkedHashMap<>();
         renamed.put("Bravo", "Aardvark");
 
@@ -110,16 +88,8 @@ public class testPageIdsAreDurable
     /**
      * A new page never takes an id a LIVE page is using.
      *
-     * This is the property, and it is weaker than the one this test used to claim. The first version
-     * said "above every id ever issued" and then deleted a MIDDLE page to prove it - which the
-     * mechanism does handle, because the highest id was still in the file. Delete the page holding the
-     * HIGHEST id and its number is reissued: the index is the only record, and a number that is gone
-     * from it cannot be told from a number that was never used.
-     *
-     * Found by review, and worth stating plainly rather than papering over: what keeps that safe is
-     * not the numbering but `deletePage`, which forgets the deleted page's settings before its id
-     * becomes available again. The test below pins exactly that, because it is now the thing the
-     * safety rests on.
+     * Deleting the page holding the HIGHEST id does reissue its number, since the index is the only record.  What keeps
+     * that safe is `deletePage` forgetting the page's settings first, which the next test pins.
      */
     @Test
     public void testANewPageNeverTakesALivePagesId() throws IOException
@@ -141,15 +111,10 @@ public class testPageIdsAreDurable
     }
 
     /**
-     * And a page that DOES reuse a retired id inherits nothing from the page that had it.
+     * A page that reuses a retired id inherits nothing from the page that had it.
      *
-     * The case above cannot be prevented by the index alone - a retired highest id looks exactly like
-     * an id never issued. So the safety has to come from the other end: the deleted page's settings
-     * are forgotten at the moment it goes, so there is nothing left for its number to carry.
-     *
-     * This is the test that matters of the two. If `deletePage` ever stops being called - and its
-     * counterpart `renamePage` went weeks with no caller at all (MT-135) - this fails, and the failure
-     * says what the consequence is rather than that a number changed.
+     * The index alone cannot prevent the reuse, so the safety is `deletePage` forgetting the settings.  If it stops
+     * being called (as `renamePage` once was, MT-135) this fails and says what the consequence is.
      */
     @Test
     public void testAPageReusingARetiredIdInheritsNothing() throws IOException
@@ -195,27 +160,12 @@ public class testPageIdsAreDurable
     }
 
     /**
-     * A page named "1" does not collect the settings of the page whose id is 1.
+     * A page named "1" does not collect the settings of the page whose id is 1 (OB-067).
      *
-     * OB-067, and the thing FR-013 named as its correctness bar. The keys are "page:x,y" strings, and
-     * on disk the page part is an ID while in memory it is a NAME. Both halves of the translation are
-     * string lookups, so each rests on being handed the kind of string it expects - and the code said
-     * as much: "ids are numeric and names are not, so the two never collide". `validateLayoutName`
-     * allows digits, so they do. Adam ruled the name stays legal: "A page should be allowed to be
-     * named 2 - let FR-013 dissolve it."
-     *
-     * The reachable way in is a page that is not loaded, which is an ordinary thing on this railway -
-     * `pagesNotLoaded` exists because a OneDrive placeholder or a file held by the sync client is
-     * enough for CS2File to skip a page. An entry belonging to an absent page cannot be translated to
-     * a name, so it stays in the file's own id form in memory, waiting to be written back untouched.
-     * Writing it back then ran that id through the NAME map - and if a live page happens to be called
-     * "1", the absent page's settings were handed to it.
-     *
-     * Both directions of the loss matter and both are asserted: the live page named "1" must not
-     * inherit anything, and the absent page must still have everything when its file comes back.
-     *
-     * The shape Adam asked these to take: a mutation, a check, a save, a load, and verification that
-     * the mutation is still there while the rest stays the same.
+     * On disk the page part of a key is an ID and in memory a NAME; an entry for a page that is not loaded stays in id
+     * form, and writing it back through the NAME map handed it to a live page called "1".  Adam ruled the name stays
+     * legal: "A page should be allowed to be named 2 - let FR-013 dissolve it."  Both losses are asserted: the live
+     * "1" inherits nothing, and the absent page keeps everything.
      */
     @Test
     public void testAPageNamedAfterAnotherPagesIdCollectsNothing() throws IOException
@@ -237,8 +187,7 @@ public class testPageIdsAreDurable
         store.setPointName(onAlpha, "Alpha Platform");
         store.save();
 
-        // Ghost's page file goes away - a placeholder that never hydrated, which is the case
-        // pagesNotLoaded was written for - and a new page arrives called "1".
+        // Ghost's page file goes away (an unhydrated placeholder) and a new page arrives called "1".
         LayoutDiagram.writeLayoutIndex(layout.getAbsolutePath(),
             new ArrayList<>(Arrays.asList("Alpha", "1")), null);
 
@@ -246,8 +195,7 @@ public class testPageIdsAreDurable
             "the fixture needs the page NAMED 1 to hold some other id, or the collision it is here "
             + "to reproduce is not set up");
 
-        // Loaded and saved with Ghost absent, which is all it takes: the entry cannot be resolved to
-        // a name, so it stays in id form, and the save is where it used to be handed away.
+        // Loaded and saved with Ghost absent: its entry cannot be resolved to a name, so it stays in id form.
         AutonomyCompanionStore reopened = new AutonomyCompanionStore(layout);
 
         reopened.setPageIds(idsAsNameToId());
@@ -268,16 +216,8 @@ public class testPageIdsAreDurable
         assertEquals(after.getPointName(onAlpha), "Alpha Platform",
             "Alpha's own station did not survive a save with another page absent");
 
-        // And the other half, which is the one that matters: the absent page's entry is still in the
-        // file, under the id it was written with, after a save that happened while it was away.
-        //
-        // Asserted on the FILE rather than by bringing the page back and reading it. Bringing it back
-        // is a separate question with a separate answer: writeLayoutIndex retires the id of a page
-        // that is not in the list, so a page whose file disappears and returns is a NEW page with a
-        // new id, and its old entries stay behind under the old one. That is the id system working as
-        // designed - it is what stops a later page inheriting them - but it means a page that goes
-        // away and comes back does not automatically pick its settings up again, which is worth
-        // knowing and is not this test's subject.
+        // The absent page's entry is still in the file under its old id after a save made while it was away.  Asserted
+        // on the FILE: a page whose file returns is a NEW page with a new id, so reading it back is another question.
         String written = new String(Files.readAllBytes(setupFile().toPath()), StandardCharsets.UTF_8);
 
         assertTrue(written.contains("1:3,3"),
@@ -292,9 +232,6 @@ public class testPageIdsAreDurable
             "and Alpha must be untouched throughout");
     }
 
-    /**
-     * Where the shared setup is written.
-     */
     private File setupFile()
     {
         return new File(new File(new File(layout, "config"), "autonomy"), "setup.json");
@@ -303,25 +240,10 @@ public class testPageIdsAreDurable
     /**
      * A retired id stays retired for longer than one write.
      *
-     * The closing comment on
-     * `testAPageReusingARetiredIdInheritsNothing` says a reused id is "the case the index cannot
-     * prevent". The index can prevent it, and until now it did so for exactly one write.
-     *
-     * `next` is derived from the ids present in the FILE. The write that drops a page still sees its
-     * id, so nothing takes it that time; the write after that does not, and hands it to the next new
-     * page. For a page that was DELETED that is harmless - `deletePage` forgets its settings first,
-     * which is what the sibling test pins. For a page whose FILE was merely absent it is the worst
-     * thing this application does: nothing forgot anything, the settings sit in setup.json under that
-     * id held verbatim (OB-067), and a brand-new page inherits a stranger's stations, lengths and
-     * exclusions with nothing reporting a renumber - because as far as the index is concerned, none
-     * happened.
-     *
-     * A page whose file will not load is ordinary here. CS2File skips one that will not parse or is
-     * not there and says so; on this railway, which lives in OneDrive, an unhydrated placeholder is
-     * enough.
-     *
-     * The index cannot remember this by itself without a new field in `gleisbild.cs2`, which real
-     * Maerklin hardware reads. The autonomy setup can, and does - so it is passed in as a floor.
+     * `next` is derived from the ids present in the FILE, so the write after the one that drops a page would hand its
+     * id to a new page.  For a page whose file was merely absent nothing forgot its settings (OB-067), so the newcomer
+     * would inherit a stranger's stations, lengths and exclusions.  The index cannot record the floor itself without
+     * a new field in `gleisbild.cs2`, which real hardware reads, so the autonomy setup passes it in.
      */
     @Test
     public void testARetiredIdIsNotHandedOutTwoWritesLater() throws IOException
@@ -347,8 +269,8 @@ public class testPageIdsAreDurable
             "the setup does not remember Bravo's id, so it cannot be asked to protect it. That "
             + "record is the only thing standing between an absent page and the next new one");
 
-        // Bravo's FILE goes missing - not deleted, nothing told to forget it - and the index is
-        // written twice, which is all it takes: once while it is still on record, once after.
+        // Bravo's FILE goes missing (nothing told to forget it) and the index is written twice: once while it is on
+        // record, once after.
         LayoutDiagram.writeLayoutIndex(layout.getAbsolutePath(),
             new ArrayList<>(Arrays.asList("Alpha")), null, floor);
 
@@ -376,37 +298,13 @@ public class testPageIdsAreDurable
     /**
      * Every held field is declared, and a save with a page absent loses none of them.
      *
-     * The held-entries mechanism (OB-067) carried the store's twelve shared collections' field
-     * names in three hand-written lists - four shape-classified arrays in `withoutAbsentPages` and a
-     * merge array inside `sharedFields` - and no test governed any of them. A reviewer removed one
-     * string, `"blockedPoints"` from the merge array, and nothing else: all three ratchets stayed
-     * green while one save with a page's file missing deleted that page's FR-001 restrictions from
-     * disk.
+     * The held-entries mechanism (OB-067) is one map of field names and SHAPES (whether values name squares); a wrong
+     * shape cannot be caught by name-matching, only by behavior.  Put something on a page, take that page's file away,
+     * load and save, and it is all still in the file.
      *
-     * The lists are one map now, so they cannot disagree by count. This is the other half, and it is
-     * the half with teeth: the map also encodes each field's SHAPE - whether its values name squares -
-     * and a field held with the wrong shape cannot be caught by any amount of name-matching. Only
-     * behavior catches it.
-     *
-     * The property is the one OB-067 was closed on, stated per field: put something on a page, take
-     * that page's file away, load and save, and it is all still in the file.
-     *
-     * **What it catches, measured rather than argued.** Three mutations, each compiled and run:
-     *
-     * - Held but not merged back - the mutation the finding itself used - fails it, naming the
-     *   collection: `the "blockedPoints" collection lost entries to one save while a page's file was
-     *   missing`.
-     * - A field's SHAPE downgraded, `captions` from SQUARE_VALUE to PLAIN, fails it on the caption
-     *   assertion. That is the half no name-matching can check, and it only fails because the fixture
-     *   puts a caption on a LOADED page pointing at a station on the absent one. With every square on
-     *   the absent page the key-side check decides everything, the shape is never exercised, and all
-     *   four square-valued fields could be downgraded with this test still green.
-     * - A field removed from `HELD_FIELDS` altogether fails it too, on the same assertion.
-     *
-     * The version of this comment written a few hours earlier said the third of those did NOT fail,
-     * and explained at length why that was acceptable. The reasoning was sound and the conclusion was
-     * stale: it was true of the weaker fixture. Which is the argument for measuring a claim about a
-     * test instead of deriving it.
+     * Each of these fails it: not merging "blockedPoints" back; downgrading `captions` from SQUARE_VALUE to PLAIN
+     * (caught only because the fixture puts a caption on a LOADED page pointing at a station on the absent one);
+     * removing a field from `HELD_FIELDS`.
      */
     @Test
     public void testASaveWhileAPageIsAbsentLosesNothingOfIt() throws IOException
@@ -422,13 +320,8 @@ public class testPageIdsAreDurable
         TileKey ghostFar = new TileKey("Ghost", 5, 5);
         TileKey ghostCaption = new TileKey("Ghost", 6, 6);
 
-        // A square on the LIVE page whose VALUE points at the absent one.
-        //
-        // Without this every square in the fixture sat on the absent page, so the key-side check alone
-        // decided every entry and the SHAPE half of HELD_FIELDS was never exercised - downgrading all
-        // four square-valued fields to PLAIN left this test green, while its own javadoc claimed only
-        // behavior could catch that. A caption on a loaded page pointing at a station on an absent
-        // one is the ordinary way that happens, and it is the entry a wrong shape lets through.
+        // A square on the LIVE page whose VALUE points at the absent one: without it the key side decides every entry
+        // and the SHAPE half of HELD_FIELDS is never exercised.
         TileKey liveCaption = new TileKey("Alpha", 7, 7);
 
         // One of each shape the hold classifies, so a field dropped or misclassified shows up.
@@ -456,8 +349,7 @@ public class testPageIdsAreDurable
                 + "by having written nothing.  File:\n" + before);
         }
 
-        // Ghost's file goes away. Not deleted - nothing is told to forget it - which is the whole
-        // point: a page that will not load is an everyday thing here.
+        // Ghost's file goes away; nothing is told to forget it.
         LayoutDiagram.writeLayoutIndex(layout.getAbsolutePath(),
             new ArrayList<>(Arrays.asList("Alpha")), null, store.highestPageIdSeen());
 
@@ -466,9 +358,7 @@ public class testPageIdsAreDurable
         reopened.setPageIds(idsAsNameToId());
         reopened.load();
 
-        // The entries really ARE held, which nothing here asserted before. A test that only
-        // checks the file still has them passes just as well when they were never taken out - and
-        // "taken out" is the whole mechanism.
+        // The entries really ARE held: a file that still has them passes just as well when they were never taken out.
         assertNull(reopened.getPointName(ghost),
             "an entry for a page that is not loaded is in the live collections. Holding it is what "
             + "keeps a page id out of a page-name field, so this is the mechanism not running at all");
@@ -509,10 +399,7 @@ public class testPageIdsAreDurable
     }
 
     /**
-     * How many entries a named collection holds in a written setup, without parsing it as JSON.
-     *
-     * Deliberately crude: it counts the commas plus one inside the field's braces or brackets, which
-     * is enough to tell "lost some" from "kept them" and does not need the file's shape to be stable.
+     * Entries in a named collection of a written setup, counted crudely as commas plus one.
      */
     private int countIn(String setup, String field)
     {
@@ -550,9 +437,6 @@ public class testPageIdsAreDurable
         return entries;
     }
 
-    /**
-     * A file as text.
-     */
     private String read(File file) throws IOException
     {
         return new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
@@ -561,18 +445,9 @@ public class testPageIdsAreDurable
     /**
      * An index written in the platform's encoding is read, not refused.
      *
-     * `writeLayoutIndex` used a `FileWriter` until 2026-07-27, so it wrote this file in
-     * whatever encoding the machine defaulted to. Reading it strictly as UTF-8 throws
-     * `MalformedInputException` on any byte that is not valid UTF-8 - and a page called
-     * "Bahnhof S\u00fcd" written by an older TrainControl on a Windows box is exactly that.
-     *
-     * That was survivable while an unreadable index simply meant "no index": the pages were renumbered
-     * and the file rewritten as UTF-8, which healed it. A refusal to renumber on a failed
-     * read - right for a locked file, and catastrophic here, because it made the condition permanent.
-     * The index could never be written again, and the message said to try again in a moment.
-     *
-     * So this asserts the two things that matter and are easy to get wrong separately: the ids survive
-     * the read, and the write goes through.
+     * `writeLayoutIndex` once used a default-encoding `FileWriter`, so a page called "Bahnhof Süd" written by an
+     * older build on Windows is not valid UTF-8.  Refusing to renumber on a failed read made the index permanently
+     * unwritable, so this asserts both that the ids survive the read and that the write goes through.
      */
     @Test
     public void testAnIndexInThePlatformEncodingIsStillReadableAndWritable() throws IOException
@@ -583,8 +458,7 @@ public class testPageIdsAreDurable
 
         assertTrue(index.isFile(), "the fixture wrote no index");
 
-        // Rewrite it the way a pre-2026-07-27 build would have: the same content, with one name
-        // carrying a byte that is not valid UTF-8.
+        // Rewrite it as an old build would have, with one name carrying a byte that is not valid UTF-8.
         String asWritten = new String(Files.readAllBytes(index.toPath()), StandardCharsets.UTF_8)
             .replace("Bahnhof Sud", "Bahnhof S\u00fcd");
 
@@ -599,7 +473,6 @@ public class testPageIdsAreDurable
         }
         catch (java.nio.charset.MalformedInputException expected)
         {
-            // what the old build's file looks like
         }
 
         Map<String, Integer> ids = ids();
@@ -610,21 +483,14 @@ public class testPageIdsAreDurable
 
         assertEquals(ids.size(), 2, "both pages should have come back.  Got: " + ids);
 
-        // The ACCENTED page by name, which is the whole point and which this test did not ask for
-        // until the hole was demonstrated (2026-08-24): a decoder that mangles the name still
-        // returns two entries with Alpha at 1, so a lenient decode that renumbers every page and
-        // reattaches every setting passed this test 11 of 11.
-        //
-        // Alpha is the control - it is pure ASCII and survives any decoding - so asserting only Alpha
-        // was asserting the half that cannot fail.
+        // The ACCENTED page by name; Alpha is pure ASCII, survives any decoding and so could not fail.
         assertEquals(ids.get("Bahnhof Süd"), Integer.valueOf(2),
             "the page whose name carries a non-ASCII byte did not come back under its own name, so "
             + "its id is lost and everything keyed to it is about to be reattached to whatever takes "
             + "that number. This is the failure the fallback exists for, and asserting Alpha alone "
             + "could not see it (TA-A1).  Got: " + ids);
 
-        // And the write must go through. Before the fallback this threw, permanently, because the
-        // condition it refuses on is one that a retry cannot clear.
+        // And the write must go through: a retry cannot clear what it used to refuse on.
         LayoutDiagram.writeLayoutIndex(layout.getAbsolutePath(),
             new ArrayList<>(Arrays.asList("Alpha", "Bahnhof S\u00fcd", "Zulu")), null, 0);
 
@@ -665,25 +531,10 @@ public class testPageIdsAreDurable
     /**
      * Renaming a page to something that looks like another page's id moves nothing but that page.
      *
-     * OB-092, and it is Adam's own words: "When I renamed '5 - Test' to 5, the main page (1 - Main,
-     * id 5) became excluded from autonomy and lost all its train placement."
-     *
-     * `renamePage` rekeyed every collection and then left the store's OWN numbering stale, so it still
-     * believed the page was called what it used to be. The next save asked `pageNameToId` about the
-     * new name, got nothing, and fell back to writing the bare NAME into `excludedPages` - where
-     * `untranslatePages` reads every value as an ID. A page called "5" came back as whichever page
-     * holds id 5. The exclusion is only the visible half: an excluded page is not in the graph, so
-     * every placement on it goes with it.
-     *
-     * **Why the existing rename tests did not catch it.** There are several, and they are thorough
-     * about what a rename must carry. Not one of them renamed a page to a string that is also a live
-     * id, because no fixture anywhere had a page named like a number - so the collision that makes
-     * this fail could not arise. That is a fixture trap: the fixture decided the
-     * answer before the assertions did.
-     *
-     * So this checks every collection rather than the one that broke, and it checks the OTHER page as
-     * hard as the renamed one. A rename that carries everything correctly and quietly empties a
-     * different page is not a rename that worked.
+     * OB-092: renaming "Test" to "5" made the page holding id 5 (Main) excluded from autonomy.  `renamePage` left the
+     * store's own numbering stale, so the next save wrote the bare NAME into `excludedPages`, which `untranslatePages`
+     * reads as an ID.  No earlier rename test used a numeric page name, so the collision could not arise.  Every
+     * collection is checked, and the OTHER page as hard as the renamed one.
      */
     @Test
     public void testRenamingAPageToAnotherPagesIdMovesOnlyThatPage() throws IOException
@@ -739,7 +590,6 @@ public class testPageIdsAreDurable
         assertFalse(store.getExcludedPages().contains("Main"),
             "renaming one page excluded another, in memory.  Got: " + store.getExcludedPages());
 
-        // THE LOAD.
         AutonomyCompanionStore back = new AutonomyCompanionStore(layout);
 
         back.setPageIds(idsAsNameToId());
@@ -780,9 +630,6 @@ public class testPageIdsAreDurable
             + "rename, which reattaches its whole setup.  Got: " + ids());
     }
 
-    /**
-     * The index as the store wants it: name -> id.
-     */
     private Map<String, String> idsAsNameToId()
     {
         Map<String, String> out = new LinkedHashMap<>();
@@ -796,12 +643,8 @@ public class testPageIdsAreDurable
     }
 
     /**
-     * The first page's id is written out, rather than left to be assumed.
-     *
-     * CS2File reads an absent id as ZERO (Adam, 2026-09-10; it was the page's POSITION until then, which
-     * is what gave two pages one id). That was harmless while ids and positions were
-     * the same thing; with a retired id there is a gap, and an omitted id would read as 1 - so the first
-     * page in the file would claim page 1's settings.
+     * The first page's id is written out rather than assumed: CS2File reads an absent id as ZERO, and with a retired
+     * id gap an omitted id would read as 1 and claim page 1's settings.
      */
     @Test
     public void testEveryPageWritesItsIdIncludingTheFirst() throws IOException
@@ -821,11 +664,8 @@ public class testPageIdsAreDurable
     }
 
     /**
-     * Deleting a page forgets that page's setup, and only that page's.
-     *
-     * renamePage has had a caller since OB-049; its counterpart never had one. The file went, the index
-     * was rewritten, and everything the setup knew about that page stayed behind keyed to a page that
-     * no longer existed.
+     * Deleting a page forgets that page's setup, and only that page's.  `renamePage` has had a caller since OB-049;
+     * `deletePage` never had one, so the setup kept everything keyed to the deleted page.
      */
     @Test
     public void testDeletingAPageForgetsItsSetupAndNothingElse() throws IOException
@@ -876,14 +716,10 @@ public class testPageIdsAreDurable
     }
 
     /**
-     * The index can say which pages a write would drop, and does not count the ones somebody meant.
+     * The index says which pages a write would drop, counting only SURPRISES (FR-018).
      *
-     * The question FR-018 turns on. Retiring an absent page's id is correct for a page that was
-     * deleted and wrong for a page whose file merely would not load, and the index cannot tell the
-     * two apart - so it stops guessing and reports, and the caller asks the one participant who
-     * knows. What this holds is that the report is about SURPRISES only: a delete and a rename both
-     * make a page absent from the list on purpose, and asking Adam about the page he just deleted
-     * would make the dialog worthless in exactly the case it fires most often.
+     * A delete and a rename both make a page absent on purpose; asking about those would make the dialog worthless in
+     * the case it fires most often.
      *
      * MUTATION: dropping either the `deliberatelyRemoved` or the `renamedFromTo` test from
      * pagesTheIndexWouldDrop fails this.
@@ -914,15 +750,8 @@ public class testPageIdsAreDurable
     }
 
     /**
-     * A page kept while its file is away comes back as the SAME page.
-     *
-     * This is the whole of what "Keep it" buys. Without it the id is retired, and the settings that
-     * are still sitting in setup.json under that number attach to nothing when the file returns -
-     * Adam gets a new page with a new number and a blank setup, and nothing anywhere says why.
-     *
-     * The second half matters as much: a page NOT named is retired exactly as before, because that is
-     * the behavior protecting against MT-135, and a fix for one of these that quietly disabled the
-     * other would be a worse bug than the one being fixed.
+     * A page kept while its file is away comes back as the SAME page; a page NOT named is retired as before (MT-135),
+     * and a fix that disabled that would be worse than the bug.
      *
      * MUTATION: dropping the keepAbsent loop from writeLayoutIndex fails the first assertion; making
      * it keep every absent page regardless fails the second.
@@ -949,12 +778,8 @@ public class testPageIdsAreDurable
     }
 
     /**
-     * Holding a page back does not let it collide with a page created while it was away.
-     *
-     * The failure this could have introduced. A held page keeps its number; a page added in the
-     * meantime is issued a fresh one, and if the fresh number were worked out from the list alone it
-     * would be the held page's. Two pages on one id is the misattachment class this whole file is
-     * about, arriving by a door the fix itself opened.
+     * Holding a page back does not let it collide with a page created while it was away: the fresh number must not be
+     * worked out from the list alone, or it would be the held page's.
      */
     @Test
     public void testAPageAddedWhileAnotherIsHeldDoesNotTakeItsNumber() throws IOException
@@ -977,30 +802,17 @@ public class testPageIdsAreDurable
     }
 
     /**
-     * Told a page is gone for good, the setup lets go of it - and of nothing else (FR-018).
+     * Told a page is gone for good, the setup lets go of it and of nothing else (FR-018).
      *
-     * The counterpart to {@link #testASaveWhileAPageIsAbsentLosesNothingOfIt}, and the two together
-     * are the whole of this feature: holding an absent page's settings for ever is what makes a
-     * OneDrive placeholder survivable, and it is also what leaves a genuinely deleted page's settings
-     * in setup.json for ever, under an id that can never attach to anything again.
+     * Holding an absent page's settings for ever is what makes a OneDrive placeholder survivable, and it also leaves a
+     * deleted page's settings in setup.json; only the person who deleted the page can tell the cases apart.
      *
-     * Adam settled which of the two it is by refusing the question as posed: "if we are talking about
-     * orphaned data, why not warn the user and then prune?" The application cannot tell the cases
-     * apart. The person who deleted the page can.
-     *
-     * **Two absent pages, and only one of them is being pruned.** That is what makes the fixture worth
-     * having. With a single absent page, forgetting the entire hold and forgetting the right entries
-     * produce the same file, so an implementation that simply emptied everything would pass - which is
-     * exactly what the first version of this test did allow.
-     *
-     * The three things asserted, in order of how easy they are to get wrong:
-     *
-     *   1. An entry anchored on a page that is STILL HERE, whose value points at the gone page, goes
-     *      too. It is a pointer to nothing. Leaving it held would be the same leak; releasing it into
-     *      memory would be worse, because the gone page's id would then stand in a page-NAME field -
-     *      the id-as-name pun the hold exists to prevent.
-     *   2. The OTHER absent page keeps everything. It is not gone, it is merely away.
-     *   3. Entries anchored on the gone page go, and the live page's own settings stay.
+     * Two absent pages, only one pruned: with one, emptying the whole hold and filtering it give the same file.
+     * Asserted in order:
+     *   1. An entry on a page still here whose VALUE points at the gone page goes too; releasing it into memory would
+     *      put the gone page's id in a page-NAME field.
+     *   2. The OTHER absent page keeps everything.
+     *   3. Entries on the gone page go, and the live page's own settings stay.
      *
      * MUTATIONS, all three run and all three fail this test: checking only the key and not the value
      * leaves the caption behind; clearing the hold outright rather than filtering it takes the other
@@ -1023,12 +835,10 @@ public class testPageIdsAreDurable
         // Absent as well, and NOT being pruned - the page that proves this filters rather than empties.
         TileKey wraith = new TileKey("Wraith", 4, 4);
 
-        // On the page that is staying, so a prune that takes everything is not mistaken for one that
-        // takes the right things.
+        // On the staying page, so a prune that takes everything is not mistaken for the right one.
         TileKey live = new TileKey("Alpha", 8, 8);
 
-        // On the page that is staying, POINTING at the page that is going.  Its key resolves; only its
-        // value names the page being pruned.
+        // On the staying page, POINTING at the going one: its key resolves; only its value names the pruned page.
         TileKey liveCaption = new TileKey("Alpha", 7, 7);
 
         store.setPointName(ghost, "Ghost Platform");
@@ -1051,12 +861,8 @@ public class testPageIdsAreDurable
                 + "by having written nothing.  File:\n" + before);
         }
 
-        // Both files go away, and neither is kept in the index - so the setup is holding two pages it
-        // cannot resolve, which is the state a prune has to be selective inside.
-        //
-        // Note that keeping a page in the index is NOT this state: a page the index still lists
-        // resolves, its entries load normally and there is nothing held to prune.  That is what "Keep
-        // it" buys, and it is tested next door.
+        // Both files go away and neither is kept in the index, so the setup holds two unresolvable pages.  (A page the
+        // index still lists resolves and holds nothing: that is "Keep it", tested above.)
         LayoutDiagram.writeLayoutIndex(layout.getAbsolutePath(),
             new ArrayList<>(Arrays.asList("Alpha")), null, store.highestPageIdSeen());
 
@@ -1077,8 +883,7 @@ public class testPageIdsAreDurable
 
         String after = read(setupFile());
 
-        // (1) The caption is keyed "<Alpha's id>:7,7", so its coordinates appearing anywhere means it
-        // survived.  Nothing else in this fixture sits on 7,7.
+        // The caption is keyed "<Alpha's id>:7,7"; nothing else sits on 7,7.
         assertFalse(after.contains("7,7"),
             "a caption on a page that is still here, pointing at a station on the deleted page, "
             + "survived - so it is either held for ever or about to come back into memory with a page "
@@ -1101,8 +906,7 @@ public class testPageIdsAreDurable
         assertTrue(after.contains("Alpha Platform"),
             "the live page's own settings were pruned along with the deleted page's.  File:\n" + after);
 
-        // And the deleted page stops being reported as one that is simply not loaded, so the operator
-        // is asked about it once rather than on every save from now on.  Wraith still is.
+        // The deleted page stops being reported as merely not loaded; Wraith still is.
         assertEquals(reopened.pagesNotLoaded(Arrays.asList("Alpha")), Arrays.asList("Wraith"),
             "after the prune the setup should know about exactly one page it cannot see");
     }
@@ -1110,25 +914,17 @@ public class testPageIdsAreDurable
     /**
      * Two pages cannot come out of one write holding the same id.
      *
-     * Nothing in the chain ever compared them. `writeLayoutIndex` wrote a duplicate straight back out;
-     * `setPageIds` inverts name-to-id into id-to-name, so the second page silently wins the number and
-     * the first page's settings resolve to the SECOND page's track; and `pageIdConflicts` - the one
-     * thing that reports a misnumbering - only fires when an id's name has changed, which for a
-     * straight duplicate it has not. Half of one page's setup attaches to another page with nothing to
-     * fire.
-     *
-     * The later claimant is the one that loses. Refusing the write would mean a page that cannot be
-     * saved, which is worse than the defect; and the first page keeps the id it has always had, so its
-     * settings stay where they are. The second page's settings were already unreachable, because the
-     * inversion was answering with the first page.
+     * Nothing compared them: `setPageIds` inverts name-to-id so the second page silently wins the number, and
+     * `pageIdConflicts` fires only when an id's name changed.  The later claimant loses; refusing the write would
+     * leave a page that cannot be saved.
      *
      * MUTATION: removing the `issued` gate from the allocation loop fails this test.
      */
     @Test
     public void testTwoPagesCannotShareAnId() throws IOException
     {
-        // Written by hand, because writeLayoutIndex is the thing being tested and will not produce a
-        // duplicate to start from.  This is the state a corrupt file, or an older build, leaves.
+        // Written by hand, since writeLayoutIndex will not produce a duplicate; a corrupt file or older build leaves
+        // it.
         Files.write(new File(new File(layout, "config"), "gleisbild.cs2").toPath(),
             ("[gleisbild]\nversion\n .major=1\ngroesse\n"
             + "seite\n .id=4\n .name=Alpha\n"
@@ -1157,32 +953,16 @@ public class testPageIdsAreDurable
     }
 
     /**
-     * A deleted page stops being reported as one that merely did not load (store review, B1).
+     * A deleted page stops being reported as one that merely did not load.
      *
-     * `deletePage` cleared the twelve collections, the excluded-page set and the configurations, and
-     * left the setup's own record of what that page id was CALLED - which is written back out as the
-     * file's "pages" map and therefore survives every reload.
-     *
-     * What that costs is not a lost setting but a store that stops working. `pagesNotLoaded` walks
-     * that record, so a page the operator deliberately deleted is named for ever as one that failed to
-     * load; `AutonomySession.pagesSafeToJudge` is therefore false for the rest of the layout's life;
-     * and a session that cannot judge never reconciles anything again. It also raises a
-     * warning dialog on every editor save, naming the page that was deleted on purpose.
-     *
-     * FR-018 cannot clear it either - it offers the "it was deleted" answer for pages the INDEX still
-     * holds, and a deleted page is not in the index. So there is no way out of the state at all.
-     *
-     * `forgetHeldPages` had the line and `deletePage` did not, three hundred lines apart, which is
-     * this repository's most-repeated defect shape applied to a rule invented the same day.
+     * `deletePage` left the setup's record of what that page id was CALLED, which survives every reload, so
+     * `pagesNotLoaded` named the deleted page for ever, `AutonomySession.pagesSafeToJudge` stayed false, and every
+     * editor save raised a warning about it.  FR-018 cannot clear it: a deleted page is not in the index.
      *
      * MUTATION: removing the `pageNameToId` / `pageIdToName` removals from `deletePage` fails this.
      *
-     * NOT the `pageNamesWhenWritten` line, which this javadoc named until a validation pass ran the
-     * mutation and found all 19 tests still green. That line is inert here and the comment beside it
-     * says so - `sharedFields` rebuilds the file’s "pages" map from the live index, so removing only
-     * the record changed nothing at all. It is the index removal that does the work. Recorded because
-     * a stated mutation that does not fail its own test is the exact defect this project keeps
-     * finding, and it was in the fix for one.
+     * Not the `pageNamesWhenWritten` line: it is inert here, since `sharedFields` rebuilds the "pages" map from the
+     * live index.
      */
     @Test
     public void testADeletedPageIsNotReportedAsMerelyMissing() throws IOException
@@ -1220,17 +1000,11 @@ public class testPageIdsAreDurable
     }
 
     /**
-     * A page named after another page’s id keeps its own held settings when that other page goes.
+     * A page named after another page's id keeps its own held settings when that other page goes.
      *
-     * The id-as-name pun, arriving through the method written to close it (store review, C1).
-     * `forgetHeldPages` matched held keys against a set holding both the page NAMES it was given and
-     * the ids those names were written under. A page may legally be called "5" - Adam ruled it must
-     * stay legal, "A page should be allowed to be named 2 - let FR-013 dissolve it" - so declaring the
-     * page NAMED "5" gone deleted every held entry belonging to the page with ID 5.
-     *
-     * The names half could never match anything legitimate anyway: `pageIsHere` answers true for any
-     * bare unrecognized name, so a name-keyed entry is never held in the first place. It could only
-     * ever produce this false positive.
+     * `forgetHeldPages` matched held keys against both page NAMES and the ids written for them, so declaring the page
+     * NAMED "5" gone deleted every held entry of the page with ID 5.  Names can never match a legitimate held key
+     * (`pageIsHere` answers true for any bare unrecognized name), so that half only produced this false positive.
      *
      * MUTATION: putting the page names back into `parts` fails this test.
      */
@@ -1320,19 +1094,10 @@ public class testPageIdsAreDurable
     }
 
     /**
-     * A page keeps its identity through a whole sequence of page operations.
+     * A page keeps its identity through a whole sequence of page operations: rename, add, delete, add again, with both
+     * watched pages checked after EVERY step and the ids of surviving pages never moving.
      *
-     * Adam, after testing MT-142: "This seems to work, but add a thorough test case for it since you
-     * already know what should happen."
-     *
-     * The tests above each isolate one operation. This one does what a person does - rename, add,
-     * delete, add again - and checks after EVERY step that the two pages he cares about still carry
-     * everything they had, and that the ids of surviving pages never moved.
-     *
-     * It is written this way because the defects this month were not in any single operation. They were
-     * in what one operation did to a page it was not about: a rename renumbered other pages, a delete
-     * handed a retired id to a newcomer, a page that failed to load was pruned by a save meant for
-     * something else. A sequence is the only shape that catches those.
+     * The defects were in what one operation did to a page it was not about, which only a sequence catches.
      */
     @Test
     public void testPageIdentitySurvivesASequenceOfOperations() throws IOException
