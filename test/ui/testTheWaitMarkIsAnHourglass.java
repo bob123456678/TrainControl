@@ -14,43 +14,19 @@ import org.traincontrol.gui.widgets.LoadingSpinner;
 import support.SourceOf;
 
 /**
- * What the "still drawing" mark actually draws, and where the signal window actually goes.
+ * What the "still drawing" mark draws, and where the signal window goes (FR-024, OB-107).
  *
- * Two things Adam reported by looking at them (FR-024 and OB-107), so they are checked here by looking
- * at them too - the drawing is rendered to an image and the image is measured, and the placement is a
- * function of two rectangles that can simply be called.
+ * Checked by looking: the drawing is rendered to an image and measured, the placement is a function of two
+ * rectangles.  Not a source-reading guard, because a bow-tie silhouette mentions nothing wrong in code.
  *
- * **Why this is not a source-reading guard.** The obvious way to hold FR-024 would be to assert that
- * the paint method mentions an hourglass, and the obvious way to hold OB-107 would be to assert that
- * the dialog code no longer says setLocationRelativeTo. Neither would have caught the two things that
- * actually went wrong while this was being built: a silhouette that came out as a bow tie, and a
- * second attempt that came out as a rectangle with an X in it. Both of those mention nothing and read
- * perfectly well. Only the pixels knew.
- *
- * The load-bearing assertion is the sand count: sand is conserved, so what leaves the upper bulb has
- * to arrive in the lower one, and that is a statement about the drawing which the drawing code does
- * not itself make anywhere.
- *
- * Its limit is written out on the method, because it is narrower than it first looks and a later
- * reader should not have to rediscover that.
+ * The load-bearing assertion is the sand count: what leaves the upper bulb must arrive in the lower one.
  *
  * @author Adam
  */
 public class testTheWaitMarkIsAnHourglass
 {
 
-    /**
-     * The application's look and feel, before this class stands anything up.
-     *
-     * Adam, 2026-09-11: *"I still see tests popping up with the small font in the menu bar."*
-     *
-     * Every window the APPLICATION owns asks for this in its own constructor, so a test that builds one
-     * gets it for free. This class builds a bare Swing window instead - a `JFrame`, a `JDialog`, a
-     * `JOptionPane` - and those are nobody's to fix but this one's. Without it the window is drawn in
-     * Metal: different font, different insets, and not the window the operator sees.
-     *
-     * `regression.testEveryWindowWearsTheApplicationsLook` holds this in place for every such class.
-     */
+    /** The application's look and feel; a bare Swing window would be drawn in Metal, not as the operator sees it. */
     @BeforeClass
     public static void theApplicationsLookAndFeel()
     {
@@ -65,12 +41,7 @@ public class testTheWaitMarkIsAnHourglass
     /** Milliseconds one frame lasts: asked of the spinner. */
     private static final int FRAME_MS = spinnerConstant("FRAME_MS");
 
-    /**
-     * One of LoadingSpinner's private constants, read by reflection so a claim follows the spinner's own rule.
-     *
-     * @param name the constant's name
-     * @return its value
-     */
+    /** One of LoadingSpinner's private constants, read by reflection. */
     private static int spinnerConstant(String name)
     {
         try
@@ -90,12 +61,7 @@ public class testTheWaitMarkIsAnHourglass
     /** Big enough that a few pixels of antialiasing either way cannot change a count materially. */
     private static final int SIZE = 240;
 
-    /**
-     * Paints the mark at a given frame of its cycle, offscreen.
-     *
-     * @param frames how many frames to advance before painting
-     * @return the picture, on white
-     */
+    /** Paints the mark `frames` frames into its cycle, offscreen, on white. */
     private BufferedImage shoot(int frames) throws Exception
     {
         LoadingSpinner mark = new LoadingSpinner();
@@ -117,13 +83,7 @@ public class testTheWaitMarkIsAnHourglass
         return out;
     }
 
-    /**
-     * Counts pixels that are neither white nor nearly white, above and below the middle.
-     *
-     * @param shot a picture from {@link #shoot}
-     * @param top true to count the upper half, false for the lower half
-     * @return how many pixels carry ink
-     */
+    /** Counts the non-white pixels in the upper or lower half. */
     private int ink(BufferedImage shot, boolean top)
     {
         int from = top ? 0 : SIZE / 2;
@@ -141,8 +101,7 @@ public class testTheWaitMarkIsAnHourglass
                 int g = (rgb >> 8) & 0xFF;
                 int b = rgb & 0xFF;
 
-                // Gray of any darkness, which is all this draws.  The threshold is well clear of the
-                // antialiased edge between the sand and the white behind it.
+                // Gray of any darkness; the threshold is clear of the antialiased edge.
                 if (r < 230 && g < 230 && b < 230) count++;
             }
         }
@@ -150,12 +109,7 @@ public class testTheWaitMarkIsAnHourglass
         return count;
     }
 
-    /**
-     * The mark draws something, and it is gray rather than the black the turning arc used.
-     *
-     * The weakest assertion here, and it is only worth having because a drawing method that throws or
-     * that draws nothing is a real failure mode for a component nobody looks at in a test.
-     */
+    /** The mark draws something, and it is gray rather than the black the turning arc used. */
     @Test
     public void testItDrawsSomethingGrey() throws Exception
     {
@@ -165,9 +119,7 @@ public class testTheWaitMarkIsAnHourglass
 
         assertTrue(drawn > 500, "the wait mark drew almost nothing: " + drawn + " pixels");
 
-        // Not black.  Adam asked for gray specifically, and the arc this replaced drew in black with
-        // alpha, which composites to gray against white - so a color check has to look at the
-        // DARKEST pixel rather than the average, or the two are indistinguishable.
+        // Not black: look at the DARKEST pixel, since black with alpha composites to gray on white.
         int darkest = 255;
 
         for (int y = 0; y < SIZE; y++)
@@ -184,23 +136,15 @@ public class testTheWaitMarkIsAnHourglass
     /**
      * Sand is conserved: what drains out of the top arrives in the bottom.
      *
-     * The assertion this class exists for. Every other check here would still pass if the two bulbs
-     * were driven by unrelated formulae - the picture would still be an hourglass, still be gray,
-     * still change frame to frame, and the sand would simply appear and vanish as it fell.
+     * Every other check here would still pass if the two bulbs ran on unrelated formulae.  The band is a twelfth,
+     * from measurement: over a real cycle the count spreads 4.4% (outline and stream count as ink); driving the
+     * lower bulb from its own level takes it to 20%.
      *
-     * The band is a twelfth, chosen from measurement rather than taste. Over a real cycle the count
-     * runs 7176, 7504, 7479, 7455, 7417, 7382, 7399, 7338, 7213 - a spread of 4.4%, which is the
-     * curved outline and the falling stream being counted as ink alongside the sand. Driving the lower
-     * bulb from its own level instead of the shared one takes the spread to 20%.
+     * MUTATION: replacing the lower bulb's rectangle with one on a level of its own (`bulbH * (1.0 - drained * 0.5)`
+     * for `bulbH * remaining`) fails this test.
      *
-     * MUTATION: replacing the lower bulb's rectangle with one on a level of its own - `bulbH * (1.0 -
-     * drained * 0.5)` for `bulbH * remaining` - fails this test. Measured: the count falls away to
-     * 5984 by the end of the cycle instead of holding near 7200.
-     *
-     * WHAT THIS DOES NOT COVER, recorded so nobody assumes otherwise: the square root in `remaining`.
-     * Both bulbs read the same variable, so whatever curve it follows the areas still sum to the same
-     * constant - replacing the root with the plain fraction passes all seven tests here. The root is
-     * how the sand LOOKS as it falls, and nothing in this battery can see that.
+     * NOT COVERED: the square root in `remaining`.  Both bulbs read the same variable, so the plain fraction passes
+     * all seven tests; how the sand LOOKS as it falls is seen by nothing here.
      */
     @Test
     public void testTheSandIsConserved() throws Exception
@@ -230,12 +174,7 @@ public class testTheWaitMarkIsAnHourglass
             + " - the two bulbs are not agreeing about the level");
     }
 
-    /**
-     * It starts full at the top and ends full at the bottom, which is the direction sand falls in.
-     *
-     * A drawing that ran the animation backwards, or that filled both bulbs at once, would satisfy the
-     * conservation check above and fail this one.
-     */
+    /** It starts full at the top and ends full at the bottom; a backwards or both-bulbs animation fails here. */
     @Test
     public void testItRunsDownwards() throws Exception
     {
@@ -249,11 +188,7 @@ public class testTheWaitMarkIsAnHourglass
             "by the end of the cycle the sand should have fallen to the lower bulb");
     }
 
-    /**
-     * The picture changes from frame to frame, so the animation is animation and not a still.
-     *
-     * Adam asked for it to move: "animate if possible."
-     */
+    /** The picture changes from frame to frame: animation, not a still. */
     @Test
     public void testItMoves() throws Exception
     {
@@ -273,13 +208,7 @@ public class testTheWaitMarkIsAnHourglass
         assertTrue(different > 200, "the wait mark is not moving: " + different + " pixels differ");
     }
 
-    /**
-     * Nothing is drawn outside the component, at any point in the cycle including the turn.
-     *
-     * The turn is the frame that can break this: the glass is rotated about the center, so a shape
-     * sized to fill the space upright sweeps outside it halfway round. Checking a border of pixels
-     * says the drawing left itself room to turn in.
-     */
+    /** Nothing is drawn outside the component at any frame, including mid-turn when the rotated glass sweeps wider. */
     @Test
     public void testItStaysInsideItsBounds() throws Exception
     {
@@ -307,20 +236,8 @@ public class testTheWaitMarkIsAnHourglass
     /**
      * The window a dialog is placed against is the window itself, not what contains it (MT-182).
      *
-     * **This is the test the two below could not be.** They check `besideOwner`, which is arithmetic on
-     * two rectangles and has always been right. Its javadoc says it was made public and static so the
-     * one thing worth checking could be checked without opening a modal dialog, and ends: "there is
-     * nothing left in the caller to get wrong except which rectangles it passes."
-     *
-     * That is exactly what the caller got wrong, twice reported and twice not found. `owner()` returns
-     * a WINDOW when the panel is in one; the caller asked `SwingUtilities.getWindowAncestor(owner())`,
-     * which walks UP from what it is given, and a top-level frame has no window ancestor. So it got
-     * null every time, took its fallback branch - `setLocationRidiculouslyRelativeTo(owner())`, which
-     * centers - and produced the precise behavior the ticket was raised about, while both tests of
-     * the rule stayed green.
-     *
-     * Driven with real components, because the mistake is only visible in what `getWindowAncestor`
-     * answers for a window as against a panel. No dialog is shown and nothing blocks.
+     * `besideOwner` is right, but its caller asked getWindowAncestor(owner()), which walks UP and is null for a
+     * top-level frame, so the centering fallback ran.  Driven with real components; no dialog is shown.
      */
     @Test
     public void testAWindowIsNotAskedWhatContainsIt() throws Exception
@@ -350,10 +267,7 @@ public class testTheWaitMarkIsAnHourglass
             assertEquals(javax.swing.SwingUtilities.getWindowAncestor(inside), frame,
                 "precondition: a panel inside the frame does not report it, so the fixture is wrong");
 
-            // And what the panel's own helper must answer for each.
-            // CODE ONLY. The first version of this read the whole file and matched the sentence in
-            // the fix's own javadoc describing the mistake - so the test failed against the corrected
-            // code, on the strength of prose explaining the correction.  Asked of the whole program's code.
+            // What the panel's own helper must answer for each.  CODE ONLY: the fix's javadoc describes the mistake.
             String panelSource = SourceOf.allCode();
 
             assertTrue(panelSource.contains("if (anchor instanceof java.awt.Window) return"),
@@ -372,14 +286,11 @@ public class testTheWaitMarkIsAnHourglass
     }
 
     /**
-     * The signal window does not open over the middle of the diagram it is describing (OB-107).
+     * The signal window does not open over the middle of the diagram it describes (OB-107).
      *
-     * Adam: "the signal protecting this station pops up over the middle of the diagram. see if you can
-     * offset it." The window's own text tells the reader the signals are outlined on the diagram
-     * BEHIND it, so centring hides the thing it is pointing at.
+     * It points at the diagram behind it, so centering hides the thing it points at.
      *
-     * MUTATION: making besideOwner return the centered point - the behavior this replaced - fails
-     * this test.
+     * MUTATION: making besideOwner return the centered point fails this test.
      */
     @Test
     public void testTheSignalWindowDoesNotSitOnTheDiagram()
@@ -396,19 +307,13 @@ public class testTheWaitMarkIsAnHourglass
             || Math.abs(at.y - centredY) > dialog.height / 2,
             "the dialog is still effectively centred, at " + at);
 
-        // And it is still ON the window it belongs to, which is what stops "not centred" being
-        // answered by throwing it into a corner of the desktop.
+        // And still ON the window it belongs to, so "not centered" is not met by a corner of the desktop.
         assertTrue(window.contains(new Rectangle(at.x, at.y, dialog.width, dialog.height)),
             "the dialog landed outside the window it belongs to, at " + at);
     }
 
     /**
-     * A dialog bigger than the window it belongs to still starts on-screen.
-     *
-     * The clamp has two ends and only one of them is exercised by the ordinary case. Pushed by the
-     * "keep it inside" rule alone, a dialog wider than its parent would be moved to a NEGATIVE offset
-     * from the parent's left edge - which on a maximized window is off the side of the display, where
-     * the buttons cannot be reached.
+     * A dialog bigger than its window still starts on-screen: a negative offset from the left edge is off the display.
      */
     @Test
     public void testAnOversizedDialogStillStartsOnScreen()
@@ -425,15 +330,10 @@ public class testTheWaitMarkIsAnHourglass
     /**
      * The frame is taken from the clock, so a coalesced tick lands where it should (OB-129).
      *
-     * Adam: "track loading hourglass does not animate."
+     * The timer coalesces when the event thread is busy; counting one frame per tick advanced the sand once for a
+     * second of ticks.
      *
-     * `javax.swing.Timer` fires on the event thread and COALESCES when that thread is busy - and this
-     * component exists to be on screen while a diagram build floods it. Counting one frame per tick
-     * therefore advanced the sand once for a second's worth of ticks. Taking the frame from elapsed
-     * time makes a late tick land on the frame it should have reached.
-     *
-     * MUTATION: going back to a counter fails the third assertion, which is the whole point - the
-     * first two pass either way.
+     * MUTATION: going back to a counter fails the third assertion; the first two pass either way.
      */
     @Test
     public void testTheFrameComesFromTheClock() throws Exception
@@ -443,8 +343,7 @@ public class testTheWaitMarkIsAnHourglass
         assertEquals(LoadingSpinner.frameAt(FRAME_MS), 1,
             "one frame period does not advance exactly one frame");
 
-        // THE CASE THAT MATTERS. Ten frames' worth of time passes while the event thread is busy and
-        // the timer manages a single tick; that tick must land on frame 10, not frame 1.
+        // Ten frames' worth of time passes with a single tick; it must land on frame 10, not frame 1.
         assertEquals(LoadingSpinner.frameAt(10L * FRAME_MS), 10,
             "600ms after the last frame the animation is still one frame along, so a busy event "
             + "thread - which is exactly when this component is shown - freezes the sand");
@@ -456,12 +355,7 @@ public class testTheWaitMarkIsAnHourglass
         assertEquals(LoadingSpinner.frameAt(-5), 0, "a clock that went backwards is not handled");
     }
 
-    /**
-     * And the timer really does drive it, with nobody calling advanceOneFrame.
-     *
-     * The gap that let OB-129 ship: `shoot` advances the frames by hand, so every drawing test above
-     * passes with a timer that never fires once.
-     */
+    /** The timer really does drive it: `shoot` advances frames by hand, so the tests above pass with a dead timer. */
     @Test(timeOut = 30000)
     public void testTheTimerActuallyRuns() throws Exception
     {
@@ -496,12 +390,7 @@ public class testTheWaitMarkIsAnHourglass
         }
     }
 
-    /**
-     * The glass has a ceiling, whatever room it is given (OB-129).
-     *
-     * Adam asked for it half the size. The component is now sized to the whole diagram it covers, so a
-     * fraction of that would make the glass grow rather than shrink.
-     */
+    /** The glass has a ceiling, whatever room it is given (OB-129): the component is sized to the whole diagram. */
     @Test
     public void testTheGlassDoesNotGrowWithTheSpaceForever() throws Exception
     {
@@ -544,19 +433,14 @@ public class testTheWaitMarkIsAnHourglass
             "the glass is " + drawn + " pixels tall in a 900px panel - it grows with the space it is "
             + "given, so covering a whole track diagram draws an enormous hourglass");
 
-        // And it is still centered in that space, which is the other half of OB-129.
+        // And it is still centered in that space.
         int middle = (top + bottom) / 2;
 
         assertTrue(Math.abs(middle - big / 2) <= 4,
             "the glass sits at " + middle + " in a " + big + "px panel rather than the middle");
     }
 
-    /**
-     * The spinner covers the area the diagram will take, which is what puts it in the middle.
-     *
-     * It is centered inside its own component already; what was wrong is how much of the page that
-     * component covered. Capped at 400 and dropped into a FlowLayout parent, it sat at the top.
-     */
+    /** The spinner covers the area the diagram will take; capped at 400 in a FlowLayout parent it sat at the top. */
     @Test
     public void testTheSpinnerCoversTheDiagramArea() throws Exception
     {
@@ -569,15 +453,10 @@ public class testTheWaitMarkIsAnHourglass
     /**
      * A blocked event thread does not freeze the sand (OB-129).
      *
-     * This is the reported fault reproduced rather than described. `javax.swing.Timer` fires on the
-     * event thread and coalesces, so while a diagram build holds that thread the ticks arrive as one -
-     * and a counter advances one frame for half a second of waiting, which is what Adam saw.
+     * While a diagram build holds the thread the ticks coalesce, and a counter advances one frame for half a second;
+     * the frame must move by roughly the time that passed.
      *
-     * The frame must therefore come back having moved by roughly the time that passed, not by one.
-     *
-     * MUTATION: `frame = (frame + 1) % ...` in the timer passes every other test in this class and
-     * fails this one - which is the gap that let OB-129 ship, since `frameAt` was correct all along
-     * and nothing asserted the timer used it.
+     * MUTATION: `frame = (frame + 1) % ...` in the timer passes every other test here and fails this one.
      */
     @Test(timeOut = 30000)
     public void testABlockedEventThreadDoesNotFreezeTheSand() throws Exception
@@ -630,30 +509,19 @@ public class testTheWaitMarkIsAnHourglass
     }
 
     /**
-     * The drain is drawn UPRIGHT in every cycle, not only the first (2026-08-29).
+     * The drain is drawn UPRIGHT in every cycle, not only the first.
      *
-     * Adam, 2026-08-29: "the hourglass flows backwards after the flip." The fix in the tree today
-     * never rotates the drain at all - only the turn does - so a mid-drain frame in the second cycle
-     * has to render EXACTLY like the same point in the first, not merely fall in the same direction.
+     * A mid-drain frame in the second cycle must render exactly like the same point in the first.  Pixels are
+     * compared because a 180-degree rotation flips top and bottom AND reverses the fall, so "sand ends at the
+     * bottom" holds either way.
      *
-     * This replaces what was here before this review: a check that shot frames deep into the
-     * second cycle and asked whether sand still fell downward. That is not the property that
-     * distinguishes a correct drain from a rotated one - a 180-degree rotation flips top and bottom
-     * AND reverses the fall, so the two inversions cancel and "sand ends up at the bottom" stays true
-     * either way. Comparing the actual pixels does not have that blind spot: a mid-drain frame that is
-     * rotated at all lands its ink on different pixels than the unrotated one, regardless of which way
-     * the rotation goes.
-     *
-     * MUTATION: reintroducing a `turns`-dependent rotation into the drain branch - so the second
-     * cycle's drain turns with the glass instead of staying upright - fails this: frame 25 of cycle two
-     * would be a rotated copy of frame 25 of cycle one, not an identical one, and far more than
+     * MUTATION: reintroducing a `turns`-dependent rotation into the drain branch fails this: far more than
      * antialiasing's worth of pixels would differ.
      */
     @Test
     public void testItRunsDownwardsAfterTheFlipToo() throws Exception
     {
-        // Mid-drain, past the antialiased edges of "just started" or "just finished" - the same frame
-        // measured by sand mass to confirm the two cycles agree.
+        // Mid-drain, past the antialiased edges of "just started" or "just finished".
         int midDrain = 25;
 
         BufferedImage firstCycle = shoot(midDrain);
@@ -679,25 +547,11 @@ public class testTheWaitMarkIsAnHourglass
     /**
      * The turn is seamless: the frame after it looks like the frame before it.
      *
-     * This is what the class actually claims - "an emptied hourglass turned through half a circle is
-     * pixel for pixel a full one" - and it is a statement about the two ENDPOINTS, not about every
-     * frame. Mid-fall the sand is a cone in the lower bulb and a funnel in the upper one, which are
-     * not each other rotated, so a whole-cycle comparison would be asking for something the drawing
-     * has never promised.
+     * A statement about the two ENDPOINTS only (mid-fall the cone and the funnel are not each other rotated); it
+     * guards the TURN's own arithmetic reaching a full half-turn by its last frame.
      *
-     * The seam is where the bug showed. Before the fix the drain after a turn began at drained = 0,
-     * which under the rotation reads as an EMPTY top - so the glass snapped from full-at-top back to
-     * empty-at-top the instant the turn finished, and then ran backwards.
-     *
-     * Since 2026-08-29 the drain no longer rotates at all, so "putting the rotation back into the
-     * drain" is not a live risk here any more - that mutation is caught by
-     * `testItRunsDownwardsAfterTheFlipToo` instead. What this test still guards, on the code as it
-     * stands, is the TURN's own arithmetic reaching a full half-turn by its last frame.
-     *
-     * MUTATION: dropping the `+ 1` from `(at - DRAIN_FRAMES + 1) / TURN_FRAMES` in the turn branch
-     * stops the rotation eleven twelfths of the way around instead of all the way - the last turn
-     * frame is then a full hourglass tilted just short of upside down, not a full hourglass rotated
-     * exactly to look empty-at-top, and the seam comparison fails by far more than antialiasing.
+     * MUTATION: dropping the `+ 1` from `(at - DRAIN_FRAMES + 1) / TURN_FRAMES` in the turn branch stops the
+     * rotation eleven twelfths of the way round, and the seam comparison fails by far more than antialiasing.
      */
     @Test
     public void testTheTurnIsSeamless() throws Exception
@@ -725,37 +579,21 @@ public class testTheWaitMarkIsAnHourglass
         }
     }
     /**
-     * The start-up notice is not a window, and that is the whole of OB-170 (2026-09-03).
+     * The start-up notice is not a window (OB-170).
      *
-     * Adam: **"2.8.1 works fine, the keyboard is focused on startup.  no message on 3.0.0."**  That
-     * made it a regression, and the start-up path had exactly one window in 3.0.0 that 2.8.1 does not
-     * have: a splash.
+     * Showing a top-level window spends Windows' one chance to put a window in the foreground, and the splash cost
+     * the main window its keyboard focus.  The notice goes on the main window; what must stay true is that nothing
+     * here can open a window, a fact about the source and about what `panel` returns.
      *
-     * **Windows gives a process one chance to put a window in the foreground when the user starts it,
-     * and showing a top-level window spends it.**  The splash spent it, so the main window arrived
-     * into the foreground of whatever launched us - which is what he reported four times: "the
-     * previous active application window retains focus".
-     *
-     * Six passes tried to make the splash cheap enough to keep: non-focusable, no auto-request-focus,
-     * closed early, closed late, owned by the frame.  All six were wrong, and his own experiment is
-     * what settled it - suppress the splash and the keyboard works.  So there is no splash: the notice
-     * goes on the main window, and the process shows one window, as 2.8.1 does.
-     *
-     * Tested as a property of the class rather than by showing anything: what must stay true is that
-     * nothing here can open a window, which is a fact about the source and about what `panel` returns.
-     *
-     * MUTATION this catches: giving `StartupSplash` a `show()` that opens a JWindow again.
+     * MUTATION: giving `StartupSplash` a `show()` that opens a JWindow again.
      */
     @Test(timeOut = 60000)
     public void testTheStartupNoticeIsNotAWindow() throws Exception
     {
         // NOTHING IN THE CLASS OPENS ANYTHING.
-        // The class itself is the claim: found by its declaration, comments kept as they always were.
         String source = SourceOf.fileDeclaring("public final class StartupSplash");
 
-        // What a window costs to OPEN, which is the thing that must not come back.  Written as the
-        // code that would do it rather than as the type names, because the class javadoc names the
-        // types on purpose - the history of OB-170 is written there and is worth keeping.
+        // What a window costs to OPEN, written as the code that would do it: the class javadoc names the types.
         for (String opens : new String[]{"new JWindow(", "new JDialog(", "setVisible(true)"})
         {
             assertFalse(source.contains(opens),
@@ -764,8 +602,7 @@ public class testTheWaitMarkIsAnHourglass
                 + "foreground, and the main window then arrives into somebody else's");
         }
 
-        // AND IT HAS NOWHERE TO KEEP ONE.  The splash held its window in a field; a class with no
-        // state cannot be holding a window between calls.
+        // AND IT HAS NOWHERE TO KEEP ONE: a class with no state cannot hold a window between calls.
         assertEquals(org.traincontrol.gui.widgets.StartupSplash.class.getDeclaredFields().length, 0,
             "StartupSplash has state again, which is what a window it can close later needs");
 
@@ -786,9 +623,6 @@ public class testTheWaitMarkIsAnHourglass
             + "a bare spinner - which says only \"wait\" - or words with nothing moving");
     }
 
-    /**
-     * Whether this component tree holds the given text AND a spinner.
-     */
     private boolean saysAndSpins(java.awt.Container where, String message)
     {
         boolean says = false;
