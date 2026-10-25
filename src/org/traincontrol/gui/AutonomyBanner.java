@@ -228,7 +228,9 @@ public class AutonomyBanner extends JPanel
 
         // The scroll pane lays its own viewport out, narrower or shorter as its scrollbars come and go, without asking
         // the deck; the strip follows the viewport's edges.
-        diagram.getViewport().addComponentListener(new java.awt.event.ComponentAdapter()
+        followedViewport = diagram.getViewport();
+
+        followingViewport = new java.awt.event.ComponentAdapter()
         {
             @Override
             public void componentResized(java.awt.event.ComponentEvent e)
@@ -241,7 +243,9 @@ public class AutonomyBanner extends JPanel
             {
                 deck.revalidate();
             }
-        });
+        };
+
+        followedViewport.addComponentListener(followingViewport);
 
         // A click on the strip stays on it.  Swing hands a click to the topmost component under the pointer that
         // listens for clicks, and without a listener of its own the strip's padding would pass it to a square below.
@@ -288,6 +292,19 @@ public class AutonomyBanner extends JPanel
 
         return deck;
     }
+
+    /** Stops following the diagram's viewport, for the editor to call when it drops this strip; the viewport outlives it. */
+    public void letGoOfTheDiagram()
+    {
+        if (followedViewport != null) followedViewport.removeComponentListener(followingViewport);
+
+        followedViewport = null;
+        followingViewport = null;
+    }
+
+    /** What floatOver listens to and with; both null before it and after letGoOfTheDiagram. */
+    private javax.swing.JViewport followedViewport;
+    private java.awt.event.ComponentListener followingViewport;
 
     /**
      * Hides the strip until the next notice; the timer is stopped with it, so nothing else changes.

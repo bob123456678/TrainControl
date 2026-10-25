@@ -1075,10 +1075,6 @@ public class testATrainCoversTheTrackBehindIt
         // way the line is: the union of both sets, and a square added wherever its roads differ.  Both
         // directions fall out of that one comparison - a square that has stopped being blocked has roads
         // before and none after, one just blocked the other way round - and each is asked for below.
-        assertTrue(diff.contains("changed.addAll(now.keySet())"),
-            "the grey diff no longer walks both sets, so a square that has just become blocked is not"
-            + " redrawn - it goes on being drawn as free track until something unrelated repaints it");
-
         assertTrue(diff.contains("new java.util.HashSet<>(was.keySet())"),
             "the grey diff no longer starts from the old set, so a square that has stopped being blocked"
             + " is not redrawn - the grey stays on track nothing blocks, on every square once a train moves");

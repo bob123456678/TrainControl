@@ -1444,7 +1444,7 @@ public class testDiagramLooksRight
 
             assertEquals(danish[2], english[2], "the editor window is wider in Danish than in English");
 
-            assertTrue(danish[3] > danish[1], "the popup is no wider than the box, so a long phrase cannot be read in full");
+            assertTrue(danish[3] > danish[1], "the opened popup's list is no wider than the box, so a long phrase cannot be read in full");
         }
         finally
         {
@@ -1455,7 +1455,7 @@ public class testDiagramLooksRight
 
     /**
      * Opens the autonomy editor in a language and returns the Station Labels box width, the Track Directions
-     * box width, the packed window width and the width the Track Directions popup takes.
+     * box width, the packed window width and the width the Track Directions popup's list shows at once opened.
      */
     private int[] editorWidths(LayoutDiagram page, java.util.Locale locale) throws Exception
     {
@@ -1489,7 +1489,25 @@ public class testDiagramLooksRight
                 widths[0] = panel.getCaptionChoice().getWidth();
                 widths[1] = panel.getShowDirections().getWidth();
                 widths[2] = editor[0].getWidth();
-                widths[3] = panel.getShowDirections().getSize().width;
+                javax.swing.JComboBox<String> directions = panel.getShowDirections();
+
+                // The list the user sees when the box is opened, as the popup laid it out
+                directions.showPopup();
+
+                try
+                {
+                    javax.swing.plaf.basic.BasicComboPopup popup =
+                        (javax.swing.plaf.basic.BasicComboPopup) directions.getAccessibleContext().getAccessibleChild(0);
+
+                    popup.validate();
+
+                    // The list's own width follows its widest phrase; what the user sees is the window it scrolls in
+                    widths[3] = popup.getList().getParent().getWidth();
+                }
+                finally
+                {
+                    directions.hidePopup();
+                }
             });
 
             return widths;

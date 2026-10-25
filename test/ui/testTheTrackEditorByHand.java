@@ -1183,6 +1183,84 @@ public class testTheTrackEditorByHand
     }
 
     /**
+     * Switching the editor between Track Diagram and Autonomy Setup in the sidebar a few times leaves no listener behind
+     * on the diagram's viewport.
+     *
+     * Each entry into autonomy mode floats a new strip over the diagram, which follows the viewport's size, and leaving
+     * must let go of it or the old strips stay alive and revalidate on every resize.
+     *
+     * MUTATION: drop the `autonomyBanner.letGoOfTheDiagram()` call in LayoutEditor.setAutonomyMode and the count grows
+     * with each round trip.
+     */
+    @Test
+    public void testSwitchingModesLeavesNoListenerOnTheDiagramsViewport() throws Exception
+    {
+        TrainControlUI.getPrefs().putBoolean(TrainControlUI.LAST_EDITOR_AUTONOMY_PREF, true);
+
+        try
+        {
+            assertTrue(Components.waitFor(() -> editButton().isEnabled(), 30000), "the Edit button never came back");
+
+            Components.press(editButton());
+
+            assertTrue(Components.waitFor(() -> editorOpen() != null && editorOpen().isAutonomyMode()
+                && editorOpen().getAutonomyPanel() != null, 30000), "the Edit button opened no autonomy editor");
+
+            Components.settle();
+
+            final LayoutEditor editor = editorOpen();
+
+            final int first = viewportListeners(editor);
+
+            assertTrue(first > 0, "precondition: the diagram's viewport was not found");
+
+            try (Answering answering = Answering.start(message -> Answering.press(I18n.t("ui.yes"))))
+            {
+                for (int round = 1; round <= 3; round++)
+                {
+                    Components.press(Components.withText(editor, I18n.t("layout.ui.sidebarTrack")));
+
+                    assertTrue(Components.waitFor(() -> !editor.isAutonomyMode(), 30000), "the Track Diagram tab did not switch");
+
+                    Components.settle();
+
+                    Components.press(Components.withText(editor, I18n.t("layout.ui.sidebarAutonomy")));
+
+                    assertTrue(Components.waitFor(() -> editor.isAutonomyMode() && editor.getAutonomyPanel() != null, 30000),
+                        "the Autonomy Setup tab did not switch");
+
+                    Components.settle();
+
+                    assertEquals(viewportListeners(editor), first, "after " + round + " round trips the diagram's viewport has"
+                        + " more listeners than on first entering Autonomy Setup");
+                }
+            }
+
+            Components.press(Components.withText(editor, I18n.t("ui.cancel")));
+
+            assertTrue(Components.waitFor(() -> !editor.isDisplayable(), 10000), "the autonomy editor did not close");
+        }
+        finally
+        {
+            TrainControlUI.getPrefs().putBoolean(TrainControlUI.LAST_EDITOR_AUTONOMY_PREF, false);
+        }
+    }
+
+    /** How many component listeners the viewport holding the diagram's squares has. */
+    private static int viewportListeners(final LayoutEditor editor)
+    {
+        return Components.onTheEventThread(() ->
+        {
+            LayoutLabel any = Components.find(editor, LayoutLabel.class, label -> true);
+
+            javax.swing.JViewport viewport = Components.find(editor, javax.swing.JViewport.class,
+                v -> any != null && SwingUtilities.isDescendingFrom(any, v));
+
+            return viewport == null ? 0 : viewport.getComponentListeners().length;
+        });
+    }
+
+    /**
      * The track editor's Text Labels box says whether the page's text is shown, after the autonomy editor has hidden it.
      *
      * The autonomy editor's unticked Text Labels box hides the page's text (FR-133) and closing it leaves it hidden, so
@@ -1235,6 +1313,8 @@ public class testTheTrackEditorByHand
         LayoutEditor editor = open();
 
         JCheckBox box = (JCheckBox) Components.withText(editor, I18n.t("layout.ui.textLabels"));
+
+        assertTrue(editor.getMarklinLayout().getEditHideText(), "the page shows its text, so the box has nothing to agree with");
 
         assertEquals(box.isSelected(), !editor.getMarklinLayout().getEditHideText(),
             "the Text Labels box is ticked while the page's text is hidden");

@@ -1309,6 +1309,8 @@ public class LayoutEditor extends PositionAwareJFrame
                 buildPalette();
             }
 
+            if (autonomyBanner != null) autonomyBanner.letGoOfTheDiagram();
+
             autonomyBanner = null;
 
             // The Addresses box back where the form had it
