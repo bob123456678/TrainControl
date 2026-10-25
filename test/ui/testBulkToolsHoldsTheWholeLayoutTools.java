@@ -19,21 +19,17 @@ import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * One-Way Run and Name Everything are on the autonomy editor's Bulk Tools menu, not in its column.
+ * One-Way Run and Name Everything are on the autonomy editor's Bulk Tools menu, not in its column (OB-217): "move 'one
+ * way run' and 'name everything' into the bulk tools menu, available only in the autonomy editor itself (not track
+ * diagram)."
  *
- * Adam, OB-217, 2026-09-13: *"move 'one way run' and 'name everything' into the bulk tools menu,
- * available only in the autonomy editor itself (not track diagram).  update 'path type' to use the blue
- * label style, and move it below 'why not moving' as it belongs.  Also, add a 'page settings' label
- * above 'exclude page'."*
+ * Both halves are asked of the real panel: the menu is built through `buildBulkMenuForTest`, which calls the same
+ * `bulkTools()` the right-click menu does, and the column is the panel's own component tree.  A move that added the
+ * items and left the buttons passes the first claim and fails the second; removing the buttons and forgetting the
+ * menu fails the first.
  *
- * **Both halves are asked of the real panel:** the menu is built through `buildBulkMenuForTest`, which
- * calls the same `bulkTools()` the right-click menu does, and the column is the panel's own component
- * tree.  A move that added the items and left the buttons would pass the first claim and fail the
- * second; one that removed the buttons and forgot the menu fails the first.
- *
- * **Not asserted: the track diagram's menus leave them out.**  That host serves the same panel with no
- * page, and building one needs the whole main window's diagram tab; `bulkTools` keys the two items on
- * `page != null` in one place, read with the code.
+ * Not asserted: the track diagram's menus leave them out.  That host serves the same panel with no page, and building
+ * one needs the whole main window's diagram tab; `bulkTools` keys the two items on `page != null` in one place.
  *
  * ON THE FROZEN RAILWAY, never `cs2_sample_layout` (OB-111).
  *
@@ -118,11 +114,7 @@ public class testBulkToolsHoldsTheWholeLayoutTools
         }
     }
 
-    /**
-     * The autonomy editor's Bulk Tools menu offers One-Way Run and Name Everything.
-     *
-     * @throws Exception from the event thread
-     */
+    /** The autonomy editor's Bulk Tools menu offers One-Way Run and Name Everything. */
     @Test
     public void testTheEditorsBulkToolsOffersBoth() throws Exception
     {
@@ -150,11 +142,7 @@ public class testBulkToolsHoldsTheWholeLayoutTools
             "the autonomy editor's Bulk Tools menu has no Name Everything: " + labels);
     }
 
-    /**
-     * And the column no longer carries them as buttons.
-     *
-     * @throws Exception from the event thread
-     */
+    /** And the column no longer carries them as buttons. */
     @Test
     public void testTheColumnNoLongerCarriesThem() throws Exception
     {
@@ -177,15 +165,11 @@ public class testBulkToolsHoldsTheWholeLayoutTools
     }
 
     /**
-     * An empty square's menu has Bulk Tools too (MT-474).
-     *
-     * Adam, 2026-09-23: *"when right clicking an empty square, show the bulk tools menu option."*  An empty square
-     * opens the station-label menu - Show Station Here - which had nothing else on it; a square of track has always
-     * ended with Bulk Tools.  Built through `buildTileMenu`, the door the right-click itself calls.
+     * An empty square's menu has Bulk Tools too (MT-474): "when right clicking an empty square, show the bulk tools
+     * menu option."  An empty square opens the station-label menu, built through `buildTileMenu`, the door the
+     * right-click itself calls.
      *
      * MUTATION: take `bulkTools()` back off `buildTextMenu` and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testAnEmptySquaresMenuHasBulkTools() throws Exception
