@@ -8,16 +8,8 @@ import org.traincontrol.util.I18n;
 /**
  * The "Return Locomotives Home" menu item.
  *
- * This class used to hold the whole home-locomotive editor - assigning and clearing a
- * single station's home, the "clear every home" bulk action, and the exclusion-conflict warning -
- * reached from three right-click menus. The editor moved to `AutonomyEditorPanel` (see
- * `homeChoices`, tested directly by `test/regression/testHomeAssignmentRules.java`), and every one
- * of `addStationItem`, `addClearAllItem`, `editHomeLocomotive`, `confirmExclusion`, `apply`,
- * `refuseWhileBusy` and `shortName` was left with no caller anywhere in `src/` or `test/` - verified
- * by grep, not assumed. Removed rather than left behind: a method with no caller is the half of a
- * removal that gets forgotten, and the next person to read this file would have had to work out
- * whether the by-name `setSelectedItem` fix and the `whyNotAHome` split in the deleted half were
- * still wanted. Only `addReturnHomeItem` survives, with its one caller in
+ * The editor for assigning and clearing homes lives in `AutonomyEditorPanel` (see `homeChoices`, tested by
+ * `test/regression/testHomeAssignmentRules.java`); only `addReturnHomeItem` is here, with its one caller in
  * `LayoutRightclickAutonomyMenu`.
  *
  * @author Adam
@@ -31,32 +23,23 @@ final class HomeLocomotiveMenu
     /**
      * Adds the item that sends every locomotive back where it belongs.
      *
-     * Shown always and grayed when there is nothing to do, so the feature stays discoverable and says
-     * why it is unavailable.  Only the cheap half of the question is asked here: whether a plan exists needs
-     * a search, which would stall the popup, and the real answer comes when it is clicked.  The setup's
-     * question is asked by the caller, once, from what Start's item already knows.
+     * Shown always and grayed when there is nothing to do, so the feature stays discoverable and says why it is
+     * unavailable.  Only the cheap half of the question is asked here: whether a plan exists needs a search, which
+     * would stall the popup, and the real answer comes when it is clicked.  The setup's question is asked by the
+     * caller, once, from what Start's item already knows.
      *
-     * **AND IT IS THE BUTTON'S ANSWER, NOT THE RAILWAY'S (OB-192, second round).**  This used to ask
-     * `Layout.triageReturnToHome` itself, and a popup menu is built on the event thread by definition:
-     * that call builds a `HomeStaging.snapshot`, which calls `Layout.getHomeStations`, `synchronized`
-     * on the `Layout`.  So right-clicking the diagram while anything held that monitor - a dispatch
-     * inside `configureAndLockPath`, or `AutoLocomotiveStatus.findPaths` inside `getPossiblePaths`
-     * with nothing running at all - froze the window instead of opening the menu.
+     * **IT IS THE BUTTON'S ANSWER, NOT THE RAILWAY'S (OB-192).**  A popup menu is built on the event thread, and
+     * `Layout.triageReturnToHome` builds a `HomeStaging.snapshot` that calls `Layout.getHomeStations`, `synchronized`
+     * on the `Layout`, so right-clicking the diagram while anything held that monitor froze the window.
+     * `refreshReturnHomeButton` is the one place that asks, off the event thread, and this reads the button it
+     * maintains so the two describe the railway one way.  Over a setup with errors they part on purpose, below: the
+     * item is grayed with the setup's sentence and the button stays live and explains on a click, as Start's does.
      *
-     * `refreshReturnHomeButton` is the one place that asks now, off the event thread, and this reads
-     * the button it maintains, so the two describe the railway one way.  Over a setup with errors they part
-     * on purpose, below: the item is grayed with the setup's sentence and the button stays live and explains
-     * on a click, as Start's item and button do.
+     * Autonomy being busy is asked HERE, after the setup: it costs no monitor (two flags and a ConcurrentHashMap) and
+     * can turn true between the last refresh and this menu opening.
      *
-     * Autonomy being busy is asked HERE, after the setup.  It costs no monitor - two flags and a
-     * ConcurrentHashMap - and it can turn true between the last refresh and this menu opening, so asking it
-     * makes the item strictly fresher than the button beside it.
-     *
-     * **AND A SETUP THAT CANNOT BE USED GRAYS IT, with the setup's own sentence** (Adam, 2026-09-24,
-     * *"Yes, go with your recommendation"*).  Return Home refuses to run over it, and
-     * this item is shown always and grayed where there is nothing it can do - so it says why here,
-     * as the right-click Start beside it does.  The buttons stay live and explain on a click, as
-     * Start's does.
+     * **A setup that cannot be used grays it, with the setup's own sentence**, as the right-click Start beside it does:
+     * Return Home refuses to run over it, and this item says why.
      *
      * @param menu
      * @param ui
