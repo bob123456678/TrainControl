@@ -27,9 +27,9 @@ import static regression.testTheImportDoorReadsAnOldFile.openTheWindow;
 import static regression.testTheImportDoorReadsAnOldFile.putTheFolderBack;
 
 /**
- * Autonomy > Manage > Delete asks which configuration, and is offered while none is loaded (OB-319; Adam, 2026-10-04:
- * *"There seems to be a bug with autonomy config management. If there is a setup cant be used, it cant be selected from
- * the list of configs, which prevents subsequent deletion."*).
+ * Autonomy > Manage > Delete asks which configuration, and is offered while none is loaded (OB-319; Adam: "There seems
+ * to be a bug with autonomy config management. If there is a setup cant be used, it cant be selected from the list of
+ * configs, which prevents subsequent deletion.").
  *
  * Delete acted on the configuration in use and was grayed until one was loaded; a configuration whose setup cannot be
  * used is refused at its load, so it never became the one in use and could not be deleted.  Here nothing is loaded - as
@@ -49,8 +49,6 @@ public class testDeleteAsksWhichConfiguration
      * chosen and no other (OB-319).
      *
      * MUTATION: gray Delete while nothing is loaded, or delete the configuration in use without asking, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testANotLoadedConfigurationCanBeChosenAndDeleted() throws Exception
