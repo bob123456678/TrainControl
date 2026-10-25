@@ -182,42 +182,7 @@ final class LayoutEditorReshape
 
         this.editor.snapshotLayout();
 
-        try
-        {
-            if (this.editor.lastHoveredY > -1)
-            {
-                // Worked out BEFORE the shift, from the dimensions as they stand: shifting down or
-                // right grows the page, so afterwards the numbers describe a diagram this map is not
-                // about.
-                java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
-                    org.traincontrol.automationui.TileGraph.TileKey> moving =
-                    setupShift(false, this.editor.lastHoveredY + 1, this.editor.layout.getSy() - 1, 0, -1);
-
-                this.editor.layout.shiftUp(this.editor.lastHoveredY);
-
-                // And applied after, so the graph is rebuilt from a diagram that has already moved.
-                //
-                // These four move every tile past one square and told the setup nothing at all, which
-                // is the same fault a dragged tile had - every station, name, facing and restriction
-                // left behind on coordinates the track had walked away from, and the next reconcile
-                // dropping them.  Worse here than for a drag: one menu click moves half the diagram.
-                org.traincontrol.automationui.AutonomySession autonomy = this.editor.parent.getAutonomySession();
-
-                if (autonomy != null)
-                {
-                    autonomy.moveTiles(moving);
-
-                    this.editor.rememberAutonomy(autonomy);
-                }
-
-                this.editor.refreshGrid();
-            }
-        }
-        catch (Exception e)
-        {
-            this.editor.parent.getModel().log(e.getMessage());
-            this.editor.parent.getModel().log(e);
-        }
+        shiftAndCarry(false, -1, line -> this.editor.layout.shiftUp(line));
     }
 
     void shiftDown()
@@ -238,43 +203,8 @@ final class LayoutEditorReshape
         if (!canShiftDown()) return;
 
         this.editor.snapshotLayout();
-        
-        try
-        {
-            if (this.editor.lastHoveredY > -1)
-            {
-                // Worked out BEFORE the shift, from the dimensions as they stand: shifting down or
-                // right grows the page, so afterwards the numbers describe a diagram this map is not
-                // about.
-                java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
-                    org.traincontrol.automationui.TileGraph.TileKey> moving =
-                    setupShift(false, this.editor.lastHoveredY, this.editor.layout.getSy() - 1, 0, 1);
 
-                this.editor.layout.shiftDown(this.editor.lastHoveredY);
-
-                // And applied after, so the graph is rebuilt from a diagram that has already moved.
-                //
-                // These four move every tile past one square and told the setup nothing at all, which
-                // is the same fault a dragged tile had - every station, name, facing and restriction
-                // left behind on coordinates the track had walked away from, and the next reconcile
-                // dropping them.  Worse here than for a drag: one menu click moves half the diagram.
-                org.traincontrol.automationui.AutonomySession autonomy = this.editor.parent.getAutonomySession();
-
-                if (autonomy != null)
-                {
-                    autonomy.moveTiles(moving);
-
-                    this.editor.rememberAutonomy(autonomy);
-                }
-
-                this.editor.refreshGrid();
-            }
-        }
-        catch (Exception e)
-        {
-            this.editor.parent.getModel().log(e.getMessage());
-            this.editor.parent.getModel().log(e);
-        }
+        shiftAndCarry(false, 1, line -> this.editor.layout.shiftDown(line));
     }
 
     void shiftLeft()
@@ -284,42 +214,7 @@ final class LayoutEditorReshape
 
         this.editor.snapshotLayout();
 
-        try
-        {
-            if (this.editor.lastHoveredX > -1)
-            {
-                // Worked out BEFORE the shift, from the dimensions as they stand: shifting down or
-                // right grows the page, so afterwards the numbers describe a diagram this map is not
-                // about.
-                java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
-                    org.traincontrol.automationui.TileGraph.TileKey> moving =
-                    setupShift(true, this.editor.lastHoveredX + 1, this.editor.layout.getSx() - 1, -1, 0);
-
-                this.editor.layout.shiftLeft(this.editor.lastHoveredX);
-
-                // And applied after, so the graph is rebuilt from a diagram that has already moved.
-                //
-                // These four move every tile past one square and told the setup nothing at all, which
-                // is the same fault a dragged tile had - every station, name, facing and restriction
-                // left behind on coordinates the track had walked away from, and the next reconcile
-                // dropping them.  Worse here than for a drag: one menu click moves half the diagram.
-                org.traincontrol.automationui.AutonomySession autonomy = this.editor.parent.getAutonomySession();
-
-                if (autonomy != null)
-                {
-                    autonomy.moveTiles(moving);
-
-                    this.editor.rememberAutonomy(autonomy);
-                }
-
-                this.editor.refreshGrid();
-            }
-        }
-        catch (Exception e)
-        {
-            this.editor.parent.getModel().log(e.getMessage());
-            this.editor.parent.getModel().log(e);
-        }
+        shiftAndCarry(true, -1, line -> this.editor.layout.shiftLeft(line));
     }
 
     void shiftRight()
@@ -341,25 +236,41 @@ final class LayoutEditorReshape
 
         this.editor.snapshotLayout();
 
+        shiftAndCarry(true, 1, line -> this.editor.layout.shiftRight(line));
+    }
+
+    /** One of the four LayoutDiagram shifts, given the hovered row or column. */
+    private interface Shift
+    {
+        void at(int line) throws java.io.IOException;
+    }
+
+    /**
+     * Shifts everything past the hovered row or column by one and carries the setup's keys with it, so every station,
+     * name, facing and restriction stays on its track.
+     *
+     * @param across true for columns, false for rows
+     * @param step -1 to shift up or left (the lines after the hovered one move), 1 for down or right (from it on)
+     */
+    private void shiftAndCarry(boolean across, int step, Shift shift)
+    {
         try
         {
-            if (this.editor.lastHoveredX > -1)
+            int hovered = across ? this.editor.lastHoveredX : this.editor.lastHoveredY;
+
+            if (hovered > -1)
             {
-                // Worked out BEFORE the shift, from the dimensions as they stand: shifting down or
-                // right grows the page, so afterwards the numbers describe a diagram this map is not
-                // about.
+                // Worked out BEFORE the shift: shifting down or right grows the page, so afterwards the dimensions
+                // describe a diagram this map is not about.
                 java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
                     org.traincontrol.automationui.TileGraph.TileKey> moving =
-                    setupShift(true, this.editor.lastHoveredX, this.editor.layout.getSx() - 1, 1, 0);
+                    setupShift(across, step < 0 ? hovered + 1 : hovered,
+                        (across ? this.editor.layout.getSx() : this.editor.layout.getSy()) - 1,
+                        across ? step : 0, across ? 0 : step);
 
-                this.editor.layout.shiftRight(this.editor.lastHoveredX);
+                shift.at(hovered);
 
                 // And applied after, so the graph is rebuilt from a diagram that has already moved.
-                //
-                // These four move every tile past one square and told the setup nothing at all, which
-                // is the same fault a dragged tile had - every station, name, facing and restriction
-                // left behind on coordinates the track had walked away from, and the next reconcile
-                // dropping them.  Worse here than for a drag: one menu click moves half the diagram.
                 org.traincontrol.automationui.AutonomySession autonomy = this.editor.parent.getAutonomySession();
 
                 if (autonomy != null)
