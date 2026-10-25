@@ -86,7 +86,8 @@ public final class RestoreAction
 
         final String[] said = new String[1];
 
-        final boolean[] wrote = new boolean[1];
+        // Whether anything was written, and whether all of it was
+        final boolean[] wrote = new boolean[2];
 
         BusyDialog.run(this.ui, I18n.t("ui.busyRestoring"), () ->
         {
@@ -114,6 +115,8 @@ public final class RestoreAction
                 archive.writeData();
 
                 said[0] = I18n.f("ui.infoRestoreComplete", chosen.getName(), kept.getName());
+
+                wrote[1] = true;
             }
             catch (IOException | RuntimeException e)
             {
@@ -125,7 +128,7 @@ public final class RestoreAction
         () ->
         {
             JOptionPane.showMessageDialog(this.ui, said[0], title,
-                wrote[0] ? JOptionPane.INFORMATION_MESSAGE : JOptionPane.ERROR_MESSAGE);
+                wrote[1] ? JOptionPane.INFORMATION_MESSAGE : JOptionPane.ERROR_MESSAGE);
 
             if (wrote[0]) closeWithoutSaving();
         });
