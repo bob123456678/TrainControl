@@ -30,15 +30,14 @@ import support.SourceOf;
 /**
  * The tail question is put on the diagram: the sensors are lit, and a click on one answers it (FR-100).
  *
- * Adam, 2026-09-24: *"when asking about the tail, instead of showing the list of points, highlight possible squares on
- * the diagram and ask the user to click one.  only show the list if there are options on another page."*  And: *"you
- * can probably piggyback off the highlight feature and s88 click events."*
+ * Adam: *"when asking about the tail, instead of showing the list of points, highlight possible squares on the diagram
+ * and ask the user to click one.  only show the list if there are options on another page."*  And: *"you can probably
+ * piggyback off the highlight feature and s88 click events."*
  *
  * On the frozen railway (OB-111): a five-unit train at Tunnel from the north has reached TunnelPre on the one rail and
  * 12,7 on the other, both on 1 - Main.  The question is asked owned by the main window, as a placement door asks it,
- * but off the event thread, so the test can click - a placement door asks on the event thread, which
- * `testAQuestionAskedOnTheEventThreadIsAnsweredByAClick` covers; and the click is TunnelPre's own tile on the
- * main diagram, through the listener every s88 tile has.
+ * but off the event thread so the test can click (`testAQuestionAskedOnTheEventThreadIsAnsweredByAClick` covers the
+ * event thread); the click is TunnelPre's own tile on the main diagram, through the listener every s88 tile has.
  *
  * MUTATION: ask with the list again, and the click answers nothing.
  *
@@ -258,13 +257,11 @@ public class testTheTailIsPickedOnTheDiagram
     /**
      * A double-click on a lit sensor answers the question and does not then flip the sensor.
      *
-     * The first click answers and takes the question down; the second arrived with nothing waiting, and the sensor's own
-     * click flipped it - announced as a real sensor change, which is what the question's taking the click exists to
-     * prevent, and which an armed route acts on.
+     * The first click answers and takes the question down; the second must not then reach the sensor's own click, which
+     * would flip it as a real sensor change, the thing the question's taking the click prevents and an armed route acts
+     * on.
      *
      * MUTATION: let the second click of a double-click reach the sensor, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testADoubleClickAnswersAndDoesNotFlipTheSensor() throws Exception
@@ -335,9 +332,9 @@ public class testTheTailIsPickedOnTheDiagram
      * The paste door reads every part of its landing before the question is asked.
      *
      * Since FR-100 the question waits on the diagram with the window live, and a second Control+V in that wait runs the
-     * paste door again and writes the same fields for its own train - so the first train's road, side and facing were
-     * read back from the second's.  Read before the question, they are this train's.  Asked of the source: the wait is a
-     * secondary loop on the event thread, which a test cannot hold open while it pastes.
+     * paste door again and writes the same fields for its own train, so the first train's road, side and facing must be
+     * read before the question.  Asked of the source: the wait is a secondary loop on the event thread, which a test
+     * cannot hold open while it pastes.
      *
      * MUTATION: read any of them after the question again, and this fails.
      *
@@ -397,8 +394,6 @@ public class testTheTailIsPickedOnTheDiagram
      * The other claims here ask off the event thread, which is the latch branch; every real door is on the event thread.
      *
      * MUTATION: leave the secondary loop without exiting it on the answer, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testAQuestionAskedOnTheEventThreadIsAnsweredByAClick() throws Exception
@@ -439,12 +434,11 @@ public class testTheTailIsPickedOnTheDiagram
     /**
      * With an editor open the question is the list, not the main window's diagram.
      *
-     * From the autonomy editor's Place door the question was put on the main window's diagram - lit on the editor's
-     * squares too, which do not take the click - with its small window at the top of a main window the editor covers.
+     * From the autonomy editor's Place door the question must not go on the main window's diagram: the editor's squares
+     * are lit too and do not take the click, and its small window would sit at the top of a main window the editor
+     * covers.
      *
      * MUTATION: put the question on the diagram with an editor open, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testWithAnEditorOpenTheQuestionIsTheList() throws Exception
@@ -516,16 +510,13 @@ public class testTheTailIsPickedOnTheDiagram
     /**
      * A tail question answered after the square has changed writes nothing onto whatever stands there by then.
      *
-     * Since FR-100 the question waits on the diagram with the window live - Start, the hand doors, another placement all
-     * still work - and the door that asked writes its answer when it comes back.  Answered after a run has brought another
-     * train onto the same copy, Cancel wrote the first train's (empty) road over the second train's driven one, on the
-     * running layout: the second train's tail then stopped at the switch, and a third could be routed into it.  Here the
-     * paste door asks for train A at Tunnel; while it waits, train B is put on the same copy with the road it drove in by,
-     * as a run's arrival puts it; then Cancel.
+     * Since FR-100 the question waits on the diagram with the window live - Start, the hand doors, another placement
+     * all still work - and the door that asked writes its answer when it comes back.  If a run has meanwhile brought
+     * another train onto the same copy, Cancel must not write the first train's (empty) road over the second train's
+     * driven one.  Here the paste door asks for train A at Tunnel; while it waits, train B is put on the same copy with
+     * the road it drove in by, as a run's arrival puts it; then Cancel.
      *
      * MUTATION: write the answer without asking whether the placement still stands, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testALateAnswerDoesNotWriteOverAnotherTrain() throws Exception
@@ -641,8 +632,6 @@ public class testTheTailIsPickedOnTheDiagram
      * source, because each needs a menu or a dialog to reach.
      *
      * MUTATION: write either door's answer without asking, and this fails naming it.
-     *
-     * @throws Exception from the files
      */
     @Test
     public void testEveryPlacementDoorAsksWhetherItStillStands() throws Exception
@@ -672,8 +661,6 @@ public class testTheTailIsPickedOnTheDiagram
      * source, as `testEveryPlacementDoorAsksWhetherItStillStands` asks them.
      *
      * MUTATION: take the save out of any door, and this fails naming it.
-     *
-     * @throws Exception from the files
      */
     @Test
     public void testEveryPlacementDoorSavesBeforeItAsks() throws Exception
@@ -701,13 +688,11 @@ public class testTheTailIsPickedOnTheDiagram
      * While the tail question waits, the setup on disk already has the train where it was put (OB-305).
      *
      * Every placement door writes the train, its facing and its side into the setup in memory, puts this question, and
-     * saved only once it was answered - and since FR-100 the question waits on the diagram for as long as the operator
-     * likes, with the window live.  A crash in that wait started the next session without the train where it stands.
-     * The paste door's question is left waiting, and the configuration's own file is read meanwhile.
+     * must save before it is answered: since FR-100 the question waits on the diagram for as long as the operator
+     * likes, and a crash in that wait would start the next session without the train where it stands.  The paste door's
+     * question is left waiting, and the configuration's own file is read meanwhile.
      *
      * MUTATION: save only after the answer again, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testThePlacementIsOnDiskWhileTheQuestionWaits() throws Exception
@@ -916,15 +901,12 @@ public class testTheTailIsPickedOnTheDiagram
 
     /**
      * Another configuration loaded in the wait, holding the same train on the same copy: the answer follows the train -
-     * into the configuration loaded now and onto the railway running (Adam, 2026-09-24: *"Follow the train."*).
+     * into the configuration loaded now and onto the railway running (Adam: *"Follow the train."*).
      *
-     * The other way dropped it, and the tail the operator had just given was then missing from the
-     * railway in front of him: the running copy held the train with no road, and the track beyond the switch, where he
-     * had said the tail lies, was free to route another train over.
+     * Otherwise the running copy would hold the train with no road, and the track beyond the switch, where the operator
+     * said the tail lies, would be free to route another train over.
      *
      * MUTATION: ask whether the configuration is the one the question was asked in, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testAnAnswerFollowsTheTrainIntoAnotherConfiguration() throws Exception
@@ -991,8 +973,6 @@ public class testTheTailIsPickedOnTheDiagram
      * railway's copy keeps no road, and the old setup is not saved over the new one's file.
      *
      * MUTATION: write where the session is not the window's any more, or save it, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testAnAnswerAfterTheSetupIsReplacedIsNotWritten() throws Exception
@@ -1047,8 +1027,6 @@ public class testTheTailIsPickedOnTheDiagram
      * The facing is written before the question, so an answer dropped in the wait does not take it with it.
      *
      * MUTATION: write the facing with the road, after the question, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testTheFacingIsWrittenBeforeTheQuestion() throws Exception
@@ -1096,8 +1074,6 @@ public class testTheTailIsPickedOnTheDiagram
      * A dropped ANSWER is logged, naming the train and the square; a Cancel of a question made stale is not.
      *
      * MUTATION: log every dropped reply, or none, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testOnlyADroppedAnswerIsLogged() throws Exception
@@ -1145,8 +1121,8 @@ public class testTheTailIsPickedOnTheDiagram
     private static final StringBuilder LOGGED = new StringBuilder();
 
     /**
-     * The model's logger, held here: java.util.logging keeps loggers only weakly, so a handler put on a logger
-     * nothing else holds yet can be dropped by a garbage collection before the model's class loads (found under JaCoCo).
+     * The model's logger, held here: java.util.logging keeps loggers only weakly, so a handler put on a logger nothing
+     * else holds yet can be dropped by a garbage collection before the model's class loads.
      */
     private static final java.util.logging.Logger MODEL_LOG = java.util.logging.Logger.getLogger(org.traincontrol.marklin.MarklinControlStation.class.getName());
 
@@ -1192,8 +1168,6 @@ public class testTheTailIsPickedOnTheDiagram
      * held before the question - read, as the pin above is, because each needs a menu or a dialog to reach.
      *
      * MUTATION: pass either door the railway it held before the question, and this fails naming it.
-     *
-     * @throws Exception from the files
      */
     @Test
     public void testEveryDoorAsksTheRailwayRunningAtTheAnswer() throws Exception
@@ -1215,14 +1189,12 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * The configuration renamed in the wait - the railway not rebuilt - keeps the answer: the same setup,
-     * under a new name.  Asked only by the configuration's name, the check dropped the answer from the railway and from
-     * the setup, and the log gave another configuration as the reason.
+     * The configuration renamed in the wait - the railway not rebuilt - keeps the answer: the same setup, under a new
+     * name.  Asked only by the configuration's name, the check would drop the answer from the railway and from the
+     * setup.
      *
      * MUTATION: ask for anything beyond the session - the configuration's name, the railway running - and this fails
      * (the answer follows the train).
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testARenameInTheWaitKeepsTheAnswer() throws Exception
@@ -1274,8 +1246,6 @@ public class testTheTailIsPickedOnTheDiagram
      * And that each writes only where the answer goes somewhere.
      *
      * MUTATION: undo any of the five at either door, and this fails naming it.
-     *
-     * @throws Exception from the files
      */
     @Test
     public void testTheOtherDoorsKeepTheLateAnswerRules() throws Exception
@@ -1362,22 +1332,20 @@ public class testTheTailIsPickedOnTheDiagram
 
     /**
      * A tail answer given after the placement changed is written where the train now stands, or not at all - driven by
-     * the gestures MT-576's steps make (Adam, 2026-09-25: automated tests supersede the MTs they answer).
+     * the gestures MT-576's steps make.
      *
      * His 75 407 DB, given a length of 5, pasted at Tunnel from the north with Control+X and Control+V through the
      * diagram's own key door, the question left waiting on the diagram.  (a) While it waits, a setting on another station
      * is changed from the diagram's right-click - which rebuilds the railway - and then TunnelPre is clicked: the new
-     * railway's Tunnel gets TunnelPre's road, made of its own rails.  The setting is put back.  (b) Pasted again; while it
-     * waits the train is taken off Tunnel with its right-click Remove, and TunnelPre is clicked: nothing is written behind
-     * Tunnel, and the log says the tail was not recorded because Tunnel changed while the question waited.
+     * railway's Tunnel gets TunnelPre's road, made of its own rails.  The setting is put back.  (b) Pasted again; while
+     * it waits the train is taken off Tunnel with its right-click Remove, and TunnelPre is clicked: nothing is written,
+     * and the log says Tunnel changed while the question waited.
      *
-     * `testAnAnswerAfterARebuildReachesTheRailway` and `testOnlyADroppedAnswerIsLogged` hold the same two rules with the
-     * wait's events made by the calls the gestures make; this makes them by the gestures.
+     * `testAnAnswerAfterARebuildReachesTheRailway` and `testOnlyADroppedAnswerIsLogged` hold the same two rules with
+     * the wait's events made by calls; this makes them by the gestures.
      *
      * MUTATION: write the answer to the copy the paste placed the train on, or write it after the train was taken off, and
      * this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheLateAnswersOfMT576ByTheirGestures() throws Exception
@@ -1512,15 +1480,13 @@ public class testTheTailIsPickedOnTheDiagram
     /**
      * An answer given after an editor was opened in the wait is not written into the setup, and the log says why.
      *
-     * The editor holds the setup as it was when it opened, and its Cancel puts that back - so a road written into the
-     * setup while it was open was taken back out by the Cancel, silently, and the rail the train lies on stopped being
-     * held.  Every main-window door that writes the setup refuses while an editor is open; this one's late answer did
-     * not ask.  His 75 407 DB, given a length of 5, pasted at Tunnel from the north with the question left waiting; the
-     * autonomy editor opened as Autonomy > Edit Autonomy opens it; TunnelPre clicked on the main window.
+     * The editor holds the setup as it was when it opened, and its Cancel puts that back, so a road written into the
+     * setup while it was open would be taken back out silently and the rail the train lies on stop being held.  Every
+     * main-window door that writes the setup refuses while an editor is open; this one's late answer must ask too.  His
+     * 75 407 DB, given a length of 5, pasted at Tunnel from the north with the question left waiting; the autonomy
+     * editor opened as Autonomy > Edit Autonomy opens it; TunnelPre clicked on the main window.
      *
      * MUTATION: write the late answer whatever opened in the wait, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testAnAnswerAfterAnEditorOpenedIsNotWritten() throws Exception
@@ -1913,14 +1879,12 @@ public class testTheTailIsPickedOnTheDiagram
     /**
      * An answer given after the running railway was rebuilt reaches the railway.
      *
-     * A rebuild in the wait - any setup change from the diagram, a page left out - builds new copies of every square and
-     * puts each train back on its new one.  The door asked the copy it had placed the train on, which the rebuild leaves
-     * as it was, so its check passed and the answer went to that copy and to the setup: the railway's own copy of Tunnel
-     * never got the road, and the train's tail stopped at the switch with another train routable into it.
+     * A rebuild in the wait - any setup change from the diagram, a page left out - builds new copies of every square
+     * and puts each train back on its new one.  The door must ask the running railway's copy, not the one it placed the
+     * train on: otherwise the answer goes to the old copy and the setup, the railway's own Tunnel never gets the road,
+     * and the train's tail stops at the switch with another train routable into it.
      *
      * MUTATION: ask the copy the door placed the train on rather than the running railway's, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testAnAnswerAfterARebuildReachesTheRailway() throws Exception
@@ -1971,8 +1935,6 @@ public class testTheTailIsPickedOnTheDiagram
      * road a run brings it back by: a late Cancel leaves that road (the road condition alone).
      *
      * MUTATION: drop the road from `placementStillStands`, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testALateAnswerLeavesTheRoadARunBroughtTheSameTrainBy() throws Exception
@@ -2009,8 +1971,6 @@ public class testTheTailIsPickedOnTheDiagram
      * the first train's road (the train condition alone).
      *
      * MUTATION: drop the train from `placementStillStands`, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testALateAnswerDoesNotGiveAnotherTrainItsRoad() throws Exception
@@ -2050,8 +2010,6 @@ public class testTheTailIsPickedOnTheDiagram
      * is not written for a train now recorded from the south (the side condition alone).
      *
      * MUTATION: drop the side from `placementStillStands`, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testALateAnswerIsNotWrittenForTheOtherSide() throws Exception
@@ -2077,15 +2035,13 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * The tail question offers Cancel and no "Not known", on the diagram and as the list (Adam, 2026-10-09, asked what
-     * tells them apart - a train just placed came out the same either way: "drop not known, keep cancel").
+     * The tail question offers Cancel and no "Not known", on the diagram and as the list (Adam: "drop not known, keep
+     * cancel").
      *
      * Asked for real, as a placement asks it: on the diagram, its buttons; with an editor open, which puts it as the list,
      * the list's.  Cancel is no answer in both, so a train keeps whatever road it had.
      *
      * MUTATION: put Not known back on either, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testTheQuestionOffersCancelAndNoNotKnown() throws Exception
