@@ -111,8 +111,6 @@ public class testRecentLayouts
      *
      * MUTATION: return from `layoutFolderIs` before it writes Recent Layouts, and the record keeps the order it was
      * given rather than the folders opened.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testARecentLayoutOpensAndTheOneLeftIsListed() throws Exception
@@ -136,12 +134,10 @@ public class testRecentLayouts
     }
 
     /**
-     * The layout open when TrainControl started is listed once another is opened, though it was never recorded: Adam
-     * opened B from cs2_sample_layout and the menu left cs2_sample_layout out (OB-378).
+     * The layout open when TrainControl started is listed once another is opened, though it was never recorded
+     * (OB-378).
      *
      * MUTATION: drop the layout being left from `layoutFolderIs`'s record, and Recent Layouts is empty after B opens.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheLayoutOpenAtStartIsListedOnceAnotherOpens() throws Exception
@@ -173,8 +169,6 @@ public class testRecentLayouts
      * Five are listed, most recent first, without the open layout; with none to list the submenu is grayed.
      *
      * MUTATION: drop the cut to `RECENT_LAYOUTS_SHOWN` in `refreshRecentLayouts`, and seven are listed.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testFiveAreListedMostRecentFirst() throws Exception
@@ -206,8 +200,6 @@ public class testRecentLayouts
      * A folder that has gone is said once, with its path, taken off the list, and the open layout stays.
      *
      * MUTATION: drop `forgetRecentLayout` from `openRecentLayout`, and the gone folder stays listed.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testAGoneFolderIsSaidOnceAndDropped() throws Exception
@@ -231,11 +223,10 @@ public class testRecentLayouts
     }
 
     /**
-     * While a route runs Recent Layouts is grayed with the run's reason, and a recent layout refuses as Open Layout does.
+     * While a route runs Recent Layouts is grayed with the run's reason, and a recent layout refuses as Open Layout
+     * does.
      *
      * MUTATION: take `refuseWhileARunHoldsTheSetup` out of `openRecentLayout`.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testARecentLayoutWaitsForARun() throws Exception
