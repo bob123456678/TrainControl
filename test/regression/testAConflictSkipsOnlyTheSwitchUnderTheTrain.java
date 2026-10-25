@@ -21,33 +21,19 @@ import org.traincontrol.marklin.MarklinRoute;
 /**
  * An auto-triggered route skips the switch under the train and runs the rest of itself.
  *
- * Adam, 2026-09-06 (MT-247): **"1. cancel should cancel everything.  OK should fire everything.  2.
- * if the route is auto triggered: popup, just a notification in the log.  don't run the conflicting
- * switch commands, but do run the power off and others."**  Asked what "conflicting" means, he was
- * clear: an accessory command whose switch sits on track a train currently occupies or has reserved.
- * Everything else in the route still runs.
+ * Adam (MT-247): "1. cancel should cancel everything.  OK should fire everything.  2. if the route is auto triggered:
+ * popup, just a notification in the log.  don't run the conflicting switch commands, but do run the power off and
+ * others."  Asked what "conflicting" means, he was clear: an accessory command whose switch sits on track a train
+ * currently occupies or has reserved.  Everything else in the route still runs.
  *
- * **What was wrong.**  `execRoute` read the ruling as being about the WHOLE accessory group.  It
- * asked `accessoryHeldByAutonomy` once before the loop - which returns the FIRST conflicting command
- * in the route and nothing about the others - and set `skipAccessories` for the entire run:
+ * `execRoute` read the ruling as being about the WHOLE accessory group: it asked `accessoryHeldByAutonomy` once before
+ * the loop, which returns the FIRST conflicting command, and set `skipAccessories = auto && conflict != null` for the
+ * entire run.  One turnout under a train dropped every other turnout in the route, and the per-command check
+ * `heldReason(rc)`, the right grain, could never run because the group skip `continue`d past it.
  *
- *     boolean skipAccessories = auto && conflict != null;
- *
- * So one turnout under a train dropped every other turnout in the route with it, and the ones it
- * dropped were on track nothing was standing on.  A four-turnout route fired by an s88 set none of
- * them because of one.  The per-command check that already existed - `heldReason(rc)`, asked
- * immediately before each command, which is the right grain - could never run at that door, because
- * the group skip `continue`d past it.
- *
- * The cost is not hypothetical: `heldReason`'s own comment records the same shape being found from
- * the other side, where an over-strict signal rule fired "and because accessories are skipped as a
- * group, it took the whole route's turnouts with it".
- *
- * **The rule Adam is protecting cuts the other way.**  "Refused whole" was argued for accessories on
- * the ground that setting three switches of five leaves the layout in a state nobody chose.  That is
- * an argument about a route being interrupted PART WAY, which still happens and still cannot be
- * helped.  It is not an argument for refusing a switch on clear track because a different switch is
- * busy.
+ * "Refused whole" was argued for accessories on the ground that setting three switches of five leaves the layout in a
+ * state nobody chose; that is an argument about a route interrupted PART WAY, not for refusing a switch on clear track
+ * because a different switch is busy.
  *
  * MUTATION: restoring `boolean skipAccessories = auto && conflict != null;` and the
  * `if (skipAccessories) continue;` at the top of the accessory branch fails
@@ -60,18 +46,14 @@ public class testAConflictSkipsOnlyTheSwitchUnderTheTrain
     private static MarklinControlStation model;
 
     /**
-     * How long the power is given to come back on after a `go()`.
-     *
-     * An acknowledgment rather than a railway event, so it is bounded - `waitForPowerState` says why
-     * at length.  Generous, because what this waits out is a busy machine.
+     * How long the power is given to come back on after a `go()`: an acknowledgment rather than a railway event, so it
+     * is bounded (`waitForPowerState` says why), and generous because what it waits out is a busy machine.
      */
     private static final long POWER_PATIENCE_MS = 15000;
 
     /**
-     * A THROWAWAY COPY OF THE LAYOUT, opened before the model is built (OB-111).
-     *
-     * `init` reads the layout preference and loads whatever it names, which on Adam's machine is his
-     * real railway.  This class builds its own two-point layout and has no business reading that one.
+     * A THROWAWAY COPY OF THE LAYOUT, opened before the model is built (OB-111): `init` loads the layout preference,
+     * which on Adam's machine is his real railway.
      */
     private static support.LayoutSandbox sandbox;
 
@@ -91,11 +73,8 @@ public class testAConflictSkipsOnlyTheSwitchUnderTheTrain
 
         model = support.TestStation.simulatedInDebug();
 
-        // So that a command comes back as an echo and the model's own power state follows it.
-        //
-        // Without this, `stop()` sends and nothing answers, so `getPowerState()` never changes and the
-        // stop assertion below is dead - it would report the power still on however well the route
-        // worked.  `testARouteDoesNotThrowSwitchesUnderATrain` sets up the same way and says why.
+        // So that a command comes back as an echo and the model's own power state follows it; without it `stop()` sends
+        // and nothing answers, so the stop assertion below is dead (`testARouteDoesNotThrowSwitchesUnderATrain` too).
         model.setNetworkCommState(false);
 
         MarklinControlStation.DEBUG_SIMULATE_PACKETS = true;
@@ -116,12 +95,9 @@ public class testAConflictSkipsOnlyTheSwitchUnderTheTrain
     /**
      * The defect: a switch on clear track was dropped because another switch was under a train.
      *
-     * **Both orders, in one test.**  The group skip is decided before the loop starts, so it drops
-     * the clear switch whether that command comes first or second - and a per-command rule has to get
-     * both right for the same reason.  Asserting only one order would leave a fix that merely moved
-     * the boundary looking green.
-     *
-     * @throws Exception on a failure to build the fixture
+     * Both orders in one test: the group skip is decided before the loop starts, so it drops the clear switch whether
+     * that command comes first or second, and asserting only one order would let a fix that merely moved the boundary
+     * look green.
      */
     @Test
     public void testTheClearSwitchIsStillThrown() throws Exception
@@ -142,12 +118,8 @@ public class testAConflictSkipsOnlyTheSwitchUnderTheTrain
     }
 
     /**
-     * The control: the switch that IS under the train is still refused.
-     *
-     * Without this the test above passes on a route that sets everything, which is the original
-     * defect back again and the one thing that must not happen.
-     *
-     * @throws Exception on a failure to build the fixture
+     * The control: the switch that IS under the train is still refused; without it the test above passes on a route
+     * that sets everything.
      */
     @Test
     public void testTheSwitchUnderTheTrainIsStillRefused() throws Exception
@@ -167,13 +139,9 @@ public class testAConflictSkipsOnlyTheSwitchUnderTheTrain
     }
 
     /**
-     * And the rest of the route runs, which is the half Adam names explicitly.
-     *
-     * **"do run the power off and others."**  The emergency stop is the command whose loss costs
-     * most, and the existing suite already pins that it survives a refusal - this asserts it in the
-     * same route as a refused switch AND a clear one, which is the shape a real safety route has.
-     *
-     * @throws Exception on a failure to build the fixture
+     * And the rest of the route runs: Adam's "do run the power off and others."  The emergency stop is the command
+     * whose loss costs most; this asserts it in the same route as a refused switch AND a clear one, the shape of a real
+     * safety route.
      */
     @Test
     public void testThePowerStillGoesOff() throws Exception
@@ -196,15 +164,8 @@ public class testAConflictSkipsOnlyTheSwitchUnderTheTrain
     }
 
     /**
-     * Locks a path, fires a three-command route at the automatic door, and reports what happened.
-     *
-     * The route is [held switch, clear switch, stop] or [clear switch, held switch, stop], which is
-     * the shape of a real safety route: some ironwork and a power cut.
-     *
-     * @param routeId a route id nothing else uses
-     * @param heldFirst whether the conflicting command comes before the clear one
-     * @return what the railway looked like once the route had run
-     * @throws Exception on a failure to build the fixture
+     * Locks a path, fires a three-command route at the automatic door, and reports what happened: [held switch, clear
+     * switch, stop] or [clear switch, held switch, stop], the shape of a real safety route.
      */
     private Outcome fire(int routeId, boolean heldFirst) throws Exception
     {
@@ -242,23 +203,12 @@ public class testAConflictSkipsOnlyTheSwitchUnderTheTrain
 
         model.go();
 
-        // WAITED FOR, NOT READ AT ONCE (2026-09-09).
-        //
-        // `go()` SENDS a command and returns; the power flag is written by the ECHO, which
-        // `receiveMessage` hands to `locMessageProcessor` - so it is set on another thread, some time
-        // after the call, and a read taken here has no happens-before with that write at all.  On an
-        // idle machine the echo always landed first and this line was a formality; in a battery it did
-        // not, and the class was green run alone and red in the suite.
-        //
-        // WHAT TURNS THE POWER OFF IS THIS CLASS, in the method before: a route carrying an emergency
-        // stop, restored by a `model.go()` in a `finally` which is asynchronous in exactly the same
-        // way.  So the state this precondition is about is established by this class and read before
-        // it has arrived - not left behind by anything else.  Every test class runs in its own JVM,
-        // and `init(simulate)` turns the power on, so no earlier class can be reaching this one.
-        //
-        // `waitForPowerState` is the railway's own wait for precisely this: it waits on the monitor
-        // `setPowerState` notifies, inside it, and it is BOUNDED because an acknowledgment of a
-        // command TrainControl itself just sent either comes back in milliseconds or is not coming.
+        // WAITED FOR, NOT READ AT ONCE: `go()` SENDS a command and returns; the power flag is written by the ECHO on
+        // another thread (`receiveMessage` hands it to `locMessageProcessor`), so a read taken here has no
+        // happens-before with that write.  On an idle machine the echo landed first; in a battery it did not.  This
+        // class established the state (a route carrying an emergency stop, restored by an asynchronous `model.go()` in
+        // a `finally`), and `waitForPowerState` is the railway's own wait for it, bounded because an acknowledgment of
+        // a command TrainControl itself just sent either comes back in milliseconds or is not coming.
         assertTrue(model.waitForPowerState(true, POWER_PATIENCE_MS),
             "precondition: the power has to be ON, or the route's stop has nothing to turn off");
 
@@ -280,9 +230,7 @@ public class testAConflictSkipsOnlyTheSwitchUnderTheTrain
             commands.add(heldFirst ? clearCommand : heldCommand);
             commands.add(RouteCommand.RouteCommandStop());
 
-            // FIRED AUTOMATICALLY, which is the door this rule is about: a sensor fires it and
-            // whatever it decides is what the railway does. Passing false here would switch the whole
-            // rule off and the assertions would run down a branch that cannot refuse anything.
+            // FIRED AUTOMATICALLY, which is the door this rule is about; passing false here would switch the rule off.
             new MarklinRoute(model, "CS grain " + routeId, routeId, commands, 0,
                 MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null).execRoute(true);
 
@@ -298,11 +246,9 @@ public class testAConflictSkipsOnlyTheSwitchUnderTheTrain
             outcome.heldWasSwitched = held.isSwitched();
             outcome.clearWasSwitched = clear.isSwitched();
 
-            // THE SAME WAIT, THE OTHER WAY ROUND.  The stop's echo is delivered on the same worker
-            // as the go's, so `settle`'s fixed 600ms is a guess about how long that thread takes to
-            // get to it - and a sample taken too early reports a route that DID cut the power as one
-            // that did not.  That is this class's own precondition flake, mirrored: bounded, so a
-            // route that really never cut the power still fails, only more slowly.
+            // THE SAME WAIT, THE OTHER WAY ROUND: the stop's echo is delivered on the same worker as the go's, so
+            // `settle`'s fixed 600ms is a guess, and a sample taken too early reports a route that DID cut the power as
+            // one that did not.  Bounded, so a route that really never cut the power still fails, only more slowly.
             try
             {
                 model.waitForPowerState(false, POWER_PATIENCE_MS);
@@ -331,11 +277,7 @@ public class testAConflictSkipsOnlyTheSwitchUnderTheTrain
         return outcome;
     }
 
-    /**
-     * Waits out the thread execRoute starts and does not join.
-     *
-     * @throws InterruptedException if the wait is interrupted
-     */
+    /** Waits out the thread execRoute starts and does not join. */
     private static void settle() throws InterruptedException
     {
         Thread.sleep(600);
