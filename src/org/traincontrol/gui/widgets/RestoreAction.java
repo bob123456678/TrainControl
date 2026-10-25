@@ -146,10 +146,6 @@ public final class RestoreAction
      * Where an archived layout goes: the open layout when it has the archived name, else a folder of that name beside
      * the data files, else, when that already holds a layout, a new one beside it.  Only the open layout is replaced,
      * and the backup taken first holds it.  The archive keeps the folder's name, not its place.
-     *
-     * @param name the layout's folder name in the archive
-     * @param open the open layout's folder, or null
-     * @return the folder whose `config` the archive's goes into
      */
     private static File layoutDestination(String name, String open)
     {
