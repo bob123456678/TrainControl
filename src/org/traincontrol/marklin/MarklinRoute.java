@@ -4,11 +4,9 @@ import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.Route;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.gui.LayoutLabel;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -17,6 +15,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.NodeExpression;
+import org.traincontrol.util.Util;
 
 /**
  * Simple route representation
@@ -1417,11 +1416,7 @@ public class MarklinRoute extends Route
     
     public JSONObject toJSON() throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException, Exception
     {		
-        JSONObject jsonObj = new JSONObject();
-        Field map = jsonObj.getClass().getDeclaredField("map");
-        map.setAccessible(true);
-        map.set(jsonObj, new LinkedHashMap<>());
-        map.setAccessible(false);
+        JSONObject jsonObj = Util.orderedJSON();
         
         jsonObj.put("name", this.getName());
         jsonObj.put("id", this.getId());

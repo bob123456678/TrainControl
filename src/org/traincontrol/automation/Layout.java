@@ -3,7 +3,6 @@ package org.traincontrol.automation;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.Accessory.accessorySetting;
 import org.traincontrol.base.Locomotive;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -28,6 +27,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.traincontrol.util.I18n;
+import org.traincontrol.util.Util;
 
 /**
  * Represent layout as a directed graph to support fully automated train operation
@@ -8608,13 +8608,7 @@ public class Layout
             timeTableJson.add(p.toJSON());
         }
         
-        // Change the map to a linkedhashmap so that ordering gets preserved
-        // https://stackoverflow.com/questions/4515676/keep-the-order-of-the-json-keys-during-json-conversion-to-csv
-        JSONObject jsonObj = new JSONObject();
-        Field map = jsonObj.getClass().getDeclaredField("map");
-        map.setAccessible(true);
-        map.set(jsonObj, new LinkedHashMap<>());
-        map.setAccessible(false);
+        JSONObject jsonObj = Util.orderedJSON();
 
         jsonObj.put("points", pointJson);
         jsonObj.put("edges", edgeJson);

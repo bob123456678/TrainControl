@@ -7,7 +7,6 @@ import static org.traincontrol.base.RouteCommand.commandType.TYPE_FUNCTION;
 import static org.traincontrol.base.RouteCommand.commandType.TYPE_FUNCTIONS_OFF;
 import static org.traincontrol.base.RouteCommand.commandType.TYPE_LOCOMOTIVE;
 import static org.traincontrol.base.RouteCommand.commandType.TYPE_STOP;
-import java.lang.reflect.Field;
 import java.util.LinkedHashMap;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -21,6 +20,7 @@ import static org.traincontrol.base.RouteCommand.commandType.TYPE_FEEDBACK;
 import static org.traincontrol.base.RouteCommand.commandType.TYPE_LOCOMOTIVE_DIRECTION;
 import static org.traincontrol.base.RouteCommand.commandType.TYPE_ROUTE;
 import org.traincontrol.util.I18n;
+import org.traincontrol.util.Util;
 
 /**
  * Individual route command
@@ -516,20 +516,11 @@ public class RouteCommand implements java.io.Serializable
     
     public JSONObject toJSON() throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException
     {		
-        JSONObject jsonObj = new JSONObject();
-        Field map = jsonObj.getClass().getDeclaredField("map");
-        map.setAccessible(true);
-        map.set(jsonObj, new LinkedHashMap<>());
-        map.setAccessible(false);
+        JSONObject jsonObj = Util.orderedJSON();
         
         jsonObj.put("type", this.getType().toString());
 
-        JSONObject configObj = new JSONObject();
-            
-        map = configObj.getClass().getDeclaredField("map");
-        map.setAccessible(true);
-        map.set(configObj, new LinkedHashMap<>());
-        map.setAccessible(false);
+        JSONObject configObj = Util.orderedJSON();
         
         for (Entry<String, String> e: this.getCommandConfig().entrySet())
         {

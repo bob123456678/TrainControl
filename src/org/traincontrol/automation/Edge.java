@@ -2,12 +2,10 @@ package org.traincontrol.automation;
 
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.Locomotive;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +16,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.util.I18n;
+import org.traincontrol.util.Util;
 
 /**
  * Graph edge - includes start and end points and how many claims are standing on it
@@ -814,11 +813,7 @@ public class Edge
      */
     public JSONObject toJSON() throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException
     {
-        JSONObject jsonObj = new JSONObject();
-        Field map = jsonObj.getClass().getDeclaredField("map");
-        map.setAccessible(true);
-        map.set(jsonObj, new LinkedHashMap<>());
-        map.setAccessible(false);
+        JSONObject jsonObj = Util.orderedJSON();
 
         List<JSONObject> lockEdgeList = new LinkedList<>();
         List<JSONObject> commandList = new LinkedList<>();
@@ -911,11 +906,7 @@ public class Edge
      */
     public JSONObject toSimpleJSON() throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException
     {
-        JSONObject jsonObj = new JSONObject();
-        Field map = jsonObj.getClass().getDeclaredField("map");
-        map.setAccessible(true);
-        map.set(jsonObj, new LinkedHashMap<>());
-        map.setAccessible(false);
+        JSONObject jsonObj = Util.orderedJSON();
 
         jsonObj.put("start", this.start.getName());
         jsonObj.put("end", this.end.getName());       

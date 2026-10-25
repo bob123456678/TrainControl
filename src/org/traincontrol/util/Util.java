@@ -10,11 +10,13 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.lang.reflect.Field;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.function.IntConsumer;
@@ -26,6 +28,22 @@ import org.traincontrol.marklin.file.CS2File;
  */
 public class Util
 {
+    /**
+     * An empty JSONObject that keeps its keys in insertion order (the library's own map is unordered).
+     * @return the object
+     * @throws NoSuchFieldException if the library no longer has a "map" field
+     * @throws IllegalAccessException if the field cannot be opened
+     */
+    public static JSONObject orderedJSON() throws NoSuchFieldException, IllegalAccessException
+    {
+        JSONObject jsonObj = new JSONObject();
+        Field map = jsonObj.getClass().getDeclaredField("map");
+        map.setAccessible(true);
+        map.set(jsonObj, new LinkedHashMap<>());
+        map.setAccessible(false);
+        return jsonObj;
+    }
+
     /**
      * Opens a URL in a browser
      * @param url

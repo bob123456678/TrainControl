@@ -1,17 +1,16 @@
 package org.traincontrol.automation;
 
 import org.traincontrol.base.Locomotive;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.traincontrol.util.I18n;
+import org.traincontrol.util.Util;
 
 /**
  * Represent stations/stops as graph points
@@ -1268,11 +1267,7 @@ public class Point
     public JSONObject toJSON(Locomotive standing) throws IllegalArgumentException, IllegalAccessException,
         NoSuchFieldException
     {		
-        JSONObject jsonObj = new JSONObject();
-        Field map = jsonObj.getClass().getDeclaredField("map");
-        map.setAccessible(true);
-        map.set(jsonObj, new LinkedHashMap<>());
-        map.setAccessible(false);
+        JSONObject jsonObj = Util.orderedJSON();
         
         jsonObj.put("name", this.getName());
         jsonObj.put("station", this.isDestination);
@@ -1376,12 +1371,7 @@ public class Point
         
         if (standing != null)
         {
-            JSONObject locObj = new JSONObject();
-            
-            map = locObj.getClass().getDeclaredField("map");
-            map.setAccessible(true);
-            map.set(locObj, new LinkedHashMap<>());
-            map.setAccessible(false);
+            JSONObject locObj = Util.orderedJSON();
             
             locObj.put("name", standing.getName());
             locObj.put("reversible", standing.isReversible());
