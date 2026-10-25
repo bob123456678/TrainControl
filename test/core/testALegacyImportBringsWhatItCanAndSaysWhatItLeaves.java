@@ -1084,8 +1084,6 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
      * which a second import meets, is nothing to say.
      *
      * MUTATION: skip either silently again, or name the train already there as another, and this fails.
-     *
-     * @throws Exception from the fixture
      */
     @Test
     public void testAnImportSaysWhatItLeftOnATakenSquare() throws Exception
@@ -1137,8 +1135,6 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
      * with the bar lifted, the same way is kept and counted.
      *
      * MUTATION: keep any recorded facing again, or keep one without counting it, and this fails.
-     *
-     * @throws Exception from the fixture
      */
     @Test
     public void testAnImportKeepsARecordedFacingOnlyWhereTrainsMayArrive() throws Exception
@@ -1211,8 +1207,6 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
      * and the homes the file named twice, each through its own sentence in the English bundle.
      *
      * MUTATION: leave any of the three out of the message, and this fails naming it.
-     *
-     * @throws Exception from the files
      */
     @Test
     public void testTheImportMessageNamesEverySkip() throws Exception
