@@ -455,6 +455,27 @@ pass below are back in 3.0.3; the four questions were taken at their conservativ
 Adam (2026-10-20): "Defer remaining optimization/comment trimming items to next steps under the plan."  3.0.3 stops
 at Phase 4, Phase 6, the comment trims and the Layout pilot; what follows is the queue for the next release.
 
+**Also in 3.0.3, on Adam's word of 2026-10-24** ("Make the doctrine.  We should also study builder behavior to identify
+redundant checks they make or questions they ask.  For DD-B9 and DD-B6, can we fix them? OK the retire the
+open-questions file after that.  For behaviour.md, add them to the plan but don't work it yet, since there may be new
+learnings.  Also, we should use US English.")
+- **A builder doctrine** in `CLAUDE.md`: how to build here (one rule written once, tests through what the user does,
+  lean briefs and runs), drawn from the lessons so far and from a study of the builders' own transcripts (redundant
+  checks, questions the repository already answers).
+- **DD-B9** (the editor's reachability walk re-applies the builder's four authored sets by hand) and **DD-B6** (the
+  control-station start-up copied into about 90 test files), fixed; DD-B6 after Phase 5 has merged, since both touch
+  the tests that name TrainControlUI's members.
+- **Retire `docs/reference/open-questions.md`** once those two are done: its Part 1 rulings checked against
+  behaviour.md, the Inbox count it carries dropped from `triagedb.py` and `testTheRecordsCountTheStore`, its two links
+  fixed.
+- **US English** everywhere: the English bundle, Readme.md, Automation.md and UI-standards.md now; comments and
+  AutomationAPI.md after the workers on those files merge; behaviour.md with its compaction below.
+
+**Not yet worked: behaviour.md** (239 KB, 2,884 lines; about 60k tokens to read whole).  Split by functional area into
+one file per area with `behaviour.md` (to be `behavior.md`) as a short index (area, section, main classes, main tests);
+compact each to the rule, its why and its id; update the ~90 citations in code and tests in the same commit; prove
+with a script that every OB/MT/FR id and every quote of Adam survives.  Held until the current work's learnings are in.
+
 **Code**
 - **Phase 5** (TrainControlUI Tier 3, the `SettledQuestion` base class), deferred on Adam's word of 2026-10-19.
 - **FR-138**, the API examples.
