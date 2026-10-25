@@ -372,10 +372,8 @@ public class testATrainCoversTheTrackBehindIt
 
         // AND IT IS THE SAME RULE THE WALK READS BACK (OB-182).
         //
-        // This used to pin `sideTowards` here, which names where the neighboring POINT lies. A
-        // reduced run turns corners, so on a curve that is not the side the track comes in by - and
-        // the operator doors were offering the other answer. Correcting the doors alone made the walk
-        // match nothing and block no track at all, so the two now share `entrySideOf`.
+        // The walk and the operator doors share `entrySideOf`, not `sideTowards`, which names where the neighboring
+        // POINT lies: a reduced run turns corners, so on a curve that is not the side the track comes in by.
         assertTrue(SourceOf.allCode().replaceAll("\\s+", " ").contains("String cameInBy = owner.entrySideOf(candidate, here);"),
             "the tail walk works out the arrival side its own way again, so it can disagree with what"
             + " the arrival wrote - and on a curve it will, which blocks nothing while looking correct");
@@ -1026,7 +1024,7 @@ public class testATrainCoversTheTrackBehindIt
      * Both directions matter and only one was reported: a square that has just become covered needs the
      * mark put on, and one that has stopped being covered needs it taken off.
      *
-     * **And BOTH MARKS go through this one comparison** (Adam, 2026-09-09: *"That plus the line, drawn
+     * **And BOTH MARKS go through this one comparison** (Adam: *"That plus the line, drawn
      * and refreshed carefully, should do the trick."*).  Since the gray wash came back beside the
      * orange line, a square changes what it draws when its road changes AND when it starts or stops
      * being blocked - and the two do not move together: starting autonomy changes every blocked square
@@ -1067,7 +1065,7 @@ public class testATrainCoversTheTrackBehindIt
             "the redraw repaints every square in either set rather than the ones that changed, which"
             + " is the whole-diagram repaint the targeted one exists to avoid (MT-334)");
 
-        // AND THE GRAY IS DIFFED IN THE SAME PASS, in both directions (2026-09-09), BY ROAD (OB-208).
+        // AND THE GRAY IS DIFFED IN THE SAME PASS, in both directions, BY ROAD (OB-208).
         //
         // It was a plain symmetric difference while the wash was over the whole square.  Since OB-208 the
         // gray is per road, like the line - a double curve on a covered edge fades only the arc the edge
