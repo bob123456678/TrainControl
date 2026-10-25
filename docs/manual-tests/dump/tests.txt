@@ -31995,3 +31995,116 @@ body:
 tail:
 | ---
 |
+
+[test MT-811]
+ordinal: 810
+anchor: mt-811
+date: 2026-10-24
+title: Covered and blocked track marks follow a standing train (Phase 5, SettledQuestion)
+disposition: needs test
+from: FR-136
+written: 2026-10-24
+reopened: no
+body:
+| <a id="mt-811"></a>
+| ### MT-811 - 2026-10-24 - Covered and blocked track marks follow a standing train (Phase 5, SettledQuestion)
+|
+| **Disposition:** needs test
+| **From:** FR-136
+|
+| **Written:** 2026-10-24
+|
+| **Steps**
+|
+| 1. Before you start, File > Backup TrainControl Data.  Open your railway's layout with autonomy loaded and the power off, and look at a page with a standing train.
+| 2. Note the orange line along the track the train covers, and the gray wash on track that is blocked.
+| 3. Right-click the train on the track diagram, move it to another station, and look again.
+| 4. Change that locomotive's train length in the autonomy settings, and look again.
+| 5. Unload autonomy (`Stop Using Autonomy`), then load it again.
+|
+| **Expected**
+|
+| - Step 2: the line and the wash are drawn as before.
+| - Step 3: the line and the wash follow the train to its new station within a moment.
+| - Step 4: the line grows or shrinks with the new length.
+| - Step 5: the marks go with the unload and come back with the load.
+|
+| *What this is:* FR-136 Phase 5.  The covered-track marks now settle through the shared `SettledQuestion` base class; nothing visible should change.
+|
+tail:
+| ---
+|
+
+[test MT-812]
+ordinal: 811
+anchor: mt-812
+date: 2026-10-24
+title: The Return Home button follows the trains (Phase 5, SettledQuestion)
+disposition: needs test
+from: FR-136
+written: 2026-10-24
+reopened: no
+body:
+| <a id="mt-812"></a>
+| ### MT-812 - 2026-10-24 - The Return Home button follows the trains (Phase 5, SettledQuestion)
+|
+| **Disposition:** needs test
+| **From:** FR-136
+|
+| **Written:** 2026-10-24
+|
+| **Steps**
+|
+| 1. Before you start, File > Backup TrainControl Data.  Open your railway's layout with autonomy loaded, every homed train standing at its home.
+| 2. Look at the Return Home button and hover over it to read its tooltip.
+| 3. Move one homed train away from its home (right-click it on the track diagram and place it at another station), then look and hover again.
+| 4. Right-click Return Home and choose `Place All Trains at Their Homes`, then look and hover again.
+|
+| **Expected**
+|
+| - Steps 2 to 4: the button is enabled or grayed as it was in 3.0.2 for the same trains, and its tooltip says why, as before.
+| - Step 3: the button and its tooltip change within a moment of the move, without anything else being clicked.
+| - Step 4: the train is back at its home in the setup, and the button and tooltip are as in step 2.
+|
+| *What this is:* FR-136 Phase 5.  The Return Home button's check now settles through the shared `SettledQuestion` base class; nothing visible should change.
+|
+tail:
+| ---
+|
+
+[test MT-813]
+ordinal: 812
+anchor: mt-813
+date: 2026-10-24
+title: Why Not Moving? in the autonomy editor (Phase 5, SettledQuestion)
+disposition: needs test
+from: FR-136
+written: 2026-10-24
+reopened: no
+body:
+| <a id="mt-813"></a>
+| ### MT-813 - 2026-10-24 - Why Not Moving? in the autonomy editor (Phase 5, SettledQuestion)
+|
+| **Disposition:** needs test
+| **From:** FR-136
+|
+| **Written:** 2026-10-24
+|
+| **Steps**
+|
+| 1. Before you start, File > Backup TrainControl Data.  Open your railway's layout, then Autonomy > Edit Autonomy on Page, and pick a page with a standing train.
+| 2. Right-click the train's square and choose `Why Not Moving?`.
+| 3. Change the editor's Path Type dropdown to another value.
+| 4. Close the editor with `Cancel` and answer Yes to "Are you sure you want to close the editor without saving changes?"
+|
+| **Expected**
+|
+| - Step 2: the panel first says it is working, then gives the answer and lists the routes as before.
+| - Step 3: the answer is worked out again for the new Path Type, again saying it is working first.
+| - Step 4: the editor closes and nothing is kept.
+|
+| *What this is:* FR-136 Phase 5.  The editor's Why Not Moving? answer now settles through the shared `SettledQuestion` base class; nothing visible should change.
+|
+tail:
+| ---
+|
