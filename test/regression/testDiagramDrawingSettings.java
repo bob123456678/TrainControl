@@ -6,38 +6,20 @@ import support.SourceOf;
 import org.traincontrol.gui.TrainControlUI;
 
 /**
- * FR-037: the one-way arrows on the ordinary diagram, and what decides whether they appear.
- *
- * Adam, 2026-08-27: "option to show RESTRICTION arrows in track diagram view mode - add this to the
- * layout preferences jmenu", then "move 'Grey Station Labels' into the Autonomy Preferences menu
- * subsection, group with the new one and with Show Inactive Labels, and add a divider above.  Make
- * sure that when autonomy isn't loaded, changing these settings doesn't blow anything up."
- *
- * **The visibility question is the one he asked for tests on, and it is the one worth having them.**
- * A one-way arrow is a statement about an autonomy SETUP. With autonomy switched off, or with no
- * configuration loaded, there is no setup - and drawing arrows anyway would describe restrictions that
- * are not in force on a railway somebody is driving by hand. The preference must therefore be the
- * LAST of several conditions rather than the only one.
+ * FR-037: the one-way arrows on the ordinary diagram, and what decides whether they appear. A one-way arrow is a
+ * statement about an autonomy SETUP: with autonomy switched off, or with no configuration loaded, drawing arrows would
+ * describe restrictions not in force on a railway somebody is driving by hand, so the preference must be the LAST of
+ * several conditions rather than the only one.
  *
  * @author Adam
  */
 public class testDiagramDrawingSettings
 {
     /**
-     * The arrows are ON by default, and the default is what is actually asked.
-     *
-     * Adam, 2026-08-28, having used it: "make this setting be on by default."  It shipped off, on the
-     * reasoning that a page of arrows over a railway nobody is configuring is what kept directions in
-     * the editor - but that was about ALL directions, and this draws only the restricted ones.
-     *
-     * **The stored value is removed first, and that is the whole point of this version.** The test
-     * before it simply called the accessor and asserted the answer, which read whatever value some
-     * earlier run had written into this machine's preferences - so when the default was changed from
-     * false to true the assertion went on passing, because a stored false was answering it. It was
-     * testing the developer's own settings, and on a clean install it would have said something else.
-     *
-     * The previous value is put back, because these are the real preferences of whoever is running the
-     * suite and a test has no business changing what their application does tomorrow.
+     * The arrows are ON by default, and the default is what is actually asked. The stored value is removed first: a
+     * test that only called the accessor read whatever an earlier run had written into this machine's preferences, so a
+     * stored false kept answering after the default changed to true. The previous value is put back, since these are
+     * the real preferences of whoever runs the suite.
      */
     @Test
     public void testTheArrowsAreOnByDefault()
@@ -63,10 +45,8 @@ public class testDiagramDrawingSettings
     }
 
     /**
-     * And the menu's tick starts in the same place the drawing does.
-     *
-     * Two reads of one default, in two files. A menu item that came up unticked while the arrows were
-     * drawn would be a window disagreeing with itself about a setting the user has not touched.
+     * And the menu's tick starts in the same place the drawing does: two reads of one default, in two files, and a menu
+     * item unticked while the arrows are drawn is a window disagreeing with itself.
      *
      * MUTATION: changing either default alone fails this.
      */
@@ -93,16 +73,11 @@ public class testDiagramDrawingSettings
     }
 
     /**
-     * Nothing draws arrows unless there is a setup to draw them from.
-     *
-     * Adam: "make sure that when autonomy isn't loaded, changing these settings doesn't blow anything
-     * up."  The preference decides whether the operator WANTS them; these four conditions decide
-     * whether there is anything to say. All of them are in `showStaticAutonomyLayer`, ahead of the
-     * annotation being built at all, and each one clears the layer before returning - so switching
-     * autonomy off does not leave the last drawing on screen.
-     *
-     * Read rather than run: reaching this needs a window, a control station and a railway, and what
-     * can silently break is a guard being removed, which is visible.
+     * Nothing draws arrows unless there is a setup to draw them from. The preference decides whether the operator WANTS
+     * them; these four conditions decide whether there is anything to say. All are in `showStaticAutonomyLayer`, ahead
+     * of the annotation being built, and each clears the layer before returning, so switching autonomy off does not
+     * leave the last drawing on screen. Read rather than run: reaching this needs a window, a control station and a
+     * railway, and what can silently break is a guard being removed.
      *
      * MUTATION: deleting either return, or the clear before either, fails this.
      */
@@ -129,9 +104,9 @@ public class testDiagramDrawingSettings
             "nothing checks that a configuration is LOADED - the graph exists whenever there is "
             + "track, so without this every sensor would be described before any setup was chosen");
 
-        // EACH RETURN CLEARS THE LAYER FIRST, which is what makes turning it off take effect.  The clearing came before
-        // both guards; since 2026-10-04 it is inside each one, so a redraw with something to draw keeps the marks that
-        // have not changed (speed) - and a guard that returns without it leaves every arrow and badge on screen.
+        // Each return clears the layer first, which makes turning it off take effect: a redraw with something to draw
+        // keeps the marks that have not changed (speed), and a guard that returns without the clear leaves every arrow
+        // and badge on screen.
         for (int guard : new int[] {offOrNoGraph, noConfiguration})
         {
             int returns = layer.indexOf("return;", guard);
@@ -145,11 +120,8 @@ public class testDiagramDrawingSettings
     }
 
     /**
-     * The three drawing settings are one group, under autonomy, with a divider above.
-     *
-     * Adam asked for the grouping, and it is checkable: Gray Station Labels used to be added to the
-     * LAYOUT menu, which is where the diagram itself is configured. The color of a station caption is
-     * not a fact about the diagram - it is a fact about what autonomy draws on one.
+     * The three drawing settings are one group, under autonomy, with a divider above: the color of a station caption is
+     * a fact about what autonomy draws, not about the diagram, so it does not belong in the LAYOUT menu.
      *
      * MUTATION: adding any of the three to layoutMenuItem again, or dropping the separator, fails this.
      */
@@ -185,12 +157,9 @@ public class testDiagramDrawingSettings
     }
 
     /**
-     * Turning the arrows on asks the overlay what it is showing, rather than assuming.
-     *
-     * This is the "does not blow anything up" case that actually has teeth. The action could have
-     * called the refresh with `true` - it looks harmless, and with a setup loaded it behaves
-     * identically. With no setup, or with the overlay switched off, it would ask the diagram to draw a
-     * layer the operator has turned off.
+     * Turning the arrows on asks the overlay what it is showing, rather than assuming: calling the refresh with `true`
+     * looks harmless and behaves identically with a setup loaded, but with no setup, or the overlay switched off, it
+     * would ask the diagram to draw a layer the operator turned off.
      *
      * MUTATION: passing `true` fails this.
      */
@@ -206,16 +175,11 @@ public class testDiagramDrawingSettings
     }
 
     /**
-     * The EDITOR's arrival chevrons are not touched by the viewer's setting (Adam, 2026-08-28).
-     *
-     * "Be careful not to disturb their behavior in the editor."  The editor governs its arrivals with
-     * its own four-way control - all, restrictions, none, arrivals - and one of those modes exists
-     * precisely to show EVERY side of EVERY station so the setting can be read. That mode is the
-     * reason `arrivalMarks` takes an `always` flag at all.
-     *
-     * So the editor must go on passing its own answer, and must never read this preference. The second
-     * assertion is the one that matters: coupling the two windows would be easy to do by accident and
-     * impossible to see afterwards.
+     * The EDITOR's arrival chevrons are not touched by the viewer's setting (*"Be careful not to disturb their behavior
+     * in the editor."*). The editor governs its arrivals with its own four-way control, one mode of which shows EVERY
+     * side of EVERY station so the setting can be read (the reason `arrivalMarks` takes an `always` flag). It must go
+     * on passing its own answer and never read this preference; coupling the two windows would be easy to do by
+     * accident and impossible to see afterwards.
      *
      * MUTATION: having the editor ask `diagramShowsRestrictionArrows` fails this.
      */
@@ -228,10 +192,9 @@ public class testDiagramDrawingSettings
 
         // The editor's code is not one file, so the claim asks the whole program: the accessor is named by its
         // declaration, the drawing's own read in TrainControlUI and the session's static annotation, and nothing else.
-        // A fourth place is either legitimate (count it here) or the editor reading the viewer's setting.
-        //
-        // AND PLACE BY PLACE (FR-136): a total of three holds when the session's read goes and the editor gains one
-        // in the same change, so each of the three is asked where it is.
+        // A fourth place is either legitimate (count it here) or the editor reading the viewer's setting. Place by
+        // place as well (FR-136): a total of three holds when the session's read goes and the editor gains one in the
+        // same change.
         String readers = "something else now reads the ordinary diagram's preference besides its accessor, the"
             + " window's drawing and the session's static annotation - if it is the autonomy editor, that is exactly"
             + " what Adam asked not to happen: the editor is where these are being decided, and it has its own control"
@@ -245,9 +208,8 @@ public class testDiagramDrawingSettings
                 "public TileAnnotation staticAnnotationFor(TileKey tile)"),
             java.util.Arrays.asList(1, 1, 1), readers);
 
-        // The METHOD NAME is not the coupling; the STORED PREFERENCE is. Reading
-        // DIAGRAM_RESTRICTION_ARROWS out of Preferences directly - skipping the accessor entirely -
-        // would couple the two windows exactly as before while leaving the check above satisfied.
+        // The METHOD NAME is not the coupling; the STORED PREFERENCE is: reading DIAGRAM_RESTRICTION_ARROWS out of
+        // Preferences directly would couple the two windows while leaving the check above satisfied.
         String keyNamed = "the stored preference key is now named somewhere beyond its declaration, the accessor, and"
             + " the menu's tick and write - if it is the autonomy editor reading it directly, bypassing "
             + "diagramShowsRestrictionArrows() rather than calling it, that is the coupling Adam asked to "
@@ -261,13 +223,7 @@ public class testDiagramDrawingSettings
             java.util.Arrays.asList(1, 1, 2), keyNamed);
     }
 
-    /**
-     * How many times a text is in the code of each of these declarations, found wherever the program keeps them.
-     *
-     * @param needle the text
-     * @param signatures the declarations, each named once in the program
-     * @return the count in each, in the order given
-     */
+    /** How many times a text is in the code of each of these declarations, found wherever the program keeps them. */
     private static java.util.List<Integer> countsIn(String needle, String... signatures)
     {
         java.util.List<Integer> counts = new java.util.ArrayList<>();
