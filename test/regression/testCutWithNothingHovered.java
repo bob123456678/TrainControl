@@ -14,27 +14,15 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * Cut or Copy while the pointer is not over a square must not arm a paste with nothing in it.
+ * Cut or Copy while the pointer is not over a square must not arm a paste with nothing in it.  The Control+V branch
+ * null-checks the hovered label; Control+X and Control+C did not, so `initCopy` discarded a group already on the
+ * clipboard and armed `toolFlag` with no component behind it, and the right-click Paste then reached `new
+ * LayoutDiagramComponent(null)` (shown as a dialog with no message, with an undo entry for an edit that never
+ * happened).
  *
- * **What went wrong.** The Control+V branch null-checks the hovered label; Control+X and Control+C did
- * not. `getLastHoveredLabel()` is null whenever the pointer is over the palette - the hover
- * coordinates go back to -1 every time the pointer leaves the grid, and `LayoutGrid.getValueAt`
- * answers null for a negative one - and `initCopy` then did three things: discarded a group already on
- * the clipboard, set the coordinates to -1, and armed `toolFlag` with no component behind it.
- *
- * Arming is what enables the right-click **Paste** item and what Control+V tests, so both then reached
- * `new LayoutDiagramComponent(null)`, which dereferences the original's type on its first line. Through
- * the menu that is caught and shown as a dialog with no message in it, and `executeTool` has already
- * taken a snapshot, so undo gains an entry for an edit that never happened.
- *
- * **The guard is narrower than the obvious one, and the two controls are what forced it there.** Two
- * other callers legitimately pass one half of this: the palette hands over a component with a label
- * whose coordinates are -1 on purpose - `placingFromPalette()` is built on that state - and a column
- * drag hands over a real grid label and NO component, because a column being dragged carries its blank
- * squares too. The first version of this fix refused on the component and broke the column drag;
- * `testLayoutEditorBulkEdits` said so. What no caller ever means is both at once.
- *
- * ON THE FROZEN RAILWAY, never `cs2_sample_layout` (OB-111).
+ * The guard is narrower than the obvious one, and the two controls forced it there: the palette hands over a component
+ * with a label whose coordinates are -1 on purpose, and a column drag hands over a real grid label and NO component.
+ * What no caller ever means is both at once.  On the frozen railway, never `cs2_sample_layout` (OB-111).
  *
  * MUTATION: remove `if (label == null && component == null) return;` from `initCopy` and both tests
  * fail; widen it back to the component alone and the blank-square claim does.
@@ -108,10 +96,8 @@ public class testCutWithNothingHovered
     }
 
     /**
-     * Cut with the pointer off the grid keeps the group that was already on the clipboard.
-     *
-     * The group and the single tile share one clipboard and both paste paths prefer the group, so a
-     * gesture that turns out to pick nothing must not be the thing that empties it.
+     * Cut with the pointer off the grid keeps the group already on the clipboard: both paste paths prefer the group, so
+     * a gesture that picks nothing must not empty it.
      */
     @Test
     public void testItDoesNotDiscardTheGroupOnTheClipboard() throws Exception
@@ -127,8 +113,8 @@ public class testCutWithNothingHovered
 
             editor.clearSelection();
 
-            // The gesture: Control+X with the pointer over the palette hands `initCopy` the null the
-            // key handler never checked for.
+            // The gesture: Control+X with the pointer over the palette hands `initCopy` the null the key handler never
+            // checked for.
             editor.initCopy(null, null, true);
 
             answer[1] = editor.hasGroupClipboard();
@@ -143,10 +129,8 @@ public class testCutWithNothingHovered
     }
 
     /**
-     * And it arms nothing, which is the half that reached the null dereference.
-     *
-     * The two claims are in this order inside one method deliberately: the editor is shared, and the
-     * control below is the only thing in the class that arms anything.
+     * And it arms nothing, the half that reached the null dereference; the claims share one editor and the control
+     * below is the only thing here that arms anything.
      */
     @Test
     public void testItArmsNothingToPaste() throws Exception
@@ -157,8 +141,7 @@ public class testCutWithNothingHovered
 
         gridField.setAccessible(true);
 
-        // The arming flag is disarmed between the three claims, because `initCopy` refusing does not
-        // CLEAR what is armed - so a claim made while something is already armed cannot fail.
+        // The arming flag is disarmed between the claims, because `initCopy` refusing does not CLEAR what is armed.
         final java.lang.reflect.Field toolField = LayoutEditor.class.getDeclaredField("toolFlag");
 
         toolField.setAccessible(true);
@@ -178,9 +161,8 @@ public class testCutWithNothingHovered
 
                 answer[0] = editor.hasToolFlag();
 
-                // THE CONTROL, and the shape the palette uses: a component handed over directly, with
-                // no label and therefore coordinates of -1.  A guard written against the coordinates
-                // would have failed here.
+                // THE CONTROL, the shape the palette uses: a component handed over directly, with no label and
+                // coordinates of -1.
                 toolField.set(editor, null);
 
                 int[] square = squareWithAComponent();
@@ -189,9 +171,8 @@ public class testCutWithNothingHovered
 
                 answer[1] = editor.hasToolFlag();
 
-                // AND THE OTHER CALLER THE NARROW GUARD IS FOR: a real grid label on a square with no
-                // track, which is what a column drag hands over for every blank square it carries.  A
-                // guard written against the component would have failed here.
+                // AND THE OTHER CALLER THE NARROW GUARD IS FOR: a real grid label on a square with no track, which a
+                // column drag hands over for every blank square.
                 toolField.set(editor, null);
 
                 int[] blank = blankSquare(grid);
@@ -221,9 +202,7 @@ public class testCutWithNothingHovered
             + "the first version of this fix broke the column drag (X8-B1)");
     }
 
-    /**
-     * A square of the fixture page that holds no track, which is what a column drag carries.
-     */
+    /** A square of the fixture page that holds no track, which is what a column drag carries. */
     private static int[] blankSquare(org.traincontrol.gui.LayoutGrid grid)
     {
         for (int x = 0; x < page.getSx(); x++)
@@ -241,9 +220,7 @@ public class testCutWithNothingHovered
         return null;
     }
 
-    /**
-     * A row of the fixture page that actually holds track, so the group copy has something in it.
-     */
+    /** A row of the fixture page that actually holds track, so the group copy has something in it. */
     private static int rowWithTrack()
     {
         for (int y = 0; y < page.getSy(); y++)
@@ -257,9 +234,7 @@ public class testCutWithNothingHovered
         throw new AssertionError("the fixture page holds no components at all");
     }
 
-    /**
-     * A square of the fixture page that holds a component.
-     */
+    /** A square of the fixture page that holds a component. */
     private static int[] squareWithAComponent()
     {
         for (int x = 0; x < page.getSx(); x++)
