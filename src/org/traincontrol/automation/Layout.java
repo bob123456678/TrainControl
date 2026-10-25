@@ -8641,6 +8641,25 @@ public class Layout
         return paused;
     }
 
+    /** A point's field written as a bare string or as an array of them, read as a list either way. */
+    private static List<String> oneOrMany(JSONObject point, String key)
+    {
+        List<String> values = new ArrayList<>();
+
+        JSONArray several = point.optJSONArray(key);
+
+        if (several != null)
+        {
+            for (int at = 0; at < several.length(); at++) values.add(several.getString(at));
+        }
+        else if (point.optString(key, null) != null)
+        {
+            values.add(point.getString(key));
+        }
+
+        return values;
+    }
+
     /**
      * Parses TrainControl's autonomous operation configuration file
      * @param config 
@@ -8985,42 +9004,13 @@ public class Layout
                 // The signals thrown to red while this platform is claimed: a bare string or an array, both read.
                 if (point.has("protectingSignal"))
                 {
-                    List<String> signals = new ArrayList<>();
-
-                    JSONArray several = point.optJSONArray("protectingSignal");
-
-                    if (several != null)
-                    {
-                        for (int at = 0; at < several.length(); at++)
-                        {
-                            signals.add(several.getString(at));
-                        }
-                    }
-                    else if (point.optString("protectingSignal", null) != null)
-                    {
-                        signals.add(point.getString("protectingSignal"));
-                    }
-
-                    layout.getPoint(point.getString("name")).setProtectingSignals(signals);
+                    layout.getPoint(point.getString("name")).setProtectingSignals(oneOrMany(point, "protectingSignal"));
                 }
 
                 // The entry guard (FR-096), read in the same two shapes.
                 if (point.has("entrySignal"))
                 {
-                    List<String> signals = new ArrayList<>();
-
-                    JSONArray several = point.optJSONArray("entrySignal");
-
-                    if (several != null)
-                    {
-                        for (int at = 0; at < several.length(); at++) signals.add(several.getString(at));
-                    }
-                    else if (point.optString("entrySignal", null) != null)
-                    {
-                        signals.add(point.getString("entrySignal"));
-                    }
-
-                    layout.getPoint(point.getString("name")).setEntrySignals(signals);
+                    layout.getPoint(point.getString("name")).setEntrySignals(oneOrMany(point, "entrySignal"));
                 }
 
                 // Where the tail is, which facing cannot answer once a train has turned; applied after the trains are
@@ -9040,23 +9030,7 @@ public class Layout
                 {
                     // Points whose occupancy makes this station unavailable to autonomy (FR-001), resolved after the
                     // loop; a name that matches nothing is logged and dropped rather than refusing the whole layout.
-                    List<String> blockers = new ArrayList<>();
-
-                    JSONArray named = point.optJSONArray("blockedBy");
-
-                    if (named != null)
-                    {
-                        for (int at = 0; at < named.length(); at++)
-                        {
-                            blockers.add(named.getString(at));
-                        }
-                    }
-                    else if (point.optString("blockedBy", null) != null)
-                    {
-                        blockers.add(point.getString("blockedBy"));
-                    }
-
-                    blockersByPoint.put(point.getString("name"), blockers);
+                    blockersByPoint.put(point.getString("name"), oneOrMany(point, "blockedBy"));
                 }
 
                 if (point.has("home"))
