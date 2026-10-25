@@ -26,12 +26,11 @@ import org.traincontrol.automationui.TilePorts.Route;
 import org.traincontrol.automationui.TilePorts.Side;
 
 /**
- * The track diagram and the autonomy editor draw the arrows trains may follow, and take the clicks that set
- * them.
+ * The track diagram and the autonomy editor draw the arrows trains may follow, and take the clicks that set them.
  *
- * One of the topic classes split from the former `testAutonomyDiagramSession` (FR-136 Phase 3): the whole
- * chain, from a decision somebody made to the graph a train could run on.  The session and layout folder
- * every claim starts from are built by `AutonomySessionFixture`.
+ * One of the topic classes split from the former `testAutonomyDiagramSession` (FR-136): the whole chain, from a
+ * decision somebody made to the graph a train could run on.  The session and layout folder every claim starts from are
+ * built by `AutonomySessionFixture`.
  *
  * @author Adam
  */
@@ -39,9 +38,9 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
 {
 
     /**
-     * A page left out grays the path type with the tools that test by it (Adam, FR-105: "when a page is excluded in the
-     * autonomy editor, also disable/grey out the auto/manual radio buttons"): Test a Path and Why not Moving? were grayed,
-     * and the pair choosing which paths they test stayed live, choosing nothing.
+     * A page left out grays the path type with the tools that test by it (FR-105: "when a page is excluded in the
+     * autonomy editor, also disable/grey out the auto/manual radio buttons"): Test a Path and Why not Moving? were
+     * grayed, and the pair choosing which paths they test stayed live, choosing nothing.
      *
      * MUTATION: leave the path type live on a page left out, and this fails.
      *
@@ -72,7 +71,6 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
                 + " the tools it chooses for, greyed (FR-105)");
         }
 
-        // AND LIVE AGAIN WITH THE PAGE BACK IN
         session.setPageExcluded("main", false);
 
         javax.swing.SwingUtilities.invokeAndWait(() -> panel[0].refresh());
@@ -84,9 +82,9 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * A tooltip short enough for one line is not padded to the width a long one wraps at (Adam, MT-613: "the 'edit
-     * autonomy on page' tooltip has a large whitespace on the right side of the message"): every tooltip was set 320
-     * pixels wide, so a short reason sat at the left of a box twice its length.  A long one still wraps.
+     * A tooltip short enough for one line is not padded to the width a long one wraps at (MT-613: "the 'edit autonomy
+     * on page' tooltip has a large whitespace on the right side of the message"): every tooltip was set 320 pixels
+     * wide.  A long one still wraps.
      *
      * MUTATION: set every tooltip at the wrapping width, and this fails.
      *
@@ -113,19 +111,16 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
 
         String longer = String.valueOf(wrapped.invoke(null, sentence + "  " + sentence + "  " + sentence));
 
-        // The width the editor wraps at is its own, asked rather than restated
         int width = (Integer) privateConstant(org.traincontrol.gui.AutonomyEditorPanel.class, "TOOLTIP_WIDTH");
 
         assertTrue(longer.contains("width: " + width + "px"), "a tooltip three sentences long no longer wraps: " + longer);
     }
 
     /**
-     * A one-way run of plain track is drawn once on the track diagram, at its first square, as the editor draws it (OB-321;
-     * Adam, 2026-10-04: *"after import, redundant arrows can shown in the viewer, on a single straight segment with
-     * multiple straight tracks that only allows travel in one direction. The editor correctly collapses then"*).
-     *
-     * A run's direction is stored on every square of it, and the diagram drew each square's: a red arrow on every square of
-     * every one-way straight.
+     * A one-way run of plain track is drawn once on the track diagram, at its first square, as the editor draws it
+     * (OB-321: "redundant arrows can shown in the viewer, on a single straight segment with multiple straight tracks
+     * that only allows travel in one direction. The editor correctly collapses then").  A run's direction is stored on
+     * every square of it, and the diagram drew each square's.
      *
      * MUTATION: draw every square's arrows again, or none of the run's, and this fails.
      *
@@ -158,15 +153,14 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * A run whose squares say different things is brought to one, its narrowest - what a train finds - and every square
-     * of it stores that, as its first square draws it (OB-361; Adam, on OB-321: *"Any disagreement should be corrected so
-     * that the viewer displays the source of truth, and the editor flags issues, rather than surprising the user."*).  A
-     * train passes every square of a run, so one square closed in a run open one way closes the run: every square is
-     * stored closed, the first draws it closed and the rest draw nothing, on the track diagram as in the editor, and the
-     * log says it once.
+     * A run whose squares say different things is brought to one, its narrowest (what a train finds), and every square
+     * of it stores that, as its first square draws it (OB-361: "Any disagreement should be corrected so that the viewer
+     * displays the source of truth, and the editor flags issues, rather than surprising the user.").  A train passes
+     * every square of a run, so one square closed in a run open one way closes the run: the first draws it closed and
+     * the rest draw nothing, on the track diagram as in the editor, and the log says it once.
      *
-     * MUTATION: leave a run's squares as they were stored, draw a square that follows its run, or draw the first square's
-     * own direction, and this fails.
+     * MUTATION: leave a run's squares as they were stored, draw a square that follows its run, or draw the first
+     * square's own direction, and this fails.
      *
      * @throws Exception from the session or the panel
      */
@@ -189,14 +183,12 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
         // ONE SQUARE CLOSED ALONE, as no door of the editor does now but a file or an older version can
         session.setDirection(odd, new RouteId(0, 0), Direction.NONE);
 
-        // STORED: every square of the run closed, as a train finds it
         for (TileKey square : run)
         {
             assertEquals(session.getStore().getTileDirection(square, new RouteId(0, 0)), Direction.NONE, square + " is"
                 + " stored otherwise than closed, in a run a closed square closes (OB-361)");
         }
 
-        // SAID ONCE, under the run's first square
         assertEquals(session.getSquaresBroughtToTheirArrows().keySet(), java.util.Collections.singleton(leader), "the run"
             + " brought to one direction is not said once, under its first square: "
             + session.getSquaresBroughtToTheirArrows());
@@ -206,7 +198,6 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
 
         assertTrue(session.takeSquaresBroughtToTheirArrows().isEmpty(), "the run was said again by the next rebuild");
 
-        // DRAWN: the first square closed, the rest nothing, as in the editor
         java.util.Map<TileKey, TileAnnotation> drawn = session.staticAnnotations(run, true, false);
 
         assertTrue(drawn.get(leader) != null && drawn.get(leader).getMarks().size() == 1
@@ -277,11 +268,10 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * Track laid on a blank square beside a one-way run takes the run's direction and is saved with the edit, so the next
-     * open has nothing to correct.  The store held nothing about the blank square, so the edit's answer said
-     * nothing was forgotten, the editor did not save, and the next open logged the run as a setup that "did not say the
-     * same on every square" - about track just laid.  The drop is done as the track diagram editor does it: the tile
-     * placed, then `forgetTiles` on its square, and a save when that says something changed.
+     * Track laid on a blank square beside a one-way run takes the run's direction and is saved with the edit, so the
+     * next open has nothing to correct.  The store held nothing about the blank square, so the edit's answer said
+     * nothing was forgotten and the editor did not save.  The drop is done as the track diagram editor does it: the
+     * tile placed, then `forgetTiles` on its square, and a save when that says something changed.
      *
      * MUTATION: answer only what the store forgot again, and this fails.
      *
@@ -312,7 +302,6 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
 
         session.save();
 
-        // A STRAIGHT DROPPED ON THE BLANK SQUARE AT THE END OF THE RUN, as the editor drops one
         TileKey laid = new TileKey("main", 5, 1);
 
         page.addComponent(componentType.STRAIGHT, 5, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
@@ -334,9 +323,9 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * A run whose squares point opposite ways - no train can pass it - is left as it is and is a warning, about the run,
-     * naming its squares (OB-361); a click on its arrow sets one way for all of it, and the warning goes.  Closing it in
-     * the correction would hide which way was meant behind a setting that looks chosen.
+     * A run whose squares point opposite ways, so no train can pass it, is left as it is and is a warning about the
+     * run, naming its squares (OB-361); a click on its arrow sets one way for all of it, and the warning goes.  Closing
+     * it in the correction would hide which way was meant behind a setting that looks chosen.
      *
      * MUTATION: say nothing, or close the run, or name another square, and this fails.
      *
@@ -378,7 +367,6 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
         assertEquals(new LinkedHashSet<>(said.getRelated()), new LinkedHashSet<>(run), "the warning does not name the"
             + " run's squares, so a click on it cannot outline the run");
 
-        // THE ARROW CLICKED: one way for all of it
         session.setRunDirection(leader, new RouteId(0, 0), Direction.TOWARD_A);
 
         for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
@@ -389,10 +377,9 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * The track diagram draws the restrictions, the directions trains may run, or both - each its own choice (FR-110; Adam,
-     * 2026-10-04: *"we also need to add an option to view the green arrows in the viewer, not just the red, similar to
-     * the editor."*, and on MT-675: *"allow the user to choose: restrictions, allowances, or both.  don't make them
-     * mutually exclusive."*).  The station ingress arrows follow the restrictions (2026-08-28).
+     * The track diagram draws the restrictions, the directions trains may run, or both, each its own choice (FR-110,
+     * MT-675: "allow the user to choose: restrictions, allowances, or both.  don't make them mutually exclusive.").
+     * The station ingress arrows follow the restrictions.
      *
      * MUTATION: draw the green without its option, drop it with it, draw the red without its option, or draw nothing
      * with the green alone, and this fails.
@@ -427,17 +414,14 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * The green arrows are a light green with a dark green edge, on the track diagram and in the autonomy editor alike
-     * (Adam, 2026-10-04, after MT-675's *"green arrows are hard to see due to low contrast"* made them the signals' green:
-     * *"The green I asked for on the track diagram is too bright/green"*, and of six drawn on the real tiles: *"F looks
-     * best.  let's see about using that in the editor too."*).
+     * The green arrows are a light green with a dark green edge, on the track diagram and in the autonomy editor alike,
+     * not the signals' green (MT-675: "green arrows are hard to see due to low contrast").
      *
      * MUTATION: drop the edge, or paint either surface another green, and this fails.
      */
     @Test
     public void testTheGreenArrowsAreLightGreenWithADarkEdge() throws Exception
     {
-        // The two greens are the annotation's own, asked rather than restated
         Color lightGreen = (Color) privateConstant(TileAnnotation.class, "ONE_WAY");
         Color darkGreen = (Color) privateConstant(TileAnnotation.class, "ONE_WAY_EDGE");
 
@@ -464,17 +448,16 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
 
     /**
      * Every arrow sits on its rail, the green and the red alike: a Y's toe arrow is as wide each side of the toe, and a
-     * straight's arrows as tall above as below - the lit pixels of a 30-pixel tile from 9 to 20, about 15.0, where the
-     * permanent Y's toe and straight track are drawn.  A red arrow's outline, rounded to the pixel grid, hung half a pixel
-     * right and down, from 9 to 21; the green one's new edge would have too (Adam, 2026-10-04: *"your down arrow on the Y
-     * may still be slightly off center"*).
+     * straight's arrows as tall above as below (the lit pixels of a 30-pixel tile from 9 to 20, about 15.0).  A red
+     * arrow's outline, rounded to the pixel grid, hung half a pixel right and down, from 9 to 21; the green one's edge
+     * would have too ("your down arrow on the Y may still be slightly off center").
      *
-     * MUTATION: stroke an arrow's outline on the pixel grid again, or anchor the arrows half a pixel over, and this fails.
+     * MUTATION: stroke an arrow's outline on the pixel grid again, or anchor the arrows half a pixel over, and this
+     * fails.
      */
     @Test
     public void testTheArrowsSitOnTheArtsCentreLine()
     {
-        // ONE WAY INTO A Y'S TOE, the green alone: the toe's arrow and nothing else on the square
         List<TileAnnotation.Mark> intoTheToe = new ArrayList<>();
 
         intoTheToe.add(new TileAnnotation.Mark(Side.W, Side.S, Direction.TOWARD_B));
@@ -483,7 +466,6 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
         assertCentred(new TileAnnotation(intoTheToe, -1, false, null, false, false, false, null, true, null)
             .withAllowedDirections().withoutRestrictions(), true, "a Y's green toe arrow");
 
-        // ONE WAY OUT OF IT, the red alone
         List<TileAnnotation.Mark> outOfTheToe = new ArrayList<>();
 
         outOfTheToe.add(new TileAnnotation.Mark(Side.W, Side.S, Direction.TOWARD_A));
@@ -492,7 +474,6 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
         assertCentred(new TileAnnotation(outOfTheToe, -1, false, null, false, false, false, null, true, null), true,
             "a Y's red toe arrow");
 
-        // A STRAIGHT ONE WAY EAST: the green arrow at the east alone, then the red at the west alone
         List<TileAnnotation.Mark> east = new ArrayList<>();
 
         east.add(new TileAnnotation.Mark(Side.W, Side.E, Direction.TOWARD_B));
@@ -615,7 +596,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * The green arrows are painted on an annotation that draws the restrictions, and with no wash under them, which the
+     * The green arrows are painted on an annotation that draws the restrictions, with no wash under them, which the
      * restrictions do not have either (FR-110).
      *
      * MUTATION: skip the open sides whatever the option, or wash the square with them, and this fails.
@@ -641,8 +622,8 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * Allowed only paints the directions trains may run and none of the shut ones (Adam, 2026-10-04: *"In addition to
-     * "restrictions only", add "allowed only" to the autonomy editor."*).
+     * Allowed only paints the directions trains may run and none of the shut ones ("add 'allowed only' to the autonomy
+     * editor").
      *
      * MUTATION: draw the shut sides under Allowed only, and this fails.
      */
@@ -651,7 +632,6 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     {
         List<TileAnnotation.Mark> marks = new ArrayList<>();
 
-        // ONE WAY, west to east: out by the east is open, out by the west is shut
         marks.add(new TileAnnotation.Mark(Side.W, Side.E, Direction.TOWARD_B));
 
         int[] all = greenAndRed(new TileAnnotation(marks, -1, false, null, false, false, false, null, false, null));
@@ -668,8 +648,8 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
 
     /**
      * The autonomy editor offers Allowed only right after Restrictions only, draws a one-way square under it in green
-     * alone, and remembers it - and a view remembered before it was added opens as it did: the box is remembered by
-     * what a view means, not by its place (Adam, 2026-10-04).
+     * alone, and remembers it; a view remembered before it was added opens as it did, since the box is remembered by
+     * what a view means, not by its place.
      *
      * MUTATION: remember the box by its place, or leave Allowed only drawing the red, and this fails.
      *
@@ -685,7 +665,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
         session.setDirection(straight, new RouteId(0, 0), Direction.TOWARD_B);
         session.rebuild();
 
-        // A test may read the user's settings; it may not decide them - put back as found, unset included
+        // A test may read the user's settings; it may not decide them: put back as found, unset included
         java.util.prefs.Preferences prefs =
             org.traincontrol.util.Util.preferencesFor(org.traincontrol.gui.AutonomyEditorPanel.class);
 
@@ -696,7 +676,6 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
 
         try
         {
-            // VIEWS REMEMBERED BEFORE ALLOWED ONLY, which open as they did
             String[][] remembered = {{"2", "autosetup.ui.directionsNone"}, {"3", "autosetup.ui.directionsArrivals"},
                 {"1", "autosetup.ui.directionsRestrictions"}, {"0", "autosetup.ui.directionsAll"}};
 
@@ -708,7 +687,6 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
                     "a view remembered as " + view[0] + " before Allowed only was added opens as another");
             }
 
-            // ALLOWED ONLY, right after Restrictions only
             final org.traincontrol.gui.AutonomyEditorPanel panel = aPanel();
 
             final javax.swing.JComboBox<String> box = panel.getShowDirections();
@@ -804,10 +782,9 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * A Y's arrows lie along its track (MT-676; Adam, 2026-10-04: *"the arrows on two permanent Y's are not aligned.
-     * [M]ake the arrow at the base point straight down, and the left and right aligned just like on curved tiles.  Right
-     * now, the angles are just a bit off, and they are asymmetrical."*): the toe's straight out of the square, and each
-     * leg's along the chord from the toe, as on a curve - so the two legs mirror each other.
+     * A Y's arrows lie along its track (MT-676: "make the arrow at the base point straight down, and the left and right
+     * aligned just like on curved tiles"): the toe's straight out of the square, and each leg's along the chord from
+     * the toe, as on a curve, so the two legs mirror each other.
      *
      * MUTATION: aim a Y's arrows from one point of the square again, and this fails.
      *
@@ -818,7 +795,6 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     {
         List<TileAnnotation.Mark> marks = new ArrayList<>();
 
-        // toe south, legs west and east
         marks.add(new TileAnnotation.Mark(Side.W, Side.S, Direction.BOTH));
         marks.add(new TileAnnotation.Mark(Side.E, Side.S, Direction.BOTH));
 
@@ -886,9 +862,9 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * Allow Every Path opens both ways every square whose setting shuts a move - one-way track, closed track, and a switch
-     * still at its base-to-forks default - and says how many squares (FR-108; Adam, 2026-10-04: *"add a bulk tool to
-     * allow all paths, i.e. remove any red arrows in one go. With warning."*).
+     * Allow Every Path opens both ways every square whose setting shuts a move (one-way track, closed track, and a
+     * switch still at its base-to-forks default) and says how many squares (FR-108: "add a bulk tool to allow all
+     * paths, i.e.  remove any red arrows in one go. With warning.").
      *
      * MUTATION: leave any of the three out of the count or the opening, and this fails.
      *
@@ -936,9 +912,9 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * A turnout with no address is opened only as far as its blades let a train through (FR-108).  At its default, or set
-     * to run the one way its blades do, it is not counted - it refuses nothing a train could do, though its red arrow
-     * still shows the one way its blades run; closed, it is counted; opened, it runs the one way the hardware
+     * A turnout with no address is opened only as far as its blades let a train through (FR-108).  At its default, or
+     * set to run the one way its blades do, it is not counted: it refuses nothing a train could do, though its red
+     * arrow still shows the one way its blades run.  Closed, it is counted; opened, it runs the one way the hardware
      * does, into its toe.
      *
      * MUTATION: count a road only the hardware restricts, or leave a closed one out, and this fails.
@@ -980,8 +956,8 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
         session.setDirection(turnout, road, Direction.NONE);
         session.rebuild();
 
-        // CLOSED AT ITS TOE, so both its roads (OB-351): a road shut shuts the arm it leaves by, and every road leaves by
-        // the toe - whose arrow is the whole of what the square says
+        // CLOSED AT ITS TOE, so both its roads (OB-351): a road shut shuts the arm it leaves by, and every road leaves
+        // by the toe, whose arrow is the whole of what the square says
         assertEquals(session.routesNotOpenBothWays().get(turnout), new ArrayList<>(session.getGraph().getRoutes(turnout)
             .keySet()), "a turnout with no address, closed, is not counted as shut on both its roads");
 
@@ -1038,16 +1014,13 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * A plain square marked out of service draws its cross while trains are running, not only while
-     * the setup is being edited.
+     * A plain square marked out of service draws its cross while trains are running, not only while the setup is being
+     * edited.
      *
-     * The running diagram badges a square only when it is worth badging, and the list of what that
-     * means is written six lines above the expression: *"this is a station, trains turn round here,
-     * autonomy is not using it."*  The third had no term in it.  So a plain sensor switched off got no
-     * badge at all and drew nothing, while the editor - which badges every Point in the graph - drew
-     * its cross.  The one drawing that says "nothing may pass here" appeared while setting the railway
-     * up and vanished while running it, which is the half the operator is looking at when a train does
-     * not arrive.
+     * The running diagram badges a square only when it is worth badging ("this is a station, trains turn round here,
+     * autonomy is not using it") and the third had no term in the expression, so a plain sensor switched off got no
+     * badge while the editor, which badges every Point, drew its cross: the one drawing that says "nothing may pass
+     * here" vanished while running the railway, which is when a train does not arrive.
      *
      * MUTATION: dropping the `|| shut` term from `worthABadge` fails this and nothing else.
      */
@@ -1061,8 +1034,8 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
         session.getStore().createConfiguration("Shut", null);
         session.getStore().setActiveConfiguration("Shut");
 
-        // The MIDDLE sensor, which is neither a station nor anywhere trains turn round - so the only
-        // thing that could earn it a badge is being switched off.
+        // The MIDDLE sensor is neither a station nor anywhere trains turn round, so only being switched off can earn it
+        // a badge.
         TileKey plain = new TileKey("main", 4, 1);
 
         session.rebuild();
@@ -1094,14 +1067,11 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     /**
      * And the running graph is told, so trains do not simply drive through it.
      *
-     * The editor offers **Out of service** on every square, station or not, and its handler writes
-     * `active` and touches nothing else - no direction, no arrow.  The builder used to drop that
-     * property for anything that is not a station, on the reasoning that "the arrows say that through
-     * the derivation".  They do not: nothing sets an arrow when the square is switched off.
-     *
-     * So the cross was a promise the runtime never kept.  `Layout.isPathClear` refuses a path whose
-     * intermediate point is inactive, which is exactly what the cross means, and it can only do that
-     * if the flag reaches the graph.
+     * The editor offers **Out of service** on every square, station or not, and its handler writes `active` and nothing
+     * else: no direction, no arrow.  The builder dropped that property for anything that is not a station, on the
+     * reasoning that "the arrows say that through the derivation"; nothing sets an arrow when the square is switched
+     * off.  `Layout.isPathClear` refuses a path whose intermediate point is inactive, which is what the cross means,
+     * and it can only do that if the flag reaches the graph.
      *
      * MUTATION: putting back `if ("active".equals(key) && !point.isStation()) continue;` fails this.
      */
@@ -1119,12 +1089,8 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
 
         session.rebuild();
 
-        // THE CONTROL, ASKED OF THE COPIES.
-        //
-        // It used to compare `pointNameForTile` - a BASE name - against the names in the built
-        // configuration, which are the emitted COPY names.  This square splits into two copies, so the
-        // builder suffixes both and the base name is never in that list: the control could not fail,
-        // and what it exists to catch is a fixture that ships the square already inactive, which would
+        // THE CONTROL, ASKED OF THE COPIES: the names in the built configuration are the emitted COPY names, not the
+        // BASE name `pointNameForTile` gives.  It catches a fixture that ships the square already inactive, which would
         // make the whole test vacuous.
         java.util.List<String> beforeAnything =
             session.pointNamesFor(session.pointNameForTile(plain));
@@ -1146,14 +1112,12 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
 
         assertNotNull(name, "the square stopped being a Point when it was switched off");
 
-        // EVERY COPY OF IT, not just one.  A square with track on both sides is emitted once per
-        // arrival side, and a train barred from one side and admitted from the other is a square that
-        // is half switched off - which is not a state the menu can express or the cross can mean.
+        // EVERY COPY OF IT, not just one: a square with track on both sides is emitted once per arrival side, and a
+        // train barred from one side and admitted from the other is a square half switched off, which neither the menu
+        // nor the cross can express.
         java.util.List<String> copies = session.pointNamesFor(name);
 
-        // TWO, not one.  The comment above is about a square that became SEVERAL Points, so a
-        // fixture that emits one satisfies the loop below while testing nothing it is written for -
-        // and this is the sibling of the floor put on the same shape 2,800 lines down.
+        // TWO, not one: a fixture that emits one satisfies the loop below while testing nothing it is written for.
         assertTrue(copies.size() >= 2,
             "precondition: this needs a square that became several Points, and it got " + copies.size()
             + " - " + copies);
@@ -1194,23 +1158,16 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * Two sensors with two plain tiles between them.
-     */
-    /**
      * A ROAD THE OPERATOR HAS SHUT DRAWS NO ARROW, EVEN WHERE THE BLADES WOULD HAVE ONE.
      *
-     * `directionMarks` is what the diagram draws.  It used to override the authored answer whenever
-     * it was not `NONE`, on the reasoning that a route the hardware restricts is one-way whatever the
-     * user chose - true for the DEFAULT, which is `BOTH`, and false for the case that matters.
+     * `directionMarks` is what the diagram draws.  It overrode the authored answer whenever it was not `NONE`, on the
+     * reasoning that a route the hardware restricts is one-way whatever the user chose: true for the DEFAULT, which is
+     * `BOTH`, and false for the case that matters.  On a permanent turnout every route is directed at the toe, so
+     * `TOWARD_A` (toward the fork) permits only an entry the blades refuse: nothing passes, which is what an operator
+     * who shuts that arm means.  The override turned that into an arrow pointing at the toe.
      *
-     * On a permanent turnout every route is directed at the toe, so `TOWARD_A` - toward the fork -
-     * permits only an entry the blades refuse: nothing passes, which is exactly what an operator who
-     * shuts that arm means.  The override turned that into an arrow pointing at the toe, so the
-     * drawing showed trains running along a road that had been closed.  Nothing covered
-     * `directionMarks` at all before this claim, which is how it survived.
-     *
-     * MUTATION: drop the `isPassable` branch from `directionMarks` and the shut route draws an arrow
-     * again; make `isPassable` answer true for everything and the same claim fails.
+     * MUTATION: drop the `isPassable` branch from `directionMarks` and the shut route draws an arrow again; make
+     * `isPassable` answer true for everything and the same claim fails.
      *
      * @throws IOException from the fixture
      */
@@ -1235,12 +1192,9 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
                 "precondition: this tile's routes should be directed at the toe, and nothing below is"
                 + " about a permanent turnout if they are not");
 
-            // THE ANSWER THAT PERMITS ONLY THE ENTRY THE BLADES REFUSE: a closure, not a direction.
-            //
-            // Travel TOWARD A means entering at B, which `isTraversableFrom` allows only when the
-            // route is directed at A.  So the shut answer is the one naming the side the route is NOT
-            // directed at - the first draft of this line named the allowed one and asserted the arrow
-            // was absent, which failed against correct code.
+            // THE ANSWER THAT PERMITS ONLY THE ENTRY THE BLADES REFUSE: a closure, not a direction.  Travel TOWARD A
+            // means entering at B, which `isTraversableFrom` allows only when the route is directed at A; so the shut
+            // answer names the side the route is NOT directed at.
             Direction shut = route.getDirectedToward() == route.getA() ? Direction.TOWARD_B
                 : Direction.TOWARD_A;
 
@@ -1255,8 +1209,8 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
                 + " arrow says trains run toward the toe");
         }
 
-        // AND THE DEFAULT STILL DRAWS THE ONE ROAD THERE IS.  A rule that drew nothing for these tiles
-        // would take away the arrow that says which way the turnout can be used at all.
+        // AND THE DEFAULT STILL DRAWS THE ONE ROAD THERE IS: a rule that drew nothing for these tiles would take away
+        // the arrow that says which way the turnout can be used at all.
         for (java.util.Map.Entry<RouteId, org.traincontrol.automationui.TilePorts.Route> entry
             : routes.entrySet())
         {
@@ -1296,15 +1250,12 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * THE TWO ARCS OF A DOUBLE CURVE ARE TWO PIECES OF METAL (Adam, 2026-09-22, on OB-238).
+     * THE TWO ARCS OF A DOUBLE CURVE ARE TWO PIECES OF METAL (OB-238): "Imagine two parallel tracks simple appearing on
+     * one tile for visual convenience.  Two distinct, not connected paths."
      *
-     * *"It is two pieces of metal.  Imagine two parallel tracks simple appearing on one tile for visual
-     * convenience.  Two distinct, not connected paths."*
-     *
-     * Occupancy is per Point, and a square is emitted as one Point per side a train can arrive by, so
-     * the builder groups those copies under a `block` - two trains cannot stand on one square.  That
-     * grouping was keyed by the TILE alone, so a train on one arc of a double curve made the other arc
-     * read occupied and `isPathClear` refused track that is physically free.  The reduction has keyed
+     * Occupancy is per Point, and a square is emitted as one Point per side a train can arrive by, which the builder
+     * groups under a `block` so that two trains cannot stand on one square.  Keyed by the TILE alone, a train on one
+     * arc made the other arc read occupied and `isPathClear` refused track that is physically free.  The reduction keys
      * these tiles per ROAD; this is the same rule at the occupancy door.
      *
      * MUTATION: key `blockFor` by the tile alone and this finds one name where it wants two.
@@ -1330,8 +1281,8 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
         {
             org.json.JSONObject point = (org.json.JSONObject) o;
 
-            // FOUND BY THE BLOCK ITSELF, which is the only thing in the emitted point that names the
-            // square: the bare tile before this fix, and the tile plus its road after it.
+            // FOUND BY THE BLOCK ITSELF, the only thing in the emitted point that names the square: the bare tile
+            // before the fix, the tile plus its road after it.
             String block = point.optString("block", null);
 
             if (block == null || !block.startsWith(curve.toString())) continue;
@@ -1359,13 +1310,13 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * A station on a double-curve sensor is drawn on the curve that carries the contact (MT-712; Adam, 2026-10-10: *"the
-     * station gets rendered on the track without the sensor rather than the one with the sensor"*).
+     * A station on a double-curve sensor is drawn on the curve that carries the contact (MT-712: "the station gets
+     * rendered on the track without the sensor rather than the one with the sensor").
      *
-     * The square is two curves and one contact, and its art draws the contact on one of them - the E-S curve as drawn,
-     * turned with the square.  The badge was put on the square's FIRST road, which is the other one.  Which curve has the
-     * contact is read here off the art itself - the white inside the contact's ring at the middle of its curve - so the
-     * claim cannot agree with a wrong rule about which road that is.
+     * The square is two curves and one contact, and its art draws the contact on one of them (the E-S curve as drawn,
+     * turned with the square).  The badge was put on the square's FIRST road, the other one.  Which curve has the
+     * contact is read off the art itself, the white inside the contact's ring at the middle of its curve, so the claim
+     * cannot agree with a wrong rule about which road that is.
      *
      * MUTATION: badge the square's first road again, and this fails.
      *
@@ -1403,12 +1354,12 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * And the arrows on BOTH its curves lie along their rails (MT-712; Adam, 2026-10-10: *"They are not parallel with the
-     * track on one side."*).
+     * And the arrows on BOTH its curves lie along their rails (MT-712: "They are not parallel with the track on one
+     * side.").
      *
-     * The track diagram's annotation of a sensor square said it was not curved, so an arrow was aimed from the middle of
-     * the badge's road - right on a curve, which has one road, and some thirty degrees off on a double curve's other one.
-     * Both roads one-way here, so each has a red arrow at its shut end; each arrow's ink is centered on its own curve's
+     * The annotation of a sensor square said it was not curved, so an arrow was aimed from the middle of the badge's
+     * road: right on a curve, which has one road, and some thirty degrees off on a double curve's other one.  Both
+     * roads one-way here, so each has a red arrow at its shut end; each arrow's ink is centered on its own curve's
      * chord.
      *
      * MUTATION: annotate a sensor square as not curved again, and this fails.
@@ -1496,8 +1447,8 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * Which of a double-curve sensor's two roads its art draws the contact on: the one whose middle - the middle of the
-     * chord between its two sides - is the white inside the contact's ring.
+     * Which of a double-curve sensor's two roads its art draws the contact on: the one whose chord middle is the white
+     * inside the contact's ring.
      */
     private static Set<Side> contactRoadOnTheArt(org.traincontrol.base.LayoutDiagramComponent square, int orientation)
         throws IOException
@@ -1589,22 +1540,15 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * A restricted piece of TRACK gets its arrow on the ordinary diagram, not only a sensor (FR-037).
+     * A restricted piece of TRACK gets its arrow on the ordinary diagram, not only a sensor (FR-037: "the arrows are
+     * not showing up for me when I toggle the option").  They showed on the few squares that happen to be Points, which
+     * on a real railway is not where a restriction lives: a one-way run is a property of track, and almost none of its
+     * squares carry a sensor.  The tests of the preference, the guards, the menu grouping and the refresh call were all
+     * true and none could notice that the arrows never reached any track.
      *
-     * Adam: "the arrows are not showing up for me when I toggle the option."  They were - on the few
-     * squares that happen to be Points, which on a real railway is not where a restriction lives. A
-     * one-way run is a property of track: straights, curves, the squares either side of a switch, and
-     * almost none of those carry a sensor.
+     * The option is set through the preference the code reads, and put back afterwards.
      *
-     * **This is the test that was missing rather than the one that failed.** The four I wrote for
-     * FR-037 checked the preference, the guards, the menu grouping and the refresh call. Every one was
-     * true, and not one of them could notice that the arrows never reached any track. Asking "does a
-     * restricted straight get a mark" would have failed the moment it was written.
-     *
-     * The option is set through the preference the code reads, and put back afterwards, so this cannot
-     * leave the running application drawing arrows nobody asked for.
-     *
-     * MUTATION: computing the marks after the Point test - which is what shipped - fails this.
+     * MUTATION: computing the marks after the Point test fails this.
      */
     @Test
     public void testARestrictedStraightGetsAnArrowOnTheDiagram() throws Exception
@@ -1616,8 +1560,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
         session.getStore().createConfiguration("FR037", null);
         session.getStore().setActiveConfiguration("FR037");
 
-        // A STRAIGHT, deliberately: the feedbacks are at 1, 3 and 5, so this square is track and
-        // nothing else - exactly the kind the option appeared not to work on.
+        // A STRAIGHT, deliberately: the feedbacks are at 1, 3 and 5, so this square is track and nothing else.
         TileKey straight = new TileKey("main", 2, 1);
         TileKey west = new TileKey("main", 1, 1);
         TileKey east = new TileKey("main", 5, 1);
@@ -1631,16 +1574,9 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
 
         session.rebuild();
 
-        // WHETHER IT WAS STORED AT ALL, not just what it reads as.
-        //
-        // This captured `getBoolean(key, false)` and put that back unconditionally - written when the
-        // default WAS false. The default became true the next day, so on any machine where nobody had
-        // ever set the key - which is every machine, including Adam's - the capture read false and the
-        // finally wrote an explicit false into his live preferences. Running the suite once switched
-        // off the feature he had just asked to be on by default, with nothing on screen connecting
-        // the two.
-        //
-        // Found by a reviewer. A test may read the user's settings; it may not decide them.
+        // WHETHER IT WAS STORED AT ALL, not just what it reads as: capturing `getBoolean(key, false)` and putting that
+        // back would write an explicit value into the user's live preferences where nobody had ever set the key.  A
+        // test may read the user's settings; it may not decide them.
         java.util.prefs.Preferences prefs = org.traincontrol.gui.TrainControlUI.getPrefs();
 
         boolean had = prefs.get(
@@ -1690,20 +1626,14 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * The station ingress arrows follow the same switch as the travel restrictions (Adam, 2026-08-28).
+     * The station ingress arrows follow the same switch as the travel restrictions: "Couple the station ingress arrows
+     * to this setting in the track viewer, but be careful not to disturb their behavior in the editor."
      *
-     * "Couple the station ingress arrows to this setting in the track viewer, but be careful not to
-     * disturb their behavior in the editor."
+     * A chevron saying which way into a platform is shut is the same kind of statement as a one-way arrow, so a switch
+     * that turned off one and left the other would half work.  The preference is set through the key the code reads and
+     * put back afterwards, because these are the real preferences of whoever runs the suite.
      *
-     * A chevron saying which way into a platform is shut is the same kind of statement as a one-way
-     * arrow - both say where a train may not go, both come from this setup - so a switch that turned
-     * off one and left the other would be a setting that half works.
-     *
-     * The preference is set through the key the code reads and put back afterwards, because these are
-     * the real preferences of whoever runs the suite.
-     *
-     * MUTATION: drawing the arrivals unconditionally - which is what the viewer did before - fails the
-     * first half.
+     * MUTATION: drawing the arrivals unconditionally fails the first half.
      */
     @Test
     public void testTheIngressArrowsFollowTheSettingInTheViewer() throws Exception
@@ -1781,12 +1711,9 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * A link is never offered a direction, and ordinary track always is.
-     *
-     * The guard this pins is the only thing standing between a user and a setting that silently does
-     * nothing.  A link's route is a stub - the same side twice - so "toward A" and "toward B" name the
-     * same place, and the traversal would allow both whichever was chosen.  See the note on
-     * TileGraph.PORTAL_ROUTE.
+     * A link is never offered a direction, and ordinary track always is.  The guard is the only thing standing between
+     * a user and a setting that silently does nothing: a link's route is a stub (the same side twice), so "toward A"
+     * and "toward B" name the same place and the traversal would allow both.  See TileGraph.PORTAL_ROUTE.
      */
     @Test
     public void testALinkIsNotOfferedADirection() throws Exception
@@ -1854,12 +1781,12 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * A sensor with no name is named as it becomes a station (FR-120; Adam, 2026-10-10: *"when an unnamed sensor is
-     * converted to a station, pop up a box to ask for its name.  if none is provided, changes are cancelled.  names are
-     * remembered so future changes are applied.  we apply a name duplication check here."*).  Through the editor's own
-     * answer to the station menu, `setUsage`, with its question answered here: Cancel, and a blank name, leave the square a
-     * sensor and unnamed; a name another square has - in any case - is refused and asked for again, with the name typed
-     * and why; a free name makes it a station of that name; and a square with a name already is not asked.
+     * A sensor with no name is named as it becomes a station (FR-120: "when an unnamed sensor is converted to a
+     * station, pop up a box to ask for its name.  if none is provided, changes are cancelled.  names are remembered so
+     * future changes are applied.  we apply a name duplication check here.").  Through the editor's own answer to the
+     * station menu, `setUsage`, with its question answered here: Cancel, and a blank name, leave the square a sensor
+     * and unnamed; a name another square has, in any case, is refused and asked for again with the name typed and why;
+     * a free name makes it a station of that name; and a square with a name already is not asked.
      *
      * MUTATION: make an unnamed sensor a station without asking, or take a name another square has, and this fails.
      *
@@ -1996,13 +1923,12 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * Show Trains redraws every square in its window, not only the squares whose annotation it changes.  The
-     * trains' icons are drawn from the railway, by squares that ask the switch as they paint; where the railway has a train
-     * and the setup places none - the setup unable to build, the last valid railway kept - the switch changes no
-     * annotation, and redrawing only the changed squares left that train drawn with the trains switched off.
-     *
-     * Here the panel shares its window with a square it knows nothing about, standing for such a square on the diagram:
-     * each click of the switch, off and back on, asks for that square to be redrawn.
+     * Show Trains redraws every square in its window, not only the squares whose annotation it changes.  The trains'
+     * icons are drawn from the railway by squares that ask the switch as they paint; where the railway has a train and
+     * the setup places none (the setup unable to build, the last valid railway kept), the switch changes no annotation,
+     * and redrawing only the changed squares left that train drawn with the trains switched off.  Here the panel shares
+     * its window with a square it knows nothing about, standing for such a square: each click of the switch, off and
+     * back on, asks for that square to be redrawn.
      *
      * MUTATION: drop the switch's redraw of its window, and this fails.
      *
@@ -2078,11 +2004,12 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * A route button on a running line takes direction clicks like the track it sits on (OB-332; Adam, 2026-10-11:
-     * *"sometimes a direction arrow is placed on a route tile, but those are greyed out in the autonomy editor and can't be clicked/changed.  We need the direction arrows to be editable and clickable."*).  The graph runs the line through the button, so a direction is stored on it and its arrow
-     * drawn there, and the editor grayed every button and refused its click - six such arrows on his Oles kreds sandbox,
-     * route 41 among them.  Not grayed, a click changes its direction; a button beside the line, with no track through
-     * it, is still grayed and takes no click.
+     * A route button on a running line takes direction clicks like the track it sits on (OB-332: "sometimes a direction
+     * arrow is placed on a route tile, but those are greyed out in the autonomy editor and can't be clicked/changed.
+     * We need the direction arrows to be editable and clickable.").  The graph runs the line through the button, so a
+     * direction is stored on it and its arrow drawn there, and the editor grayed every button and refused its click.
+     * Not grayed, a click changes its direction; a button beside the line, with no track through it, is still grayed
+     * and takes no click.
      *
      * MUTATION: gray every route button again, and this fails.
      *
@@ -2155,8 +2082,8 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * A square out of service offers no direction click in the editor: it draws no arrows (round 127), and its
-     * click went on cycling the hidden setting under the hand pointer, the square looking the same afterwards.
+     * A square out of service offers no direction click in the editor: it draws no arrows, and its click went on
+     * cycling the hidden setting under the hand pointer, the square looking the same afterwards.
      *
      * MUTATION: let the click change a square out of service again, and this fails.
      *
