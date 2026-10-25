@@ -7518,11 +7518,10 @@ public class AutonomySession
 
             org.traincontrol.automation.Point point = running.getPoint(copy.getKey());
 
-            // STANDING BEATS TURNED ROUND, at the same distance.
+            // Standing beats turned round, at the same distance.
             if (point != null && !point.isTerminus() && !point.isReversing()) return copy.getValue();
 
-            // And the first turning copy is remembered in case that is all there is (a compulsory turn), the first in
-            // the BUILD's order so two runs of the same paste give the same railway.
+            // The first turning copy, in build order, in case that is all there is (a compulsory turn).
             if (turning == null) turning = copy.getValue();
         }
 
@@ -7530,14 +7529,9 @@ public class AutonomySession
     }
 
     /**
-     * Which way a train cut from one square would face on another, if it DROVE there (OB-270).  Adam: *"Trains should
-     * not inadvertently change direction when pasted, so a loc going west from bottomsecondary should always face east
-     * when pasted on bottommaina"*, and, asked whether a cut train keeps the heading it was cut with or takes the one
-     * it would have after driving there: *"it should be east.  no train should inadvertently change direction when
-     * pasted."* `facingByPath` walks from where the train is standing and a cut train is standing nowhere, so this
-     * walks from the square it was cut from, and answers only where the walk found a way: null means no path, and the
-     * caller keeps the heading it was cut with (MT-368) rather than an answer that pretends to be derived.
-     *
+     * Which way a train cut from one square would face on another if it drove there (OB-270), walking from the square
+     * it was cut from.  Adam: *"it should be east.  no train should inadvertently change direction when pasted."*  Null
+     * means no path, and the caller keeps the heading it was cut with (MT-368).
      * @param running the layout
      * @param fromPoint the Point the train was standing on when it was cut
      * @param target the square it is being pasted onto
@@ -7565,24 +7559,17 @@ public class AutonomySession
      * line face into the station and away from that station, respectively"**, and **"for terminuses, they must reverse on
      * paste"**.
      *
-     * **Both halves of the first sentence are one rule: the heading survives.**  The same train with the same heading,
-     * one station later or earlier, faces into or away from the reference station - only the square it stands on
-     * differs - so putting it down must not turn it.
+     * Both halves of the first sentence are one rule: the heading survives, so putting a train down must not turn it.
      *
-     * **And a terminus has one direction, so a train put down there takes it.**  That falls out of asking what the landing
-     * can hold: the end of a line holds one heading, whatever the train was doing before.
+     * A terminus holds one heading, so a train put down there takes it.
      *
-     * The heading has to be read BEFORE the move, from where the train was standing, and handed in here: the landing
-     * copy's own side is not the train's heading, because `StationIndex.speakerAt` says that on an empty square "any copy
-     * will do".  Separated from the door so that it can be run; `testAPastedTrainKeepsItsDirection` asserts the
-     * call site is a call site.
+     * The heading is read before the move and handed in: the landing copy's side is not the train's (see `landedOn`).
      *
      * @param held every copy the landing square builds to, by name, with the side each one faces
      * @param keep the heading the train had before it was moved, or null when that is not known
      * @param landedOn the copy the running layout chose - accepted and deliberately NOT used, because
      *        `StationIndex.speakerAt` says that on an empty square "any copy will do", so it is copy 0
-     *        and evidence of nothing.  Recording it was a bug.  Kept in the signature so that a
-     *        caller reaching for it finds this sentence rather than the idea
+     *        and evidence of nothing.
      * @return the side to record, or null to record nothing
      */
     public static Side facingAfterAPaste(Map<String, Side> held, Side keep, String landedOn)
@@ -7598,8 +7585,8 @@ public class AutonomySession
         // THE HEADING SURVIVES where the landing can hold it, which is Adam's rule proper.
         if (keep != null && held.containsValue(keep)) return keep;
 
-        // Several copies, and the heading did not survive the move: nothing here knows which the operator meant and the
-        // layout's pick was arbitrary, so the value is cleared and the facing menu asks.
+        // Several copies and the heading lost: the layout's pick was arbitrary, so nothing is recorded and the menu
+        // asks.
         return null;
     }
 
@@ -7619,9 +7606,7 @@ public class AutonomySession
     /**
      * The same, asking the running layout first.
      *
-     * **The setup names the square a train SET OFF FROM until `captureFromLayout` writes the arrival back** (as for
-     * `flipFacing`): for a train run and then placed by hand, the heading read "before the move" is the one it had at
-     * the platform it left, and the paste would preserve a direction from a different part of the railway.
+     * The setup names the square a train set off from until a capture writes the arrival back.
      *
      * @param locomotive the train
      * @param running the layout, or null when there is none to ask
@@ -7644,16 +7629,13 @@ public class AutonomySession
 
                 if (where == null) continue;
 
-                // THE COPY IT IS STANDING ON, not the square's stored facing: that is ONE value per square, and a
-                // square is up to four Points facing two ways, so it is the setup's last word about the platform rather
-                // than this train (after a run, the previous occupant's).  Which copy a train stands on IS its
-                // direction.
+                // The copy it stands on IS its direction; the square's stored facing is the setup's last word about the
+                // platform, not this train.
                 Side onThisCopy = getStationIndex().facingsAt(where).get(point.getName());
 
                 if (onThisCopy != null) return onThisCopy;
 
-                // A copy the index has no facing for (a square with no named copies, or one built whole) falls back to
-                // what the setup says about the square, right when there is only one copy to be on.
+                // A copy with no facing in the index: the square's, right when there is one copy.
                 if (getFacing(where) != null) return getFacing(where);
             }
         }
@@ -7691,15 +7673,11 @@ public class AutonomySession
     }
 
     /**
-     * Records a facing AND stands the train on the copy that faces that way.
+     * Records a facing and stands the train on the copy that faces that way (Adam: `flipFacing` updates the railway
+     * too).
      *
-     * **The setup and the railway are two places**: Adam's ruling that `flipFacing` should also update the running
-     * layout holds from the other end too, the operator choosing a direction by hand.
-     *
-     * **The train the railway has here, and only then the setup's**: after a run the setup still names each square's
-     * pre-run occupant (behaviour.md 6a), so turning the setup's train would move nothing while the train actually
-     * standing there stayed as it was.  The setup's record is its own train's, so it is written only where the railway
-     * has that train, or none.
+     * The railway's train here first: after a run the setup names the pre-run occupant (behaviour.md 6a).  The setup's
+     * record is written only where the railway has that train, or none.
      *
      * Silently a plain `setFacing` when no layout is running, which is every headless use.
      *
@@ -7724,9 +7702,7 @@ public class AutonomySession
     }
 
     /**
-     * The train standing on any copy of a square on the RAILWAY, or null: `facingOnTheRailway`'s question about the
-     * train rather than its facing, as after a run the setup's placement need not be the railway's.
-     *
+     * The train standing on any copy of a square on the RAILWAY, or null; after a run the setup's need not be it.
      * @return the locomotive's name, or null when no copy holds one
      */
     public String trainOnTheRailway(TileKey square, org.traincontrol.automation.Layout running)
@@ -7758,11 +7734,8 @@ public class AutonomySession
     }
 
     /**
-     * Records the road the tail of the train standing here lies along, beside its arrival side (Adam: *"select the
-     * farthest sensor the tail of the train recently crossed."*): the road from that sensor to this square, as
-     * `Layout.namesOfRoad` writes it, so it travels with the placement and the side through a save, a load and a
-     * capture.
-     *
+     * Records the road the tail of the train here lies along (Adam: *"select the farthest sensor the tail of the train
+     * recently crossed."*), as `Layout.namesOfRoad` writes it.
      * @param road [start, end] point-name pairs as a JSON array string, or null to forget
      */
     public void setArrivedAlong(TileKey tile, String road)
@@ -7790,13 +7763,8 @@ public class AutonomySession
     }
 
     /**
-     * Which way the train standing on this square is actually facing, according to the RAILWAY: a square that splits is
-     * several Points and which one a train is on IS its direction, so this reads where the train is rather than looking
-     * up something somebody typed.  The station label reads the copy (`TrainControlUI.facingArrowOf`), as the stored
-     * value is written only when somebody places a train BY HAND; the facing MENU must read the same thing (OB-181), or
-     * the two agree only while a hand-placed train has not moved.  Null when no copy of the square holds a train, and
-     * the caller falls back to what the setup records.
-     *
+     * Which way the train on this square faces according to the RAILWAY: the copy it is on IS its direction.  The label
+     * and the facing menu both read it (OB-181).  Null when no copy holds a train; the caller falls back to the setup.
      * @param square the diagram square
      * @param running the running layout, which is where a train's position lives
      * @return the facing of the copy holding the train, or null
@@ -7812,9 +7780,7 @@ public class AutonomySession
 
             if (copy == null || copy.getCurrentLocomotive() == null) continue;
 
-            // ON ITS WAY, THE COPY IT WILL STAND ON (OB-314): a train sent to a square it may turn at holds the turning
-            // copy its path ends on until it arrives, so the label must not read it the wrong way round for the whole
-            // journey.
+            // On its way, the copy it will stand on (OB-314), or a train sent to turn reads backwards all journey.
             org.traincontrol.automation.Point standing = running.copyItWillStandOn(copy.getCurrentLocomotive());
 
             if (standing != null && standing != copy && standing.isSamePlaceAs(copy))
@@ -7850,15 +7816,9 @@ public class AutonomySession
     }
 
     /**
-     * Which way to draw a train no copy of its square holds a facing for (OB-348): one whose copy records no facing and
-     * has no single way out, or one the railway stands on no Point (`trainsOnNoPoint`).  The facing the setup records,
-     * where its track runs that way (the one the caption shows), else a guess along the track: the first facing the
-     * square offers (the one the Is Facing menu ticks), or where it offers none its first way: north or south on track
-     * that runs north to south, east or west on track that runs across, along the curve on a curve.  Null where the
-     * square has no track to ask.  A square no track leads out of is emitted whole with no facing, and an icon given
-     * none is drawn as its picture is (east).  Adam: *"The icon can guess in that case, but it must be N/S or a N/S
-     * track, or E/W on E/W, or angled on a curved track."*
-     *
+     * Which way to draw a train no copy holds a facing for (OB-348): the setup's record where the track runs that way,
+     * else the square's first facing, else its first way along the track; null with no track.  Adam: *"The icon can
+     * guess in that case, but it must be N/S or a N/S track, or E/W on E/W, or angled on a curved track."*
      * @param square the diagram square
      * @return a side its track runs to, or null
      */
@@ -7878,11 +7838,8 @@ public class AutonomySession
     }
 
     /**
-     * The facing the setup records for the train on a square, where the square's track runs that way, or null (OB-348):
-     * a record the track does not run, left by an edit of the track under it, is no direction a train there can face,
-     * and the icon cannot be drawn along it; the caption and the Is Facing menu read this, so the three say the same.
-     * Where the square's track cannot be asked, the record as it stands.
-     *
+     * The setup's recorded facing for the train here where the track runs that way, else null (OB-348); the record as
+     * it stands where the track cannot be asked.  The icon, caption and Is Facing menu all read this.
      * @param square the diagram square
      * @return the recorded side, or null
      */
@@ -7897,9 +7854,7 @@ public class AutonomySession
         return track.isEmpty() || track.contains(recorded) ? recorded : null;
     }
 
-    /**
-     * The sides a square's track runs to, in the order of its routes, without repeats; empty where it cannot be asked.
-     */
+    /** The sides a square's track runs to, in route order, no repeats; empty where it cannot be asked. */
     private List<Side> waysTheTrackRuns(TileKey square)
     {
         List<Side> track = new ArrayList<>();
@@ -7924,12 +7879,8 @@ public class AutonomySession
     }
 
     /**
-     * Gives a square a home locomotive, taking that locomotive's home away from anywhere else: ONE locomotive, ONE
-     * station.  The running layout enforces this (setHomeLocomotive clears the same locomotive from every other Point),
-     * and the setup-side editor must too, or two squares could be given the same home and the next load would drop one
-     * by iteration order with only a log line as notice.  Here rather than in the menu because it is a rule about the
-     * SETUP.
-     *
+     * Gives a square a home locomotive, taking its home away from anywhere else: one locomotive, one station, as the
+     * running layout enforces, or the next load drops one by iteration order.
      * @param tile the square to make home
      * @param locomotive the locomotive, or null to clear this square's home
      */
@@ -7941,14 +7892,11 @@ public class AutonomySession
     }
 
     /**
-     * The same, facing the way the operator said, for a locomotive not standing on the square (OB-282).  Adam, on a
-     * home given to a train standing elsewhere: *"prompt the user for the direction"*; a facing no copy trains may
-     * arrive at holds is not saved (*"we shouldn't allow an impossible facing to be saved"*).
-     *
+     * The same, facing the way the operator said, for a train not standing here (OB-282; Adam: *"prompt the user for
+     * the direction"*).  An impossible facing is not saved (*"we shouldn't allow an impossible facing to be saved"*).
      * @param tile the square to make home
      * @param locomotive the locomotive, or null to clear this square's home
-     * @param facing the way it should face there, or null to take the facing of the train standing there, where a train
-     *        may be brought home in it (`knownHomeFacing`)
+     * @param facing the way it should face there, or null for the standing train's (`knownHomeFacing`)
      */
     public void setHome(TileKey tile, String locomotive, Side facing)
     {
@@ -7962,20 +7910,13 @@ public class AutonomySession
         deriveStationIndex();
     }
 
-    /**
-     * The ways a locomotive may be homed facing on this square (OB-282), see `AutonomyBuilder.homeFacingsAt`; empty on
-     * a square that is not split.
-     */
+    /** The ways a locomotive may be homed facing here (OB-282, `AutonomyBuilder.homeFacingsAt`); empty if not split. */
     public java.util.Set<Side> homeFacingsFor(TileKey tile)
     {
         return reducer == null ? java.util.Collections.<Side>emptySet() : builder(null).homeFacingsAt(tile);
     }
 
-    /**
-     * The same rule, written without re-deriving, for a caller about to make several: `setPointProperty` re-derives the
-     * station index on every call, a full builder construction.  `setHome` is this plus the re-derive, and
-     * `homeEveryPlacedTrain` this in a loop plus one re-derive at the end: one writer, two schedules.
-     */
+    /** `setHome` without re-deriving, for callers making several (`homeEveryPlacedTrain`). */
     private void writeHome(TileKey tile, String locomotive)
     {
         if (tile == null) return;
@@ -7991,19 +7932,13 @@ public class AutonomySession
 
         writePointProperty(tile, "home", locomotive);
 
-        // AND THE WAY IT IS FACING, where it is standing here (OB-282): the facing Return Home brings it back in.  Only
-        // a facing a train may be brought home in: a train reversed on the throttle can stand facing a way trains may
-        // not arrive, which no Return Home can reach, so it is not saved.  A home given to a train standing elsewhere
-        // is the square.
+        // And its facing where it stands here, if a train may be brought home in it (OB-282)
         Side facing = knownHomeFacing(tile, locomotive);
 
         writePointProperty(tile, AutonomyBuilder.HOME_FACING, facing == null ? null : facing.name());
     }
 
-    /**
-     * The facing a home set here for this locomotive would be saved with without asking anybody, or null when only the
-     * operator can say.
-     */
+    /** The facing a home here would be saved with without asking, or null when only the operator can say. */
     public Side knownHomeFacing(TileKey tile, String locomotive)
     {
         String facing = homeFacingOf(tile, locomotive);
@@ -8012,17 +7947,13 @@ public class AutonomySession
 
         for (Side each : Side.values())
         {
-            // ONLY ONE A TRAIN MAY BE BROUGHT HOME IN - see `writeHome`.
             if (each.name().equals(facing)) return homeFacingsFor(tile).contains(each) ? each : null;
         }
 
         return null;
     }
 
-    /**
-     * The way a locomotive is facing on a square, if it is standing there (OB-282); `knownHomeFacing` keeps it where a
-     * train may be brought home in it.
-     */
+    /** The way a locomotive faces on a square if it stands there (OB-282). */
     private String homeFacingOf(TileKey tile, String locomotive)
     {
         if (locomotive == null) return null;
@@ -8031,10 +7962,8 @@ public class AutonomySession
 
         String standing = loc instanceof org.json.JSONObject ? ((org.json.JSONObject) loc).optString("name", null) : null;
 
-        // FROM THE RAILWAY FIRST, as `facingOf` reads it: the setup names the heading a train set off with until a
-        // capture writes the arrival back, so after a run that turned the train here its FACING is the way it no longer
-        // faces (Adam: *"Direction it is facing when home is set"*).  The copy it stands on in the running layout IS
-        // its facing.
+        // The railway first, as `facingOf` reads it: after a run the setup's facing is the way it set off (Adam:
+        // *"Direction it is facing when home is set"*).
         org.traincontrol.automation.Layout running = runningLayout == null ? null : runningLayout.get();
 
         boolean onTheRailway = false;
@@ -8058,8 +7987,7 @@ public class AutonomySession
             }
         }
 
-        // STANDING ELSEWHERE ON THE RAILWAY, whatever the setup still says: the setup names this square until a capture
-        // writes the move back, so its FACING is a train's no longer here, and the editor asks.
+        // Elsewhere on the railway: the setup's facing is stale, so the editor asks.
         if (onTheRailway) return null;
 
         if (!locomotive.equals(standing)) return null;
@@ -8070,10 +7998,7 @@ public class AutonomySession
     }
 
     /**
-     * Takes the home off every square that has one, re-deriving the station index once: the single-square setter
-     * re-derives per call, a full builder construction on the event thread, wrong for sixty-two squares.  Both doors
-     * write the same property through the same method, so they cannot come to disagree about clearing a home.
-     *
+     * Takes the home off every square, re-deriving once, through the single-square writer.
      * @return how many squares were cleared
      */
     public int clearEveryHome()
@@ -8086,22 +8011,17 @@ public class AutonomySession
             writePointProperty(tile, AutonomyBuilder.HOME_FACING, null);
         }
 
-        // ONCE, at the end; not skipped: the split names are computed from these properties.
+        // Once: the split names are computed from these properties.
         deriveStationIndex();
 
         return homed.size();
     }
 
     /**
-     * Every STATION the active configuration gives a maximum train length other than 0, and every square with a
-     * negative one, on every page.  Adam: *"Add a right click menu open to clear all max station train lengths (grouped
-     * with the other clear options)"*.  Above 0 because 0 is "any length", what the station has after the clear (the
-     * setup writes an explicit `maxTrainLength: 0` on every destination).  **A NEGATIVE COUNTS**: `Layout.fromJSON`
-     * refuses a maximum below 0 and invalidates the whole configuration, so a clear that counted only what is above 0
-     * would find nothing to clear on the very setting that stops the railway loading.  The editor door refuses one
-     * (`AutonomyEditorPanel.whyNotThisNumber`); this removes one written by hand or by an older build.
-     *
-     * @return the squares, in NO PARTICULAR ORDER, for `tilesWithAHome`'s reason
+     * Every station with a maximum train length above 0, and every square with a negative one, which `Layout.fromJSON`
+     * refuses outright.  Adam: *"Add a right click menu open to clear all max station train lengths (grouped with the
+     * other clear options)"*.
+     * @return the squares, in no particular order
      */
     public java.util.List<TileKey> tilesWithAMaxTrainLength()
     {
@@ -8111,9 +8031,7 @@ public class AutonomySession
 
             int maximum = ((Number) point.opt("maxTrainLength")).intValue();
 
-            // STATIONS ONLY, since a square that is no longer one keeps its maximum and ignores it (OB-291) -
-            // but a NEGATIVE ONE WHEREVER IT IS: `Layout.fromJSON` refuses it on any point, so a remembered one
-            // still stops the railway loading, and this is the door that takes it off.
+            // Stations only (OB-291), but a negative one anywhere: it still stops the railway loading.
             TileKey tile = AutonomyCompanionStore.parseTileKey(key);
 
             return maximum < 0 || (maximum != 0 && tile != null && store.isStation(tile));
@@ -8121,9 +8039,7 @@ public class AutonomySession
     }
 
     /**
-     * Takes the maximum train length off every square that has one, re-deriving the station index once
-     * (`clearEveryHome`'s shape and reason).
-     *
+     * Takes the maximum train length off every square, re-deriving once.
      * @return how many squares were cleared
      */
     public int clearEveryMaxTrainLength()
@@ -8141,12 +8057,8 @@ public class AutonomySession
     }
 
     /**
-     * Every placement the bulk doors will act on: square against locomotive.  `tilesWithALocomotive()` reads the
-     * configuration's points directly and so answers for every page; this is `placedLocomotives()`, which the bulk
-     * doors walk and which skips pages excluded from autonomy.  A menu that COUNTS one while the action walks the other
-     * tells the operator a figure the gesture will not deliver (`guard-and-affordance-same-question`).  A copy.
-     *
-     * @return the placements, by square
+     * Every placement the bulk doors act on (excluded pages skipped), so a menu's count matches what the action does.
+     * @return the placements, by square, as a copy
      */
     public Map<TileKey, String> placementsAutonomyWillWrite()
     {
@@ -8154,32 +8066,17 @@ public class AutonomySession
     }
 
     /**
-     * Makes every placed train's current square its home, re-deriving the station index once (FR-075).  Adam: *"to bulk
-     * tools in the autonomy editor, add an option to mass mark current train locations as their homes."*  Written
-     * through `writeHome` (`clearEveryHome`'s shape: `setPointProperty` rebuilds the station index on every call): ONE
-     * LOCOMOTIVE, ONE STATION still holds, as a train homed HERE loses its home anywhere else, and writing the property
-     * directly would be a second door with the sweep missing, which would reintroduce duplicate homes.
-     *
-     * **How fresh the placements are.**  This writes from the SETUP's placements, what the editor shows.  Autonomy
-     * cannot be running: `TrainControlUI.whyAutonomyEditorCannotOpen` refuses to open this editor while
-     * `isAutonomyBusy()`, and the other windows refuse the other way round (`autolayout.errorCannotEditWhileRunning`),
-     * so no run can have moved a train since the capture that opened the editor.  **Where the railway has a train, that
-     * is where it is homed**: Bulk Tools is on the track diagram's menu too, which folds nothing first, so after a run
-     * the setup still names the squares the trains set off from; a train the railway does not have is homed where the
-     * setup has it (`trainsWhereTheyStand`).
-     *
-     * **A square already homed to a DIFFERENT train is overwritten**, because that is what the gesture says; the count
-     * includes squares whose home was already this train, "it is already right" and "I set it" being the same outcome
-     * to the operator.
-     *
+     * Makes every placed train's square its home, re-deriving once (FR-075).  Adam: *"to bulk tools in the autonomy
+     * editor, add an option to mass mark current train locations as their homes."*  Through `writeHome`, so one
+     * locomotive, one station holds.  Where the railway has the train, that is where it is homed.  A square homed to
+     * another train is overwritten, and counted.
      * @return how many squares were given a home
      */
     public int homeEveryPlacedTrain()
     {
         int assigned = 0;
 
-        // WHERE THE TRAINS STAND: the railway's, then the setup's where the railway has none of them (Bulk Tools folds
-        // nothing first, so after a run the setup alone would home each train where it set off).
+        // Where the trains stand: the railway's, then the setup's
         for (Map.Entry<TileKey, String> placed : trainsWhereTheyStand().entrySet())
         {
             if (placed.getKey() == null || placed.getValue() == null) continue;
@@ -8189,20 +8086,15 @@ public class AutonomySession
             assigned++;
         }
 
-        // ONCE, at the end; not skipped: the split names are computed from these properties.
+        // Once: the split names are computed from these properties.
         deriveStationIndex();
 
         return assigned;
     }
 
     /**
-     * Every home a train can be put on: the square, and the locomotive it is home to (FR-115).  A home the operator
-     * GAVE (the setup's `home`), not wherever a train last stood, which the running layout also calls a home until the
-     * next build.  On a page autonomy runs, as placements are (`placedLocomotives`); what Place All Trains at Their
-     * Homes counts, offers and walks.  **A locomotive is offered once**: a hand-edited setup can home one on two
-     * squares, and standing it on both would refuse the whole configuration.  The square kept is the one the loader
-     * keeps (`squareTheLoaderKeeps`).
-     *
+     * Every home the operator gave, square to locomotive, on pages autonomy runs (FR-115), for Place All Trains at
+     * Their Homes.  A locomotive homed twice is offered once, on the square the loader keeps.
      * @return the homes, square to locomotive, in no particular order
      */
     public Map<TileKey, String> homesToPlace()
@@ -8240,10 +8132,8 @@ public class AutonomySession
     }
 
     /**
-     * Which of the squares one locomotive is homed on `Layout.rebuildHomeStations` keeps its home on: the loader keeps
-     * the first home it meets walking its Points in the iteration order of a `HashMap` keyed by Point name, reproduced
-     * here from the names the build emits.  Only a locomotive homed twice asks, because it builds the configuration.
-     *
+     * The square `Layout.rebuildHomeStations` keeps a twice-homed locomotive on: the first in HashMap order of the
+     * built names.
      * @return the one square the loader keeps; the first given where the build does not say
      */
     private TileKey squareTheLoaderKeeps(List<TileKey> squares)
