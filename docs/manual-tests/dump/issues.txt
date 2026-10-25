@@ -854,3 +854,22 @@ text:
 |
 | Found while writing FR-138's examples.  AutomationAPI.md's full example, and src/org/traincontrol/examples/FullAutonomyExample.java, end with layout.runLocomotive(loc, speed) for each train.  runLocomotive starts a thread that loops while the layout's running flag is set, and only runLocomotives() sets it, so the sample places the trains and then nothing moves.  It has been so since at least v2.7.0.  The new examples (test/examples/RunTrainsOnAGraph) use setLocomotivesToRun plus runLocomotives and do run.  Two ways to fix: (a) the sample and FullAutonomyExample call runLocomotives() as the new example does (docs only, no behavior change); (b) runLocomotive starts the run itself when none is going (changes Adam's pre-2.7.0 API code, so needs his word).  Recommended: (a).
 |
+
+[issue OB-370]
+ordinal: 40
+inbox: yes
+kind: bug
+title: for 3.0.3: layout actions refused while autonomy runs say "Cannot edit locomotives while autonomy is running."
+filed: 2026-10-24
+filed_at: 2026-10-24 18:21
+raised_from: MT drafting
+build: -
+text:
+| ### OB-370 - 2026-10-24 - for 3.0.3: layout actions refused while autonomy runs say "Cannot edit locomotives while autonomy is running."
+|
+| **Kind:** bug  
+| **Raised from:** MT drafting  
+| **Filed:** 2026-10-24 18:21
+|
+| Found while drafting MT-806.  The six layout doors behind RunGates.refuseWhileARunHoldsTheSetup (Create New Layout, Combine Linked Pages, Duplicate and Rename Current Layout, Switch to the Central Station layout, Choose Local Data Folder, Delete Layout) show the locomotive sentence while autonomy runs, and "Not while autonomy, a timetable, Return Home or a route is running.  Stop it first." while a route runs.  Adam, 2026-10-24: "The wording is wrong for layout actions. -> Edits are not allowed while autonomy or routes are running."
+|

@@ -39,7 +39,7 @@ is not one.
 
 The railway defects live in the Inbox, in `docs/manual-tests/triage.db` (`triagedb.py issues`). **It is not empty**, and this
 paragraph said it was for twelve days (IND9X-B3, 2026-09-09).
-Today it holds 31 entries - 5 OB and 26 FR, recounted from the store on 2026-10-24 (FR-143 the newest).  On 2026-09-24 eighteen entries
+Today it holds 32 entries - 6 OB and 26 FR, recounted from the store on 2026-10-24 (OB-370 the newest).  On 2026-09-24 eighteen entries
 left it on Adam's word.  Seven were given their receipts then - OB-240 to OB-243, OB-271, OB-275
 and FR-095, each fixed, answered or withdrawn by its own text - and eleven had been receipted long before
 and were still sitting in the Inbox, which `triage.py` already treated as closed.  OB-272 to OB-277 and
