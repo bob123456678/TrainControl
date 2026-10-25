@@ -72,7 +72,7 @@ public class testTheRefusalToStartSaysWhichThing
     public void testNoDoorWordsItItself() throws Exception
     {
         // The program's code, comments blanked: two mentions of the singular sentence in the main window are comments
-        // about where the choosing USED to be, and a count that reads those counts history.
+        // about where the choosing was, and a count that reads those counts history.
         String ui = SourceOf.allCode();
 
         // The diagram menu's file, whole; the autonomy page has a sentence of its own, so it is left out of the counts
