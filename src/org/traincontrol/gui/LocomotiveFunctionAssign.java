@@ -12,8 +12,6 @@ import javax.swing.JFileChooser;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
-import javax.swing.filechooser.FileFilter;
-import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.plaf.basic.BasicComboPopup;
 import org.traincontrol.util.I18n;
 
@@ -659,8 +657,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
         );
 
         fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
-        FileFilter filter = new FileNameExtensionFilter("JPEG, PNG, GIF, BMP " + I18n.t("ui.images"), "jpg", "png", "gif", "jpeg", "jpe", "bmp");
-        fc.setFileFilter(filter);
+        fc.setFileFilter(QuickFileChooser.imageFilter());
 
         fc.setAcceptAllFileFilterUsed(false);
 

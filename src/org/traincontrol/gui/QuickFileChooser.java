@@ -8,7 +8,9 @@ import java.util.Set;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.swing.Icon;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.filechooser.FileSystemView;
+import org.traincontrol.util.I18n;
 
 /**
  * A file chooser whose Look In list is asked of Windows once, ahead of time, rather than every time (OB-323; Adam,
@@ -63,6 +65,13 @@ public class QuickFileChooser extends javax.swing.JFileChooser
     public QuickFileChooser(String currentDirectoryPath)
     {
         super(currentDirectoryPath, new Places());
+    }
+
+    /** The file types every image chooser offers. */
+    public static FileNameExtensionFilter imageFilter()
+    {
+        return new FileNameExtensionFilter("JPEG, PNG, GIF, BMP " + I18n.t("ui.images"),
+                "jpg", "png", "gif", "jpeg", "jpe", "bmp");
     }
 
     /**

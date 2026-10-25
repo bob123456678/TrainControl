@@ -15,8 +15,6 @@ import javax.swing.JCheckBox;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.filechooser.FileFilter;
-import javax.swing.filechooser.FileNameExtensionFilter;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.util.I18n;
 import org.traincontrol.util.Util;
@@ -279,8 +277,7 @@ final class LocIconActions
             );
 
             fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
-            FileFilter filter = new FileNameExtensionFilter("JPEG, PNG, GIF, BMP " + I18n.t("ui.images"), "jpg", "png", "gif", "jpeg", "jpe", "bmp");
-            fc.setFileFilter(filter);
+            fc.setFileFilter(QuickFileChooser.imageFilter());
 
             fc.setAcceptAllFileFilterUsed(false);
 
