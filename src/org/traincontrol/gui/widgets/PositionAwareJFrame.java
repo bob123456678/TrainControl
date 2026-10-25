@@ -18,23 +18,12 @@ import org.traincontrol.util.I18n;
  */
 public class PositionAwareJFrame extends JFrame
 {
-    // THE APPLICATION'S LOOK AND FEEL, BEFORE THIS CLASS CAN BE INSTANTIATED (Adam, 2026-09-11).
-    //
-    // **A static block rather than the first line of the constructor, and the difference was measured.**
-    // `JFrame`'s own constructor runs before any constructor body here, and it creates the ROOT PANE -
-    // whose UI comes from whatever look and feel is installed at that instant. So installing inside the
-    // constructor is too late for the window's own chrome. Built cold, which is what a test does, this
-    // window came out with a `MetalRootPaneUI` and an operating-system title bar while the same window in
-    // the running program gets `FlatRootPaneUI`, FlatLaf's own title bar and the menu bar drawn inside it:
-    // 166x77 against 166x49 for the identical window, measured 2026-09-11.
-    //
-    // Class initialization always finishes before the first instance is created, so this is early enough.
-    //
-    // It is early enough for a SUBCLASS too - initializing one initializes this class first - which is
-    // how `TrainControlUI` and `LayoutEditor` are covered by this block and have none of their own.
-    //
-    // Headless-guarded because a static initializer that throws leaves the class unusable for the rest of
-    // the process, which is a worse failure than a window in the wrong font.
+    // The application's look and feel, before this class can be instantiated.  A static block, not the constructor's
+    // first line: `JFrame`'s constructor creates the ROOT PANE from whatever look and feel is installed at that
+    // instant, so a cold-built window (a test's) came out with a `MetalRootPaneUI` and an operating-system title bar
+    // instead of FlatLaf's.  Early enough for a SUBCLASS too, as initializing one initializes this class first
+    // (`TrainControlUI` and `LayoutEditor` have none of their own).  Headless-guarded because a static initializer that
+    // throws leaves the class unusable.
     static
     {
         if (!java.awt.GraphicsEnvironment.isHeadless()) TrainControlUI.installLookAndFeel();
@@ -56,9 +45,7 @@ public class PositionAwareJFrame extends JFrame
     // Have we loaded the window?
     private boolean loaded = false;
 
-    /**
-     * A remembered state that maximizes the window, held until the window is on screen (OB-328), or -1 for none.
-     */
+    /** A remembered state that maximizes the window, held until the window is on screen (OB-328), or -1 for none. */
     private int maximisedOnceShown = -1;
     
     public PositionAwareJFrame()
@@ -179,12 +166,10 @@ public class PositionAwareJFrame extends JFrame
                         int state = prefs.getInt(windowName + "_state", this.getExtendedState());
                         this.setSize(width, height);
 
-                        // MAXIMIZED ONCE IT IS ON SCREEN, NOT BEFORE (OB-328; Adam, 2026-10-09: "When a track diagram
-                        // popup is maximized, it will not appear on top of the window (or any other windows) after the
-                        // button is clicked ... same for the editor.  Both work when the window is not previously
-                        // maximized").  The diagram's windows and the editor are built anew at each click, and one
-                        // maximized before it was first shown came up behind every other window; shown at its remembered
-                        // size first, it comes up in front, and is maximized there (`setVisible`).
+                        // Maximized once it is on screen, not before (OB-328): the diagram's windows and the editor are
+                        // built anew at each click, and one maximized before it was first shown came up behind every
+                        // other window; shown at its remembered size first, it comes up in front and is maximized there
+                        // (`setVisible`).
                         if ((state & java.awt.Frame.MAXIMIZED_BOTH) != 0 && !isShowing())
                         {
                             this.maximisedOnceShown = state;
@@ -209,7 +194,7 @@ public class PositionAwareJFrame extends JFrame
     
     /**
      * Shows or hides the window - and, shown, maximizes it where it was remembered maximized, and brings it forward
-     * (OB-328): see `loadWindowBounds`.
+     * (OB-328).
      *
      * @param visible whether to show it
      */
