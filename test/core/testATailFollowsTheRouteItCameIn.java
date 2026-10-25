@@ -18,26 +18,18 @@ import org.traincontrol.marklin.MarklinControlStation;
 /**
  * A standing train's tail follows the route it arrived along, past a junction.
  *
- * Adam, MT-333/MT-335, 2026-09-13: *"With 75 407 DB at bottommaina, length 5, segment length 1+1 between
- * bottommaina and bottommainapre, and 1 between tunnel and bottommainapre past the previous station,
- * EN57-947 may still be manually sent to botommainb, and the orange blocked track is not extended to the
- * segment between tunnel and bottommaina pre."*
+ * Adam, MT-333/MT-335: "With 75 407 DB at bottommaina, length 5, segment length 1+1 between bottommaina and
+ * bottommainapre, and 1 between tunnel and bottommainapre past the previous station, EN57-947 may still be manually
+ * sent to botommainb, and the orange blocked track is not extended to the segment between tunnel and bottommaina pre."
  *
- * **Why it stopped.**  Beyond the first edge the tail walk has only the graph to go on, and at a junction
- * several roads lead back - so on 2026-09-07 the rule became *"end locking at the switch and call it a
- * day"*.  Five units of train with two measured behind the platform reach past BottomMainAPre, which is
- * a junction, and nothing claimed the road beyond it.
+ * Beyond the first edge the tail walk has only the graph to go on, and at a junction several roads lead back, so the
+ * rule had become "end locking at the switch and call it a day".  His ruling: a tail that runs past a junction follows
+ * the route the train actually arrived on; a train placed by hand has no route, and still stops at the fork.
  *
- * **His ruling, 2026-09-13:** a tail that runs past a junction follows the route the train actually
- * arrived on.  A train placed by hand has no route, and still stops at the fork.
- *
- * **The fixture is that shape and nothing else:** a train drives A -> J -> S, and J is a junction because
- * a second road C -> J also arrives there.  The platform's own approach is one unit and the train is
- * three, so two units lie back past J - along A -> J, which is where it came from, and not along C -> J.
- *
- * The run is real - `executePath`, with the destination's sensor thrown - because what has to hold is
- * that an ARRIVAL leaves the route behind for the walk to read.  A claim that set it by hand would pass
- * with the arrival forgetting to.
+ * The fixture is that shape and nothing else: a train drives A -> J -> S, and J is a junction because a second road
+ * C -> J also arrives there.  The platform's own approach is one unit and the train three, so two units lie back past J
+ * along A -> J, not C -> J.  The run is real (`executePath`, with the destination's sensor thrown), because what has to
+ * hold is that an ARRIVAL leaves the route behind for the walk to read.
  *
  * @author Adam
  */
@@ -52,8 +44,7 @@ public class testATailFollowsTheRouteItCameIn
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        // BEFORE the model: `init` reads the machine-global layout preference and would otherwise
-        // open Adam's real railway (OB-111).
+        // BEFORE the model: `init` reads the machine-global layout preference (OB-111).
         sandbox = support.LayoutSandbox.open();
 
         model = support.TestStation.simulated();
@@ -78,8 +69,6 @@ public class testATailFollowsTheRouteItCameIn
 
     /**
      * Driven there, the tail claims the road it came in on, beyond the junction.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testADrivenTrainsTailFollowsItsRoutePastTheJunction() throws Exception
@@ -153,12 +142,8 @@ public class testATailFollowsTheRouteItCameIn
     }
 
     /**
-     * Placed there by hand, it still stops at the junction: there is no route to follow.
-     *
-     * The control, and the half of the ruling that keeps the fork rule: *"A train placed by hand (no
-     * route) still stops at the fork, as now."*
-     *
-     * @throws Exception from the railway
+     * Placed there by hand, it still stops at the junction: there is no route to follow.  The control, and the half of
+     * the ruling that keeps the fork rule: "A train placed by hand (no route) still stops at the fork, as now."
      */
     @Test
     public void testAPlacedTrainStillStopsAtTheJunction() throws Exception
@@ -187,9 +172,6 @@ public class testATailFollowsTheRouteItCameIn
 
     /**
      * A -> J -> S, with C -> J making J a junction; every edge measured, the platform's approach at one.
-     *
-     * @param s88 the first of four sensor numbers this fixture uses
-     * @return the graph
      */
     private static Layout aJunctionBehindAPlatform(int s88) throws Exception
     {
