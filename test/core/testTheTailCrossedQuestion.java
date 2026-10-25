@@ -19,12 +19,10 @@ import org.traincontrol.marklin.MarklinControlStation;
  * The farthest sensor the tail of a hand-placed train has crossed: which sensors are offered, when the question is
  * put, and that the road it names is the one the tail then covers.
  *
- * Adam, 2026-09-14: *"the prompt should ask the user to pick from a list and select the farthest sensor the tail of
- * the train recently crossed."*
- *
- * **Each claim builds its own graph on sensors of its own** (Adam, 2026-09-14: *"Make sure tests for the different
- * scenarios use independent track diagrams"*).  The shape is the junction behind a platform: A -> J -> S with C -> J,
- * J a junction, every edge measured, the platform's approach one unit.  The train stands at S having come in from J's
+ * Adam: "the prompt should ask the user to pick from a list and select the farthest sensor the tail of the train
+ * recently crossed."  Each claim builds its own graph on sensors of its own ("Make sure tests for the different
+ * scenarios use independent track diagrams").  The shape is the junction behind a platform: A -> J -> S with C -> J, J
+ * a junction, every edge measured, the platform's approach one unit.  The train stands at S having come in from J's
  * side.
  *
  * @author Adam
@@ -88,13 +86,12 @@ public class testTheTailCrossedQuestion
     }
 
     /**
-     * Three units reach past J and cross neither A nor C: the question is put, offering J and the way the tail lies past
-     * it - towards A, or towards C (MT-477).
+     * Three units reach past J and cross neither A nor C: the question is put, offering J and the way the tail lies
+     * past it - towards A, or towards C (MT-477).
      *
-     * Adam, 2026-09-23, on MT-477: *"when set to lenth 3, the tail always follows switch 51 turned, rather than facing
-     * straight toward rampdown.  Not a major issue, but technically that length should qualify for the prompt."*  Until
-     * then a junction the tail passed without crossing a sensor beyond was not asked about, on the reading that
-     * every answer would be J.  But the last two units lie on A's rail or on C's, and those are different track.
+     * Adam: "when set to lenth 3, the tail always follows switch 51 turned, rather than facing straight toward
+     * rampdown.  Not a major issue, but technically that length should qualify for the prompt."  The last two units lie
+     * on A's rail or on C's, and those are different track.
      */
     @Test
     public void testATailPastTheJunctionShortOfASensorIsAsked() throws Exception
@@ -194,11 +191,9 @@ public class testTheTailCrossedQuestion
     /**
      * Only a road a train can DRIVE in on is offered (OB-227).
      *
-     * Adam, MT-435, 2026-09-15: *"the blocked orange path crosses switch 99 and switch 100 instead of going to
-     * bottomsecondary, which would require the train to reverse in.  that isn't a realistic path."*  Here the rails out of
-     * J run AWAY from the platform to A and C, so no train can have come from A or C to S without turning round: nothing
-     * past J is offered.  This replaces a claim of 2026-09-14 that such a road was followed - a reading of "a tail is not
-     * directional" that the road it lies on does not share.
+     * Adam, MT-435: "the blocked orange path crosses switch 99 and switch 100 instead of going to bottomsecondary,
+     * which would require the train to reverse in.  that isn't a realistic path."  Here the rails out of J run AWAY
+     * from the platform, so no train can have come from A or C to S without turning round: nothing past J is offered.
      */
     @Test
     public void testOnlyARoadATrainCanDriveInOnIsOffered() throws Exception
@@ -217,9 +212,9 @@ public class testTheTailCrossedQuestion
     /**
      * A sensor exactly the train's length back is one its tail has crossed (OB-226).
      *
-     * Adam, MT-435, 2026-09-15: *"When 75 407 DB is set to length 3, only BottomMainAPre is offered (2 away from the
-     * station), but Tunnel should also be offered since it is 3 away."*  Here: one unit to J, three more to A and C - a
-     * four-unit train reaches exactly to A and to C.
+     * Adam, MT-435: "When 75 407 DB is set to length 3, only BottomMainAPre is offered (2 away from the station), but
+     * Tunnel should also be offered since it is 3 away."  One unit to J, three more to A and C: a four-unit train
+     * reaches exactly to A and to C.
      */
     @Test
     public void testASensorExactlyTheTrainsLengthBackIsOffered() throws Exception
@@ -241,10 +236,10 @@ public class testTheTailCrossedQuestion
     /**
      * With no recorded road, the list starts on the sensor nearest the back when there is exactly one (FR-088).
      *
-     * Adam, MT-435, 2026-09-15: *"The closest sensor to the back should be the default selection in the length window,
-     * so the user can just click OK if appropriate."*  And, asked what to do where there are several: nearest the back
-     * if there is one, nothing chosen otherwise.  One unit to J, then A -> J three and C -> J five: five units cross A
-     * and not C, so A is the one sensor nearest the back.  With both at three, A and C both are, and nothing is chosen.
+     * Adam, MT-435: "The closest sensor to the back should be the default selection in the length window, so the user
+     * can just click OK if appropriate."  Nearest the back if there is one, nothing chosen otherwise.  One unit to J,
+     * then A -> J three and C -> J five: five units cross A and not C, so A is the one.  With both at three, nothing is
+     * chosen.
      */
     @Test
     public void testTheListStartsOnTheOneSensorNearestTheBack() throws Exception
@@ -270,10 +265,6 @@ public class testTheTailCrossedQuestion
         assertEquals(TailCrossedPrompt.preselectedIndex(both, null), -1,
             "TQ_A and TQ_C are both nearest the back, and the list chose one of them: " + farthestOf(both));
     }
-
-    // RESTORED: these seven claims were dropped when OB-226, OB-227 and FR-088 rewrote this class on
-    // 2026-09-15, and the rules they hold are still
-    // in the code.
 
     /**
      * One road with a crossed sensor is enough to ask, when the other road has none.
@@ -614,17 +605,14 @@ public class testTheTailCrossedQuestion
     /**
      * Two copies of one square leaving by the same rail are ONE road back, offered once and no reason to ask (OB-276).
      *
-     * Adam, 2026-09-23: *"when pasting 75 407 DB on bottomsecondary, the tail question lists rampdown twice in the
-     * list."*  Measured on his railway, the two were RampDown's southbound lane and its northbound TURNING copy - a train
-     * that came in from the south and turned - both leaving south over the same places.  Keyed by lane name they were
-     * two roads.
+     * Adam: "when pasting 75 407 DB on bottomsecondary, the tail question lists rampdown twice in the list."  The two
+     * were RampDown's southbound lane and its northbound TURNING copy, both leaving south over the same places; keyed
+     * by lane name they were two roads.
      *
      * Built on the diagram, because the copies are the builder's: X - R - Q - A in a line, R a square trains may turn
      * at, so R is emitted as a plain copy and a turning one for each side, and two of them leave east over the same
-     * rail towards Q.  Every square measured at one unit: a three-unit train at Q has its tail across R, which is the
-     * first hop; a five-unit train at A has it across Q and R, which is the same two copies one hop further back.
-     *
-     * Before the fix: R offered twice (its two names), and `wouldAsk` true - a junction counted where there is one rail.
+     * rail towards Q.  Every square measured at one unit: a three-unit train at Q has its tail across R, the first hop;
+     * a five-unit train at A has it across Q and R, the same two copies one hop further back.
      *
      * @throws Exception from the build
      */
