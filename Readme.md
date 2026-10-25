@@ -410,6 +410,8 @@ Tab icons provided by Freepik.
         - Moving a condition up or down now takes it past a whole bracketed group beside it, so `(A or B or C) and D` becomes `D and (A or B or C)`.
     - Track Diagram
         - The autonomy locomotive icon is now slightly see-through, so a label under it can still be made out.
+    - Automation API
+        - The API guide now points to six short example programs, one for each common job: getting to know your station, driving a locomotive, switches, signals and sensors, building a layout in code, running trains on it, and reacting to events.  Each is checked automatically, so they keep working as TrainControl changes.
     - Track Diagram Bug Fixes
         - In the layout editor, the `Text Labels` box now matches what the page shows when it opens, also after the autonomy editor has hidden the page's text.
     - Route Bug Fixes
