@@ -6836,11 +6836,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Delegates to `CoveredTrackView.awaitCoveredTrack`.
+     * Delegates to `CoveredTrackView.awaitSettled`: true once every covered-track refresh already asked for has landed.
      */
     boolean awaitCoveredTrack(long millis)
     {
-        return this.coveredTrackView.awaitCoveredTrack(millis);
+        return this.coveredTrackView.awaitSettled(millis);
     }
 
     /**

@@ -7,7 +7,7 @@ package org.traincontrol.gui;
  *
  * The marks, the flags, the ask and the worker stay on `TrainControlUI`; this holds the machine that drives them.
  */
-final class CoveredTrackView
+final class CoveredTrackView extends SettledQuestion
 {
     private final TrainControlUI ui;
 
@@ -35,7 +35,7 @@ final class CoveredTrackView
      * `repaint()`, which Swing documents as callable from any thread.  And in the railway's own lock order: the worker takes the
      * `Layout` monitor and gives it back before it touches anything of this window's, so it never holds one and wants the other.
      *
-     * @see #awaitCoveredTrack(long) for waiting until the answer has landed
+     * @see #awaitSettled(long) for waiting until the answer has landed
      */
     void refreshCoveredTrack()
     {
@@ -72,7 +72,7 @@ final class CoveredTrackView
         {
             // Submitting can be refused - the pool is shut down when the window closes - and the flag
             // is set by then.  Clearing it here keeps the latch from coming back at one remove.
-            settleCoveredTrack();
+            settle();
         }
     }
 
@@ -141,7 +141,7 @@ final class CoveredTrackView
         }
         finally
         {
-            settleCoveredTrack();
+            settle();
 
             // AN ASK THAT ARRIVED IN THE GAP.  Between the loop reading the flag for the last time and
             // the line above giving the job up, an ask can set the flag and find a worker still in
@@ -151,57 +151,25 @@ final class CoveredTrackView
         }
     }
 
-    /**
-     * Says the job is given up, and wakes anybody waiting for the marks to have caught up.
-     *
-     * Both under the one monitor `awaitCoveredTrack` waits on, so a waiter cannot check the flags,
-     * find a refresh outstanding, and go to sleep in the instant between this clearing them and
-     * announcing it.
-     */
-    void settleCoveredTrack()
+    @Override
+    Object settledLock()
     {
-        synchronized (this.ui.coveredTrackSettled)
-        {
-            this.ui.coveredTrackInFlight.set(false);
-
-            this.ui.coveredTrackSettled.notifyAll();
-        }
+        return this.ui.coveredTrackSettled;
     }
 
     /**
-     * Waits until every covered-track refresh already asked for has landed: the marks are worked out on a worker (OB-192), so
-     * asking for them and looking at them are two moments, which anything that READS `coveredTrack` or `blockedTrack` right after
-     * asking (in practice a test) has to bridge.  BOUNDED, and it says which it did: a wait with no deadline would turn a dead
-     * worker into a hung window rather than a stale mark.
-     *
-     * @param millis how long to wait at most
-     * @return true when the marks are up to date, false when the wait ran out
+     * A refresh is outstanding while a worker is on it or one is asked for: asking for the marks and looking at them are
+     * two moments, which anything that READS `coveredTrack` or `blockedTrack` right after asking (in practice a test) bridges.
      */
-    boolean awaitCoveredTrack(long millis)
+    @Override
+    boolean outstanding()
     {
-        long deadline = System.currentTimeMillis() + millis;
+        return this.ui.coveredTrackInFlight.get() || this.ui.coveredTrackDirty.get();
+    }
 
-        synchronized (this.ui.coveredTrackSettled)
-        {
-            while (this.ui.coveredTrackInFlight.get() || this.ui.coveredTrackDirty.get())
-            {
-                long left = deadline - System.currentTimeMillis();
-
-                if (left <= 0) return false;
-
-                try
-                {
-                    this.ui.coveredTrackSettled.wait(left);
-                }
-                catch (InterruptedException stopped)
-                {
-                    Thread.currentThread().interrupt();
-
-                    return false;
-                }
-            }
-        }
-
-        return true;
+    @Override
+    void giveUp()
+    {
+        this.ui.coveredTrackInFlight.set(false);
     }
 }
