@@ -152,8 +152,7 @@ public class testTheRecordsCountTheStore
             + reviews + " it states above");
 
         // ONE NEEDLE, NOT TWO: a file named "<date>-questions-for-adam.md" also ends with "-for-adam.md", so counting
-        // both names
-        // counted that file twice.
+        // both names counted that file twice.
         assertEquals(occurrences(said, "-for-adam.md"),
             files - reviews,
             "the README says the difference between " + files + " files and " + reviews
@@ -371,10 +370,7 @@ public class testTheRecordsCountTheStore
         }
     }
 
-    /**
-     * The refs in the mirror whose prefix is this one, with the round each belongs to (a ref with no number is in the
-     * first).
-     */
+    /** The refs in the mirror whose prefix is this one, with the round each belongs to (no number: the first). */
     private static java.util.Map<String, Integer> roundsInTheMirror(String prefix) throws Exception
     {
         java.util.Map<String, Integer> out = new java.util.TreeMap<>();
