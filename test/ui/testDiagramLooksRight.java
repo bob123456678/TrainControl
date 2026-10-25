@@ -1551,7 +1551,8 @@ public class testDiagramLooksRight
         {
             for (String language : new String[] {"en", "da"})
             {
-                java.util.Map<String, java.awt.Rectangle> column = rightColumn(page, new java.util.Locale(language));
+                java.util.Map<String, java.awt.Rectangle> column = rightColumn(page, new java.util.Locale(language),
+                    new java.util.HashMap<String, Integer>());
 
                 java.awt.Rectangle labels = column.get("Station Labels");
 
@@ -1579,11 +1580,66 @@ public class testDiagramLooksRight
     }
 
     /**
+     * The tool buttons and Save and Cancel read in full in English and in Danish: none is narrower than its text needs
+     * (OB-377; the Danish "Hvorfor kører det ikke?" was cut to "...").
+     *
+     * MUTATION: put `autosetup.ui.toolWhy` in messages_da.properties back to "Hvorfor kører det ikke?": red in
+     * Danish.
+     *
+     * @throws Exception from the editor
+     */
+    @Test
+    public void testTheRightColumnsButtonsReadInFull() throws Exception
+    {
+        final org.traincontrol.automationui.AutonomySession session = ui.getAutonomySession();
+
+        assertNotNull(session, "precondition: no autonomy setup in the fixture layout");
+
+        String pageName = null;
+
+        for (org.traincontrol.automationui.TileGraph.TileKey station : session.getLabelledStationTiles())
+        {
+            if (pageName == null) pageName = station.getPage();
+        }
+
+        assertNotNull(pageName, "precondition: no station in the fixture layout");
+
+        final LayoutDiagram page = model.getLayout(pageName);
+
+        final java.util.Locale was = java.util.Locale.getDefault();
+
+        try
+        {
+            for (String language : new String[] {"en", "da"})
+            {
+                java.util.Map<String, Integer> needs = new java.util.LinkedHashMap<>();
+                java.util.Map<String, java.awt.Rectangle> column = rightColumn(page, new java.util.Locale(language), needs);
+
+                assertTrue(needs.size() >= 4, "precondition: Save, Cancel and the tool buttons were not found in "
+                    + language + ": " + needs.keySet());
+
+                for (java.util.Map.Entry<String, Integer> button : needs.entrySet())
+                {
+                    assertTrue(button.getValue() <= column.get(button.getKey()).width, "\"" + button.getKey()
+                        + "\" needs " + button.getValue() + " pixels and has " + column.get(button.getKey()).width
+                        + " in " + language + ", so it is cut short with \"...\"");
+                }
+            }
+        }
+        finally
+        {
+            java.util.Locale.setDefault(was);
+            org.traincontrol.util.I18n.setLocale(was);
+        }
+    }
+
+    /**
      * Opens the autonomy editor in a language, packed, and returns the bounds in the content pane of the right
      * column's dropdowns and buttons: the two boxes, the window's visible push buttons, and the panel's tool buttons.
+     * Each button's minimum width, what its text needs, goes into {@code needs}.
      */
-    private java.util.Map<String, java.awt.Rectangle> rightColumn(LayoutDiagram page, java.util.Locale locale)
-        throws Exception
+    private java.util.Map<String, java.awt.Rectangle> rightColumn(LayoutDiagram page, java.util.Locale locale,
+        final java.util.Map<String, Integer> needs) throws Exception
     {
         java.util.Locale.setDefault(locale);
         org.traincontrol.util.I18n.setLocale(locale);
@@ -1624,10 +1680,11 @@ public class testDiagramLooksRight
                     if (c instanceof javax.swing.JButton && c.isVisible())
                     {
                         column.put(((javax.swing.JButton) c).getText(), inPane(c, pane));
+                        needs.put(((javax.swing.JButton) c).getText(), c.getMinimumSize().width);
                     }
                 }
 
-                collectToolButtons(panel, pane, column);
+                collectToolButtons(panel, pane, column, needs);
             });
 
             return column;
@@ -1645,7 +1702,7 @@ public class testDiagramLooksRight
 
     /** The panel's visible push and toggle buttons (not its check boxes or radio buttons). */
     private static void collectToolButtons(java.awt.Container in, java.awt.Container pane,
-        java.util.Map<String, java.awt.Rectangle> out)
+        java.util.Map<String, java.awt.Rectangle> out, java.util.Map<String, Integer> needs)
     {
         for (java.awt.Component c : in.getComponents())
         {
@@ -1654,10 +1711,11 @@ public class testDiagramLooksRight
             if (c instanceof javax.swing.JButton || c.getClass() == javax.swing.JToggleButton.class)
             {
                 out.put(((javax.swing.AbstractButton) c).getText(), inPane(c, pane));
+                needs.put(((javax.swing.AbstractButton) c).getText(), c.getMinimumSize().width);
             }
             else if (c instanceof java.awt.Container && !(c instanceof javax.swing.JComboBox))
             {
-                collectToolButtons((java.awt.Container) c, pane, out);
+                collectToolButtons((java.awt.Container) c, pane, out, needs);
             }
         }
     }
