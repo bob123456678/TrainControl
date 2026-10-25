@@ -20,33 +20,24 @@ import support.SourceOf;
 /**
  * Two windows, and no Control key doing two things in either of them.
  *
- * **Adam picked a shortcut by hand on 2026-09-09 and had to be told what was free.**  FR-066 asked for
- * Control+D and Control+D is taken twice over - the layout editor toggles addresses with it, the main
- * window opens the locomotive adder - so the answer to *"which key"* was a list measured off both key
- * handlers by reading them.  He chose **E** from it.
+ * FR-066 asked for Control+D, which is taken twice over (the layout editor toggles addresses with it, the main window
+ * opens the locomotive adder), so the answer to "which key" was a list measured off both key handlers by reading them;
+ * Adam chose **E**.  This class does that reading on every run.  A collision is invisible: both are `else if` chains on
+ * one keycode, so the second branch is never reached, and the shortcut that stops working is the one added last.
  *
- * That reading is what this class does on every run.  A collision is invisible: the second branch is
- * simply never reached, because both are `else if` chains on one keycode, and the shortcut that stops
- * working is the one somebody added last.  Nothing else in the suite would notice.
+ * **What this is, and what it is not.**  It is a source-shape guard and knows only the spellings the two files use
+ * (`evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_X`, `e.` in the editor, `controlPressed && keyCode ==
+ * KeyEvent.VK_X` in the main window), so `testItFoundTheHandlersItThinksItIsReading` asserts a floor on how many it
+ * found: a regex that silently stopped matching would otherwise report a clean bill of health.
  *
- * **What this is, and what it is not.**  It is a source-shape guard, and it knows only the spellings
- * the two files actually use - `evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_X` or the same
- * with `e.` in the editor, `controlPressed && keyCode == KeyEvent.VK_X` in the main window.  A shortcut
- * bound some third way is one it cannot see, so `testItFoundTheHandlersItThinksItIsReading` asserts a
- * floor on how many it found: a regex that silently stopped matching would otherwise report a clean
- * bill of health about every case it never heard of.
+ * It does NOT require the two windows to agree (Control+S means Rename in one and Swap in the other); only that neither
+ * window has two answers to one key.
  *
- * It deliberately does NOT require the two windows to agree with each other.  They are different
- * windows with different jobs, and Control+S means Rename in one and Swap in the other quite happily.
- * What it requires is that neither window has two answers to one key.
- *
- * **THE MAIN WINDOW HAD NO FREE LETTERS AT ALL UNTIL OB-197.**  Its chain ended
- * `else if (this.buttonMapping.containsKey(keyCode))` with no `!controlPressed`, and `buttonMapping`
- * holds every letter - so Control plus any letter not caught above it selected a locomotive button,
- * and the seven letters this printed as "free in both" were seven that already did something.  Adam,
- * 2026-09-10: *"it should stop doing that.  that was not intended."*  The arm filters Control now and
- * `testTheFallThroughStillFiltersControl` is what keeps it filtering, because everything this class
- * prints about free keys rests on it.
+ * **THE MAIN WINDOW HAD NO FREE LETTERS AT ALL UNTIL OB-197.**  Its chain ended `else if
+ * (this.buttonMapping.containsKey(keyCode))` with no `!controlPressed`, so Control plus any letter not caught above
+ * selected a locomotive button.  Adam: "it should stop doing that.  that was not intended."
+ * `testTheFallThroughStillFiltersControl` keeps it filtering, because everything this class prints about free keys
+ * rests on it.
  *
  * @author Adam
  */
@@ -58,16 +49,13 @@ public class testNoTwoShortcutsShareAKey
      */
     private static final String EDITOR = "LayoutEditor.java";
 
-    /**
-     * The main window, named the same way.
-     */
+    /** The main window, named the same way. */
     private static final String MAIN = "TrainControlUI.java";
 
     /**
-     * Each window's key handlers, so "the editor" means the editor's handlers and not every file that happens to spell
-     * a shortcut the editor's way (FR-136): a Control+S added to another window must not stand in for the editor's.
-     *
-     * `formKeyPressed` is a name more than one window gives its handler, so the editor's is asked of its class.
+     * Each window's key handlers, so "the editor" means the editor's handlers and not every file that spells a shortcut
+     * the editor's way (FR-136).  `formKeyPressed` is a name more than one window gives its handler, so the editor's is
+     * asked of its class.
      */
     private static final Map<String, String[][]> HANDLERS = new LinkedHashMap<>();
 
@@ -84,71 +72,45 @@ public class testNoTwoShortcutsShareAKey
     }
 
     /**
-     * `evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_X`, and the same with `e.`.
-     *
-     * The Control half first and the keycode second, which is the only order either file writes.  A
-     * branch written the other way round is one this cannot see - it said it read both until a review
-     * checked - and the floor above is what catches a spelling going silently unmatched.
-     *
-     * Both event names, because `LayoutEditor` has two key entry points and they do not agree on one:
+     * `evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_X`, and the same with `e.`: the Control half first, the
+     * only order either file writes (the floor catches a spelling going unmatched).  Both names, because
      * `formKeyPressed` calls its argument `evt` and `receiveKeyEvent` calls it `e`.
      */
     private static final Pattern IN_THE_EDITOR = Pattern.compile(
         "\\be(?:vt)?\\.isControlDown\\(\\)\\s*&&\\s*e(?:vt)?\\.getKeyCode\\(\\)"
         + "\\s*==\\s*KeyEvent\\.VK_([A-Z0-9_]+)");
 
-    /**
-     * `controlPressed && keyCode == KeyEvent.VK_X`.
-     */
+    /** `controlPressed && keyCode == KeyEvent.VK_X`. */
     private static final Pattern IN_THE_MAIN_WINDOW = Pattern.compile(
         "controlPressed\\s*&&\\s*keyCode\\s*==\\s*KeyEvent\\.VK_([A-Z0-9_]+)");
 
     /**
-     * The keys one file binds twice on purpose, and why.
+     * The keys one file binds twice on purpose, as `File.java#KEY`; each is a claim somebody has to defend.
      *
-     * **A second binding is not automatically a collision.**  `TrainControlUI.locomotiveGestureOnDiagram`
-     * is asked FIRST, from the top of the key handler, and returns true when it has handled the key -
-     * so Control+X and Control+V mean the square under the pointer while the pointer is resting on the
-     * track diagram, and the locomotive button everywhere else.  Adam's own reasoning is in that
-     * method: *"A user pointing at a station and pressing Control+X means the station - there is
-     * nothing else it could mean."*
-     *
-     * Delete is on this list for a related reason: the diagram layer takes it WITHOUT Control and the
-     * else-if chain takes it WITH, so the two never contend at all - the regex here sees only the key
-     * name and cannot tell them apart.
-     *
-     * Each entry is `File.java#KEY`, and each is a claim somebody has to defend: an entry added
-     * without a first-refusal layer to point at is a shortcut quietly turned off.
+     * **A second binding is not automatically a collision.**  `TrainControlUI.locomotiveGestureOnDiagram` is asked
+     * FIRST and returns true when it has handled the key, so Control+X and Control+V mean the square under the pointer
+     * while it rests on the track diagram, and the locomotive button elsewhere.  Delete is here because the diagram
+     * layer takes it WITHOUT Control and the else-if chain WITH, so they never contend, and the regex sees only the key
+     * name.
      */
     private static final Set<String> BOUND_TWICE_ON_PURPOSE = new LinkedHashSet<>(java.util.Arrays.asList(
         "TrainControlUI.java#X", "TrainControlUI.java#V", "TrainControlUI.java#DELETE",
 
-        // `LayoutEditor.receiveKeyEvent` is a SECOND entry point, not a second branch of the first:
-        // it takes the tile it was pressed over, has no caller today, and returns immediately in
-        // autonomy mode.  Its Control+V cannot contend with `formKeyPressed`'s.
+        // `LayoutEditor.receiveKeyEvent` is a SECOND entry point, not a second branch: it has no caller today and
+        // returns at once in autonomy mode.
         "LayoutEditor.java#V"));
 
     /**
-     * How many Control shortcuts each file is known to bind.
-     *
-     * A floor rather than a count: adding one is ordinary and must not fail this, while a regex that
-     * has stopped matching drops towards nothing and must.
-     *
-     * **Measured by running the regexes**, which is how the first version of this got them wrong: it
-     * said 10 and 15 from a reading, and floors of 8 and 12 would have let half the editor's handlers
-     * go invisible before anything reddened.  The scan of each window's own key handlers finds **20 in
-     * the editor and 16 in the main window** (2026-10-19).  A little below the real count, so that
-     * removing a shortcut is ordinary and losing a spelling is not.
+     * How many Control shortcuts each file is known to bind: a floor rather than a count, so adding one is ordinary
+     * while a regex that stopped matching drops towards nothing and fails.  Measured by running the regexes (20 in the
+     * editor, 16 in the main window) and set a little below; floors of 8 and 12 had let half the editor's handlers go
+     * invisible.
      */
     private static final int EDITOR_FLOOR = 17;
 
     private static final int MAIN_FLOOR = 14;
 
-    /**
-     * No key does two things in the layout editor.
-     *
-     * @throws IOException when the source cannot be read
-     */
+    /** No key does two things in the layout editor. */
     @Test
     public void testTheEditorHasOneAnswerPerKey() throws IOException
     {
@@ -159,11 +121,7 @@ public class testNoTwoShortcutsShareAKey
             + " whichever was added last - silently");
     }
 
-    /**
-     * And none does in the main window.
-     *
-     * @throws IOException when the source cannot be read
-     */
+    /** And none does in the main window. */
     @Test
     public void testTheMainWindowHasOneAnswerPerKey() throws IOException
     {
@@ -173,12 +131,8 @@ public class testNoTwoShortcutsShareAKey
     }
 
     /**
-     * The regexes still match the handlers they were written against.
-     *
-     * Without this the two claims above pass by finding nothing, which is the failure mode of every
-     * guard that reads source: it reports a clean bill of health about the cases it never heard of.
-     *
-     * @throws IOException when the source cannot be read
+     * The regexes still match the handlers they were written against: without it the two claims above pass by finding
+     * nothing.
      */
     @Test
     public void testItFoundTheHandlersItThinksItIsReading() throws IOException
@@ -205,12 +159,8 @@ public class testNoTwoShortcutsShareAKey
     }
 
     /**
-     * What is still free in BOTH windows, printed rather than asserted.
-     *
-     * The next person to be asked "which key" gets the answer off a run instead of off a reading, and
-     * the reading is what took an hour on 2026-09-09.
-     *
-     * @throws IOException when the source cannot be read
+     * What is still free in BOTH windows, printed rather than asserted, so the next "which key" is answered off a run
+     * instead of a reading.
      */
     @Test
     public void testTheFreeKeysArePrinted() throws IOException
@@ -253,17 +203,9 @@ public class testNoTwoShortcutsShareAKey
     }
 
     /**
-     * The main window's last arm takes a bare letter and not a Control chord (OB-197).
-     *
-     * `buttonMapping` is filled with all 26 letters, so without `!controlPressed` this arm catches
-     * Control plus every letter the arms above it do not - which is what it did until 2026-09-10, and
-     * is why the first version of this class printed seven letters as free in both windows when all
-     * seven already selected a locomotive button.  FR-066's key was chosen off that list.
-     *
-     * **Everything this class says about free keys rests on this arm**, so it is asserted rather than
-     * assumed: a "free in both" list is only true while Control cannot reach the buttons.
-     *
-     * @throws IOException when the source cannot be read
+     * The main window's last arm takes a bare letter and not a Control chord (OB-197): `buttonMapping` holds all 26
+     * letters, so without `!controlPressed` Control plus every letter the arms above do not catch selected a locomotive
+     * button.  Everything this class says about free keys rests on this arm, so it is asserted rather than assumed.
      */
     @Test
     public void testTheFallThroughStillFiltersControl() throws IOException
@@ -274,14 +216,7 @@ public class testNoTwoShortcutsShareAKey
             + " class prints is wrong about all of them. That is OB-197 coming back");
     }
 
-    /**
-     * Every Control key bound in one window's key handlers, handler by handler.
-     *
-     * @param window the window, EDITOR or MAIN
-     * @param how the spelling that window uses
-     * @return the key names, with repeats
-     * @throws IOException when the source cannot be read
-     */
+    /** Every Control key bound in one window's key handlers, handler by handler, with repeats. */
     private List<String> keysIn(String window, Pattern how) throws IOException
     {
         List<String> out = new ArrayList<>();
@@ -300,12 +235,8 @@ public class testNoTwoShortcutsShareAKey
     }
 
     /**
-     * Every allowance names a key that really is bound twice.
-     *
-     * An allowlist entry whose case has gone is an allowance nobody can see expiring, and the next
-     * genuine collision on that key is admitted without a word.
-     *
-     * @throws IOException when the source cannot be read
+     * Every allowance names a key that really is bound twice: an allowance whose case has gone is one nobody sees
+     * expiring.
      */
     @Test
     public void testNoAllowanceHasOutlivedItsCase() throws IOException
@@ -322,9 +253,8 @@ public class testNoTwoShortcutsShareAKey
             stale.remove("LayoutEditor.java#" + key);
         }
 
-        // Removed once per APPEARANCE above, so a key bound once is still removed - what is asserted
-        // here is only that the key is bound at all.  A key bound once has no second binding to
-        // allow, and that is caught by the count below.
+        // Removed once per APPEARANCE, so a key bound once is still removed; one bound once has no second binding to
+        // allow, which the count below catches.
         assertEquals(stale, new TreeSet<String>(),
             "these allowances name keys nothing binds any more: " + stale + ". An allowance that has"
             + " outlived its case admits the next real collision on that key without a word");
@@ -349,14 +279,7 @@ public class testNoTwoShortcutsShareAKey
         }
     }
 
-    /**
-     * The keys that appear more than once.
-     *
-     * @param window the window, EDITOR or MAIN
-     * @param how the spelling that window uses
-     * @return the duplicated key names, sorted
-     * @throws IOException when the source cannot be read
-     */
+    /** The keys that appear more than once, sorted. */
     private Set<String> duplicatesIn(String window, Pattern how) throws IOException
     {
         Map<String, Integer> counted = new LinkedHashMap<>();
