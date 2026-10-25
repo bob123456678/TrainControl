@@ -21,14 +21,10 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * Under Visible Elements, the first control is as far from the heading as under the editor's other headings (OB-289).
- *
- * Adam, 2026-09-24: *"there is slightly too much spacing/padding below "visible elements" in autonomy editor.  make it
- * be consistent with other labels"*.  The first row there is a column of Text Labels, a gap, and Grid (FR-006); the
- * autonomy editor hides Text Labels, which its caption choice replaces (FR-061), and the gap was left standing at the
- * top of the column - twice the space every other heading has under it.
- *
- * In both editors, because the plain one is where the column is right, and it has to stay right.
+ * Under Visible Elements, the first control is as far from the heading as under the editor's other headings (OB-289;
+ * Adam: "make it be consistent with other labels").  The autonomy editor hides Text Labels, which its caption choice
+ * replaces (FR-061), and the gap above Grid was left standing at the top of the column.  In both editors, because the
+ * plain one is where the column is right and has to stay right.
  *
  * And the column is all there at the window's smallest size (OB-342): the floor's height shows its last control, and a
  * status line that does not ask the window for its sentence's width keeps the column on the screen.
@@ -105,8 +101,6 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
 
     /**
      * In the track diagram editor the column is right: Visible Elements has the gap Diagram Size has over its buttons.
-     *
-     * @throws Exception from the event thread or reflection
      */
     @Test
     public void testInTheTrackEditor() throws Exception
@@ -117,11 +111,7 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
             + " pixels below it, and the first under Diagram Size " + gaps[0]);
     }
 
-    /**
-     * And in the autonomy editor - where Adam saw it - Visible Elements has that same gap.
-     *
-     * @throws Exception from the event thread or reflection
-     */
+    /** And in the autonomy editor, where Adam saw it, Visible Elements has that same gap. */
     @Test
     public void testInTheAutonomyEditor() throws Exception
     {
@@ -135,15 +125,11 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
     }
 
     /**
-     * The checkboxes under Visible Elements are evenly spaced, and spaced alike in both editors (OB-312).
-     *
-     * Adam, 2026-10-03: *"check spacing between visible elements checkboxes"*.  They were 6, 4 and 6 pixels apart: the
-     * columns built beside the form's own checkboxes left the heading's gap between them, where the form leaves 4.  Track
-     * Lengths and Show Unmeasured stay together with no gap, as Adam asked on 2026-09-16 - one subject.
+     * The checkboxes under Visible Elements are evenly spaced, and spaced alike in both editors (OB-312).  They were 6,
+     * 4 and 6 pixels apart: the columns built beside the form's own checkboxes left the heading's gap between them,
+     * where the form leaves 4.  Track Lengths and Show Unmeasured stay together with no gap, as one subject.
      *
      * MUTATION: leave a heading's gap between two of the checkboxes, and this fails.
-     *
-     * @throws Exception from the event thread or reflection
      */
     @Test
     public void testTheCheckboxesUnderItAreEvenlySpaced() throws Exception
@@ -164,31 +150,20 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
     }
 
     /**
-     * The autonomy editor, shrunk as far as it will go in both directions, still shows every control (OB-342; Adam,
-     * 2026-10-12: *"It looks like the min height of the autonomy editor window needs to be a few more pixels taller"*).
+     * The autonomy editor, shrunk as far as it will go in both directions, still shows every control (OB-342; Adam:
+     * "the min height of the autonomy editor window needs to be a few more pixels taller").
      *
-     * HEIGHT: at Small the window would shrink to 680 pixels and the column of tools needs 693 to show Cancel, the last
-     * control in it, and the status line under the findings (measured at 125%, the display this was built on).
+     * HEIGHT: at Small the window shrank to 680 pixels and the column of tools needs 693 to show Cancel, the last
+     * control, and the status line.  WIDTH: the status line's words are data and its minimum width was its text's (521
+     * pixels in English, 655 in German), so the tools column went off the right edge; the sentence here is longer than
+     * any language's, so the claim does not depend on the railway's words.  SCALE: the floor was in pixels and the
+     * window is not, so it is asked at 100%, 125% and 150% (`flatlaf.uiScale`, which `TrainControlUI` sets from the
+     * display as dpi / 96), with the look and feel installed again and put back at the end.  Asked at each of the three
+     * diagram sizes, of every control outside the scroll panes.
      *
-     * WIDTH: the status line is a label whose words are data, and its minimum width was its text's: 521 pixels in English
-     * and 655 in German, so the window's layout would not go below 839 and 1004 with the sidebar and the whole tools column
-     * went off the right edge at the smallest width, which is 700 at Small and 806 at Medium.  So the sentence here is one
-     * longer than any language's, put into the line, and the claim does not depend on the words of the railway it is asked
-     * about.
-     *
-     * SCALE (OB-342): the floor was in pixels and the window is not - at 150% the column needs 17 pixels more than at 125%
-     * and the floor did not move, so Cancel and the status line were cut off again.  Asked at 100%, 125% and 150%, which
-     * `TrainControlUI` sets from the display as dpi / 96 (`flatlaf.uiScale`, read when the look and feel is installed): here
-     * the property is set and the look and feel installed again, and put back at the end.
-     *
-     * Asked at each of the three diagram sizes (Small, Medium, Large: the floor grows with the size), of every control
-     * outside the scroll panes.
-     *
-     * MUTATION: put `EXTRA_MINIMUM_HEIGHT` in `LayoutEditor` back to 50, take out the floor the window's own layout asks for
-     * in `sizeForDiagram`, or give the status line in `AutonomyEditorPanel` its text's width as its minimum again, and this
-     * fails.
-     *
-     * @throws Exception from the event thread or reflection
+     * MUTATION: put `EXTRA_MINIMUM_HEIGHT` in `LayoutEditor` back to 50, take out the floor the window's own layout
+     * asks for in `sizeForDiagram`, or give the status line in `AutonomyEditorPanel` its text's width as its minimum
+     * again, and this fails.
      */
     @Test
     public void testTheAutonomyEditorShowsEveryControlAtItsSmallestSize() throws Exception
@@ -197,12 +172,11 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
     }
 
     /**
-     * And the track diagram editor, which has the same floor: its Cancel button was cut off by up to 25 pixels (OB-342).
+     * And the track diagram editor, which has the same floor: its Cancel button was cut off by up to 25 pixels
+     * (OB-342).
      *
      * MUTATION: put `EXTRA_MINIMUM_HEIGHT` back to 50, or take out the floor the window's own layout asks for in
      * `sizeForDiagram`, and this fails.
-     *
-     * @throws Exception from the event thread or reflection
      */
     @Test
     public void testTheTrackEditorShowsEveryControlAtItsSmallestSize() throws Exception
@@ -212,15 +186,12 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
 
     /**
      * The notices float over the bottom of the diagram, across its visible width, and the diagram never moves for them:
-     * not with none, nor when one of one, two or six lines arrives, nor when it is dismissed (OB-366; Adam: *"I'd rather
-     * have the band float and have an x to dismiss each time it surfaces, so the user can be in control."*).  The diagram
-     * is its scroll pane's viewport, on screen; the band lies inside it on its bottom edge, and is what a point in the
-     * band finds first, so it is over the track rather than under it.
+     * not with none, nor when one of one, two or six lines arrives, nor when it is dismissed (OB-366; Adam: "I'd rather
+     * have the band float and have an x to dismiss each time it surfaces").  The band lies inside the diagram's
+     * viewport on its bottom edge, and is what a point in it finds first.
      *
      * MUTATION: mount the notices under the scroll pane again (`foot.add(autonomyBanner, BorderLayout.NORTH)` in
      * `LayoutEditor.setAutonomyMode`) and this fails.
-     *
-     * @throws Exception from the event thread or reflection
      */
     @Test
     public void testANoticeFloatsOverTheDiagramAndNeverMovesIt() throws Exception
@@ -281,12 +252,9 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
 
     /**
      * A notice longer than three lines scrolls inside a band three lines tall, never sideways, and a shorter one gets a
-     * band its own height (OB-366, *"cap the height at 3 lines with a scrollbar"*).  Lines are measured in the notice
-     * text's own font.
+     * band its own height (OB-366: "cap the height at 3 lines with a scrollbar"), measured in the notice text's font.
      *
      * MUTATION: raise `AutonomyBanner.MOST_LINES` to 6, and this fails.
-     *
-     * @throws Exception from the event thread or reflection
      */
     @Test
     public void testALongNoticeScrollsWithinThreeLines() throws Exception
@@ -349,14 +317,12 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
 
     /**
      * The X at the band's top right, clicked where it is drawn, hides the notice and leaves the diagram as it was: its
-     * place on screen and the part of the railway it shows (OB-366, *"an x to dismiss"*).  And the next notice shows the
-     * band again, even one saying the same thing, as does a timed one: dismissed is until the next notice, *"each time it
-     * surfaces"*.  Tab reaches the X and Enter presses it, but a click never takes the editor's keyboard (OB-200).
+     * place on screen and the part of the railway it shows (OB-366).  The next notice shows the band again, even one
+     * saying the same thing, as does a timed one: dismissed is until the next notice.  Tab reaches the X and Enter
+     * presses it, but a click never takes the editor's keyboard (OB-200).
      *
-     * MUTATION: make the X do nothing (an empty action in `AutonomyBanner.floatOver`), or never clear `dismissed` when a
-     * notice arrives (in `AutonomyBanner.hold`), and this fails.
-     *
-     * @throws Exception from the event thread or reflection
+     * MUTATION: make the X do nothing (an empty action in `AutonomyBanner.floatOver`), or never clear `dismissed` when
+     * a notice arrives (in `AutonomyBanner.hold`), and this fails.
      */
     @Test
     public void testTheXHidesTheNoticeUntilTheNextOne() throws Exception
@@ -419,12 +385,10 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
     }
 
     /**
-     * A click on the band stays on the band: on its padding, on its text or on its scrollbar, the square under it is not
-     * clicked.  And a click on the diagram away from the band still reaches the square there.
+     * A click on the band stays on the band: on its padding, on its text or on its scrollbar, the square under it is
+     * not clicked.  And a click on the diagram away from the band still reaches the square there.
      *
      * MUTATION: take the band's own mouse listener out of `AutonomyBanner.floatOver`, and this fails on the padding.
-     *
-     * @throws Exception from the event thread or reflection
      */
     @Test
     public void testAClickOnTheBandNeverReachesTheDiagram() throws Exception
