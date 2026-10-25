@@ -3701,8 +3701,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 answers[0]
             );
 
-            // Cancelled, or the dialog was closed.  Put the sidebar back to what is actually on screen: nothing moved,
-            // and a control showing the page they did not go to would be lying about where they are.
+            // Cancelled or closed: the sidebar goes back to what is on screen.
             if (answer != 0 && answer != 1)
             {
                 syncSidebar();
@@ -3715,10 +3714,8 @@ public class LayoutEditor extends PositionAwareJFrame
                 return false;
             }
 
-            // Discarding the SETUP has to happen here, because the setup is shared: the window that opens next looks at
-            // the same session, so edits left in it would survive a discard.  Discarding the DIAGRAM happens by itself
-            // (layoutEditingComplete re-reads the pages from disk), and undoAutonomyEdits below puts the setup back as
-            // it was found.
+            // The setup is discarded here, as it is shared with the window that opens next; the diagram is re-read
+            // anyway.
             this.settledByDiscarding = answer == 1;
 
             if (answer == 1 && isAutonomyMode())
@@ -3742,50 +3739,30 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
-     * Closes this window and opens the editor again, on another page or in the other mode: the exit and reopen the
-     * sidebar does for the user.  Not a lighter operation than closing: the window is built around one diagram and one
-     * mode, the diagram is re-read from disk on the way out, and the setup is put back as it was, so switching asks
-     * what closing asks, for the same reason.
-     *
+     * Closes and reopens the editor on another page or mode, for the sidebar: as heavy as closing, so it asks the same.
      * @param page the page to open
      * @param autonomy whether to open the setup rather than the track
      */
     private void leaveFor(String page, boolean autonomy)
     {
-        // NOBODY IS POINTING AT THE OLD PAGE ANY MORE (OB-198).  `hoveredSquare` refuses a stale label anyway, but a
-        // field that is never cleared is one the next reader has to remember to distrust.
+        // Nobody points at the old page now (OB-198).
         autonomyHover = null;
 
-        // Save, discard, or stay: see settleUnsavedWork.
         if (!settleUnsavedWork()) return;
 
-        // Committed: from here the switch is going to happen, and nothing else may start one until it has (FR-036).
-        // After the question, so answering "stay here" leaves this alone.  The window STAYS: only the frame survives,
-        // and the teardown still runs in full, because a switch is an exit as far as the rest of the application is
-        // concerned (the diagram is re-read from disk, the setup is put back as it was found, and the main window is
-        // told).
-        //
-        // The work is posted (OB-016) rather than run straight from the callback, but that does not order it against
-        // the main window's repaint: autonomyEditorClosed and layoutRefreshComplete both end by calling repaintLayout,
-        // which submits to LayoutGridRenderer, a single-thread ExecutorService, and only calls invokeLater from inside
-        // THAT, so its EDT task is not queued when this one is.  The viewer is not built in edit mode because of
-        // LayoutGrid: the LAYOUT decision asks whether that grid is inside an editor rather than reading the shared
-        // flag, so the viewer does not change shape whoever wins the race.  The posting is kept because it is harmless
-        // and narrows the window on the half that is still shared (clickability is decided by the same flag).
+        // Committed (FR-036), after the question: nothing else starts a switch until this one arrives.  Only the frame
+        // survives; the teardown runs in full.  Posted (OB-016); the viewer's shape does not depend on the race with
+        // the main window's repaint, as LayoutGrid asks whether its grid is in an editor.
         if (isAutonomyMode())
         {
             layout.setEdit(false);
 
-            // Raised HERE, immediately before the work is posted: raised earlier, with `undoAutonomyEdits` (which
-            // parses every page) still to run, a throw would leave it up with nothing on its way to lower it, and the
-            // editor would refuse every page and mode change in silence until it was closed and reopened.
+            // Raised just before posting, or a throw before it would leave every switch refused.
             changingPage = true;
 
             javax.swing.SwingUtilities.invokeLater(() ->
             {
-                // POSTED FROM A FINALLY, like the other branch gets from layoutEditingCompleteThen:
-                // autonomyEditorClosed reaches rebuildRunningLayoutFromSetup, and a throw in it would leave the latch
-                // up with nothing on its way to lower it.
+                // Posted from a finally, as the other branch is, so a throw cannot leave the latch up.
                 try
                 {
                     parent.autonomyEditorClosed();
@@ -3799,10 +3776,9 @@ public class LayoutEditor extends PositionAwareJFrame
             return;
         }
 
-        // Both halves of the edit, or neither - see confirmExit
+        // Both halves of the edit, or neither
         undoAutonomyEdits();
 
-        // Raised HERE, as in the autonomy branch above.
         changingPage = true;
 
         javax.swing.SwingUtilities.invokeLater(() ->
@@ -3811,27 +3787,20 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
-     * Re-points this window at another page, or the other mode, without closing it: what openLayoutEditor does to a NEW
-     * frame, done to this one, with the same checks (a setup can stop being editable between one click and the next, so
-     * an impossible mode falls back to the track and the sidebar is put back to say so).
-     *
+     * Re-points this window at another page or mode without closing it, with openLayoutEditor's checks: an impossible
+     * mode falls back to the track.
      * @param page the page to show
      * @param autonomy whether to show the setup rather than the track
      */
     private void arriveAt(String page, boolean wanted)
     {
-        // Arrived, whatever happens below.  Cleared FIRST so that a failure inside this method cannot leave the window
-        // refusing every further switch, a worse fault than the one the latch exists to stop.
+        // Cleared first, so a failure here cannot leave every switch refused.
         changingPage = false;
 
-        // CLOSED ON THE WAY (MT-649): the switch's work is posted, so a close can land before it arrives, and arriving
-        // at a closed window would put it back together out of sight and grey Edit and Edit Autonomy Paths for the
-        // session; the close has already given them back.
+        // Closed on the way (MT-649): the close already gave Edit back.
         if (!isDisplayable()) return;
 
-        // THE SQUARE UNDER THE POINTER IS FORGOTTEN (Adam: "on page switch - yes, clear the active square"): Delete and
-        // the other keys that act on it would ask the old page's coordinates on the new page until the pointer moved,
-        // in both editors, the autonomy editor's square being read against the page now showing.
+        // The square under the pointer is forgotten (Adam: "on page switch - yes, clear the active square").
         this.lastHoveredX = -1;
         this.lastHoveredY = -1;
         this.autonomyHover = null;
@@ -3841,8 +3810,7 @@ public class LayoutEditor extends PositionAwareJFrame
         {
             boolean autonomy = wanted;
 
-            // Still editable?  Asked again rather than assumed from the click, for the same reason
-            // openLayoutEditor asks: the answer can change while a save dialog is on screen.
+            // Still editable?  Asked again: it can change while a save dialog is up.
             org.traincontrol.automationui.AutonomySession session =
                 autonomy ? parent.editableAutonomySession() : null;
 
@@ -3856,29 +3824,21 @@ public class LayoutEditor extends PositionAwareJFrame
                 session = null;
             }
 
-            // The main window's own idea of which page is being edited, which the editor takes from it rather than the
-            // other way round.
+            // The main window's idea of the page, which the editor takes from it.
             parent.selectLayoutPage(page);
 
             LayoutDiagram arriving = parent.getModel().getLayout(page);
 
             if (arriving == null)
             {
-                // The page went away while the dialog was up - renamed, or deleted by a reload.  There
-                // is nothing to show and nothing to be done about it here.
+                // The page went away while the dialog was up.
                 confirmExitWithoutAsking();
 
                 return;
             }
 
-            // Everything remembered about squares on the page being LEFT: a TileKey is a page name and a pair of
-            // coordinates, and a selection carried across a switch would name squares on a page that is no longer on
-            // screen.  Cleared before the diagram changes underneath them, not after.  A pending cut is not stood down
-            // here: Discard on the way out restores the cut track, and a restored square is not empty, which `cutMoves`
-            // asks per square; a setup is still not carried ACROSS pages (paste snapshots only the destination page and
-            // the source page's undo history is thrown away here, so a cross-page move could not be undone), because
-            // `cutMoves` skips an origin whose page is not the page being pasted onto.  So leaving the page and COMING
-            // BACK does not cost the cut: the squares are still empty and it is the same page again.
+            // Everything about squares on the page left is cleared before the diagram changes.  A pending cut is kept:
+            // `cutMoves` asks per square and skips other pages, so coming back keeps it.
 
             this.selection.clear();
             this.previewSelection.clear();
@@ -3886,14 +3846,10 @@ public class LayoutEditor extends PositionAwareJFrame
 
             this.toolFlag = null;
 
-            // AND THE PALETTE'S OUTLINE WITH IT, as resetClipboard puts it back: the palette would show a piece armed,
-            // the sign for what the next click does, when nothing was held
+            // And the palette's outline, or it shows a piece armed
             this.clearBordersFromChildren(this.newComponents);
 
-            // The undo history goes with the page.  Each entry is a snapshot of a page's COMPONENTS with nothing in it
-            // that says which page it came from, so carried across a switch one Ctrl+Z on the new page would write the
-            // old page's track over it.  Cleared rather than kept per page: the diagram has just been re-read from disk
-            // by the teardown, so every snapshot in here describes a file state that no longer exists.
+            // The undo history goes with the page: its snapshots name no page, and describe files since re-read.
             this.previousLayoutComponents.clear();
             this.previousLayoutComponentsRedo.clear();
 
@@ -3901,53 +3857,38 @@ public class LayoutEditor extends PositionAwareJFrame
 
             this.showTextCheckbox.setSelected(!arriving.getEditHideText());
 
-            // Leaving the mode BEFORE the new diagram is drawn: setAutonomyMode(null) takes the setup panel and its
-            // banner out of the window, and run after the grid it would be tearing down controls that the new grid has
-            // already been wired to.
+            // Out of the mode before the new diagram is drawn, or its teardown would hit controls the grid wired.
             setAutonomyMode(null);
 
-            // The grid, the sidebar, the title and the size: the parts of render() that are about WHICH diagram this
-            // is, not those about being a window (no pack of a remembered size, no second window listener, no
-            // setVisible on something visible).
+            // The parts of render() about which diagram this is, not about being a window.
             layout.setEdit();
 
             mountSidebar();
 
             drawGrid();
 
-            // THE ARRIVING MODE'S TITLE, from the start (MT-669; Adam: *"when switching pages, the autonomy editor
+            // The arriving mode's title from the start (MT-669; Adam: *"when switching pages, the autonomy editor
             // window title briefly shows the layout editor (not autonomy editor) title for a split second, before being
-            // updated."*): the track editor's was set here and the autonomy editor's only by the step setAutonomyMode
-            // posts, so the wrong one would show while the new page drew.
+            // updated."*).
             setTitle(titleFor(session != null));
 
             if (session != null) setAutonomyMode(session);
 
-            // Remembered, and only when the mode asked for is the mode arrived at, because a fallback is not a choice.
+            // Remembered only when arrived at as asked: a fallback is no choice.
             if (autonomy == (session != null)) parent.rememberEditorChoice(session != null);
 
-            // The same one entry as on the way in (see EDITOR_WINDOW_KEY).  The window does NOT move on a switch: only
-            // the size may change, and only upwards, as sizeForDiagram grows it if the arriving page needs more room
-            // and leaves it alone if not.
+            // The same entry (EDITOR_WINDOW_KEY): the window does not move, and only grows.
             setWindowIndex(EDITOR_WINDOW_KEY);
 
             sizeForDiagram();
 
             saveWindowBounds();
 
-            // The editor is still open, so the button that opens one stays shut.  Both teardowns above hand it back
-            // (autonomyEditorClosed directly, layoutEditingComplete through the refresh it finishes with), because both
-            // tell the application an editor CLOSED.
+            // Edit stays shut: both teardowns handed it back as if the editor had closed.
             parent.setEditLayoutEnabled(false);
 
-            // The undo point moves with the switch.  autonomyAsOpened is what Cancel restores, taken when the WINDOW
-            // opened, which is right for a window that edits one page and then closes and wrong in both directions once
-            // it carries on: arriving from the track editor, undoAutonomyEdits above has just consumed it, so Cancel on
-            // the new page would have nothing to put back; arriving from the setup editor it survives untouched, so
-            // Cancel on the new page would undo the setup all the way to when the window opened, including work the
-            // user was asked about and chose to SAVE on the way here.  The prompt at the top of leaveFor has already
-            // settled what happens to the previous page's edits; whatever the setup says now is what this page found.
-            // Both halves of it (see takeTheUndoPoint): the disk half moves with a switch too.
+            // The undo point moves with the switch, both halves (`takeTheUndoPoint`): leaveFor settled the previous
+            // page, so Cancel here puts back what this page found.
             takeTheUndoPoint(parent.getAutonomySession());
 
             syncSidebar();
@@ -3957,9 +3898,7 @@ public class LayoutEditor extends PositionAwareJFrame
         }
         catch (RuntimeException | Error failed)
         {
-            // A half-switched window is worse than none: it is showing one page and wired to another.  An Error too,
-            // given up and then thrown on: past a catch of exceptions only, the window stays half switched and counted
-            // as an open editor.
+            // A half-switched window is worse than none, for an Error too.
             if (failed instanceof RuntimeException && parent.getModel() != null)
             {
                 parent.getModel().log((RuntimeException) failed);
@@ -3971,38 +3910,30 @@ public class LayoutEditor extends PositionAwareJFrame
         }
     }
 
-    /**
-     * Gives up on this window when a switch cannot be completed, without asking anything: the questions have already
-     * been asked and answered by the time a switch gets this far, and asking again would be about work that is no
-     * longer anywhere.
-     */
+    /** Gives up on this window when a switch cannot complete, without asking: the questions were answered. */
     private void confirmExitWithoutAsking()
     {
         layout.setEdit(false);
 
         parent.setEditLayoutEnabled(true);
 
-        // Every other door out of this window pairs setEditLayoutEnabled(true) with a repaintLayout() (see
-        // TrainControlUI's own layoutEditingComplete); without it the Central Station "Switch"/"Download" menu items,
-        // only re-decided from repaintPathLabel which repaintLayout calls, stay however guardLayoutMenu last left them,
-        // greyed while this editor was open.
+        // Every door out pairs setEditLayoutEnabled(true) with repaintLayout, which re-decides the Central Station
+        // menus.
         parent.repaintLayout();
 
         dispose();
     }
 
     /**
-     * Writes what this window has been editing, for somebody who is switching away from it: the same two saves the Save
-     * button makes, and the same refusal while trains are running.  Split out rather than called through the button's
-     * handler because that handler CLOSES the window on success, the one thing a switch must not do before it is ready.
-     *
+     * Writes what this window edits before a switch, with the Save button's refusal while trains run; not through its
+     * handler, which closes the window.
      * @return true when it was written, so the caller may leave
      */
     private boolean saveBeforeLeaving()
     {
         try
         {
-            // A ROUTE TOO (`TrainControlUI.aRunHoldsTheSetup`)
+            // A route too
             if ((parent.getModel() != null && parent.getModel().isAutonomyRunning()) || parent.aRunHoldsTheSetup())
             {
                 JOptionPane.showMessageDialog(this,
@@ -4011,8 +3942,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 return false;
             }
 
-            // AND THE UNDO POINT TAKEN AGAIN, as the track editor's below drops it: kept, a close before the switch
-            // arrives would ask to "throw away everything changed since you last saved" straight after a save
+            // And the undo point taken again, or a close before the switch would ask straight after a save
             if (isAutonomyMode())
             {
                 if (!autonomyPanel.save()) return false;
@@ -4026,12 +3956,10 @@ public class LayoutEditor extends PositionAwareJFrame
 
             layout.saveChanges(null, false);
 
-            // Kept, so that undoAutonomyEdits below cannot put back a setup the user has just saved.
-            // The snapshot exists for Cancel, and this is not one.
+            // Dropped, so undoAutonomyEdits cannot put back what was just saved.
             this.autonomyAsOpened = null;
 
-            // AND THE UNDO HISTORY WITH IT, as the arrival clears it: kept, a close before the switch arrives would ask
-            // "close the editor without saving changes?" straight after a save
+            // And the undo history, for the same reason
             this.previousLayoutComponents.clear();
             this.previousLayoutComponentsRedo.clear();
             this.previousCaptions.clear();
@@ -4048,15 +3976,9 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
-     * What Escape does: let go of whatever is being held, and close only when there is nothing left.  **TWO REQUESTS,
-     * ONE KEY, AND THE ORDER IS THE ANSWER TO BOTH**: FR-065 asks that Escape close the editor (Adam: *"escape closes
-     * autonomy/track editor - same as closing via button, with warning shown as needed."*), and a review finding asks
-     * that Escape put an armed tool down.  Closing outright would lose the second, expensively: a user who armed the
-     * wrong tool, or picked the wrong squares, presses Escape to think again and would get the window shut, through
-     * `mayLeave`, which asks whether to throw their unsaved work away.  Letting go first costs one extra press when
-     * something is held, and nothing in the case FR-065 is about: an editor holding nothing closes on the first Escape.
-     * `confirmExit` and not `dispose`, so this is the button's own path: the unsaved-work prompt, the autonomy-mode
-     * branch, and the undo of autonomy edits all come with it.
+     * Escape: let go of whatever is held, and close only when nothing is (FR-065; Adam: *"escape closes
+     * autonomy/track editor - same as closing via button, with warning shown as needed."*).  Letting go first spares a
+     * user rethinking an armed tool the unsaved-work question; closing is `confirmExit`, the button's path.
      */
     private void escapePressed()
     {
@@ -4066,20 +3988,15 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
-     * Drops the gesture in progress, and says whether there was one.  Each mode has its own idea of what it is holding,
-     * and each already has one method that lets go of all of it, so this asks rather than reimplements.  The track
-     * editor's list is the picked squares, the copied group, the armed tool and the picking MODE: letting go of the
-     * squares but not of the mode is the half of Escape nobody asks for.  `resetClipboard` is what takes the tool flag
-     * and the group with it.
-     *
+     * Drops the gesture in progress and says whether there was one, by each mode's own let-go method; the track editor
+     * lets go of the picked squares, the group, the tool and the picking mode.
      * @return whether anything was let go of
      */
     private boolean letGoOfWhateverIsHeld()
     {
         if (isAutonomyMode()) return autonomyPanel.putToolsDown();
 
-        // A BOX BEING DRAWN IS HELD TOO: left out, the release would pick it (picking off), and with nothing else held
-        // Escape would close the editor with the button still down.
+        // A box being drawn is held too, or Escape would close the editor with the button down.
         boolean boxOpen = this.boxAnchorX >= 0 && this.boxAnchorY >= 0;
 
         boolean holding = boxOpen || !this.selection.isEmpty() || this.hasGroupClipboard()
@@ -4089,8 +4006,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
         if (boxOpen)
         {
-            // AND THE CLICK ITS PRESS WILL END IN, if the pointer never leaves the square: a press and release on one
-            // square are a click, which with Shift picked the square and with picking on picked the tile up
+            // And the click its press would end in
             this.clickToIgnore = this.dragSource;
 
             this.boxAnchorX = -1;
@@ -4103,9 +4019,7 @@ public class LayoutEditor extends PositionAwareJFrame
         this.resetClipboard();
         this.setSelectMode(false);
 
-        // AND THE DIAGRAM'S BORDERS PUT BACK: `resetClipboard` puts back only the palette's, so a tile picked up would
-        // keep its red outline until the pointer entered another square, and `clearSelection` puts them back only when
-        // there was a selection to let go of.  The square under the pointer keeps its blue one.
+        // And the diagram's borders put back, which neither call does here; the pointer's square keeps its blue.
         if (this.grid != null) this.refreshSelectionBorders();
 
         return true;
@@ -4122,21 +4036,17 @@ public class LayoutEditor extends PositionAwareJFrame
             return;
         }
         
-        // Both halves of the edit, or neither.  layoutEditingComplete re-reads the pages from disk,
-        // which undoes the diagram; this undoes what the same gestures wrote into the autonomy setup.
+        // Both halves of the edit, or neither: the pages are re-read, and this undoes the setup.
         undoAutonomyEdits();
 
-        // COUNTED BEFORE THE EDITOR CLOSES: no train is sent between here and the reset
+        // Counted before the editor closes
         parent.layoutEditingCompleteFromTheEditor();
 
         this.dispose();
     }
     
     /**
-     * The strip down the side of the window: which page, and which of the two editors.  Switching is not a lighter
-     * operation than closing and reopening (it still closes and reopens, and still asks about unsaved work); the strip
-     * means the user does not have to know that.  Hidden when it would say nothing (one page, and no setup to switch
-     * to): a control that offers one choice is furniture.
+     * The strip down the side: which page, and which editor.  Hidden when it would offer one choice.
      */
     private void mountSidebar()
     {
@@ -4150,9 +4060,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
         sidebar = new javax.swing.JPanel();
         sidebar.setLayout(new javax.swing.BoxLayout(sidebar, javax.swing.BoxLayout.Y_AXIS));
-        // Less on the right than the left (MT-097): even padding looks wrong now the pages are a LIST, as a list has
-        // its own inset before the text and a selection bar that runs to its edge, so the eight on the right read as
-        // sixteen.
+        // Less on the right (MT-097): a list has its own inset.
         sidebar.setBorder(new javax.swing.border.EmptyBorder(8, 8, 8, 2));
 
         if (offersPages)
@@ -4167,14 +4075,12 @@ public class LayoutEditor extends PositionAwareJFrame
 
         sidebar.add(javax.swing.Box.createVerticalGlue());
 
-        // One width, whatever the pages are called: a strip that grows to fit a long page name takes that width off the
-        // diagram for as long as the window is open.  The buttons truncate instead and say the whole name in a tooltip.
+        // One width, whatever the names: the buttons truncate, with the whole name in a tooltip.
         sidebar.setPreferredSize(new java.awt.Dimension(SIDEBAR_WIDTH, sidebar.getPreferredSize().height));
         sidebar.setMaximumSize(new java.awt.Dimension(SIDEBAR_WIDTH, Short.MAX_VALUE));
         sidebar.setMinimumSize(new java.awt.Dimension(SIDEBAR_WIDTH, 0));
 
-        // Wrapped rather than added: the window's own contents are laid out by the form, which is generated, so there
-        // is nowhere in it to put this; putting the form's panel inside a new one leaves it as the designer built it.
+        // Wrapped, as the generated form has nowhere to put this.
         javax.swing.JPanel wrapper = new javax.swing.JPanel(new java.awt.BorderLayout());
 
         wrapper.add(sidebar, java.awt.BorderLayout.WEST);
@@ -4184,19 +4090,13 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
-     * Moves to the next page along, or the previous one (FR-036; Adam: "just have them call existing components to
-     * reuse the same guards/warnings."), so it ends at `leaveFor`, which clicking a row of the page list calls too: the
-     * unsaved-work question, the mode the new page opens in and the latch that stops a second switch starting inside
-     * the first belong to that method.  IT WRAPS: stopping dead at the last page means noticing which end you are at
-     * before you can decide which key to press, and the pages are a ring the user is looking through, not a list being
-     * consumed.  Silent when there is nowhere to go (one page, or a switch already under way).
-     *
+     * Moves to the next page or the previous, wrapping (FR-036; Adam: "just have them call existing components to reuse
+     * the same guards/warnings."), through `leaveFor`.  Silent with nowhere to go.
      * @param by 1 for the next page, -1 for the one before
      */
     private void stepPage(int by)
     {
-        // `changingPage` as well as `switching`: the first says a switch is in flight, which is
-        // exactly the state auto-repeat produces and the one `switching` cannot see.
+        // `changingPage` too: auto-repeat's in-flight switch, which `switching` cannot see.
         if (switching || changingPage || parent == null || parent.getModel() == null) return;
 
         java.util.List<String> pages = parent.getModel().getLayoutList();
@@ -4205,7 +4105,6 @@ public class LayoutEditor extends PositionAwareJFrame
 
         int at = pages.indexOf(layout.getName());
 
-        // The page being looked at is not in the list, which is a state this cannot reason from.
         if (at < 0) return;
 
         int next = (at + by + pages.size()) % pages.size();
@@ -4213,29 +4112,23 @@ public class LayoutEditor extends PositionAwareJFrame
         leaveFor(pages.get(next), isAutonomyMode());
     }
 
-    /**
-     * Which page, as a list of rows; the control type lives here and nowhere else, so swapping the body leaves the rest
-     * of the window unaware.
-     */
+    /** Which page, as a list of rows; the control type lives here alone. */
     private javax.swing.JComponent buildPageControl(java.util.List<String> pages)
     {
-        // A list (OB-004): twenty buttons down the side of a window read as twenty things to press, twenty rows read as
-        // a list of pages, which is what they are.
+        // A list (OB-004): rows read as pages, buttons as things to press.
         pageList = new javax.swing.JList<>(pages.toArray(new String[0]));
 
         pageList.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
         pageList.setSelectedValue(layout.getName(), true);
 
-        // docs/UI-standards.md: regular text is Segoe UI Plain 14, black (OB-014).  Rows of a list are text, not
-        // buttons.
+        // docs/UI-standards.md: regular text is Segoe UI Plain 14 (OB-014).
         pageList.setFont(new java.awt.Font("Segoe UI", 0, 14));
         pageList.setForeground(java.awt.Color.BLACK);
         pageList.setFixedCellHeight(24);
         pageList.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
         pageList.setFocusable(false);
 
-        // The whole name for whichever row the pointer is on, since a long one is cut off by the
-        // strip's fixed width - the tooltip the buttons carried, per row.
+        // The whole name for the row under the pointer, cut off by the fixed width.
         pageList.addMouseMotionListener(new java.awt.event.MouseMotionAdapter()
         {
             @Override
@@ -4247,9 +4140,7 @@ public class LayoutEditor extends PositionAwareJFrame
             }
         });
 
-        // On the CLICK, not on the selection change: a ListSelectionListener also fires when the selection is set in
-        // code (syncSidebar does on every cancelled switch), and the arrow keys would move the selection and start a
-        // switch per row travelled through.  A click is the gesture that means "go here".
+        // On the click, not the selection change, which code and arrow keys fire too.
         pageList.addMouseListener(new java.awt.event.MouseAdapter()
         {
             @Override
@@ -4257,8 +4148,7 @@ public class LayoutEditor extends PositionAwareJFrame
             {
                 int row = pageList.locationToIndex(e.getPoint());
 
-                // And not while one is already in flight: two quick clicks on two different rows would queue two
-                // switches, and the second would read a page name the first had not yet changed.
+                // Not while one is in flight.
                 if (row < 0 || switching || changingPage) return;
 
                 String page = pageList.getModel().getElementAt(row);
@@ -4276,11 +4166,8 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
-     * Which editor, as a pair of radio buttons: the control type is confined to this method, because which control this
-     * ought to be is the sort of thing that gets decided again after somebody has used it.  The setup half is disabled
-     * rather than hidden when there is nothing to set up: hidden, the window would look different for a reason the user
-     * cannot see; disabled with a tooltip says what is missing, and the missing thing (a configuration) is something
-     * they can go and load.
+     * Which editor, as two radio buttons, the control type confined here.  The setup half is disabled with a tooltip,
+     * not hidden, when there is nothing to set up.
      */
     private javax.swing.JComponent buildModeControl()
     {
@@ -4316,12 +4203,10 @@ public class LayoutEditor extends PositionAwareJFrame
 
     private javax.swing.JToggleButton modeTab(String text, final boolean autonomy)
     {
-        // A radio button (OB-004): two mutually exclusive views of one diagram.  A JRadioButton IS a JToggleButton, so
-        // the group, the fields and syncSidebar need no change.
+        // A radio button (OB-004); a JRadioButton is a JToggleButton.
         javax.swing.JToggleButton tab = new javax.swing.JRadioButton(text);
 
-        // docs/UI-standards.md: regular text is Segoe UI Plain 14, black (OB-015): a radio button's label is a choice
-        // written out, and the standard reads it as text, not as a button.
+        // docs/UI-standards.md: Segoe UI Plain 14 (OB-015).
         tab.setFont(new java.awt.Font("Segoe UI", 0, 14));
         tab.setForeground(java.awt.Color.BLACK);
 
@@ -4345,11 +4230,7 @@ public class LayoutEditor extends PositionAwareJFrame
         return tab;
     }
 
-    /**
-     * The page list, scrolling when there are more of them than the strip can show: without this the strip would grow
-     * past the bottom of the window and the last few pages could not be reached at all.  No border and no horizontal
-     * bar, so it looks like the column it replaces until it needs to scroll.
-     */
+    /** The page list, scrolling when the strip cannot show them all; borderless, with no horizontal bar. */
     private javax.swing.JComponent scrollable(javax.swing.JComponent column, int pages)
     {
         if (pages <= SIDEBAR_TABS_BEFORE_SCROLLING) return column;
@@ -4364,8 +4245,7 @@ public class LayoutEditor extends PositionAwareJFrame
         scroll.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
         scroll.getVerticalScrollBar().setUnitIncrement(24);
 
-        // Rows, not buttons: 24 to match pageList.setFixedCellHeight, so the strip shows a whole
-        // number of pages rather than most of one.
+        // 24, as pageList.setFixedCellHeight, so whole rows show.
         int height = SIDEBAR_TABS_BEFORE_SCROLLING * 24;
 
         scroll.setPreferredSize(new java.awt.Dimension(SIDEBAR_WIDTH - 16, height));
@@ -4384,43 +4264,31 @@ public class LayoutEditor extends PositionAwareJFrame
         label.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13));
         label.setForeground(new java.awt.Color(0, 0, 155));
 
-        // The same air under a heading as the form leaves under its own - see HEADING_GAP
+        // The form's air under a heading (HEADING_GAP)
         label.setBorder(new javax.swing.border.EmptyBorder(0, 0, HEADING_GAP, 0));
 
         return label;
     }
 
-    /** One width for the strip, so a long page name cannot take it off the diagram */
+    /** One width for the strip, so a long page name cannot take it off the diagram. */
     private static final int SIDEBAR_WIDTH = 150;
 
-    /**
-     * One remembered position and size for the editor, whatever page it is showing (MT-095): per-page entries would
-     * make switching tabs pick the window up and put it somewhere else.
-     */
+    /** One remembered position and size for the editor, whatever its page (MT-095). */
     private static final String EDITOR_WINDOW_KEY = "editor";
 
-    /**
-     * How many pages the strip shows before it starts scrolling: the pages are rows of a list at 24px and the strip
-     * runs the height of the window, so a small number would scroll a railway of twelve pages for no reason (MT-056).
-     */
+    /** How many pages the strip shows before scrolling (MT-056). */
     private static final int SIDEBAR_TABS_BEFORE_SCROLLING = 20;
 
-    /**
-     * The air under a blue heading: the form leaves this much under its own, and everything added by hand beside them
-     * leaves the same or the column reads as two columns that happen to be touching.
-     */
+    /** The air under a blue heading, as the form leaves. */
     static final int HEADING_GAP = 6;
 
     /**
-     * The air between one checkbox and the next under Visible Elements: what the form leaves between its own two
-     * (OB-312; Adam: "check spacing between visible elements checkboxes").
+     * The air between Visible Elements checkboxes, as the form leaves (OB-312; Adam: "check spacing between visible
+     * elements checkboxes").
      */
     static final int CHECKBOX_GAP = 4;
 
-    /**
-     * Puts the sidebar back to what is actually on screen: selecting a tab is a REQUEST, and a refused one (the user
-     * answered no to losing their work) must not leave the control showing where they did not go.
-     */
+    /** Puts the sidebar back to what is on screen: a refused switch must not leave it showing elsewhere. */
     private void syncSidebar()
     {
         switching = true;
@@ -4438,30 +4306,23 @@ public class LayoutEditor extends PositionAwareJFrame
         }
     }
 
-    /** The panel the form built, which the sidebar wraps rather than replaces */
+    /** The panel the form built, which the sidebar wraps. */
     private java.awt.Container formPane;
 
-    /** The strip down the side, or null when it would have nothing to offer */
     private javax.swing.JPanel sidebar;
 
-    /** Which page, as a list - see buildPageControl */
     private javax.swing.JList<String> pageList;
 
     private javax.swing.JToggleButton trackModeButton;
 
     private javax.swing.JToggleButton autonomyModeButton;
 
-    /** Set while the sidebar is being put back, so that doing so does not read as a click */
+    /** Set while the sidebar is being put back, so that does not read as a click. */
     private boolean switching;
 
     /**
-     * Set while a page or mode switch has been ASKED FOR and has not yet arrived.  `switching` cannot answer this: it
-     * is true only inside `syncSidebar`, synchronously, so it is false at every moment a second switch could be
-     * started, while `leaveFor` answers the unsaved-work question, posts the rest of the work and returns before the
-     * page has changed (anything reading `layout.getName()` meanwhile gets the page being left).  Holding + would queue
-     * one full teardown per auto-repeat, all to the same destination, each re-reading the diagram from disk.  Set after
-     * the question is answered, so cancelling never sets it, and cleared in `arriveAt`, where both branches end up once
-     * the new page is in place.
+     * Set from a switch's answered question until `arriveAt`: `leaveFor` posts and returns before the page changes, so
+     * holding + would otherwise queue a teardown per auto-repeat.
      */
     private boolean changingPage;
 
@@ -4680,10 +4541,7 @@ public class LayoutEditor extends PositionAwareJFrame
         // Handle key shortcuts
         javax.swing.SwingUtilities.invokeLater(() ->
         {
-            // The shortcuts that belong to autonomy mode too, handled BEFORE the guard that turns the rest of them off:
-            // below the return they would be unreachable in the only mode where they do anything.  The guard's own
-            // sentence says why this one is different: "Every shortcut below places, cuts, rotates or retextures a
-            // tile."  This one shows and hides a number.
+            // The keys that show or hide something, and so work in autonomy mode too, come before the guard below.
             if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_G)
             {
                 toggleTrackLengths();
@@ -4691,15 +4549,12 @@ public class LayoutEditor extends PositionAwareJFrame
                 return;
             }
 
-            // Control+L and Control+D, for the same reason and by the same rule (MT-109; Adam: "Control+G works, but
-            // control +L does not in the autonomy editor."): all three show or hide something ABOUT the diagram without
-            // changing it, so all three sit above the guard.
+            // Control+L and Control+D, for the same reason (MT-109; Adam: "Control+G works, but control +L does not in
+            // the autonomy editor.").
             if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_L)
             {
-                // IN THE AUTONOMY EDITOR, THE NEXT CAPTION OPTION (OB-272: *"make control+L cycle the options"*), the
-                // dropdown's four (FR-133); the Text Labels box is not part of the cycle.  The same test `toggleText`
-                // uses to decide the dropdown is showing.  In the track editor it is the text switch, the only text
-                // setting there.
+                // In the autonomy editor, the next caption option (OB-272: *"make control+L cycle the options"*;
+                // FR-133); in the track editor, the text switch.
                 if (autonomyPanel != null && autonomyPanel.isVisible()) autonomyPanel.cycleCaptionMode();
                 else toggleText();
 
@@ -4713,11 +4568,8 @@ public class LayoutEditor extends PositionAwareJFrame
                 return;
             }
 
-            // Control+K draws and hides the grid, and with it the column and row numbers (OB-179): the numbers are part
-            // of the grid, so the key that showed them (FR-057) is the key that shows the grid, which has no shortcut
-            // of its own besides the checkbox.  Above the guard with Control+G, L and D, by its own rule: this shows
-            // and hides scenery.  Both modes, because the coordinates are what warnings are written in and the track
-            // editor is where squares get moved to the coordinates a warning named.
+            // Control+K toggles the grid and its coordinates (OB-179), in both modes: warnings are written in
+            // coordinates.
             if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_K)
             {
                 setShowGrid(!showGrid());
@@ -4725,10 +4577,8 @@ public class LayoutEditor extends PositionAwareJFrame
                 return;
             }
 
-            // Control+H sets the home locomotive of the square under the pointer (Adam: "set control+H for home."): a
-            // second door onto the menu item, as Control+S is to Rename.  Autonomy mode only, and it takes
-            // `hoveredSquare` for the reason MT-258 item 4 records: the placement variables are deliberately not set in
-            // that mode, so asking them gets -1,-1 and a key that fires and finds nothing.
+            // Control+H sets the home of the square under the pointer (Adam: "set control+H for home."), by
+            // `hoveredSquare`, as the placement variables are unset in this mode (MT-258).
             if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_H)
             {
                 org.traincontrol.automationui.TileGraph.TileKey over = hoveredSquare();
@@ -4738,18 +4588,11 @@ public class LayoutEditor extends PositionAwareJFrame
                 return;
             }
 
-            // Control+S names the square under the pointer (MT-257 item 4; Adam: "add the keyboard shortcut back to the
-            // autonomy editor, we already have the function in the right click menu there."): a second door onto
-            // `Rename` on the autonomy editor's right-click menu.  Above the guard below, by its own rule ("Every
-            // shortcut below places, cuts, rotates or retextures a tile."): naming a square does none of the four.  It
-            // takes the square the pointer is over, the same the right-click menu would open on, so the key and the
-            // menu cannot disagree about which one is meant.
+            // Control+S names the square under the pointer (MT-257; Adam: "add the keyboard shortcut back to the
+            // autonomy editor, we already have the function in the right click menu there."), as the menu's Rename.
             if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_S)
             {
-                // `hoveredSquare`, NOT the placement variables (MT-258 item 4): autonomy mode never sets those, so the
-                // key would fire, find nothing, and do nothing in the only mode where it means anything.  Nor
-                // `autonomyHover` directly (OB-198): nothing clears that field, so a page change left it naming a
-                // square on the page before.
+                // `hoveredSquare` (MT-258), which refuses a label a page change left (OB-198).
                 org.traincontrol.automationui.TileGraph.TileKey over = hoveredSquare();
 
                 if (over != null && autonomyPanel != null) autonomyPanel.promptNameFor(over);
@@ -4758,12 +4601,8 @@ public class LayoutEditor extends PositionAwareJFrame
             }
 
             // Control+E measures the square under the pointer (FR-066; Adam: *"a keyboard shortcut for setting a
-            // square's length"*, and for the key **"let's do E"**).  E is the e in "length"; Control+D is taken twice,
-            // by this editor's addresses toggle and the main window's locomotive adder.  The main window's key chain
-            // filters Control (OB-197), so Control+E selects no locomotive button there, and
-            // `regression.testNoTwoShortcutsShareAKey` keeps it filtering.  Above the guard below, by its own rule:
-            // measuring a square places, cuts, rotates and retextures nothing.  `hoveredSquare` for Control+S's reason
-            // (MT-258 item 4), the one door that refuses a label the page change left behind (OB-198).
+            // square's length"*, **"let's do E"**); the main window's key chain filters Control (OB-197,
+            // `regression.testNoTwoShortcutsShareAKey`).
             if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_E)
             {
                 org.traincontrol.automationui.TileGraph.TileKey over = hoveredSquare();
@@ -4774,9 +4613,7 @@ public class LayoutEditor extends PositionAwareJFrame
             }
 
             // Control+N shows a station's name on the square under the pointer (FR-086; MT-397: *"let's add a hotkey
-            // for 'show station name here' too"*).  N for name, free here.  Above the guard below with the other keys
-            // that are, by that guard's own rule: a caption places, cuts, rotates and retextures nothing.  The square
-            // under the pointer, as Control+S and Control+E take it.
+            // for 'show station name here' too"*).
             if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_N)
             {
                 org.traincontrol.automationui.TileGraph.TileKey over = hoveredSquare();
@@ -4786,13 +4623,8 @@ public class LayoutEditor extends PositionAwareJFrame
                 return;
             }
 
-            // Control+B is the same door onto the STATION's own maximum.  Control+M was asked for and is taken in the
-            // MAIN window, which toggles the menu bar with it; it is not taken in this editor, as the main window's
-            // `KeyEventPostProcessor` returns at once unless the focus owner `isDescendingFrom` that window, but the
-            // choice stands on its own.  `regression.testNoTwoShortcutsShareAKey` prints what is free in both windows
-            // (B J O P Q U W), and **B** is for berth, the word this project uses for the platform the maximum belongs
-            // to.  Above the page-turning guard for Control+E's reason: setting a maximum places, cuts, rotates and
-            // retextures nothing.  `hoveredSquare` rather than the placement variables, again for Control+E's reason.
+            // Control+B, B for berth: the station's maximum train length (`regression.testNoTwoShortcutsShareAKey`
+            // lists what is free).
             if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_B)
             {
                 org.traincontrol.automationui.TileGraph.TileKey over = hoveredSquare();
@@ -4805,11 +4637,8 @@ public class LayoutEditor extends PositionAwareJFrame
                 return;
             }
 
-            // Plus and minus walk through the pages, in BOTH editors (FR-036).  Above the guard below, for its own
-            // sentence's reason: moving to another page places, cuts, rotates and retextures nothing (MT-109 is the
-            // ticket about keys filed as fixed while sitting below that line doing nothing).  Four keycodes for two
-            // keys: the main row reports plus as VK_EQUALS unless shift is held, the numpad reports VK_ADD, and a
-            // keyboard laid out for another language may report either.
+            // Plus and minus walk the pages in both editors (FR-036, MT-109).  Four keycodes: VK_EQUALS without shift,
+            // VK_ADD on the numpad, and other layouts may report either.
             if (!evt.isControlDown())
             {
                 int code = evt.getKeyCode();
@@ -4830,10 +4659,8 @@ public class LayoutEditor extends PositionAwareJFrame
                 }
             }
 
-            // ESCAPE SITS ABOVE THE GUARD, with Control+G, L, D and K (FR-065; Adam: "escape closes autonomy/track
-            // editor - same as closing via button, with warning shown as needed."): below the guard it would do nothing
-            // in autonomy mode, and `AutonomyEditorPanel`'s own Escape binding cannot cover for it, for the reason the
-            // paragraph below this guard spells out about key bindings in this window.
+            // Escape, above the guard (FR-065; Adam: "escape closes autonomy/track editor - same as closing via button,
+            // with warning shown as needed.").
             if (evt.getKeyCode() == KeyEvent.VK_ESCAPE)
             {
                 escapePressed();
@@ -4841,15 +4668,11 @@ public class LayoutEditor extends PositionAwareJFrame
                 return;
             }
 
-            // Every shortcut below places, cuts, rotates or retextures a tile.  None of them mean
-            // anything while setting autonomy up, and all of them would edit the diagram silently.
+            // Every shortcut below places, cuts, rotates or retextures a tile, which autonomy mode must not.
             if (isAutonomyMode()) return;
 
-            // The selection shortcuts live HERE, in the handler that actually runs: key bindings on the root pane's
-            // WHEN_IN_FOCUSED_WINDOW map are dead in this window, as every control is setFocusable(false) and tiles are
-            // JLabels that never take focus, so the FRAME is the focus owner, and for a heavyweight focus owner the
-            // focus manager walks the parent chain, which for a top-level frame is empty.  Selection first, then the
-            // single-tile behaviour, so nothing changes while nothing is picked.
+            // Selection shortcuts live here: key bindings are dead in this window, as the unfocusable controls leave
+            // the frame the focus owner.  Selection first, then the single tile.
             if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_V)
             {
                 if (this.hasGroupClipboard() && getLastHoveredLabel() != null)
@@ -4863,8 +4686,7 @@ public class LayoutEditor extends PositionAwareJFrame
             }
             else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_X)
             {
-                // Cut completes copy, paste, rotate and delete for a group: without it, moving several squares to
-                // another page means copying, pasting, and going back to delete the originals by hand.
+                // Cut, so a group can move to another page.
                 if (!this.selection.isEmpty())
                 {
                     this.cutSelection();
@@ -4889,9 +4711,7 @@ public class LayoutEditor extends PositionAwareJFrame
             {
                 this.rotate(getLastHoveredLabel());
             }
-            // There is no Shift+C or Shift+R (a whole column or row pasted from the hovered tile): selecting the
-            // squares you mean and dragging them replaces them, and a mis-aimed one would write over a whole row with
-            // undo as the only way back.
+            // No Shift+C or Shift+R: a mis-aimed one would overwrite a whole row.
             else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_T)
             {
                 this.editText(getLastHoveredLabel());
@@ -4902,8 +4722,7 @@ public class LayoutEditor extends PositionAwareJFrame
             }
             else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_I)
             {
-                // growEdges, the same thing the menu does, so the keyboard and the menu grow the diagram alike and both
-                // have the matching shrink.
+                // growEdges, as the menu does.
                 this.growEdges();
             }
             else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_Z)
@@ -4914,7 +4733,7 @@ public class LayoutEditor extends PositionAwareJFrame
             {
                 this.redo();
             }
-            // SELECT BY DRAGGING A BOX, as its item on the right-click menu (FR-107)
+            // Select by Dragging a Box (FR-107)
             else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_M)
             {
                 this.selectOnce();
@@ -4936,20 +4755,17 @@ public class LayoutEditor extends PositionAwareJFrame
     private void saveButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_saveButtonActionPerformed
         try
         {
-            // A ROUTE TOO (`TrainControlUI.aRunHoldsTheSetup`)
+            // A route too
             if (parent.getModel().isAutonomyRunning() || parent.aRunHoldsTheSetup())
             {
                 JOptionPane.showMessageDialog(this, parent.whyTheSetupIsHeld("autolayout.errorCannotEditWhileRunning"));
                 return;
             }
 
-            // In autonomy mode this window never touched the diagram, so Save means the autonomy setup
-            // - the thing the user has actually been editing.
+            // In autonomy mode Save means the setup, the only thing edited.
             if (isAutonomyMode())
             {
-                // Only on a save that happened.  The edits are not lost either way - they live in
-                // the shared session - but closing on a failure tells the user the opposite of what
-                // the failure dialog just told them.
+                // Closed only on a save that happened, or it would contradict the failure dialog.
                 if (autonomyPanel.save())
                 {
                     closeAutonomyMode();
@@ -4960,10 +4776,10 @@ public class LayoutEditor extends PositionAwareJFrame
 
             layout.saveChanges(null, false);
 
-            // Kept, so nothing can put them back.  The snapshot exists only for Cancel.
+            // Dropped: the snapshot exists only for Cancel.
             this.autonomyAsOpened = null;
 
-            // COUNTED BEFORE THE EDITOR CLOSES: no train is sent between here and the reset
+            // Counted before the editor closes
             parent.layoutEditingCompleteFromTheEditor();
 
             dispose();
@@ -4979,14 +4795,13 @@ public class LayoutEditor extends PositionAwareJFrame
     }//GEN-LAST:event_cancelButtonActionPerformed
 
     private void ExtLayoutPanelMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_ExtLayoutPanelMouseEntered
-        // The margin: the pointer is over no square - and the grip stays
+        // The margin: over no square; the grip stays
         pointerOffTheSquares();
     }//GEN-LAST:event_ExtLayoutPanelMouseEntered
 
     private void showAddressCheckboxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showAddressCheckboxActionPerformed
 
-        // The other half of the exclusion: turning addresses on turns lengths off, since both write a
-        // number on the tile and two numbers on one square cannot be read.
+        // Addresses on turns lengths off: two numbers on a square cannot be read.
         if (this.showAddressCheckbox.isSelected() && autonomyPanel != null
             && autonomyPanel.getShowLengths().isSelected())
         {
