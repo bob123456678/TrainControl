@@ -18,26 +18,18 @@ import support.SourceOf;
 /**
  * Cancel on the function editor undoes a Copy Customizations, as it already undoes the two slots.
  *
- * **The dialog's Cancel branch claimed everything in it waits for OK, and one thing did not**.
- * `copyCustomizationsActionPerformed` writes the other locomotive's function types, triggers and
- * custom flag straight onto this one - deliberately, so the panel can show them at once, which is the
- * same reason the departure and arrival slots write straight through.  Those two are put back on
- * Cancel and this was not, so Cancel kept the copy: press Copy Customizations, change your mind, and
- * the locomotive keeps somebody else's functions and icons.
- *
- * What makes it worth a test rather than a reading is the comment: a comment says *"everything else in
- * this dialog waits for OK"* directly above the restore, so the next reader has been told this door
- * does not exist.
+ * The dialog's Cancel branch claimed everything in it waits for OK, and one thing did not:
+ * `copyCustomizationsActionPerformed` writes the other locomotive's function types, triggers and custom flag straight
+ * onto this one, deliberately, so the panel can show them at once (as the departure and arrival slots do).  Those two
+ * are put back on Cancel and this was not, so the locomotive kept somebody else's functions and icons.  A comment
+ * saying *"everything else in this dialog waits for OK"* sat directly above the restore, telling the next reader this
+ * door does not exist.
  *
  * @author Adam
  */
 public class testCancelUndoesACustomizationCopy
 {
-    /**
-     * A copy pressed and then canceled leaves the locomotive exactly as it was.
-     *
-     * @throws Exception from the event thread
-     */
+    /** A copy pressed and then canceled leaves the locomotive exactly as it was. */
     @Test
     public void testACancelledCopyLeavesTheFunctionsAlone() throws Exception
     {
@@ -47,9 +39,8 @@ public class testCancelUndoesACustomizationCopy
         {
             int[] wereTypes = Arrays.copyOf(up.loc.getFunctionTypes(), up.loc.getFunctionTypes().length);
 
-            // THE TRIGGERS TOO.  `undoCopiedCustomizations` puts back two arrays and a flag,
-            // and asserting one array let a regression that dropped the triggers from either the save
-            // or the restore pass.
+            // The triggers too: `undoCopiedCustomizations` puts back two arrays and a flag, and asserting one array let
+            // a regression that dropped the triggers from either the save or the restore pass.
             int[] wereTriggers = Arrays.copyOf(
                 up.loc.getFunctionTriggerTypes(), up.loc.getFunctionTriggerTypes().length);
 
@@ -86,11 +77,7 @@ public class testCancelUndoesACustomizationCopy
         }
     }
 
-    /**
-     * A copy that was never pressed is not undone into something else.
-     *
-     * @throws Exception from the event thread
-     */
+    /** A copy that was never pressed is not undone into something else. */
     @Test
     public void testACancelWithoutACopyChangesNothing() throws Exception
     {
@@ -114,13 +101,8 @@ public class testCancelUndoesACustomizationCopy
     }
 
     /**
-     * The Cancel branch actually calls the undo.
-     *
-     * The panel's method is only half the fix: pinning it alone would leave the call site - the one
-     * place that was wrong - as the only thing nothing checks.  Read rather than driven, because the
-     * branch sits inside a modal `showOptionDialog` that a test cannot answer without a window.
-     *
-     * @throws Exception from the file
+     * The Cancel branch actually calls the undo: pinning the panel's method alone would leave the call site, the one
+     * place that was wrong, unchecked.  Read rather than driven, as the branch sits inside a modal `showOptionDialog`.
      */
     @Test
     public void testTheCancelBranchCallsIt() throws Exception
@@ -168,12 +150,7 @@ public class testCancelUndoesACustomizationCopy
         }
     }
 
-    /**
-     * Presses Copy Customizations.
-     *
-     * @param up the fixture
-     * @throws Exception from the event thread
-     */
+    /** Presses Copy Customizations. */
     private static void press(Started up) throws Exception
     {
         final Method door = LocomotiveFunctionAssign.class.getDeclaredMethod(
@@ -194,12 +171,7 @@ public class testCancelUndoesACustomizationCopy
         });
     }
 
-    /**
-     * Builds the fixture: a locomotive with ordinary functions and a copy target with odd ones.
-     *
-     * @return the started application
-     * @throws Exception from start-up
-     */
+    /** Builds the fixture: a locomotive with ordinary functions and a copy target with odd ones. */
     private static Started start() throws Exception
     {
         Started up = new Started();
