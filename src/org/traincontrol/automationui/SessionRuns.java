@@ -1,6 +1,5 @@
 package org.traincontrol.automationui;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -132,35 +131,11 @@ final class SessionRuns
 
         Landing landing = owner.graph.landing(leader, toward);
 
-        // Which way along the run the user pointed.  The run's OWN tiles are walked, not a path re-derived from its two ends
-        // (see applyOneWay); the boundaries say which way the first and last tiles go, a null boundary (track that simply
-        // stops) is left out, and the tile beside it is still recorded, from its road (OB-361).
-        List<TileKey> path = new ArrayList<>();
-
-        if (run.getStart() != null) path.add(run.getStart());
-
-        int first = path.size();
-
-        path.addAll(run.getTiles());
-
-        int last = path.size() - 1;
-
-        if (run.getEnd() != null) path.add(run.getEnd());
-
+        // Which way along the run the user pointed.
         boolean towardEnd = landing == null
             || !run.getTiles().isEmpty() && landing.getTile().equals(nextAfter(run, leader));
 
-        if (!towardEnd)
-        {
-            Collections.reverse(path);
-
-            int was = first;
-
-            first = path.size() - 1 - last;
-            last = path.size() - 1 - was;
-        }
-
-        int changed = owner.recordAlong(path, first, last).size();
+        int changed = owner.recordAlongTheRun(run, towardEnd).size();
 
         return owner.directionsTouched() ? changed : 0;
     }

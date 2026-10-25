@@ -8340,6 +8340,26 @@ public class AutonomySession
 
         if (run == null || toward == null) return new LinkedHashSet<>();
 
+        // The squares either side along the run, a boundary past either end; none where the track stops.
+        List<TileKey> tiles = run.getTiles();
+
+        int at = tiles.indexOf(square);
+
+        TileKey next = at + 1 < tiles.size() ? tiles.get(at + 1) : run.getEnd();
+        TileKey previous = at > 0 ? tiles.get(at - 1) : at == 0 ? run.getStart() : null;
+
+        boolean along = next != null ? toward == graph.sideTowardNeighbour(square, next)
+            : !(previous != null && toward == graph.sideTowardNeighbour(square, previous));
+
+        return recordAlongTheRun(run, along);
+    }
+
+    /**
+     * Records one way along a run's OWN tiles, not a path re-derived from its ends (see `applyOneWay`): its boundaries
+     * say which way the end tiles go, and one that is null (track that simply stops) is left out (OB-361).
+     */
+    Set<TileKey> recordAlongTheRun(TileGraph.Run run, boolean towardEnd)
+    {
         List<TileKey> path = new ArrayList<>();
 
         if (run.getStart() != null) path.add(run.getStart());
@@ -8352,12 +8372,7 @@ public class AutonomySession
 
         if (run.getEnd() != null) path.add(run.getEnd());
 
-        int at = first + run.getTiles().indexOf(square);
-
-        boolean along = at + 1 < path.size() ? toward == graph.sideTowardNeighbour(square, path.get(at + 1))
-            : !(at > 0 && toward == graph.sideTowardNeighbour(square, path.get(at - 1)));
-
-        if (!along)
+        if (!towardEnd)
         {
             Collections.reverse(path);
 
