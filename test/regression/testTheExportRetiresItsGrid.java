@@ -14,35 +14,21 @@ import static org.testng.Assert.assertTrue;
 import org.testng.annotations.Test;
 
 /**
- * An export that fails hands its grid back, exactly as one that works does.
+ * An export that fails hands its grid back, exactly as one that works does.  The export builds a grid into a panel
+ * nobody will ever show, and every caption it registers stays in the window's label table for the rest of the session
+ * unless the grid is retired.  The discard sat after the paint with no `finally`, and the wait for tile images or the
+ * paint under `invokeAndWait` can leave by the other door.
  *
- * **The leak is written out beside the discard itself**: the export builds a grid into a panel
- * nobody will ever show, and every caption it registers stays in the window's label table for the rest
- * of the session unless the grid is retired - keeping that whole grid, its tiles and its listeners
- * reachable.  The panel is a local, so no later export will ever match its owner and prune them.
- *
- * The discard sat after the paint with no `finally`.  Two statements above it can leave by
- * the other door: the wait for tile images throws `InterruptedException`, and the paint runs under
- * `invokeAndWait`, which rethrows whatever the paint threw.
- *
- * **Driven, not read.**  A source-shape version of this rule passed against the unfixed file - the
- * paint's own `try`/`finally` around its `Graphics2D` sits between the two, so "there is a finally
- * before the discard" was true either way.
- *
- * **And made to fail through a seam, not by an interrupt.**  Interrupting the calling thread was tried
- * first: it lands at whichever statement it reaches, so the render sometimes threw before the grid
- * existed and the test passed for the wrong reason.  `stumbleForTest` throws at one known point, after
- * the grid is built and its captions registered.
+ * Driven, not read: a source-shape version passed against the unfixed file, because the paint's own `try`/`finally`
+ * sits between the two.  And made to fail through a seam, not by an interrupt, which lands at whichever statement it
+ * reaches so the render sometimes threw before the grid existed; `stumbleForTest` throws at one known point, after the
+ * grid is built and its captions registered.
  *
  * @author Adam
  */
 public class testTheExportRetiresItsGrid
 {
-    /**
-     * A failed export leaves no captions behind in the window's label table.
-     *
-     * @throws Exception from start-up
-     */
+    /** A failed export leaves no captions behind in the window's label table. */
     @Test
     public void testAnInterruptedExportStillHandsBackItsCaptions() throws Exception
     {
@@ -52,8 +38,8 @@ public class testTheExportRetiresItsGrid
         {
             int before = quiesced(up.ui);
 
-            // THE PAGE HAS CAPTIONS TO LOSE.  Both claims below compare a count with itself, so
-            // a sandbox page with no station squares would make them pass about nothing at all.
+            // THE PAGE HAS CAPTIONS TO LOSE: both claims compare a count with itself, so a page with no station squares
+            // would pass about nothing.
             assertTrue(before > 0,
                 "the first page of the sandbox registered no caption labels, so this class is comparing"
                 + " zero with zero and says nothing about whether an export hands its own back");
@@ -94,12 +80,8 @@ public class testTheExportRetiresItsGrid
     }
 
     /**
-     * And the export that works still hands them back, which is the other case.
-     *
-     * Here because the fix moves the discard into a `finally`: a mistake there would take the working
-     * path with it, and this is the half of the behavior that was never in doubt.
-     *
-     * @throws Exception from start-up
+     * And the export that works still hands them back: the fix moves the discard into a `finally`, and a mistake there
+     * would take the working path with it.
      */
     @Test
     public void testAnExportThatWorksStillHandsThemBack() throws Exception
@@ -123,17 +105,11 @@ public class testTheExportRetiresItsGrid
     }
 
     /**
-     * A grid can be retired by the panel it was built into, without a reference to it.
-     *
-     * **This is the door the export's bracket could not cover.**  `LayoutGrid`'s constructor registers itself
-     * against its panel before it builds anything, and assigns the caller's reference only by returning - so a
-     * constructor that threw part-way left captions registered with nothing for a `finally` to discard.  The
-     * export retires by panel now, and this is what says that works.
-     *
-     * Driven on a grid that was built normally, because a constructor made to throw part-way needs a hook
-     * `LayoutGrid` does not have.  What is pinned is the mechanism the bracket depends on.
-     *
-     * @throws Exception from the event thread
+     * A grid can be retired by the panel it was built into, without a reference to it.  `LayoutGrid`'s constructor
+     * registers itself against its panel before it builds anything and assigns the caller's reference only by
+     * returning, so a constructor that threw part-way left captions registered with nothing for a `finally` to discard;
+     * the export retires by panel now.  Driven on a grid built normally, because a constructor made to throw needs a
+     * hook `LayoutGrid` does not have.
      */
     @Test
     public void testAGridCanBeRetiredByItsPanel() throws Exception
@@ -153,7 +129,7 @@ public class testTheExportRetiresItsGrid
                 "precondition: building a grid into a panel registered no captions at all, so retiring it"
                 + " cannot be shown to hand any back");
 
-            // BY THE PANEL, with no reference to the grid - which is all a failed constructor leaves.
+            // BY THE PANEL, with no reference to the grid, which is all a failed constructor leaves.
             SwingUtilities.invokeAndWait(() -> org.traincontrol.gui.LayoutGrid.retire(host));
 
             assertEquals(quiesced(up.ui), before,
@@ -167,16 +143,9 @@ public class testTheExportRetiresItsGrid
     }
 
     /**
-     * How many caption labels the window is holding, once the count has stopped moving.
-     *
-     * **Start-up registers captions on its own, asynchronously**, so a count taken the moment
-     * `setViewListener` returns is a count of part of the window's own work - and the first draft of
-     * this class reported sixteen labels appearing across an export that had handed every one of its
-     * own back.  Three identical samples in a row is what counts as finished.
-     *
-     * @param ui the window
-     * @return the settled total
-     * @throws Exception from the reflection or the sleep
+     * How many caption labels the window is holding, once the count has stopped moving: start-up registers captions on
+     * its own, asynchronously, so a count taken the moment `setViewListener` returns counts part of the window's own
+     * work.  Three identical samples in a row is what counts as finished.
      */
     private static int quiesced(TrainControlUI ui) throws Exception
     {
@@ -200,13 +169,7 @@ public class testTheExportRetiresItsGrid
         return last;
     }
 
-    /**
-     * How many caption labels the window is holding.
-     *
-     * @param ui the window
-     * @return the total across every square
-     * @throws Exception from the reflection
-     */
+    /** How many caption labels the window is holding, across every square. */
     @SuppressWarnings("unchecked")
     private static int captions(TrainControlUI ui) throws Exception
     {
@@ -224,9 +187,7 @@ public class testTheExportRetiresItsGrid
         return total;
     }
 
-    /**
-     * A window, a model and a page to draw.
-     */
+    /** A window, a model and a page to draw. */
     private static final class Started
     {
         support.LayoutSandbox sandbox;
@@ -252,12 +213,7 @@ public class testTheExportRetiresItsGrid
         }
     }
 
-    /**
-     * Sandbox, model, window and the first page of the sample layout.
-     *
-     * @return the started application
-     * @throws Exception from start-up
-     */
+    /** Sandbox, model, window and the first page of the sample layout. */
     private static Started start() throws Exception
     {
         Started up = new Started();
