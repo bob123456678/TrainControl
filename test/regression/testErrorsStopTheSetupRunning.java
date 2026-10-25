@@ -21,33 +21,18 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 import support.SourceOf;
 
 /**
- * An error stops the setup running, and everything that offers to run it asks the same question.
+ * An error stops the setup running, and everything that offers to run it asks the same question (OB-090).
  *
- * Adam, OB-090: "the setup refuses to run when there are errors.  it runs on warnings, but on errors
- * it should say fix it."
+ * Adam: "the setup refuses to run when there are errors.  it runs on warnings, but on errors it should say fix it."
+ * Starting autonomy is refused on any ERROR finding (OB-057), but the diagram strip decided what to show from
+ * hasBlockingProblems(), which asks the GRAPH only and knows nothing of the CHECKS, so four unnamed stations (four
+ * errors, no blocking problem) left a live Start button that every press refused.  There is now ONE definition of
+ * broken, AutonomySession.errorCount(), which both the refusal and the strip ask.
  *
- * He was right about the rule and I had written the opposite into the ticket. Starting autonomy IS
- * refused on any ERROR finding - that is OB-057, and refuseAutonomyStartWhileBroken has done it ever
- * since. What had never happened is that the things which OFFER to start it were told. The diagram
- * strip decided what to show from hasBlockingProblems(), which asks the GRAPH only - scissors
- * crossings, unaddressed switches, unpaired links - and knows nothing of the CHECKS. Four unnamed
- * stations are four errors and no blocking problem, so the strip went on showing a live Start button
- * while every press of it was refused with a dialog.
- *
- * That is the OB-057 shape a third time: "it says there are errors, but the start autonomy button is
- * still visible." The fix is not another guard at another press site - it is that there is now ONE
- * definition of broken, AutonomySession.errorCount(), which both the refusal and the strip ask.
- *
- * **What this fixture can and cannot show.** The sample layout is parsed with no Central Station on
- * the other end, so every switch on it is unaddressed and all 79 of its errors are blocking graph
- * problems. There is therefore no way to reach the state "graph builds cleanly, setup still must not
- * run" on this fixture, and a test that asserted hasBlockingProblems() were false would be asserting
- * something about the network being down. So the gap is shown as a DELTA instead, which is stronger
- * anyway: a mutation that adds an error WITHOUT adding a blocking problem proves there are errors the
- * narrow question cannot see, whatever the starting counts happen to be.
- *
- * Every assertion here is a delta for the same reason. What the sample layout contains today is not
- * the subject, and a test that pins it becomes a test about the fixture the first time it is edited.
+ * The sample layout is parsed with no Central Station, so every switch is unaddressed and all its errors are blocking
+ * graph problems; the state "graph builds cleanly, setup still must not run" cannot be reached.  So the gap is shown
+ * as a DELTA: a mutation that adds an error WITHOUT a blocking problem proves errors the narrow question cannot see.
+ * Every assertion is a delta, so none becomes a test about the fixture the first time it is edited.
  */
 public class testErrorsStopTheSetupRunning
 {
@@ -60,11 +45,8 @@ public class testErrorsStopTheSetupRunning
     }
 
     /**
-     * There are errors the blocking question cannot see, which is why the strip must not ask it.
-     *
-     * The mutation is a name, so nothing about the TRACK changes: the blocking count must come back
-     * identical while the error count goes up by one. An affordance deciding from the blocking count
-     * is blind to exactly this, and this is the state Adam was in with his four unnamed stations.
+     * There are errors the blocking question cannot see, which is why the strip must not ask it.  The mutation is a
+     * name, so the blocking count comes back identical while the error count goes up by one.
      */
     @Test
     public void testAnUnnamedStationIsAnErrorNoBlockingProblemAccountsFor() throws Exception
@@ -109,11 +91,8 @@ public class testErrorsStopTheSetupRunning
     }
 
     /**
-     * The count the strip shows and the count the refusal uses are the same count.
-     *
-     * They were not, which is the whole of OB-090, and they were not because each side counted for
-     * itself. Nothing in the compiler stops that recurring - two loops over check() that filter
-     * differently look identical at a glance - so the equality is asserted rather than assumed.
+     * The count the strip shows and the count the refusal uses are the same count: they once were not because each
+     * counted for itself, and nothing in the compiler stops that recurring.
      */
     @Test
     public void testTheErrorCountIsExactlyTheErrorFindings() throws Exception
@@ -139,13 +118,9 @@ public class testErrorsStopTheSetupRunning
     }
 
     /**
-     * Warnings and notices are not errors, which is the other half of Adam's rule.
-     *
-     * "it runs on warnings." Worth its own test because the cheap way to fix OB-090 - have the strip
-     * ask whether the checks found ANYTHING - passes every assertion in the two tests above and
-     * quietly makes a railway with one unlabeled siding unstartable. The sample layout carries far
-     * more soft findings than errors, so an errorCount() that had swallowed them would be obvious
-     * here.
+     * Warnings and notices are not errors, the other half of Adam's rule ("it runs on warnings").  The cheap fix for
+     * OB-090, asking whether the checks found ANYTHING, passes the tests above and makes a railway with one unlabeled
+     * siding unstartable; the sample layout carries far more soft findings than errors.
      */
     @Test
     public void testWarningsAndNoticesAreNotCountedAsErrors() throws Exception
@@ -175,48 +150,23 @@ public class testErrorsStopTheSetupRunning
     }
 
     /**
-     * The affordances that offer to start autonomy ask the same question the refusal asks.
-     *
-     * **Written when `AutonomySession.hasErrors()` had no callers at all** - the guard and every
-     * affordance asked `autonomyErrorCount()` / `errorCount()`, so a test that proved only that
-     * `hasErrors()` still computes correctly was a rule tested with its call site left uncovered:
-     * a rule named in this class's own javadoc and then done anyway.
-     *
-     * That is no longer the state of the code and the paragraph saying it was stood here for a week
-     * after the same commit corrected the identical claim two hundred lines up.  The guard
-     * asks `hasErrors()` through `TrainControlUI.autonomyHasErrors()`, and so do all three
-     * affordances.  The rule below is what keeps them together.
-     *
-     * This reads the affordances instead, and asks whether they still consult the guard's own number
-     * rather than the narrower graph-only question OB-090 was about.
+     * The affordances that offer to start autonomy ask the same question the refusal asks.  The guard asks
+     * `hasErrors()` through `TrainControlUI.autonomyHasErrors()`, as do all three affordances; this reads them and asks
+     * whether they still consult the guard's own number rather than the narrower graph-only question OB-090 was about.
      *
      * MUTATION this catches: change `canStartAutonomy()`'s last term from `!autonomyHasErrors()` to
-     * `autonomyErrorCount() == 0` - the shape it had before OB-090's third occurrence.  **The sentence
-     * here used to name a mutation that does not compile** (`session` is not a name in that class, and
-     * `hasBlockingProblems` is not one of its methods), and a mutation nobody can run is no evidence at
-     * all.  This one is one edit in one line, and the assertion below goes red on it, because
-     * the count is the narrower question: a graph that will not build at all is not an error it sees,
-     * so the Start button stays live over a setup that refuses every press.
+     * `autonomyErrorCount() == 0`.  The count is the narrower question: a graph that will not build at all is not an
+     * error it sees, so the Start button stays live over a setup that refuses every press.
      */
     @Test
     public void testTheAffordancesAskTheGuardsOwnQuestion() throws Exception
     {
         String canStart = code("public boolean canStartAutonomy()");
 
-        // THE GUARD'S QUESTION AND THE AFFORDANCE'S, PINNED AS A PAIR.
-        //
-        // This used to require the literal `autonomyErrorCount()`, and that is how it came to ENFORCE
-        // the divergence it exists to catch: the guard was widened to `hasErrors()` and this assertion
-        // said the affordance must go on asking the narrower one.
-        //
-        // **It does not read the guard and derive the affordance's question from it**, which is what
-        // the sentence here used to claim.  It cannot: the guard asks the SESSION (`hasErrors()`) and
-        // the affordance asks the WINDOW's wrapper for it (`autonomyHasErrors()`), so the two literals
-        // differ by design and no textual comparison can tell that pairing from a divergence.
-        //
-        // What it does is name both halves in one place, so that widening one and not the other fails
-        // here rather than on Adam's railway.  If the guard's question changes, both assertions below
-        // have to change together, and that is the point: they are the pair.
+        // THE GUARD'S QUESTION AND THE AFFORDANCE'S, PINNED AS A PAIR.  The guard asks the SESSION (`hasErrors()`) and
+        // the affordance asks the WINDOW's wrapper (`autonomyHasErrors()`), so the two literals differ by design and no
+        // textual comparison can derive one from the other.  Both are named in one place, so widening one and not the
+        // other fails here rather than on Adam's railway.
         String guard = code("    String whyAutonomyStartIsRefused()");
 
         assertTrue(guard.contains("hasErrors()"),
@@ -233,39 +183,21 @@ public class testErrorsStopTheSetupRunning
             "canStartAutonomy() is asking hasBlockingProblems() - the narrower, graph-only question "
             + "OB-090 was about, blind to an unnamed station or any other check-only error");
 
-        // AND THE WRAPPER HAS TO REACH THE SESSION'S QUESTION.
-        //
-        // Every rule above names a literal, and the correspondence between the guard's `hasErrors()`
-        // and the affordance's `autonomyHasErrors()` was knowledge held by a person rather than by the
-        // test: gut the wrapper to `return false;` and all of them still passed, with every affordance
-        // then offering Start over a setup that refuses each press.
+        // AND THE WRAPPER HAS TO REACH THE SESSION'S QUESTION: gutting it to `return false;` would pass every literal
+        // above, with every affordance offering Start over a setup that refuses each press.
         String wrapper = code("public boolean autonomyHasErrors()");
 
         assertTrue(wrapper.contains("hasErrors()"),
             "autonomyHasErrors() no longer asks the session's own question, so the affordances and the "
             + "guard can agree word for word and mean different things.  Body: " + wrapper);
 
-        // THE SAME FOR THE OTHER TWO AFFORDANCES, and asked the same way.
+        // THE SAME FOR THE OTHER TWO AFFORDANCES.  The strip's `fixing` flag is a DECISION (a press opens the editor or
+        // clicks Start), so what must match the guard is what DECIDES.  The MENU still reads the count, for its
+        // tooltip; the strip's displayed number comes from setFindings' arguments, and reading it here too was a second
+        // whole walk of the graph on the event thread.
         //
-        // These used to require the literal `autonomyErrorCount()`, and that is how this rule came to
-        // pin the divergence in place a second time: the strip's `fixing` flag is a DECISION - it
-        // decides whether a press opens the editor or clicks Start - and it went on asking the narrow
-        // question while the guard asked the wide one.
-        //
-        // The MENU still reads the count, and rightly - it puts the number in its tooltip.  The strip
-        // does not: the number it displays comes from setFindings' own arguments, and reading it here
-        // as well was a second whole walk of the graph on the event thread.  What must match
-        // the guard is what DECIDES.
-        // THE BODY, not the file.
-        //
-        // A whole-file `contains` is satisfied by the method name appearing in a COMMENT.  It is not
-        // satisfied today - `autonomyHasErrors()` occurs once in that file, in code - so this is a
-        // guard against the next comment rather than a fix for a hole that was open.  The version
-        // saying the comments "name it twice" was simply wrong, and it is the reason a reader would
-        // have checked first.
-        //
-        // Worth having anyway: its sibling assertion above extracts the body and strips comments, this
-        // one is now the strip's only rule, and the class already holds both helpers.
+        // THE BODY, not the file: a whole-file `contains` is satisfied by the method name appearing in a COMMENT.
+        // Its sibling assertion above extracts the body and strips comments; this is now the strip's only rule.
         String sync = code("public final void syncRun()");
 
         assertTrue(sync.contains("autonomyHasErrors()"),
@@ -273,13 +205,9 @@ public class testErrorsStopTheSetupRunning
             + "it can offer a Start that every press refuses - which is OB-090, at the site OB-090 is "
             + "named for.  Body: " + sync);
 
-        // AND THE ANSWER HAS TO REACH THE DECISION.
-        //
-        // Asking the question and then deciding on something else is the whole of OB-090, and every
-        // rule above this one is satisfied by a body that asks it and drops the answer:
-        // `boolean broken = ui.autonomyHasErrors(); fixing = source == start && errors > 0;` passes
-        // each of them.  So the assignment itself is read: whatever `fixing` is decided from, the
-        // guard's answer must be part of it.
+        // AND THE ANSWER HAS TO REACH THE DECISION: a body that asks the question and drops the answer
+        // (`boolean broken = ui.autonomyHasErrors(); fixing = source == start && errors > 0;`) passes every rule above,
+        // so the assignment itself is read.
         int asked = sync.indexOf("autonomyHasErrors()");
         int decided = sync.indexOf("fixing =");
 
@@ -293,22 +221,11 @@ public class testErrorsStopTheSetupRunning
             "the strip asks the guard's question and then decides on something else, which is OB-090 "
             + "with the fix's own words still in the file.  The decision reads: " + decision);
 
-        // THE MENU'S HALF, AND IT NO LONGER COUNTS FOR ITSELF (MT-263, measured 2026-09-21).
-        //
-        // This asked for the literal `autonomyErrorCount()` in this file - twice, once through a
-        // `bodyOf` for a method called `startItem` that this class has never had (so that assertion
-        // was vacuous from the day it was written, passing on an empty body) and once as a whole-file
-        // grep.  `52b05706` then moved the tooltip onto `whyAutonomyWillNotStart()`, which is where
-        // MT-263 put the wording AND the counting, and the whole-file grep went red on a menu whose
-        // OB-090 fix is entirely intact.  A guard that fails when a fix is expressed better is a guard
-        // that argues for the worse expression.
-        //
-        // What the pair actually requires is unchanged, so it is asked of the things that now carry it:
-        // the item's ENABLED state comes from the guard's own question, its REASON comes from the one
-        // rule, and the one rule is what reaches the number.
-        //
-        // WITHOUT COMMENTS, over the constructor that builds the item: its prose mentions
-        // `autonomyErrorCount` twice, which is how the old rule could have gone on passing after the call had gone.
+        // THE MENU'S HALF, AND IT NO LONGER COUNTS FOR ITSELF (MT-263): the tooltip moved onto
+        // `whyAutonomyWillNotStart()`, which holds the wording AND the counting.  The pair is asked of the things that
+        // now carry it: the item's ENABLED state comes from the guard's own question, its REASON from the one rule, and
+        // the one rule reaches the number.  WITHOUT COMMENTS, over the constructor that builds the item, whose prose
+        // mentions `autonomyErrorCount` twice.
         String menuCode = code("private LayoutRightclickAutonomyMenu(");
 
         assertTrue(menuCode.contains("canStartAutonomy()"),
@@ -353,11 +270,8 @@ public class testErrorsStopTheSetupRunning
     }
 
     /**
-     * How many problems would stop the graph being built.
-     *
-     * Counted from the graph and the reducer directly rather than through check(), because the point
-     * of these tests is that the two are different questions - taking this number from the same place
-     * the other one comes from would beg it.
+     * How many problems would stop the graph being built, counted from the graph and the reducer directly: the point of
+     * these tests is that it is a different question from check().
      */
     private static int blockingProblems(AutonomySession session)
     {
@@ -442,22 +356,13 @@ public class testErrorsStopTheSetupRunning
     /**
      * The strip grays the stop it has already carried out, rather than removing it (OB-143).
      *
-     * Adam: "the button disappears rather than being greyed out prior to replacement by the start
-     * button. make it get greyed out and then replaced."
+     * Adam: "the button disappears rather than being greyed out prior to replacement by the start button. make it get
+     * greyed out and then replaced."  The strip mirrors whichever real button is ENABLED; Graceful Stop disables itself
+     * at once while autonomy keeps running, so for that window "neither enabled" meant hide.  The rule is exercised
+     * rather than the panel, which needs a window; `testTheStripAsksThatQuestion` is the other half.
      *
-     * The strip mirrors whichever of the two real buttons is ENABLED. Pressing Graceful Stop disables
-     * it at once while autonomy keeps running - `stopLocomotives()` returns immediately and the trains
-     * coast on to their next station - so for that whole window neither was enabled, and "neither"
-     * meant hide. The control vanished from under the hand that had just pressed it and came back
-     * seconds later as a different button.
-     *
-     * The decision is exercised here rather than the panel, because the panel needs a window and the
-     * thing that was wrong is a rule, not a paint. `testTheStripAsksThatQuestion` below is the other
-     * half: a rule that nobody calls is a rule that is not in force.
-     *
-     * The case that must NOT change is the last one. "Neither button is enabled" has causes that have
-     * nothing to do with stopping - most of them before anything has been started at all - and a
-     * grayed Graceful Stop shown to somebody who has never run anything would be worse than the gap.
+     * The case that must NOT change is the last one: "neither enabled" has causes unrelated to stopping, and a grayed
+     * Graceful Stop shown to somebody who has never run anything would be worse than the gap.
      *
      * MUTATION: return HIDDEN for the pending case and the third assertion fails; return STOP_PENDING
      * whenever neither is enabled and the last one fails.
@@ -491,9 +396,7 @@ public class testErrorsStopTheSetupRunning
             AutonomyOverlayToggle.RunButton.START,
             "autonomy can be started, so the strip must offer the start");
 
-        // Not loaded, and the page left out of the setup: both hide whatever else is true, including
-        // a pending stop, because a strip for a page that is not part of the setup has nothing to say
-        // about it.
+        // Not loaded, and the page left out of the setup: both hide whatever else is true, a pending stop included.
         assertEquals(AutonomyOverlayToggle.runButtonFor(false, false, true, true, true),
             AutonomyOverlayToggle.RunButton.HIDDEN,
             "no setup is loaded, so the strip has nothing to stand in for");
@@ -504,11 +407,8 @@ public class testErrorsStopTheSetupRunning
     }
 
     /**
-     * The strip actually asks that question, and grays the button when the answer says to.
-     *
-     * The rule above is only in force if `syncRun` calls it and acts on the answer. Extracting a rule
-     * and testing the rule leaves the call site as the only uncovered part, which is how two defects
-     * got into one method earlier in this project - so both halves are asserted.
+     * The strip actually asks that question, and grays the button when the answer says to: the rule is only in force if
+     * `syncRun` calls it and acts on the answer, so both halves are asserted.
      */
     @Test
     public void testTheStripAsksThatQuestion() throws Exception
@@ -528,18 +428,10 @@ public class testErrorsStopTheSetupRunning
     /**
      * The autonomy strip is not the scroll pane's column header (OB-148).
      *
-     * Adam: "if a track diagram is wide, the header above a track diagram flickers while scrolling
-     * sideways" - the whole strip, not just the button on it.
-     *
-     * A column header is as wide as the view and scrolls horizontally with it. That is right for
-     * column labels and wrong for a strip of controls: every sideways scroll step repainted a panel as
-     * wide as the diagram, and the checkbox and Start button slid away from under the hand reaching
-     * for them. Above the viewport it does neither.
-     *
-     * The swap is made at runtime through GroupLayout.replace because the container's layout comes
-     * from the form, and a hand-edited GEN block is how cropOverlay disappeared twice. So what this
-     * checks is that the runtime swap is still there and the column header is not being set again -
-     * the two are easy to reintroduce separately, and either alone brings the flicker back.
+     * Adam: "if a track diagram is wide, the header above a track diagram flickers while scrolling sideways".  A column
+     * header is as wide as the view and scrolls with it, so every sideways step repainted a panel as wide as the
+     * diagram.  The swap is made at runtime through GroupLayout.replace (a hand-edited GEN block is how cropOverlay
+     * disappeared twice), so this checks that the swap is still there and the column header is not being set again.
      */
     @Test
     public void testTheStripIsNotTheScrollPanesColumnHeader() throws Exception
@@ -559,8 +451,8 @@ public class testErrorsStopTheSetupRunning
 
         int header = body.indexOf("setColumnHeaderView(strip)");
 
-        // The fallback still names it, for a form whose layout is no longer a GroupLayout - so this
-        // asserts it is only reachable when the swap could not be made, not that the words are absent.
+        // The fallback still names it, for a form whose layout is no longer a GroupLayout: only reachable when the swap
+        // could not be made.
         if (header >= 0)
         {
             assertTrue(body.lastIndexOf("else") < header && body.lastIndexOf("else") > 0,
@@ -572,18 +464,10 @@ public class testErrorsStopTheSetupRunning
     /**
      * All three "why can't I start" messages name the third reason.
      *
-     * The guard refuses on `hasErrors()`, which covers a graph that will not build at all with nothing
-     * having turned that into a finding - and in that case `autonomyErrorCount()` is **zero**.  Every
-     * message that splits on the count alone therefore falls through to "wait for trains", and tells
-     * the operator to wait for trains that are not running and never will be.
-     *
-     * The guard itself got the third arm in the commit that widened it.  Its twins - the API's
-     * exception and the grayed right-click item's tooltip - did not, and stood like that for a week.
-     * That is the sweep-the-siblings miss this project makes more often than any other, so it is pinned
-     * rather than fixed and forgotten.
-     *
-     * Asked of the source, because what is wrong is a message and no test can read a tooltip's words
-     * back out of a menu that needs a running model to build.
+     * The guard refuses on `hasErrors()`, which covers a graph that will not build at all, where `autonomyErrorCount()`
+     * is **zero**; a message splitting on the count alone falls through to "wait for trains" that never run.  The
+     * guard has the third arm; its twins, the API's exception and the grayed right-click item's tooltip, once did not.
+     * Asked of the source, since no test can read a tooltip back out of a menu that needs a running model.
      *
      * MUTATION this catches: deleting the `autonomyHasErrors()` arm from any one of the three.
      */
@@ -598,13 +482,8 @@ public class testErrorsStopTheSetupRunning
             {"the greyed Start item's tooltip", code("private LayoutRightclickAutonomyMenu(")},
         };
 
-        // ASKED, AND COUNTED.
-        //
-        // The gate below used to be `body.contains("errorCannotStartWithErrors")`, and MT-263 moved
-        // that wording into `whyAutonomyWillNotStart` - so every site fell through the `continue`, the
-        // loop asserted nothing at all, and the mutation this class names would have passed.  A site is
-        // in scope now if it words the refusal ITSELF or if it delegates to the one rule, and the floor
-        // below fails if none of them does either.
+        // ASKED, AND COUNTED.  A site is in scope if it words the refusal ITSELF or delegates to the one rule (MT-263
+        // moved the wording into `whyAutonomyWillNotStart`), and the floor below fails if none of them does.
         int asked = 0;
 
         for (String[] site : sites)
@@ -622,17 +501,9 @@ public class testErrorsStopTheSetupRunning
 
             asked++;
 
-            // WHAT IS LEFT FOR THE LOOP TO SAY, once no door words the refusal itself.
-            //
-            // The first repair wrote both arm-checks as `X || throughTheRule` and every site delegates,
-            // so they were satisfied by the disjunct alone.  The second put them behind
-            // `if (wordsItHere)` - which no site can enter: the wording lives in one place, and
-            // `regression.testTheRefusalToStartSaysWhichThing.testNoDoorWordsItItself` asserts that it
-            // stays there.  A branch that another test forbids anything from entering is not a guard,
-            // it is a sentence that reads like one.
-            //
-            // So the loop's job is what it can still hold: every refusal reaches the one rule.  The
-            // arms are asserted OF THAT RULE below, which is where they went.
+            // WHAT IS LEFT FOR THE LOOP TO SAY, once no door words the refusal itself: every refusal reaches the one
+            // rule.  The arms are asserted OF THAT RULE below; a branch that `testNoDoorWordsItItself` forbids anything
+            // to enter would not be a guard.
         }
 
         assertTrue(asked == sites.length,
@@ -640,13 +511,8 @@ public class testErrorsStopTheSetupRunning
             + " rule for it, so the rest are saying something this check cannot see.  That is how this"
             + " loop came to assert nothing: the wording moved and every site fell through the gate");
 
-        // AND THE ONE RULE ASKS ALL THREE THINGS, which is where the arms went when the sites stopped
-        // wording the refusal themselves.
-        //
-        // The no-arg wrapper is the door every site actually calls, and it is what chooses between the
-        // three answers: the error count, the blocking count, and whether the setup is broken at all.
-        // Nothing asserted that, so the third arm could be deleted - which is OB-090 for the third
-        // time - with this class green.
+        // AND THE ONE RULE ASKS ALL THREE THINGS: the error count, the blocking count, and whether the setup is broken
+        // at all.  The no-arg wrapper is the door every site calls; nothing else asserted its third arm.
         String wrapper = code("public String whyAutonomyWillNotStart()");
 
         assertTrue(wrapper.contains("autonomyErrorCount()"),
