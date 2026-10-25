@@ -41,22 +41,17 @@ final class ReturnHomeController extends SettledQuestion
 
         if (this.ui.isAutonomyBusy())
         {
-            // Routed through describeStagingOutcome like every other surface.  This one said "please
-            // wait for all active locomotives to stop" while the button tooltip and the plan-refusal
-            // dialog described the same state differently - which is the exact thing that method
-            // exists to prevent.
+            // Routed through describeStagingOutcome like every other surface, so one state is described one way.
             JOptionPane.showMessageDialog(this.ui,
                 describeStagingOutcome(HomeStaging.Outcome.LOCOMOTIVES_RUNNING, null));
             return;
         }
 
-        // The cheap triage is not asked here (OB-192): this is the event thread, and `triageReturnToHome` builds a
-        // `HomeStaging.snapshot`, which calls `Layout.getHomeStations`, `synchronized` on the `Layout`, so pressing
-        // this button while anything held that monitor froze the window (`refreshReturnHomeButton` says why that
-        // monitor is not the event thread's to wait for).  Nothing is lost: the timetable is borrowed and handed back
-        // rather than replaced, so no confirmation is needed, and the trivial outcome still arrives through `plan()` ->
-        // `triage()` and is reported by the block below through `describeStagingPlan`, off this thread.  The button was
-        // enabled by that very answer, so reaching here means the railway had work to do the last time anybody asked.
+        // The cheap triage is not asked here (OB-192): this is the event thread, and `triageReturnToHome` takes the
+        // `Layout` monitor (`HomeStaging.snapshot` calls the `synchronized` `Layout.getHomeStations`), so the press
+        // froze the window while anything held it.  Nothing is lost: the timetable is borrowed and handed back, so no
+        // confirmation is needed, and a trivial outcome still arrives through `plan()` and is reported below through
+        // `describeStagingPlan`, off this thread.
 
         // Borrowed, not replaced: the staging plan occupies the timetable only while it runs and the original goes back afterwards (on
         // success, failure and graceful stop alike), so there is nothing to warn about.  An abrupt exit is safe by construction: the timetable
@@ -66,10 +61,8 @@ final class ReturnHomeController extends SettledQuestion
         // Cleared per run, so a stop from an earlier one cannot excuse this one ending short
         this.ui.gracefulStopRequested = false;
 
-        // Disabled here rather than once execution begins, matching what pressing Execute Timetable
-        // does: the run is committed from this point, and both buttons would start the same thing.
-        // The flag is what makes that stick - a repaint or a menu opening during planning would
-        // otherwise re-enable the button, because nothing is running yet.
+        // Disabled here rather than once execution begins, as Execute Timetable does: the run is committed from this
+        // point.  The flag makes that stick, since a repaint during planning would re-enable the button.
         this.ui.stagingFlowActive = true;
 
         // The same state on the Layout, so the guards that ask the model rather than this class can see
@@ -77,15 +70,13 @@ final class ReturnHomeController extends SettledQuestion
         layout.setStagingInProgress(true);
         this.ui.returnHomeButton().setEnabled(false);
 
-        // A TURNING MARK ON THE BUTTON WHILE THE PLAN IS WORKED OUT (Adam, FR-077: "there needs to be a
-        // spinner on the return home button while it is calculating").  The search can take seconds on
-        // a full railway, and a grayed button with nothing moving reads as a click that did nothing.
+        // A TURNING MARK ON THE BUTTON WHILE THE PLAN IS WORKED OUT (FR-077): the search can take seconds on a full
+        // railway, and a grayed button with nothing moving reads as a click that did nothing.
         this.ui.showReturnHomeWorking(true);
         this.ui.executeTimetableButton().setEnabled(false);
 
-        // And the capture toggle (OB-101; Adam: "capture locomotive commands button can still be toggled while trains are returning home."):
-        // its handler did refuse (isAutonomyBusy covers this flow), but refusing is not the same as not offering; a grayed button says the
-        // railway is busy, which is true (the same distinction as OB-094 and OB-100: make the affordance agree with the guard).
+        // And the capture toggle (OB-101): its handler refused, but refusing is not the same as not offering; a grayed
+        // button says the railway is busy (as OB-094 and OB-100).
         this.ui.timetableCapture().setEnabled(false);
 
         // and the settings, which wait for the trains as these do
@@ -103,14 +94,12 @@ final class ReturnHomeController extends SettledQuestion
 
             try
             {
-                // THE AUTO TAB STOPS OFFERING PATHS: its double-click sends nothing while this flow owns the
-                // railway, so its lists are hidden, as they are while autonomy runs - refreshed from this worker, as the
-                // finally refreshes it
+                // THE AUTO TAB STOPS OFFERING PATHS: its double-click sends nothing while this flow owns the railway,
+                // so its lists are hidden, as while autonomy runs.
                 this.ui.repaintAutoLocList(true);
 
-                // Planned ONCE: asking planReturnToHome and then letting loadReturnToHomeTimetable plan again meant two answers that can differ
-                // (getNeighbors shuffles, and the state can move underneath), the second deciding whether the timetable was replaced and the first
-                // whether to run, which executed the operator's own timetable because "Return Home" had been pressed.
+                // Planned ONCE: planning twice gave two answers that can differ (getNeighbors shuffles, the state
+                // moves), the second deciding whether the timetable was replaced and the first whether to run.
                 HomeStaging.Plan plan = layout.loadReturnToHomeTimetable();
 
                 // The plan is known, whatever it says - the run that follows has its own marks.
@@ -126,13 +115,11 @@ final class ReturnHomeController extends SettledQuestion
                     return;
                 }
 
-                // AND THE SAME QUESTION THE OTHER RUN DOORS ASK.  This is the run where it costs most: several trains
-                // move at once, so one with no train length hands back the track under itself while the others are
-                // being routed around it.  After every refusal, the plan's included: a refused press should change
-                // nothing, and this writes the setting, which the planner does not read.  On the event thread, where
-                // the setting's checkbox lives; a gate that fails stops the run, and the finally hands the timetable
-                // back.
-                // AND NO EDITOR COME SINCE THE PRESS, asked at the same event-thread moment as the gate
+                // AND THE SAME QUESTION THE OTHER RUN DOORS ASK: several trains move at once here, so one with no train
+                // length hands back the track under itself.  After every refusal, the plan's included: a refused press
+                // should change nothing, and this writes the setting.  On the event thread, where the setting's
+                // checkbox lives; a gate that fails stops the run, and the finally hands the timetable back.  AND NO
+                // EDITOR COME SINCE THE PRESS, asked at the same event-thread moment as the gate
                 final boolean[] editorCame = {false};
 
                 try
@@ -162,19 +149,18 @@ final class ReturnHomeController extends SettledQuestion
                     this.ui.gracefulStopButton().setEnabled(true);
                 });
 
-                // So the operator can see what is about to run rather than watching the old timetable while different trains move.  Called from this
-                // thread, not the block above: repaintTimetable takes the Layout monitor before it marshals, and the first entry's
-                // configureAndLockPath is about to hold that monitor for the length of its switch-throwing, so marshalled the wait landed on the EDT
-                // and froze the UI.
+                // So the operator sees what is about to run.  Called from this thread, not the block above:
+                // repaintTimetable takes the Layout monitor before it marshals, and the first entry's
+                // configureAndLockPath holds it for the length of its switch-throwing, so marshalled the wait froze the
+                // UI.
                 this.ui.repaintTimetable();
 
                 // Blocks until every train has arrived, not merely until the last one set off
                 final boolean completed = layout.executeTimetable(stopsAtPress);
 
-                // Trusting the boolean means trusting a chain: every move completed or was abandoned,
-                // and executePath completes only on arrival.  That holds today.  Asking outright costs
-                // one occupancy read and does not decay when a link in the chain changes.
-                // A paused train is left where it stands, so it does not make the run short (FR-117)
+                // Asked outright rather than trusting the boolean (a chain: every move completed or was abandoned, and
+                // executePath completes only on arrival), which costs one occupancy read and does not decay.  A paused
+                // train is left where it stands, so it does not make the run short (FR-117)
                 HomeStaging.Outcome after = layout.triageReturnToHome();
 
                 final boolean everyoneHome = after == HomeStaging.Outcome.ALREADY_HOME
@@ -182,11 +168,9 @@ final class ReturnHomeController extends SettledQuestion
 
                 javax.swing.SwingUtilities.invokeLater(() ->
                 {
-                    // A move that gave up stopped the whole run.  It is logged, but a log line is not
-                    // something an operator watching the layout will see - and what they are looking at
-                    // is trains that stopped halfway with no explanation.
-                    // A graceful stop legitimately leaves trains short of home and returns true, so it
-                    // is not reported - the operator asked for it and watched it happen.
+                    // A move that gave up stopped the whole run, and a log line is not something an operator watching
+                    // the layout sees.  A graceful stop legitimately leaves trains short of home and returns true, so
+                    // it is not reported.
                     if (!completed || (!everyoneHome && !this.ui.gracefulStopRequested))
                     {
                         JOptionPane.showMessageDialog(this.ui,
@@ -205,16 +189,12 @@ final class ReturnHomeController extends SettledQuestion
 
                 layout.setStagingInProgress(false);
 
-                // Hands the timetable back.  In the finally so it survives every way out of the block:
-                // the plan being impossible, the run finishing, a move giving up, a graceful stop, or
-                // an exception.  setTimetable also clears the sequential flag, so normal execution
-                // semantics return with it.
+                // Hands the timetable back, in the finally so it survives every way out of the block.  setTimetable
+                // also clears the sequential flag.
                 layout.setTimetable(borrowedTimetable);
 
-                // Re-enabled whether it ran, could not be planned, or threw.  In a finally because a
-                // button that never comes back needs a restart to recover - and these two must not be
-                // reset only on the normal path, or an exception out of executeTimetable leaves Start
-                // Autonomy dead and Graceful Stop live, for a run that is no longer happening.
+                // Re-enabled whether it ran, could not be planned, or threw: in a finally, because an exception out of
+                // executeTimetable would leave Start Autonomy dead and Graceful Stop live.
                 final boolean restoreButtons = tookTheButtons;
 
                 javax.swing.SwingUtilities.invokeLater(() ->
@@ -235,25 +215,21 @@ final class ReturnHomeController extends SettledQuestion
                     this.ui.refreshWhatWaitsForTheTrains();
                 });
 
-                // Off the EDT for the same reason as the pre-run repaint above: a path abandoned or
-                // graceful-stopped can still be unwinding when this runs, so the monitor is not
-                // reliably free here either
+                // Off the EDT as the pre-run repaint above: a path abandoned or graceful-stopped can still be
+                // unwinding, so the monitor is not reliably free.
                 this.ui.repaintTimetable();
 
-                // The locomotive panel has to be repainted HERE, not by the end-of-path callback that normally maintains it, because that callback
-                // runs one step too early: the last staging path fires it from executePathInternal and only afterwards does the entry thread call
-                // stopLocomotives(), so the final repaint always sees isAutoRunning() still true and hides the available-paths list until autonomy
-                // is started and gracefully stopped.  Full rather than Lite: the panels must be rebuilt, not just their route labels refreshed.
+                // The locomotive panel is repainted HERE, not by the end-of-path callback, which runs one step too
+                // early (the last staging path fires it before stopLocomotives(), so isAutoRunning() is still true and
+                // the paths list stays hidden).  Full rather than Lite: the panels must be rebuilt.
                 this.ui.repaintAutoLocList(false);
             }
         }).start();
     }
 
     /**
-     * Why a return home is not on offer.
-     *
-     * IMPOSSIBLE names the locomotives, because that is actionable.  NO_PLAN_FOUND must not claim
-     * impossibility - the search only ran out of room, which is a weaker statement.
+     * Why a return home is not on offer.  IMPOSSIBLE names the locomotives, because that is actionable; NO_PLAN_FOUND
+     * must not claim impossibility, as the search only ran out of room.
      */
     private String describeStagingPlan(HomeStaging.Plan plan)
     {
@@ -261,21 +237,16 @@ final class ReturnHomeController extends SettledQuestion
     }
 
     /**
-     * Sets the return home button to match what the layout can actually do right now.  Called wherever the button would otherwise simply
-     * be switched back on, and whenever the autonomy locomotive list is repainted (what runs when a locomotive is placed or arrives,
-     * exactly when "is anything away from home" changes its answer).  Only the cheap half of the question is asked: whether a plan
-     * exists needs a search.
+     * Sets the return home button to match what the layout can actually do right now.  Called wherever the button would
+     * otherwise simply be switched back on, and whenever the autonomy locomotive list is repainted.  Only the cheap
+     * half of the question is asked: whether a plan exists needs a search.
      *
-     * **AND THE CHEAP HALF IS STILL NOT ASKED HERE (OB-192).**  This runs on the event thread (`repaintAutoLocListLite` and
-     * `repaintAutoLocListFull` call it from their `invokeLater`), and `Layout.triageReturnToHome` builds a `HomeStaging.snapshot`, which
-     * calls `Layout.getHomeStations`, `synchronized` on the `Layout`: the same monitor, thread and freeze as the covered marks
-     * (`refreshCoveredTrack` says why the event thread must never queue for it).  **`isAutonomyBusy` DOES NOT COVER IT**: it asks
-     * `Layout.isRunning`, which counts `locomotiveThreads` and so is true for a hand dispatch as well as autonomy, but says nothing about
-     * every OTHER holder of that monitor with no train moving at all, the nearest being this very refresh (`repaintAutoLocListLite`
-     * submits `AutoLocomotiveStatus.findPaths` to `AutonomyRenderer`, which calls the `synchronized` `getPossiblePaths`, a search of the
-     * whole graph, once per panel).  Measured: the reproduction holds the monitor with nothing running and the event thread parks at
-     * `Layout.getHomeStations`.  So the question goes to a worker and the answer comes back to be painted; what the button says does not
-     * change, only where it is worked out.
+     * **AND THE CHEAP HALF IS STILL NOT ASKED HERE (OB-192).**  This runs on the event thread, and
+     * `Layout.triageReturnToHome` builds a `HomeStaging.snapshot`, which calls the `synchronized`
+     * `Layout.getHomeStations`; `isAutonomyBusy` does not cover it, as it says nothing about every OTHER holder of that
+     * monitor, the nearest being `AutoLocomotiveStatus.findPaths` from the refresh itself (`refreshCoveredTrack` says
+     * why the event thread must never queue for it).  So the question goes to a worker and the answer comes back to be
+     * painted.
      *
      * @see #askForReturnHomeTriage(org.traincontrol.automation.Layout)
      */
@@ -290,18 +261,16 @@ final class ReturnHomeController extends SettledQuestion
 
         if (layout == null)
         {
-            // Same reasoning as the other disableReturnHome sites - a bare setEnabled(false)
-            // here leaves the tooltip from whatever this button last had to say, which is nonsense once
-            // there is no autonomy layout behind it at all.
+            // Same as the other disableReturnHome sites: a bare setEnabled(false) leaves the tooltip from whatever this
+            // button last said.
             this.ui.disableReturnHome(I18n.t("autosetup.ui.whyNoLayout"));
             return;
         }
 
         if (this.ui.isAutonomyBusy())
         {
-            // Said out loud rather than left to the previous reason.  Disabling without touching the
-            // tooltip meant a button grayed because trains are moving went on claiming they were all
-            // at home - the explanation from before the run started.
+            // Said out loud rather than left to the previous reason: a button grayed because trains are moving went on
+            // claiming they were all at home.
             this.ui.disableReturnHome(describeStagingOutcome(HomeStaging.Outcome.LOCOMOTIVES_RUNNING, null));
             return;
         }
@@ -354,9 +323,8 @@ final class ReturnHomeController extends SettledQuestion
             return;
         }
 
-        // DISCARDED IF THE RAILWAY MOVED ON.  `parseAuto` replaces the Layout wholesale, and an
-        // answer about the graph that has just been thrown away must not paint the button for
-        // the one that replaced it.
+        // DISCARDED IF THE RAILWAY MOVED ON: `parseAuto` replaces the Layout wholesale, and an answer about the
+        // discarded graph must not paint the button.
         if (asked != this.ui.returnHomeTriageSubject) return;
 
         this.ui.returnHomeTriagePausedAway = pausedAway;
@@ -388,7 +356,7 @@ final class ReturnHomeController extends SettledQuestion
         this.ui.returnHomeButton().setEnabled(nothingToDo == null);
 
         // Says why it is unavailable, rather than leaving a dead button with no explanation
-        // WRAPPED (Adam on MT-756: "The tooltip is much too wide"): a reason can name many trains
+        // WRAPPED (MT-756): a reason can name many trains
         this.ui.returnHomeButton().setToolTipText(AutonomyEditorPanel.wrapped(nothingToDo == null
             ? I18n.t("ui.main.tooltip.returnHome")
             : describeStagingOutcome(nothingToDo, this.ui.returnHomeTriagePausedAway)));
@@ -480,18 +448,16 @@ final class ReturnHomeController extends SettledQuestion
                 return I18n.t("autolayout.ui.errorNoHomeStations");
 
             case LOCOMOTIVES_RUNNING:
-                // The button is named by pulling its own label in, so the sentence cannot tell the user
-                // to press something that is not on their screen - four translations had already
-                // invented a different name for it on day one.
+                // The button is named by pulling its own label in, so the sentence cannot tell the user to press
+                // something not on their screen.
                 return I18n.f("autolayout.ui.errorReturnHomeTrainsMoving",
                     I18n.t("ui.main.gracefulStop"));
 
             case IMPOSSIBLE:
                 return I18n.f("autolayout.ui.errorCannotReachHome", namesWithHomes(blocked));
 
-            // Its own sentence, not the default one: "no return plan found" would be wrong twice, as a plan almost
-            // certainly exists and the obstacle is that nobody can say where the train is; errorCannotReachHome is
-            // wrong too, sending the operator to look at track that is fine.
+            // Its own sentence, not the default one: a plan almost certainly exists and the obstacle is that nobody can
+            // say where the train is.
             case POSITION_AMBIGUOUS:
                 return I18n.f("autolayout.ui.errorLocomotivePositionAmbiguous", namesOf(blocked));
 
@@ -501,10 +467,8 @@ final class ReturnHomeController extends SettledQuestion
     }
 
     /**
-     * The blocked locomotives with the station each of them could not reach (OB-206; Adam: "when you say 'these
-     * locomotives cannot reach their home stations: <locomotive>', update the error message to provide the station
-     * name."), falling back to the locomotive alone where the home cannot be named, as a sentence that drops a train
-     * because its station could not be looked up would hide the very thing it is reporting.
+     * The blocked locomotives with the station each could not reach (OB-206), falling back to the locomotive alone
+     * where the home cannot be named, as dropping the train would hide the very thing reported.
      */
     private String namesWithHomes(List<Locomotive> blocked)
     {
