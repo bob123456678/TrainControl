@@ -21,20 +21,16 @@ import org.traincontrol.util.SelfUpdate;
 
 /**
  * The update question offers Download & Update only where there is a jar to replace, and the update refuses to start
- * while trains are running (FR-125).
+ * while trains are running (FR-125; Adam: *"If no jar in current folder, it shouldn't be offered as a menu option."*).
  *
- * Adam, 2026-10-12: *"when user clicks on the new version, they see a download, download & update, or cancel button"*,
- * and *"If no jar in current folder, it shouldn't be offered as a menu option."*
- *
- * **No window and no dialog.**  The question's buttons go to a hook that answers in place of the user
+ * No window and no dialog: the question's buttons go to a hook that answers in place of the user
  * (`TrainControlUI.updateQuestionForTests`), and the refusal is the predicate Download & Update asks before it
  * downloads and again before it closes TrainControl, asked of a real model on a sandboxed layout.
  *
- * MUTATIONS, each seen red: the answer read by position alone, so the second of two buttons counts as Download & Update,
- * or Download & Update made the default, or the tooltip promising an update without a jar (the buttons claim); `jarAt`
- * accepting a folder (the classes claim); the refusal dropping the model's running question, or the routes (the
- * refusal claim); `whenNoModalDialog` not waiting (the dialog claim); `aModalDialogIsShowing` not seeing one (the
- * modal claim).
+ * MUTATIONS, each seen red: the answer read by position alone, Download & Update made the default, or the tooltip
+ * promising an update without a jar (the buttons claim); `jarAt` accepting a folder (the classes claim); the refusal
+ * dropping the model's running question, or the routes (the refusal claim); `whenNoModalDialog` not waiting (the dialog
+ * claim); `aModalDialogIsShowing` not seeing one (the modal claim).
  */
 public class testTheUpdateQuestion
 {
@@ -82,7 +78,7 @@ public class testTheUpdateQuestion
         assertEquals(defaults, Arrays.<Object>asList(download, download), "the default button must be Download, with a"
             + " jar or without: Download & Update closes TrainControl, and a reflex Enter must not do that");
 
-        // And the item's tooltip says what the question will offer (FR-125, 2026-10-13)
+        // And the item's tooltip says what the question will offer (FR-125)
         assertEquals(TrainControlUI.updateItemTooltip(false), I18n.t("ui.main.tooltip.downloadUpdate"), "without a jar"
             + " the tooltip promises an update the question does not offer");
         assertEquals(TrainControlUI.updateItemTooltip(true), I18n.t("ui.main.tooltip.downloadAndUpdate"));
@@ -105,9 +101,7 @@ public class testTheUpdateQuestion
 
     /**
      * The update's exit waits while a modal dialog is open and runs once it has closed; with none open it runs at once
-     * (FR-125, 2026-10-13: a posted exit ran inside a rename dialog and closed it with the typing unapplied).
-     *
-     * @throws Exception from the event thread
+     * (a posted exit ran inside a rename dialog and closed it with the typing unapplied).
      */
     @Test
     public void testTheUpdateWaitsForAnOpenDialog() throws Exception
