@@ -3531,7 +3531,7 @@ RSA75-D1	RSA75.md	Closed	Checked - clean (but C1 to C4).	OB-361's correction, OB
 RSA76-B1	RSA76.md	-	Open	AutomationAPI.md invites running the new examples on a real railway, and RunTrainsOnAGraph would leave a train running there
 RSA76-B2	RSA76.md	-	Follow-up: older than the range (`902c647c`, 2026-08-19); not a 3.0.3 regression	The AutomationAPI.md progress-callback sample does not compile as written, and once renamed it stops the run on its first sensor
 RSA76-C1	RSA76.md	-	Open	OB-366's three-line cap also shortens the main window's autonomy strip
-RSA76-C10	RSA76.md	-	Open	Several of the range's claims reach their door by reflection or a test hook, not the user's gesture
+RSA76-C10	RSA76.md	Closed	Follow-up - next release: drive OB-365, FR-144 and OB-370's doors by the user's gesture; c	Several of the range's claims reach their door by reflection or a test hook, not the user's gesture
 RSA76-C11	RSA76.md	-	Open	OB-369's sample now writes preferred speeds into the user's locomotive database
 RSA76-C12	RSA76.md	-	Open	AutomationAPI.md's new text and the new examples are not US English, and two sentences are not true
 RSA76-C13	RSA76.md	-	Open: Adam's call	The Readme's v3.0.3 list has no line for FR-138's six API examples
@@ -3539,25 +3539,25 @@ RSA76-C14	RSA76.md	-	Open	The code split off LayoutEditor and AutonomyEditorPane
 RSA76-C2	RSA76.md	-	Open	Each entry into autonomy mode adds a viewport listener that is never removed
 RSA76-C3	RSA76.md	-	Open	OB-368 makes the Track Directions box narrower in English too
 RSA76-C4	RSA76.md	-	Open	The OB-368 claim reads the override's own answer
-RSA76-C5	RSA76.md	-	Open	DD-B9: Test a Path and the findings now disagree at a station whose stopping copy cannot leave
-RSA76-C6	RSA76.md	-	Open	DD-B9's checker claim checks BuiltReach against a copy of its own rule
-RSA76-C7	RSA76.md	-	Open	OB-370's sentence names autonomy or routes when Return Home, a hand send or a graceful stop holds the setup, and it drops the remedy
+RSA76-C5	RSA76.md	Closed	Follow-up - next release: Test a Path should start from the stopping copies as the finding	DD-B9: Test a Path and the findings now disagree at a station whose stopping copy cannot leave
+RSA76-C6	RSA76.md	Closed	Follow-up - next release: an independent oracle (Layout's own path search between station 	DD-B9's checker claim checks BuiltReach against a copy of its own rule
+RSA76-C7	RSA76.md	-	Open: Adam's call (the sentence names autonomy or routes when Return Home, a hand send or 	OB-370's sentence names autonomy or routes when Return Home, a hand send or a graceful stop holds the setup, and it drops the remedy
 RSA76-C8	RSA76.md	-	Open	The OB-364 claim has no precondition that the page hides its text
 RSA76-C9	RSA76.md	-	Open	Cluster 27's rewritten source claim asks the same thing twice
-RSA76-D1	RSA76.md	-	Not a defect	The autonomy clusters merged into one place are behavior-preserving
-RSA76-D10	RSA76.md	-	Not a defect	OB-369 fixes the sample's start
-RSA76-D11	RSA76.md	-	Not a defect	The bundles are complete, ASCII and US English
-RSA76-D12	RSA76.md	-	Not a defect	The Readme's v3.0.3 section matches the fixes and the house rules
-RSA76-D13	RSA76.md	-	Not a defect	The user-facing fixes do what their lines say
-RSA76-D14	RSA76.md	-	Not a defect	DD-B6's station start-ups map one for one
-RSA76-D2	RSA76.md	-	Not a defect	The editor clusters merged into one place are behavior-preserving
-RSA76-D3	RSA76.md	-	Not a defect	The other clusters merged into one place are behavior-preserving
-RSA76-D4	RSA76.md	-	Not a defect	OB-371 merges the two walk prompts without losing either one's behavior
-RSA76-D5	RSA76.md	-	Not a defect	OB-372 changes only flipFacing's reading, and that is the intended fix
-RSA76-D6	RSA76.md	-	Not a defect	The Phase 5 extractions are delegations with the same bodies, locks and threads
-RSA76-D7	RSA76.md	-	Not a defect	SettledQuestion keeps each of the three waits' own rule
-RSA76-D8	RSA76.md	-	Not a defect	No synchronized member or event-thread hand-off was lost in gui/ or automationui/
-RSA76-D9	RSA76.md	-	Not a defect	The public API of 3.0.2 is all there, with the same signatures
+RSA76-D1	RSA76.md	Closed	Not a defect	The autonomy clusters merged into one place are behavior-preserving
+RSA76-D10	RSA76.md	Closed	Not a defect	OB-369 fixes the sample's start
+RSA76-D11	RSA76.md	Closed	Not a defect	The bundles are complete, ASCII and US English
+RSA76-D12	RSA76.md	Closed	Not a defect	The Readme's v3.0.3 section matches the fixes and the house rules
+RSA76-D13	RSA76.md	Closed	Not a defect	The user-facing fixes do what their lines say
+RSA76-D14	RSA76.md	Closed	Not a defect	DD-B6's station start-ups map one for one
+RSA76-D2	RSA76.md	Closed	Not a defect	The editor clusters merged into one place are behavior-preserving
+RSA76-D3	RSA76.md	Closed	Not a defect	The other clusters merged into one place are behavior-preserving
+RSA76-D4	RSA76.md	Closed	Not a defect	OB-371 merges the two walk prompts without losing either one's behavior
+RSA76-D5	RSA76.md	Closed	Not a defect	OB-372 changes only flipFacing's reading, and that is the intended fix
+RSA76-D6	RSA76.md	Closed	Not a defect	The Phase 5 extractions are delegations with the same bodies, locks and threads
+RSA76-D7	RSA76.md	Closed	Not a defect	SettledQuestion keeps each of the three waits' own rule
+RSA76-D8	RSA76.md	Closed	Not a defect	No synchronized member or event-thread hand-off was lost in gui/ or automationui/
+RSA76-D9	RSA76.md	Closed	Not a defect	The public API of 3.0.2 is all there, with the same signatures
 RSA8-B1	RSA8.md	Closed	Fixed - a build for inspection settles the timetable for the look and puts it back (Autono	The Autonomy menu's Pages tick loses every timetable entry set aside for a page when it is ticked back in: the findings refresh it runs before its rel
 RSA8-B2	RSA8.md	Closed	Fixed - a move moves what the carry of names remembers (squareOfNameSeen) with the squares	A move of stations in the track editor - saved, cancelled or undone - rebinds the timetable's legs through them to the stations now on the squares the
 RSA8-B3	RSA8.md	Closed	Fixed with B2 - the undo point holds the railway's squares and an undo puts them back, as 	The track editor's Ctrl+Z after a move puts back the page's setup and not the railway's squares, which round 23 now moves: while a declined edit waits

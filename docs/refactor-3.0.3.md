@@ -553,6 +553,18 @@ AutonomyEditorPanel 99, LayoutEditor 47): a member used across a new package lin
   switch" and "the two menus NAME a square alike" were not confirmed done.  DD-A1, DD-C6, DD-C7 and DD-C8 stay in
   OB-331 for 3.1.0.
 
+**Next release: from the 3.0.3 validator (RSA76)**
+- C5: the editor's Test a Path still starts a station facing every way, while DD-B9's findings start from its stopping
+  copies only, so at a station whose stopping copy cannot leave it can draw a path the findings say is not there.  Make
+  Test a Path read reach as the build does.
+- C6: DD-B9's checker claim tests `BuiltReach` against a copy of its own rule; give it an independent oracle (Layout's
+  own path search between pairs of stations).
+- C10: claims that reach their door by reflection or a test hook, to be driven by the user's gesture: OB-365's key,
+  FR-144's Shift-click, OB-370's eight doors during a route run; claims for OB-367's dropdown renderer and the
+  direction "Reads as" line; a test that runs `FullAutonomyExample`.
+- D7's note: `SettledQuestion`'s `outstanding()` and `giveUp()` hooks are not final and their "called under the lock"
+  contract is not enforced.
+
 **Next release: behaviour.md** (239 KB, 2,884 lines; about 60k tokens to read whole).  Split by functional area into
 one file per area with `behaviour.md` (to be `behavior.md`) as a short index (area, section, main classes, main tests);
 compact each to the rule, its why and its id; update the ~90 citations in code and tests in the same commit; prove
