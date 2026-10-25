@@ -8169,19 +8169,13 @@ public class AutonomySession
     }
 
     /**
-     * Puts every locomotive with a home on it, facing the way it was homed, and takes every other locomotive off its
-     * station, in the SETUP only (FR-115; Adam: "Place all at their homes.  Teleports locomotives to their home
-     * stations, facing the correct way, and clears all other locomotives from other stations (without actually moving
-     * anything)").  **The facing** is the home's own (`homeFacing`); else the one the caller gives (the running
-     * layout's home copy), or none on a square with one way to face.  **No arrival side and no road**: with none a
-     * train has no tail behind it, the safe answer.  **Each train's settings travel with it** (speed, arrival
-     * functions, the rest of the placement, which the build resets where left out).  **Every train the railway or the
-     * setup has standing is named in the answer**, homed or not, because the rebuild that follows
-     * (`TrainControlUI.rebuildRunningLayoutFromSetup`) puts back every train it is not told about where the railway had
-     * it.  Re-derives once; homes and placements on pages left out of autonomy are left alone.
-     *
+     * Puts every homed locomotive on its home and takes every other off its station, in the SETUP only (FR-115; Adam:
+     * "Place all at their homes.  Teleports locomotives to their home stations, facing the correct way, and clears all
+     * other locomotives from other stations (without actually moving anything)").  Facing: the home's own, else the
+     * caller's; no arrival side or road.  Settings travel with each train.  Every train the railway or setup has
+     * standing is in the answer, as the rebuild puts back any it is not told about.  Excluded pages are left alone.
      * @param fallbackFacings for a home recorded without a facing, the way its locomotive should face there; may be
-     * empty
+     *        empty
      * @return every locomotive this put on a home or took off a station
      */
     public java.util.Set<String> placeEveryTrainAtHome(Map<TileKey, Side> fallbackFacings)
@@ -8195,7 +8189,7 @@ public class AutonomySession
             if (standing != null) touched.add(standing);
         }
 
-        // OFF EVERY STATION, each train's settings kept to carry to its home
+        // Off every station, settings kept for the home
         Map<String, org.json.JSONObject> settings = new LinkedHashMap<>();
 
         for (Map.Entry<TileKey, String> placed : placedLocomotives().entrySet())
@@ -8215,7 +8209,6 @@ public class AutonomySession
             if (placed.getValue() != null) touched.add(placed.getValue());
         }
 
-        // AND ONTO ITS HOME, facing the way it was homed
         for (Map.Entry<TileKey, String> home : homes.entrySet())
         {
             org.json.JSONObject loc = settings.containsKey(home.getValue())
@@ -8255,9 +8248,7 @@ public class AutonomySession
     }
 
     /**
-     * Where this locomotive is already at home, if it is somewhere other than the given square, for the menu, which
-     * warns before moving it rather than moving it silently.
-     *
+     * Where this locomotive is already at home other than this square, for the menu's warning.
      * @param tile the square being assigned, which is not itself an answer
      * @param locomotive the locomotive
      * @return the other square that calls this locomotive home, or null
@@ -8269,10 +8260,7 @@ public class AutonomySession
         return found.isEmpty() ? null : found.get(0);
     }
 
-    /**
-     * Every square other than this one whose home is that locomotive: a list, as a hand-edited setup can hold several,
-     * and taking one away would move the problem rather than fix it.
-     */
+    /** Every other square homed to that locomotive: a hand-edited setup can hold several. */
     private java.util.List<TileKey> homesElsewhere(TileKey tile, String locomotive)
     {
         if (locomotive == null) return new java.util.ArrayList<>();
@@ -8282,23 +8270,13 @@ public class AutonomySession
                 && locomotive.equals(point.optString("home", null)));
     }
 
-    /**
-     * Every square the active configuration records a home locomotive on, for the one gesture about all of them at
-     * once.
-     *
-     * @return the squares, in NO PARTICULAR ORDER (a `JSONObject` is a `HashMap`), empty when nothing is homed anywhere
-     */
+    /** @return every square the active configuration homes a locomotive on, in no particular order; may be empty */
     public java.util.List<TileKey> tilesWithAHome()
     {
         return tilesWhere((key, point) -> carriesAHome(point));
     }
 
-    /**
-     * Every square the active configuration records a locomotive standing on: the placement twin of `tilesWithAHome`
-     * (MT-257).
-     *
-     * @return the squares, in NO PARTICULAR ORDER, as `tilesWithAHome`; empty when nothing is placed
-     */
+    /** @return every square the active configuration places a locomotive on (MT-257), in no particular order */
     public java.util.List<TileKey> tilesWithALocomotive()
     {
         java.util.List<TileKey> out = new java.util.ArrayList<>();
@@ -8330,29 +8308,20 @@ public class AutonomySession
     }
 
     /**
-     * One of a Point's operational properties, in the active configuration: kept per configuration, as these are what a
-     * configuration IS (the same railway with different rules about where trains may stand and turn).  The keys are the
-     * ones parseAuto reads, so nothing translates them on the way out.
-     *
+     * Sets one of a Point's operational properties in the active configuration, under the key parseAuto reads.
      * @param key terminus, reversing, active, maxTrainLength, speedMultiplier, priority, home, excludedLocs,
-     * excludedLocsMode
+     *        excludedLocsMode
      * @param value the value, or null to remove the property entirely
      */
     public void setPointProperty(TileKey tile, String key, Object value)
     {
         writePointProperty(tile, key, value);
 
-        // The split names are computed from these properties (which squares turn trains round, which are berths), so a
-        // cached set is out of date the moment one changes; this method does not rebuild, so without this the labels
-        // would look up Point names the running graph has never heard of.
+        // The split names are computed from these properties; this does not rebuild.
         deriveStationIndex();
     }
 
-    /**
-     * The write on its own, for a caller about to make several and re-derive once: deriving the station index is a full
-     * builder construction, and per square would turn one press of "clear every home" into sixty-two on the event
-     * thread.
-     */
+    /** The write alone, for a caller making several and re-deriving once. */
     private void writePointProperty(TileKey tile, String key, Object value)
     {
         String active = store.getActiveConfiguration();
@@ -8377,11 +8346,7 @@ public class AutonomySession
         dirty = true;
     }
 
-    /**
-     * @param tile
-     * @param key
-     * @return the stored value, or null when this Point has no such property
-     */
+    /** @return the stored value, or null when this Point has no such property */
     public Object getPointProperty(TileKey tile, String key)
     {
         String active = store.getActiveConfiguration();
@@ -8404,10 +8369,8 @@ public class AutonomySession
     }
 
     /**
-     * Sets one direction across a whole run of track, from one square to another: a user thinks "trains only go this
-     * way along here", not "close the westward route on eleven tiles".  The route is found ignoring directions, so an
-     * already one-way run can be reversed by drawing it the other way.
-     *
+     * Sets one direction along the track from one square to another, found ignoring directions, so a one-way run can be
+     * reversed by drawing it the other way.
      * @param from the square trains may leave
      * @param to the square they may travel toward
      * @return how many tiles were changed, or -1 if there is no continuous track between the two
@@ -8420,9 +8383,7 @@ public class AutonomySession
 
         Set<TileKey> changed = recordAlong(path, 1, path.size() - 2);
 
-        // AND THE RUNS OF THE TWO SQUARES CLICKED (OB-361): a square of plain track is part of a run, which is one
-        // decision, and left out it would leave its run saying two things.  A sensor or a switch clicked is left as it
-        // is: closing a road there would block traffic that never enters the run.
+        // And the runs of the two squares clicked, if plain track (OB-361), or a run would say two things.
         TileKey first = path.get(0);
         TileKey last = path.get(path.size() - 1);
 
@@ -8436,10 +8397,7 @@ public class AutonomySession
         return directionsTouched() ? changed.size() : 0;
     }
 
-    /**
-     * Records one way along the run a square of plain track belongs to, the way a train leaving that square by `toward`
-     * goes, without re-deriving (OB-361); returns the squares recorded, none where the square is no plain track.
-     */
+    /** Records one way along the run of a plain-track square, without re-deriving (OB-361); returns the squares set. */
     private Set<TileKey> recordTheRunOf(TileKey square, Side toward)
     {
         TileGraph.Run run = graph.runOf(square);
@@ -8460,7 +8418,6 @@ public class AutonomySession
 
         int at = first + run.getTiles().indexOf(square);
 
-        // ALONG THE PATH when the side leads to the square after it, or where nothing is before it to lead back to
         boolean along = at + 1 < path.size() ? toward == graph.sideTowardNeighbour(square, path.get(at + 1))
             : !(at > 0 && toward == graph.sideTowardNeighbour(square, path.get(at - 1)));
 
@@ -8477,7 +8434,7 @@ public class AutonomySession
         return recordAlong(path, first, last);
     }
 
-    /** Sets one direction along a path that is already known, tile by tile, the track between its two ends. */
+    /** Sets one direction along a known path, the track between its two ends. */
     private int applyOneWay(List<TileKey> path)
     {
         int changed = recordAlong(path, 1, path.size() - 2).size();
@@ -8486,13 +8443,9 @@ public class AutonomySession
     }
 
     /**
-     * Records one direction along a path that is already known, tile by tile, without re-deriving: a RUN knows its own
-     * tiles, and re-deriving them from its two ends with a shortest-path search is wrong wherever two chains join the
-     * same pair (a passing loop, a double-track section), as it could return the other chain and one-way track the user
-     * had not touched.  The squares from `first` to `last` are recorded; the others are only neighbours, to say which
-     * way the path goes.  A square at the very end of the path (track that simply stops, OB-361) takes its way from its
-     * one neighbour and its road.
-     *
+     * Records one direction along a known path from `first` to `last` without re-deriving: a shortest-path search could
+     * pick the other chain of a passing loop.  The rest are neighbours, for the path's way; an end square takes its way
+     * from its one neighbour (OB-361).
      * @param path the squares in order
      * @return the squares recorded
      */
@@ -8507,8 +8460,7 @@ public class AutonomySession
             Side cameFrom = i > 0 ? graph.sideTowardNeighbour(tile, path.get(i - 1)) : null;
             Side goingTo = i + 1 < path.size() ? graph.sideTowardNeighbour(tile, path.get(i + 1)) : null;
 
-            // THE PATH'S OWN END, on a square of one road with two sides: the road's other side.  Not a square beside a
-            // link's jump, which is no end and was never recorded.
+            // The path's own end, on a one-road square: the road's other side (not beside a link's jump).
             Route only = graph.getRoutes(tile).size() == 1 ? firstRoute(tile) : null;
 
             if (only != null && only.getA() == only.getB()) only = null;
@@ -8531,7 +8483,7 @@ public class AutonomySession
                 ways.put(entry.getKey(), route.getA() == goingTo ? Direction.TOWARD_A : Direction.TOWARD_B);
             }
 
-            // ON A SWITCH, BY ITS ARMS (OB-351): the arm the run may not leave by is shut for every road through it
+            // On a switch, by its arms (OB-351)
             recordSquare(tile, ways);
 
             if (!ways.isEmpty()) changed.add(tile);
@@ -8547,10 +8499,8 @@ public class AutonomySession
     }
 
     /**
-     * Answers these squares 0 on purpose, replacing any length they had, and re-derives once: what Segment Length's 0
-     * means since *"no, add a clear button"*, the same answer a 0 in Mass Assign Lengths is (OB-274), kept, not offered
-     * again, and read by every length rule but the own-tail one (OB-300) as measured track of no length.  Clearing a
-     * length is `setTileLength(tile, 0)`, which removes the answer as well.
+     * Answers these squares 0 on purpose (OB-274), re-deriving once: Segment Length's clear (*"no, add a clear
+     * button"*).  `setTileLength(tile, 0)` instead removes the answer.
      */
     public void answerTileLengthsZero(java.util.Collection<TileKey> tiles)
     {
@@ -8565,10 +8515,7 @@ public class AutonomySession
         touched();
     }
 
-    /**
-     * Writes several squares' lengths and re-derives once: `touched()` is a full builder construction (graph,
-     * reduction, station index) and the single setter calls it per square.
-     */
+    /** Writes several squares' lengths and re-derives once. */
     public void setTileLengths(java.util.Map<TileKey, Integer> lengths)
     {
         if (lengths == null || lengths.isEmpty()) return;
@@ -8588,8 +8535,7 @@ public class AutonomySession
     }
 
     /**
-     * Forgets every length on every page, and re-derives once (FR-069), for the reason `clearEveryHome` gives.
-     *
+     * Forgets every length on every page, re-deriving once (FR-069).
      * @return how many squares had a length
      */
     public int clearEveryTileLength()
@@ -8614,11 +8560,8 @@ public class AutonomySession
     }
 
     /**
-     * Pairs two portals, and switches BOTH ends on (OB-031): a pairing is one fact about two squares and being switched
-     * off is a fact about one, so a pair whose far end was disabled would read as connected on the diagram and refuse
-     * every train.  Adam: "when an active link from one page pairs with a link on another, both must be marked as
-     * active. right now, the target doesn't have to be."  Enabling rather than refusing: pairing two links says they
-     * are joined.
+     * Pairs two portals and switches both on (OB-031).  Adam: "when an active link from one page pairs with a link on
+     * another, both must be marked as active. right now, the target doesn't have to be."
      */
     public void pairPortals(TileKey a, TileKey b)
     {
@@ -8637,11 +8580,8 @@ public class AutonomySession
     }
 
     /**
-     * One arrow per run of track between two sensors, on a square in the middle of it: marking only what is RESTRICTED
-     * leaves a layout almost bare, wrong for the first question anybody asks (does this sensor reach that one, and
-     * which way round).  A pair of runs that face each other collapses into one double-headed arrow, as bidirectional
-     * track already looks.
-     *
+     * One arrow per run between two sensors, mid-run, so an unrestricted layout is not bare; facing runs collapse into
+     * one double-headed arrow.
      * @return the square to mark, and what to draw there
      */
     public Map<TileKey, TileAnnotation.Mark> flowMarks()
@@ -8649,30 +8589,20 @@ public class AutonomySession
         return sessionRuns.flowMarks();
     }
 
-    /**
-     * Every run of plain track, keyed by the tile that speaks for it - the graph's, which finds them (`TileGraph.runs`).
-     *
-     * @return leader tile to the run it leads
-     */
+    /** @return every run of plain track, by the tile that speaks for it (`TileGraph.runs`) */
     public Map<TileKey, Run> runs()
     {
         return sessionRuns.runs();
     }
 
-    /**
-     * @return every tile of every run, mapped to the tile that speaks for it
-     */
+    /** @return every tile of every run, mapped to the tile that speaks for it */
     public Map<TileKey, TileKey> runLeaders()
     {
         return sessionRuns.runLeaders();
     }
 
     /**
-     * Whether a run can be made one way at all: a lone square, or a run with track between its two ends (the squares a
-     * one-way run restricts, as `applyOneWay` walks them).  A piece of track joined to nothing has no between, so
-     * setting it one way changes nothing and its click says there is no path (FR-112: the diagram's pointer asks this
-     * before offering the click).
-     *
+     * Whether a run can be made one way: a lone square, or a run with track between its ends (FR-112).
      * @param leader the square a click sets
      * @return true where a one-way direction would land on something
      */
@@ -8688,12 +8618,11 @@ public class AutonomySession
     }
 
     /**
-     * Sets a direction on every tile of the run a leader speaks for, in the sense the leader means.
-     *
+     * Sets a direction on every tile of a leader's run, in the leader's sense.
      * @param leader the tile the user set
      * @param routeId which of its routes
      * @param direction what they chose
-     * @return how many tiles were changed, so a caller does not announce a change that did not happen
+     * @return how many tiles were changed
      */
     public int setRunDirection(TileKey leader, RouteId routeId, Direction direction)
     {
@@ -8701,11 +8630,7 @@ public class AutonomySession
     }
 
     /**
-     * Whether a square follows its run: a square of a run of plain track other than the first, which speaks for it.  A
-     * run's direction is stored on every square of it, and a following square draws no arrows of its own, in the editor
-     * and on the track diagram alike (OB-321, OB-361); what a run that disagrees with itself does to a train is drawn
-     * at its first square (`runsAs`), so nothing is hidden.
-     *
+     * Whether a square follows its run (not its first square), and so draws no arrows of its own (OB-321, OB-361).
      * @return true for a square of a run that is not its first
      */
     public boolean followsItsRun(TileKey tile)
@@ -8715,21 +8640,14 @@ public class AutonomySession
         return leader != null && !leader.equals(tile);
     }
 
-    /**
-     * Which way trains run along a run, as its first square's direction - the graph's answer (`TileGraph.runsAs`).
-     *
-     * @param leader a square
-     * @return the run's direction, or null
-     */
+    /** @return the run's direction, as its first square's (`TileGraph.runsAs`), or null */
     private Direction runsAs(TileKey leader)
     {
         return graph == null ? null : graph.runsAs(leader);
     }
 
     /**
-     * The direction a square's road is drawn with, which a click steps on from and a menu ticks: a run's first square's
-     * is the run's (`runsAs`), any other square's what is stored (OB-361).
-     *
+     * The direction a square's road is drawn with: the run's for its first square, else what is stored (OB-361).
      * @param tile the square
      * @param routeId its road
      * @return the direction
@@ -8742,20 +8660,15 @@ public class AutonomySession
     }
 
     /**
-     * Which way each route across a square runs, as marks to draw (FR-037), shared so the editor and the ordinary track
-     * diagram cannot come to different conclusions about which way a piece of track runs.  Not shared, deliberately:
-     * every reason the editor has for staying quiet (a square it is ignoring, the greying while a signal is picked, a
-     * tile that merely follows its run, the flow-mark fallback), which are about the editor's own gestures and on the
-     * running diagram would say nothing or something false.  The hardware correction stays, being a fact about the
-     * railway: a route the blades restrict is one-way whichever direction was authored.
-     *
+     * Which way each route across a square runs, as marks (FR-037), shared by the editor and the track diagram.  The
+     * editor's own reasons for silence are not shared; the hardware correction is.
      * @return one mark per route, never null, empty when the square has no routes or no graph
      */
     public List<TileAnnotation.Mark> directionMarks(TileKey tile)
     {
         List<TileAnnotation.Mark> marks = new ArrayList<>();
 
-        // NONE ON TRACK NO STATION IS ON (OB-353): no train is sent there, so which way it runs says nothing
+        // None on stationless track (OB-353)
         if (graph == null || tile == null || reachesNoStation(tile)) return marks;
 
         for (Map.Entry<TileGraph.RouteId, TilePorts.Route> entry : getRoutes(tile).entrySet())
@@ -8764,10 +8677,8 @@ public class AutonomySession
 
             TileGraph.Direction direction = graph.getDirection(tile, entry.getKey());
 
-            // A route the hardware restricts is one-way whatever the user chose: the graph leaves the authored
-            // direction BOTH there (see defaultDirection), but a train still cannot pass against the blades.  AND A
-            // SHUT ROUTE DRAWS NOTHING: on a permanent turnout `TOWARD_A` (toward the fork) is a closure, permitting
-            // only an entry the blades refuse, so a road the operator shut must not be drawn with a green arrow.
+            // The blades make a route one-way whatever was authored; a shut route draws nothing (on a permanent
+            // turnout `TOWARD_A` is a closure).
             if (!TileGraph.isPassable(direction, route))
             {
                 direction = TileGraph.Direction.NONE;
@@ -8778,7 +8689,7 @@ public class AutonomySession
                     ? TileGraph.Direction.TOWARD_A : TileGraph.Direction.TOWARD_B;
             }
 
-            // A RUN'S FIRST SQUARE DRAWS THE RUN, as a train finds it (OB-361) - see `runsAs`
+            // A run's first square draws the run (OB-361)
             TileGraph.Direction run = runsAs(tile);
 
             if (run != null) direction = run;
@@ -8790,14 +8701,9 @@ public class AutonomySession
     }
 
     /**
-     * What the ordinary track diagram draws on each of these squares, decided in one pass (OB-321, FR-110).  A run of
-     * plain track is one decision, stored on every square, so drawing each square's arrows would put a red arrow on
-     * every square of a one-way straight: a square that follows its run draws none, and the run's first square draws
-     * the run (`followsItsRun`, `runsAs`; OB-361).  With `allowedToo` the directions trains may run are drawn in green
-     * as well (FR-110), or on their own, the two being chosen apart (MT-675; Adam: *"allow the user to choose:
-     * restrictions, allowances, or both.  don't make them mutually exclusive."*).  The options are the caller's, read
-     * once a pass.
-     *
+     * What the track diagram draws on each square, in one pass (OB-321, FR-110): a following square draws none, a run's
+     * first square draws the run.  Restrictions and allowances are chosen apart (MT-675; Adam: *"allow the user to
+     * choose: restrictions, allowances, or both.  don't make them mutually exclusive."*).
      * @param squares the squares to describe
      * @param arrows whether the travel restrictions - the red arrows, and the station ingress arrows - are drawn
      * @param allowedToo whether the directions trains may run - the green arrows - are drawn
@@ -8810,11 +8716,7 @@ public class AutonomySession
     }
 
     /**
-     * What the setup says about one square, for drawing on the ordinary track diagram.  Also draws the one-way
-     * restriction arrows (FR-037), on Points and plain track alike: a restriction is a fact about TRACK, almost none of
-     * which carries a sensor, so gating on the Point test would make the option appear to do nothing; `directionMarks`
-     * is asked before the Point test, and `diagramShowsRestrictionArrows()` defaults to true.
-     *
+     * What the setup says about one square for the track diagram, restriction arrows (FR-037) on plain track too.
      * @return the annotation, or null when this square has nothing to say
      */
     public TileAnnotation staticAnnotationFor(TileKey tile)
@@ -8823,10 +8725,7 @@ public class AutonomySession
     }
 
     /**
-     * The same, with the one-way arrows option as a caller describing many squares read it once: the option is a read
-     * of the Windows settings, and the main window's marks asked it for every square, several times per click in the
-     * autonomy editor, a fifth of the click.
-     *
+     * The same, with the arrows option read once by a caller describing many squares (it reads Windows settings).
      * @param arrows whether the one-way arrows are drawn, as diagramShowsRestrictionArrows() answered for this pass
      * @return the annotation, or null when this square has nothing to say
      */
@@ -8836,9 +8735,7 @@ public class AutonomySession
     }
 
     /**
-     * The same, with the station ingress arrows asked apart from the direction arrows: the green arrows can be drawn
-     * without the travel restrictions (MT-675), and the ingress arrows follow the restrictions.
-     *
+     * The same, with the ingress arrows asked apart from the direction arrows (MT-675).
      * @param tile the square
      * @param arrows whether the direction arrows are drawn - red, green or both, as the annotation is then told
      * @param arrivals whether the station ingress arrows are drawn
@@ -8846,16 +8743,13 @@ public class AutonomySession
      */
     public TileAnnotation staticAnnotationFor(TileKey tile, boolean arrows, boolean arrivals)
     {
-        // AND NONE WHERE A CROSSING'S SQUARES MEET (OB-322)
         return withoutTheCrossingsMiddle(tile, staticAnnotationOf(tile, arrows, arrivals));
     }
 
     /**
      * Leaves out the arrows where a two-square crossing's squares meet (OB-322; Adam: *"the crossings consisting of 2
      * fixed Y's or 2 sets of static switches have a redundant set of (red/green) arrows in the middle.  let's hide them
-     * in that configuration for simplicity."*): a track over the crossing runs the same way on both squares (`record`),
-     * so the arrows at its two outer ends say it all.  For the track diagram and the autonomy editor alike.
-     *
+     * in that configuration for simplicity."*).
      * @return the same annotation
      */
     public TileAnnotation withoutTheCrossingsMiddle(TileKey tile, TileAnnotation annotation)
@@ -8867,33 +8761,22 @@ public class AutonomySession
         return annotation;
     }
 
-    /**
-     * What `staticAnnotationFor` answers, before a crossing's middle is left out.
-     *
-     * @param tile the square
-     * @param arrows whether the direction arrows are drawn
-     * @param arrivals whether the station ingress arrows are drawn
-     * @return the annotation, or null when this square has nothing to say
-     */
+    /** What `staticAnnotationFor` answers, before a crossing's middle is left out. */
     private TileAnnotation staticAnnotationOf(TileKey tile, boolean arrows, boolean arrivals)
     {
         if (graph == null || reducer == null) return null;
 
-        // A link switched off is greyed here as well as in the editor: it is the one square whose being switched off is
-        // invisible from the track alone (the tile art is the same either way).  Before the Point test, because a link
-        // may or may not carry a sensor.
+        // A disabled link is greyed (its art does not show it), before the Point test: a link may lack a sensor.
         if (isDisabledLink(tile))
         {
             return new TileAnnotation(new ArrayList<TileAnnotation.Mark>(), -1, false, null, true);
         }
 
-        // The one-way arrows, when the operator has asked for them (FR-037), BEFORE the Point test: that test is about
-        // whether a square deserves a BADGE, and a restriction is a fact about TRACK, not sensors.
+        // The one-way arrows (FR-037), before the Point test: restrictions are about track, not sensors.
         List<TileAnnotation.Mark> marks = arrows ? directionMarks(tile)
             : new ArrayList<TileAnnotation.Mark>();
 
-        // Track that is not a Point, but is restricted.  Still null when there is nothing to say, so a diagram with the
-        // option off, or no restrictions, is exactly as bare as ever.
+        // Restricted track that is not a Point; null when there is nothing to say.
         if (!reducer.getPoints().containsKey(tile))
         {
             return marks.isEmpty() ? null
@@ -8902,19 +8785,12 @@ public class AutonomySession
 
         String name = store.getPointName(tile);
 
-        // A plain point draws no badge on the running diagram: the tile is a feedback tile and looks like one.  A badge
-        // is FOR what the art cannot say: a station, trains turn round here (a non-station where trains turn keeps its
-        // mark), autonomy is not using it.  A square switched off that is neither a station nor a turn-around must
-        // still draw its cross here as the editor does, or "nothing may pass here" would vanish while running the
-        // railway.
+        // A plain point draws no badge: its art says it.  A shut square still draws its cross, as in the editor.
         boolean shut = Boolean.FALSE.equals(getPointProperty(tile, "active"));
 
         boolean worthABadge = store.isStation(tile) || isTurnAround(tile) || shut;
 
-        // The marks worked out above, alongside whatever badge this Point earns, handed over WHOLE with `blockedOnly`
-        // saying which to draw: the annotation already filters a mark to the restricted ones for the editor's
-        // restrictions view, and deciding it twice would let the two drawings disagree.  Nothing here asks whether
-        // autonomy is running: `showStaticAutonomyLayer` settles that before this is called.
+        // The marks go over whole with `blockedOnly` saying which to draw, so the two drawings cannot disagree.
         Route road = stationRoad(tile);
 
         return new TileAnnotation(marks, -1, false,
@@ -8928,28 +8804,20 @@ public class AutonomySession
                 road == null ? null : road.getB(),
                 isTurnAround(tile) && !isMustTurnAround(tile),
                 shut,
-                // which way a station's track runs out, for the terminus's flat end (FR-118)
+                // which way a station's track runs out, for a terminus's flat end (FR-118)
                 store.isStation(tile) ? deadEndSide(tile) : null),
             false, isCurveSquare(tile), false, null,
-            // RESTRICTED ONLY, which is all that was asked for ("show RESTRICTION arrows"): a run open both ways is the
-            // majority of any layout and the default, so drawing those would put an arrow on nearly every square.
+            // Restricted only: open both ways is the default and nearly every square
             arrows,
-            // The station ingress arrows follow the SAME switch: a chevron saying which way into a platform is shut is
-            // the same kind of statement as a one-way arrow.  The editor is not touched: its arrivals are governed by
-            // its own four-way control (why `arrivalMarks` takes an `always` flag); `false` means only where something
-            // is restricted.
+            // Ingress arrows follow the same switch; `false` means only where something is restricted.
             arrivals ? arrivalMarks(tile, false)
                 : new ArrayList<TileAnnotation.Arrival>());
     }
 
     /**
-     * The side of a square's road whose track runs out (to a buffer stop, or where the drawn track stops) before it
-     * reaches another sensor, or null where both sides go somewhere, or neither does (FR-118).  A station there is
-     * drawn as a terminus flat against that side, whatever its turning setting (Adam: *"a station with only one way out
-     * becomes a terminus, correct?"* - confirmed).  Asked of the TRACK as drawn, not of the edges built from it: a
-     * one-way run or a barred arrival leaves trains one way out of a station whose track carries on, and it keeps its
-     * own shape.  The road is the badge's, `stationRoad`.
-     *
+     * The side of a square's road whose drawn track runs out before another sensor, or null (FR-118): a station there
+     * is drawn as a terminus against it (Adam: *"a station with only one way out becomes a terminus, correct?"* -
+     * confirmed).  Asked of the track as drawn, not the built edges.
      * @return the side, or null
      */
     public Side deadEndSide(TileKey tile)
@@ -8969,10 +8837,7 @@ public class AutonomySession
     }
 
     /**
-     * The stations whose every way in has been barred: needs both what is barred and how many ways in the square has,
-     * and the split is this class's business.  A station with no arrival sides at all is not shut: it never splits,
-     * which the restriction cannot touch.
-     *
+     * Stations whose every way in is barred; one with no arrival sides never splits, so is not shut.
      * @return station square to true, only for the ones that are shut
      */
     public Map<TileKey, Boolean> shutStations()
@@ -9001,13 +8866,9 @@ public class AutonomySession
     }
 
     /**
-     * The arrival marks for a square, or none where there is nothing to say.  Only stations have them: arriving
-     * somewhere is stopping there.
-     *
-     * @param always true to mark every arrival side of every station (the editor's own view of this setting), false to
-     * mark
-     *        only the stations that actually restrict something (the running diagram); left on everywhere, a two-ended
-     *        station would carry two marks saying "yes, trains may arrive", on every platform, to say nothing at all
+     * A station's arrival marks, or none where there is nothing to say.
+     * @param always true to mark every arrival side of every station (the editor's view), false to mark only the
+     *        stations that restrict something (the running diagram)
      * @return the marks, in the order the build emits the copies
      */
     public List<TileAnnotation.Arrival> arrivalMarks(TileKey tile, boolean always)
@@ -9029,10 +8890,7 @@ public class AutonomySession
     }
 
     /**
-     * Whether this square is a link that autonomy has been told to leave alone.  Both halves have to hold: the store
-     * remembers a switched-off link by its square, and a square that has since stopped being a link (tile replaced,
-     * page redrawn) would otherwise be greyed out by a setting nobody can see or clear.
-     *
+     * Whether this square is a link autonomy leaves alone: still a link, and switched off (a stale setting is unseen).
      * @return true when the square is a link and switched off
      */
     public boolean isDisabledLink(TileKey tile)
@@ -9046,10 +8904,8 @@ public class AutonomySession
     }
 
     /**
-     * The road a Point's badge is drawn on: the road its sensor's contact is on (`TilePorts.contactRoad`; on a
-     * double-curve sensor not the first road, MT-712) and the first road of any other square.  The track diagram's
-     * badge and the editor's ask this one question.
-     *
+     * The road a Point's badge is drawn on: its sensor's contact road (`TilePorts.contactRoad`, MT-712), else the
+     * first.
      * @return the road, or null where the square has none in the graph
      */
     public Route stationRoad(TileKey tile)
@@ -9060,7 +8916,6 @@ public class AutonomySession
         {
             Route contact = TilePorts.contactRoad(square.getType(), square.getOrientation());
 
-            // the graph's own road on those two sides, so the badge and the graph agree about it
             Map<RouteId, Route> routes = graph.getRoutes(tile);
 
             for (Route road : routes == null ? java.util.Collections.<Route>emptyList() : routes.values())
@@ -9077,10 +8932,7 @@ public class AutonomySession
     }
 
     /**
-     * Whether a square's track is a curve or a double curve, with a sensor or without: the squares whose arrows lie
-     * along their chords (`TileAnnotation.heading`), as a double curve's other road's arrows aimed from the middle of
-     * the badge's road would cross their own rails (MT-712).
-     *
+     * Whether a square is one of the four curved types, whose arrows lie along their chords (MT-712).
      * @return true for the four curved types
      */
     public boolean isCurveSquare(TileKey tile)
@@ -9097,9 +8949,7 @@ public class AutonomySession
             || type == org.traincontrol.base.LayoutDiagramComponent.componentType.FEEDBACK_DOUBLE_CURVE;
     }
 
-    /**
-     * The tile's first route: where the badge of a square that is not a sensor is drawn (`stationRoad`).
-     */
+    /** The tile's first route, where a non-sensor's badge is drawn. */
     private Route firstRoute(TileKey tile)
     {
         Map<RouteId, Route> routes = graph == null ? null : graph.getRoutes(tile);
@@ -9121,15 +8971,9 @@ public class AutonomySession
     }
 
     /**
-     * Whether this session can safely judge what the diagram no longer has.  "A page that is not loaded must not be
-     * judged" is enforced by this method, the store's held entries, `captureFromLayout`'s pagesInPlay and
-     * `forgetArrivalsThatNoLongerExist`'s station-index membership test; every pruner added to this class needs it.
-     * Two ways the picture can be incomplete, with one remedy (OB-068: save, but do not prune): a page's file did not
-     * load, so its settings look like settings for deleted track (`CS2File` skips a page whose file will not parse or
-     * is not there; this layout lives in OneDrive, where an unhydrated placeholder is an ordinary Tuesday); or the
-     * numbering is suspect, a renumber having happened with nothing re-keying the setup yet, so an id cannot be trusted
-     * to say a square is gone.
-     *
+     * Whether this session can safely judge what the diagram no longer has: every page loaded (an unhydrated OneDrive
+     * placeholder is ordinary) and the numbering not mid-renumber (OB-068: save, but do not prune).  Every pruner here
+     * must ask it.
      * @return true when everything the setup knows about is here and correctly numbered
      */
     public boolean pagesSafeToJudge()
@@ -9138,11 +8982,8 @@ public class AutonomySession
 
         for (LayoutDiagram page : pages)
         {
-            // A STAND-IN FOR A PAGE THAT WOULD NOT READ IS NOT A LOADED PAGE: a blank placeholder keeps a link tile
-            // after it resolving to the right page, but carries the missing page's NAME, which this set is compared by,
-            // so without this skip `save()` would reconcile against its one text tile and drop every station, name,
-            // length, facing, signal pairing, caption and placement on the real page (MT-135).  It stays in the list so
-            // the link fix keeps what it gained; it simply stops claiming to be loaded.
+            // A stand-in for an unreadable page is not loaded: it carries the real name, and a save would prune the
+            // whole page against its one text tile (MT-135).
             if (page.isUnreadable()) continue;
 
             loadedNames.add(page.getName());
@@ -9152,19 +8993,14 @@ public class AutonomySession
     }
 
     /**
-     * Writes the setup out, and forgets what the diagram no longer has, UNLESS it cannot tell.  Reconciled at save
-     * rather than at load, so a diagram edited between sessions is tidied when somebody is present to be told.  A page
-     * that did not load, or numbering caught mid-renumber, means everything on the missing page looks deleted: nothing
-     * is pruned in that state, and the Reconciliation returned reports a decline instead.
-     *
+     * Writes the setup out and forgets what the diagram no longer has, unless it cannot tell (`pagesSafeToJudge`): then
+     * nothing is pruned and the Reconciliation reports a decline.
      * @return what reconciling found, for showing
      * @throws IOException
      */
     public AutonomyCompanionStore.Reconciliation save() throws IOException
     {
-        // Every tile of EVERY page, excluded ones included: the graph omits excluded pages, so reconciling against it
-        // would make every setting on such a page look like it belonged to a deleted tile.  Excluding a page must be
-        // reversible.
+        // Every tile of every page, excluded ones too: excluding must be reversible.
         Set<TileKey> existing = new LinkedHashSet<>();
 
         for (LayoutDiagram page : pages)
@@ -9178,25 +9014,13 @@ public class AutonomySession
             }
         }
 
-        // Not while the numbering is suspect: a renumber leaves every entry name-keyed to the wrong page, so their
-        // coordinates are missing from the page they were attached to and dropMissing reads that as a deleted tile.
-        // Nothing re-keys, and the save below rewrites "pages" from the current index, the only evidence a renumber
-        // happened.  Saving still happens; only the DELETING waits.
-        //
-        // A page this setup knows about that is NOT among the pages above is the same problem (OB-068): `CS2File` skips
-        // a page whose file will not parse or is missing, quietly (on a layout in OneDrive an unhydrated placeholder is
-        // enough), so `existing` holds only pages that DID load, and every name, station, direction, length, signal
-        // pairing and caption on the missing page would read as deleted track, be pruned and written, and the next page
-        // operation would drop the page from gleisbild.cs2 too.  Three of the four doors that reach this save discard
-        // the report.
+        // Not while the numbering is suspect or a known page is missing (OB-068): its every entry would read as deleted
+        // and be pruned.  Saving still happens; only the deleting waits.
         java.util.Set<String> loadedNames = new LinkedHashSet<>();
 
         for (LayoutDiagram page : pages)
         {
-            // THE SAME SKIP AS `pagesSafeToJudge` AND `open`, AND IT HAS TO BE HERE TOO: without it `incomplete` would
-            // be true but `absent` EMPTY, as the placeholder still supplies its name here, and
-            // `Reconciliation.declined(absent)` reports `wasDeclined()` false for an empty list; three of the four
-            // doors discard the report, so the refusal would be silent in exactly the case the report exists for.
+            // The same skip as `pagesSafeToJudge`: here too, or `absent` is empty and the decline silent.
             if (page.isUnreadable()) continue;
 
             loadedNames.add(page.getName());
@@ -9206,15 +9030,12 @@ public class AutonomySession
 
         boolean incomplete = !pagesSafeToJudge();
 
-        // Not logged from here (this class is the model half and has no logger): callers are told through the
-        // Reconciliation, and nothing is destroyed while the answer is non-empty.
+        // Callers are told through the Reconciliation; nothing is destroyed while it is non-empty.
 
         AutonomyCompanionStore.Reconciliation report = incomplete
             ? AutonomyCompanionStore.Reconciliation.declined(absent)
             : store.reconcile(existing);
 
-        // Pruned only once the guard above has agreed the picture is complete; every pruner added to this class needs
-        // it.
         if (!incomplete) forgetArrivalsThatNoLongerExist();
 
         store.save();
@@ -9227,13 +9048,8 @@ public class AutonomySession
     }
 
     /**
-     * Writes the setup out WITHOUT reconciling it against the diagram, for the paths that save because the diagram is
-     * being replaced underneath them: the pages are the ones an editor mutated in place, which the user may have just
-     * discarded with Cancel (it reverts by re-reading from disk into NEW ones), so reconciling against them would
-     * delete the names, lengths, directions and arrival restrictions of every square the user deleted and then thought
-     * better of.  Nothing is lost by waiting: the next explicit save reconciles with current pages, when its report can
-     * be shown to somebody.
-     *
+     * Writes the setup out without reconciling, for paths saving while the diagram is replaced: the pages may hold
+     * edits the user cancelled, and reconciling would delete what those squares had.
      * @throws IOException
      */
     public void saveWithoutReconciling() throws IOException
@@ -9243,29 +9059,19 @@ public class AutonomySession
         dirty = false;
     }
     /**
-     * How to find out how long a train is, when somebody has told us (FR-046): a function rather than a map, because
-     * the length lives on the Locomotive in the model and a copied map would be a second record, wrong the first time a
-     * length was edited.  Null until the window installs it, and every check using it is silent meanwhile, rather than
-     * raising the warning about every train on the railway.
+     * How to look a train's length up (FR-046): a function, as the length lives on the Locomotive.  Null until
+     * installed, and the checks using it are silent meanwhile.
      */
     private java.util.function.Function<String, Integer> trainLengths;
 
-    /**
-     * Tells this session how to look a train's length up.
-     *
-     * @param lengths a function from locomotive name to length, or null to stop asking
-     */
+    /** @param lengths a function from locomotive name to length, or null to stop asking */
     public void setTrainLengthSource(java.util.function.Function<String, Integer> lengths)
     {
         this.trainLengths = lengths;
     }
 
     /**
-     * Who stands where: the railway's trains on the squares it has them, then the setup's placements of trains the
-     * railway does not have, on squares the railway leaves free.  After a run the setup still names each moved train's
-     * old square (the track diagram's menu folds nothing before a gesture), so a reader of the setup alone acts on
-     * squares the trains have left.
-     *
+     * Who stands where: the railway's trains, then the setup's placements of trains it lacks on squares it leaves free.
      * @return square to train
      */
     public Map<TileKey, String> trainsWhereTheyStand()
@@ -9290,9 +9096,7 @@ public class AutonomySession
     }
 
     /**
-     * The squares holding a train whose length nobody has set; empty when no source has been installed, as not knowing
-     * a length and knowing it is unset are different things and only one is worth a warning.
-     *
+     * Squares holding a train with no length set; empty with no source installed (unknown is not unset).
      * @return the squares and the trains standing on them, where the railway has them first
      */
     private Map<TileKey, String> placedTrainsWithoutLength()
@@ -9301,15 +9105,13 @@ public class AutonomySession
 
         if (trainLengths == null) return out;
 
-        // WHERE THEY STAND, not where the last run set them off from
         for (Map.Entry<TileKey, String> placed : trainsWhereTheyStand().entrySet())
         {
             if (placed.getValue() == null || placed.getValue().trim().isEmpty()) continue;
 
             Integer length = trainLengths.apply(placed.getValue());
 
-            // Zero and unset mean the same to the railway: a train of no length is never too long for anywhere.  WITH
-            // THE TRAIN THAT STANDS THERE (the railway's, not the setup's).
+            // Zero is unset to the railway: never too long.
             if (length == null || length <= 0) out.put(placed.getKey(), placed.getValue());
         }
 
@@ -9317,10 +9119,8 @@ public class AutonomySession
     }
 
     /**
-     * Whether this railway models lengths at all: a measured tile, a station with a maximum, or a placed locomotive
-     * with a train length.  Any one means somebody is using the length rules and the notices about the parts not filled
-     * in are worth having; none, and a notice on every station would be a list of things that are not wrong.
-     *
+     * Whether this railway models lengths at all (a measured tile, a station maximum, a train length): with none,
+     * length notices would list things that are not wrong.
      * @return true when anything on this railway carries a length
      */
     private boolean modelsAnyLength()
@@ -9331,7 +9131,7 @@ public class AutonomySession
         {
             for (TileKey square : reducer.getPoints().keySet())
             {
-                // A STATION's (OB-291): a square that is no longer one remembers its maximum and ignores it.
+                // A station's only (OB-291).
                 if (!store.isStation(square)) continue;
 
                 Object value = getPointProperty(square, "maxTrainLength");
@@ -9356,14 +9156,8 @@ public class AutonomySession
     }
 
     /**
-     * The station squares that will take a train of any length; stations only, as a maximum on somewhere trains cannot
-     * stop decides nothing (FR-046).  **Gated on the railway modelling lengths at all**: Adam set that condition for
-     * `reversalsWithoutLength` (*"a railway that measures nothing has decided not to model lengths"*), and without it
-     * every station on a layout that models no lengths would be listed.  **But not on TRACK lengths**: `maxTrainLength`
-     * is compared against the locomotive's own authored length (`Point.validateTrainLength`) and no tile length enters
-     * into it, so somebody who authors train lengths and station maxima and has never measured track must still get the
-     * notices.
-     *
+     * Stations taking a train of any length (FR-046), gated on the railway modelling any length, not track lengths:
+     * `maxTrainLength` compares only with the train's own length.
      * @return the squares, empty when the layout models no lengths anywhere
      */
 
@@ -9383,14 +9177,10 @@ public class AutonomySession
         return out;
     }
 
-    /**
-     * Whether any square of a leg that takes a length has one, which is what makes the berth rule judge the leg at all;
-     * asked by both berth notices.  A route tile is passed over, as it takes no length (OB-273).
-     */
+    /** Whether any length-taking square of a leg has a length, which makes the berth rule judge it (OB-273). */
     private boolean anythingMeasuredOn(java.util.List<TileKey> squares)
     {
-        // AND A LEG ANSWERED 0 THROUGHOUT IS MEASURED, at no length - the berth rule judges it (`Edge.isMeasured`), so an
-        // approach answered 0 end to end is warned about as one given no room.
+        // A leg answered 0 throughout is measured, at no length (`Edge.isMeasured`).
         boolean anySquare = false;
         boolean answeredThroughout = true;
 
@@ -9409,16 +9199,11 @@ public class AutonomySession
     }
 
     /**
-     * The track a parking berth's rule spends before it stops, walking back from the berth over one arriving leg: how
-     * much of it is measured, and how many of its squares have no length and no answer (OB-288).
-     * `Layout.whyABerthCannotHoldIt` spends a train from the berth backwards, its own square first (OB-278), passes a
-     * square with no length for nothing, and refuses the train once its spending reaches a square `endsTheBerthsRoom`;
-     * squares beyond can neither hold the train nor refuse it, so neither berth notice counts them.
-     *
+     * The track a parking berth's rule spends walking back from the berth over one leg until it stops (OB-288), as
+     * `Layout.whyABerthCannotHoldIt` spends it, berth first.
      * @param squares the leg's squares in order, the berth last
-     * @return {measured length before the stop, squares before it with no length, how it stops}: 1 at a square the
-     *         berth rule refuses on - another road runs over it - 2 at one only the room walk ends at, 0 at none
-     *         (the berth rule's figure is the berth rule's only where it refuses)
+     * @return {measured length before the stop, squares before it with no length, how it stops}: 1 where the berth
+     *         rule refuses (another road runs over), 2 where only the room walk ends, 0 at none
      */
     private int[] berthTrackBeforeTheStop(java.util.List<TileKey> squares)
     {
@@ -9431,7 +9216,6 @@ public class AutonomySession
         {
             TileKey tile = squares.get(at);
 
-            // Not a route tile, which takes no length (OB-273).
             if (getGraph() != null && takesNoLength(tile)) continue;
 
             if (getGraph() != null && berth != null && endsTheBerthsRoom(tile, berth))
@@ -9443,7 +9227,7 @@ public class AutonomySession
 
             held += Math.max(0, length);
 
-            // AN ANSWERED 0 IS NOT MISSING (Adam: "stop listing answered zeros as missing").
+            // An answered 0 is not missing (Adam: "stop listing answered zeros as missing").
             if (length <= 0 && !store.isTileLengthAnswered(tile)) unmeasured++;
         }
 
@@ -9451,21 +9235,11 @@ public class AutonomySession
     }
 
     /**
-     * Stations whose approach is measured in part and not in whole, the state that refuses a berth trains that fit
-     * (Adam: *"We want clear warnings to the user"*).  `Layout.whyABerthCannotHoldIt` declines to judge only when
-     * NOTHING is measured, the berth's own square included (OB-278); one measured square makes it judge, walking
-     * backwards CLAIMING each place before spending the train's length, so an unmeasured square (worth 0) is claimed
-     * for nothing and a train whose length is not spent on the measured squares before the switch or crossing is
-     * refused, quoting the road rather than the hole in the measurements.  The berth's own square is spent first, so a
-     * train short enough to be spent there is not refused, which is why the count asks about the station's longest
-     * train (OB-288, MT-552); it is the refusing direction of a ruled rounding.  "Switches measured, some pieces still
-     * at 0" is what Mass Assign Lengths leaves between sittings (it gives every switch a length in a step of its own,
-     * and MT-454's steps reach it by skipping pieces), so it is the ordinary state.  Asked of the legs that ARRIVE at
-     * each station, which is what the berth walk reads.
-     *
-     * @return the station squares, each mapped to how many squares of its approach, before the switch or crossing that
-     * ends
-     *         the berth's room, still have no length
+     * Parking berths whose approach is measured in part, the state that refuses trains that fit (Adam: *"We want clear
+     * warnings to the user"*): one measured square makes `whyABerthCannotHoldIt` judge, and unmeasured squares hold
+     * nothing.  Asked per arriving leg, against the station's longest train (OB-288, MT-552).  The ordinary state
+     * between Mass Assign Lengths sittings.
+     * @return the station squares, each mapped to how many squares of its approach before the stop still have no length
      */
     public java.util.Map<TileKey, Integer> stationsWithAHalfMeasuredApproach()
     {
@@ -9477,53 +9251,40 @@ public class AutonomySession
         {
             if (!store.isStation(square)) continue;
 
-            // THE RULE EXEMPTS A STATION AUTONOMY CHOOSES: `whyABerthCannotHoldIt` returns at once for a berth that
-            // `isAutoDestination` (Adam's ruling, the default), so a warning about ordinary platforms would be about a
-            // refusal that never happens; what is left is the parking berths.
+            // Stations autonomy chooses are exempt from the rule, so not warned about.
             if (isAutoDestination(square)) continue;
 
-            // THE LONGEST TRAIN IT TAKES, where it has one (OB-288).
+            // The longest train it takes, if set (OB-288).
             Object stated = getPointProperty(square, "maxTrainLength");
 
             int longest = stated instanceof Number ? ((Number) stated).intValue() : 0;
 
-            // ONE APPROACH AT A TIME: the walk judges the approach a train arrives on, so a station with one approach
-            // measured throughout and another with nothing measured is half measured on neither; pooling said it was.
+            // One approach at a time: the walk judges the approach a train arrives on.
             int worst = 0;
 
             for (GraphReducer.ReducedEdge arriving : reducer.getEdges())
             {
                 if (!arriving.getEnd().equals(square)) continue;
 
-                // NOT A SIDE NO TRAIN STOPS FROM (MT-552): a train may come in that way and turn, but none stops there, so
-                // nothing about its track can refuse one - and the walk the rule stands for never starts from it.
+                // Not a side no train stops from (MT-552).
                 if (getBarredArrivals(square).contains(arriving.getEntrySide())) continue;
 
                 boolean anyMeasured = false;
 
-                // THE PATH AND THE BERTH ITSELF: the path is the squares between the leg's two ends; the berth is rail
-                // the walk spends first (OB-278), which `whyABerthCannotHoldIt` counts among the measured places, so a
-                // berth measured with nothing behind it must be warned about.
+                // The path and the berth itself, which the walk spends first (OB-278).
                 java.util.List<TileKey> squares = new java.util.ArrayList<>();
 
                 for (GraphReducer.TileStep step : arriving.getPath()) squares.add(step.getTile());
 
                 squares.add(square);
 
-                // MEASURED ANYWHERE ON THE LEG (beyond the stop included) is what makes the rule judge it; the run-in
-                // notice asks the same question through `anythingMeasuredOn`, as the two notices hand a berth to each
-                // other on it.
+                // Measured anywhere on the leg makes the rule judge it, as for the run-in notice.
                 anyMeasured = anythingMeasuredOn(squares);
 
                 if (!anyMeasured) continue;
 
-                // NOT WHERE THE BERTH'S MEASURED TRACK BEFORE THE STOP HOLDS ITS LONGEST TRAIN (OB-288, MT-552): the
-                // rule refuses only when its spending reaches track another road runs over, so a berth whose measured
-                // track before the stop holds its longest train refuses none for the holes in it.  Counted the walk's
-                // way, in `berthTrackBeforeTheStop` (Adam, of BottomMainPost - 1 on its own square, nothing on 22,7, 1
-                // each on 22,8 and 22,9 - *"trains of length 3 can hold there"*); with no longest train set, any train
-                // could reach the stop.  AND ONLY THE HOLES BEFORE THE STOP ARE COUNTED: a square beyond is one the
-                // operator would measure for nothing.
+                // Not where the measured track before the stop holds its longest train (OB-288, MT-552; Adam, of
+                // BottomMainPost: *"trains of length 3 can hold there"*); only holes before the stop count.
                 int[] before = berthTrackBeforeTheStop(squares);
 
                 if (longest > 0 && before[0] >= longest) continue;
@@ -9538,37 +9299,15 @@ public class AutonomySession
     }
 
     /**
-     * Stations told they hold more train than their track measures.  Adam: *"Let's add an autonomy editor notice that
+     * Stations told they hold more train than their run-in measures.  Adam: *"Let's add an autonomy editor notice that
      * alerts the user if a run-in is shorter than the berth length, that way they can decide if it makes sense or not.
      * for example, a station of length 4 may have two segments of tracks on either side of a switch, of length 2.  that
-     * is acceptable and its limitations are understood."*
-     *
-     * **The measured room is the guard's own number, not a second opinion**: `ReducedEdge.getRoomAtTheEnd()`, the track
-     * from the last switch on the arriving edge to the platform, which `Layout.measuredRoomAtTheEndOf` counts when that
-     * edge crosses a switch; a notice quoting a number the refusal would not quote has the reader measure the wrong
-     * stretch.  For a parking berth it is the berth rule's where that stops first (a switch or crossing before the room
-     * walk's end, or a leg with no switch) and only where the rule refuses: something on the leg is measured and
-     * another road runs over the square.  Where nothing before that stop is measured and its squares were answered 0,
-     * the berth takes no train that way (a warning of its own, `runInFigures`); unanswered, they are the half-measured
-     * notice's to name.
-     *
-     * **At a platform, the figure a train is refused above, where there is one** (Adam: *"Add the refusing figure where
-     * there is one."*): a train longer than the room stands across the switch as far as the measured route in holds it
-     * (FR-087), so one longer than the shortest way in is refused (`refusingFigures`); given only under the stated
-     * maximum.
-     *
-     * **An edge crossing no switch is skipped unless the train turns at its far end** (or, for a parking berth, a
-     * crossing on it ends the berth rule's room): the guard carries on backwards through earlier edges, so this edge
-     * alone bounds nothing and any number from it would be too small, except where it begins at a square trains turn
-     * round on, where the walk stops.  `unmeasuredAfterTheLastSwitch` makes the same choice.
-     *
-     * **Silent where either side is missing**: no stated maximum is `NO_MAX_TRAIN_LENGTH`, an unmeasured stretch is
-     * `REVERSAL_NEEDS_LENGTH` where it matters most, and a railway that measures no track has decided not to model
-     * lengths (Adam: *"a railway that measures nothing has decided not to model them"*).
-     *
+     * is acceptable and its limitations are understood."*  The room is the guard's own number (`getRoomAtTheEnd`), or
+     * for a parking berth the berth rule's where it refuses; at a platform, the refusing figure where there is one
+     * (FR-087; Adam: *"Add the refusing figure where there is one."*).  An edge crossing no switch counts only where
+     * the train turns at its far end.  Silent without a maximum or with no track measured.
      * @return the station squares, each mapped to {the stated maximum, the smallest measured room} - and at a platform
-     * with
-     *         a refusing figure under its maximum, that figure third
+     *         with a refusing figure under its maximum, that figure third
      */
     java.util.Map<TileKey, int[]> runInsShorterThanTheBerth()
     {
@@ -9576,11 +9315,9 @@ public class AutonomySession
     }
 
     /**
-     * The walk behind `runInsShorterThanTheBerth`, and behind the parking berths that take no train on a way in because
-     * every square before the stop there was answered 0 on purpose (Adam: *"Give it its own sentence
-     * as a warning, make it sound intuitive (the effective specified length of the track is 0)"*): a warning of its own,
-     * not the run-in notice's sentence for a berth that holds something.  The findings take both from one pass.
-     *
+     * The walk behind `runInsShorterThanTheBerth`, collecting too the parking berths given no room by a way in answered
+     * 0 throughout (Adam: *"Give it its own sentence as a warning, make it sound intuitive (the effective specified
+     * length of the track is 0)"*).
      * @param givenNoRoom where to put the berths given no room, or null when nobody asks
      * @param built the railway the setup builds, for the refusing figures, or null when it will not build
      * @param named the built railway's point names to squares, or null to ask the builder
@@ -9591,7 +9328,6 @@ public class AutonomySession
     {
         java.util.Map<TileKey, int[]> out = new LinkedHashMap<>();
 
-        // The figure a train is refused above at each platform, off the railway the setup builds.
         java.util.Map<TileKey, Integer> refusing = refusingFigures(built, named);
 
         if (reducer == null || store == null) return out;
