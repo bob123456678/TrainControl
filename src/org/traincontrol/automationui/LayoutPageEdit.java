@@ -9,28 +9,21 @@ import org.traincontrol.model.ViewListener;
 /**
  * Renaming, duplicating and blanking a layout page, as one operation that can be run without a window.
  *
- * Adam: "Do you have tests that try to load an entire config, and then trigger a rename via the same function that the
- * UI calls, and then rename it back and test along the way?  This is the only way to catch bugs across these complex
- * types of features."  This owns the sequence (what happens once the answer is yes); the window still owns the
- * refusals and dialogs.  Every rename defect so far (MT-135, OB-049, OB-092) lived in the ORDER of the steps below or
- * in a step not called, so a test that supplies its own order proves nothing.  The comments below record something
- * that went wrong once.
+ * This owns the sequence (what happens once the answer is yes); the window still owns the refusals and dialogs.  Every
+ * rename defect (MT-135, OB-049, OB-092) lived in the ORDER of the steps or in a step not called, so a test must run
+ * this same function rather than supply its own order.
  */
 public class LayoutPageEdit
 {
-    /**
-     * Not instantiable: this is a sequence, not a thing.
-     */
+    /** Not instantiable: this is a sequence, not a thing. */
     private LayoutPageEdit()
     {
     }
 
     /**
-     * The floor `writeLayoutIndex` must not issue a fresh page id at or below.  The index remembers a retired id for
-     * one write and hands it out again afterwards: harmless for a DELETED page, but not for a page whose FILE was
-     * merely absent, whose settings are still in the autonomy setup under its old number, so the next new page would
-     * collect a stranger's stations, lengths and exclusions.  The setup is what remembers, so it is asked: the session
-     * ALREADY BUILT (no lazy getter in scope to reach for by mistake), zero when there is none.
+     * The floor `writeLayoutIndex` must not issue a fresh page id at or below.  The index hands a retired id out
+     * again after one write: harmless for a DELETED page, not for a page whose FILE was merely absent, whose settings
+     * are still in the setup under its old number.  The setup remembers, so it is asked; zero when there is no session.
      *
      * @param session the session already built, or null
      * @return the highest page id the autonomy setup has ever recorded, or 0
@@ -43,18 +36,15 @@ public class LayoutPageEdit
         }
         catch (RuntimeException e)
         {
-            // A floor is a safety margin, not a correctness requirement of the write itself. Failing
-            // to work one out must not stop the index being written at all.
+            // A floor is a safety margin; failing to work one out must not stop the index being written.
             return 0;
         }
     }
 
     /**
-     * The page whose file a page of this name would be written to, other than the one named except, or null.  A page
-     * lives in `sanitizeFilename(name) + ".cs2"`, and two names can come to one file: names that differ only in case,
-     * or in a character a file name cannot hold; writing one replaced the other page's file.  So every door that names
-     * a page (Rename, Duplicate, Add Blank Page, Combine Linked Pages) asks this, as the configurations ask
-     * `fileNameTaken`.
+     * The page whose file a page of this name would be written to, other than `except`, or null.  A page lives in
+     * `sanitizeFilename(name) + ".cs2"`, and names differing only in case or in a character a file name cannot hold
+     * come to one file, so every door that names a page asks this.
      *
      * @param except the page being renamed, which may keep its own file under another case, or null
      * @return the other page already using that file, or null
@@ -79,10 +69,8 @@ public class LayoutPageEdit
      * Renames, duplicates or blanks a page, carrying its id and its autonomy setup with it.  The caller has already
      * decided that this may happen (no editor open, no trains running, the layout local, the new name not taken).
      *
-     * **Handed the pages rather than asked for them**: the path and the diagrams are two arguments nothing makes agree,
-     * and `saveChanges` writes where the DIAGRAM came from, not where the path points.  Taking the list and the diagram
-     * makes a mismatch unrepresentable (a test once passed a temp copy as the path and renamed a page in the
-     * repository's sample data).
+     * Handed the pages rather than asked for them: `saveChanges` writes where the DIAGRAM came from, not where the
+     * path points, so taking the list and the diagram makes a mismatch unrepresentable.
      *
      * @param layoutList the page names in the order they are to appear - MUTATED, as the caller's own live list
      * @param page the diagram being renamed, which is also where the file is written
@@ -116,13 +104,8 @@ public class LayoutPageEdit
         java.util.Collection<String> keepAbsent) throws Exception
     {
 
-        // WHERE it sits, so the file stays in the order the user sees (no longer load-bearing for ids since MT-135,
-        // kept because a file whose order jumps around is harder to read).
-        //
-        // The autonomy setup is keyed by page ID on disk, so renaming one page silently reattached the whole setup to
-        // the wrong pages, and ids that shift by one round-trip unchanged: the file looked consistent while meaning
-        // something else.  The next save reconciled the settings away as deleted squares.  Adam, MT-135: "Immediately
-        // after rename, all stations are gone... Renaming the page back did not restore the stations."
+        // Where it sits keeps the file in the order the user sees.  The autonomy setup is keyed by page ID on disk,
+        // so ids that shift would reattach the whole setup to the wrong pages (MT-135).
         int renamedAt = rename ? layoutList.indexOf(currentLayout) : -1;
 
         if (rename)
@@ -130,8 +113,8 @@ public class LayoutPageEdit
             layoutList.remove(currentLayout);
         }
 
-        // Back in its own slot, so the page keeps its id; a duplicate or new page goes at the end.  MOVED ABOVE THE
-        // WRITE: the arrows must be re-aimed before anything is written and the re-aim needs the final list.
+        // Back in its own slot so the page keeps its id; a duplicate or new page goes at the end.  This is above the
+        // write because the arrows must be re-aimed first and that needs the final list.
         if (renamedAt >= 0 && renamedAt <= layoutList.size())
         {
             layoutList.add(renamedAt, newLayoutName);
@@ -141,28 +124,23 @@ public class LayoutPageEdit
             layoutList.add(newLayoutName);
         }
 
-        // Told what was renamed, so the page keeps its ID under the new name and the arrows that point AT it follow it
-        // (built before the re-aim below).  Ids are read back from the index by NAME, so a rename is the one operation
-        // where the name an id belongs to changes; without this the page would take a fresh id and orphan its setup.
+        // Told what was renamed, so the page keeps its ID under the new name and the arrows pointing AT it follow.
+        // Ids are read back from the index by NAME; without this a rename would orphan the setup.
         Map<String, String> renamed = new LinkedHashMap<>();
 
         if (rename) renamed.put(currentLayout, newLayoutName);
 
-        // AND THE ARROWS ARE RE-AIMED BEFORE ANY PAGE IS WRITTEN.  A link tile holds the destination's place in the
-        // name-sorted page list, so all three gestures change what every arrow means.  Re-aimed at the end, Add Page
-        // had blanked the current page's object so the ORIGINAL file was never corrected, Duplicate's copy was not in
-        // the model, and Rename excluded its own page on the ground that the fix "travels with it" - true of the
-        // object, false of the ORDER.  Doing it here fixes all three, being upstream of every write.
+        // Arrows are re-aimed BEFORE any page is written: a link tile holds the destination's place in the
+        // name-sorted page list, and re-aiming upstream of every write fixes Add Page, Duplicate and Rename at once.
         List<LayoutDiagram> pages = loadedPages(log);
 
-        // HELD, so the page this gesture is about can be asked the same question.
+        // Held, so the page this gesture is about can be asked the same question.
         List<LayoutDiagram> changed = LayoutDiagram.repointLinksForNewOrder(pages, layoutList, renamed);
 
         for (LayoutDiagram moved : changed)
         {
-            // The page this gesture is about is written below, under its new name, carrying the tiles
-            // just corrected - so saving it HERE as well would write the same correction to its old
-            // path, which for a rename is the file the rename is about to delete.
+            // The page this gesture is about is written below under its new name; saving it here would also write
+            // the correction to its old path, which a rename is about to delete.
             if (moved == page) continue;
 
             try
@@ -171,16 +149,14 @@ public class LayoutPageEdit
             }
             catch (Exception cannotSave)
             {
-                // The arrows are right in memory either way; refusing here would leave this gesture
-                // half done.
+                // The arrows are right in memory either way; refusing would leave the gesture half done.
                 if (log != null) log.log(cannotSave);
             }
         }
 
-        // A PAGE THAT KEEPS ITS OWN FILE IS SAVED TO IT: Add and Duplicate write a NEW file and leave the current
-        // page's own alone, so the correction above would not reach disk.  AND ONLY WHEN THE RE-AIM ACTUALLY CHANGED
-        // IT: the loop above saves exactly the pages `repointLinksForNewOrder` reported as changed, and this is the one
-        // page it cannot see; rewriting an unchanged page touches a file on OneDrive and makes a `.bak` for nothing.
+        // A page that keeps its own file is saved to it, but only when the re-aim changed it: Add and Duplicate write
+        // a NEW file, and the loop above saves exactly the pages `repointLinksForNewOrder` reported, not this one.
+        // Rewriting an unchanged page would make a `.bak` on OneDrive for nothing.
         if (!rename && changed.contains(page))
         {
             try
@@ -200,71 +176,51 @@ public class LayoutPageEdit
 
         page.saveChanges(newLayoutName, duplicate);
 
-        // The autonomy setup keys everything by PAGE NAME, so it has to be told (OB-049):
-        // AutonomyCompanionStore.renamePage rekeys all eleven collections and the tile keys in every configuration.
-        // Unrenamed, the next reconcile treats every square of the page as deleted and drops its point name and
-        // station.  Adam: "CRITICAL: renaming a layout page disconnects its autonomy config. stations and links are
-        // broken."  Here and not after saveChanges succeeds: the store must be rekeyed before the caller rebuilds the
-        // session from the renamed pages, which is what reconciles.
+        // The autonomy setup keys everything by PAGE NAME (OB-049): rekey it before the caller rebuilds the session
+        // from the renamed pages, or the next reconcile treats every square of the page as deleted.
         if (rename)
         {
             // Only written to a setup that is already there.  The session is handed in ALREADY BUILT because
-            // TrainControlUI's getAutonomySession() builds one on demand (opens every page, runs the caption migration,
-            // and save() writes setup.json unconditionally), so renaming a page on a layout where autonomy had never
-            // been touched invented a setup out of nothing.
+            // getAutonomySession() builds one on demand and save() writes setup.json unconditionally.
             if (session != null)
             {
-                // In memory always: it costs nothing and is right either way.  The setup's squares, and the
-                // railway's, which a carry reads.
+                // In memory always: right either way, and a carry reads it.
                 session.renamePage(currentLayout, newLayoutName);
 
-                // The session now holds page objects that describe a layout that no longer exists under those names:
-                // everything derived from them still says the old name while the store says the new one.  Say so here
-                // rather than leave each reader to notice: one that did not wrote every placement back under the old
-                // page name, and a locomotive recorded in two places fails the entire setup (MT-135).  See
-                // `markPagesStale`.
+                // The session's pages still describe the old names; mark them stale rather than leave each reader to
+                // notice (one that did not wrote placements under the old name, MT-135).  See `markPagesStale`.
             }
 
             try
             {
                 if (session == null)
                 {
-                    // No session: rewrite the file itself, which writes nothing at all unless the setup
-                    // is already there.
+                    // No session: rewrite the file itself, which writes nothing unless the setup is already there.
                     AutonomyCompanionStore.renamePageOnDisk(new java.io.File(layoutPath),
                         currentLayout, newLayoutName);
                 }
                 else if (session.exists())
                 {
-                    // WITHOUT reconciling, like its twin in the delete path.  save() prunes the setup against the pages
-                    // this session holds, which still carry the OLD name now (saveChanges writes a new FILE, it never
-                    // renames the object), so every name, station, length and caption on the renamed page would read as
-                    // deleted track and be dropped: the MT-135 loss by a second route.
+                    // WITHOUT reconciling, like its twin in the delete path: save() would prune against pages that
+                    // still carry the OLD name and drop every setting on the renamed page (MT-135).
                     session.saveWithoutReconciling();
                 }
             }
             catch (java.io.IOException e)
             {
-                // The rekey stands in memory either way; only the record of it is at risk, and failing
-                // to write it must not stop the page being renamed.
+                // The rekey stands in memory either way; failing to write it must not stop the rename.
                 if (log != null) log.log(e);
             }
         }
 
-        // AND EVERY ARROW KEEPS ITS AIM: a link tile holds a POSITION in the name-sorted page list, so adding, renaming
-        // or duplicating a page changes what every arrow means.  The rule is in LayoutDiagram because TrainControlUI
-        // writes this same index for Delete and Combine.  The arrows were re-aimed and saved above, before the page
-        // files were written; what is left here is the index itself.
+        // A link tile holds a POSITION in the name-sorted page list, so each gesture changes what every arrow means.
+        // The arrows were re-aimed above; the index is what is left.  The rule lives in LayoutDiagram because
+        // TrainControlUI writes the same index for Delete and Combine.
         LayoutDiagram.writeLayoutIndex(layoutPath, layoutList, renamed, pageIdFloor(session),
             keepAbsent);
     }
 
-    /**
-     * Every page of the layout, as objects.
-     *
-     * @param model the ViewListener this was handed, null in the overload that takes none (nothing to re-aim)
-     * @return the loaded pages
-     */
+    /** Every page of the layout as objects; empty when there is no model (nothing to re-aim). */
     private static List<LayoutDiagram> loadedPages(ViewListener model)
     {
         List<LayoutDiagram> pages = new java.util.ArrayList<>();
