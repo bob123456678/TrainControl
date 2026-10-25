@@ -1,7 +1,8 @@
-package org.traincontrol.gui;
+package org.traincontrol.gui.autonomyeditor;
 
 import org.traincontrol.automationui.AutonomyChecks;
 import org.traincontrol.automationui.TileGraph.TileKey;
+import org.traincontrol.gui.SettledQuestion;
 import org.traincontrol.util.I18n;
 
 /**
@@ -319,20 +320,20 @@ final class EditorWhy extends SettledQuestion
     }
 
     @Override
-    Object settledLock()
+    public Object settledLock()
     {
         return editor.whySettled;
     }
 
     /** Counted, not coalesced: every ask started is its own question until its worker gives it up. */
     @Override
-    boolean outstanding()
+    public boolean outstanding()
     {
         return editor.whyWorking.get() > 0;
     }
 
     @Override
-    void giveUp()
+    public void giveUp()
     {
         editor.whyWorking.decrementAndGet();
     }

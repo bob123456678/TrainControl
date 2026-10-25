@@ -249,11 +249,11 @@ public class testAnAnsweredZeroIsNotMissing
 
         if (notEnglish != null) throw notEnglish;
 
-        org.traincontrol.gui.AutonomyEditorPanel panel = new org.traincontrol.gui.AutonomyEditorPanel(session, null, () -> { });
+        org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(session, null, () -> { });
 
         panel.refresh();
 
-        java.lang.reflect.Field field = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredField("findingsModel");
+        java.lang.reflect.Field field = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredField("findingsModel");
 
         field.setAccessible(true);
 

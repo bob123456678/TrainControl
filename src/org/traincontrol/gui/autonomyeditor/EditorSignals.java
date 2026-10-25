@@ -1,4 +1,4 @@
-package org.traincontrol.gui;
+package org.traincontrol.gui.autonomyeditor;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
@@ -15,6 +15,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.automationui.TileGraph.TileKey;
+import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
 
 /**

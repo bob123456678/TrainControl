@@ -23,6 +23,7 @@ import org.traincontrol.automationui.AutonomyCompanionStore;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.autonomy.AutonomyReport;
+import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.widgets.QuickFileChooser;
 import org.traincontrol.gui.widgets.DetailsArea;
 import org.traincontrol.util.I18n;
@@ -126,7 +127,7 @@ public class AutonomyViewerPanel extends JPanel
     // labels and controls plain 14, buttons bold 12, boxes white with a 1px (204,204,204) line border.
     static final java.awt.Font FONT = new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 14);
 
-    static final java.awt.Font FONT_GROUP = new java.awt.Font("Segoe UI Semibold", java.awt.Font.PLAIN, 13);
+    public static final java.awt.Font FONT_GROUP = new java.awt.Font("Segoe UI Semibold", java.awt.Font.PLAIN, 13);
 
     static final java.awt.Font FONT_BOLD = new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12);
 
@@ -147,7 +148,7 @@ public class AutonomyViewerPanel extends JPanel
      *
      * @param component the root to sweep, usually a panel
      */
-    static <T extends java.awt.Component> T unfocusable(T component)
+    public static <T extends java.awt.Component> T unfocusable(T component)
     {
         component.setFocusable(false);
 
@@ -485,7 +486,7 @@ public class AutonomyViewerPanel extends JPanel
      * Colors a row by what it is: a section heading, something that must be fixed, or something worth
      * checking.  Color rather than a prefix, because the list is scanned rather than read.  The editor's list too.
      */
-    static final class FindingRenderer extends javax.swing.DefaultListCellRenderer
+    public static final class FindingRenderer extends javax.swing.DefaultListCellRenderer
     {
         private final List<AutonomyChecks.Severity> severities;
         private final List<?> tiles;
@@ -496,7 +497,7 @@ public class AutonomyViewerPanel extends JPanel
          * @param severities each row's severity, null on a heading
          * @param tiles each row's square, null on a heading and on a row about no square
          */
-        FindingRenderer(List<AutonomyChecks.Severity> severities, List<?> tiles, java.awt.Font font,
+        public FindingRenderer(List<AutonomyChecks.Severity> severities, List<?> tiles, java.awt.Font font,
             java.awt.Font headingFont)
         {
             this.severities = severities;
@@ -2047,7 +2048,7 @@ public class AutonomyViewerPanel extends JPanel
      * @param describeTile what a square is
      * @return the ERROR, WARNING and NOTICE rows, every other severity among the notices
      */
-    static Map<AutonomyChecks.Severity, List<Object[]>> findingRows(List<AutonomyChecks.Finding> findings,
+    public static Map<AutonomyChecks.Severity, List<Object[]>> findingRows(List<AutonomyChecks.Finding> findings,
         java.util.function.Function<org.traincontrol.automationui.TileGraph.TileKey, String> describeTile)
     {
         Map<AutonomyChecks.Severity, List<Object[]>> sorted = new java.util.EnumMap<>(AutonomyChecks.Severity.class);

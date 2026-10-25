@@ -202,7 +202,7 @@ public class testTheSampleLayoutSaysOnlyWhatTrainsCanDo
     @Test
     public void testTheDiagramDrawsTheEditorsArrows() throws Exception
     {
-        org.traincontrol.gui.AutonomyEditorPanel panel = new org.traincontrol.gui.AutonomyEditorPanel(session, null, () -> { });
+        org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(session, null, () -> { });
 
         panel.refresh();
 
@@ -300,10 +300,10 @@ public class testTheSampleLayoutSaysOnlyWhatTrainsCanDo
     {
         AutonomySession fresh = openOn(unpackTheSample());
 
-        final org.traincontrol.gui.AutonomyEditorPanel[] panel = new org.traincontrol.gui.AutonomyEditorPanel[1];
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[] panel = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[1];
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
-            panel[0] = new org.traincontrol.gui.AutonomyEditorPanel(fresh, null, () -> { }));
+            panel[0] = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(fresh, null, () -> { }));
 
         int clicked = 0;
 
@@ -422,7 +422,7 @@ public class testTheSampleLayoutSaysOnlyWhatTrainsCanDo
 
     /** Each square's stored directions and the marks it draws on the track diagram and in the editor, in one line. */
     private static java.util.Map<TileKey, String> everyArrow(AutonomySession on,
-        org.traincontrol.gui.AutonomyEditorPanel panel)
+        org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel)
     {
         java.util.Map<TileKey, String> out = new java.util.LinkedHashMap<>();
 
@@ -447,10 +447,10 @@ public class testTheSampleLayoutSaysOnlyWhatTrainsCanDo
     }
 
     /** A click on a square in the editor, as the mouse gives it. */
-    private static void click(final org.traincontrol.gui.AutonomyEditorPanel panel, final TileKey square) throws Exception
+    private static void click(final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel, final TileKey square) throws Exception
     {
         final java.lang.reflect.Method cycle =
-            org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredMethod("cycle", TileKey.class);
+            org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredMethod("cycle", TileKey.class);
 
         cycle.setAccessible(true);
 

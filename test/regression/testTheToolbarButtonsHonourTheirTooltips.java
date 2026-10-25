@@ -401,7 +401,7 @@ public class testTheToolbarButtonsHonourTheirTooltips
             String long1 = "Creates a blank track diagram that you can edit visually, with every track, signal and"
                 + " switch placed where you put it and nothing else.";
 
-            String wrapped = org.traincontrol.gui.AutonomyEditorPanel.wrappedIfLong(long1);
+            String wrapped = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.wrappedIfLong(long1);
 
             assertTrue(tooltipSize(wrapped).height > tooltipSize(long1).height,
                 "a long tooltip did not wrap at all, so it runs off the edge of the display: " + wrapped);

@@ -28,6 +28,9 @@ trim comments elsewhere in the UI that we haven't trimmed yet."
   the gui package's node, then moves with EditorMassAssign, EditorPrompts, EditorSignals, EditorTileMenus and EditorWhy
   into `gui.autonomyeditor`.  CaptionVisibility, CoalescedAsk, CoveredTrackView and SettledQuestion go with them where
   the count of members made public stays small.  This runs after the UI comment pass is merged.
+  Done: the six moved, with 25 members made public and none from before 2.7.0.  The four helpers stay in gui: each
+  is mostly TrainControlUI's (CaptionVisibility would have widened 17 members, one from before 2.7.0, and
+  CoveredTrackView 26), and CoalescedAsk and SettledQuestion are shared with classes that stay.
 - The move also anchors `AutoLocomotiveStatus`'s `resources/info.gif` on TrainControlUI, makes the four checks that
   list the gui folder recurse, and updates the path-keyed baselines.
 

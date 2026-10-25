@@ -1029,7 +1029,7 @@ public class testNoSetupEditWhileARouteRuns
 
             settle();
 
-            final org.traincontrol.gui.AutonomyEditorPanel panel = editor[0].getAutonomyPanel();
+            final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = editor[0].getAutonomyPanel();
 
             assertNotNull(panel, "precondition: the editor did not open in autonomy mode");
 
@@ -1041,12 +1041,12 @@ public class testNoSetupEditWhileARouteRuns
 
             final org.json.JSONObject before = session.snapshotSetup();
 
-            final java.lang.reflect.Field button = org.traincontrol.gui.AutonomyEditorPanel.class
+            final java.lang.reflect.Field button = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class
                 .getDeclaredField("oneWayButton");
 
             button.setAccessible(true);
 
-            final java.lang.reflect.Field excludeBox = org.traincontrol.gui.AutonomyEditorPanel.class
+            final java.lang.reflect.Field excludeBox = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class
                 .getDeclaredField("excludePage");
 
             excludeBox.setAccessible(true);
@@ -1168,15 +1168,15 @@ public class testNoSetupEditWhileARouteRuns
     }
 
     /** What the editor's message strip says after a gesture, cleared to a dash first so only its words are read. */
-    private static String saidBy(final org.traincontrol.gui.AutonomyEditorPanel panel, final Runnable gesture)
+    private static String saidBy(final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel, final Runnable gesture)
         throws Exception
     {
-        final java.lang.reflect.Method say = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredMethod("say",
+        final java.lang.reflect.Method say = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredMethod("say",
             javax.swing.JLabel.class, String.class);
 
         say.setAccessible(true);
 
-        final java.lang.reflect.Field hint = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredField("hint");
+        final java.lang.reflect.Field hint = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredField("hint");
 
         hint.setAccessible(true);
 
@@ -1198,7 +1198,7 @@ public class testNoSetupEditWhileARouteRuns
 
         StringBuilder out = new StringBuilder(String.valueOf(((javax.swing.JLabel) hint.get(panel)).getText()));
 
-        java.lang.reflect.Field banner = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredField("messageBanner");
+        java.lang.reflect.Field banner = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredField("messageBanner");
 
         banner.setAccessible(true);
 
@@ -1246,7 +1246,7 @@ public class testNoSetupEditWhileARouteRuns
     }
 
     /** A station's label square and a square the editor's own rule lets it be dragged to, in that order. */
-    private static TileKey[] aLabelThatMoves(AutonomySession session, org.traincontrol.gui.AutonomyEditorPanel panel,
+    private static TileKey[] aLabelThatMoves(AutonomySession session, org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel,
         org.traincontrol.base.LayoutDiagram page)
     {
         List<TileKey> tiles = new ArrayList<>(session.getGraph().getTiles().keySet());

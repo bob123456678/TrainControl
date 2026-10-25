@@ -3,6 +3,7 @@ package org.traincontrol.gui;
 import javax.swing.JMenuItem;
 import javax.swing.JComponent;
 import org.traincontrol.automation.HomeStaging;
+import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.util.I18n;
 
 /**

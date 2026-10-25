@@ -63,7 +63,7 @@ public class GraphLocAssign extends javax.swing.JPanel
      * @param p
      * @return
      */
-    static String menuLabelFor(Point p)
+    public static String menuLabelFor(Point p)
     {
         return I18n.t(p != null && p.getCurrentLocomotive() == null
             ? "autolayout.ui.labelPlaceLocomotiveAt"

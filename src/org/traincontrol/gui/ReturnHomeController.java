@@ -7,6 +7,7 @@ import org.traincontrol.automation.HomeStaging;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.TimetablePath;
 import org.traincontrol.base.Locomotive;
+import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.util.I18n;
 
 /**
@@ -367,20 +368,20 @@ final class ReturnHomeController extends SettledQuestion
      * holds across a `CONFIGURE_SLEEP` per accessory of a path (OB-192), so the event thread may wait on it, bounded.
      */
     @Override
-    Object settledLock()
+    public Object settledLock()
     {
         return this.ui.returnHomeTriageSettled;
     }
 
     /** The triage is outstanding while a worker is on it or an ask has not been picked up. */
     @Override
-    boolean outstanding()
+    public boolean outstanding()
     {
         return this.ui.returnHomeTriageInFlight.get() || this.ui.returnHomeTriageDirty.get();
     }
 
     @Override
-    void giveUp()
+    public void giveUp()
     {
         this.ui.returnHomeTriageInFlight.set(false);
     }

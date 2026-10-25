@@ -400,13 +400,13 @@ public class testTwoYsMakeACrossing
     {
         open(verticalPair(), "OB-320 click");
 
-        final org.traincontrol.gui.AutonomyEditorPanel[] panel = new org.traincontrol.gui.AutonomyEditorPanel[1];
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[] panel = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[1];
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
-            panel[0] = new org.traincontrol.gui.AutonomyEditorPanel(session, "main", () -> { }));
+            panel[0] = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(session, "main", () -> { }));
 
         final java.lang.reflect.Method cycle =
-            org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredMethod("cycle", TileKey.class);
+            org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredMethod("cycle", TileKey.class);
 
         cycle.setAccessible(true);
 
@@ -697,7 +697,7 @@ public class testTwoYsMakeACrossing
 
         open(page, "OB-320 naming");
 
-        final org.traincontrol.gui.AutonomyEditorPanel[] panel = new org.traincontrol.gui.AutonomyEditorPanel[1];
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[] panel = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[1];
 
         final String[] said = new String[1];
 
@@ -705,15 +705,15 @@ public class testTwoYsMakeACrossing
         {
             try
             {
-                panel[0] = new org.traincontrol.gui.AutonomyEditorPanel(session, "main", () -> { });
+                panel[0] = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(session, "main", () -> { });
 
                 java.lang.reflect.Method cycle =
-                    org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredMethod("cycle", TileKey.class);
+                    org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredMethod("cycle", TileKey.class);
 
                 cycle.setAccessible(true);
                 cycle.invoke(panel[0], key(5, 5));
 
-                java.lang.reflect.Field hint = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredField("hint");
+                java.lang.reflect.Field hint = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredField("hint");
 
                 hint.setAccessible(true);
 
@@ -749,16 +749,16 @@ public class testTwoYsMakeACrossing
         TileKey upper = key(5, 5);
         TileKey lower = key(5, 6);
 
-        final org.traincontrol.gui.AutonomyEditorPanel[] panel = new org.traincontrol.gui.AutonomyEditorPanel[1];
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[] panel = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[1];
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
-            panel[0] = new org.traincontrol.gui.AutonomyEditorPanel(session, "main", () -> { }));
+            panel[0] = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(session, "main", () -> { }));
 
         // ON SHOW ALL, which draws the open track's arrows too; the view it opened on is put back
         final java.lang.reflect.Method view =
-            org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredMethod("directionsView");
+            org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredMethod("directionsView");
         final java.lang.reflect.Method show =
-            org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredMethod("showDirectionsView", int.class);
+            org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredMethod("showDirectionsView", int.class);
 
         view.setAccessible(true);
         show.setAccessible(true);
@@ -919,7 +919,7 @@ public class testTwoYsMakeACrossing
         final java.util.Map<String, Boolean> boxes = new java.util.LinkedHashMap<>();
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
-            boxes.putAll(ticks(new org.traincontrol.gui.AutonomyEditorPanel(session, "main", () -> { })
+            boxes.putAll(ticks(new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(session, "main", () -> { })
                 .buildTileMenu(turnout, null))));
 
         for (Side arm : arms)
@@ -958,13 +958,13 @@ public class testTwoYsMakeACrossing
 
         assertNull(session.getGraph().crossingPartner(turnout), "precondition: the turnout is half of a crossing");
 
-        final org.traincontrol.gui.AutonomyEditorPanel[] panel = new org.traincontrol.gui.AutonomyEditorPanel[1];
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[] panel = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[1];
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
-            panel[0] = new org.traincontrol.gui.AutonomyEditorPanel(session, "main", () -> { }));
+            panel[0] = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(session, "main", () -> { }));
 
         final java.lang.reflect.Method cycle =
-            org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredMethod("cycle", TileKey.class);
+            org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredMethod("cycle", TileKey.class);
 
         cycle.setAccessible(true);
 

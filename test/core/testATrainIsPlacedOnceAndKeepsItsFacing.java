@@ -743,13 +743,13 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
         assertEquals(session.staticAnnotationFor(buffer).getBadge().getDeadEnd(), Side.W, "the diagram's badge for the"
             + " station against the buffer stop does not say which way its track runs out");
 
-        final org.traincontrol.gui.AutonomyEditorPanel[] panel = new org.traincontrol.gui.AutonomyEditorPanel[1];
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[] panel = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[1];
 
-        javax.swing.SwingUtilities.invokeAndWait(() -> panel[0] = new org.traincontrol.gui.AutonomyEditorPanel(session,
+        javax.swing.SwingUtilities.invokeAndWait(() -> panel[0] = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(session,
             "main", () -> { }));
 
         java.lang.reflect.Method badgeFor =
-            org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredMethod("badgeFor", TileKey.class);
+            org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredMethod("badgeFor", TileKey.class);
 
         badgeFor.setAccessible(true);
 
@@ -1261,7 +1261,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     @Test
     public void testADemotedStationHasItsSettingsBackWhenItIsAStationAgain() throws Exception
     {
-        org.traincontrol.gui.AutonomyEditorPanel panel = aStationWithEverySetting();
+        org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = aStationWithEverySetting();
 
         TileKey station = new TileKey("main", 3, 1);
 
@@ -1357,7 +1357,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
      * its first arrival side barred, the signal at 2,1 as its exit guard, the one at 4,1 as its entry guard, and the
      * turn flag.  Each is asserted as set before anything is demoted.  Returns an editor over the page.
      */
-    private org.traincontrol.gui.AutonomyEditorPanel aStationWithEverySetting() throws Exception
+    private org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel aStationWithEverySetting() throws Exception
     {
         session.open(Arrays.asList(pageWithAGuardedTwoEndedStation()));
         session.initialize("Default");
@@ -1388,10 +1388,10 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
         assertEquals(session.getPointProperty(station, "terminus"), Boolean.TRUE, "precondition: the turn flag was not"
             + " set");
 
-        final org.traincontrol.gui.AutonomyEditorPanel[] panel = new org.traincontrol.gui.AutonomyEditorPanel[1];
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[] panel = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[1];
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
-            panel[0] = new org.traincontrol.gui.AutonomyEditorPanel(session, "main", () -> { }));
+            panel[0] = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(session, "main", () -> { }));
 
         return panel[0];
     }
@@ -1459,7 +1459,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     @Test
     public void testADemotedStationsSettingsAreIgnoredWhileItIsNotAStation() throws Exception
     {
-        org.traincontrol.gui.AutonomyEditorPanel panel = aStationWithEverySetting();
+        org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = aStationWithEverySetting();
 
         TileKey station = new TileKey("main", 3, 1);
         TileKey caption = new TileKey("main", 3, 3);

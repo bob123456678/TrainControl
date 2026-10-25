@@ -166,10 +166,10 @@ abstract class AutonomySessionFixture
     }
 
     /** One of the editor panel's own controls, by its field. */
-    static java.awt.Component panelPart(org.traincontrol.gui.AutonomyEditorPanel panel, String field)
+    static java.awt.Component panelPart(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel, String field)
         throws Exception
     {
-        java.lang.reflect.Field f = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredField(field);
+        java.lang.reflect.Field f = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredField(field);
 
         f.setAccessible(true);
 
@@ -484,10 +484,10 @@ abstract class AutonomySessionFixture
      * @param station true to make it a station, false for a square trains only pass through
      * @throws Exception from the event thread or the reflection
      */
-    static void answerTheStationMenu(final org.traincontrol.gui.AutonomyEditorPanel panel, final TileKey square,
+    static void answerTheStationMenu(final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel, final TileKey square,
         final boolean station) throws Exception
     {
-        final java.lang.reflect.Method usage = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredMethod("setUsage",
+        final java.lang.reflect.Method usage = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredMethod("setUsage",
             TileKey.class, boolean.class, boolean.class);
 
         usage.setAccessible(true);

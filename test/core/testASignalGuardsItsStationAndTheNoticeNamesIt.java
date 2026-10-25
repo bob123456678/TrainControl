@@ -566,10 +566,10 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
 
         session.setEntrySignals(station, Arrays.asList(signal));
 
-        final org.traincontrol.gui.AutonomyEditorPanel panel =
-            new org.traincontrol.gui.AutonomyEditorPanel(session, "main", () -> { });
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel =
+            new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(session, "main", () -> { });
 
-        java.lang.reflect.Field field = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredField("findings");
+        java.lang.reflect.Field field = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredField("findings");
 
         field.setAccessible(true);
 
@@ -592,7 +592,7 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
         javax.swing.SwingUtilities.invokeAndWait(() -> { });
 
         // OUTLINED, not selected - read by reflection, as the claim came first
-        java.lang.reflect.Method outlined = org.traincontrol.gui.AutonomyEditorPanel.class.getMethod("isOutlined",
+        java.lang.reflect.Method outlined = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getMethod("isOutlined",
             TileKey.class);
 
         assertTrue((Boolean) outlined.invoke(panel, signal), "a click on the guard notice did not outline the signal it"
@@ -622,8 +622,8 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
 
         session.setEntrySignals(station, Arrays.asList(signal));
 
-        final org.traincontrol.gui.AutonomyEditorPanel panel =
-            new org.traincontrol.gui.AutonomyEditorPanel(session, "main", () -> { });
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel =
+            new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(session, "main", () -> { });
 
         clickTheGuardNotice(panel);
 
@@ -663,8 +663,8 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
 
         session.setEntrySignals(station, Arrays.asList(signal));
 
-        final org.traincontrol.gui.AutonomyEditorPanel panel =
-            new org.traincontrol.gui.AutonomyEditorPanel(session, "main", () -> { });
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel =
+            new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(session, "main", () -> { });
 
         clickTheGuardNotice(panel);
 
@@ -696,12 +696,12 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
 
         session.setEntrySignals(station, Arrays.asList(signal));
 
-        final org.traincontrol.gui.AutonomyEditorPanel panel =
-            new org.traincontrol.gui.AutonomyEditorPanel(session, "far", () -> { });
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel =
+            new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(session, "far", () -> { });
 
         final List<Object> handed = new ArrayList<>();
 
-        java.lang.reflect.Method jump = org.traincontrol.gui.AutonomyEditorPanel.class.getMethod("setOnJumpToNotice",
+        java.lang.reflect.Method jump = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getMethod("setOnJumpToNotice",
             java.util.function.BiConsumer.class);
 
         jump.invoke(panel, (java.util.function.BiConsumer<TileKey, List<TileKey>>) (at, related) ->
@@ -738,8 +738,8 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
 
         session.rebuild();
 
-        final org.traincontrol.gui.AutonomyEditorPanel panel =
-            new org.traincontrol.gui.AutonomyEditorPanel(session, "main", () -> { });
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel =
+            new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(session, "main", () -> { });
 
         final List<TileKey> revealed = new ArrayList<>();
 
@@ -773,8 +773,8 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
 
         session.rebuild();
 
-        final org.traincontrol.gui.AutonomyEditorPanel panel =
-            new org.traincontrol.gui.AutonomyEditorPanel(session, "far", () -> { });
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel =
+            new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(session, "far", () -> { });
 
         final List<Object> outlined = new ArrayList<>();
         final List<Object> plain = new ArrayList<>();
@@ -815,10 +815,10 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
 
         session.setEntrySignals(station, Arrays.asList(signal));
 
-        final org.traincontrol.gui.AutonomyEditorPanel panel =
-            new org.traincontrol.gui.AutonomyEditorPanel(session, "main", () -> { });
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel =
+            new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(session, "main", () -> { });
 
-        java.lang.reflect.Field field = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredField("findings");
+        java.lang.reflect.Field field = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredField("findings");
 
         field.setAccessible(true);
 
@@ -860,7 +860,7 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
         assertFalse(copied.contains("<"), "the copied notice carries markup, which is not plain text: " + copied);
 
         // AND A HEADING IS NOT A NOTICE: clicking "Warnings" or a page's name leaves the clipboard alone
-        java.lang.reflect.Field severities = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredField("findingSeverity");
+        java.lang.reflect.Field severities = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredField("findingSeverity");
 
         severities.setAccessible(true);
 
@@ -924,12 +924,12 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     }
 
     /** Selects the first row of the editor's list that says this and is about this square, as a click on it does. */
-    private static void clickTheFinding(org.traincontrol.gui.AutonomyEditorPanel panel, String says, TileKey at)
+    private static void clickTheFinding(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel, String says, TileKey at)
         throws Exception
     {
         final javax.swing.JList<?> list = (javax.swing.JList<?>) panelPart(panel, "findings");
 
-        java.lang.reflect.Field field = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredField("findingTiles");
+        java.lang.reflect.Field field = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredField("findingTiles");
 
         field.setAccessible(true);
 
@@ -953,9 +953,9 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     }
 
     /** Selects the guard notice in the editor's list, as a click on it does. */
-    private static void clickTheGuardNotice(org.traincontrol.gui.AutonomyEditorPanel panel) throws Exception
+    private static void clickTheGuardNotice(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel) throws Exception
     {
-        java.lang.reflect.Field field = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredField("findings");
+        java.lang.reflect.Field field = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredField("findings");
 
         field.setAccessible(true);
 

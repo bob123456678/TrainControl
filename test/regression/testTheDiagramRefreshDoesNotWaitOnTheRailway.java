@@ -572,7 +572,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     {
         final org.traincontrol.automationui.TileGraph.TileKey occupied = squareWithATrainOnIt();
 
-        final org.traincontrol.gui.AutonomyEditorPanel panel = aWhyPanel();
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = aWhyPanel();
 
         final org.traincontrol.base.LayoutDiagramComponent drawn = theSquareItself(occupied);
 
@@ -631,7 +631,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     {
         final org.traincontrol.automationui.TileGraph.TileKey occupied = squareWithATrainOnIt();
 
-        final org.traincontrol.gui.AutonomyEditorPanel panel = aWhyPanel();
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = aWhyPanel();
 
         final org.traincontrol.base.LayoutDiagramComponent drawn = theSquareItself(occupied);
 
@@ -751,7 +751,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
         if (!aRunExists) return;
 
         java.lang.reflect.Field traces =
-            org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredField("traces");
+            org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredField("traces");
 
         traces.setAccessible(true);
 
@@ -782,7 +782,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     {
         final org.traincontrol.automationui.TileGraph.TileKey occupied = squareWithATrainOnIt();
 
-        final org.traincontrol.gui.AutonomyEditorPanel panel = aWhyPanel();
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = aWhyPanel();
 
         final org.traincontrol.base.LayoutDiagramComponent drawn = theSquareItself(occupied);
 
@@ -992,14 +992,14 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
      * @return the panel
      * @throws Exception when the event thread refuses to build it
      */
-    private static org.traincontrol.gui.AutonomyEditorPanel aWhyPanel() throws Exception
+    private static org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel aWhyPanel() throws Exception
     {
-        final org.traincontrol.gui.AutonomyEditorPanel[] built =
-            new org.traincontrol.gui.AutonomyEditorPanel[1];
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[] built =
+            new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[1];
 
         SwingUtilities.invokeAndWait(() ->
         {
-            built[0] = new org.traincontrol.gui.AutonomyEditorPanel(session, null, () -> { });
+            built[0] = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(session, null, () -> { });
 
             built[0].setLayoutSource(() -> layout);
         });
@@ -1037,7 +1037,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
      */
     private static java.lang.reflect.Method theWhyTool() throws Exception
     {
-        java.lang.reflect.Method why = org.traincontrol.gui.AutonomyEditorPanel.class
+        java.lang.reflect.Method why = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class
             .getDeclaredMethod("applyWhy", org.traincontrol.automationui.TileGraph.TileKey.class,
                 org.traincontrol.base.LayoutDiagramComponent.class);
 
@@ -1053,10 +1053,10 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
      * @return true when nothing is outstanding
      * @throws Exception when the panel no longer offers the wait
      */
-    private static boolean awaitWhy(org.traincontrol.gui.AutonomyEditorPanel panel) throws Exception
+    private static boolean awaitWhy(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel) throws Exception
     {
         java.lang.reflect.Method waiting =
-            org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredMethod("awaitWhy", long.class);
+            org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredMethod("awaitWhy", long.class);
 
         waiting.setAccessible(true);
 
@@ -1073,11 +1073,11 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
      * @return the text
      * @throws Exception when the label is no longer there
      */
-    private static String whatTheEditorSays(org.traincontrol.gui.AutonomyEditorPanel panel)
+    private static String whatTheEditorSays(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel)
         throws Exception
     {
         java.lang.reflect.Field label =
-            org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredField("hint");
+            org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredField("hint");
 
         label.setAccessible(true);
 

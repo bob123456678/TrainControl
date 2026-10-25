@@ -351,7 +351,7 @@ public class testTheBulkClearSaysWhatCancelDoes
             try
             {
                 Object built = panel.get(ui);
-                if (built != null) said[0] = ((org.traincontrol.gui.AutonomyEditorPanel) built).clearLocomotivesWarning();
+                if (built != null) said[0] = ((org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel) built).clearLocomotivesWarning();
             }
             catch (IllegalAccessException failed)
             {

@@ -1109,11 +1109,11 @@ public class testDiagramLooksRight
 
         final int[] rebuilds = {0};
 
-        final org.traincontrol.gui.AutonomyEditorPanel[] panel =
-            new org.traincontrol.gui.AutonomyEditorPanel[1];
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[] panel =
+            new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[1];
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
-            panel[0] = new org.traincontrol.gui.AutonomyEditorPanel(session, null, () -> {}));
+            panel[0] = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(session, null, () -> {}));
 
         panel[0].setOnDiagramChanged(() -> rebuilds[0]++);
 
@@ -1128,9 +1128,9 @@ public class testDiagramLooksRight
         final int was = choice.getSelectedIndex();
 
         // Any option but the current one; Parked rather than None, so the box the drawing code reads changes too.
-        final int wanted = was == org.traincontrol.gui.AutonomyEditorPanel.CAPTIONS_PARKED
-            ? org.traincontrol.gui.AutonomyEditorPanel.CAPTIONS_HOMES
-            : org.traincontrol.gui.AutonomyEditorPanel.CAPTIONS_PARKED;
+        final int wanted = was == org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.CAPTIONS_PARKED
+            ? org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.CAPTIONS_HOMES
+            : org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.CAPTIONS_PARKED;
 
         javax.swing.SwingUtilities.invokeAndWait(() -> choice.setSelectedIndex(wanted));
 
@@ -1138,7 +1138,7 @@ public class testDiagramLooksRight
             "selecting a caption option did not take");
 
         assertEquals(panel[0].isShowingParkedTrains(),
-            wanted == org.traincontrol.gui.AutonomyEditorPanel.CAPTIONS_PARKED,
+            wanted == org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.CAPTIONS_PARKED,
             "the choice did not reach the flag the drawing code reads, so the menu says one thing and"
             + " the captions draw another");
 
@@ -1147,11 +1147,11 @@ public class testDiagramLooksRight
             + " decided when the grid is built, so it would appear to do nothing at all until"
             + " something else happened to rebuild it");
 
-        final org.traincontrol.gui.AutonomyEditorPanel[] again =
-            new org.traincontrol.gui.AutonomyEditorPanel[1];
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[] again =
+            new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[1];
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
-            again[0] = new org.traincontrol.gui.AutonomyEditorPanel(session, null, () -> {}));
+            again[0] = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(session, null, () -> {}));
 
         int remembered = again[0].getCaptionChoice().getSelectedIndex();
 
@@ -1216,7 +1216,7 @@ public class testDiagramLooksRight
             was = choice[0].getSelectedIndex();
 
             javax.swing.SwingUtilities.invokeAndWait(() ->
-                choice[0].setSelectedIndex(org.traincontrol.gui.AutonomyEditorPanel.CAPTIONS_PARKED));
+                choice[0].setSelectedIndex(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.CAPTIONS_PARKED));
 
             settleTheEditor();
 
@@ -1325,7 +1325,7 @@ public class testDiagramLooksRight
                 editor[0].pack();
                 editor[0].validate();
 
-                org.traincontrol.gui.AutonomyEditorPanel panel = editor[0].getAutonomyPanel();
+                org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = editor[0].getAutonomyPanel();
 
                 widths[0] = panel.getCaptionChoice().getWidth();
                 widths[1] = panel.getShowDirections().getWidth();
@@ -1572,7 +1572,7 @@ public class testDiagramLooksRight
                 editor[0].validate();
 
                 java.awt.Container pane = editor[0].getContentPane();
-                org.traincontrol.gui.AutonomyEditorPanel panel = editor[0].getAutonomyPanel();
+                org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = editor[0].getAutonomyPanel();
 
                 column.put("Station Labels", inPane(panel.getCaptionChoice(), pane));
                 column.put("Track Directions", inPane(panel.getShowDirections(), pane));

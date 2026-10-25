@@ -460,7 +460,7 @@ public class testTheAutonomyEditorKnowsWhichSquare
 
             for (int i = 0; i < 4; i++) javax.swing.SwingUtilities.invokeAndWait(() -> { });
 
-            assertEquals(open.editor.getAutonomyPanel().getTool(), org.traincontrol.gui.AutonomyEditorPanel.Tool.TEST,
+            assertEquals(open.editor.getAutonomyPanel().getTool(), org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.Tool.TEST,
                 "precondition: pressing Test did not arm it");
 
             assertNotEquals(cursorOf(again), java.awt.Cursor.HAND_CURSOR, "with Test armed a click tests a path, and the"
@@ -558,7 +558,7 @@ public class testTheAutonomyEditorKnowsWhichSquare
     /** A private field of the editor's autonomy panel, by name. */
     private static Object panelField(org.traincontrol.gui.layouteditor.LayoutEditor of, String name) throws Exception
     {
-        java.lang.reflect.Field f = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredField(name);
+        java.lang.reflect.Field f = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredField(name);
 
         f.setAccessible(true);
 

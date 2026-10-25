@@ -53,11 +53,11 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
 
         session.setPageExcluded("main", true);
 
-        final org.traincontrol.gui.AutonomyEditorPanel[] panel = new org.traincontrol.gui.AutonomyEditorPanel[1];
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[] panel = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[1];
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
         {
-            panel[0] = new org.traincontrol.gui.AutonomyEditorPanel(session, "main", () -> { });
+            panel[0] = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(session, "main", () -> { });
 
             panel[0].refresh();
         });
@@ -94,7 +94,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     public void testAShortTooltipIsNotPaddedToTheWrappingWidth() throws Exception
     {
         java.lang.reflect.Method wrapped =
-            org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredMethod("wrapped", String.class);
+            org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredMethod("wrapped", String.class);
 
         wrapped.setAccessible(true);
 
@@ -111,7 +111,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
 
         String longer = String.valueOf(wrapped.invoke(null, sentence + "  " + sentence + "  " + sentence));
 
-        int width = (Integer) privateConstant(org.traincontrol.gui.AutonomyEditorPanel.class, "TOOLTIP_WIDTH");
+        int width = (Integer) privateConstant(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class, "TOOLTIP_WIDTH");
 
         assertTrue(longer.contains("width: " + width + "px"), "a tooltip three sentences long no longer wraps: " + longer);
     }
@@ -205,7 +205,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
             + " the run closed, and a train can pass no square of it: " + (drawn.get(leader) == null ? null
                 : drawn.get(leader).getMarks()));
 
-        org.traincontrol.gui.AutonomyEditorPanel panel = aPanel();
+        org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = aPanel();
 
         for (TileKey square : run)
         {
@@ -667,7 +667,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
 
         // A test may read the user's settings; it may not decide them: put back as found, unset included
         java.util.prefs.Preferences prefs =
-            org.traincontrol.util.Util.preferencesFor(org.traincontrol.gui.AutonomyEditorPanel.class);
+            org.traincontrol.util.Util.preferencesFor(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class);
 
         final String key = "autonomyEditorDirections";
 
@@ -687,7 +687,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
                     "a view remembered as " + view[0] + " before Allowed only was added opens as another");
             }
 
-            final org.traincontrol.gui.AutonomyEditorPanel panel = aPanel();
+            final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = aPanel();
 
             final javax.swing.JComboBox<String> box = panel.getShowDirections();
 
@@ -718,7 +718,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
             assertTrue(panel.isShowingDirections(), "Allowed only is not counted as showing directions, so the editor draws no arrows under it");
 
             assertEquals(prefs.getInt(key, -1),
-                (int) (Integer) privateConstant(org.traincontrol.gui.AutonomyEditorPanel.class, "VIEW_ALLOWED"),
+                (int) (Integer) privateConstant(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class, "VIEW_ALLOWED"),
                 "Allowed only is not remembered by its own value");
 
             assertEquals(aPanel().getShowDirections().getSelectedItem(),
@@ -732,12 +732,12 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /** A fresh autonomy editor panel on the main page, built on the event thread. */
-    private org.traincontrol.gui.AutonomyEditorPanel aPanel() throws Exception
+    private org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel aPanel() throws Exception
     {
-        final org.traincontrol.gui.AutonomyEditorPanel[] panel = new org.traincontrol.gui.AutonomyEditorPanel[1];
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[] panel = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[1];
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
-            panel[0] = new org.traincontrol.gui.AutonomyEditorPanel(session, "main", () -> { }));
+            panel[0] = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(session, "main", () -> { }));
 
         return panel[0];
     }
@@ -1743,10 +1743,10 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     @Test
     public void testTheEditorHasAShowTrainsSwitch() throws Exception
     {
-        final org.traincontrol.gui.AutonomyEditorPanel panel = anEditorOverATwoEndedStation();
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = anEditorOverATwoEndedStation();
 
-        final java.lang.reflect.Method box = org.traincontrol.gui.AutonomyEditorPanel.class.getMethod("getShowTrains");
-        final java.lang.reflect.Method showing = org.traincontrol.gui.AutonomyEditorPanel.class.getMethod("isShowingTrains");
+        final java.lang.reflect.Method box = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getMethod("getShowTrains");
+        final java.lang.reflect.Method showing = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getMethod("isShowingTrains");
 
         final javax.swing.JCheckBox[] trains = new javax.swing.JCheckBox[1];
         final boolean[] seen = new boolean[3];
@@ -1795,7 +1795,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     @Test
     public void testAnUnnamedSensorIsNamedAsItBecomesAStation() throws Exception
     {
-        final org.traincontrol.gui.AutonomyEditorPanel panel = anEditorOverATwoEndedStation();
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = anEditorOverATwoEndedStation();
 
         final TileKey unnamed = new TileKey("main", 5, 1);
         final TileKey named = new TileKey("main", 1, 1);
@@ -1805,7 +1805,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
         final List<String[]> asked = new java.util.ArrayList<>();
         final java.util.LinkedList<String> answers = new java.util.LinkedList<>();
 
-        java.lang.reflect.Field question = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredField("askForAName");
+        java.lang.reflect.Field question = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredField("askForAName");
 
         question.setAccessible(true);
 
@@ -1857,15 +1857,15 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /** The editor over `pageWithATwoEndedStation`, its three sensors plain points. */
-    private org.traincontrol.gui.AutonomyEditorPanel anEditorOverATwoEndedStation() throws Exception
+    private org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel anEditorOverATwoEndedStation() throws Exception
     {
         session.open(Arrays.asList(pageWithATwoEndedStation()));
         session.initialize("Default");
 
-        final org.traincontrol.gui.AutonomyEditorPanel[] panel = new org.traincontrol.gui.AutonomyEditorPanel[1];
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[] panel = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[1];
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
-            panel[0] = new org.traincontrol.gui.AutonomyEditorPanel(session, "main", () -> { }));
+            panel[0] = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(session, "main", () -> { }));
 
         return panel[0];
     }
@@ -1881,7 +1881,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     @Test
     public void testShowTrainsOffHidesTheSetupsTrainMarkToo() throws Exception
     {
-        final org.traincontrol.gui.AutonomyEditorPanel panel = anEditorOverATwoEndedStation();
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = anEditorOverATwoEndedStation();
 
         final TileKey station = new TileKey("main", 3, 1);
 
@@ -1937,7 +1937,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     @Test
     public void testShowTrainsRedrawsEverySquareInItsWindow() throws Exception
     {
-        final org.traincontrol.gui.AutonomyEditorPanel panel = anEditorOverATwoEndedStation();
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = anEditorOverATwoEndedStation();
 
         final boolean[] redrawn = new boolean[2];
 
@@ -2042,10 +2042,10 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
         session.open(Arrays.asList(page));
         session.initialize("Default");
 
-        final org.traincontrol.gui.AutonomyEditorPanel[] panel = new org.traincontrol.gui.AutonomyEditorPanel[1];
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[] panel = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[1];
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
-            panel[0] = new org.traincontrol.gui.AutonomyEditorPanel(session, "main", () -> { }));
+            panel[0] = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(session, "main", () -> { }));
 
         final TileKey button = new TileKey("main", 4, 1), beside = new TileKey("main", 4, 3);
 
@@ -2092,7 +2092,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     @Test
     public void testAClickChangesNoDirectionOnASquareOutOfService() throws Exception
     {
-        final org.traincontrol.gui.AutonomyEditorPanel panel = anEditorOverATwoEndedStation();
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = anEditorOverATwoEndedStation();
 
         final TileKey square = new TileKey("main", 3, 1);
 
@@ -2108,7 +2108,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
         assertFalse(panel.clickChangesDirections(square), "the editor offers a direction click on a square out of service,"
             + " whose arrows it does not draw (RSA63-C5)");
 
-        final java.lang.reflect.Method cycle = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredMethod("cycle",
+        final java.lang.reflect.Method cycle = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredMethod("cycle",
             TileKey.class);
 
         cycle.setAccessible(true);

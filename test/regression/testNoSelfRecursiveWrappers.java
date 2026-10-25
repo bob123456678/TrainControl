@@ -85,7 +85,7 @@ public class testNoSelfRecursiveWrappers
 
     private static final String EDITOR = "src/org/traincontrol/gui/layouteditor/LayoutEditor.java";
 
-    private static final String AUTONOMY_EDITOR = "src/org/traincontrol/gui/AutonomyEditorPanel.java";
+    private static final String AUTONOMY_EDITOR = "src/org/traincontrol/gui/autonomyeditor/AutonomyEditorPanel.java";
 
     /**
      * The collaborators (FR-136), one row each: the field of the owner that holds it, the file it is declared in, its
@@ -121,15 +121,15 @@ public class testNoSelfRecursiveWrappers
             "TrainControlUI", "ui." },
         { "captionVisibility", "src/org/traincontrol/gui/CaptionVisibility.java", "CaptionVisibility", WINDOW,
             "TrainControlUI", "ui." },
-        { "tileMenus", "src/org/traincontrol/gui/EditorTileMenus.java", "EditorTileMenus", AUTONOMY_EDITOR,
+        { "tileMenus", "src/org/traincontrol/gui/autonomyeditor/EditorTileMenus.java", "EditorTileMenus", AUTONOMY_EDITOR,
             "AutonomyEditorPanel", "editor." },
-        { "prompts", "src/org/traincontrol/gui/EditorPrompts.java", "EditorPrompts", AUTONOMY_EDITOR,
+        { "prompts", "src/org/traincontrol/gui/autonomyeditor/EditorPrompts.java", "EditorPrompts", AUTONOMY_EDITOR,
             "AutonomyEditorPanel", "editor." },
-        { "signalPairing", "src/org/traincontrol/gui/EditorSignals.java", "EditorSignals", AUTONOMY_EDITOR,
+        { "signalPairing", "src/org/traincontrol/gui/autonomyeditor/EditorSignals.java", "EditorSignals", AUTONOMY_EDITOR,
             "AutonomyEditorPanel", "editor." },
-        { "massAssignment", "src/org/traincontrol/gui/EditorMassAssign.java", "EditorMassAssign", AUTONOMY_EDITOR,
+        { "massAssignment", "src/org/traincontrol/gui/autonomyeditor/EditorMassAssign.java", "EditorMassAssign", AUTONOMY_EDITOR,
             "AutonomyEditorPanel", "editor." },
-        { "whyAnswers", "src/org/traincontrol/gui/EditorWhy.java", "EditorWhy", AUTONOMY_EDITOR,
+        { "whyAnswers", "src/org/traincontrol/gui/autonomyeditor/EditorWhy.java", "EditorWhy", AUTONOMY_EDITOR,
             "AutonomyEditorPanel", "editor." },
         { "RunGates", "src/org/traincontrol/gui/RunGates.java", "RunGates", WINDOW, "TrainControlUI", "ui." },
         { "returnHomeController", "src/org/traincontrol/gui/ReturnHomeController.java", "ReturnHomeController", WINDOW,

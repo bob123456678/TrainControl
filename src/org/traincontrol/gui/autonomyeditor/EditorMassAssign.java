@@ -1,4 +1,4 @@
-package org.traincontrol.gui;
+package org.traincontrol.gui.autonomyeditor;
 
 import java.util.Map;
 import javax.swing.JLabel;
@@ -7,6 +7,7 @@ import javax.swing.JPanel;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.automationui.TileGraph.TileKey;
+import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
 
 /**

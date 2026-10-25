@@ -131,6 +131,7 @@ import org.traincontrol.gui.autonomy.DiagramMonitorDriver;
 import org.traincontrol.gui.autonomy.DiagramTileRegistry;
 import org.traincontrol.gui.autonomy.ManualReversalPrompt;
 import org.traincontrol.gui.autonomy.RightClickTimetableMenu;
+import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.locomotive.AddLocomotive;
 import org.traincontrol.gui.locomotive.CurrentKeyRow;

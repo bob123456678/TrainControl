@@ -1,4 +1,4 @@
-package org.traincontrol.gui;
+package org.traincontrol.gui.autonomyeditor;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
@@ -28,6 +28,11 @@ import org.traincontrol.automationui.TileGraph;
 import org.traincontrol.automationui.TileGraph.Direction;
 import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
+import org.traincontrol.gui.AutonomyViewerPanel;
+import org.traincontrol.gui.GraphLocAssign;
+import org.traincontrol.gui.RunGates;
+import org.traincontrol.gui.TailCrossedPrompt;
+import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.autonomy.AutonomyBanner;
 import org.traincontrol.gui.autonomy.AutonomyReport;
 import org.traincontrol.gui.autonomy.FacingPrompt;
@@ -229,9 +234,13 @@ public class AutonomyEditorPanel extends JPanel
     /** What each entry of the directions box means, by place; the meaning is what is remembered. */
     private static final int[] DIRECTIONS_BY_ENTRY = {0, 1, VIEW_ALLOWED, 2, VIEW_ARRIVALS};
 
-    /** The visibility controls, remembered in Preferences: a person's taste, not the railway's, so not exported. */
+    /**
+     * The visibility controls, remembered in Preferences: a person's taste, not the railway's, so not exported.  Keyed
+     * by TrainControlUI, so the node stays /org/traincontrol/gui, where users' settings were saved before this class
+     * moved package.
+     */
     private static final java.util.prefs.Preferences VIEW_PREFS =
-        org.traincontrol.util.Util.preferencesFor(AutonomyEditorPanel.class);
+        org.traincontrol.util.Util.preferencesFor(TrainControlUI.class);
 
     private static final String PREF_DIRECTIONS = "autonomyEditorDirections";
     private static final String PREF_LENGTHS = "autonomyEditorLengths";
@@ -1528,7 +1537,7 @@ public class AutonomyEditorPanel extends JPanel
      * @param refusedBecause why the placement is not allowed now, or null; asked after the confirmation
      * @param saying where the outcome is said
      */
-    void placeEveryTrainAtHome(String confirmKey, java.util.function.Supplier<String> refusedBecause,
+    public void placeEveryTrainAtHome(String confirmKey, java.util.function.Supplier<String> refusedBecause,
         java.util.function.Consumer<String> saying)
     {
         java.util.Map<TileKey, String> homes = session.homesToPlace();
@@ -1752,7 +1761,7 @@ public class AutonomyEditorPanel extends JPanel
      * @param width the width in pixels, or 0 or less to leave it on one line
      * @return the text, wrapped
      */
-    static String wrappedAt(String text, int width)
+    public static String wrappedAt(String text, int width)
     {
         if (text == null || width <= 0) return text;
 
@@ -3883,7 +3892,7 @@ public class AutonomyEditorPanel extends JPanel
      * @param maxDigits the most digits it holds once an edit is applied, or 0 for no limit
      * @return the field
      */
-    static javax.swing.JTextField digitsOnlyField(String initial, int columns, final int maxDigits)
+    public static javax.swing.JTextField digitsOnlyField(String initial, int columns, final int maxDigits)
     {
         javax.swing.JTextField field = new javax.swing.JTextField(initial, columns);
 
@@ -6171,7 +6180,7 @@ public class AutonomyEditorPanel extends JPanel
      * busy or missing clipboard is silently skipped.
      * @param shown the notice as the list holds it
      */
-    static void copyNoticeToClipboard(String shown)
+    public static void copyNoticeToClipboard(String shown)
     {
         if (shown == null) return;
 

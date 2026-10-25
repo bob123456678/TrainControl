@@ -5,22 +5,22 @@ package org.traincontrol.gui;
  * await, on a monitor the owner keeps (FR-136).  The answer and what counts as outstanding stay with each user; the
  * ask and its loop are `CoalescedAsk`'s.
  */
-abstract class SettledQuestion
+public abstract class SettledQuestion
 {
     /** The owner's monitor, the one `settle` and `awaitSettled` must agree on. */
-    abstract Object settledLock();
+    public abstract Object settledLock();
 
     /** Whether an ask is still outstanding; read under the lock. */
-    abstract boolean outstanding();
+    public abstract boolean outstanding();
 
     /** Gives the job up; called under the lock, just before the waiters are woken. */
-    abstract void giveUp();
+    public abstract void giveUp();
 
     /**
      * Gives the job up and wakes anybody waiting, both under the one monitor `awaitSettled` waits on, so a waiter
      * cannot find an ask outstanding and go to sleep in the instant between the two.
      */
-    final void settle()
+    public final void settle()
     {
         Object lock = settledLock();
 
@@ -36,7 +36,7 @@ abstract class SettledQuestion
      * Waits at most `millis` until nothing is outstanding; false when the wait ran out or was interrupted.  BOUNDED:
      * a wait with no deadline would turn a dead worker into a hung window rather than a stale answer.
      */
-    final boolean awaitSettled(long millis)
+    public final boolean awaitSettled(long millis)
     {
         long deadline = System.currentTimeMillis() + millis;
 

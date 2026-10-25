@@ -11,7 +11,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.base.LayoutDiagram;
-import org.traincontrol.gui.AutonomyEditorPanel;
+import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.widgets.StationCaption;
 import org.traincontrol.gui.TrainControlUI;
@@ -132,8 +132,8 @@ public class testARememberedNoneOpensWithTheCaptionsOff
     /**
      * The preference the panel restores from, named here rather than reached through the panel.
      *
-     * `AutonomyEditorPanel.VIEW_PREFS` is private, and it is the same node either way -
-     * `userNodeForPackage` of a class in `org.traincontrol.gui`. Writing it from outside is what makes
+     * `AutonomyEditorPanel.VIEW_PREFS` is private, and it is the same node: both are keyed by TrainControlUI, so
+     * this also fails if the editor's settings leave `/org/traincontrol/gui`. Writing it from outside is what makes
      * this test about a REMEMBERED setting: setting the dropdown by hand exercises the listener, which
      * is the path that already worked.
      */

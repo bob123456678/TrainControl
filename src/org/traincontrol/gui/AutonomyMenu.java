@@ -12,6 +12,7 @@ import javax.swing.event.MenuListener;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.gui.autonomy.AutonomyReport;
+import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.util.I18n;
 import org.traincontrol.util.Util;
 

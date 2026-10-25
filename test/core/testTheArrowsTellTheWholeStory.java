@@ -106,7 +106,7 @@ public class testTheArrowsTellTheWholeStory
     {
         allOpen();
 
-        final org.traincontrol.gui.AutonomyEditorPanel panel = panel();
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = panel();
 
         Set<Set<Side>> seen = new LinkedHashSet<>();
 
@@ -320,10 +320,10 @@ public class testTheArrowsTellTheWholeStory
 
         try
         {
-            final org.traincontrol.gui.AutonomyEditorPanel[] other = new org.traincontrol.gui.AutonomyEditorPanel[1];
+            final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[] other = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[1];
 
             javax.swing.SwingUtilities.invokeAndWait(() ->
-                other[0] = new org.traincontrol.gui.AutonomyEditorPanel(kinds.session, "main", () -> { }));
+                other[0] = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(kinds.session, "main", () -> { }));
 
             Set<String> crossing = menuTexts(other[0].buildTileMenu(kinds.crossing, null));
 
@@ -378,10 +378,10 @@ public class testTheArrowsTellTheWholeStory
                     }
                 }
 
-                final org.traincontrol.gui.AutonomyEditorPanel[] panel = new org.traincontrol.gui.AutonomyEditorPanel[1];
+                final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[] panel = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[1];
 
                 javax.swing.SwingUtilities.invokeAndWait(() ->
-                    panel[0] = new org.traincontrol.gui.AutonomyEditorPanel(on, "main", () -> { }));
+                    panel[0] = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(on, "main", () -> { }));
 
                 for (int click = 1; click <= 20; click++)
                 {
@@ -755,7 +755,7 @@ public class testTheArrowsTellTheWholeStory
             assertFalse(frozen.getRoutes(button).isEmpty(), "precondition: the route button at " + button + " carries no"
                 + " track");
 
-            final org.traincontrol.gui.AutonomyEditorPanel panel = panelOn(frozen, "1 - Main");
+            final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = panelOn(frozen, "1 - Main");
 
             // A route button on a line that reaches stations, as 4,14 is on his, drawing its arrows
             TileKey track = null;
@@ -835,7 +835,7 @@ public class testTheArrowsTellTheWholeStory
 
             TileKey[] stray = aPieceOfTrackOnItsOwn(snapshot);
 
-            final org.traincontrol.gui.AutonomyEditorPanel panel = panelOn(frozen, "1 - Main");
+            final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = panelOn(frozen, "1 - Main");
 
             final TileKey square = stray[0];
 
@@ -908,31 +908,31 @@ public class testTheArrowsTellTheWholeStory
         return out;
     }
 
-    private static org.traincontrol.gui.AutonomyEditorPanel panelOn(AutonomySession on, String page) throws Exception
+    private static org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panelOn(AutonomySession on, String page) throws Exception
     {
-        final org.traincontrol.gui.AutonomyEditorPanel[] panel = new org.traincontrol.gui.AutonomyEditorPanel[1];
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[] panel = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[1];
 
-        javax.swing.SwingUtilities.invokeAndWait(() -> panel[0] = new org.traincontrol.gui.AutonomyEditorPanel(on, page,
+        javax.swing.SwingUtilities.invokeAndWait(() -> panel[0] = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(on, page,
             () -> { }));
 
         return panel[0];
     }
 
-    private static org.traincontrol.gui.AutonomyEditorPanel panel() throws Exception
+    private static org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel() throws Exception
     {
-        final org.traincontrol.gui.AutonomyEditorPanel[] panel = new org.traincontrol.gui.AutonomyEditorPanel[1];
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[] panel = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[1];
 
-        javax.swing.SwingUtilities.invokeAndWait(() -> panel[0] = new org.traincontrol.gui.AutonomyEditorPanel(session,
+        javax.swing.SwingUtilities.invokeAndWait(() -> panel[0] = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(session,
             scenario.getPages().get(0).getName(), () -> { }));
 
         return panel[0];
     }
 
     /** A left click on a square, as the editor takes it. */
-    private static void cycle(final org.traincontrol.gui.AutonomyEditorPanel panel, final TileKey square) throws Exception
+    private static void cycle(final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel, final TileKey square) throws Exception
     {
         final java.lang.reflect.Method cycle =
-            org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredMethod("cycle", TileKey.class);
+            org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredMethod("cycle", TileKey.class);
 
         cycle.setAccessible(true);
 

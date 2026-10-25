@@ -507,7 +507,7 @@ public class testTheMenusComeBackAtOneMoment
     {
         try
         {
-            java.lang.reflect.Method rule = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredMethod("fitsOnOneLine", String.class);
+            java.lang.reflect.Method rule = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredMethod("fitsOnOneLine", String.class);
             rule.setAccessible(true);
 
             return (Boolean) rule.invoke(null, text);

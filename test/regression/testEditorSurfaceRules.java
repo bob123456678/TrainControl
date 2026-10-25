@@ -2094,7 +2094,7 @@ public class testEditorSurfaceRules
             menu.add(item);
         }
 
-        org.traincontrol.gui.AutonomyEditorPanel.tidy(menu);
+        org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.tidy(menu);
 
         StringBuilder out = new StringBuilder();
 

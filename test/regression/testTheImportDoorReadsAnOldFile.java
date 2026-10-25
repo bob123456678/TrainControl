@@ -3249,7 +3249,7 @@ public class testTheImportDoorReadsAnOldFile
 
             assertNotNull(second, "precondition: no two stations on one page");
 
-            org.traincontrol.gui.AutonomyEditorPanel shown = openTheEditorFor(ui[0], first, Collections.emptyList());
+            org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel shown = openTheEditorFor(ui[0], first, Collections.emptyList());
 
             assertTrue(shown.isOutlined(first), "the editor opened for a finding that names nothing beside its own does"
                 + " not outline its square, as the editor's own list does (OB-352, RLV10-C3)");
@@ -3299,7 +3299,7 @@ public class testTheImportDoorReadsAnOldFile
 
         // Set, not toggled: the box is remembered in the preferences and a run's copy starts as Adam's own.
         final java.util.prefs.Preferences viewPrefs =
-            org.traincontrol.util.Util.preferencesFor(org.traincontrol.gui.AutonomyEditorPanel.class);
+            org.traincontrol.util.Util.preferencesFor(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class);
 
         final String trainsWas = viewPrefs.get("autonomyEditorTrains", null);
 
@@ -3330,7 +3330,7 @@ public class testTheImportDoorReadsAnOldFile
                     continue;
                 }
 
-                final org.traincontrol.gui.AutonomyEditorPanel panel = openTheEditorFor(ui[0], station, null);
+                final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = openTheEditorFor(ui[0], station, null);
 
                 java.lang.reflect.Field open = TrainControlUI.class.getDeclaredField("openEditor");
                 open.setAccessible(true);
@@ -3448,9 +3448,9 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /** A private field of the editor's panel, by name. */
-    private static Object panelPart(org.traincontrol.gui.AutonomyEditorPanel panel, String name) throws Exception
+    private static Object panelPart(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel, String name) throws Exception
     {
-        java.lang.reflect.Field field = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredField(name);
+        java.lang.reflect.Field field = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredField(name);
 
         field.setAccessible(true);
 
@@ -3458,7 +3458,7 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /** Opens the autonomy editor at a square, as a finding's click does, and waits for it to settle. */
-    static org.traincontrol.gui.AutonomyEditorPanel openTheEditorFor(TrainControlUI ui, TileKey at,
+    static org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel openTheEditorFor(TrainControlUI ui, TileKey at,
         List<TileKey> related) throws Exception
     {
         answeringYes(() -> ui.openAutonomyEditor(at, related));
