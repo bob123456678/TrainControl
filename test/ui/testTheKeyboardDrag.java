@@ -17,32 +17,19 @@ import org.testng.annotations.Test;
 /**
  * Dragging a locomotive from one keyboard key to another.
  *
- * Adam, 2026-09-07, ruling on C26 - which had reported the drag writing the locomotive's name to the
- * system clipboard as an unwanted side effect: **"c26 is deliberate, that is the dragging functionality
- * you implemented on the keyboard. there should be tests to ensure no regression there."**
+ * Adam, on C26 (the drag writing the locomotive's name to the system clipboard): "c26 is deliberate, that is the
+ * dragging functionality you implemented on the keyboard. there should be tests to ensure no regression there."
  *
- * There were none. `setCopyTarget`, `doPaste`, `getSwapTarget` and `clearCopyTarget` between them carry
- * copy, cut, move and swap across fifty pages, and not one line of it was covered - which is how a
- * reviewer came to read a deliberate feature as a defect in the first place. A behavior nothing
- * asserts is a behavior the next reader has to guess at.
+ * `setCopyTarget`, `doPaste`, `getSwapTarget` and `clearCopyTarget` carry copy, cut, move and swap across fifty pages.
+ * The four gestures are asserted through the public surface, on a real window; what they do to the MAPPING is what
+ * matters, since a wrong mapping is a locomotive that answers to somebody else's key.
  *
- * The four gestures are asserted through the public surface, on a real window. What they do to the
- * MAPPING is the thing that matters: the paint follows it, and a wrong mapping is a locomotive that
- * answers to somebody else's key.
+ * **The page is the hard part.** A copy remembers which page it started on, and a paste made after the user has flipped
+ * pages has to clear or swap the SOURCE on its own page rather than on whichever one is showing.
  *
- * **The page is the hard part.** A copy remembers which page it started on, and a paste made after the
- * user has flipped pages has to clear or swap the SOURCE on its own page rather than on whichever one
- * happens to be showing. Every one of these tests that involves the source crossing a page boundary is
- * there because that is the assumption a refactor would quietly drop.
- *
- * **These tests DO write to the system clipboard**, because they exercise the real gesture and the
- * real gesture puts the locomotive name on it - that is C26, and it is deliberate. An earlier version
- * of this comment claimed they avoided it; they never could. What they can do is give it back, so
- * `build` saves whatever text was on the clipboard and restores it afterwards. A non-text clipboard -
- * an image, a file - cannot be restored that way, and nothing here pretends otherwise.
- *
- * No assertion here reads the clipboard. The write itself is pinned in `testEditorSurfaceRules`, where
- * it is a fact about the source rather than about the machine the battery happens to run on.
+ * **These tests DO write to the system clipboard**, because the real gesture puts the locomotive name on it (C26,
+ * deliberate).  `build` saves whatever text was on the clipboard and restores it afterwards; a non-text clipboard
+ * cannot be restored.  No assertion here reads the clipboard: the write itself is pinned in `testEditorSurfaceRules`.
  *
  * @author Adam
  */
@@ -58,11 +45,9 @@ public class testTheKeyboardDrag
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        // A THROWAWAY COPY OF THE LAYOUT, opened before the model is built (OB-111).
-        //
-        // One test in this class already opened a sandbox for itself, which is not the same thing:
-        // `init` reads the layout preference and loads whatever it names, and it runs here - so the
-        // class was reading Adam's real railway before any test method got the chance to redirect it.
+        // A THROWAWAY COPY OF THE LAYOUT, opened before the model is built (OB-111): `init` reads the layout preference
+        // and loads whatever it names, and it runs here, so the class would read Adam's real railway before any test
+        // could redirect it.
         classSandbox = support.LayoutSandbox.open();
 
         model = support.TestStation.simulated();
@@ -80,17 +65,11 @@ public class testTheKeyboardDrag
     }
 
     /**
-     * A copy leaves the source where it is; a cut takes it off at once.
-     *
-     * The difference is the whole of the distinction between the two gestures, and it is made in an
-     * unusual way: `setCopyTarget` performs the cut by nulling `copyTarget` and pasting that null over
-     * the source button, then putting the real one back. So the same statement that arms the drag also
-     * empties the key, and anything that reorders those three lines breaks cut without touching copy -
-     * which a test of copy alone would report as clean.
+     * A copy leaves the source where it is; a cut takes it off at once.  `setCopyTarget` performs the cut by nulling
+     * `copyTarget` and pasting that null over the source button, then putting the real one back, so anything that
+     * reorders those three lines breaks cut without touching copy.
      *
      * MUTATION: dropping the `if (cut)` block leaves the source populated and fails the second half.
-     *
-     * @throws Exception on a failure to build the window
      */
     @Test
     public void testACopyLeavesTheSourceAndACutTakesItOff() throws Exception
@@ -124,16 +103,10 @@ public class testTheKeyboardDrag
     }
 
     /**
-     * A paste puts the locomotive down and disarms the drag.
-     *
-     * `doPaste` ends in `clearCopyTarget`, which is what stops one pick-up becoming many drops. Without
-     * it the next click anywhere on the keyboard would paste again, and the person would have no way to
-     * tell an armed drag from a finished one - `hasCopyTarget` is what the interface asks before it
-     * offers Paste at all.
+     * A paste puts the locomotive down and disarms the drag.  `doPaste` ends in `clearCopyTarget`, which stops one
+     * pick-up becoming many drops; `hasCopyTarget` is what the interface asks before it offers Paste at all.
      *
      * MUTATION: removing the clearCopyTarget call fails the last two assertions.
-     *
-     * @throws Exception on a failure to build the window
      */
     @Test
     public void testAPastePutsItDownAndDisarmsTheDrag() throws Exception
@@ -165,19 +138,11 @@ public class testTheKeyboardDrag
     }
 
     /**
-     * A move empties the key it came from, on THAT key's page.
-     *
-     * The page is the point. `copyTargetPage` is recorded when the drag starts and the clear is applied
-     * to `locMapping.get(copyTargetPage - 1)`, not to whatever page is showing when the paste happens -
-     * and flipping pages mid-drag is the ordinary way to move a locomotive from page one to page three.
-     *
-     * Read the wrong way round, a move across pages empties a key on the destination page: a locomotive
-     * the person never touched disappears, and the one they were moving is left behind on its old key.
-     * Both halves are asserted for that reason.
+     * A move empties the key it came from, on THAT key's page: `copyTargetPage` is recorded when the drag starts and
+     * the clear goes to `locMapping.get(copyTargetPage - 1)`, not to the page showing at paste time.  Read the wrong
+     * way round, a move across pages empties a key on the destination page, so both halves are asserted.
      *
      * MUTATION: using the current page instead of copyTargetPage leaves the source populated.
-     *
-     * @throws Exception on a failure to build the window
      */
     @Test
     public void testAMoveAcrossPagesEmptiesTheKeyItCameFrom() throws Exception
@@ -190,8 +155,7 @@ public class testTheKeyboardDrag
 
         put(ui, 1, keys.get(0), one);
 
-        // Something on the DESTINATION page's copy of the same key, so a clear applied to the wrong
-        // page has a victim rather than writing null over null and looking correct.
+        // Something on the DESTINATION page's copy of the same key, so a clear on the wrong page has a victim.
         put(ui, 2, keys.get(0), two);
 
         ui.setCopyTarget(keys.get(0), false);
@@ -213,18 +177,11 @@ public class testTheKeyboardDrag
     }
 
     /**
-     * A swap sends whatever was under the drop back to where the drag started.
-     *
-     * The exchange, and the one gesture with two writes to get right. `getSwapTarget` is what the
-     * interface shows the person before they commit, so it has to name the same locomotive the paste
-     * will actually move - an affordance describing a different outcome from the action behind it is
-     * this project's most repeated defect.
-     *
-     * Across pages again, for the reason given above.
+     * A swap sends whatever was under the drop back to where the drag started, across pages again.  `getSwapTarget` is
+     * what the interface shows before the person commits, so it has to name the locomotive the paste will actually
+     * move.
      *
      * MUTATION: swapping into the current page rather than copyTargetPage fails the third assertion.
-     *
-     * @throws Exception on a failure to build the window
      */
     @Test
     public void testASwapAcrossPagesExchangesTheTwoKeys() throws Exception
@@ -257,14 +214,8 @@ public class testTheKeyboardDrag
     }
 
     /**
-     * A drag armed on an empty key is not a drag.
-     *
-     * `setCopyTarget` reads the mapping and stores whatever it finds, including null, and the clipboard
-     * write below it is guarded on the result being non-null. `hasCopyTarget` must agree: an armed drag
-     * carrying nothing would let a paste write null over a populated key, which is a delete performed by
-     * a gesture that has no business deleting anything.
-     *
-     * @throws Exception on a failure to build the window
+     * A drag armed on an empty key is not a drag: `hasCopyTarget` must agree with the guarded clipboard write, or a
+     * paste would write null over a populated key, a delete by a gesture that has no business deleting.
      */
     @Test
     public void testDraggingAnEmptyKeyArmsNothing() throws Exception
@@ -287,13 +238,8 @@ public class testTheKeyboardDrag
     // ---------------------------------------------------------------- the fixture
 
     /**
-     * A window with a model behind it.
-     *
-     * The model is set by reflection rather than through setViewListener, which starts the threads a
-     * connected window runs; nothing here needs them and a test that starts them has to stop them.
-     *
-     * @return the window
-     * @throws Exception on a failure to build
+     * A window with a model behind it.  The model is set by reflection rather than through setViewListener, which
+     * starts the threads a connected window runs; nothing here needs them.
      */
     private TrainControlUI build() throws Exception
     {
@@ -302,8 +248,8 @@ public class testTheKeyboardDrag
             throw new org.testng.SkipException("the keyboard is on a window");
         }
 
-        // BEFORE the window: its constructor reads the machine-global layout preference and would
-        // otherwise open Adam's real railway (OB-111).
+        // BEFORE the window: its constructor reads the machine-global layout preference and would open Adam's real
+        // railway (OB-111).
         support.LayoutSandbox sandbox = null;
 
         final TrainControlUI[] built = new TrainControlUI[1];
@@ -324,26 +270,17 @@ public class testTheKeyboardDrag
         f.setAccessible(true);
         f.set(built[0], model);
 
-        // WHATEVER WAS ON THE CLIPBOARD, so the battery can be run without losing it.
-        //
-        // setCopyTarget writes the locomotive name to the system clipboard - deliberately, per Adam -
-        // so exercising the gesture necessarily overwrites it. Saved here and put back by
-        // `giveTheClipboardBack`, which every test calls in a finally.
+        // WHATEVER WAS ON THE CLIPBOARD, so the battery can be run without losing it; put back by
+        // `giveTheClipboardBack`.
         priorClipboard = readClipboard();
 
         return built[0];
     }
 
-    /**
-     * Whatever text was on the system clipboard before a test ran, or null.
-     */
+    /** Whatever text was on the system clipboard before a test ran, or null. */
     private String priorClipboard;
 
-    /**
-     * The clipboard as text, or null when it holds something else or cannot be read.
-     *
-     * @return the text, or null
-     */
+    /** The clipboard as text, or null when it holds something else or cannot be read. */
     private String readClipboard()
     {
         try
@@ -366,11 +303,7 @@ public class testTheKeyboardDrag
         }
     }
 
-    /**
-     * Puts back whatever text the clipboard held before the test.
-     *
-     * Called from a finally in every test, because the gesture under test overwrites it.
-     */
+    /** Puts back whatever text the clipboard held before the test. */
     @org.testng.annotations.AfterMethod(alwaysRun = true)
     public void giveTheClipboardBack()
     {
@@ -390,20 +323,10 @@ public class testTheKeyboardDrag
     }
 
     /**
-     * Three of the keyboard’s locomotive keys, in a stable order.
-     *
-     * Taken from `buttonMapping`, which is the window’s real keyboard - key code to on-screen button,
-     * built in the constructor.  `locMapping` would be the obvious place to look and is the wrong one:
-     * it is empty until a saved state is loaded, because it holds only the keys that have a locomotive.
-     * Reading it gave three tests that skipped straight past their preconditions.
-     *
-     * Sorted by key code so the same three come back in the same order every run - a HashMap’s
-     * iteration order is not a promise, and a test whose source and destination swap between runs fails
-     * intermittently for a reason nobody will find.
-     *
-     * @param ui the window
-     * @return at least three keys
-     * @throws Exception on a reflection failure
+     * Three of the keyboard's locomotive keys, in a stable order.  Taken from `buttonMapping`, the window's real
+     * keyboard built in the constructor: `locMapping` is empty until a saved state is loaded, and reading it gave three
+     * tests that skipped past their preconditions.  Sorted by key code, since a HashMap's iteration order would make
+     * source and destination swap between runs and fail intermittently.
      */
     @SuppressWarnings("unchecked")
     private List<JButton> keysOf(TrainControlUI ui) throws Exception
@@ -434,13 +357,8 @@ public class testTheKeyboardDrag
     }
 
     /**
-     * Puts a locomotive on a key on a given page, without going through the gesture under test.
-     *
-     * @param ui the window
-     * @param page one-based, as the interface numbers them
-     * @param key the button
-     * @param loc the locomotive, or null to empty it
-     * @throws Exception on a reflection failure
+     * Puts a locomotive on a key on a given page (one-based), or empties it with null, without going through the
+     * gesture under test.
      */
     @SuppressWarnings("unchecked")
     private void put(TrainControlUI ui, int page, JButton key, Locomotive loc) throws Exception
@@ -453,17 +371,8 @@ public class testTheKeyboardDrag
     }
 
     /**
-     * What is on a key on a given page.
-     *
-     * Asked of the page directly rather than through getButtonLocomotive, which only ever answers about
-     * whichever page is showing - and which page a write landed on is the question these tests exist to
-     * ask.
-     *
-     * @param ui the window
-     * @param page one-based
-     * @param key the button
-     * @return the locomotive, or null
-     * @throws Exception on a reflection failure
+     * What is on a key on a given page (one-based), asked of the page directly: getButtonLocomotive only answers about
+     * the page showing.
      */
     @SuppressWarnings("unchecked")
     private Locomotive at(TrainControlUI ui, int page, JButton key) throws Exception
@@ -476,14 +385,8 @@ public class testTheKeyboardDrag
     }
 
     /**
-     * Moves the window to a page.
-     *
-     * By the field rather than switchLocMapping, which repaints tabs and selects them; the page NUMBER
-     * is all these tests need and driving the tab strip would make them about the tab strip.
-     *
-     * @param ui the window
-     * @param page one-based
-     * @throws Exception on a reflection failure
+     * Moves the window to a page by the field rather than switchLocMapping, which would make these tests about the tab
+     * strip.
      */
     private void page(TrainControlUI ui, int page) throws Exception
     {
@@ -499,21 +402,15 @@ public class testTheKeyboardDrag
         if (count.getInt(ui) < page) count.setInt(ui, page);
     }
 
-    /**
-     * A locomotive to drag, made once and reused.
-     *
-     * @param name one of TEST_LOCS
-     * @return the locomotive
-     */
+    /** A locomotive to drag, made once and reused. */
     private MarklinLocomotive loco(String name)
     {
         MarklinLocomotive existing = model.getLocByName(name);
 
         if (existing != null) return existing;
 
-        // MM2, and an address well clear of anything on a track diagram.  The real locomotive
-        // database is open here, so the address matters: one already in use would hand back somebody
-        // else’s locomotive and these tests would be dragging Adam’s trains around.
+        // MM2, and an address well clear of anything on a track diagram: the real database is open here, and an address
+        // in use would hand back somebody else's locomotive.
         int address = 240 + java.util.Arrays.asList(TEST_LOCS).indexOf(name);
 
         return model.newMM2Locomotive(name, address);
