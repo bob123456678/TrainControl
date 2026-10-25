@@ -8,16 +8,13 @@ import org.traincontrol.base.TileSelection;
 /**
  * The arithmetic behind selecting and dragging a group of squares in the diagram editor.
  *
- * Tested apart from the editor because this is the half that goes wrong quietly.  A gesture that
- * selects the wrong square is obvious the moment it happens; a drag that pushes two squares off the
- * edge of the diagram, or a copy that takes a shape with holes in it, is not noticed until somebody
- * looks for track that is no longer there.
+ * Tested apart from the editor because this is the half that goes wrong quietly: a drag that pushes squares off the
+ * edge of the diagram, or a copy that takes a shape with holes in it, is not noticed until somebody looks for track
+ * that is no longer there.
  */
 public class testTileSelection
 {
-    /**
-     * Picking is a toggle, so the same gesture corrects itself.
-     */
+    /** Picking is a toggle, so the same gesture corrects itself. */
     @Test
     public void testPickingTwiceUnpicks()
     {
@@ -70,9 +67,8 @@ public class testTileSelection
             "a box dragged up and to the left must select what the same box dragged down and to the "
             + "right does");
 
-        // Floor: without this, addRectangle producing nothing would leave both sizes at 0 - the
-        // equality above would hold and the loop below would run zero times, proving nothing about
-        // which squares actually got selected.
+        // Floor: without this, addRectangle producing nothing would leave both sizes at 0 and the loop below running
+        // zero times.
         assertFalse(forwards.isEmpty(), "precondition: the box must actually select some squares");
 
         for (TileSelection.At at : forwards.all())
@@ -110,10 +106,8 @@ public class testTileSelection
     }
 
     /**
-     * A group dragged past the edge is refused WHOLE, rather than clipped.
-     *
-     * Clipping would silently drop track off the side of the diagram: the user drags a yard two squares
-     * left, one column of it ceases to exist, and nothing says so.
+     * A group dragged past the edge is refused WHOLE, rather than clipped: clipping would silently drop track off the
+     * side of the diagram.
      */
     @Test
     public void testAGroupThatWouldLeaveTheDiagramIsRefused()
@@ -133,12 +127,7 @@ public class testTileSelection
             "and five down runs off the bottom");
     }
 
-    /**
-     * A copy takes the bounding box, holes included.
-     *
-     * Copying only the picked squares would paste a shape with gaps in it, and a piece of railway with
-     * gaps is not the piece the user pointed at.
-     */
+    /** A copy takes the bounding box, holes included: a shape with gaps is not the piece the user pointed at. */
     @Test
     public void testTheBoundsCoverTheWholeShapeIncludingGaps()
     {
@@ -269,12 +258,8 @@ public class testTileSelection
     }
 
     /**
-     * The grip sits at the top right of what is picked.
-     *
-     * With picking switched on every drag draws a new box - that is what the mode is - so the
-     * "start a drag on a picked square" gesture could not be reached without turning the mode off
-     * first, which works and which nobody would guess.  One square of the selection is a grip
-     * instead, and where it is has to be somewhere a user can predict.
+     * The grip sits at the top right of what is picked.  With picking switched on every drag draws a new box, so one
+     * square of the selection is a grip instead, and where it is has to be somewhere a user can predict.
      */
     @Test
     public void testTheGripIsTheTopRightCorner()
@@ -288,11 +273,8 @@ public class testTileSelection
     }
 
     /**
-     * And it does not care which corner the box was dragged out from.
-     *
-     * A rectangle dragged up and to the left is the same rectangle, so its grip is in the same place
-     * - otherwise the control moves depending on how the selection happened to be made, which is the
-     * one thing a grip must not do.
+     * And it does not care which corner the box was dragged out from, or the control would move depending on how the
+     * selection was made.
      */
     @Test
     public void testTheGripDoesNotDependOnHowTheBoxWasDrawn()
@@ -308,11 +290,8 @@ public class testTileSelection
     }
 
     /**
-     * An L-shaped selection has an empty corner, and the grip goes there anyway.
-     *
-     * The corner of the BOX rather than the top right picked square: being able to grab the corner
-     * of the rectangle you can see is worth more than the grip always sitting on something chosen,
-     * and every square in the editor answers a drag whether or not it holds track.
+     * An L-shaped selection has an empty corner, and the grip goes there anyway: the corner of the BOX, since every
+     * square in the editor answers a drag.
      */
     @Test
     public void testTheGripIsTheCornerOfTheBoxNotOfTheSquares()
