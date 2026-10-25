@@ -95,15 +95,8 @@ public class AutoJSONExport extends javax.swing.JPanel
 
     private void jsonSaveAsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jsonSaveAsActionPerformed
 
-        // THE CHOOSER IS ON THE EVENT THREAD.
-        //
-        // The whole handler ran inside `new Thread(...)` and opened a modal JFileChooser there, with
-        // the error dialog and the button re-enable on the same thread. This is the shape OB-137 was
-        // reported for, one class over - and the guard written for OB-137 read a single file, so it
-        // could not see this one.
-        //
-        // An action handler is already on the event thread, so the chooser needs no marshalling. Only
-        // the write goes off it.
+        // THE CHOOSER IS ON THE EVENT THREAD: an action handler already is, so it needs no marshalling (the shape
+        // OB-137 was reported for, one class over).  Only the write goes off it.
         JFileChooser fc = this.tcui.getFileChooser(JFileChooser.FILES_ONLY, extension);
 
         fc.setSelectedFile(new File("TC_" + prefix + "_"
