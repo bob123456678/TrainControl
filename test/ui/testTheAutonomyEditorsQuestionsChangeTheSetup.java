@@ -39,12 +39,9 @@ import support.Components;
  * The autonomy editor's questions, answered as the user answers them, and what each answer leaves in the setup once the
  * editor's Save has written it (FR-136 Phase 6).
  *
- * The Bulk Tools that ask before they act - Home All Trains Where They Stand, Clear All Home Locomotives, Place All Trains
- * at Their Homes - answered Yes and No; and a square's own questions: its speed multiplier, the locomotives kept out of
- * it, its home locomotive, and taking its train off.  Each claim opens the editor afresh on the frozen railway, picks the
- * item from the menu the editor builds, answers the real dialog, presses Save, and reads the setup back from disk.
- *
- * ON THE FROZEN RAILWAY, never `cs2_sample_layout` (OB-111).  Between claims the setup is put back as it opened.
+ * Each claim opens the editor afresh on the frozen railway (never `cs2_sample_layout`, OB-111), picks the item from the
+ * menu the editor builds, answers the real dialog, presses Save, and reads the setup back from disk.  Between claims
+ * the setup is put back as it opened.
  *
  * @author Adam
  */
@@ -115,7 +112,7 @@ public class testTheAutonomyEditorsQuestionsChangeTheSetup
         {
             session.restoreSetup(asOpened);
 
-            // every train named, so the railway stands each where the setup has it rather than where the last claim left it
+            // every train named, so the railway stands each where the setup has it, not where the last claim left it
             Set<String> trains = new LinkedHashSet<>(session.placementsAutonomyWillWrite().values());
 
             trains.addAll(session.homesToPlace().values());
@@ -574,9 +571,9 @@ public class testTheAutonomyEditorsQuestionsChangeTheSetup
     }
 
     /**
-     * Opens the station's Exit Guard Signal window from its menu, presses By Address and types this, then presses Done
-     * once every question has been answered and the window lists as many signals as expected (or three seconds later).  The window is a dialog of
-     * the editor's own, so it is driven here; its address question and its refusals are plain ones, which `Answering`
+     * Opens the station's Exit Guard Signal window from its menu, presses By Address, types this, then presses Done
+     * once every question has been answered and the window lists as many signals as expected (or three seconds later).
+     * The window is a dialog of the editor's own, so it is driven here; its questions are plain ones, which `Answering`
      * takes.
      *
      * @param questions how many questions the address brings: its own, and a refusal if there is one
@@ -630,8 +627,8 @@ public class testTheAutonomyEditorsQuestionsChangeTheSetup
 
                             if (answeredAt[0] == 0) answeredAt[0] = System.currentTimeMillis();
 
-                            // DONE ONCE THE LIST SHOWS THE ANSWER, or after three seconds if it never does: then the claim
-                            // reads what was kept, rather than this waiting for a list that is not coming
+                            // Done once the list shows the answer, or after three seconds: then the claim reads what
+                            // was kept, rather than waiting for a list that is not coming
                             if (listed == expected || System.currentTimeMillis() - answeredAt[0] > 3000)
                             {
                                 Components.press(Components.withText(window, I18n.t("autosetup.ui.optionSignalsDone")));
@@ -712,7 +709,7 @@ public class testTheAutonomyEditorsQuestionsChangeTheSetup
             }
         }
 
-        // ITS ADDRESS ITS OWN, so the address names this signal and no other
+        // Its address its own, so the address names this signal and no other
         for (List<TileKey> carrying : byAddress.values())
         {
             if (carrying.size() == 1 && PAGE.equals(carrying.get(0).getPage())) return carrying.get(0);
@@ -891,8 +888,8 @@ public class testTheAutonomyEditorsQuestionsChangeTheSetup
     }
 
     /**
-     * Picks this locomotive in the list of the question on screen, then presses OK: the list is part of the question's
-     * own panel, which `Answering` does not type into.
+     * Picks this locomotive in the list of the question on screen, then presses OK (`Answering` does not type into the
+     * list).
      */
     private static Function<String, Answering.Answer> choosing(final String name)
     {
