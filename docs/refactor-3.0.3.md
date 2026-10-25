@@ -559,6 +559,18 @@ release?").  The pre/post-compaction experiment built FR-109 four times (branche
 as those sit on 3.0.3's code; rebase it onto dev after 3.0.3 ships, fix what the grader found (untested autonomy-mode
 path, the run refusal through the editor, the unsaved-work wording), then the usual review, Readme line and MT.
 
+**Next release: shorter messages and tooltips** (Adam, 2026-10-24: "shorten error messages and tooltips across the
+app to be more concise?  I've seen some massive popups in tests").  The English bundle has 2,069 keys; 52 values shown
+to the user run past 40 words (the longest after the route editor's help: 76, 63 and 61 words, all setup-check
+findings), confirmations have a median of 20 words, warnings 17, errors 10, tooltips 13.  Some popups are also composed
+in code from several keys and lists, which the bundle count does not see.
+- Step 1, measure what the user sees: record every dialog's text, its key(s) and its size during a battery (through the
+  tests' dialog answerer), plus every tooltip, and rank them by length.
+- Step 2, for Adam's approval: the target shape (the reason and the remedy, about 25 words for a popup, 15 for a
+  tooltip; details to the log or a Details button) and about 20 sample rewrites from the top of the list.
+- Step 3: rewrite to the approved shape, English first, then all 7 translations in the same commit; tests that pin a
+  text follow it.  A ratchet test then caps words per kind of message.
+
 **Next release: from the 3.0.3 validator (RSA76)**
 - C5: the editor's Test a Path still starts a station facing every way, while DD-B9's findings start from its stopping
   copies only, so at a station whose stopping copy cannot leave it can draw a path the findings say is not there.  Make
