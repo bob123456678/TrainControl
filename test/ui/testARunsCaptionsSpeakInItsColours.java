@@ -25,12 +25,10 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
  * A running route's captions speak the route's colors, its destination is a warm yellow, and the Auto tab's station
- * badge is the captions' blue (Adam, 2026-10-09: "Build 2,3,5,6" - the diagram look proposals' second, third and
- * sixth), asked of the real window on his frozen railway with a run staged part way along its route.
- *
- * The colors themselves are claimed beside the pill (`ui.testDiagramLooksRight`); this asks the place that chooses
- * them for a running train - `TrainControlUI.updateStationLabels` - because a rule tested apart from its caller says
- * nothing about whether the caller asks it.
+ * badge is the captions' blue (Adam: "Build 2,3,5,6", the diagram look proposals), asked of the real window on his
+ * frozen railway with a run staged part way along its route.  The colors themselves are claimed beside the pill
+ * (`ui.testDiagramLooksRight`); this asks `TrainControlUI.updateStationLabels`, since a rule tested apart from its
+ * caller says nothing about the caller.
  */
 public class testARunsCaptionsSpeakInItsColours
 {
@@ -53,8 +51,8 @@ public class testARunsCaptionsSpeakInItsColours
     }
 
     /**
-     * The darker blue the window's own labels are written in: the program's `HEADING_COLOUR`, which the Auto tab's
-     * `TAB_BLUE` is.  Asked rather than restated, so a change of the labels' blue is followed by the tab.
+     * The darker blue the window's own labels are written in (`HEADING_COLOUR`, which the Auto tab's `TAB_BLUE` is),
+     * asked rather than restated.
      */
     private static final Color LABEL_BLUE =
         support.ProgramConstants.colour(org.traincontrol.gui.AutonomyViewerPanel.class, "HEADING_COLOUR");
@@ -63,14 +61,12 @@ public class testARunsCaptionsSpeakInItsColours
     private static final String MOVER = "2-8-4 3505 SP";
 
     /**
-     * Staged on the frozen railway: 2-8-4 3505 SP from TopMainR2Inter to TopMainR1, with 75 407 DB standing at BottomMainA,
-     * past its first sensor, then held there - simulation switched off once the run is waiting for that sensor, so the next
-     * never comes.
+     * Staged on the frozen railway: 2-8-4 3505 SP from TopMainR2Inter to TopMainR1, with 75 407 DB standing at
+     * BottomMainA past its first sensor, then held there: simulation is switched off once the run is waiting for that
+     * sensor.
      *
      * MUTATION: put the old yellow back on a destination, or the old red on a station not yet reached, or the navy on
      * the Auto tab's badge, and this fails.
-     *
-     * @throws Exception from the window or the railway
      */
     @Test
     @SuppressWarnings("unchecked")
@@ -90,7 +86,7 @@ public class testARunsCaptionsSpeakInItsColours
 
             sandbox.simulated();
 
-            // ITS TRAINS, NAMED (FR-136): where his trains stand is working state.  The run, and one train standing by.
+            // ITS TRAINS, NAMED (FR-136): the run, and one train standing by.
             sandbox.withNoTrains()
                 .standing(new org.traincontrol.automationui.TileGraph.TileKey("1 - Main", 0, 11), MOVER, "E", "N")
                 .standing(new org.traincontrol.automationui.TileGraph.TileKey("1 - Main", 20, 12), "75 407 DB", "E", "W");
@@ -98,8 +94,8 @@ public class testARunsCaptionsSpeakInItsColours
             model = support.TestStation.simulatedWithWindowInDebug();
             model.setNetworkCommState(false);
 
-            // ITS TRAINS' LENGTHS, CLEARED: a length is the database's working state, and his 3505 SP of four units
-            // cannot stop at TopMainR1 (room for three).  A claim about colors keeps the length rule out.
+            // ITS TRAINS' LENGTHS, CLEARED: his 3505 SP of four units cannot stop at TopMainR1 (room for three), and a
+            // claim about colors keeps the length rule out.
             for (String name : new String[] {MOVER, "75 407 DB"})
             {
                 Locomotive borrowed = model.getLocByName(name);
@@ -219,8 +215,8 @@ public class testARunsCaptionsSpeakInItsColours
             {
                 Color fill = pill.getBackground(), text = pill.getForeground();
 
-                // THE TRAIN'S LINE AS IT SHOWS ON WHITE, SOLID (Adam, 2026-10-09: "Make the yellow labels (trains on their
-                // way somewhere) have the same orange background color as occupied train tiles, just without the fading",
+                // THE TRAIN'S LINE AS IT SHOWS ON WHITE, SOLID (Adam: "Make the yellow labels (trains on their way
+                // somewhere) have the same orange background color as occupied train tiles, just without the fading",
                 // then "Go with as the line actually looks on white")
                 if (sameInk(fill, DiagramColours.DESTINATION) && fill.getAlpha() == 255) destination = pill;
                 if (rgb(fill, 255, 214, 64)) warmYellow++;
@@ -246,9 +242,9 @@ public class testARunsCaptionsSpeakInItsColours
 
             assertTrue(ahead > 0, "no caption along " + mover.getName() + "'s run is in the route's blue");
 
-            // THE AUTO TAB'S BADGE AND TEXT, the window's label blue (Adam, 2026-10-09: "On the Autonomy Locomotive
-            // Commands tab, match the color of the text and pills to the darker blue used on text labels"): every card
-            // whose badge is neither idle gray nor the home teal, and every destination not written in red
+            // THE AUTO TAB'S BADGE AND TEXT, the window's label blue (Adam: "match the color of the text and pills to
+            // the darker blue used on text labels"): every card whose badge is neither idle gray nor home teal, and
+            // every destination not in red
             List<AutoLocomotiveStatus> cards = new ArrayList<>();
 
             collect(ui.getContentPane(), cards);
@@ -314,14 +310,10 @@ public class testARunsCaptionsSpeakInItsColours
     }
 
     /**
-     * An empty station's dash is drawn dimmer than a name on the running diagram, as the diagram's own rule for a
-     * placeholder says (D1 of the look's design pass; Adam, 2026-10-09: "Do D1 and D2").  `StationCaption.onPill` dims a
-     * placeholder, and the editors ask it with the placeholder gray; the running diagram asked it with black, so the dash
-     * was as loud as a train's name.
+     * An empty station's dash is drawn dimmer than a name on the running diagram (D1 of the look's design pass; Adam:
+     * "Do D1 and D2"): `StationCaption.onPill` dims a placeholder, and the running diagram asked it with black.
      *
      * MUTATION: color the dash black again and this fails.
-     *
-     * @throws Exception from the window or the railway
      */
     @Test
     @SuppressWarnings("unchecked")
