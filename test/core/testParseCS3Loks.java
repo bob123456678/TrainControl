@@ -13,6 +13,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinLocomotive;
 import static org.traincontrol.marklin.file.CS2File.fetchURL;
 import static org.traincontrol.marklin.file.CS2File.parseFile;
@@ -356,5 +357,35 @@ public class testParseCS3Loks
 
         assertTrue(traktion.contains("lokname=Ordinary Name"),
             "control: the ordinary member must still be present: " + traktion);
+    }
+
+    /**
+     * One function list, read twice: the "typ" answer and the trigger answer (a "dauer", else pulse for
+     * typ 128 and up, else toggle) must agree on which slot is which, over gaps, and a malformed "dauer"
+     * fails only the trigger answer.
+     *
+     * MUTATION: the trigger answer reading "dauer" into the wrong slot, or the "typ" answer reading "dauer".
+     */
+    @Test
+    public void testASparseFunctionListIsReadByTypeAndByTrigger()
+    {
+        String sparse = "{nr=0,typ=1}|{nr=3,typ=129}|{nr=5,typ=2,dauer=250}";
+
+        assertEquals(CS2File.parseLocomotiveFunctions(sparse), new int[] {1, 0, 0, 129, 0, 2},
+            "the types, each in the slot of its function number, the gaps left at zero");
+
+        assertEquals(CS2File.parseFunctionTriggerTypes(sparse),
+            new int[] {Locomotive.FUNCTION_TOGGLE, 0, 0, Locomotive.FUNCTION_PULSE, 0, 250},
+            "the triggers over the same slots: toggle, pulse for typ 128 and up, and the stated duration");
+
+        assertEquals(CS2File.parseLocomotiveFunctions("{nr=0,typ=1,dauer=x}"), new int[] {1},
+            "a malformed dauer is not the types' business");
+
+        try
+        {
+            CS2File.parseFunctionTriggerTypes("{nr=0,typ=1,dauer=x}");
+            fail("a malformed dauer must still escape the trigger answer as a NumberFormatException");
+        }
+        catch (NumberFormatException expected) {}
     }
 }

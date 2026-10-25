@@ -1081,6 +1081,20 @@ public final class CS2File
      */
     public static int[] parseLocomotiveFunctions(String functionList)
     {
+        return parseFunctionList(functionList, false);
+    }
+
+    public static int[] parseFunctionTriggerTypes(String functionList)
+    {
+        return parseFunctionList(functionList, true);
+    }
+
+    /**
+     * Slot n holds function n's "typ", or with triggerTypes its "dauer" (else pulse for typ 128 and up, toggle).
+     * "dauer" is read only for triggerTypes, so a malformed one never fails the "typ" answer.
+     */
+    private static int[] parseFunctionList(String functionList, boolean triggerTypes)
+    {
         // Sanity check in case no functions are specified in the CS2 file
         if (functionList == null || functionList.isEmpty())
         {
@@ -1093,64 +1107,6 @@ public final class CS2File
         // entry count only bounds how many are listed.  A CS2 file may list functions sparsely, and
         // indexing an entry-count-sized array by function number then threw - which escaped
         // parseLocomotives and aborted the entire Central Station sync for one bad locomotive.
-        Map<Integer, Integer> parsed = new HashMap<>();
-        int highest = -1;
-
-        // Loop through each function
-        for (String functionInfo : data)
-        {
-            int fn = 0;
-            int type = 0;
-
-            // Loop through the keys in each function
-            for (String functionItem : functionInfo.split(","))
-            {
-                // A key with no value would otherwise run off the end of the array below
-                if (!functionItem.contains("=")) continue;
-
-                String[] item = functionItem.split("=");
-
-                if ("nr".equals(item[0]))
-                {
-                    fn = Integer.parseInt(item[1]);
-                }
-                else if ("typ".equals(item[0]))
-                {
-                    type = Integer.parseInt(item[1]);
-                }
-            }
-
-            if (fn >= 0)
-            {
-                parsed.put(fn, type);
-
-                if (fn > highest) highest = fn;
-            }
-        }
-
-        // At least data.length, so a contiguous list returns exactly what it always did
-        int[] output = new int[Math.max(data.length, highest + 1)];
-
-        for (Map.Entry<Integer, Integer> function : parsed.entrySet())
-        {
-            output[function.getKey()] = function.getValue();
-        }
-
-        return output;
-    }
-
-    public static int[] parseFunctionTriggerTypes(String functionList)
-    {
-        // Sanity check in case no functions are specified in the CS2 file
-        if (functionList == null || functionList.isEmpty())
-        {
-            return new int[0];
-        }
-
-        String[] data = functionList.replace("{", "").replace("}", "").split("\\|");
-
-        // Collected first - see parseLocomotiveFunctions above for why the array cannot be sized by the
-        // number of entries
         Map<Integer, Integer> parsed = new HashMap<>();
         int highest = -1;
 
@@ -1177,7 +1133,7 @@ public final class CS2File
                 {
                     type = Integer.parseInt(item[1]);
                 }
-                else if ("dauer".equals(item[0]))
+                else if (triggerTypes && "dauer".equals(item[0]))
                 {
                     dauer = Integer.parseInt(item[1]);
                 }
@@ -1185,12 +1141,14 @@ public final class CS2File
 
             if (fn >= 0)
             {
-                parsed.put(fn, dauer > 0 ? dauer : (type >= 128 ? Locomotive.FUNCTION_PULSE : Locomotive.FUNCTION_TOGGLE));
+                parsed.put(fn, !triggerTypes ? type
+                        : dauer > 0 ? dauer : (type >= 128 ? Locomotive.FUNCTION_PULSE : Locomotive.FUNCTION_TOGGLE));
 
                 if (fn > highest) highest = fn;
             }
         }
 
+        // At least data.length, so a contiguous list returns exactly what it always did
         int[] output = new int[Math.max(data.length, highest + 1)];
 
         for (Map.Entry<Integer, Integer> function : parsed.entrySet())
