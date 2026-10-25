@@ -94,10 +94,15 @@ By script, at the start, before other branches are open: `git mv`, package and i
   comment-only by `comment-strip-compare.py` (bytecode for src, tokens for tests), with the history pin lowered from 120
   to 106 and the long-block pin from 26 to 25.  A few files already under about 15% comments were left as they are.
 - The duplicated-code ratchet test (Java port of `dupscan.py`'s tokenizer), and the approved pre-2.7.0 merges.
-- behaviour.md split by area, with a short index; citations updated in the same commit.
+- behaviour.md split by area, with a short index; citations updated in the same commit.  Done (`606d2c2a`..
+  `6d1a8116`): 14 area files in `docs/reference/behaviour/`, `behaviour.md` kept at its path as the index because the
+  tracker and old reviews cite it; `docs/tools/behaviour-split-proof.py` shows all 139 tracker ids and 262 of Adam's
+  quotes kept.  `testCommentsStayLean` counts `test/` too, under pins of its own (`eb7e4f4a`, then 53 and 3).
 - Builder tooling: `newtest.py`, `redgreen.sh`, `env.sh`, a watchdog for a dialog nobody answers, an affected-classes
   helper; the CLAUDE.md lessons from the FR-109 experiment.
-- RSA76-C6, C10 and D7: claims driven by the user's gesture, an independent oracle for the reach claim.
+- RSA76-C6, C10 and D7: claims driven by the user's gesture, an independent oracle for the reach claim.  Done
+  (`9799c527`..`68ceff2a`, `9864e1dc`), except Add Blank Page and Rename during a run: they ask the name before the
+  refusal, in code from before 2.7.0, so their claim still calls the handler.
 - The JaCoCo rerun, outside the repository.
 
 ## 5. Release
