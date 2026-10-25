@@ -4405,10 +4405,8 @@ public class AutonomySession
     }
 
     /**
-     * Whether trains may turn round on this square.  Reads the older keys as well as the current one: a setup authored
-     * before the three switches said the same things as "terminus" and "reversing", now DERIVED, and would quietly lose
-     * its termini the first time it was rebuilt.  Nothing is rewritten on disk; the first edit to a square writes the
-     * new spelling.
+     * Whether trains may turn round on this square, reading the older "terminus" and "reversing" keys too, or an older
+     * setup would lose its termini at the first rebuild.  The first edit writes the new spelling.
      */
     public boolean isTurnAround(TileKey tile)
     {
@@ -4416,33 +4414,27 @@ public class AutonomySession
 
         if (Boolean.TRUE.equals(getPointProperty(tile, AutonomyBuilder.CAN_REVERSE))) return true;
 
-        // a terminus was always "a station where trains turn round" - so on a square that is not a station now it turns
-        // nothing round: demoting keeps the flag for when the square is promoted again
+        // A terminus turns trains only while the square is a station; the flag is kept for promotion
         if (store.isStation(tile) && Boolean.TRUE.equals(getPointProperty(tile, "terminus"))) return true;
 
-        // a reversing point that is NOT a station was "somewhere trains turn round on the way past"
+        // A non-station "reversing" point turned trains on the way past
         return Boolean.TRUE.equals(getPointProperty(tile, "reversing")) && !store.isStation(tile);
     }
 
-    /**
-     * Whether this station is a parking berth: somewhere autonomy never sends a train of its own accord, and cannot
-     * route one through.
-     */
+    /** Whether this station is a parking berth: never chosen by autonomy, never routed through. */
     public boolean isParking(TileKey tile)
     {
         if (!store.isStation(tile)) return false;
 
-        // the switch as it is stored now: written only when it is off, like every other default
+        // The switch as stored now (written only when off), then the older "parking", then a reversing STATION
         if (Boolean.FALSE.equals(getPointProperty(tile, AutonomyBuilder.AUTO_DESTINATION))) return true;
 
-        // the older spelling, "parking"
         if (Boolean.TRUE.equals(getPointProperty(tile, AutonomyBuilder.PARKING))) return true;
 
-        // and the oldest: a reversing STATION
         return Boolean.TRUE.equals(getPointProperty(tile, "reversing"));
     }
 
-    /** Whether full autonomy may choose this station of its own accord: the switch the user sees. */
+    /** Whether full autonomy may choose this station: the switch the user sees. */
     public boolean isAutoDestination(TileKey tile)
     {
         return !isParking(tile);
@@ -4456,16 +4448,12 @@ public class AutonomySession
         setPointProperty(tile, "reversing", null);
     }
 
-    /**
-     * Sets one of the three switches (key CAN_REVERSE or PARKING), clearing the older spellings so a square cannot say
-     * one thing in two vocabularies.
-     */
+    /** Sets one of the three switches (CAN_REVERSE or PARKING), clearing the older spellings. */
     public void setPointFlag(TileKey tile, String key, boolean on)
     {
         setPointProperty(tile, key, on ? Boolean.TRUE : null);
 
-        // Never authored again: derived at build time now, and one left behind would keep asserting itself after the
-        // switch that set it was turned off.
+        // Derived at build now; one left behind would outlive the switch that set it.
         setPointProperty(tile, "terminus", null);
         setPointProperty(tile, "reversing", null);
     }
@@ -4483,9 +4471,7 @@ public class AutonomySession
         return builder(globals()).withCoordinatesFromTiles(pageOrder).build();
     }
 
-    /**
-     * The per-point operational data of the active configuration, for the builder to merge in.
-     */
+    /** The per-point operational data of the active configuration, for the builder to merge in. */
     private Map<String, org.json.JSONObject> pointExtras()
     {
         Map<String, org.json.JSONObject> out = new LinkedHashMap<>();
@@ -4509,12 +4495,9 @@ public class AutonomySession
     }
 
     /**
-     * Lifts what the running layout knows into the active configuration (placements, homes, termini, pace settings), so
-     * that what was set while trains were running loads next time.  Takes the layout's own JSON rather than the layout:
-     * `toJSON` is the serialization the legacy path trusted, so anything it captures is loadable, and a string can be
-     * tested without a control station.  Keyed by tile, so a Point renamed between sessions keeps its placements;
-     * Points whose names match no tile belong to track that no longer exists and are dropped silently.
-     *
+     * Lifts what the running layout knows into the active configuration (placements, homes, termini, pace), so what was
+     * set while running loads next time.  Takes `toJSON`'s output, the trusted serialization.  Keyed by square, so a
+     * renamed Point keeps its placements; names matching no square are dropped.
      * @param layoutJson what the running Layout serialized to
      */
     public void captureFromLayout(String layoutJson)
@@ -4523,10 +4506,7 @@ public class AutonomySession
     }
 
     /**
-     * The same, into a named configuration, for callers that know which one the running layout was generated from: a
-     * load refused partway leaves the store pointing at a configuration that never ran, and capturing into it would
-     * overwrite it with another configuration's state.
-     *
+     * The same, into a named configuration: after a refused load the store's active one never ran.
      * @param layoutJson what the running Layout serialized to
      * @param configurationName which configuration this layout's state belongs to
      */
@@ -4536,10 +4516,7 @@ public class AutonomySession
     }
 
     /**
-     * The same, bringing the window's record of how the railway was built up to date (OB-343): the fold writes every
-     * setting the railway has into the setup, so the record, what they last agreed on, is the railway's settings as
-     * they stand (see `captureTheRailwaysSettings`).
-     *
+     * The same, bringing the record of how the railway was built up to what the fold wrote (OB-343).
      * @param layoutJson what the running Layout serialized to
      * @param configurationName which configuration this layout's state belongs to
      * @param asBuilt the railway's settings as it was built, changed in place to what the fold wrote; or null
@@ -4550,23 +4527,15 @@ public class AutonomySession
     }
 
     /**
-     * `captureFromLayout` above, and the placements half of `captureWhatTheRailwayOwns`: each square's train, the side
-     * and road of its tail, and the facing of the copy it stands on.
-     *
-     * @param layoutJson what the running Layout serialized to
-     * @param configurationName which configuration this layout's state belongs to
-     * @param placementsOnly whether to write where the trains stand and nothing else
+     * `captureFromLayout`, or with `placementsOnly` just each square's train, its tail's side and road, and its facing.
      * @param asBuilt the railway's settings as it was built, changed in place to the settings written; or null
      */
     private void capture(String layoutJson, String configurationName, boolean placementsOnly, org.json.JSONObject asBuilt)
     {
         if (layoutJson == null || reducer == null || configurationName == null) return;
 
-        // Not after a rename (MT-135): this works out its tile keys from THIS session's naming, which a rename has made
-        // stale (the store is rekeyed, the graph, reducer and page objects still carry the old name), so every
-        // placement would be written a second time under the old name, and a locomotive in two places fails the whole
-        // setup.  Refused rather than repaired, losing nothing: the rename has written the store through
-        // saveWithoutReconciling and is refused while autonomy runs, and the session is about to be rebuilt.
+        // Not after a rename or move (MT-135): this session's naming is stale and would place every train twice.
+        // Nothing is lost: the store was written and the session is about to be rebuilt.
         if (pagesStale || squaresMoved) return;
 
         org.json.JSONObject configuration = store.getConfiguration(configurationName);
@@ -4593,9 +4562,7 @@ public class AutonomySession
             {
                 org.json.JSONObject point = (org.json.JSONObject) o;
 
-                // BY THE SQUARE THE RUNNING POINT IS A COPY OF, where it names one this diagram has, not by its name
-                // through today's naming: a page ticked out, or a name moved to another square, changes it after the
-                // railway is built.
+                // By the square the running Point copies, not today's naming of its name, which may have moved.
                 TileKey tile = squareOf(point, diagram);
 
                 if (tile == null) tile = tilesByName.get(point.optString("name"));
@@ -4608,9 +4575,7 @@ public class AutonomySession
                 {
                     if (!point.has(key) || point.isNull(key)) continue;
 
-                    // A placement records WHICH locomotive stands here and nothing else: `Point.toJSON` also writes
-                    // length, reversibility, speed and functions, which parseAuto applies back onto the Locomotive, so
-                    // capturing them would silently revert changes made in the locomotive UI (they live in LocDB).
+                    // Only WHICH locomotive: `Point.toJSON`'s length, speed and functions would revert LocDB edits.
                     if ("loc".equals(key) && point.get(key) instanceof org.json.JSONObject)
                     {
                         org.json.JSONObject loc = point.getJSONObject(key);
@@ -4622,16 +4587,13 @@ public class AutonomySession
                         continue;
                     }
 
-                    // A TAIL BELONGS TO THE COPY THE TRAIN STANDS ON: the build writes a square's side and road onto
-                    // every copy and a train leaving clears only its own, so read from the others a departed train's
-                    // tail would go back into the setup, for whatever stood there next.
+                    // A tail belongs to the copy the train stands on; the other copies keep a departed train's.
                     if (("arrivedFrom".equals(key) || "arrivedAlong".equals(key)) && !point.has("loc")) continue;
 
                     extras.put(key, point.get(key));
                 }
 
-                // Which way the train ended up pointing, learned rather than asked for: the copy's own facing where the
-                // running layout says it; else the naming's, for a name it still gives that square.
+                // The facing: the copy's own where the railway says, else the naming's.
                 TilePorts.Side facing = sideNamed(point.optString(AutonomyBuilder.COPY_FACING, null));
 
                 if (facing == null && tile.equals(tilesByName.get(point.optString("name"))))
@@ -4644,19 +4606,14 @@ public class AutonomySession
                     extras.put(AutonomyBuilder.FACING, facing.name());
                 }
 
-                // AND THE FACING OF A HOME THE RUNNING LAYOUT HOLDS TO ITS COPY (OB-282) - one set from the running
-                // diagram, which is a home on the copy the train stood on.
+                // And a home's facing where the railway holds the home to a copy (OB-282)
                 if (facing != null && extras.has("home") && point.optBoolean(AutonomyBuilder.HOME_FACING_FIXED, false))
                 {
                     extras.put(AutonomyBuilder.HOME_FACING, facing.name());
                 }
 
-                // An empty one is still recorded: skipping a square the running layout had NOTHING to say about would
-                // never reach the merge's `else remove`, and a train that drove away from a plain sensor would stay
-                // placed there.
-
-                // Merged, not replaced: a split square is visited once per copy and only ONE carries the locomotive, so
-                // the last copy read would win and the placement be lost when that is not the copy the train is on.
+                // Recorded even empty, so the merge removes a train that drove away.  Merged, not replaced: a split
+                // square is visited once per copy and only one carries the locomotive.
                 String id = tile.toString();
 
                 org.json.JSONObject into = points.has(id)
@@ -4668,14 +4625,12 @@ public class AutonomySession
             }
         }
 
-        // Merged per point, not substituted wholesale: the running Layout was built BEFORE the editor's edits since, so
-        // replacing the whole object would discard them; only what the running layout knows about is overwritten.
+        // Merged per point: the running layout predates the editor's edits, which must survive.
         org.json.JSONObject existing = configuration.has("points")
             ? configuration.getJSONObject("points") : new org.json.JSONObject();
 
-        // A TRAIN THE RAILWAY CANNOT STAND, kept where the setup records it: its facing has no copy of its square, so
-        // the railway does not have it, and folding that square's emptiness in would take it off the setup too.  Kept
-        // unless the railway now has it somewhere else.
+        // A train the railway cannot stand (its facing has no copy) stays where the setup has it, unless the railway
+        // has it elsewhere.
         java.util.Set<TileKey> unheld = configurationName.equals(store.getActiveConfiguration())
             ? facingsThatCannotBeHeld() : java.util.Collections.<TileKey>emptySet();
 
@@ -4702,9 +4657,7 @@ public class AutonomySession
                 continue;
             }
 
-            // AND THE TAIL GOES WITH THE TRAIN THAT LEFT: the loop below replaces `loc` from the running layout, so a
-            // capture can hand a square to a different locomotive, and the OLD train's `arrivedFrom` and `arrivedAlong`
-            // must not stay.  Read before the replacement, which is what makes them differ.
+            // And an old occupant's tail leaves with it: read before `loc` is replaced.
             String occupantWas = nameOfPlacedLocomotive(before.opt("loc"));
             String occupantNow = nameOfPlacedLocomotive(captured.opt("loc"));
 
@@ -4714,25 +4667,20 @@ public class AutonomySession
                 before.remove("arrivedAlong");
             }
 
-            // Keys the layout can speak for are replaced - including being REMOVED when the layout no
-            // longer carries them, which is how a property returned to its default is cleared.
+            // Replaced, or removed where the layout no longer carries them (back to default).
             for (String key : placementsOnly ? PLACEMENT_KEYS : POINT_OPERATIONAL_KEYS)
             {
                 if (captured.has(key)) before.put(key, captured.get(key));
                 else before.remove(key);
             }
 
-            // Not one of those keys, as the running layout has no field for it: worked out from WHICH copy of a split
-            // square the locomotive was found on.  Only ever written here, never cleared: a square with no train still
-            // remembers which way the last one pointed, the better guess for the next.
+            // Facing, from which copy the train was found on; never cleared, as the best guess for the next train.
             if (captured.has(AutonomyBuilder.FACING))
             {
                 before.put(AutonomyBuilder.FACING, captured.get(AutonomyBuilder.FACING));
             }
 
-            // AND A HOME'S FACING, where the running layout holds the home to a copy (OB-282): a home set on the
-            // running diagram faces the way that copy faces.  Kept where the layout's home carries none, and gone when
-            // the home is.
+            // And a home's facing (OB-282): kept where the layout's home has none, gone with the home.
             if (captured.has(AutonomyBuilder.HOME_FACING))
             {
                 before.put(AutonomyBuilder.HOME_FACING, captured.get(AutonomyBuilder.HOME_FACING));
@@ -4745,28 +4693,18 @@ public class AutonomySession
             existing.put(id, before);
         }
 
-        // A square whose TILE is gone keeps nothing.  A square that is merely not a Point keeps everything: a sensor
-        // reduces to a Point only where track connects it, so a station nudged off its run stops being a Point while
-        // remaining on the diagram.  Adam asked that the placement be kept, the build refuse it, and it come back when
-        // the track is joined up again; the check reports the disconnected station.  Judged against squares, not
-        // against what this capture had something to say about: a square marked "trains may turn round here" and
-        // nothing else carries no operational data, so pruning on what was captured would delete the marking the first
-        // time autonomy ran.
+        // Only a square whose TILE is gone loses its entry; a disconnected station keeps its placement for when the
+        // track is joined again, and the check reports it.
         Set<String> stillThere = new LinkedHashSet<>();
 
         for (TileKey tile : graph.getTiles().keySet()) stillThere.add(tile.toString());
 
-        // Which pages this reduction was allowed to look at: a page left out of autonomy has no Points in it, so
-        // judging its squares by it condemns every one, and excluding a page has to be reversible.  Taken from the
-        // layout's own pages, not from the pages the reduction has Points on: a page whose last sensor was deleted
-        // would be exempt forever.
+        // Squares on pages out of autonomy are not judged: excluding a page must be reversible.
         Set<String> pagesInPlay = new LinkedHashSet<>();
 
         for (LayoutDiagram page : pages)
         {
-            // NOR A STAND-IN FOR A PAGE THAT WOULD NOT READ: it carries the real page's name and one text tile, so
-            // every placement, home and priority on that page would be judged "no longer there" (the MT-135 loss
-            // `pagesSafeToJudge` and `save()` refuse).
+            // Nor a stand-in for an unreadable page, whose squares would all look gone (MT-135).
             if (page.isUnreadable()) continue;
 
             if (!store.getExcludedPages().contains(page.getName())) pagesInPlay.add(page.getName());
@@ -4780,14 +4718,11 @@ public class AutonomySession
 
             TileKey tile = AutonomyCompanionStore.parseTileKey(id);
 
-            // Unparseable, or on a page this setup is not looking at: left alone, not judged by a reduction that never
-            // saw it.
             if (tile == null || !pagesInPlay.contains(tile.getPage())) continue;
 
             gone.add(id);
         }
 
-        // Not where only the trains are written: a square gone is the setup's business
         if (!placementsOnly) for (String id : gone) existing.remove(id);
 
         configuration.put("points", existing);
@@ -4803,8 +4738,7 @@ public class AutonomySession
 
         configuration.put("globals", globals);
 
-        // AND THE RECORD OF HOW THE RAILWAY WAS BUILT IS THEN THE RAILWAY'S SETTINGS (OB-343): every one was just
-        // written into the setup (see `captureTheRailwaysSettings`)
+        // And the record of how the railway was built is the railway's settings now (OB-343)
         if (asBuilt != null)
         {
             for (String key : new ArrayList<>(asBuilt.keySet())) asBuilt.remove(key);
@@ -4829,13 +4763,8 @@ public class AutonomySession
     }
 
     /**
-     * Folds what the railway owns, and nothing the setup was given since the railway was built: where each train stands
-     * (the train, its facing, the side it came in by and its road) and the settings and timetable the Auto tab and a
-     * run write to the railway.  The fold made while the setup is newer than the railway: folding all of it would write
-     * the older railway's homes, lengths and priorities over the edit, and folding none would lose where the run left
-     * the trains and every timetable entry it captured.
-     *
-     *
+     * Folds what the railway owns and nothing the setup gained since it was built: train placements and the settings
+     * and timetable a run writes.  For a setup newer than the railway.
      * @param layoutJson what the running Layout serialized to
      * @param configurationName which configuration this layout's state belongs to
      * @param asBuilt the railway's settings as it was built, or null to take every one of them
@@ -4848,28 +4777,10 @@ public class AutonomySession
     }
 
     /**
-     * Folds the railway's settings and timetable alone: the Auto tab and a run write them to the railway, and a rebuild
-     * from the setup throws away whatever had not been folded.
-     *
-     * **Only those the railway changed since it was built**, where it is told how it was built: a door can edit the
-     * setup's own (a timetable put in place, a routing choice), and fold-everything would write the railway's older
-     * value over it.
-     *
-     * **The record of how it was built is brought up to date with what is taken (OB-343).**  It is what the railway and
-     * the setup last agreed on; left as it was, a fold that no rebuild follows (the editor opening, a load the build
-     * declined) leaves it behind, and a setting the railway then changed back reads as unchanged since it was built.  A
-     * door that may put the setup back after a fold keeps the record beside its snapshot and puts it back with it
-     * (`TrainControlUI.noteSettingsAsBuilt`; the old-file import): the record must never say the setup has what a
-     * rollback took away.  An edit session's Cancel is the other way round: what a fold takes is the railway's, and
-     * Cancel keeps it (`beginEditSession`).
-     *
-     * **The paused trains are taken BY TRAIN, in every fold.**  The railway's list holds the trains a card paused and a
-     * tick paused (the tick wrote the record as well as the setup), so what it has against the record is the cards'
-     * alone.  Those it gained or lost against the record are applied to the setup's own list, which is never replaced:
-     * a replaced list would put a tick the editor made, or the setup's own pause, back where Cancel had taken it from.
-     * With no record every one of the railway's is taken, and the list is the railway's.
-     *
-     *
+     * Folds the railway's settings and timetable alone, before a rebuild throws them away.  With a record of how the
+     * railway was built, only those it changed since (OB-343), and the record follows what is taken, so it stays what
+     * railway and setup last agreed on.  Paused trains are taken BY TRAIN against the record: gains and losses applied
+     * to the setup's own list, never replacing it.
      * @param layoutJson what the running Layout serialized to
      * @param configurationName which configuration this layout's state belongs to
      * @param asBuilt the railway's settings as it was built, or null to take every one of them; changed in place to the
@@ -4896,16 +4807,13 @@ public class AutonomySession
 
         for (String key : now.keySet())
         {
-            // UNCHANGED ON THE RAILWAY: the setup's stands, edited or not
             if (asBuilt != null && asBuilt.has(key) && sameSetting(asBuilt.get(key), now.get(key))) continue;
 
-            // NOT THE TIMETABLE WHILE THE PAGES ARE STALE, as the placements are not (`capture`): a rename or move
-            // renamed the Points the setup's timetable names, and the railway still has the old names.
+            // Not the timetable while pages are stale: the railway still has the old Point names.
             if ((pagesStale || squaresMoved) && "timetable".equals(key)) continue;
 
             if (org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES.equals(key))
             {
-                // BY TRAIN, against the record before the record follows (OB-343)
                 takePausesByTrain(configurationName, globals, asBuilt == null ? null : asBuilt.opt(key), now.get(key),
                     asBuilt == null);
             }
@@ -4913,16 +4821,13 @@ public class AutonomySession
             {
                 globals.put(key, now.get(key));
 
-                // what an edit session's Cancel keeps (OB-343)
                 takenFromTheRailway(configurationName, key, now.get(key));
             }
 
-            // the railway's and the setup's both now: the record follows (OB-343)
             if (asBuilt != null) asBuilt.put(key, copyOfSetting(now.get(key)));
         }
 
-        // AND ONE THE RAILWAY STOPPED WRITING: Simulate and the sequential flag are written only while on, so
-        // turning one off left no key to compare - and the setup kept it on
+        // And one the railway stopped writing (Simulate and the sequential flag are written only while on)
         if (asBuilt != null)
         {
             for (String key : new ArrayList<>(asBuilt.keySet()))
@@ -4931,7 +4836,6 @@ public class AutonomySession
 
                 if (org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES.equals(key))
                 {
-                    // nobody paused any more: every train the record had is a loss (OB-343)
                     takePausesByTrain(configurationName, globals, asBuilt.opt(key), org.json.JSONObject.NULL, false);
                 }
                 else
@@ -4949,9 +4853,7 @@ public class AutonomySession
     }
 
     /**
-     * Takes the railway's paused trains into the setup's list BY TRAIN: those it gained against the record added, those
-     * it lost taken off, the rest as it was (OB-343; see `captureTheRailwaysSettings`).
-     *
+     * Takes the railway's paused trains into the setup's list by train (OB-343).
      * @param recorded the record's list of the paused, or null where there is no record
      * @param value the railway's list, or JSON null where it pauses nobody
      * @param wholesale whether there is no record, so that the list is the railway's own
@@ -4987,7 +4889,6 @@ public class AutonomySession
         for (String name : lost) pauses.put(name, Boolean.FALSE);
     }
 
-    /** The setup's list of the paused with these trains added and those taken off. */
     private static void applyPauses(org.json.JSONObject globals, Set<String> gained, Set<String> lost)
     {
         Set<String> names = namesIn(globals.opt(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES));
@@ -5006,8 +4907,7 @@ public class AutonomySession
     }
 
     /**
-     * Notes a setting a fold took from the railway while an edit session is open (see `takenFromTheRailway`); `value`
-     * is JSON null where it stopped writing one.
+     * Notes a setting a fold took during an edit session (`takenFromTheRailway`); JSON null where it stopped writing.
      */
     private void takenFromTheRailway(String configurationName, String key, Object value)
     {
@@ -5043,7 +4943,7 @@ public class AutonomySession
         return names;
     }
 
-    /** A setting's value as a copy, so the record of how the railway was built never shares an array with the setup's. */
+    /** A setting's value as a copy, so the record never shares an array with the setup. */
     private static Object copyOfSetting(Object value)
     {
         if (value instanceof org.json.JSONObject) return new org.json.JSONObject(value.toString());
@@ -5069,10 +4969,7 @@ public class AutonomySession
         return String.valueOf(a).equals(String.valueOf(b));
     }
 
-    /**
-     * The squares with names of their own on pages out of autonomy, and those names: they take their turn in
-     * the naming though they are not built, so a name shared with a page in play is settled as if they were.
-     */
+    /** Named squares on pages out of autonomy: they still take their turn in the naming. */
     private Map<TileKey, String> namesOutOfPlay()
     {
         Set<String> out = new java.util.HashSet<>(store.getExcludedPages());
@@ -5108,7 +5005,7 @@ public class AutonomySession
         return tile != null && diagram.contains(tile) ? tile : null;
     }
 
-    /** Every square of the diagram on every page, those out of autonomy too, which the graph leaves out. */
+    /** Every square of the diagram, including pages out of autonomy. */
     private Set<TileKey> squaresOfTheDiagram()
     {
         Set<TileKey> out = new java.util.HashSet<>();
@@ -5125,8 +5022,7 @@ public class AutonomySession
     }
 
     /**
-     * Clears the timetable of the configuration in use, every entry of it.  Saved.
-     *
+     * Clears the in-use configuration's timetable, and saves.
      * @return whether there was a configuration to clear
      * @throws IOException if the setup cannot be written
      */
@@ -5136,13 +5032,8 @@ public class AutonomySession
     }
 
     /**
-     * Writes one run-wide setting into the active configuration and saves.  TARGETED, because the whole-layout route is
-     * wrong for this: captureFromLayout copies everything Layout.toJSON knows, including where every train stands, and
-     * the window's wrapper declines to run while autonomy is running.  Saved immediately, because a setting the user
-     * picked from a menu and did not see written is one they will pick again.  ANSWERS WHETHER IT STORED, because two
-     * of its three ways of doing nothing are silent: a caller that deletes its own copy of a setting on the strength of
-     * calling this must know.
-     *
+     * Writes one run-wide setting into the active configuration and saves at once.  Targeted: `captureFromLayout` would
+     * copy every train's place too.  Callers must check the answer before dropping their own copy.
      * @param key the global's name, as it appears at the top level of the built configuration
      * @param value the value to store
      * @return true when the value was written and saved, false when there was no configuration to write it to
@@ -5165,18 +5056,16 @@ public class AutonomySession
 
         configuration.getJSONObject("globals").put(key, value);
 
-        // Without reconciling: nothing about this edit has touched a page, which reconciling compares against
+        // Without reconciling: no page was touched
         saveWithoutReconciling();
 
         return true;
     }
 
     /**
-     * The trains this configuration pauses (FR-117; Adam: "in autonomy configs, track the paused/unpaused status of
-     * locomotives, as designated on the autonomy locomotive controls tab"), by name and sorted.  Kept with the
-     * configuration's settings, under the key the railway writes them under (`Layout.PAUSED_LOCOMOTIVES`), so the build
-     * carries them to the railway as it carries the rest, and the fold brings back a pause made there.
-     *
+     * The trains this configuration pauses, by name, sorted (FR-117; Adam: "in autonomy configs, track the
+     * paused/unpaused status of locomotives, as designated on the autonomy locomotive controls tab").  Kept under
+     * `Layout.PAUSED_LOCOMOTIVES`, so build and fold carry it like any setting.
      * @return the names; empty where no configuration is active or it pauses nobody
      */
     public java.util.Set<String> getPausedLocomotives()
@@ -5203,9 +5092,7 @@ public class AutonomySession
     }
 
     /**
-     * Records a train paused, or set going, in the active configuration, and saves it (FR-117).  The list is written only
-     * while it names somebody, as the railway writes it, so a configuration that pauses nobody carries no key.
-     *
+     * Records a train paused or set going in the active configuration, and saves (FR-117).
      * @param name the train
      * @param paused whether it is paused
      * @return whether there was a configuration to write it to
@@ -5219,9 +5106,7 @@ public class AutonomySession
     }
 
     /**
-     * Records several trains paused, or set going, in the active configuration, and saves it ONCE (FR-126).  The record
-     * `setLocomotivePaused` keeps for one train, written for the bulk tools' many in a single save.
-     *
+     * The same for several trains, saved once (FR-126).
      * @param names the trains
      * @param paused whether they are paused
      * @return whether there was a configuration to write it to
@@ -5244,9 +5129,8 @@ public class AutonomySession
     }
 
     /**
-     * Pauses a train or sets it going (FR-117): the train itself, which autonomy and Return Home read, and this
-     * configuration's record of it, saved - the two together, so a fold between them cannot take one for the other.
-     *
+     * Pauses a train or sets it going (FR-117): the train and this configuration's record together, so a fold between
+     * them cannot take one for the other.
      * @param train the train
      * @param active whether autonomy may run it
      * @throws IOException if the setup cannot be written
@@ -5259,9 +5143,7 @@ public class AutonomySession
     }
 
     /**
-     * Pauses every one of these trains or sets every one going (FR-126), as `setActive` does for one: each train itself,
-     * and this configuration's record of them all, saved once.  The model call is the same, `setAutonomyPaused`, per train.
-     *
+     * The same for several trains, saved once (FR-126).
      * @param trains the trains
      * @param active whether autonomy may run them
      * @throws IOException if the setup cannot be written
@@ -5283,11 +5165,8 @@ public class AutonomySession
     }
 
     /**
-     * What the active configuration STORES for a global, or null (no active configuration, no configuration object, or
-     * no such global).  The counterpart setGlobal never had: "has the configuration already answered this?" cannot be
-     * put to the live Layout, which carries whatever was last pushed into it in memory, so a migration that writes the
-     * value and asks again is told yes by its own writing.
-     *
+     * What the active configuration STORES for a global, or null.  Not the live Layout, which answers with whatever was
+     * last pushed into it, so a migration would be told yes by its own write.
      * @param key the global's name, as it appears at the top level of the built configuration
      * @return the stored value as text, or null when nothing is stored under that name
      */
@@ -5308,7 +5187,7 @@ public class AutonomySession
         return globals.optString(key, null);
     }
 
-    /** The globals of the active configuration, which is where pace and speed settings live. */
+    /** The globals of the active configuration: pace and speed settings. */
     private AutonomyBuilder.Globals globals()
     {
         AutonomyBuilder.Globals globals = new AutonomyBuilder.Globals();
@@ -5332,11 +5211,8 @@ public class AutonomySession
     }
 
     /**
-     * Whether a square can meaningfully be given a direction.  False for a link: its route is a stub (the same side
-     * twice, as the tile conducts track on one face and a jump on the other, and a jump is not a side), so "toward A"
-     * and "toward B" name the same place and the setting would silently do nothing.  Making a link one-way needs the
-     * JUMP to carry the direction (on the backlog); this returns false until it does.
-     *
+     * Whether a square can meaningfully be given a direction.  False for a link: its route is a stub, so "toward A" and
+     * "toward B" are the same place; a one-way link would need the jump to carry it.
      * @param tile the square
      * @return true when the direction answers mean something there
      */
@@ -5353,10 +5229,7 @@ public class AutonomySession
         return !getRoutes(tile).isEmpty();
     }
 
-    /**
-     * The stations carrying no protecting signal at all.  Distinct from signalsThatAreGone (a pairing that no longer
-     * resolves): "nothing was ever set" is ordinary, worth listing rather than warning about.
-     */
+    /** Stations with no protecting signal at all: ordinary, listed rather than warned about. */
     private java.util.Set<TileKey> stationsWithNoSignal()
     {
         java.util.Set<TileKey> out = new LinkedHashSet<>();
@@ -5374,30 +5247,25 @@ public class AutonomySession
     }
 
     /**
-     * Squares whose recorded facing is not one the square can actually hold: the build honours a facing by choosing the
-     * copy of the split square that faces that way, and when no copy does it falls back to the first copy trains may
-     * arrive at (`startableCopy`), so the train quietly turns round.  A square stops being able to hold a facing when
-     * the track around it changes while the recorded one stays.  Reported rather than corrected, as only the operator
-     * knows which way the train physically points; a square with NO facings is left out, being disconnected, with its
-     * own findings.
+     * Squares whose recorded facing no copy can hold: the build falls back to `startableCopy` and the train quietly
+     * turns.  Reported, not corrected, as only the operator knows which way it points; squares with no facings are left
+     * to their own findings.
      */
     private java.util.Set<TileKey> facingsThatCannotBeHeld()
     {
         java.util.Set<TileKey> out = new LinkedHashSet<>();
 
-        // WHERE THE RAILWAY HAS THE TRAIN, as the warning and the Facing menu ask it
+        // Where the railway has the train, as the warning and the Facing menu ask
         Map<String, Object[]> railway = railwayTrains();
 
         for (Map.Entry<TileKey, String> placed : placedLocomotives().entrySet())
         {
-            // A RECORD THE LAST RUN HAS OUTRUN is no train there: the railway has it standing on another square,
-            // and the railway wins (OB-183) - an error about a square no train stands on stopped every send
+            // A record the last run outran is no train there: the railway wins (OB-183)
             Object[] there = railway.get(placed.getValue());
 
             if (there != null && !placed.getKey().equals(there[0])) continue;
 
-            // AND ON THE SAME SQUARE, THE WAY THE RAILWAY HAS IT FACING: a run can turn a train and bring it back,
-            // and the setup's facing is then the one it set off with
+            // On the same square, its facing on the railway: a run can turn it and bring it back
             Side recorded = there != null && there[1] != null ? (Side) there[1] : getFacing(placed.getKey());
 
             if (recorded == null) continue;
@@ -5406,10 +5274,8 @@ public class AutonomySession
 
             if (offered.isEmpty() || offered.contains(recorded)) continue;
 
-            // A TRAIN THAT TURNED ROUND is simply offered, not excused: on a square a train may turn round on, a
-            // turning copy's facing IS an arrival side and `facingChoices` includes it (OB-145), so the test above is
-            // true by construction; an excuse would forgive a facing the menu would not offer and hide the
-            // disagreement.
+            // Not excused for having turned: a turning copy's facing is an arrival side `facingChoices` offers
+            // (OB-145).
             out.add(placed.getKey());
         }
 
@@ -5417,9 +5283,8 @@ public class AutonomySession
     }
 
     /**
-     * The stations whose paired protecting signal no longer resolves to an accessory: the walk protectingSignalNames
-     * does, keeping what it skips.  A build cannot emit an accessory that is not there, but skipping in silence leaves
-     * an operator believing a platform is protected when it is not.
+     * Stations whose paired signal no longer resolves to an accessory: the build drops it silently, and the operator
+     * would believe the platform protected.
      */
     private java.util.Set<TileKey> signalsThatAreGone()
     {
@@ -5427,10 +5292,7 @@ public class AutonomySession
 
         if (graph == null) return out;
 
-        // ANY of them, not all: a station paired to two signals of which one has gone is protected on one approach and
-        // not the other, the state worth warning about.  BOTH GUARDS (FR-096): a gone entry-guard signal is dropped
-        // from the build the same way.  STATIONS': a square that is not one now keeps its guards, and nothing throws
-        // them.
+        // Any of them, not all: one gone signal leaves one approach unprotected.  Both guards (FR-096); stations only.
         Map<TileKey, List<TileKey>> both = new LinkedHashMap<>(stationsOnly(store.getProtectingSignals()));
 
         for (Map.Entry<TileKey, List<TileKey>> entry : stationsOnly(store.getEntrySignals()).entrySet())
@@ -5445,14 +5307,11 @@ public class AutonomySession
 
         for (Map.Entry<TileKey, List<TileKey>> pair : both.entrySet())
         {
-            // NOT ABOUT A PAGE THAT IS SWITCHED OFF: `getProtectingSignals()` is the raw store and the graph does not
-            // carry an excluded page, so its signal would report as GONE.
+            // Not a station on an excluded page: the graph lacks it, so its signal would read as gone.
             if (store.getExcludedPages().contains(pair.getKey().getPage())) continue;
 
-            // THE SIGNAL SIDE IS NOT FILTERED, and that asymmetry is the point: a signal on an excluded page is dropped
-            // from the built configuration (`protectingSignalNames` resolves through `graph.getTiles()`), so the
-            // platform really IS unprotected, and silencing that warning is the one direction this check must never
-            // fail in.
+            // A signal on an excluded page IS gone from the build, so it is reported: never silence this warning
+            // wrongly.
             for (TileKey tile : pair.getValue())
             {
                 LayoutDiagramComponent signal = graph.getTiles().get(tile);
@@ -5469,12 +5328,8 @@ public class AutonomySession
     }
 
     /**
-     * Whether every train arriving at this square is forced to turn round (OB-123).  The setting "may change direction
-     * here" offers a choice only if an arrived train could CARRY ON, leaving by a side other than the one it came in
-     * by; with one arrival that has somewhere to go the setting means what it says, and a warning would tell the
-     * operator their railway is something it is not.  Departures are gathered as `departureSides` gathers them, as the
-     * trapped-arrival check does, so the two cannot disagree.
-     *
+     * Whether every train arriving here must turn round (OB-123), so "may change direction here" offers no choice.
+     * Departures as `departureSides` gathers them, as the trapped-arrival check does.
      * @return whether turning is the only thing any arriving train can do
      */
     private boolean everyArrivalMustTurn(TileGraph graph, GraphReducer reducer, TileKey tile)
@@ -5491,8 +5346,7 @@ public class AutonomySession
 
         java.util.Collection<Side> arrivals = arrivalSides(tile);
 
-        // Nothing arrives here at all: left to the checks about unreachable squares, not reported as a pointless
-        // setting.
+        // Nothing arrives: the unreachable-square checks' business.
         if (arrivals.isEmpty()) return false;
 
         for (Side arrival : arrivals)
@@ -5516,11 +5370,8 @@ public class AutonomySession
     }
 
     /**
-     * The squares of the active configuration whose stored point satisfies a test.  One walk for what four methods
-     * spelled out (`homeTiles`, `tilesWithAHome`, `homesElsewhere`, `shutTiles`), which have to agree, or a
-     * qualification added to one makes the bulk clear act on a set the findings never mentioned.  The parse splits on
-     * the LAST colon, as a page name may hold one; that rule lives on the store.
-     *
+     * The squares of the active configuration whose stored point passes a test: the one walk the home and shut queries
+     * share, so they agree.  Keys split on the LAST colon (the store's rule), as page names may hold one.
      * @param wanted asked of each square's key and its stored point
      * @return the squares that matched, in the file's own order
      */
@@ -5551,12 +5402,7 @@ public class AutonomySession
         return out;
     }
 
-    /**
-     * What `homeTiles()` answers, named so a test can ask whether it matches `tilesWithAHome()`: the two that must
-     * agree, which were separate walks.
-     *
-     * @return the squares the findings treat as carrying a home
-     */
+    /** @return what `homeTiles()` answers, for a test that it matches `tilesWithAHome()` */
     public java.util.Set<TileKey> homesForFindings()
     {
         return homeTiles();
@@ -5567,24 +5413,20 @@ public class AutonomySession
     {
         return homesElsewhere(tile, locomotive);
     }
-    /** Whether a stored point records a home locomotive: one spelling of "carries a home" (a blank is none). */
+    /** Whether a stored point records a home locomotive (a blank is none). */
     private static boolean carriesAHome(org.json.JSONObject point)
     {
         return !point.optString("home", "").trim().isEmpty();
     }
-    /**
-     * The squares an authored home locomotive lives at: `tilesWithAHome` as a set, delegating so it cannot drift from
-     * what `check()` compares against.
-     */
+    /** The squares an authored home lives at: `tilesWithAHome` as a set, so it cannot drift from `check()`. */
     private java.util.Set<TileKey> homeTiles()
     {
         return new LinkedHashSet<>(tilesWithAHome());
     }
 
     /**
-     * The findings of the last check, kept for the rest of the event that asked: one click on a switch asked for them
-     * twenty times over five events, and every check builds the whole configuration.  Kept for ONE EVENT, and only
-     * while everything the check reads is as it was (whatTheCheckReads); off the event thread nothing is kept.
+     * The last check's findings, kept for the rest of the event that asked (one click asked twenty times) while nothing
+     * `whatTheCheckReads` covers changes; off the event thread nothing is kept.
      */
     private java.lang.ref.WeakReference<java.awt.AWTEvent> findingsEvent;
 
@@ -5595,10 +5437,8 @@ public class AutonomySession
     private List<AutonomyChecks.Finding> findingsKept;
 
     /**
-     * Everything check() reads that can change, as a key equal only while all of it is as it was: the graph, its
-     * reduction and the station index (each replaced whole), the setup's snapshot, the running railway and the trains
-     * on it and those the setup places with their lengths, and every square of every page as the diagram has it now.
-     *
+     * Everything check() reads that can change, as a key equal only while all of it is as it was: graph, reduction,
+     * index, setup snapshot, railway and trains, placed lengths, every square.
      * @return the key
      */
     private List<Object> whatTheCheckReads()
@@ -5675,7 +5515,7 @@ public class AutonomySession
     /** Everything wrong or worth knowing about the setup as it stands. */
     public List<AutonomyChecks.Finding> check()
     {
-        // KEPT FOR THE REST OF THE EVENT, while nothing it read has changed - see findingsEvent
+        // Kept for the rest of the event (`findingsEvent`)
         java.awt.AWTEvent event = java.awt.EventQueue.isDispatchThread() ? java.awt.EventQueue.getCurrentEvent() : null;
 
         if (event == null || graph == null || reducer == null) return checkAfresh();
@@ -5694,28 +5534,23 @@ public class AutonomySession
         return new ArrayList<>(findingsKept);
     }
 
-    /** The check itself, worked out every time it is asked: the findings, most severe first. */
+    /** The check itself, every time: the findings, most severe first. */
     private List<AutonomyChecks.Finding> checkAfresh()
     {
-        // Guarded because a panel builds its list in its constructor before anything forces open(), and an unopened
-        // session throwing out of a constructor is harder to read than an empty list.
+        // A panel asks in its constructor, before open(); an empty list reads better than a throw.
         if (graph == null || reducer == null) return new ArrayList<AutonomyChecks.Finding>();
 
-        // The terminus flag lives in the configuration, so the checks are told rather than inferring it from the graph.
+        // The terminus flag lives in the configuration, so the checks are told it
         Set<TileKey> termini = new LinkedHashSet<>();
 
         for (TileKey tile : reducer.getPoints().keySet())
         {
-            // A STATION'S, as `isTurnAround` reads the same flag
             if (store.isStation(tile) && Boolean.TRUE.equals(getPointProperty(tile, "terminus"))) termini.add(tile);
         }
 
-        // "May turn round here" where no arriving train could do anything else (OB-123).  Adam: "this is wrong: the
-        // train can continue or reverse.  It should test for two outgoing paths, not two incoming."  Carrying on is a
-        // DEPARTURE, so a square with one way in and two ways out offers every arriving train the choice.  Per ARRIVAL,
-        // not by counting departures: two arrivals and one departure forces a turn on the train that arrived by the
-        // departure side and offers a genuine choice to the other, so the setting is pointless only when EVERY arrival
-        // is a forced turn.  Arrivals come from arrivalSides, because the answer has to be the BUILD's.
+        // "May turn round here" where no arriving train could do anything else (OB-123), judged per ARRIVAL against
+        // the build's own sides.  Adam: "this is wrong: the train can continue or reverse.  It should test for two
+        // outgoing paths, not two incoming."
         Set<TileKey> pointless = new LinkedHashSet<>();
 
         for (TileKey tile : reducer.getPoints().keySet())
@@ -5725,34 +5560,28 @@ public class AutonomySession
             if (everyArrivalMustTurn(graph, reducer, tile)) pointless.add(tile);
         }
 
-        // Built once, up here, because the checks below are ABOUT the build: `AutonomyChecks` is a predictor, not a
-        // second authority, and where the build can answer a second derivation can only disagree.  Drawn by severity:
-        // an ERROR says the setup will not build, so there is no build to inspect and those checks reason about the
-        // diagram; everything softer describes a railway that WILL exist, and asks it.
+        // Built once: the checks ask the build rather than derive a second answer.  With an ERROR there is no build,
+        // and those checks reason about the diagram.
         org.json.JSONObject inspected = builtForInspection();
 
         java.util.Map<String, TileKey> namesForInspection =
             inspected == null ? null : builder(null).tilesByName();
 
-        // which routes command each guard, off the same build
         GuardNotices guards = guardNotices(inspected, namesForInspection);
 
-        // and the side each copy's trains come in by, which a trapped arrival is named by (OB-201)
+        // and each copy's arrival side, which names a trapped arrival (OB-201)
         java.util.Map<String, Side> arrivalsForInspection =
             inspected == null ? null : builder(null).arrivalByName();
 
-        // Squares a train can reach and then not leave: it arrived by one side, the only way on is back out of that
-        // same side, and nobody has said trains may turn round there.  Read off the built graph; nothing is reported
-        // when the setup will not build (louder problems, already listed).
+        // Squares a train can reach and then not leave, off the built graph
         Map<TileKey, Set<Side>> trapped = tilesWithATrappedArrival(inspected, namesForInspection, arrivalsForInspection);
 
-        // Captions the user's own writing is sitting under: the grid draws the caption and hides the text (MT-017), and the
-        // editor asks before it puts a caption over text, naming the text.  Worth saying rather than silently losing.
+        // Captions sitting over the user's own text, which the grid hides (MT-017)
         Map<TileKey, TileKey> covered = new LinkedHashMap<>();
 
         for (Map.Entry<TileKey, TileKey> caption : store.getCaptions().entrySet())
         {
-            // NOT ONE KEPT FOR A SQUARE THAT IS NOT A STATION NOW: it is not drawn, so nothing covers it
+            // Not one kept for a non-station: it is not drawn
             if (caption.getValue() == null || !store.isStation(caption.getValue())) continue;
 
             LayoutDiagram page = pageOf(caption.getKey());
@@ -5768,67 +5597,52 @@ public class AutonomySession
         }
 
 
-        // The run-in notices and the berths given no room, from one walk.
         java.util.Set<TileKey> givenNoRoom = new LinkedHashSet<>();
 
         java.util.Map<TileKey, int[]> runIns = runInFigures(givenNoRoom, inspected, namesForInspection);
 
         List<AutonomyChecks.Finding> found = AutonomyChecks.run(graph, reducer, termini, getLabelledStationTiles(), pointless,
-            // with the squares where closing their trapped sides is something the arrivals menu can do
             trapped, arrivalsClosableAt(trapped), covered, placedLocomotives(), shutStations(),
             mayTurnTiles(), mandatoryTurnTiles(), homeTiles(), signalsThatAreGone(),
             stationsWithNoSignal(), facingsThatCannotBeHeld(),
-            // The red arrows, so the findings walk the railway a train can actually use (OB-120).
+            // Red arrows and shut squares, so the findings walk the usable railway (OB-120)
             barredArrivals(),
-            // And the squares switched out of service: a barred side is passed through and not stopped at, a closed
-            // square is not passed through at all.
             shutTiles(),
-            // The two halves of the length rule (FR-046), and the two of them disagreeing about one
-            // platform.
+            // The length rule's two halves (FR-046), and their disagreements
             placedTrainsWithoutLength(), stationsWithoutMaxLength(), runIns, givenNoRoom,
-            // AND THE HALF-MEASURED APPROACH, which closes a berth to everything until it is finished
-            // (Adam: *"we want clear warnings to the user"*).
+            // And the half-measured approach, which closes a berth until finished
             stationsWithAHalfMeasuredApproach(),
-            // A terminus with two ways in, which is a statement that cannot be true (MT-361).
+            // A terminus with two ways in (MT-361)
             terminiWithTwoWaysIn(),
-            // Pages sharing one sensor with another, which cannot be modelled at all (OB-150).
+            // Pages sharing a sensor, which cannot be modelled (OB-150)
             repeatedSensorPages(),
-            // Squares trains reverse at that nobody has measured.
             reversalsWithoutLength(),
-            // Stations autonomy will never choose, so a pocket holding only those still leads
-            // nowhere.
+            // Stations never chosen, so a pocket of only those still leads nowhere
             stationsAutonomyWillNotChoose(),
-            // And the termini a route can back a train into, off the same build
             berthsATrainCanBackInto(inspected, namesForInspection),
-            // Copies a train could be sent to and never leave, and copies nothing can reach at all: per COPY, which no
-            // other check here can see.  ONE BUILD FOR THE THREE OF THEM: each building the configuration itself would
-            // make one `check()` three full graph builds on the event thread at every right-click on a station.
+            // Per-copy checks, all off one build: three builds per right-click would be too slow
             destinationCopiesWithNoWayOut(inspected, namesForInspection),
             destinationCopiesWithNoWayIn(inspected, namesForInspection),
             destinationCopiesReachingNoStation(inspected, namesForInspection),
-            // A station's two guards as one signal, and the guards the routes that command them say are misplaced.
             guardsOnBothLists(), guards.entryOffTheWayIn, guards.exitOnNoRoute, guards.exitCrossed, guards.exitOnTheWayIn,
-            // Every square unavailable while another is occupied, station or not.
             restrictionsToList());
 
-        // A train facing track that runs only towards it, and a station at the end of a line trains may not turn at:
-        // said, not refused
+        // Said, not refused
         found.addAll(AutonomyChecks.checkTrainsFacingTrackTowardsThem(reducer, trainsFacingTrackTowardsThem()));
         java.util.Set<TileKey> endsOfLines = stationsAtTheEndOfALine();
 
         found.addAll(AutonomyChecks.checkStationsAtTheEndOfALine(reducer, endsOfLines));
 
-        // AND A STATION WHOSE NAME IS DRAWN IN MORE THAN ONE PLACE, which no door of the editor makes (OB-341)
+        // A station named in more than one place (OB-341)
         found.addAll(AutonomyChecks.checkStationsNamedTwice(stationsShownMoreThanOnce()));
 
-        // AND A RUN WHOSE SQUARES POINT OPPOSITE WAYS, which no train can pass and the correction leaves as it is (OB-361)
+        // A run whose squares point opposite ways (OB-361)
         found.addAll(AutonomyChecks.checkRunsPointingOppositeWays(runsPointingOppositeWays()));
 
-        // AND A SENSOR ADDRESS THAT TWO PLACES SHARE, which the build cannot tell apart (FR-139)
+        // A sensor address two places share (FR-139)
         found.addAll(AutonomyChecks.checkSensorAddressesShared(sensorAddressesSharedByPlaces()));
 
-        // ONE FINDING AND ONE PIECE OF ADVICE for a station at the end of a line: the warning and the error word "may"
-        // and "must" differently, and "may" would draw a notice saying "must"
+        // One finding for a station at the end of a line: "may" would draw a notice saying "must"
         found.removeIf(finding -> AutonomyChecks.isArrivalTrapped(finding.getMessageKey())
             && endsOfLines.contains(finding.getTile()));
 
@@ -5837,10 +5651,7 @@ public class AutonomySession
         return found;
     }
 
-    /**
-     * The runs of plain track whose squares point opposite ways (`TileGraph.runsPointingOppositeWays`), each first
-     * square to its squares, not on track no station is on, where no train is sent (OB-353, OB-361).
-     */
+    /** Runs whose squares point opposite ways, first square to squares, off stationless track (OB-361). */
     private Map<TileKey, List<TileKey>> runsPointingOppositeWays()
     {
         Map<TileKey, List<TileKey>> out = new LinkedHashMap<>();
@@ -5856,16 +5667,9 @@ public class AutonomySession
     }
 
     /**
-     * Every station whose name the track diagram draws in more than one place, against the squares it draws it on
-     * (OB-341).  What counts is what is DRAWN (`drawnCaptionsFor`) and PER PAGE (Adam: *"The duplicate caption check
-     * should be per page.  It is OK to show on another page what is going on on another."*): two captions beside the
-     * station on one page are the finding; one on its own square and one beside it is drawn once, and one beside it on
-     * each of two pages is not here either.  Every door of the editor keeps one station to one caption (OB-256), so
-     * what this finds came in past them: a setup file edited by hand, or written by an older version.  Stale state is
-     * not counted (a caption kept for a square no station now, on a page gone or left out of autonomy, or of a station
-     * unnamed and out of service), and a station that is no Point is, as the diagram draws its captions all the same.
-     * In reading order, so the sentence and the list do not change from one load to the next.
-     *
+     * Stations whose name is drawn twice on one page (OB-341; Adam: *"The duplicate caption check should be per page.
+     * It is OK to show on another page what is going on on another."*), by `drawnCaptionsFor`, in reading order.  The
+     * editor's doors prevent it, so these came from a hand-edited or older file.
      * @return each such station's square, to the squares of the pages that draw its name more than once
      */
     private Map<TileKey, List<TileKey>> stationsShownMoreThanOnce()
@@ -5881,8 +5685,7 @@ public class AutonomySession
 
         for (TileKey station : stations)
         {
-            // Drawn is drawn: a station the railway built no Point for (a sensor with no track, a page left out) has
-            // its captions drawn all the same (OB-341).
+            // Drawn is drawn, Point or not (OB-341).
             Map<String, List<TileKey>> onPage = new LinkedHashMap<>();
 
             for (TileKey square : drawnCaptionsFor(station))
@@ -5908,10 +5711,8 @@ public class AutonomySession
     }
 
     /**
-     * Every square held back while another is occupied, against the names of what it watches (Adam: *"a simple info
-     * notice on restrictions (in the list for any type of station or non station)"*).  Not on an excluded page, as the
-     * guards' notices are not: nothing there is built.
-     *
+     * Every square held back while another is occupied, to the names it watches; not on excluded pages.  Adam: *"a
+     * simple info notice on restrictions (in the list for any type of station or non station)"*.
      * @return the restricted squares, each against its watched squares' names
      */
     private Map<TileKey, String> restrictionsToList()
@@ -5940,9 +5741,7 @@ public class AutonomySession
     }
 
     /**
-     * Stations whose entry guard is also their exit guard, against those signals' names.  The setters refuse it, but
-     * loading a setup does not go through them, so a file written by hand can still carry it.
-     *
+     * Stations whose entry guard is also their exit guard: the setters refuse it, a hand-written file need not.
      * @return station square to the names of the signals on both its lists
      */
     private Map<TileKey, Map<TileKey, String>> guardsOnBothLists()
@@ -5951,7 +5750,6 @@ public class AutonomySession
 
         if (graph == null) return out;
 
-        // STATIONS', as `signalsThatAreGone`
         Map<TileKey, List<TileKey>> exits = stationsOnly(store.getProtectingSignals());
 
         for (Map.Entry<TileKey, List<TileKey>> entry : stationsOnly(store.getEntrySignals()).entrySet())
@@ -5987,22 +5785,11 @@ public class AutonomySession
     }
 
     /**
-     * Which routes command each guard, read off the built railway.  Adam: *"if the guard signal is not on a path
-     * leading to the chosen station, we can add notice to the autonomy editor."*  The BUILT railway is read, not the
-     * reduction, which knows a square but not which way a train faces on it: the built edges have each copy of a point
-     * and the accessories each edge commands, which is what turns a guard green.  The ways in are the built edges
-     * walked back from the station's stopping copies to the first stop on each, the ways out walked on from any copy to
-     * the first stop.
-     *
-     * An ENTRY guard turns red behind a train arriving: noticed where no route into its station commands it.  An EXIT
-     * guard is red while its station is occupied, and a route over it sets it green as it sets any signal on it:
-     * commanded only by routes out of its station it is that station's exit signal and right; a route INTO it (a home
-     * signal) turns it green for the arriving train and the arrival's claim can turn it red in front of that train, the
-     * entry guard being the signal on the way in; routes to other stations turn it green over a train standing there;
-     * no route at all, away from the station's own track, leaves it only showing whether the station is occupied.  One
-     * notice for each, in that order.  A station on a page left out of autonomy is not in play, a signal whose tile has
-     * gone is `signalsThatAreGone`'s, and with no build (the setup has an error) there is no guard notice.
-     *
+     * Which routes command each guard, read off the BUILT railway, whose edges know each copy's facing and the
+     * accessories they command.  Adam: *"if the guard signal is not on a path leading to the chosen station, we can add
+     * notice to the autonomy editor."*  Noticed: an entry guard no way in commands; an exit guard no route commands
+     * (away from the station's own track), one routes to other stations command, and one a way in commands.  None with
+     * no build.
      * @param built the configuration as built for the check, or null
      * @param named the builder's own map of its names to their squares, or null
      * @return the notices
@@ -6054,14 +5841,13 @@ public class AutonomySession
         {
             if (store.getExcludedPages().contains(station.getPage())) continue;
 
-            // NOR ONE THAT IS NOT A STATION NOW: it keeps its guards, and nothing throws them
+            // Nor one that is not a station now
             if (!store.isStation(station)) continue;
 
             java.util.Set<Integer> in = waysAt(station, true, from, to, named, stops);
             java.util.Set<Integer> outOf = waysAt(station, false, from, to, named, stops);
 
-            // A STATION NO ROUTE REACHES OR LEAVES is cut off, and the check says so in its own words (a station at the end
-            // of a line, an isolated point) - its guards are not where the trouble is
+            // A station no route reaches or leaves is cut off, which its own check says
             if (in.isEmpty() && outOf.isEmpty()) continue;
 
             for (TileKey signal : nonNull(store.getEntrySignals().get(station)))
@@ -6080,8 +5866,7 @@ public class AutonomySession
 
                 String accessory = accessoryOf(signal);
 
-                // ELSEWHERE: neither on a way in or out, nor through the station itself - a route over the station's own
-                // square cannot be set while a train stands there, so it never turns the guard green over one
+                // Elsewhere: not a way in or out, nor over the station (unsettable under a standing train)
                 java.util.Set<Integer> elsewhere = new java.util.HashSet<>();
 
                 for (int i = 0; i < commands.size(); i++)
@@ -6090,8 +5875,7 @@ public class AutonomySession
                         && !station.equals(named.get(to[i]))) elsewhere.add(i);
                 }
 
-                // ON THE WAY IN, a train coming in passes it (OB-361): not where the way in starts, leaving a station this
-                // signal is the exit guard of - there a train passes it going out, as that station's own exit
+                // On a way in (OB-361), except where that way starts at a station this signal is the exit guard of
                 java.util.Set<Integer> comingIn = new java.util.HashSet<>();
 
                 for (Integer i : in)
@@ -6102,8 +5886,7 @@ public class AutonomySession
                         || !nonNull(store.getProtectingSignals().get(leaving)).contains(signal)) comingIn.add(i);
                 }
 
-                // NO ROUTE AT ALL is noticed only away from the station's own track: a signal there - past a terminus's sensor, at
-                // its buffers - shows whether the station is occupied, and that is what it is for
+                // No route at all is noticed only off the station's own track, where it shows occupancy
                 Map<TileKey, Map<TileKey, String>> notice = commandedBy(accessory, comingIn, commands) ? out.exitOnTheWayIn
                     : commandedBy(accessory, elsewhere, commands) ? out.exitCrossed
                     : !commandedBy(accessory, outOf, commands) && !onItsOwnTrack(station, signal) ? out.exitOnNoRoute
@@ -6117,10 +5900,8 @@ public class AutonomySession
     }
 
     /**
-     * The built edges on the ways into a station or out of it: walked back from its stopping copies, or on from any
-     * copy of it, through every point a train passes (a plain sensor, or a copy of a station that bars it) to the first
-     * stop on each way.  A copy is a point and a facing, so a walk turns back only where the railway lets a train.
-     *
+     * The built edges on a station's ways in (back from its stopping copies) or out (on from any copy), through every
+     * point a train passes to the first stop.
      * @param in true for the ways in, false for the ways out
      * @param stops each copy's name to whether a train stops there
      * @return the indices of the edges on those ways
@@ -6136,7 +5917,6 @@ public class AutonomySession
         {
             if (!station.equals(copy.getValue())) continue;
 
-            // INTO a copy a train stops at; out of any copy, a train passing included
             if (in && !Boolean.TRUE.equals(stops.get(copy.getKey()))) continue;
 
             if (seen.add(copy.getKey())) toVisit.add(copy.getKey());
@@ -6161,10 +5941,7 @@ public class AutonomySession
         return found;
     }
 
-    /**
-     * Whether a signal lies on the track a station's own reduced edges run over (the last stretch into it or the first
-     * out, its room past the sensor included) and no further, so nothing is walked that a train could not run.
-     */
+    /** Whether a signal lies on the track of a station's own reduced edges, its room past the sensor included. */
     private boolean onItsOwnTrack(TileKey station, TileKey signal)
     {
         if (reducer == null) return false;
@@ -6179,7 +5956,6 @@ public class AutonomySession
         return false;
     }
 
-    /** Whether any of these edges commands the accessory. */
     private static boolean commandedBy(String accessory, java.util.Set<Integer> edges, List<java.util.Set<String>> commands)
     {
         if (accessory == null) return false;
@@ -6189,7 +5965,7 @@ public class AutonomySession
         return false;
     }
 
-    /** The accessory a signal's square carries, or null - what a route commands is the accessory, by name. */
+    /** The accessory a signal's square carries, or null: routes command accessories by name. */
     private String accessoryOf(TileKey signal)
     {
         org.traincontrol.base.LayoutDiagramComponent component = graph == null ? null : graph.getTiles().get(signal);
@@ -6197,7 +5973,6 @@ public class AutonomySession
         return component == null || component.getAccessory() == null ? null : component.getAccessory().getName();
     }
 
-    /** The list, or an empty one. */
     private static <T> List<T> nonNull(List<T> list)
     {
         return list == null ? java.util.Collections.<T>emptyList() : list;
@@ -6214,15 +5989,9 @@ public class AutonomySession
     }
 
     /**
-     * How many things must be dealt with before this setup will run: the one definition of "broken".  Starting autonomy
-     * is refused when the checks report any ERROR (OB-057), so the diagram strip decides what to offer from the same
-     * count, not from hasBlockingProblems() alone (which asks the GRAPH only, about scissors crossings and unpaired
-     * links), or a setup with four unnamed stations and four errors would show a live Start button that every press of
-     * is refused.  Adam, OB-090: "the fix it button is not shown, rather just start autonomy when the config had worked
-     * before." Blocking problems are counted through check(), which copies each in as an ERROR, with
-     * hasBlockingProblems() kept in the disjunction because check() returns nothing when the graph has not been derived
-     * yet.
-     *
+     * How many things must be dealt with before this setup will run: the one definition of "broken", the same count
+     * that refuses a start (OB-057), so the strip never offers a Start that is refused.  Adam: "the fix it button is
+     * not shown, rather just start autonomy when the config had worked before." (OB-090)
      * @return the number of ERROR findings
      */
     public int errorCount()
@@ -6238,11 +6007,8 @@ public class AutonomySession
     }
 
     /**
-     * Whether anything must be dealt with before this setup will run.  NOT the question the LOAD door asks,
-     * deliberately: loading a configuration is how somebody gets at its errors to fix them, so refusing to load an
-     * errored setup would be a guard with no way past it; `AutonomyViewerPanel.load` asks hasBlockingProblems() (can
-     * this be built at all).  This one asks whether the setup can be RUN, the question every affordance that offers to
-     * run it has to ask (see errorCount()).
+     * Whether the setup can be RUN (`errorCount`).  Not the load door's question, `hasBlockingProblems`: loading is how
+     * somebody gets at the errors to fix them.
      */
     public boolean hasErrors()
     {
@@ -6256,9 +6022,7 @@ public class AutonomySession
     }
 
     /**
-     * How many of them there are, for the doors that put the number in a sentence: two doors say this and each must
-     * pick the singular or plural message by the same count.
-     *
+     * How many blocking problems there are, for the doors that pick singular or plural by it.
      * @return the number of problems that would stop the setup being built, or zero when there is no graph to ask
      */
     public int blockingProblemCount()
@@ -6284,10 +6048,8 @@ public class AutonomySession
     }
 
     /**
-     * Records directions wanted on some of one square's roads as its arms can hold them, without re-deriving (OB-351).
-     * Every door that sets a direction comes through here, so none can store a road closed a way its square's arrow
-     * shows open: where roads share an arm the arms decide (`TileGraph.armAnswersFor`), elsewhere each road takes what
-     * was wanted.
+     * Records directions wanted on one square's roads as its arms can hold them, without re-deriving (OB-351): every
+     * door comes through here, so none stores a road closed where the arrow shows it open.
      */
     private void recordSquare(TileKey tile, Map<RouteId, Direction> wanted)
     {
@@ -6297,7 +6059,6 @@ public class AutonomySession
         {
             Route route = routes.get(answer.getKey());
 
-            // the other roads only where their arms changed them
             if (!wanted.containsKey(answer.getKey()) && route != null
                 && TileGraph.inForce(graph.getDirection(tile, answer.getKey()), route) == answer.getValue()) continue;
 
@@ -6310,8 +6071,7 @@ public class AutonomySession
     {
         apply(tile, routeId, direction);
 
-        // ONE TRACK, TWO SQUARES (OB-320): a two-square crossing's track runs over both of its squares, so its direction
-        // is set on both - in the other square's own terms - whichever square and whichever door it was set from.
+        // One track, two squares (OB-320): a two-square crossing's direction is set on both, in each square's terms.
         RouteId across = graph == null ? null : graph.crossingRouteOnPartner(tile, routeId);
 
         if (across != null)
@@ -6321,11 +6081,9 @@ public class AutonomySession
     }
 
     /**
-     * The directions recorded, derived from, never refused under a standing train (Adam: *"Generally I prefer warnings
-     * or errors over outright refusals, since it makes editing easier for the user"*).  What a direction does to a
-     * train is the setup check's to say: a train left facing a way its station no longer has is an error
-     * (`facingsThatCannotBeHeld`), one left facing track that runs only towards it a warning.  First, each train of the
-     * railway's the change leaves no copy facing its way is written into the setup where it stands.
+     * The directions recorded, re-derived, never refused under a standing train (Adam: *"Generally I prefer warnings or
+     * errors over outright refusals, since it makes editing easier for the user"*).  Trains the change leaves on no
+     * copy are first written into the setup where they stand.
      */
     boolean directionsTouched()
     {
@@ -6337,12 +6095,9 @@ public class AutonomySession
     }
 
     /**
-     * Every train the setup records on a square the railway stands it on no Point of (no copy faces its way), and the
-     * way it faces: the diagram draws it there, where the error about it says it stands.  ALONG ITS TRACK (Adam: "it
-     * must be N/S or a N/S track, or E/W on E/W, or angled on a curved track"): a recorded facing the track does not
-     * run is drawn as `facingWhereNoCopySays` draws any train no copy holds, as the caption and the Is Facing menu read
-     * it.
-     *
+     * Trains the setup records on a square where the railway stands them on no Point, to their facing, drawn along the
+     * track as `facingWhereNoCopySays` draws them (Adam: "it must be N/S or a N/S track, or E/W on E/W, or angled on a
+     * curved track").
      * @return square to facing
      */
     public Map<TileKey, Side> trainsOnNoPoint()
@@ -6367,10 +6122,7 @@ public class AutonomySession
         return out;
     }
 
-    /**
-     * The squares of `trainsOnNoPoint` whose train this configuration pauses, for the diagram to draw grey: the setup's
-     * list, since the railway does not have these trains.
-     */
+    /** The squares of `trainsOnNoPoint` whose train this configuration pauses, by the setup's list. */
     public java.util.Set<TileKey> pausedTrainsOnNoPoint()
     {
         java.util.Set<TileKey> out = new LinkedHashSet<>();
@@ -6390,10 +6142,8 @@ public class AutonomySession
     }
 
     /**
-     * Writes into the setup, where it stands and facing as it faces, each train of the railway's that the setup as it
-     * now stands gives no copy facing its way.  The copy a train stands on is its direction, so the rebuild cannot
-     * stand it on another; recorded, the check reports it as an error until the track or the train is put right, and
-     * the fold keeps it on its square (`capture`).
+     * Records in the setup each railway train the setup now gives no copy facing its way: the rebuild cannot move it to
+     * another copy, so the check reports it and the fold keeps it on its square.
      */
     private void recordTrainsTheRailwayCannotHold()
     {
@@ -6414,7 +6164,7 @@ public class AutonomySession
 
             setFacing(square, facing);
 
-            // AND ITS TAIL: the track put back stood it with none, and offered what its tail lies over
+            // And its tail
             if (train.getValue().length > 2 && train.getValue()[2] != null) setArrivedFrom(square, (String) train.getValue()[2]);
 
             if (train.getValue().length > 3 && train.getValue()[3] != null)
@@ -6424,10 +6174,7 @@ public class AutonomySession
         }
     }
 
-    /**
-     * Whether a naming has a copy of the square a train facing that way can stand on: one facing it, or a square of one
-     * copy recording no facing - one place, as `pointNamedNow` puts a train back.
-     */
+    /** Whether a naming has a copy a train facing that way can stand on, as `pointNamedNow` puts it back. */
     private static boolean holds(AutonomyBuilder naming, TileKey square, Side facing)
     {
         Map<String, Side> facings = naming.facingByName();
@@ -6451,10 +6198,7 @@ public class AutonomySession
         return copies == 1 && recordsNone;
     }
 
-    /**
-     * The railway's trains, each to its square and the way it faces, or null: by the square and facing each running Point
-     * says, else by its name through today's naming.
-     */
+    /** The railway's trains, each to its square and facing, or null: by the running Point's square, else its name. */
     private Map<String, Object[]> railwayTrains()
     {
         Map<String, Object[]> standing = new LinkedHashMap<>();
@@ -6475,7 +6219,6 @@ public class AutonomySession
 
             if (loc == null || loc.getName() == null || square == null) continue;
 
-            // AND THE SIDE IT CAME IN BY AND ITS ROAD, for a record of it
             standing.putIfAbsent(loc.getName(), new Object[] {square, facing, point.getArrivedFrom(),
                 org.traincontrol.automation.Layout.namesOfRoad(point.getArrivedAlong())});
         }
@@ -6484,8 +6227,7 @@ public class AutonomySession
     }
 
     /**
-     * The trains standing, each to its square and the way it is said to face, or null: the railway's (`railwayTrains`),
-     * and the setup's where the railway has none of them.
+     * The trains standing, to square and facing, or null: the railway's, and the setup's where the railway has none.
      */
     private Map<String, Object[]> standingTrains()
     {
@@ -6509,11 +6251,7 @@ public class AutonomySession
         return standing;
     }
 
-    /**
-     * The squares a standing train faces track from that runs only towards it (a warning, judged near the train only):
-     * no edge of the railway leaves the square by the side it faces, and one arrives by it.  Track closed there is not
-     * this.
-     */
+    /** Squares where a standing train faces track that only runs towards it (a warning). */
     private Set<TileKey> trainsFacingTrackTowardsThem()
     {
         Set<TileKey> out = new LinkedHashSet<>();
@@ -6533,10 +6271,7 @@ public class AutonomySession
         return out;
     }
 
-    /**
-     * The stations at the end of a line that trains may not turn at (an error): the railway reaches the square by one
-     * side only, and neither may nor must a train change direction there, so a train sent there could never leave.
-     */
+    /** Stations at the end of a line that trains may not turn at (an error): a train sent there could never leave. */
     private Set<TileKey> stationsAtTheEndOfALine()
     {
         Set<TileKey> out = new LinkedHashSet<>();
@@ -6586,10 +6321,7 @@ public class AutonomySession
         return false;
     }
 
-    /**
-     * The naming of a reduction of the graph as the setup now stands, made as a rebuild makes it and not installed: the
-     * graph held may not reflect a direction recorded, or a link switched off.
-     */
+    /** The naming of a trial reduction of the setup as it now stands, not installed. */
     private AutonomyBuilder trialNaming()
     {
         TileGraph trialGraph = new TileGraph(pages, store.getExcludedPages());
