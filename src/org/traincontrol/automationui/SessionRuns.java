@@ -22,17 +22,12 @@ final class SessionRuns
 {
     private final AutonomySession owner;
 
-    /**
-     * @param owner the session whose graph the runs are on
-     */
     SessionRuns(AutonomySession owner)
     {
         this.owner = owner;
     }
 
-    /**
-     * The body of `AutonomySession.flowMarks`, whose javadoc says what it does.
-     */
+    /** The body of `AutonomySession.flowMarks`. */
     Map<TileKey, TileAnnotation.Mark> flowMarks()
     {
         Map<TileKey, TileAnnotation.Mark> out = new LinkedHashMap<>();
@@ -76,17 +71,13 @@ final class SessionRuns
         return out;
     }
 
-    /**
-     * The body of `AutonomySession.runs`, whose javadoc says what it does.
-     */
+    /** The body of `AutonomySession.runs`. */
     Map<TileKey, Run> runs()
     {
         return owner.graph == null ? Collections.<TileKey, Run>emptyMap() : owner.graph.runs();
     }
 
-    /**
-     * The body of `AutonomySession.runLeaders`, whose javadoc says what it does.
-     */
+    /** The body of `AutonomySession.runLeaders`. */
     Map<TileKey, TileKey> runLeaders()
     {
         Map<TileKey, TileKey> out = new LinkedHashMap<>();
@@ -102,9 +93,7 @@ final class SessionRuns
         return out;
     }
 
-    /**
-     * The body of `AutonomySession.setRunDirection`, whose javadoc says what it does.
-     */
+    /** The body of `AutonomySession.setRunDirection`. */
     int setRunDirection(TileKey leader, RouteId routeId, Direction direction)
     {
         Run run = runs().get(leader);
@@ -152,9 +141,7 @@ final class SessionRuns
         return at + 1 < run.getTiles().size() ? run.getTiles().get(at + 1) : run.getEnd();
     }
 
-    /**
-     * The body of `AutonomySession.staticAnnotations`, whose javadoc says what it does.
-     */
+    /** The body of `AutonomySession.staticAnnotations`. */
     Map<TileKey, TileAnnotation> staticAnnotations(java.util.Collection<TileKey> squares, boolean arrows,
         boolean allowedToo)
     {
