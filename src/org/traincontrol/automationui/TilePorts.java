@@ -12,22 +12,17 @@ import org.traincontrol.base.Accessory.accessorySetting;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 
 /**
- * The port map: which sides of a track diagram tile are connected to each other.
- *
- * The seed for autonomy's tile graph.  Geometry proposes the connections and the user corrects them in the diagram
- * editor, so a misreading here shows up as a visibly wrong line rather than a silently wrong edge.
+ * The port map: which sides of a track diagram tile are connected to each other, the seed for autonomy's tile graph.
+ * Geometry proposes and the user corrects it in the diagram editor, so a misreading shows up as a visibly wrong line
+ * rather than a silently wrong edge.
  *
  * The map is state-indexed: ports(type, orientation, state) returns the routes that exist in that state.  Switches
  * REPLACE their routes when thrown rather than adding to them (a SWITCH_LEFT is N-S unswitched and S-W switched), so
- * there is no "common" leg, branch or toe in this class.  Non-switch tiles have a single state.
- *
- * Orientation follows getImage: the icon is rotated by (4 - orientation) * 90 degrees clockwise.  Valid orientations
- * are what LayoutDiagramComponent.getNumOrientations() allows for the type; asking for orientation 3 of a STRAIGHT is
- * a bug, not a rotation.
- *
- * The table was verified tile by tile against the icon art (`assets/automation/tile-ports.png` is drawn from it), and
- * testAutonomyDiagramPorts.testTheWholePortTableIsWhatTheMapSaysItIs executes all of it, so adding a tile type without
- * stating its ports fails the build.
+ * there is no "common" leg, branch or toe in this class.  Non-switch tiles have a single state.  Orientation follows
+ * getImage: the icon is rotated by (4 - orientation) * 90 degrees clockwise, and an orientation the type does not have
+ * (3 of a STRAIGHT) is a bug, not a rotation.  The table was verified tile by tile against the icon art
+ * (`assets/automation/tile-ports.png`), and testAutonomyDiagramPorts executes all of it, so a tile type added without
+ * its ports fails the build.
  *
  * @author Adam
  */
