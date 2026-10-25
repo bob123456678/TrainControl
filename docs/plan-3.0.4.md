@@ -79,6 +79,14 @@ By script, at the start, before other branches are open: `git mv`, package and i
 ## 4. Code health
 
 - The test comment pass (`lean.py`, the 23 longest test files first), then `testCommentsStayLean` counts `test/` too.
+- Adam, later the same day: "Check for any other classes you've made that haven't yet had a comment pass, add the
+  pass to the plan, and run it."  A survey of `dev` at `5f179da5` found 445 of the 569 Java files were written with
+  Claude, and 359 of those had no comment trim in their history.  The pass takes 17 `src` files (JarUpdater,
+  CommandRow, StandingTrains, SelfUpdate, ConditionOutline, TrainFit, LayoutExplanations, ThreeWaySwitch,
+  TileSelection, AutonomySettingsTab, RouteCapture, BuiltReach, RestoreAction, SessionRuns, CoalescedAsk, DetailsArea,
+  PopupListener) and the 278 test files with 30 or more comment lines, in eight Sonnet sets.  The 35 files that open
+  branches touch go in a ninth set once those branches are merged; the 29 tests with fewer than 30 comment lines are
+  left as they are.  Then the ratchet pins are lowered once, before `testCommentsStayLean` counts `test/`.
 - The duplicated-code ratchet test (Java port of `dupscan.py`'s tokenizer), and the approved pre-2.7.0 merges.
 - behaviour.md split by area, with a short index; citations updated in the same commit.
 - Builder tooling: `newtest.py`, `redgreen.sh`, `env.sh`, a watchdog for a dialog nobody answers, an affected-classes
