@@ -25,6 +25,17 @@ text:
 | Moved to 3.0.4 on Adam's word of 2026-10-25: "Put FR-124 into 3.0.4."
 |
 
+[comment FR-145 0]
+who: Claude
+date: 2026-10-25
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-25.**
+|
+| Moved to 3.0.4 on Adam's word of 2026-10-25: "Sorry, I also meant to put FR-145 in."
+|
+
 [comment MT-001 0]
 who: Adam
 date: 2026-08-22

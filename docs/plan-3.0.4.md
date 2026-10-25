@@ -1,7 +1,7 @@
 # 3.0.4 plan
 
 Adam, 2026-10-25: "Put FR-124 into 3.0.4.  Go with the package split proposal and the proposal for the pre-2.7 code
-first for my approval, and then the rest of the plan sounds good."
+first for my approval, and then the rest of the plan sounds good."  Then: "Sorry, I also meant to put FR-145 in.  Then proceed with the plan."
 
 The details behind most items are in `docs/refactor-3.0.3.md` section 8 ("Next steps, after 3.0.3"); this file sets
 the order.  Dev became 3.0.4 at `992ea86b`, after 3.0.3 shipped as master `1aa89b05`.
@@ -27,6 +27,7 @@ By script, at the start, before other branches are open: `git mv`, package and i
 
 - **OB-374:** Layout > Screenshot offers the Medium size and drops the pixel counts.
 - **FR-124:** Restore from Backup in the File menu (its entry lists what to settle when it is built).
+- **FR-145:** the last five layouts in the Layouts menu, for easy switching.
 - **FR-109:** rename, delete and add pages from the layout editor, from `exp-post-sonnet` with the grader's fixes and
   the window kept open.
 - **Shorter messages and tooltips:** measure, then Adam approves the target shape and about 20 samples, then all eight
@@ -47,4 +48,4 @@ By script, at the start, before other branches are open: `git mv`, package and i
 
 Validator rounds to convergence, a full battery, then `docs/RELEASE.md`.
 
-Not in 3.0.4: FR-145 and the rest of the 3.1.0 list.
+Not in 3.0.4: the rest of the 3.1.0 list.

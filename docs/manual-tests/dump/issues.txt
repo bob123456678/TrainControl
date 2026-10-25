@@ -579,7 +579,7 @@ text:
 ordinal: 44
 inbox: yes
 kind: feature request
-title: easy switching between layouts
+title: for 3.0.4: easy switching between layouts
 filed: 2026-10-25
 filed_at: 2026-10-25 00:09
 raised_from: noticed while testing - not from a particular test
