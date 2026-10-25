@@ -136,6 +136,40 @@ public class testRecentLayouts
     }
 
     /**
+     * The layout open when TrainControl started is listed once another is opened, though it was never recorded: Adam
+     * opened B from cs2_sample_layout and the menu left cs2_sample_layout out (OB-378).
+     *
+     * MUTATION: drop the layout being left from `layoutFolderIs`'s record, and Recent Layouts is empty after B opens.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testTheLayoutOpenAtStartIsListedOnceAnotherOpens() throws Exception
+    {
+        String a = sandbox.getFolder().getAbsolutePath();
+        String b = second.toFile().getAbsolutePath();
+
+        if (!a.equals(new File(String.valueOf(ui.localLayoutPath())).getAbsolutePath()))
+        {
+            record(a);
+
+            open(a);
+        }
+
+        // A is open and was never recorded, as at start-up
+        record(b);
+
+        open(b);
+
+        assertEquals(shown(), Collections.singletonList(a), "after opening B, Recent Layouts does not list A, the"
+            + " layout open before it");
+
+        open(a);
+
+        assertEquals(shown(), Collections.singletonList(b), "after opening A again, Recent Layouts does not list B alone");
+    }
+
+    /**
      * Five are listed, most recent first, without the open layout; with none to list the submenu is grayed.
      *
      * MUTATION: drop the cut to `RECENT_LAYOUTS_SHOWN` in `refreshRecentLayouts`, and seven are listed.
@@ -310,6 +344,9 @@ public class testRecentLayouts
     /** Opens a listed folder and waits until its pages are loaded. */
     private static void open(String folder) throws Exception
     {
+        // The submenu is filled as the Layouts menu opens
+        shown();
+
         List<String> said = new ArrayList<>();
 
         JMenuItem item = Components.onTheEventThread(() ->

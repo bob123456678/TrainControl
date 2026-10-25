@@ -23046,11 +23046,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (path != null && !path.isEmpty())
         {
+            // The local layout being left comes next, so the one open at start-up, never opened here, is listed too
+            String leaving = prefs.get(LAST_LOCAL_LAYOUT_PREF, "");
+
             prefs.put(LAST_LOCAL_LAYOUT_PREF, path);
 
             List<String> recent = new ArrayList<>(Collections.singletonList(path));
 
-            recent.addAll(recentLayoutsWithout(path));
+            File left = leaving.isEmpty() ? null : new File(leaving).getAbsoluteFile();
+
+            if (left != null && !left.equals(new File(path).getAbsoluteFile())) recent.add(leaving);
+
+            for (String folder : recentLayoutsWithout(path))
+            {
+                if (!new File(folder).getAbsoluteFile().equals(left)) recent.add(folder);
+            }
 
             // One more than are shown, as the open one is not shown
             prefs.put(RECENT_LAYOUTS_PREF, String.join("\n", recent.subList(0, Math.min(recent.size(),
