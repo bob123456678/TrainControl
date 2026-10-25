@@ -481,8 +481,8 @@ at Phase 4, Phase 6, the comment trims and the Layout pilot; what follows is the
   `render_findings`).  `testEveryCitationResolves`'s `cited.size() > 300` (ids in code and strings as well as
   comments) still holds with LayoutEditor cleared; lower it if a later pass takes the count under.
 - Found by the test pass (issue 28): `HomeStaging.canRest`'s FR-001 check never decides anything, because the
-  planner's path search already refuses a held-back square.  Left as it is: removing a rule's second copy needs
-  Adam's word.
+  planner's path search already refuses a held-back square.  Removed on Adam's word of 2026-10-24 ("canRest's
+  redundant check can go").
 
 **Ratchets as they stand at 3.0.3** (each may only go down)
 - `testCommentsStayLean`: history 319, long blocks 54, review ids 67.
