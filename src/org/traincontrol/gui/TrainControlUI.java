@@ -21437,10 +21437,25 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     private void exportRoutesMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exportRoutesMenuItemActionPerformed
 
-        // The panel is built and shown on the event thread: "showMessageDialog" reads like a toast, but what it shows is a whole
-        // AutoJSONExport (a JTextArea, a JButton and a GroupLayout), and constructing Swing components off the event thread is as wrong as
-        // showing them.  Generating the export is the slow part and the only thing left on the thread; it runs once, for the panel and the
-        // clipboard.
+        showExport(() -> this.getModel().exportRoutes(), "routes", "json", "route.ui.dialogExportRouteData",
+            "autolayout.errorJsonExportFailedWithMessage", "route.ui.errorFailedToGenerateOrExportRouteJsonCheckLog", true);
+    }//GEN-LAST:event_exportRoutesMenuItemActionPerformed
+
+    /** Generates one export; may be slow, so it is never asked on the event thread. */
+    private interface ExportText
+    {
+        String generate() throws Exception;
+    }
+
+    /**
+     * Generates an export off the event thread and shows its panel on it, since the panel is Swing components: a
+     * failure either side is logged under `logKey` and reported with `errorKey`.
+     *
+     * @param toClipboard also put the export on the clipboard once the panel is closed
+     */
+    private void showExport(ExportText export, String type, String extension, String titleKey, String logKey,
+        String errorKey, boolean toClipboard)
+    {
         new Thread(() ->
         {
             String generated = null;
@@ -21448,7 +21463,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             try
             {
-                generated = this.getModel().exportRoutes();
+                generated = export.generate();
             }
             catch (Exception e)
             {
@@ -21462,10 +21477,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 if (threw != null)
                 {
-                    this.model.logf("autolayout.errorJsonExportFailedWithMessage", threw.getMessage());
+                    this.model.logf(logKey, threw.getMessage());
                     this.model.log(threw);
 
-                    JOptionPane.showMessageDialog(this, I18n.t("route.ui.errorFailedToGenerateOrExportRouteJsonCheckLog"));
+                    JOptionPane.showMessageDialog(this, I18n.t(errorKey));
 
                     return;
                 }
@@ -21474,27 +21489,29 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 {
                     JOptionPane.showMessageDialog(
                         this,
-                        new AutoJSONExport(payload, this, "routes", "json"),
-                        I18n.t("route.ui.dialogExportRouteData"),
+                        new AutoJSONExport(payload, this, type, extension),
+                        I18n.t(titleKey),
                         JOptionPane.PLAIN_MESSAGE
                     );
 
-                    // Place in clipboard
-                    StringSelection selection = new StringSelection(payload);
-                    Toolkit.getDefaultToolkit()
-                        .getSystemClipboard()
-                        .setContents(selection, selection);
+                    if (toClipboard)
+                    {
+                        StringSelection selection = new StringSelection(payload);
+                        Toolkit.getDefaultToolkit()
+                            .getSystemClipboard()
+                            .setContents(selection, selection);
+                    }
                 }
                 catch (Exception e)
                 {
-                    this.model.logf("autolayout.errorJsonExportFailedWithMessage", e.getMessage());
+                    this.model.logf(logKey, e.getMessage());
                     this.model.log(e);
 
-                    JOptionPane.showMessageDialog(this, I18n.t("route.ui.errorFailedToGenerateOrExportRouteJsonCheckLog"));
+                    JOptionPane.showMessageDialog(this, I18n.t(errorKey));
                 }
             });
         }).start();
-    }//GEN-LAST:event_exportRoutesMenuItemActionPerformed
+    }
 
     private void importRoutesMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_importRoutesMenuItemActionPerformed
 
@@ -22391,57 +22408,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     private void exportLocsToCSVMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exportLocsToCSVMenuItemActionPerformed
 
-        // The panel is built and shown on the event thread: "showMessageDialog" reads like a toast, but what it shows is a whole
-        // AutoJSONExport (a JTextArea, a JButton and a GroupLayout), and constructing Swing components off the event thread is as wrong as
-        // showing them.  Generating the export is the slow part and the only thing left on the thread; it runs once, for the panel and the
-        // clipboard.
-        new Thread(() ->
-        {
-            String generated = null;
-            Exception failed = null;
-
-            try
-            {
-                generated = this.getModel().exportLocsToCSV();
-            }
-            catch (Exception e)
-            {
-                failed = e;
-            }
-
-            final String payload = generated;
-            final Exception threw = failed;
-
-            javax.swing.SwingUtilities.invokeLater(() ->
-            {
-                if (threw != null)
-                {
-                    this.model.logf("loc.errorExportFailedWithMessage", threw.getMessage());
-                    this.model.log(threw);
-
-                    JOptionPane.showMessageDialog(this, I18n.t("loc.ui.errorFailedToGenerateOrExportLocomotiveDatabaseCheckLog"));
-
-                    return;
-                }
-
-                try
-                {
-                    JOptionPane.showMessageDialog(
-                        this,
-                        new AutoJSONExport(payload, this, "locs", "csv"),
-                        I18n.t("loc.ui.dialogExportLocomotiveData"),
-                        JOptionPane.PLAIN_MESSAGE
-                    );
-                }
-                catch (Exception e)
-                {
-                    this.model.logf("loc.errorExportFailedWithMessage", e.getMessage());
-                    this.model.log(e);
-
-                    JOptionPane.showMessageDialog(this, I18n.t("loc.ui.errorFailedToGenerateOrExportLocomotiveDatabaseCheckLog"));
-                }
-            });
-        }).start();
+        showExport(() -> this.getModel().exportLocsToCSV(), "locs", "csv", "loc.ui.dialogExportLocomotiveData",
+            "loc.errorExportFailedWithMessage", "loc.ui.errorFailedToGenerateOrExportLocomotiveDatabaseCheckLog", false);
     }//GEN-LAST:event_exportLocsToCSVMenuItemActionPerformed
 
     private void popUpAllMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_popUpAllMenuItemActionPerformed
