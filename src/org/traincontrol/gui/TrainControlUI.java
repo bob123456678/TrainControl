@@ -150,6 +150,7 @@ import org.traincontrol.gui.widgets.BusyDialog;
 import org.traincontrol.gui.widgets.HandScrollListener;
 import org.traincontrol.gui.widgets.PositionAwareJFrame;
 import org.traincontrol.gui.widgets.QuickFileChooser;
+import org.traincontrol.gui.widgets.RestoreAction;
 import org.traincontrol.gui.widgets.StartupSplash;
 import org.traincontrol.gui.widgets.StationCaption;
 import org.traincontrol.gui.widgets.UpdateFlow;
@@ -210,6 +211,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /** This computer's last layout folder, kept when switching to the Central Station's layout (OB-308). */
     public static final String LAST_LOCAL_LAYOUT_PREF = "LastLocalLayoutFolder" + Conversion.getFolderHash(10);
+
+    /** The layout folders opened lately, most recent first, one per line (FR-145). */
+    public static final String RECENT_LAYOUTS_PREF = "RecentLayoutFolders" + Conversion.getFolderHash(10);
     public static final String SLIDER_SETTING_PREF = "SliderSetting";
 
     /** Whether station captions are drawn light gray instead of the theme blue (FR-031); app-wide, not per folder. */
@@ -2455,6 +2459,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // `applyLayoutEditingAvailability`, during a layout database rebuild.
             if (editPageMenu != null) editPageMenu.setEnabled(workable && isLayoutLoaded());
 
+            refreshRecentLayouts();
+
             // Pop-outs and the picture export need loaded pages, not a local folder (a Central Station diagram works),
             // and the export would be handed the null page that activeLayoutPage returns when the selector is empty.
             boolean loaded = isLayoutLoaded();
@@ -2478,6 +2484,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         String why = running ? I18n.t(RunGates.NO_EDITS_WHILE_RUNNING) : null;
 
         greyForTheRun(chooseLocalDataFolderMenuItem, running, false, why);
+        greyForTheRun(recentLayoutsMenu, running, false, why);
         greyForTheRun(modifyLocalLayoutMenu, running, false, why);
         greyForTheRun(editPageMenu, running, false, why);
         greyForTheRun(initializeLocalLayoutMenuItem, running, true, why);
@@ -3063,6 +3070,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // always has a null `session`, so below it the guard, the data-source label and the headings would never exist
         // for it.
         mountLayoutHeadings();
+        mountRecentLayouts();
+        mountRestoreFromBackup();
         mountFindRoute();
 
         if (layoutMenu != null && layoutMenu.getMenuListeners().length == 0)
@@ -17659,6 +17668,37 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return this.backupDataMenuItem;
     }
 
+    /** File &gt; Restore from Backup (FR-124), placed by hand under Backup TrainControl Data. */
+    private javax.swing.JMenuItem restoreDataMenuItem;
+
+    private void mountRestoreFromBackup()
+    {
+        if (fileMenu == null || restoreDataMenuItem != null) return;
+
+        restoreDataMenuItem = new javax.swing.JMenuItem(I18n.t("ui.main.toolbar.restoreData"));
+
+        restoreDataMenuItem.setToolTipText(I18n.t("ui.main.toolbar.tooltip.restoreData"));
+
+        restoreDataMenuItem.addActionListener(e ->
+        {
+            // It replaces the layout folder, so it waits for a run and for the layout editor, as Open Layout does
+            if (refuseWhileARunHoldsTheSetup(this)) return;
+
+            if (refuseWhileEditorOpen()) return;
+
+            new RestoreAction(this).restoreFromBackup();
+        });
+
+        int backup = -1;
+
+        for (int i = 0; i < fileMenu.getMenuComponentCount(); i++)
+        {
+            if (fileMenu.getMenuComponent(i) == backupDataMenuItem) backup = i;
+        }
+
+        fileMenu.add(restoreDataMenuItem, backup + 1);
+    }
+
     private void backupDataMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_backupDataMenuItemActionPerformed
         this.backupAction.backupDataMenuItemActionPerformed();
     }//GEN-LAST:event_backupDataMenuItemActionPerformed
@@ -17751,7 +17791,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (fc.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) return;
 
-        layoutFolderIs(fc.getSelectedFile().getPath());
+        openLayoutFolder(fc.getSelectedFile());
+    }//GEN-LAST:event_chooseLocalDataFolderMenuItemActionPerformed
+
+    /** Open Layout after its chooser, which Recent Layouts runs too (FR-145): the folder becomes the layout and loads. */
+    private void openLayoutFolder(File folder)
+    {
+        layoutFolderIs(folder.getPath());
 
         applyLayoutEditingAvailability();
 
@@ -17784,7 +17830,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         I18n.t("layout.ui.errorInvalidPathOrCorruptData"));
                 }
             });
-    }//GEN-LAST:event_chooseLocalDataFolderMenuItemActionPerformed
+    }
 
     private void showCurrentLayoutFolderMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showCurrentLayoutFolderMenuItemActionPerformed
         
@@ -22947,13 +22993,134 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Says which layout the application is on (a folder of this computer's, or "" for the Central Station's) and
      * remembers a folder as the last local one, which switching to the Central Station does not forget (OB-308).  Every
-     * writer of the layout preference comes through here; "" is never remembered.
+     * writer of the layout preference comes through here; "" is never remembered.  A folder also heads Recent Layouts
+     * (FR-145).
      */
-    static void layoutFolderIs(String path)
+    public static void layoutFolderIs(String path)
     {
         prefs.put(LAYOUT_OVERRIDE_PATH_PREF, path);
 
-        if (path != null && !path.isEmpty()) prefs.put(LAST_LOCAL_LAYOUT_PREF, path);
+        if (path != null && !path.isEmpty())
+        {
+            prefs.put(LAST_LOCAL_LAYOUT_PREF, path);
+
+            List<String> recent = new ArrayList<>(Collections.singletonList(path));
+
+            recent.addAll(recentLayoutsWithout(path));
+
+            // One more than are shown, as the open one is not shown
+            prefs.put(RECENT_LAYOUTS_PREF, String.join("\n", recent.subList(0, Math.min(recent.size(),
+                RECENT_LAYOUTS_SHOWN + 1))));
+        }
+    }
+
+    /** How many folders Layouts &gt; Recent Layouts lists (FR-145). */
+    private static final int RECENT_LAYOUTS_SHOWN = 5;
+
+    /** The recorded layout folders, most recent first, without `open` and without repeats (by `File.equals`). */
+    private static List<String> recentLayoutsWithout(String open)
+    {
+        List<String> kept = new ArrayList<>();
+
+        Set<File> seen = new HashSet<>();
+
+        if (open != null && !open.isEmpty()) seen.add(new File(open).getAbsoluteFile());
+
+        for (String path : prefs.get(RECENT_LAYOUTS_PREF, "").split("\n"))
+        {
+            if (!path.isEmpty() && seen.add(new File(path).getAbsoluteFile())) kept.add(path);
+        }
+
+        return kept;
+    }
+
+    /** Takes a folder off Recent Layouts (FR-145). */
+    private static void forgetRecentLayout(String path)
+    {
+        List<String> kept = new ArrayList<>();
+
+        for (String recorded : prefs.get(RECENT_LAYOUTS_PREF, "").split("\n"))
+        {
+            if (!recorded.isEmpty() && !new File(recorded).getAbsoluteFile().equals(new File(path).getAbsoluteFile()))
+            {
+                kept.add(recorded);
+            }
+        }
+
+        prefs.put(RECENT_LAYOUTS_PREF, String.join("\n", kept));
+    }
+
+    /** Layouts &gt; Recent Layouts (FR-145), rebuilt each time the Layouts menu opens. */
+    private javax.swing.JMenu recentLayoutsMenu;
+
+    private void mountRecentLayouts()
+    {
+        if (layoutMenu == null || recentLayoutsMenu != null) return;
+
+        recentLayoutsMenu = new javax.swing.JMenu(I18n.t("ui.main.toolbar.recentLayouts"));
+
+        recentLayoutsMenu.setToolTipText(I18n.t("ui.main.toolbar.tooltip.recentLayouts"));
+
+        int open = indexOnLayoutMenu(chooseLocalDataFolderMenuItem);
+
+        if (open >= 0) layoutMenu.add(recentLayoutsMenu, open + 1);
+        else layoutMenu.add(recentLayoutsMenu);
+
+        refreshRecentLayouts();
+    }
+
+    /** The open layout is not listed; a name two folders share is shown as the whole path. */
+    private void refreshRecentLayouts()
+    {
+        if (recentLayoutsMenu == null) return;
+
+        recentLayoutsMenu.removeAll();
+
+        List<String> shown = recentLayoutsWithout(getLocalLayoutPath());
+
+        shown = shown.subList(0, Math.min(shown.size(), RECENT_LAYOUTS_SHOWN));
+
+        Map<String, Integer> named = new HashMap<>();
+
+        for (String path : shown) named.merge(new File(path).getName(), 1, Integer::sum);
+
+        for (final String path : shown)
+        {
+            String name = new File(path).getName();
+
+            javax.swing.JMenuItem item = new javax.swing.JMenuItem(named.get(name) > 1 || name.isEmpty() ? path : name);
+
+            item.setToolTipText(path);
+
+            item.addActionListener(e -> openRecentLayout(path));
+
+            recentLayoutsMenu.add(item);
+        }
+
+        recentLayoutsMenu.setEnabled(!shown.isEmpty());
+    }
+
+    /** Open Layout's rules, without its chooser; a folder that has gone is said once and taken off the list. */
+    private void openRecentLayout(String path)
+    {
+        if (refuseWhileARunHoldsTheSetup(this)) return;
+
+        if (refuseWhileEditorOpen()) return;
+
+        File folder = new File(path);
+
+        if (!folder.isDirectory())
+        {
+            forgetRecentLayout(path);
+
+            refreshRecentLayouts();
+
+            JOptionPane.showMessageDialog(this, I18n.f("ui.main.toolbar.errorRecentLayoutGone", path));
+
+            return;
+        }
+
+        openLayoutFolder(folder);
     }
 
     /**

@@ -614,6 +614,8 @@
         <test-one-class class="testATypedAddressIsReadTheSameAtEveryDoor"/>
         <test-one-class class="testTheDailyStatisticsHaveOneEntryPerCalendarDay"/>
         <test-one-class class="testTestAPathStartsWhereTheFindingsDo"/>
+        <test-one-class class="testRestoreFromBackup"/>
+        <test-one-class class="testRecentLayouts"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>
