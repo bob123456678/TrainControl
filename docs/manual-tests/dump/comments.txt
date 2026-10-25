@@ -29401,6 +29401,30 @@ text:
 | *Run against commit 76d7c9f1, in Dansk - build\classes, compiled 24 Oct 23:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 |
 
+[comment MT-823 0]
+who: Adam
+date: 2026-10-25
+kind: verdict
+verdict: Works, with notes
+text:
+| **Adam, 2026-10-25 (triage).** Works, with notes.
+|
+| It is still wider than before (172), but the widths match.
+|
+| *Run against commit f0fa3854, in Dansk - build\classes, compiled 25 Oct 01:17 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-824 0]
+who: Adam
+date: 2026-10-25
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-25 (triage).** Works.
+|
+| *Run against commit f0fa3854, in Dansk - build\classes, compiled 25 Oct 01:17 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
 [comment OB-331 0]
 who: Claude
 date: 2026-10-24
