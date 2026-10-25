@@ -12,13 +12,12 @@ import org.traincontrol.gui.LayoutLabel;
 /**
  * Which on-screen tiles stand for which square of which page.
  *
- * The same square can be on screen more than once - the main window and a popup can show the same page,
- * and the diagram is redrawn whenever a page is switched - so this is a set per square rather than a
- * single label.  Monitoring publishes one picture and every copy of a tile shows it.
+ * The same square can be on screen more than once (the main window and a popup can show the same page, and the diagram
+ * is redrawn on every page switch), so this is a set per square rather than a single label.  Monitoring publishes one
+ * picture and every copy of a tile shows it.
  *
- * Stale labels are pruned the way the accessory and feedback tile sets already prune theirs: on
- * iteration, by asking whether the label's window is still up.  Nothing has to remember to deregister,
- * which is what keeps a closed popup from leaking its whole page.
+ * Stale labels are pruned the way the accessory and feedback tile sets prune theirs: on iteration, by asking whether
+ * the label's window is still up, so nothing has to deregister and a closed popup cannot leak its page.
  *
  * @author Adam
  */
@@ -53,25 +52,18 @@ public class DiagramTileRegistry
             if (raced != null) here = raced;
         }
 
-        // Registering a new label for a square is the moment the old ones for it became rubbish, so it
-        // is the moment to drop them.
+        // Registering a new label for a square is the moment the old ones for it became rubbish.  The prune in publish
+        // cannot do this on the main window: it asks whether the label's parent is VISIBLE, and the main window's grid
+        // parent is the tab, visible for the life of the application, so every redraw left the old page here forever.
         //
-        // The prune in publish cannot do this job on the main window: it asks whether the label's parent
-        // is VISIBLE, and the main window's grid parent is the tab, which is visible for the life of the
-        // application.  Every repaint of the diagram - a size change, an address toggle, closing the
-        // editor - built a fresh page of labels and left the old page here forever, so the registry grew
-        // without bound and every publish walked an ever-longer list of components attached to nothing.
+        // Judged by isDisplayable rather than visibility: a label whose grid was replaced was removed from a realized
+        // window and has no peer.  Only the labels already here are judged, never the arriving one, which may not be
+        // attached yet.
         //
-        // Judged by isDisplayable rather than by visibility: a label whose grid has been replaced has
-        // been removed from a realized window and has no peer, which is exactly what "nobody can see
-        // this any more" means.  Only the labels already here are judged, never the one arriving - which
-        // may legitimately not be attached yet.
-        //
-        // And only labels of the SAME window.  The main window caches a page's grid and re-attaches it
-        // when the user comes back to that page, so its labels are detached - and perfectly alive -
-        // whenever another page is showing.  Judging them from a popup that happens to be rebuilding the
-        // same page threw them out while they were merely put away, and when the user switched back the
-        // page was attached, visible, and registered nowhere: no train ever lit up on it again.
+        // And only labels of the SAME window: the main window caches a page's grid and re-attaches it when the user
+        // returns, so its labels are detached but alive whenever another page shows, and judging them from a popup
+        // rebuilding the same page would leave the re-attached page registered nowhere, with no train ever lighting it
+        // again.
         for (Iterator<LayoutLabel> i = here.iterator(); i.hasNext();)
         {
             LayoutLabel existing = i.next();
@@ -173,10 +165,9 @@ public class DiagramTileRegistry
                 continue;
             }
 
-            // Never over the editor's own tiles.  The editor draws directions, lengths and selection
-            // into this same slot from the panel beside it, and the static layer carries none of those
-            // - so publishing here wiped every arrow in the editor the moment anything was edited,
-            // because an edit is exactly what asks the main diagram to refresh.
+            // Never over the editor's own tiles: the editor draws directions, lengths and selection into this same slot
+            // from the panel beside it, and the static layer carries none of those, so publishing here would wipe every
+            // arrow in the editor on any edit.
             if (label.isEditMode()) continue;
 
             label.setAutonomyAnnotation(annotation);
@@ -196,9 +187,7 @@ public class DiagramTileRegistry
     /**
      * The labels currently showing this square, if any.
      *
-     * A copy, because the caller walks it while the grid may be rebuilding underneath - and a set that
-     * is rebuilt during a walk is the ConcurrentModificationException this class exists to have already
-     * dealt with once.
+     * A copy, because the caller walks it while the grid may be rebuilding underneath.
      *
      * @param key the square
      * @return its labels, possibly empty, never null
@@ -228,11 +217,9 @@ public class DiagramTileRegistry
     }
 
     /**
-     * Blanks every square showing an annotation that is not among those kept, and forgets it (speed, 2026-10-04).
-     *
-     * What `clearAnnotations` is for - the square that has LEFT the setup, which a redraw walking the graph cannot reach -
-     * without blanking the squares the redraw sets again: those keep their mark, so the check that skips an unchanged
-     * one sees it.
+     * Blanks every square showing an annotation that is not among those kept, and forgets it.  What `clearAnnotations`
+     * is for - the square that has LEFT the setup, which a redraw walking the graph cannot reach - without blanking the
+     * squares the redraw sets again: those keep their mark, so the check that skips an unchanged one sees it.
      *
      * @param keep the squares the redraw sets
      */
@@ -249,13 +236,10 @@ public class DiagramTileRegistry
     }
 
     /**
-     * Blanks every square that is currently showing an annotation, and forgets it.
-     *
-     * Narrower than reset: the label registry and the monitoring state are left alone, because this
-     * runs whenever the static layer is redrawn and tearing those down would lose track of where the
-     * trains are.  What it exists for is the square that has LEFT the setup - a page just excluded,
-     * track just deleted - which the redraw cannot reach, because the redraw walks what is in the
-     * graph and that square no longer is.
+     * Blanks every square that is currently showing an annotation, and forgets it.  Narrower than reset: the label
+     * registry and monitoring state are left alone, because this runs whenever the static layer is redrawn.  It exists
+     * for the square that has LEFT the setup (a page just excluded, track just deleted), which the redraw walking the
+     * graph cannot reach.
      */
     public void clearAnnotations()
     {
