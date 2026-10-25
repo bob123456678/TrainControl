@@ -22,21 +22,18 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * Return Home brings a train back facing the way it was homed, not merely onto the square (Adam, 2026-09-23).
+ * Return Home brings a train back facing the way it was homed, not merely onto the square. Adam: *"yes, it should
+ * accomplish the facing.  but it's also reasonable to expect that the input facings are ones realistic on the layout.
+ * we shouldn't allow an impossible facing to be saved."* And for what a home is: *"the home should just be the logical
+ * point, and the direction is wherever the locomotive was facing when it started moving."*
  *
- * *"yes, it should accomplish the facing.  but it's also reasonable to expect that the input facings are ones realistic
- * on the layout.  we shouldn't allow an impossible facing to be saved."*  And his rule of 2026-08-31 for what a home is:
- * *"the home should just be the logical point, and the direction is wherever the locomotive was facing when it started
- * moving."*
+ * With BottomMainA's two plain copies both stations, a train homed on the westbound copy came back on the EASTBOUND one
+ * and was called home, because the planner took any copy of the home square as home (MT-165); a copy is a facing
+ * (section 3), so it came home turned round.
  *
- * **What this morning's run showed.**  With BottomMainA's two plain copies both stations, the pinned arrangement homed a
- * train on the westbound copy, and Return Home brought it back on the EASTBOUND one and called it home: the planner took
- * any copy of the home square as home (MT-165).  A copy is a facing (section 3), so that train came home turned round.
- *
- * **The fixture:** the frozen operator layout with BottomMainA's east bar lifted, as it stood at `2958fcf3` - Adam's
- * follow-up edit of the same day barred arrivals from the east there again, which leaves the square one placeable copy
- * and the facing no choice.  One train, homed on the westbound copy by the running diagram's own door, moved away by
- * hand, and sent home.
+ * The fixture: the frozen operator layout with BottomMainA's east bar lifted, as it stood at `2958fcf3` (the live
+ * layout bars arrivals from the east there again, leaving the facing no choice). One train, homed on the westbound copy
+ * by the running diagram's own door, moved away by hand, and sent home.
  *
  * @author Adam
  */
@@ -71,7 +68,7 @@ public class testATrainComesHomeFacingTheWayItWasHomed
 
         session.open(pages);
 
-        // BOTH PLAIN COPIES OF BOTTOMMAINA PLACEABLE - see the class comment.
+        // Both plain copies of BottomMainA placeable - see the class comment.
         TileKey mainA = null;
 
         for (TileKey key : session.getStore().getNamedTiles())
@@ -93,7 +90,7 @@ public class testATrainComesHomeFacingTheWayItWasHomed
         layout.setMinDelay(0);
         layout.setMaxDelay(0);
 
-        // NOTHING OF HIS STANDING OR HOMED, so the plan is about this train alone.
+        // Nothing of his standing or homed, so the plan is about this train alone.
         for (Point p : new ArrayList<>(layout.getPoints()))
         {
             if (p.getCurrentLocomotive() != null) layout.moveLocomotive(null, p.getName(), true);
@@ -134,8 +131,6 @@ public class testATrainComesHomeFacingTheWayItWasHomed
      * Homed westbound on BottomMainA, moved to RampDown, sent home: it stands westbound.
      *
      * MUTATION: `HomeStaging.atHome` answering by square alone (MT-165) brings it home eastbound.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testItComesHomeOnTheCopyItWasHomedOn() throws Exception
@@ -149,7 +144,7 @@ public class testATrainComesHomeFacingTheWayItWasHomed
 
         assertTrue(layout.moveLocomotive(OUR_TRAIN, westbound.getName(), false), "could not stand the train westbound");
 
-        // HOMED THROUGH THE RUNNING DIAGRAM'S DOOR, on the copy it stands on - the facing it has.
+        // Homed through the running diagram's door, on the copy it stands on - the facing it has.
         layout.setHomeLocomotive(westbound.getName(), OUR_TRAIN);
 
         Point away = null;
@@ -184,20 +179,16 @@ public class testATrainComesHomeFacingTheWayItWasHomed
     }
 
     /**
-     * A train standing turned round on its home square - on the turning copy of the arrival it was homed in - is not home.
-     *
-     * A turning copy points back at the side it came in by, so it faces the other way from its plain twin.  Return Home
-     * counted the twin as home because the two share an arrival, and on a square trains may turn at, a train left turned
-     * round there was reported already home.  On his railway that is BottomMainB, EN57-947's home.
+     * A train standing turned round on its home square - on the turning copy of the arrival it was homed in - is not
+     * home. A turning copy points back at the side it came in by, so it faces the other way from its plain twin; Return
+     * Home counted the twin as home because the two share an arrival (on his railway, BottomMainB, EN57-947's home).
      *
      * MUTATION: `HomeStaging.atHome` accepting the turning twin again fails this.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testATrainTurnedRoundOnItsHomeIsNotHome() throws Exception
     {
-        // A PLAIN COPY WITH A TURNING TWIN, both places a train may stand - BottomMainB's where it has one.
+        // A plain copy with a turning twin, both places a train may stand - BottomMainB's where it has one.
         Point plain = null;
         Point twin = null;
 
@@ -248,16 +239,12 @@ public class testATrainComesHomeFacingTheWayItWasHomed
     }
 
     /**
-     * A home is set facing the way the train faces ON THE RAILWAY, not the way the setup last said.
-     *
-     * Adam's rule for the facing: *"Direction it is facing when home is set."*  It was read from the setup's FACING,
-     * which names the heading a train set off with until a capture writes the arrival back - so after a run that turned
-     * the train at this square, the home was saved facing the way it no longer faces.  `facingOf` was given the
-     * running-layout-first reading for exactly this staleness; the home door is its sibling.
+     * A home is set facing the way the train faces ON THE RAILWAY, not the way the setup last said (*"Direction it is
+     * facing when home is set."*). The setup's FACING names the heading a train set off with until a capture writes the
+     * arrival back, so after a run that turned the train at this square the home was saved facing the way it no longer
+     * faces. `facingOf` has the running-layout-first reading for this staleness; the home door is its sibling.
      *
      * MUTATION: read the setup's facing alone again and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testAHomeTakesTheFacingTheTrainHasOnTheRailway() throws Exception
@@ -281,11 +268,11 @@ public class testATrainComesHomeFacingTheWayItWasHomed
 
         try
         {
-            // THE SETUP SAYS IT STANDS HERE FACING EAST...
+            // The setup says it stands here facing east...
             session.placeLocomotive(square, OUR_TRAIN);
             session.setFacing(square, org.traincontrol.automationui.TilePorts.Side.valueOf(plainFacing));
 
-            // ...AND ON THE RAILWAY IT HAS TURNED, uncaptured.
+            // ...and on the railway it has turned, uncaptured.
             assertTrue(layout.moveLocomotive(OUR_TRAIN, twin.getName(), false), "could not stand the train on " + twin.getName());
 
             session.setHome(square, OUR_TRAIN);
@@ -313,16 +300,12 @@ public class testATrainComesHomeFacingTheWayItWasHomed
     }
 
     /**
-     * A train the railway has somewhere else gets no facing from the setup's stale word for it.
+     * A train the railway has somewhere else gets no facing from the setup's stale word for it: where the setup still
+     * has the train on this square and it has since driven off, the setup's FACING (the heading of a train no longer
+     * here) must not be saved as the home's, and the editor must not decide whether to ask from the setup.
      *
-     * A home's facing comes from the railway first.  But where the setup still has the train on this square
-     * and it has since driven off, the running layout finds it on no copy here and the setup's FACING - the heading of a
-     * train that is no longer here - was saved as the home's facing, and the editor did not ask, because it decided
-     * whether to ask from the setup.  Where the railway knows where the train is, the setup does not answer for it.
-     *
-     * MUTATION: let `homeFacingOf` fall back to the setup's facing for a train the railway has elsewhere and this fails.
-     *
-     * @throws Exception from the railway
+     * MUTATION: let `homeFacingOf` fall back to the setup's facing for a train the railway has elsewhere and this
+     * fails.
      */
     @Test
     public void testATrainThatHasDrivenOffGivesNoFacing() throws Exception
@@ -336,7 +319,7 @@ public class testATrainComesHomeFacingTheWayItWasHomed
 
         assertNotNull(square, "precondition: BottomMainB is not a square of the setup");
 
-        // SOMEWHERE ELSE a train may stand, not a copy of this square.
+        // Somewhere else a train may stand, not a copy of this square.
         Point elsewhere = null;
 
         for (Point p : layout.getPoints())
@@ -356,11 +339,11 @@ public class testATrainComesHomeFacingTheWayItWasHomed
 
         try
         {
-            // THE SETUP STILL SAYS IT STANDS HERE FACING EAST...
+            // The setup still says it stands here facing east...
             session.placeLocomotive(square, OUR_TRAIN);
             session.setFacing(square, session.facingsFor(square).get(plain.getName()));
 
-            // ...AND ON THE RAILWAY IT HAS DRIVEN OFF, uncaptured.
+            // ...and on the railway it has driven off, uncaptured.
             assertTrue(layout.moveLocomotive(OUR_TRAIN, elsewhere.getName(), false), "could not stand the train on "
                 + elsewhere.getName());
 
@@ -384,17 +367,13 @@ public class testATrainComesHomeFacingTheWayItWasHomed
     }
 
     /**
-     * A home held to a facing the train cannot stand in there is IMPOSSIBLE, with the reason - not a search that
-     * exhausts and says "maybe".
-     *
-     * The pre-check that turns an unreachable home into a proof asked whether the train could reach and stand on ANY
-     * copy of the home square.  Once a home is held to a facing, only the copies facing that way will do: here the train
-     * is excluded from the westbound copy it was homed on, the eastbound copy would still take it, and the pre-check
-     * passed on the eastbound copy's word - leaving the search to spend its budget and answer NO_PLAN_FOUND.
+     * A home held to a facing the train cannot stand in there is IMPOSSIBLE, with the reason, not a search that
+     * exhausts and says "maybe". Once a home is held to a facing only the copies facing that way will do: here the
+     * train is excluded from the westbound copy it was homed on, the eastbound copy would still take it, and a
+     * pre-check that looked at ANY copy passed on the eastbound copy's word and left the search to answer
+     * NO_PLAN_FOUND.
      *
      * MUTATION: have the pre-check look at every copy again and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testAHomeHeldToAFacingItCannotStandInIsImpossible() throws Exception
@@ -424,7 +403,7 @@ public class testATrainComesHomeFacingTheWayItWasHomed
 
             assertTrue(layout.moveLocomotive(OUR_TRAIN, away.getName(), false), "could not move the train away");
 
-            // THE HOME'S OWN COPY WILL NOT TAKE IT; the other arrival's would.
+            // The home's own copy will not take it; the other arrival's would.
             westbound.getExcludedLocs().add(train);
 
             HomeStaging.Plan plan = layout.planReturnToHome();
