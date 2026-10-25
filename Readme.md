@@ -420,6 +420,7 @@ Tab icons provided by Freepik.
         - Notices in the autonomy editor no longer push the diagram down: they float over its bottom edge, at most three lines with a scrollbar, and an X hides each one until the next.
         - In some languages, long phrases in the autonomy editor's `Track Directions` dropdown no longer make the window wider; the open list still shows them in full.
         - While autonomy or a route is running, the Layouts menu's page and layout items (such as `Create New Layout`, `Rename Current Page` and `Open Layout...`) now say "Edits are not allowed while autonomy or routes are running." instead of a message about locomotives.
+        - In the autonomy editor, the `Name Everything...` prompt now wraps a long question over several lines, like the other Bulk Tools prompts.
         - The setup check's warning that no train can reach a station now also finds stations whose only way in is from a side where arrivals are refused.
     - Automation API Bug Fixes
         - The full autonomy example in the API guide now gives each train a preferred speed and starts the trains it chose, so it runs as written.

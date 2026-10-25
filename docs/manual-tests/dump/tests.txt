@@ -32146,3 +32146,42 @@ body:
 tail:
 | ---
 |
+
+[test MT-815]
+ordinal: 814
+anchor: mt-815
+date: 2026-10-24
+title: Name Everything's prompt wraps its question and keeps the keyboard (OB-371)
+disposition: needs test
+from: OB-371
+written: 2026-10-24
+reopened: no
+body:
+| <a id="mt-815"></a>
+| ### MT-815 - 2026-10-24 - Name Everything's prompt wraps its question and keeps the keyboard (OB-371)
+|
+| **Disposition:** needs test
+| **From:** OB-371
+|
+| **Written:** 2026-10-24
+|
+| **Steps**
+|
+| 1. Before you start, File > Backup TrainControl Data.  Open your railway's layout, then Autonomy > Edit Autonomy on Page, on a page where at least one station or sensor has no name (clear one if needed, and note which).
+| 2. Open `Bulk Tools` > `Name Everything...`.
+| 3. Without clicking anywhere, type a name and press Enter.
+| 4. On the next prompt, type a name that is already taken and press Enter, then type a different name straight away.
+| 5. Press `Cancel`, then close the editor with `Cancel` and answer Yes to "Are you sure you want to close the editor without saving changes?"
+|
+| **Expected**
+|
+| - Step 2: the prompt's question runs over several lines, as the Mass Assign prompts' do, rather than one long line.
+| - Step 3: the name is typed into the field and accepted.
+| - Step 4: after the refusal you can type again without clicking the field.
+| - Step 5: the editor closes and nothing is kept.
+|
+| *What this is:* OB-371.  Name Everything had its own copy of the walk's prompt, which did not wrap its question; it now uses the Mass Assign prompt, with MT-474's focus fix.
+|
+tail:
+| ---
+|

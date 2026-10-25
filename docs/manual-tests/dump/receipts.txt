@@ -4010,3 +4010,11 @@ kind: bug
 what: The Layouts menu's page and layout items refused while autonomy or a route runs say "Edits are not allowed while autonomy or routes are running." (new key ui.main.errorNoEditsWhileRunning in 8 bundles); locomotive edits keep their sentence (`62d9fe37` on ob370).
 state: -
 became: MT-814
+
+[receipt OB-371]
+seq: 501
+filed: 2026-10-24
+kind: bug
+what: Name Everything asks in the Mass Assign walks' prompt (EditorMassAssign.askInWalkPrompt): the question wraps, and the field has the keyboard when the prompt opens and after a refusal, per MT-474 (`60d68612`).
+state: -
+became: MT-815

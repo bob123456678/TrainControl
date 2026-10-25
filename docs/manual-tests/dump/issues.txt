@@ -876,7 +876,7 @@ text:
 
 [issue OB-371]
 ordinal: 41
-inbox: yes
+inbox: no
 kind: bug
 title: The autonomy editor's name prompt may open without the keyboard focus in its field
 filed: 2026-10-24
