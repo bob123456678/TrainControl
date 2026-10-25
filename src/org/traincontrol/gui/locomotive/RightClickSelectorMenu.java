@@ -27,10 +27,7 @@ public class RightClickSelectorMenu extends JPopupMenu
         // No current button means no key to render - (char) -1 painted as U+FFFF garbage.
         // Without a target the item is meaningless, so it is omitted rather than disabled.
         //
-        // ONE CLAUSE, NOT TWO. The `!= null` half could never be false -
-        // `getKeyForCurrentButton` returns -1 and never null - and a guard whose first clause is dead
-        // is what made the OTHER site look as though it were already covered. It was not: the same
-        // value went into a dialog unguarded for as long as this comment has been here.
+        // ONE CLAUSE, NOT TWO: `getKeyForCurrentButton` returns -1 and never null, so an `!= null` half is dead.
         int currentButtonKey = ui.getKeyForCurrentButton();
 
         if (currentButtonKey >= 0)
@@ -60,16 +57,13 @@ public class RightClickSelectorMenu extends JPopupMenu
 
         add(LocomotiveMenuItems.editNotes(ui, loc, e));
 
-        // HOW LONG THIS TRAIN IS, when there is autonomy to care (FR-047).
-        //
-        // Beside the other facts about the locomotive itself rather than with the icons: it is a
-        // number about the train, like its name and address, and the items above it are about how it
-        // is drawn.
+        // HOW LONG THIS TRAIN IS, when there is autonomy to care (FR-047): beside the other facts about the locomotive,
+        // not the icons.
         JMenuItem length = LocomotiveMenuItems.trainLength(ui, loc, e);
 
         if (length != null) add(length);
 
-        // And its multi-unit, as the keyboard's menu offers it, below a divider of its own (Adam, 2026-10-03)
+        // And its multi-unit, as the keyboard's menu offers it, below a divider of its own
         addSeparator();
 
         add(LocomotiveMenuItems.multiUnit(ui, loc));
