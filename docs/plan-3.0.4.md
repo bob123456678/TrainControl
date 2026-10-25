@@ -6,6 +6,43 @@ first for my approval, and then the rest of the plan sounds good."  Then: "Sorry
 The details behind most items are in `docs/refactor-3.0.3.md` section 8 ("Next steps, after 3.0.3"); this file sets
 the order.  Dev became 3.0.4 at `992ea86b`, after 3.0.3 shipped as master `1aa89b05`.
 
+## Adam's decisions, 2026-10-25
+
+Taken on the approval page (claude.ai/artifact/26JF5A9WtBf6QDRCedLCVL, 58 items; the proposals' data is in the
+session's `plan304/` scratch folder).  Then: "Decisions are in.  Autonomously, follow the plan and then run up to 3
+iteration rounds on a validator.  Make sure the plan includes trimming comments in the test files.  You should also
+trim comments elsewhere in the UI that we haven't trimmed yet."
+
+**Package split** (counts on `4552832e`):
+- `gui.widgets`: About, AxisRuler, BusyDialog, HandScrollListener, LoadingSpinner, PositionAwareJFrame,
+  QuickFileChooser, RowIcons, StartupSplash, AddressLabel, StationCaption, and UpdateFlow and BackupAction (Adam:
+  "Move into widgets."; 19 members made public, `TrainControlUI#DATA_FILE_NAME` the one from before 2.7.0).
+- `gui.locomotive`: the 17 locomotive dialogs, menus and icons (`TrainControlUI#fileOf` made public).
+- `gui.autonomy`: the 10 prompts, reports and diagram monitor, and RightClickTimetableMenu (Adam: "RightClickTimetableMenu
+  should go to autonomy.  Leave the other two, since it's just two classes.").
+- `gui.layouteditor`: LayoutEditor and its five helpers.
+- Stay in gui: RouteEditorFrame, RightClickRouteMenu, TrainControlUI, and AutonomyEditorPanel (its preferences line is
+  left alone).
+- The move also anchors `AutoLocomotiveStatus`'s `resources/info.gif` on TrainControlUI, makes the four checks that
+  list the gui folder recurse, and updates the path-keyed baselines.
+
+**Pre-2.7.0 duplicated code** (cluster ranks on `4552832e`): yes to p1 (the icon cache, "contingent on this not
+reducing runtime efficiency"), p3 (the "0x" address parse), p4 (the daily statistics walk), p6 (the popup listeners),
+p7 (the CS2 JSON readers), p8 (the focus-timer text field).  No to p2 ("revisit later, seems like a minimal gain"), p5
+and p9 to p16.
+
+**Other items:** OB-374, FR-145 and FR-109 as proposed.  FR-124 (Adam: "The restorestate is fine, but we also need to
+figure out how to restore layouts.  And we probably need to take a shadow backup so the user can manually revert."):
+the restore brings back the layout folder too, and takes a full backup of the current data first, kept where the user
+can find it.
+
+**Messages:** the target shape and caps, Details areas for long lists and widths for wide HTML dialogs, log-only text
+out of scope with Help and About exempt, `I18n.countForm` for counts before plural nouns, the
+`core.testMessagesStayShort` ratchet, the 11 keys shown by pre-2.7.0 code included, and all 22 samples as written.
+
+**Comments:** the test comment pass (section 4) and, in `src/`, every UI file the 3.0.3 passes did not trim (those
+were Layout, AutonomySession, AutonomyEditorPanel, LayoutEditor and TrainControlUI).
+
 ## 1. For Adam's approval, before other branches open
 
 - **The gui package split proposal.**  A read-only script proposes groups for `org.traincontrol.gui` and counts, per
