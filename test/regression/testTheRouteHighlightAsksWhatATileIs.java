@@ -19,25 +19,22 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 /**
- * Highlight on Diagram lights a tile of the kind the address names, and not everything numbered alike
- * (MT-462).
+ * Highlight on Diagram lights a tile of the kind the address names, and not everything numbered alike (MT-462).
  *
- * Adam, 2026-09-21, having run MT-462: *"(tested with route 7): links, unrelated routes (58), and S88s
- * (10) are highlighted.  Should be switches and signals and the S88 that triggers the route or is
- * involved in conditions only.  Seems the highlighting doesn't care about item type."*
+ * Adam, having run MT-462: "(tested with route 7): links, unrelated routes (58), and S88s (10) are highlighted.  Should
+ * be switches and signals and the S88 that triggers the route or is involved in conditions only.  Seems the
+ * highlighting doesn't care about item type."
  *
- * **It did not care.**  `TrainControlUI.highlightAddresses` matched on `getRawAddress()` alone, and
- * every kind of tile carries one: a page link's address is the page it points at, a route tile's is the
- * route's id, an s88's is the sensor. So a route commanding accessory 10 lit the s88 numbered 10, a
- * route commanding accessory 58 lit the tile for route 58, and a route whose own id was 7 lit every
- * link aimed at page 7. Three separate kinds of false positive from one missing question.
+ * `TrainControlUI.highlightAddresses` matched on `getRawAddress()` alone, and every kind of tile carries one (a page
+ * link's is the page it points at, a route tile's the route's id, an s88's the sensor): three kinds of false positive
+ * from one missing question.
  *
- * **The scenario has the collision built in**, which is why it is used here: `single-switch` gives
- * WestEnd the s88 address 10 and the turnout the accessory address 1, so "accessory 10" is an address
- * nothing on the page answers to as an accessory and one that an s88 answers to.
+ * **The scenario has the collision built in:** `single-switch` gives WestEnd the s88 address 10 and the turnout the
+ * accessory address 1, so "accessory 10" is an address nothing on the page answers to as an accessory and one that an
+ * s88 answers to.
  *
- * MUTATION: drop the `answersTo` test from the loop in `highlightAddresses` and the first claim goes
- * red - the s88 lights for an accessory address.
+ * MUTATION: drop the `answersTo` test from the loop in `highlightAddresses` and the first claim goes red - the s88
+ * lights for an accessory address.
  *
  * @author Adam
  */
@@ -69,8 +66,7 @@ public class testTheRouteHighlightAsksWhatATileIs
             throw new SkipException("the highlight is a drawing, and drawing needs a display");
         }
 
-        // BEFORE init, which opens whatever the layout preference names - Adam's own railway on his
-        // machine (OB-111).  The sandbox redirects it to a copy of the scenario.
+        // BEFORE init, which opens whatever the layout preference names - Adam's own railway on his machine (OB-111).
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("single-switch"));
 
         // showUI, because the registry this asks about is filled by the grid the window mounts.
@@ -105,11 +101,7 @@ public class testTheRouteHighlightAsksWhatATileIs
         }
     }
 
-    /**
-     * An accessory address that only a sensor carries lights nothing.
-     *
-     * @throws Exception from the event thread
-     */
+    /** An accessory address that only a sensor carries lights nothing. */
     @Test
     public void testASensorIsNotLitByAnAccessoryAddress() throws Exception
     {
@@ -127,11 +119,8 @@ public class testTheRouteHighlightAsksWhatATileIs
     }
 
     /**
-     * The same address, asked of the sensors, lights the sensor.
-     *
-     * The control for the claim above: without it, a filter that refuses everything would pass.
-     *
-     * @throws Exception from the event thread
+     * The same address, asked of the sensors, lights the sensor: the control, without which a filter that refuses
+     * everything would pass.
      */
     @Test
     public void testTheSameAddressAsASensorDoesLightIt() throws Exception
@@ -146,12 +135,8 @@ public class testTheRouteHighlightAsksWhatATileIs
     }
 
     /**
-     * And an accessory address the turnout does answer to lights the turnout.
-     *
-     * The second control, on the other side: the first two claims together would also pass if
-     * ACCESSORY lit nothing at all.
-     *
-     * @throws Exception from the event thread
+     * And an accessory address the turnout does answer to lights the turnout: the second control, since the first two
+     * would also pass if ACCESSORY lit nothing.
      */
     @Test
     public void testAnAccessoryAddressLightsTheAccessory() throws Exception
@@ -167,13 +152,10 @@ public class testTheRouteHighlightAsksWhatATileIs
 
     /**
      * A three-way answers to its second decoder too, which is how a route sets its other diverging road.
-     *
-     * `layout.switchThreeWayAddr` prints both addresses; only the first is the tile's logical address, so a route
-     * commanding only the second lit nothing and said there was nothing to show.
+     * `layout.switchThreeWayAddr` prints both addresses but only the first is the tile's logical address, so a route
+     * commanding only the second lit nothing.
      *
      * MUTATION: drop the three-way clause from `answersToAccessoryAddress` and this fails.
-     *
-     * @throws Exception building the tiles
      */
     @Test
     public void testAThreeWayAnswersToItsSecondDecoder() throws Exception
@@ -200,8 +182,6 @@ public class testTheRouteHighlightAsksWhatATileIs
      * An address is one per protocol: an MM2 turnout 5 and a DCC turnout 5 are two decoders.
      *
      * MUTATION: stop comparing the protocol in `answersToAccessoryAddress` and this fails.
-     *
-     * @throws Exception building the tiles
      */
     @Test
     public void testAnAddressIsOnePerProtocol() throws Exception
@@ -214,8 +194,8 @@ public class testTheRouteHighlightAsksWhatATileIs
 
         assertTrue(dcc.answersToAccessoryAddress(5, DCC), "control: a DCC turnout 5 does not answer to DCC 5");
 
-        // A tile with no protocol is the implicit one, which is what the parser and a route command both read a
-        // missing protocol as.
+        // A tile with no protocol is the implicit one, which the parser and a route command both read a missing
+        // protocol as.
         org.traincontrol.base.LayoutDiagramComponent unstated = accessoryTile(
             org.traincontrol.base.LayoutDiagramComponent.componentType.SWITCH_LEFT, 5, null);
 
@@ -226,13 +206,10 @@ public class testTheRouteHighlightAsksWhatATileIs
     }
 
     /**
-     * And the window asks the decoder: the scenario's MM2 turnout is not lit for a DCC command.
-     *
-     * The claims above are about the tile; this is the door Highlight on Diagram uses.
+     * And the window asks the decoder: the scenario's MM2 turnout is not lit for a DCC command (the door Highlight on
+     * Diagram uses).
      *
      * MUTATION: have `highlightAccessories` pass the addresses on without their protocols and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testTheHighlightAsksTheDecoder() throws Exception
@@ -274,14 +251,7 @@ public class testTheRouteHighlightAsksWhatATileIs
         return tile;
     }
 
-    /**
-     * Lights one address, of one kind, and lets the event thread finish.
-     *
-     * @param address the address
-     * @param kind what it names
-     * @return how many labels were lit
-     * @throws Exception from the event thread
-     */
+    /** Lights one address, of one kind, and lets the event thread finish; how many labels were lit. */
     private static int light(final int address, final TrainControlUI.AddressedAs kind) throws Exception
     {
         endEveryFlash();
@@ -296,12 +266,7 @@ public class testTheRouteHighlightAsksWhatATileIs
         return lit[0];
     }
 
-    /**
-     * Whether any label on a square is holding a flash.
-     *
-     * @param square the square
-     * @return whether one is
-     */
+    /** Whether any label on a square is holding a flash. */
     private static boolean flashing(TileKey square)
     {
         for (LayoutLabel label : ui.getDiagramTileRegistry().labelsFor(square))
@@ -312,11 +277,7 @@ public class testTheRouteHighlightAsksWhatATileIs
         return false;
     }
 
-    /**
-     * Ends every flash the last claim started, so one cannot decide the next.
-     *
-     * @throws Exception from the event thread
-     */
+    /** Ends every flash the last claim started, so one cannot decide the next. */
     private static void endEveryFlash() throws Exception
     {
         for (TileKey square : new TileKey[] {WEST_END, TURNOUT})
@@ -332,11 +293,7 @@ public class testTheRouteHighlightAsksWhatATileIs
         settle();
     }
 
-    /**
-     * Lets the event thread finish what a gesture posted.
-     *
-     * @throws Exception from the event thread
-     */
+    /** Lets the event thread finish what a gesture posted. */
     private static void settle() throws Exception
     {
         for (int i = 0; i < 3; i++) SwingUtilities.invokeAndWait(() -> { });
