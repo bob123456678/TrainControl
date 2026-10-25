@@ -13,10 +13,10 @@ import org.traincontrol.util.I18n;
  * (FR-136).
  *
  * The panel keeps `composeWhy` as a one-line call to the method of the same name here, and every field: this reads
- * them through `editor`.  Nothing here takes a lock of its own; the railway's monitor is taken by the Layout calls
- * the answer is made of, off the event thread.
+ * them through `editor`.  Its settle and await take the panel's `whySettled`; the railway's monitor is taken by the
+ * Layout calls the answer is made of, off the event thread.
  */
-final class EditorWhy
+final class EditorWhy extends SettledQuestion
 {
     private final AutonomyEditorPanel editor;
 
@@ -346,5 +346,24 @@ final class EditorWhy
         }
 
         return out.toString();
+    }
+
+    @Override
+    Object settledLock()
+    {
+        return editor.whySettled;
+    }
+
+    /** Counted, not coalesced: every ask started is its own question until its worker gives it up. */
+    @Override
+    boolean outstanding()
+    {
+        return editor.whyWorking.get() > 0;
+    }
+
+    @Override
+    void giveUp()
+    {
+        editor.whyWorking.decrementAndGet();
     }
 }

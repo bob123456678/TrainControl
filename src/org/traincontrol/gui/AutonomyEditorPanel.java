@@ -4862,7 +4862,7 @@ public class AutonomyEditorPanel extends JPanel
         catch (RuntimeException refused)
         {
             // Counted down before rethrowing, so `awaitWhy` cannot wait for nothing.
-            settleWhy();
+            whyAnswers.settle();
 
             throw refused;
         }
@@ -4900,7 +4900,7 @@ public class AutonomyEditorPanel extends JPanel
         }
         finally
         {
-            settleWhy();
+            whyAnswers.settle();
         }
     }
 
@@ -4932,50 +4932,15 @@ public class AutonomyEditorPanel extends JPanel
         refresh();
     }
 
-    /** Gives the why job up and tells anybody waiting. */
-    private void settleWhy()
-    {
-        synchronized (whySettled)
-        {
-            whyWorking.decrementAndGet();
-
-            whySettled.notifyAll();
-        }
-    }
-
     /**
-     * Waits until every why ask already started is worked out, for a test (as `TrainControlUI.awaitCoveredTrack`).
-     * Waits for the answer, not its `invokeLater` paint: flush the queue after, and never call it on the event thread.
-     * Bounded, saying which.
+     * Waits until every why ask already started is worked out, for a test.  Waits for the answer, not its
+     * `invokeLater` paint: flush the queue after, and never call it on the event thread.  Bounded, saying which.
      * @param millis how long to wait at most
      * @return true when nothing is outstanding, false when the wait ran out
      */
     boolean awaitWhy(long millis)
     {
-        long deadline = System.currentTimeMillis() + millis;
-
-        synchronized (whySettled)
-        {
-            while (whyWorking.get() > 0)
-            {
-                long left = deadline - System.currentTimeMillis();
-
-                if (left <= 0) return false;
-
-                try
-                {
-                    whySettled.wait(left);
-                }
-                catch (InterruptedException stopped)
-                {
-                    Thread.currentThread().interrupt();
-
-                    return false;
-                }
-            }
-        }
-
-        return true;
+        return whyAnswers.awaitSettled(millis);
     }
 
     /**
@@ -5041,11 +5006,11 @@ public class AutonomyEditorPanel extends JPanel
     private final java.util.concurrent.atomic.AtomicLong whyAsked =
         new java.util.concurrent.atomic.AtomicLong();
 
-    private final java.util.concurrent.atomic.AtomicInteger whyWorking =
+    final java.util.concurrent.atomic.AtomicInteger whyWorking =
         new java.util.concurrent.atomic.AtomicInteger();
 
     /** Notified when an ask finishes; the count changes under it, so `awaitWhy` cannot miss the moment. */
-    private final Object whySettled = new Object();
+    final Object whySettled = new Object();
 
     /** Builds the pool above; `allowCoreThreadTimeOut` is called after construction. */
     private static java.util.concurrent.ThreadPoolExecutor whyRenderer()
