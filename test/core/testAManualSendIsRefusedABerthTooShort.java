@@ -329,8 +329,8 @@ public class testAManualSendIsRefusedABerthTooShort
 
     /**
      * A run into a berth with a switch part way along, and a measured stretch after it, as
-     * `testATrainTooLongIsRefusedTheBerth` builds one.  Whether the berth is a terminus is a parameter, since the rule
-     * used to be fenced behind it; `roomAfterTheSwitch` is the measured track between the switch and the berth, 0 for
+     * `testATrainTooLongIsRefusedTheBerth` builds one.  Whether the berth is a terminus is a parameter;
+     * `roomAfterTheSwitch` is the measured track between the switch and the berth, 0 for
      * unmeasured.
      */
     private Fixture build(int trainLength, int roomAfterTheSwitch, boolean terminus) throws Exception
