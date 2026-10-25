@@ -23,8 +23,8 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * A state Adam has CONFIRMED is right, and everything that should still follow from it.
  *
  * Adam: "Once we are bug free, can you capture confirmed good state along with config files for validation? That is
- * better than guessing."  Every other test in this suite asserts a rule somebody believed (three rules written on
- * 2026-08-23 were wrong on the first draft and passed anyway).  A blessed baseline makes no claim about WHY anything is
+ * better than guessing."  Every other test in this suite asserts a rule somebody believed (three rules were wrong on
+ * the first draft and passed anyway).  A blessed baseline makes no claim about WHY anything is
  * correct: this exact input produced this exact output, and a person who knows the railway said yes.  It does not
  * replace the rules, since a baseline cannot catch a fault the first time it appears: a rule says "this was never
  * allowed", a baseline says "this changed since you approved it".
