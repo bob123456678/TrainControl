@@ -14,15 +14,12 @@ import java.awt.geom.AffineTransform;
 import javax.swing.JLabel;
 
 /**
- * A square's address on the diagram: red letters with a white halo round each one, and nothing behind the rest (Adam,
- * 2026-10-09: "Can we prettify address labels to have a white halo outline around the red text rather than a
- * rectangle around them?").
+ * A square's address on the diagram: red letters with a white halo round each one, and nothing behind the rest.  A halo
+ * keeps the number readable on black track and on white alike and covers only what the letters would, where a
+ * translucent box covered the corner of the track and signal art.
  *
- * It was a label with a translucent white box behind it, which covered the corner of the square's track and signal
- * art.  A halo keeps the number readable on black track and on white alike and covers only what the letters would.
- *
- * Still a JLabel, so that the grid's mouse handling, its tooltip and its place in the layout are as they were.  Its
- * text is the address and, where the decoder is not MM2, the protocol on a second line.
+ * Still a JLabel, so the grid's mouse handling, tooltip and place in the layout are unchanged.  Its text is the address
+ * and, where the decoder is not MM2, the protocol on a second line.
  */
 public class AddressLabel extends JLabel
 {
