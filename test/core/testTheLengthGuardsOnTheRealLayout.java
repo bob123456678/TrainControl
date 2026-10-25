@@ -70,11 +70,9 @@ public class testTheLengthGuardsOnTheRealLayout
     /**
      * The train this class asks with, made here rather than borrowed.
      *
-     * Adam, 2026-09-09: *"generate trains programmatically in the tests, and give them semantic
-     * names."*  Every claim that used to ask `anyPlacedLocomotive` - "whatever is standing" - was
-     * asserting about ONE square, chosen by the order the layout enumerates its Points in, while
-     * reading as an assertion about the whole railway.  Two of them were false from a different square
-     * and green from that one.
+     * Adam: *"generate trains programmatically in the tests, and give them semantic
+     * names."*  A claim that asks `anyPlacedLocomotive` - "whatever is standing" - asserts about ONE square, chosen by
+     * the order the layout enumerates its Points in, while reading as an assertion about the whole railway.
      *
      * Deleted in `tearDown`.  `MarklinControlStation.init` opens Adam's real locomotive database rather
      * than an empty one - the layout sandbox copies the layout folder and nothing else - so a train
@@ -104,7 +102,7 @@ public class testTheLengthGuardsOnTheRealLayout
     private static final TileKey BOTTOM_MAIN_A = new TileKey(MAIN, 20, 12);
 
     /**
-     * The tile the whole of Adam's 2026-09-09 ruling turns on.
+     * The tile the whole of Adam's ruling turns on.
      *
      * `1 - Main:22,7` is the last unswitched square before BottomMainPost, and one of only three tiles
      * the snapshot measures at all.  Adam: *"I see no tracks with a defined length except for 22,7."*
@@ -159,10 +157,10 @@ public class testTheLengthGuardsOnTheRealLayout
         session = new AutonomySession(sandbox.getFolder());
         session.open(pages);
 
-        // AND NO STATION'S SIZE (the refreeze of 2026-09-23).  Adam has since given every station a maximum train
-        // length, and `whyTooLongForThisRoute` asks that first - so a nine-unit train was refused BottomMainPost, which
-        // holds 3, before any track was looked at, and every claim below became a claim about the number typed on
-        // the station.  This class is about the TRACK: the lengths it sets are the only thing that may decide.
+        // AND NO STATION'S SIZE.  Every station has a maximum train length, and `whyTooLongForThisRoute` asks that
+        // first, so a nine-unit train would be refused BottomMainPost, which holds 3, before any track was looked at,
+        // and every claim below would be a claim about the number typed on the station.  This class is about the TRACK:
+        // the lengths it sets are the only thing that may decide.
         session.clearEveryMaxTrainLength();
 
         edgesAtOpen = session.getReducer().getEdges().size();
@@ -194,50 +192,24 @@ public class testTheLengthGuardsOnTheRealLayout
     }
 
     /*
-     * WHAT THIS CLASS BORROWS FROM ADAM'S RAILWAY, AND WHAT IT STOPPED BORROWING ON 2026-09-09.
+     * WHAT THIS CLASS BORROWS FROM ADAM'S RAILWAY, AND WHAT IT DOES NOT.
+     * It borrows by NAME - `75 407 DB` at three sites and `2-8-4 3505 SP` at one, each with an `assertNotNull` saying
+     * It borrows by NAME - `75 407 DB` at three sites and `2-8-4 3505 SP` at one, each with an `assertNotNull` saying
+     * the engine "is not on this railway any more" - with `borrowTheLengthOf` and `giveTheLengthsBack` putting every
+     * length back.  It does not borrow "whatever is standing", which made a claim about ONE START SQUARE read as one
+     * about the whole railway.  The guard refuses from some start squares and not others, and that is the rule: it asks
+     * where the train comes to rest (MT-333), so two starts reaching one berth by different approaches can differ.
      *
-     * Adam: *"generate trains programmatically in the tests, and give them semantic names."*
-     *
-     * It borrows by NAME - `75 407 DB` at three sites and `2-8-4 3505 SP` at one, each with an
-     * `assertNotNull` saying the engine "is not on this railway any more" - and those sites stay, with
-     * `borrowTheLengthOf` and `giveTheLengthsBack` putting every length back.
-     *
-     * **What it no longer borrows is "whatever is standing".**  `anyPlacedLocomotive` returned the
-     * first occupied Point the layout enumerates, and three claims asked it for a train.  That made
-     * every one of them an assertion about ONE START SQUARE while reading as an assertion about the
-     * whole railway - and the note that used to be here recorded two questions about it, both of which
-     * are now answered by measurement rather than left open.
-     *
-     * **THE FIRST QUESTION: is the guard refusing from some start squares and not others?**  Yes, and
-     * that is the rule rather than a hole in it.  The guard asks where the train comes to rest - the
-     * destination and any square it turns at (MT-333, 2026-09-14; from 2026-09-09 until then, every square
-     * on the route) - so two starts that reach one berth by different approaches, turning in different
-     * places, can get different answers about it.  `testTheOneUnitAtTwentyTwoSevenDecidesBottomMainPost`
-     * pins one tile deciding the berth it leads into, and `testRampDownIsOfferedPastTheOneUnitItOnlyPasses`
-     * pins the same tile NOT deciding a berth eight edges away that the route only passes it on the way
-     * to.  Neither claim can be made by asking whatever train happens to be standing somewhere.
-     *
-     * **THE SECOND QUESTION: does `roomTheGuardSees` answer a different question from
-     * `Layout.measuredRoomAtTheEndOf`?**  It did, and that is what it was rewritten for on the same
-     * day.  It took the LARGEST `getRoomAtTheEnd` of any edge ending at a station of that name, over
-     * every copy of it and every approach, while the guard used the room on the path in hand - so it
-     * once reported "the room at that berth is ONE" for RampDown, whose last edge crosses no switch at
-     * all and has no such number.  It now enumerates the routes from where the train is standing and
-     * returns the best route's tightest square.
-     *
-     * **NOT EXACTLY WHAT THE GUARD COMPARES AGAINST, and the difference is in the safe direction.**
-     * It asks `measuredRoomAtTheEndOf` of every prefix; the guard asks nothing at a square the train
-     * only passes (MT-333, 2026-09-14).  So this can report a SMALLER number than the guard uses.  Its one caller,
-     * `testExactlyFitsIsAdmittedAndOneMoreIsNot`, searches for a berth where the guard binds and then
-     * verifies the refusal itself before using the number, so being wrong that way costs a candidate
-     * rather than a verdict.  Said out loud because this codebase's characteristic defect is a
-     * sentence claiming to mirror a rule it does not.
+     * `roomTheGuardSees` can report a SMALLER number than the guard uses: it asks `measuredRoomAtTheEndOf` of every
+     * prefix, the guard nothing at a square the train only passes.  Its one caller,
+     * `testExactlyFitsIsAdmittedAndOneMoreIsNot`, verifies the refusal itself before using the number, so being wrong
+     * that way costs a candidate, not a verdict.
      */
 
     /**
      * ONE TILE, THREE MEASUREMENTS, AND THE BERTH IT ACTUALLY GOVERNS.
      *
-     * Adam, 2026-09-09: **"Make sure you add a test case to confirm this pathing IS possible if no
+     * Adam: **"Make sure you add a test case to confirm this pathing IS possible if no
      * lengths are set anywhere, and if those lengths are set to 9."**  Both of his cases are here, with
      * the case that separates them in the middle.
      *
@@ -322,7 +294,7 @@ public class testTheLengthGuardsOnTheRealLayout
      * Turn the measurements up and the same long train becomes welcome again.
      *
      * The whole-railway form of the control: not one tile but every one of them, which is the closest
-     * this fixture can come to the claim it used to make.  **It is not the same claim**: measuring
+     * this fixture can come to the whole-railway claim.  **It is not the same claim**: measuring
      * every TILE at one unit does not make every SECTION one unit, because a section here is many
      * tiles - the run into RampDown is eighteen of them.  So this asserts it of the berth whose
      * approach really is short, and `core.testALongTrainIsOfferedNothingOnAOneUnitRailway` makes the
@@ -357,19 +329,15 @@ public class testTheLengthGuardsOnTheRealLayout
     /**
      * A nine-unit train is offered RampDown, past the one unit at 22,7 that it only drives through.
      *
-     * **THE CLAIM TURNED ROUND ON 2026-09-14, the ruling read as meant rather than reversed, and the old reasoning kept
-     * for the record.**  Adam, MT-333: *"this SHOULD be allowed per
-     * the standing rule that this switch blocking should only affect berthes."*  A square a train only passes
-     * is no longer judged for room, so BottomMainPost - which the route to RampDown only runs past - no longer
-     * refuses it, and RampDown is offered.  What follows is the ruling this test was written for.
+     * **A square a train only passes is not judged for room.**  Adam, MT-333: *"this SHOULD be allowed per
+     * the standing rule that this switch blocking should only affect berthes."*  So BottomMainPost - which the route to
+     * RampDown only runs past - does not refuse it, and RampDown is offered.
      *
-     * Adam, 2026-09-09, on being shown that a nine-unit train standing at BottomMainB was offered
+     * Adam, on being shown that a nine-unit train standing at BottomMainB was offered
      * `RampDown (southbound, reverse)`: **"technically incorrect to say there is a path since we pass
      * the track of length 1 at 22,7 to get there, then nothing."**
      *
-     * **He was right, and this test used to say he was not.**  It measured the geometry - which is
-     * still below, because it is the whole of why the tile matters - and concluded that 22,7 was not
-     * RampDown's business:
+     * **He was right.**  The geometry, which is the whole of why the tile matters:
      *
      *   - RampDown is at `1 - Main:21,6`, BottomMainPost at `22,6`.  They are adjacent squares on the
      *     drawing and there is NO edge between them: the reduction connects RampDown only to
@@ -383,22 +351,16 @@ public class testTheLengthGuardsOnTheRealLayout
      *   - The last of those nine crosses no switch at all and is eighteen tiles long, so there is
      *     nothing at the berth to bound the train with - the *"then nothing"* in his ruling.
      *
-     * All of that is still true.  What changed is the question, twice.  Until his ruling of the same day
-     * the rule asked only whether the train fitted where it STOPPED, so the walk started at RampDown, hit
-     * a switch seven edges short of 22,7, and never saw it.  From then until 2026-09-14 it asked at every
-     * square the route ran through, and the answer at BottomMainPost - the FIRST square, one measured
-     * unit - refused the route before the berth was reached.  Since MT-333 it asks only where the train
-     * comes to rest - the destination and a square it turns at - so BottomMainPost is not judged and
-     * RampDown is offered.
-     *
-     * **Under that reading the refusal named BottomMainPost, not RampDown** - RampDown has no measurement
-     * to fix.  Now the rule gives no reason at all for this route, which the last assertion checks.
+     * The rule asks only where the train comes to rest - the destination and a square it turns at - so BottomMainPost,
+     * the FIRST square and one measured unit, is not judged and RampDown is offered.  Asked at every square the route
+     * runs through, it would refuse the route before the berth was reached.  The rule gives no reason at all for this
+     * route, which the last assertion checks.
      *
      * The route is taken from `bfs` rather than from what the railway offers, because what the railway
      * offers is the thing under test - asking it for the route would make every assertion below
      * conditional on the answer under test.
      *
-     * MUTATION, run 2026-09-14: taking `if (!comesToRest) continue;` out of `Layout.whyTooLongForThisRoute`,
+     * MUTATION, run: taking `if (!comesToRest) continue;` out of `Layout.whyTooLongForThisRoute`,
      * so every square the route runs through is judged again, refuses RampDown and fails the offer assertion
      * that follows the standing-train precondition; `testExactlyFitsIsAdmittedAndOneMoreIsNot` fails with it.
      *
@@ -690,9 +652,8 @@ public class testTheLengthGuardsOnTheRealLayout
     /**
      * TunnelLongPark refuses this train at every measurement - which is worth pinning as a FACT.
      *
-     * This test used to assert that measuring the approach wide enough would get `75 407 DB` into
-     * TunnelLongPark. Measured 2026-09-08: it is refused with two units of room and refused with
-     * eight, so whatever is refusing there is not the length.
+     * Measuring the approach wide enough does not get `75 407 DB` into TunnelLongPark: it is refused with two units
+     * of room and refused with eight, so whatever is refusing there is not the length.
      *
      * **The rule the test was written for has moved to `testExactlyFitsIsAdmittedAndOneMoreIsNot`,**
      * which finds a berth the railway will offer and asserts the boundary there. What is left here is
@@ -816,13 +777,13 @@ public class testTheLengthGuardsOnTheRealLayout
 
             for (String candidate : offeredDestinations(train))
             {
-                // A PARKING BERTH - Can Be Chosen In Full Autonomy off - since FR-087 (Adam, on MT-431,
-                // 2026-09-15).  At a station autonomy may choose, a train the measured route in holds is admitted
-                // however little room lies past the last switch, and with every tile measured wide every such
-                // station holds one unit more: the room rule binds at a berth.  A berth also refuses a train that
-                // fouls a road it does not own - a different rule, which can refuse BOTH lengths (ParkingTrack6,
-                // found 2026-09-14) - so a berth is taken only where exactly-fits is offered too.  What the search
-                // cannot supply is that the boundary sits at the room the guard is measured to see.
+                // A PARKING BERTH - Can Be Chosen In Full Autonomy off - since FR-087 (Adam, on MT-431).  At a station
+                // autonomy may choose, a train the measured route in holds is admitted however little room lies past
+                // the last switch, and with every tile measured wide every such station holds one unit more: the room
+                // rule binds at a berth.  A berth also refuses a train that fouls a road it does not own - a different
+                // rule, which can refuse BOTH lengths (ParkingTrack6) - so a berth is taken only where exactly-fits is
+                // offered too.  What the search cannot supply is that the boundary sits at the room the guard is
+                // measured to see.
                 Point asked = rebuild().getPoint(candidate);
 
                 if (asked == null || asked.isAutoDestination()) continue;
@@ -895,12 +856,12 @@ public class testTheLengthGuardsOnTheRealLayout
      * The largest train the guard will let into a station from where this one is standing.
      *
      * **The tightest measured stretch where the train comes to rest on the best route there** - the
-     * destination and any square it turns at, which is what the rule compares a train against since MT-333
-     * (2026-09-14; from 2026-09-09 until then it was every square, `Layout.whyTooLongForThisRoute`).  Read off the
+     * destination and any square it turns at, which is what the rule compares a train against (MT-333,
+     * `Layout.whyTooLongForThisRoute`).  Read off the
      * built railway rather than worked out here: which tiles fall inside a stretch depends on where
      * the switches are, and a test that decides that for itself is a test that has to know the
-     * geometry.  This one used to name two tiles, they stopped being the run in when the fixture began
-     * building the whole railway, and both halves of the boundary read as refusals.
+     * geometry.  Two tiles named by hand fail when they are not on the run in, and both halves of the boundary then
+     * read as refusals.
      *
      * **Tightest along a route, largest across routes.**  A train is offered a berth when SOME route
      * to it fits, so the number that decides the boundary is the best route's worst square.  Reading
@@ -945,7 +906,7 @@ public class testTheLengthGuardsOnTheRealLayout
 
             for (int i = 0; i < path.size(); i++)
             {
-                // WHERE THE TRAIN COMES TO REST, as the guard asks since 2026-09-14: the destination and a
+                // WHERE THE TRAIN COMES TO REST, as the guard asks (MT-333): the destination and a
                 // square it turns at, not one it only passes.
                 if (i < path.size() - 1 && !path.get(i).getEnd().isReversing()) continue;
 
@@ -989,9 +950,8 @@ public class testTheLengthGuardsOnTheRealLayout
         // AND THEY ARE ON TRACK THE GUARD COUNTS.
         //
         // Two named tiles are a measurement only while they lie on a stretch the room walk reaches,
-        // and this file records what it costs when they do not: the RampDown claim's own note (it was
-        // `testWhyRampDownIsRefused` until 2026-09-14)
-        // is about two tiles named by hand that turned out to be on track the walk never consulted,
+        // and this file records what it costs when they do not: the RampDown claim's own note is about two tiles
+        // named by hand that turned out to be on track the walk never consulted,
         // and both halves of a boundary then read as refusals.
         //
         // Asked of the walk rather than of the geometry.  `measuredRoomAtTheEndOf` is what the guard
@@ -1031,8 +991,7 @@ public class testTheLengthGuardsOnTheRealLayout
                 "with only the two one-unit segments he measured, a four-unit train is still offered"
                 + " TunnelLongPark - so the guard is wrong and the stale lengths were not the cause");
 
-            // AND THE LENGTH IS WHAT REFUSES IT, which is the claim this test's NAME makes and which
-            // it did not make until 2026-09-10.
+            // AND THE LENGTH IS WHAT REFUSES IT, which is the claim this test's NAME makes.
             //
             // `testTunnelLongParkIsRefusedForReasonsOtherThanLength` already asserts that this berth
             // refuses this locomotive with every tile measured at eight - so something other than
@@ -1091,7 +1050,7 @@ public class testTheLengthGuardsOnTheRealLayout
      * Not from what the railway offers, because what it offers is the thing under test - asking it for the
      * route would make the claim conditional on the refusal not happening.  **And, since OB-229, not from
      * `Layout.bfs` either**: that search no longer extends a route through a terminus that is not its end
-     * (Adam, 2026-09-15: *"Search past termini"*), because `isPathClear` refuses every such route.  The shortest
+     * (Adam: *"Search past termini"*), because `isPathClear` refuses every such route.  The shortest
      * track route from where 75 407 DB stands to TunnelLongPark passes one - the precondition says so, of that route -
      * which is the reason other than length
      * `testTunnelLongParkIsRefusedForReasonsOtherThanLength` pins - so `bfs` now finds nothing there, and the
@@ -1228,10 +1187,8 @@ public class testTheLengthGuardsOnTheRealLayout
 
         // PUT THERE, NOT FOUND THERE.
         //
-        // This used to walk the Points for whichever one had the 2-8-4 on it and then assert that it
-        // was BottomMainB.  That is an assertion about where Adam last left a train, and it went red
-        // the first time he shunted it - it is at BottomMainA today.  What the test is about is a tail
-        // lying across the throat behind a platform, and the platform is named here.
+        // Walking the Points for whichever one has the 2-8-4 on it would assert about where Adam last left a train.
+        // What the test is about is a tail lying across the throat behind a platform, and the platform is named here.
         Point platform = placeAt(built, engine, new TileKey(MAIN, 20, 13));
 
         assertNotNull(platform, "there is no platform at 1 - Main:20,13 to put the 2-8-4 on");
@@ -1283,15 +1240,9 @@ public class testTheLengthGuardsOnTheRealLayout
     /**
      * Sets EVERY tile the reduction knows to one length, which is what makes the guard testable here.
      *
-     * **Every page, not just the main one, since 2026-09-08.** It filtered to `1 - Main` and its name
-     * still said "everything", which was true of the railway this suite used to build: the fixture
-     * parsed its pages without wiring their accessories, so the graph was eighteen edges and never left
-     * that page. Wired, it is the whole railway - and a berth on another page arrived UNMEASURED, which
-     * the guard cannot judge, so a nine-unit train was offered `LowerFront` on a layout this method had
-     * just declared measured at one unit throughout.
-     *
-     * Two of the four failures in this class were that, and they are the good kind: the test said
-     * something about the whole railway while looking at a fifth of it.
+     * **Every page, not just the main one.**  A berth on another page would arrive UNMEASURED, which the guard cannot
+     * judge, so a nine-unit train would be offered `LowerFront` on a layout this method had just declared measured at
+     * one unit throughout.
      *
      * @param units the length to give every tile
      */
