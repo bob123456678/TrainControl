@@ -11,32 +11,25 @@ import org.traincontrol.base.LayoutDiagramComponent.componentType;
 /**
  * Picking a tile out of "new components" and clicking a square puts that tile on the square.
  *
- * Adam, OB-169: **"clicking a tile in 'new components' followed by a square on the diagram no longer
- * places that tile.  it should place it and stay in place mode until escape is pressed or another
- * action taken."**
+ * Adam, OB-169: "clicking a tile in 'new components' followed by a square on the diagram no longer places that tile.
+ * it should place it and stay in place mode until escape is pressed or another action taken."
  *
- * **The square he was clicking already had track on it**, and that is the whole of it.  Pressing the
- * mouse on a square that carries a component is how a tile is picked up to be dragged, so the press
- * handler arms a MOVE and remembers that square as the drag source - throwing away the palette
- * selection the user had just made.  The release then sees the press and the release on the same
- * square, calls it a click rather than a drag, and clears the clipboard; by the time the click event
- * arrives there is no tool left to run and nothing happens.
+ * **The square he was clicking already had track on it.**  Pressing the mouse on a square that carries a component
+ * picks the tile up to be dragged, so the press handler armed a MOVE and threw away the palette selection; the release
+ * then saw press and release on the same square, called it a click, and cleared the clipboard, leaving no tool for the
+ * click event.  On an EMPTY square a press picks nothing up, which is why this went unnoticed and why the test places
+ * over occupied track.
  *
- * On an EMPTY square the same gesture works, because a press there picks nothing up: the palette
- * selection survives to the click.  That is why this went unnoticed, and it is why the test places
- * over occupied track specifically.
- *
- * The gesture is driven through the editor's own three handlers in the order a mouse produces them -
- * beginDrag, endDrag, receiveClickEvent - rather than through executeTool, because executeTool was
- * never the broken part.  Calling it directly passes on the code that shipped.
+ * The gesture is driven through the editor's own three handlers in the order a mouse produces them - beginDrag,
+ * endDrag, receiveClickEvent - rather than through executeTool, which was never the broken part.
  */
 public class testThePaletteStillPlacesTiles
 {
     /**
      * A tile from the palette lands on a square that already has track on it.
      *
-     * MUTATION: putting back the press handler's unconditional `initCopy(label, null, true)` - the
-     * pick-up-to-drag arm - fails this, which is the shipped behavior it was written against.
+     * MUTATION: putting back the press handler's unconditional `initCopy(label, null, true)` - the pick-up-to-drag arm
+     * - fails this.
      */
     @Test
     public void testAPaletteTileLandsOnOccupiedTrack() throws Exception
@@ -49,8 +42,8 @@ public class testThePaletteStillPlacesTiles
 
         try
         {
-            // Before the model, not just before the window (OB-111) - constructing a TrainControlUI
-            // reads the layout-path preference, and without the sandbox it is Adam's own railway.
+            // Before the model, not just before the window (OB-111): constructing a TrainControlUI reads the
+            // layout-path preference.
             sandbox = support.LayoutSandbox.open();
 
             model = support.TestStation.simulatedInDebug();
@@ -77,8 +70,8 @@ public class testThePaletteStillPlacesTiles
 
             LayoutDiagram diagram = new LayoutDiagram("Palette Page", 12, 8, null, null);
 
-            // THE SQUARE IS OCCUPIED, which is the case that fails.  A straight, so that the tile
-            // arriving from the palette is a different type and the assertion cannot pass by accident.
+            // THE SQUARE IS OCCUPIED, the case that fails: a straight, so the palette tile is a different type and the
+            // assertion cannot pass by accident.
             diagram.addComponent(componentType.STRAIGHT, 4, 2, 0, 0, 0, 0,
                 accessoryDecoderType.MM2, null);
 
@@ -138,19 +131,15 @@ public class testThePaletteStillPlacesTiles
 
                     componentType placing = chosen.getComponent().getType();
 
-                    // THE GESTURE, in the order a mouse makes it.
-                    //
-                    // First the palette: press, release, click.  The release over the palette is what
-                    // arms nothing - receiveClickEvent is what arms the tool, which is why all three
-                    // are here rather than just the click.
+                    // THE GESTURE, in the order a mouse makes it.  First the palette: press, release, click;
+                    // receiveClickEvent is what arms the tool, so all three are here.
                     editor[0].receiveMoveEvent(press(chosen), chosen);
                     editor[0].beginDrag(press(chosen), chosen);
                     editor[0].endDrag(press(chosen), chosen);
                     editor[0].receiveClickEvent(press(chosen), chosen);
 
-                    // Then the diagram square.  The move event first, because endDrag asks where the
-                    // pointer WAS - `getLastHoveredLabel` - rather than reading it off the release,
-                    // so without a hover the release lands on whatever was hovered last.
+                    // Then the diagram square.  The move event first, because endDrag asks where the pointer WAS
+                    // (`getLastHoveredLabel`), not the release.
                     editor[0].receiveMoveEvent(press(square), square);
                     editor[0].beginDrag(press(square), square);
                     editor[0].endDrag(press(square), square);
@@ -187,24 +176,13 @@ public class testThePaletteStillPlacesTiles
         }
         finally
         {
-            // THE PREFERENCE COMES BACK WHATEVER ELSE HAPPENS.
-            //
-            // `sandbox.close()` is the line that puts `LAYOUT_OVERRIDE_PATH_PREF` back, and its own
-            // javadoc says why that is the most important line in this block: a test that leaves a
-            // path behind has changed which layout the application opens the next time Adam starts it,
-            // and the preference is per-user and outlives the JVM.
-            //
-            // It was last, behind three things that can throw - `LayoutEditor.dispose()` is overridden
-            // and does file IO under OneDrive.  Nothing throws there today, which is why this is a C
-            // and not a B, but the ordering made the cheapest line in the block depend on the most
-            // expensive ones.  Its own `finally` now.
+            // THE PREFERENCE COMES BACK WHATEVER ELSE HAPPENS: `sandbox.close()` puts `LAYOUT_OVERRIDE_PATH_PREF` back,
+            // and a test that leaves a path behind changes which layout the application opens the next time Adam starts
+            // it.  Its own `finally`, since `LayoutEditor.dispose()` does file IO under OneDrive and could throw.
             try
             {
-                // THE EDITOR TOO, not only the window that owns it.
-                //
-                // Both siblings this test was written from dispose theirs, and a LayoutEditor left
-                // undisposed keeps a frame, its grid and its listeners alive for the rest of the JVM -
-                // which for a class that builds one per test is a leak the battery pays for.
+                // THE EDITOR TOO, not only the window that owns it: an undisposed LayoutEditor keeps a frame, its grid
+                // and its listeners alive for the rest of the JVM.
                 if (editor[0] != null)
                 {
                     javax.swing.SwingUtilities.invokeAndWait(() -> editor[0].dispose());
@@ -236,11 +214,8 @@ public class testThePaletteStillPlacesTiles
     }
 
     /**
-     * Any tile in the palette that is not the type already on the square.
-     *
-     * @param palette the "new components" panel
-     * @param avoid the type the fixture already has, so a pass cannot mean "nothing happened"
-     * @return a palette label, or null if the palette holds nothing else
+     * Any tile in the palette that is not the type already on the square (so a pass cannot mean "nothing happened");
+     * null if there is none.
      */
     private static org.traincontrol.gui.LayoutLabel aPaletteTileOtherThan(javax.swing.JPanel palette,
         componentType avoid)
