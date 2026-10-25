@@ -76,8 +76,8 @@ final class LocomotiveActions
     {
         Component source = evt != null ? (Component) evt.getSource() : this.ui;
 
-        // THE WINDOW, read now (the popups sweep, on Adam's MT-703 note): the database's refresh below takes the tile
-        // out of it, and an error after that was owned by Swing's hidden frame
+        // The window, read now: the database's refresh below takes the tile out of it, and an error after that was
+        // owned by Swing's hidden frame.
         final java.awt.Window around = javax.swing.SwingUtilities.getWindowAncestor(source);
 
         final Component sourceWindow = source instanceof java.awt.Window ? source : around != null ? around : this.ui;
@@ -112,9 +112,9 @@ final class LocomotiveActions
                     TrainControlUI.OK_CANCEL_OPTS[0] // default selection
                 );
 
-                // The name asked first (OB-301): a name refused returns before anything has changed, not after the new address had gone
-                // through and before the sweep that takes a clash off the railway, so a standing train given another's address and a taken name
-                // stayed on the railway beside it, the two answering to one decoder address.
+                // The name asked first (OB-301): a name refused returns before anything has changed, not after the new
+                // address went through, which left a standing train given another's address on the railway beside it,
+                // two answering to one decoder address.
                 String newName = edit.getLocName();
 
                 boolean renaming = result == JOptionPane.OK_OPTION && newName != null && !l.getName().equals(newName);
@@ -148,9 +148,10 @@ final class LocomotiveActions
                         return;
                     }
 
-                    // Routes store locomotives by name, in a comma-separated text format, so renaming into a name with a comma rewrites every existing
-                    // command and condition into something that re-parses as a different locomotive, or not at all.  (Brackets are allowed: Adam's
-                    // ruling.)  The route editor refuses these names at both of its own doors; this is the third way in.
+                    // Routes store locomotives by name in a comma-separated text format, so renaming into a name with a
+                    // comma rewrites every command and condition into something that re-parses as a different
+                    // locomotive.  (Brackets are allowed: Adam's ruling.)  The route editor refuses these names at both
+                    // its doors; this is the third way in.
                     if (!org.traincontrol.base.RouteCommand.isNameUsable(newName))
                     {
                         JOptionPane.showMessageDialog(
@@ -161,10 +162,8 @@ final class LocomotiveActions
                     }
                 }
 
-                // ASKED AGAIN AFTER THE DIALOG, BEFORE ANYTHING IS WRITTEN.  The question above was put before
-                // the dialog opened, an s88 trigger can start a route that drives this locomotive while it is open, and
-                // both writes below rewrite what that route is reading.  The multi-unit dialog and the Central Station's
-                // name proposal already ask after theirs.
+                // Asked again after the dialog, before anything is written: an s88 trigger can start a route that
+                // drives this locomotive while it is open, and both writes below rewrite what that route is reading.
                 if (result == JOptionPane.OK_OPTION && this.ui.refuseWhileARouteDrivesIt(source, l.getName())) return;
 
                 String newAddress = edit.getAddress();
@@ -198,15 +197,14 @@ final class LocomotiveActions
                         this.ui.getModel().getAutoLayout().sanitizeMultiUnits(l);
                         this.ui.getModel().getAutoLayout().refreshUI();
 
-                        // And the station labels on the track diagram (OB-081; Adam: "When autonomy is loaded: Renaming a locomotive does not immediately
-                        // propagate to the labels in the track diagram viewer."): refreshUI fires the layout's callbacks, which redraw the autonomy
-                        // surfaces, but the labels beside a station are written by updateStationLabels, which every other door that changes which locomotive
-                        // stands where already calls ("The label still says the locomotive's name until something rewrites it.").
+                        // And the station labels on the track diagram (OB-081): refreshUI redraws the autonomy
+                        // surfaces, but the labels beside a station are written by updateStationLabels, which every
+                        // other door that changes which locomotive stands where calls.
                         this.ui.updateVisiblePoints();
                         this.ui.repaintAutoLocList(false);
 
-                        // And the timetable, which names locomotives too: the guard inside `repaintTimetable` is keyed on a hash a rename
-                        // cannot move (MT-149), and neither rename door CALLED it.
+                        // And the timetable, which names locomotives too: the guard inside `repaintTimetable` is keyed
+                        // on a hash a rename cannot move (MT-149).
                         this.ui.repaintTimetable();
                     }
                 }
@@ -589,12 +587,11 @@ final class LocomotiveActions
         // AND NOT WHILE A ROUTE THAT DRIVES IT IS RUNNING.
         if (this.ui.refuseWhileARouteDrivesIt(source, value)) return;
         
-        // The routes that drive it, counted before it goes: deleting a locomotive removes every command that drives it from every route
-        // (the reasoning is in Route.locomotiveDeleted: a command naming a locomotive that does not exist does nothing when the route fires
-        // and makes the route look complete while it is not), and an operator who deletes and re-adds it under the same name (how a decoder
-        // type is changed) loses those commands, which is why the question counts them.  Counted here rather than reported afterwards, because by then there is
-        // nothing left to count.  Commands only: a CONDITION naming the locomotive is left in place and reported on its own line by the
-        // deletion.
+        // The routes that drive it, counted before it goes: deleting a locomotive removes every command that drives it
+        // from every route (see Route.locomotiveDeleted), and an operator who deletes and re-adds it under the same
+        // name loses those commands, which is why the question counts them.  Counted here, not afterwards, when there
+        // is nothing left to count.  Commands only: a CONDITION naming it is left in place and reported on its own line
+        // by the deletion.
         int drivenBy = 0;
 
         for (String routeName : this.ui.getModel().getRouteList())
@@ -635,22 +632,21 @@ final class LocomotiveActions
                     this.ui.activeLoc = null;
                 }
 
-                // What Control+X is holding, if it is this locomotive: cut a train off a square, delete the locomotive, press Control+V, and the paste
-                // resolves a locomotive no longer in the database.  Harmless in itself (it fails and logs), but the same shape as the five that were
-                // not, and the holder is in the interface rather than in the layout, which the source guard cannot see.
+                // What Control+X is holding, if it is this locomotive: cut a train off a square, delete the locomotive,
+                // press Control+V, and the paste resolves a locomotive no longer in the database.  The holder is in the
+                // interface rather than the layout, which the source guard cannot see.
                 if (l.equals(this.ui.cutLocomotive))
                 {
                     this.ui.cutLocomotive = null;
 
-                    // The heading goes with it, or a later cut of a DIFFERENT train would inherit it
-                    // where that train has none of its own - and the square it was cut from.
+                    // The heading goes with it, or a later cut of a DIFFERENT train would inherit it.
                     this.ui.cutFacing = null;
 
                     this.ui.cutFrom = null;
                 }
 
-                // Every PAGE of mappings, not only the one on screen: a locomotive mapped on any other page kept its button, holding a reference to
-                // something no longer in the database on a button that still drives real hardware, its decoder address being unchanged.
+                // Every PAGE of mappings, not only the one on screen: a button mapped on another page would keep a
+                // reference to a locomotive no longer in the database, on a button that still drives real hardware.
                 for (java.util.HashMap<javax.swing.JButton, Locomotive> page : this.ui.locMapping)
                 {
                     for (JButton key : new LinkedList<>(page.keySet()))
@@ -665,11 +661,9 @@ final class LocomotiveActions
                 this.ui.repaintMappings();
                 this.ui.getLocSelector().refreshLocSelectorList();
 
-                // And the two the rename doors have, which this one never got: `updateVisiblePoints()` is the only writer of the station
-                // captions on the track diagram (OB-081; `refreshUI()` below redraws the overlay, not the captions), so deleting a locomotive
-                // standing at a station left its caption naming a locomotive the database no longer has; and `repaintTimetable()` is MT-149 at the
-                // door its fix never reached.  A locomotive leaving the database changes exactly what a rename changes (which name is right), so
-                // the door that removes one needs what the doors that rename one need.
+                // And the two the rename doors have: `updateVisiblePoints()` is the only writer of the station captions
+                // on the track diagram (OB-081), and `repaintTimetable()` is MT-149.  A locomotive leaving the database
+                // changes which name is right, as a rename does.
                 this.ui.updateVisiblePoints();
                 this.ui.repaintTimetable();
                 
