@@ -21,8 +21,8 @@ import org.traincontrol.marklin.MarklinLocomotive;
  * "Example train" are invented: replace them with your own track's before handing `run` a real station.
  *
  * Shows `setLocomotivesToRun`, `runLocomotives`, `stopLocomotives`, `stopEveryTrainWhereItIs`, `isRunning`,
- * `setMinDelay`, `setMaxDelay`, `setSimulate`, the locomotive's `setCallback` with `Layout.CB_ROUTE_START`, `CB_ROUTE_PROG` and `CB_ROUTE_END`, the
- * layout's own `setCallback`, `getActiveLocomotives`, `getStart`, `getDestination`, `getPointsInActivePath`,
+ * `setMinDelay`, `setMaxDelay`, `setSimulate`, the locomotive's `setCallback` with `Layout.CB_ROUTE_START`,
+ * `CB_ROUTE_PROG` and `CB_ROUTE_END`, the layout's own `setCallback`, `getActiveLocomotives`, `getStart`, `getDestination`, `getPointsInActivePath`,
  * `getReachedMilestones`, `getLatestMilestoneS88`, `getLastPointsReached`, `waitForS88Reached`,
  * `getLocomotiveLocation` and the locomotive's `getNumPaths`.
  */

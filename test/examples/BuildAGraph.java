@@ -136,14 +136,14 @@ public class BuildAGraph
         mainTrack.setReversing(true);
 
         found.add("after making Main Track reversing: " + layout.hasOnlyReversingIncoming(preArrival)
-            + ", and every neighbour of Station 1 reversing: " + layout.hasOnlyReversingNeighbors(station1));
+            + ", and every neighbor of Station 1 reversing: " + layout.hasOnlyReversingNeighbors(station1));
 
         found.add("every way into Pre Arrival is from an inactive point: " + layout.hasOnlyInactiveIncoming(preArrival));
 
         mainTrack.setActive(false);
 
         found.add("after switching Main Track off: " + layout.hasOnlyInactiveIncoming(preArrival)
-            + ", and every neighbour of Station 1 inactive: " + layout.hasOnlyInactiveNeighbors(station1));
+            + ", and every neighbor of Station 1 inactive: " + layout.hasOnlyInactiveNeighbors(station1));
 
         mainTrack.setActive(true);
         mainTrack.setReversing(false);

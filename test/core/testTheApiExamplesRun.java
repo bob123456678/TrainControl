@@ -240,11 +240,11 @@ public class testTheApiExamplesRun
 
         assertSays(found, "every way into Pre Arrival is from a reversing point: false");
 
-        assertSays(found, "after making Main Track reversing: true, and every neighbour of Station 1 reversing: true");
+        assertSays(found, "after making Main Track reversing: true, and every neighbor of Station 1 reversing: true");
 
         assertSays(found, "every way into Pre Arrival is from an inactive point: false");
 
-        assertSays(found, "after switching Main Track off: true, and every neighbour of Station 1 inactive: true");
+        assertSays(found, "after switching Main Track off: true, and every neighbor of Station 1 inactive: true");
 
         assertHasLine(found, "shortest way: [Station 1 -> ");
 
