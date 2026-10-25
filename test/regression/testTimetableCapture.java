@@ -13,21 +13,15 @@ import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
 
 /**
- * Capturing what the operator drives, into the timetable.
+ * Capturing what the operator drives, into the timetable.  There was no test for this at all, which Adam noticed when
+ * it broke: "capture locomotive commands is capturing neither manual locomotive commands nor full autonomy commands
+ * into the timetable. Regression."
  *
- * There was no test for this at all, which Adam noticed when it broke: "capture locomotive commands is
- * capturing neither manual locomotive commands nor full autonomy commands into the timetable.
- * Regression."
- *
- * The engine was never at fault. `addTimetableEntry` works, and did throughout - probing it directly
- * captured a dispatch first time. What was broken is that the operator's CHOICE did not survive: the
- * capture flag lives on the Layout object, `parseAuto` replaces that object wholesale, and a fresh
- * Layout starts with capture off. So every rebuild - applying a diagram edit, placing a locomotive,
- * loading a configuration - quietly turned capture off underneath a toggle button that stayed lit.
- *
- * That is why the tests below are in two halves. The first two are the behavior anybody would have
- * written; the third is the one that would have caught this, and it is about a piece of state
- * surviving something that looks unrelated to it.
+ * The engine was never at fault; what was broken is that the operator's CHOICE did not survive.  The capture flag lives
+ * on the Layout object, `parseAuto` replaces that object wholesale, and a fresh Layout starts with capture off, so
+ * every rebuild (a diagram edit applied, a locomotive placed, a configuration loaded) turned capture off underneath a
+ * toggle button that stayed lit.  So the tests are in two halves: the first two are the behavior anybody would have
+ * written; the third is about a piece of state surviving something that looks unrelated to it.
  *
  * @author Adam
  */
@@ -54,9 +48,7 @@ public class testTimetableCapture
         if (model != null) model.stop();
     }
 
-    /**
-     * With capture on, a dispatch lands in the timetable.
-     */
+    /** With capture on, a dispatch lands in the timetable. */
     @Test
     public void testADispatchIsCapturedWhenCaptureIsOn() throws Exception
     {
@@ -85,10 +77,8 @@ public class testTimetableCapture
     }
 
     /**
-     * And with capture off, nothing is.
-     *
-     * The mutation check for the test above: an entry appearing here would mean the flag is not
-     * consulted at all, and the first test would pass whatever the code did.
+     * And with capture off, nothing is: an entry here would mean the flag is not consulted, and the first test would
+     * pass whatever the code did.
      */
     @Test
     public void testNothingIsCapturedWhenCaptureIsOff() throws Exception
@@ -103,8 +93,7 @@ public class testTimetableCapture
 
         dispatch(layout, loc);
 
-        // long enough that a capture would have happened - the entry is added immediately after the
-        // path is locked, well before the train finishes
+        // The entry is added immediately after the path is locked, well before the train finishes.
         waitForCapture(layout, 1);
 
         assertTrue(layout.getTimetable().isEmpty(),
@@ -112,16 +101,10 @@ public class testTimetableCapture
     }
 
     /**
-     * The operator's choice survives the layout being rebuilt.
-     *
-     * This is the one that matters, and the one nothing covered. `parseAuto` replaces the Layout
-     * object, and the capture flag lives on it - so a rebuild started a fresh Layout with capture off
-     * while the toggle button, which is not repainted at that moment, stayed lit. The operator pressed
-     * a button, did something ordinary that rebuilds the setup, and captured nothing for the rest of
-     * the session with no indication why.
-     *
-     * A rebuild happens far more often than it reads: applying a diagram edit, placing a locomotive
-     * and loading a configuration all come through parseAuto.
+     * The operator's choice survives the layout being rebuilt.  `parseAuto` replaces the Layout object, and the capture
+     * flag lives on it, so a rebuild started a fresh Layout with capture off while the toggle button stayed lit, and
+     * nothing was captured for the rest of the session with no indication why.  A rebuild happens far more often than
+     * it reads.
      */
     @Test
     public void testCaptureSurvivesTheLayoutBeingRebuilt() throws Exception
@@ -134,8 +117,7 @@ public class testTimetableCapture
 
         assertTrue(model.getAutoLayout().isTimetableCapture(), "the fixture did not switch capture on");
 
-        // Anything that rebuilds the setup - a diagram edit applied, a locomotive placed, a
-        // configuration loaded - arrives here.
+        // Anything that rebuilds the setup arrives here.
         model.parseAuto(twoStationJSON());
 
         assertTrue(model.getAutoLayout().isTimetableCapture(),
@@ -145,29 +127,16 @@ public class testTimetableCapture
     }
 
     /**
-     * How long the run from A to B is measured, and it is LONGER THAN THE TRAIN on purpose.
-     *
-     * It was 1 until 2026-09-08, when MT-262 took the fence off the berth-room rule in
-     * `Layout.isPathClear`.  Until then that rule was asked only where the destination was a terminus
-     * or a reversing point, so B - a plain through station - was never judged on the track leading
-     * into it, and any positive number did.  It is judged now, and `firstLocomotive()` comes from the
-     * operator's real database, where it is three units long: the dispatch below was refused with
-     * "02 0314-1 DDR (length 3) is longer than the track leading into B, which measures 1", so
-     * `executePath` never reached the capture and testADispatchIsCapturedWhenCaptureIsOn failed on
-     * the whole of the feature.
-     *
-     * testNothingIsCapturedWhenCaptureIsOff was passing at the same time and for the same reason,
-     * which is the worse half: it asserts that NOTHING is captured, and a path that is refused
-     * captures nothing whatever the flag says.  Both ask a real question again now.
+     * How long the run from A to B is measured, and it is LONGER THAN THE TRAIN on purpose (MT-262): the berth-room
+     * rule in `Layout.isPathClear` judges B, a plain through station, on the track leading into it, and
+     * `firstLocomotive()` comes from the operator's real database, three units long.  A dispatch refused for length
+     * never reaches the capture, which also makes the capture-off test pass for the wrong reason.
      */
     private static final int APPROACH = 20;
 
     /**
-     * That the run really is longer than the train this class dispatches.
-     *
-     * The locomotive is the operator's own - `getLocList().get(0)` - so its length is data this file
-     * does not control, and a longer one arriving in that database would put both tests above back
-     * where MT-262 found them, reading as a broken capture rather than as a fixture gone too small.
+     * That the run really is longer than the train this class dispatches: the locomotive is the operator's own, so its
+     * length is data this file does not control, and a longer one would read as a broken capture.
      */
     private static void theRunHoldsTheTrainUsedHere(Locomotive loc)
     {
@@ -210,8 +179,8 @@ public class testTimetableCapture
     }
 
     /**
-     * Dispatches A to B on a thread of its own, because executePath drives the train and does not
-     * return until it has arrived - and the capture happens immediately after the path is locked.
+     * Dispatches A to B on a thread of its own, because executePath does not return until the train has arrived; the
+     * capture happens right after the path is locked.
      */
     private void dispatch(Layout layout, Locomotive loc)
     {
