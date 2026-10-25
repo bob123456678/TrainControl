@@ -11,24 +11,13 @@ import org.testng.annotations.Test;
 /**
  * Every test class is in `ant test`, and this is what notices when one is not.
  *
- * `build.xml` names each test class on its own line, because `NetworkProxy` binds a fixed UDP port and
- * only one control station can exist per JVM - so the battery runs one class per JVM and there is no
- * wildcard that could do it. The list is therefore kept by hand, and a hand-kept list of everything is
- * a list that falls behind.
+ * `build.xml` names each test class on its own line, because `NetworkProxy` binds a fixed UDP port and only one control
+ * station can exist per JVM, so the battery runs one class per JVM with no wildcard.  A hand-kept list of everything
+ * falls behind (a review once found thirty-five classes missing); it is still kept by hand, but forgetting it now
+ * fails.
  *
- * It has fallen behind twice. A review found **thirty-five** classes missing, among them the matrix test
- * written specifically to catch this project's commonest bug class. That was closed on 2026-08-22 by
- * adding them - and by 2026-08-22 evening six more were missing, one of them added in the very commit
- * that closed it, and one of them the guard for the four defects around the editor switch. A green
- * `ant test` was reporting on a suite that did not include the tests written that day.
- *
- * So the fix was not adding thirty-four lines. It is this: the list is still kept by hand,
- * but forgetting it now fails.
- *
- * **`testAutoDetect` is the one deliberate omission.** It probes the network for a real Central Station
- * and cannot pass without one, so it is excluded on purpose and excluded here too. Anything else that
- * needs to be left out should be added to the exclusion below WITH ITS REASON, so the next reader can
- * tell a decision from an oversight - which is the whole difference this test exists to preserve.
+ * `testAutoDetect` is the one deliberate omission: it probes the network for a real Central Station.  Anything else
+ * left out is added to the exclusion below WITH ITS REASON, so the next reader can tell a decision from an oversight.
  *
  * @author Adam
  */
@@ -51,15 +40,9 @@ public class testEveryTestIsInTheBattery
         assertTrue(build.exists(), "cannot find " + build.getAbsolutePath()
             + " - this test reads the build file, so it has to run from the project root");
 
-        // WITHOUT its comments.
-        //
-        // The check below is a substring search for a `test-one-class` line, and a line inside
-        // `<!-- -->` is still a substring - so commenting a class out satisfied this guard while
-        // `ant test` stopped running it. That is not a hypothetical edit. It is what somebody does to
-        // skip a slow class while debugging, and forgetting to put it back is exactly how thirty-five
-        // classes came to be silently out of the battery, which is the state this test exists
-        // to stop returning to. Demonstrated by mutation: commented out, 3 of 3 green; deleted
-        // outright, correctly red.
+        // WITHOUT its comments: the check below is a substring search for a `test-one-class` line, and a line inside
+        // `<!-- -->` is still a substring, so commenting a class out (to skip a slow class while debugging) satisfied
+        // this guard while `ant test` stopped running it.
         String xml = withoutXmlComments(
             new String(Files.readAllBytes(build.toPath()), StandardCharsets.UTF_8));
 
@@ -99,26 +82,16 @@ public class testEveryTestIsInTheBattery
     }
 
     /**
-     * And the exclusion list does not quietly grow.
-     *
-     * A test like the one above is defeated by adding names to its own exemption list, which is easier
-     * than fixing what it found and leaves no trace. One entry is the number there is a reason for.
+     * And the exclusion list does not quietly grow: adding names to its own exemption list is easier than fixing what
+     * the test found.  One entry is the number there is a reason for.
      */
     @Test
     public void testTheExclusionListIsStillOneEntry()
     {
-        // BACK TO ONE, on Adam's instruction of 2026-09-01: "ok, so that test should then be red."
-        //
-        // testTheParkingBerthsGetTheirTrainsBack was excused because a permanently red battery costs
-        // more than the test earns.  That was the wrong trade and he said so: Return Home does not
-        // work for this arrangement, nothing moves when it is pressed, and a test for something that
-        // does not work belongs in the battery being red rather than in a table being quiet.  The
-        // outcome improved twice today - IMPOSSIBLE to NO_PLAN_FOUND, and a false claim removed - and
-        // improving is not the same as working.
-        //
-        // The one that is left is testAutoDetect, which needs hardware that is not here.  That is a
-        // different kind of reason from the one just removed: a test nothing on this machine could
-        // ever satisfy, rather than a test whose subject does not work yet.
+        // BACK TO ONE, on Adam's instruction: "ok, so that test should then be red."  A test for something that does
+        // not work (Return Home for the parking-berth arrangement) belongs in the battery being red rather than
+        // excused.  The one left is testAutoDetect, which needs hardware that is not here: a test nothing on this
+        // machine could satisfy.
         assertEquals(DELIBERATELY_OUT.length, 1,
             "something has been added to the list of tests `ant test` deliberately skips. That may be "
             + "right, but it is a decision worth a second look: the reason must be in the table, and "
@@ -143,14 +116,10 @@ public class testEveryTestIsInTheBattery
     /**
      * NO TEST BUILDS ITS PAGES WITHOUT WIRING THEM.
      *
-     * `CS2File.parseLayout` reads the files and builds the components. What attaches a component to a
-     * live `Accessory` - creating one from the tile's own address when the station has none - is
-     * `MarklinControlStation.wireComponents`, in a loop after the parse. A test that constructs its own
-     * parser and calls `parseLayout` directly skips that loop, and every switch and signal comes back
-     * with a null accessory.
-     *
-     * `TileGraph` reports `errorTileHasNoAddress` for an unwired switch and refuses to trace through
-     * it, so the railway falls to pieces. Measured on the sample layout, 2026-09-08:
+     * `CS2File.parseLayout` builds the components, but what attaches each to a live `Accessory` is
+     * `MarklinControlStation.wireComponents`, in a loop after the parse.  A test that calls `parseLayout` directly
+     * skips it, every switch and signal has a null accessory, and `TileGraph` refuses to trace through, so the railway
+     * falls to pieces (measured on the sample layout):
      *
      * | | re-parsed | wired |
      * |---|---|---|
@@ -159,35 +128,26 @@ public class testEveryTestIsInTheBattery
      * | built points / edges | 59 / 5 | 96 / 149 |
      * | isolated points | 51 | 3 |
      *
-     * **Twenty test classes were doing it**, and they passed - an assertion about a square with no
-     * edges is usually an assertion about null. Converting them turned up ten failures, including a
-     * class written for the paste-direction defects that could not reach the code it was about.
+     * Twenty test classes did it and passed, since an assertion about a square with no edges is usually an assertion
+     * about null.  `support.LayoutSandbox.wired(model, parser)` is the recipe.
      *
-     * `support.LayoutSandbox.wired(model, parser)` is the recipe. This guard exists because the wrong
-     * one looks completely reasonable and produces a green suite.
-     *
-     * MUTATION: writing `parser.parseLayout(new LinkedList<MarklinAccessory>())` in any test outside
-     * the excused list fails this.
+     * MUTATION: writing `parser.parseLayout(new LinkedList<MarklinAccessory>())` in any test outside the excused list
+     * fails this.
      *
      * @throws Exception on a failure to read the tests
      */
     @Test
     public void testNoTestParsesALayoutWithoutWiringIt() throws Exception
     {
-        // `testParseCS2Layout` is excused because it is testing the PARSER. An unwired parse is what
-        // that class is about, and wiring would change the thing under test.
         // THE GUARD SEARCHES FOR A CALL AND CANNOT SEE CONTEXT, so three files are excused by name.
         //
-        // `testParseCS2Layout` is testing the PARSER: an unwired parse is the thing under test there,
-        // and wiring it would change what it measures.
+        // `testParseCS2Layout` is testing the PARSER: an unwired parse is the thing under test there.
         //
-        // `LayoutSandbox` is the CURE - the wiring helper contains the call by definition, and its
-        // javadoc quotes the wrong form to explain it. This file quotes it too, in the search below.
-        // Both were flagged by the first version of this guard, which is the ordinary way a source
-        // rule catches itself: the comment above it predicted exactly that and it happened anyway.
+        // `LayoutSandbox` is the CURE: the wiring helper contains the call by definition, and its javadoc quotes the
+        // wrong form to explain it.  This file quotes it too, in the search below.
         //
-        // `testTimetableOnDerivedGraph` spells the call with `java.util.LinkedList`, which the search now sees, and wires
-        // the pages by hand straight after (`wireAccessories(pages)`, with the reason written beside it).
+        // `testTimetableOnDerivedGraph` spells the call with `java.util.LinkedList` and wires the pages by hand
+        // straight after (`wireAccessories(pages)`, with the reason written beside it).
         java.util.List<String> excused = java.util.Arrays.asList(
             "testParseCS2Layout.java", "LayoutSandbox.java", "testEveryTestIsInTheBattery.java",
             "testTimetableOnDerivedGraph.java");
@@ -229,9 +189,6 @@ public class testEveryTestIsInTheBattery
 
     /**
      * Whether a source file parses a layout with an empty accessory list.
-     *
-     * @param source the text of a test file
-     * @return true when it contains such a call
      */
     private static boolean parsesWithoutAccessories(String source)
     {
@@ -239,10 +196,8 @@ public class testEveryTestIsInTheBattery
     }
 
     /**
-     * The search for an unwired parse sees the spellings tests use, and not a wired one.
-     *
-     * The guard above looked for two exact spellings, so `new java.util.LinkedList<MarklinAccessory>()` - already in the
-     * tree - went by it, and an unwired parse spelled that way would have passed.  This drives the same search over
+     * The search for an unwired parse sees the spellings tests use, and not a wired one: the guard once looked for two
+     * exact spellings, so `new java.util.LinkedList<MarklinAccessory>()` went by it.  This drives the same search over
      * made-up lines, so it cannot go quiet unnoticed.
      *
      * MUTATION: put an unwired parse spelled `new java.util.LinkedList<MarklinAccessory>()` in a test outside the excused
@@ -273,18 +228,10 @@ public class testEveryTestIsInTheBattery
     /**
      * Every test-SHAPED method carries an annotation, not just the class.
      *
-     * The check above answers "is this FILE in the battery", by whether `@Test` appears in it
-     * anywhere - which is also true of a file where one method quietly lost its `@Test` and four
-     * others kept theirs. That happened: five methods in one class carried no `@Test` at all and had
-     * never run, and this test's own sibling could not see it, because the class itself was still
-     * correctly listed in `build.xml`.
-     *
-     * Deliberately permissive about WHICH annotation: `@AfterClass`/`@BeforeClass`/`@BeforeMethod`/
-     * etc. on a method named like a test is a lifecycle hook that happens to share the naming
-     * convention (`testTheGoldenLayoutHoldsTogether`'s golden-write check is exactly this, run via
-     * `@AfterClass`), and flagging those would be noise this test would train someone to ignore. What
-     * must never happen is a `public void testX()` with no TestNG annotation above it at all - that
-     * is a method TestNG will never call, whatever it is named.
+     * The check above answers "is this FILE in the battery" by whether `@Test` appears anywhere, which is also true of
+     * a file where one method quietly lost its `@Test` (five methods in one class never ran).  Permissive about WHICH
+     * annotation: a lifecycle hook (`@AfterClass`) on a method named like a test is legitimate.  What must never happen
+     * is a `public void testX()` with no TestNG annotation above it at all.
      *
      * MUTATION: removing the annotation from any `public void testX(...)` method, leaving the method
      * itself in place, fails this and names the file and method.
@@ -337,20 +284,12 @@ public class testEveryTestIsInTheBattery
 
                         if (line.startsWith("@"))
                         {
-                            // A TESTNG ONE, NOT ANY ONE.
-                            //
-                            // The javadoc above argues for being permissive about WHICH TestNG
-                            // annotation - a lifecycle hook named like a test is fine - and this
-                            // accepted anything beginning with @.  `@Override`, `@Deprecated` and
-                            // `@SuppressWarnings("unchecked")` all marked a test-shaped method as
-                            // annotated, and the last of those is exactly what somebody adds above a
-                            // method while working on it.  A method whose @Test had been lost and a
-                            // @SuppressWarnings gained would have passed this guard, which is the
-                            // five-methods-never-run failure it exists for, one step subtler.
-                            //
-                            // Anything further up the list of annotations still counts: a method may
-                            // carry @Override above @Test, and the loop keeps reading until it meets
-                            // something that is not an annotation.
+                            // A TESTNG ONE, NOT ANY ONE: `@Override`, `@Deprecated` and
+                            // `@SuppressWarnings("unchecked")` all marked a test-shaped method as annotated, so a
+                            // method that lost its @Test and gained a
+                            // @SuppressWarnings passed.  Anything further up the list still counts: the loop keeps
+                            // reading
+                            // until it meets something that is not an annotation.
                             if (isTestNGAnnotation(line)) annotated = true;
 
                             continue;
@@ -367,9 +306,8 @@ public class testEveryTestIsInTheBattery
             }
         }
 
-        // A pattern that stopped matching - a reformat, a renamed convention - would pass having
-        // examined nothing. Over a thousand methods are named like a test today; 500 is a floor well
-        // under that, not a pin on the count.
+        // A pattern that stopped matching would pass having examined nothing; 500 is a floor well under the number of
+        // test-shaped methods, not a pin on the count.
         assertTrue(methodsChecked >= 500,
             "only " + methodsChecked + " methods named like a test (public void test...) were found "
             + "under test/ - fewer than the suite is known to have, so this scan ran from the wrong "
@@ -401,18 +339,10 @@ public class testEveryTestIsInTheBattery
         return false;
     }
     /**
-     * The build file with everything between comment delimiters removed.
-     *
-     * Deliberately crude: it blanks spans rather than parsing XML. A comment delimiter inside an
-     * attribute value would confuse it, and `build.xml` has none - a real parser here would be a
-     * dependency and a second thing that can be wrong about a file this test exists to read
-     * literally.
-     *
-     * An unterminated comment swallows the rest of the file, which is what ant would do with it too,
-     * so a class after one is correctly reported as missing.
-     *
-     * @param xml the file's text
-     * @return it, with comment spans removed
+     * The build file with everything between comment delimiters removed.  Deliberately crude, blanking spans rather
+     * than parsing XML (a real parser would be a second thing that can be wrong about a file this test reads
+     * literally).  An unterminated comment swallows the rest of the file, as ant would, so a class after one is
+     * correctly reported as missing.
      */
     private static String withoutXmlComments(String xml)
     {
@@ -442,14 +372,8 @@ public class testEveryTestIsInTheBattery
 
 
     /**
-     * Whether an annotation line is one TestNG acts on.
-     *
-     * By name rather than by import, because this reads source rather than classes. The list is
-     * every annotation in `org.testng.annotations` that can sit on a method; a fully-qualified one
-     * (`@org.testng.annotations.Test`) is matched by the same suffix test.
-     *
-     * @param line the trimmed source line, beginning with `@`
-     * @return true if TestNG would call the method beneath it
+     * Whether an annotation line is one TestNG acts on, by name rather than by import (this reads source): every
+     * annotation in `org.testng.annotations` that can sit on a method, fully-qualified or not.
      */
     private static boolean isTestNGAnnotation(String line)
     {
