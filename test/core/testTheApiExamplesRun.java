@@ -26,16 +26,14 @@ import org.traincontrol.marklin.MarklinLocomotive;
 /**
  * The API examples in test/examples run, against a station that is not there (FR-138).
  *
- * The examples teach the public Java API (AutomationAPI.md points to them), and a teaching example that no longer
- * compiles or no longer does what its words say is worse than none.  They compile with the tests, so a renamed method
- * breaks the build; this class runs each one on a simulated station and reads back what it claims to have done, so a
- * method that still exists but behaves differently fails here.
+ * The examples teach the public Java API (AutomationAPI.md points to them), and one that no longer compiles or does
+ * what its words say is worse than none.  They compile with the tests, so a renamed method breaks the build; this class
+ * runs each on a simulated station and reads back what it claims to have done, so a method that still exists but
+ * behaves differently fails here.
  *
- * Every example takes its station as a parameter, and none connects to a real Central Station: the only call to
- * `init` is in `SimulatedStation`, and it asks for a simulation.
- *
- * One station per JVM, because it binds a fixed network port, so the examples share one and use names, addresses and
- * sensors that do not meet.
+ * Every example takes its station as a parameter, and none connects to a real Central Station: the only call to `init`
+ * is in `SimulatedStation`, and it asks for a simulation.  One station per JVM, because it binds a fixed network port,
+ * so the examples share one and use names, addresses and sensors that do not meet.
  *
  * MUTATION: change a call in an example so it does something else (turn where it says straight, say), and the line it
  * reports no longer matches.
@@ -81,18 +79,14 @@ public class testTheApiExamplesRun
         if (sandbox != null) sandbox.close();
     }
 
-    /**
-     * Whether a report has a line that says exactly this, with a message that prints the report.
-     */
+    /** Whether a report has a line that says exactly this, with a message that prints the report. */
     private static void assertSays(List<String> found, String line)
     {
         assertTrue(found.contains(line), "the example did not report \"" + line + "\"; it reported:\n"
             + String.join("\n", found));
     }
 
-    /**
-     * Whether a report has a line that begins like this.
-     */
+    /** Whether a report has a line that begins like this. */
     private static void assertHasLine(List<String> found, String start)
     {
         for (String line : found)
@@ -104,11 +98,7 @@ public class testTheApiExamplesRun
             + String.join("\n", found));
     }
 
-    /**
-     * The station tells what it holds, and a power switch it is asked to make is confirmed by the answer.
-     *
-     * @throws Exception from the example
-     */
+    /** The station tells what it holds, and a power switch it is asked to make is confirmed by the answer. */
     @Test
     public void testKnowYourStation() throws Exception
     {
@@ -131,8 +121,6 @@ public class testTheApiExamplesRun
 
     /**
      * Every direction, speed and function the example sets reads back as set, and it leaves the locomotive standing.
-     *
-     * @throws Exception from the example
      */
     @Test
     public void testDriveALocomotive() throws Exception
@@ -173,8 +161,6 @@ public class testTheApiExamplesRun
     /**
      * Switches and signals take the setting they are given, the sensor is read as set, and the stored route throws what
      * it holds and is gone again at the end.
-     *
-     * @throws Exception from the example
      */
     @Test(timeOut = 120000)
     public void testSwitchesSignalsAndSensors() throws Exception
@@ -218,8 +204,6 @@ public class testTheApiExamplesRun
     /**
      * The graph answers what it was built to answer, a changed setting or lock is gone, and a saved graph loads again
      * the same.
-     *
-     * @throws Exception from the example
      */
     @Test
     public void testBuildAGraph() throws Exception
@@ -267,8 +251,6 @@ public class testTheApiExamplesRun
 
     /**
      * A train set off by the layout is seen leaving, passing its sensor and arriving, and stands at its destination.
-     *
-     * @throws Exception from the example
      */
     @Test(timeOut = 120000)
     public void testRunTrainsOnAGraph() throws Exception
@@ -299,8 +281,6 @@ public class testTheApiExamplesRun
 
     /**
      * A sensor makes a thread of the example's own act, a sensor starts the stored route, and the commands are counted.
-     *
-     * @throws Exception from the example
      */
     @Test(timeOut = 120000)
     public void testReactToEvents() throws Exception
@@ -328,8 +308,6 @@ public class testTheApiExamplesRun
     /**
      * Each example takes its station as a parameter, has a main to run by itself, and none opens a real station: the
      * only init in the folder is the simulation.
-     *
-     * @throws Exception from reading the sources
      */
     @Test
     public void testNoExampleReachesForARealStation() throws Exception
@@ -380,12 +358,8 @@ public class testTheApiExamplesRun
     }
 
     /**
-     * The methods kept for the people who use the API are shown in the examples.
-     *
-     * A method nothing in the program calls survives only because someone may use it; this keeps the promise made when
-     * it was kept (FR-138) from lapsing when an example is edited.
-     *
-     * @throws Exception from reading the sources
+     * The methods kept for the people who use the API are shown in the examples, so the promise made when they were
+     * kept (FR-138) cannot lapse when an example is edited.
      */
     @Test
     public void testEveryKeptMethodIsShown() throws Exception
@@ -401,9 +375,7 @@ public class testTheApiExamplesRun
         }
     }
 
-    /**
-     * @return the example sources
-     */
+    /** The example sources. */
     private static File[] sources()
     {
         File[] files = new File("test/examples").listFiles((dir, name) -> name.endsWith(".java"));
@@ -415,11 +387,7 @@ public class testTheApiExamplesRun
         return files;
     }
 
-    /**
-     * @param source a Java file
-     * @return its code, without comments and text in quotes
-     * @throws Exception when it cannot be read
-     */
+    /** A Java file's code, without comments and text in quotes. */
     private static String code(File source) throws Exception
     {
         String text = new String(Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8);
