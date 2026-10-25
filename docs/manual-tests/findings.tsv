@@ -788,8 +788,8 @@ DD-B6	2026-09-22-GS-backlog.md	Closed	still true, **declined** by `open-question
 DD-B7	2026-08-22-duplication-and-design.md	Closed	Open	three copies of `item(text, Runnable)`, three different things happen when it throws
 DD-B8	2026-08-22-duplication-and-design.md	Closed	Open	two "something changed" protocols in `AutonomySession`
 DD-B8	2026-08-24-duplication-robustness.md	Closed	Open; `touched()` at `:3848`, the two inline `dirty = true` unchanged.	Open; `touched()` at `:3848`, the two inline `dirty = true` unchanged.
-DD-B9	2026-08-22-duplication-and-design.md	Open - deferred	Open	one reachability rule, written out three times
-DD-B9	2026-08-24-duplication-robustness.md	Open - deferred	Open; `findPath`/`reachableTiles` walks and turn blocks unchanged, `onwardSides`/`onwardFr	Open; `findPath`/`reachableTiles` walks and turn blocks unchanged, `onwardSides`/`onwardFrom` unchanged, plus the new session-level pair: DR-B6.
+DD-B9	2026-08-22-duplication-and-design.md	Closed	Open	one reachability rule, written out three times
+DD-B9	2026-08-24-duplication-robustness.md	Closed	Open; `findPath`/`reachableTiles` walks and turn blocks unchanged, `onwardSides`/`onwardFr	Open; `findPath`/`reachableTiles` walks and turn blocks unchanged, `onwardSides`/`onwardFrom` unchanged, plus the new session-level pair: DR-B6.
 DD-C1	2026-08-22-duplication-and-design.md	Open - deferred	Open	`TrainControlUI`, and what could actually leave it
 DD-C1	2026-09-22-GS-backlog.md	Open - deferred	still true, **not a defect** by the §2c ruling	(listed in a table, no section of its own)
 DD-C10	2026-08-22-duplication-and-design.md	Closed	Open	the port table exists three times, one of them in Python

@@ -8471,7 +8471,7 @@ evidence: testRouteCommandParity.java:23
 commit_id: f956946b
 cited_by:
 status: Closed
-status_note: Closed 2026-10-10: declined, as open-questions.md recommended (it buys consistency, not correctness), on Adam's "Agree- defer the DD's for 3.1.0" - see OB-331.
+status_note: Fixed 2026-10-24 in 3.0.3 (01ba3969..7e3a66e1 on the ddb6 branch), on Adam's "For DD-B9 and DD-B6, can we fix them?": 230 test files start their station through support.TestStation; 10 that sync from the application's own address keep their own init.
 
 [finding DD-B6 in 2026-09-22-GS-backlog.md]
 line:
@@ -8482,7 +8482,7 @@ evidence:
 commit_id:
 cited_by:
 status: Closed
-status_note: Closed 2026-10-10: declined, as open-questions.md recommended (it buys consistency, not correctness), on Adam's "Agree- defer the DD's for 3.1.0" - see OB-331.
+status_note: Fixed 2026-10-24 in 3.0.3 (01ba3969..7e3a66e1 on the ddb6 branch), on Adam's "For DD-B9 and DD-B6, can we fix them?": 230 test files start their station through support.TestStation; 10 that sync from the application's own address keep their own init.
 
 [finding DD-B7 in 2026-08-22-duplication-and-design.md]
 line: 876
@@ -8525,8 +8525,8 @@ disposition: Open
 evidence: GraphReducer.java:403
 commit_id:
 cited_by:
-status: Open - deferred
-status_note: Deferred 2026-10-10 to 3.1.0 on Adam's "Agree- defer the DD's for 3.1.0" - tracked as OB-331 in the Inbox.
+status: Closed
+status_note: Fixed 2026-10-24 in 3.0.3 (c7e0ca6b), on Adam's "For DD-B9 and DD-B6, can we fix them?": the editor's reach findings read the built railway (BuiltReach); GraphReducer.reachableTiles and AutonomySession.reachesAStationElsewhere are gone.  findPath stays a drawn-diagram walk.  MT-810.
 
 [finding DD-B9 in 2026-08-24-duplication-robustness.md]
 line:
@@ -8536,8 +8536,8 @@ disposition: Open; `findPath`/`reachableTiles` walks and turn blocks unchanged, 
 evidence:
 commit_id:
 cited_by:
-status: Open - deferred
-status_note: Deferred 2026-10-10 to 3.1.0 on Adam's "Agree- defer the DD's for 3.1.0" - tracked as OB-331 in the Inbox.
+status: Closed
+status_note: Fixed 2026-10-24 in 3.0.3 (c7e0ca6b), on Adam's "For DD-B9 and DD-B6, can we fix them?": the editor's reach findings read the built railway (BuiltReach); GraphReducer.reachableTiles and AutonomySession.reachesAStationElsewhere are gone.  findPath stays a drawn-diagram walk.  MT-810.
 
 [finding DD-C1 in 2026-08-22-duplication-and-design.md]
 line: 976

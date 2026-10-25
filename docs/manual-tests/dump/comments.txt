@@ -29275,3 +29275,14 @@ text:
 |
 | Validated on your *Works* of 2026-10-21.
 |
+
+[comment OB-331 0]
+who: Claude
+date: 2026-10-24
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-24.**
+|
+| DD-B9 is done in 3.0.3 (c7e0ca6b, MT-810): the editor's reach findings read the built railway.  DD-A1, DD-C1, DD-C6, DD-C7 and DD-C8 stay here for 3.1.0.
+|
