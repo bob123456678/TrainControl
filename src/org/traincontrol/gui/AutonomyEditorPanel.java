@@ -577,7 +577,8 @@ public class AutonomyEditorPanel extends JPanel
         panel.add(row(pathTypeAuto));
         panel.add(row(pathTypeManual));
 
-        // One-Way Run and Name Everything are in Bulk Tools (OB-217).
+        // One-Way Run and Name Everything are in Bulk Tools (OB-217); the disarm path still un-presses One-Way Run
+        // (MT-098).
 
         // And a heading for what follows (OB-217).
         JLabel pageSettings = new JLabel(I18n.t("autosetup.ui.labelPageSettings"));
