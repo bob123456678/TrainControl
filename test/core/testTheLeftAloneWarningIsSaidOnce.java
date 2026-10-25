@@ -10,18 +10,16 @@ import org.traincontrol.gui.autonomy.AutonomyReport;
 /**
  * "The setup was left alone" is said once for a set of missing pages, not on every save.
  *
- * Adam, MT-380, 2026-09-13: the warning *"shows twice (once at first import, once again when import is
- * completed).  Then, it shows up after every time the autonomy editor is opened."*  His ruling: it
- * **"should stop repeating."**
+ * Adam (MT-380): the warning "shows twice (once at first import, once again when import is completed).  Then, it shows
+ * up after every time the autonomy editor is opened."  His ruling: it "should stop repeating."
  *
- * **The refusal is right and stays.**  A save declines to tidy while a page the setup knows about is not
- * loaded, because a OneDrive page that has not downloaded yet must not be pruned - and five doors show
- * that refusal as a dialog.  Useful once: it is how somebody learns a page is missing.  Useless the tenth
- * time, when nothing about it has changed.  So a given set of missing pages is warned about once in a
- * session, and again only when the set changes.
+ * The refusal is right and stays: a save declines to tidy while a page the setup knows about is not loaded (a OneDrive
+ * page that has not downloaded yet must not be pruned), and five doors show that as a dialog, useful once and useless
+ * the tenth time.  So a given set of missing pages is warned about once in a session, and again only when the set
+ * changes.
  *
- * Asked of `AutonomyReport.worthSaying`, the rule the dialog asks, so no dialog is shown here.  Each claim
- * uses page names of its own: the memory of what has been said lasts the session, which is the point.
+ * Asked of `AutonomyReport.worthSaying`, the rule the dialog asks, so no dialog is shown here.  Each claim uses page
+ * names of its own: the memory of what has been said lasts the session.
  *
  * @author Adam
  */
@@ -52,10 +50,8 @@ public class testTheLeftAloneWarningIsSaidOnce
     }
 
     /**
-     * A different set of missing pages is a new thing to say.
-     *
-     * The other half, and the control: a warning that learned to say nothing ever again would pass the
-     * claim above.
+     * A different set of missing pages is a new thing to say: the control, since a warning that learned to say nothing
+     * ever again would pass the claim above.
      */
     @Test
     public void testADifferentSetIsSaidAgain()
@@ -69,9 +65,7 @@ public class testTheLeftAloneWarningIsSaidOnce
             + " covering it. A different set of missing pages is news.");
     }
 
-    /**
-     * And a save that was not declined is never a reason to say it.
-     */
+    /** And a save that was not declined is never a reason to say it. */
     @Test
     public void testASaveThatTidiedSaysNothingHere()
     {
