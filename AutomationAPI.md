@@ -8,7 +8,7 @@
 > `autonomy.json` written for an older version can still be imported from the Autonomy menu.
 >
 > **What still applies in v3.0.0:** the Java API - `MarklinControlStation`, and the `Layout` class with `createPoint`,
-> `createEdge`, `addConfigCommand`, `addLockEdge`, `setLocomotive`, `runLocomotive`, the callbacks and `fromJSON` /
+> `createEdge`, `addConfigCommand`, `addLockEdge`, `setLocomotive`, `runLocomotives`, the callbacks and `fromJSON` /
 > `toJSON` - works as described here, as do the JSON keys and the settings in the reference sections at the bottom.  A
 > layout built in code runs on its own; it is not drawn on the track diagram.  Notes marked *Since v3.0.0* say where
 > the newer version behaves differently.  Changed in the API: a point's home locomotive (`getHomeLoc` / `setHomeLoc`) is
@@ -169,11 +169,13 @@ These commands will execute before that edge is traversed by a locomotive.
     layout.getPoint("Station 2").setLocomotive(data.getLocByName("140 024-1 DB AG"));
 
     //
-    // Now we can run the locomotives!  This method also specifies the desired speed
-    // The layout class will automatically choose and execute an available route
+    // Now we can run the locomotives!  Each runs at its preferred speed (saved with the locomotive), and
+    // the layout automatically chooses and executes an available route, one journey after another
     //
-    layout.runLocomotive(data.getLocByName("SNCF 422365"), 30);
-    layout.runLocomotive(data.getLocByName("140 024-1 DB AG"), 50);
+    data.getLocByName("SNCF 422365").setPreferredSpeed(30);
+    data.getLocByName("140 024-1 DB AG").setPreferredSpeed(50);
+    layout.setLocomotivesToRun(Arrays.asList(data.getLocByName("SNCF 422365"), data.getLocByName("140 024-1 DB AG")));
+    layout.runLocomotives();
 
 The `Layout` class also allows *optional* pre-departure, pre-arrival, and post-arrival callbacks to be set to turn on functions and lights as desired.
 In these lambda functions, `loc` is a reference to the locomotive itself.

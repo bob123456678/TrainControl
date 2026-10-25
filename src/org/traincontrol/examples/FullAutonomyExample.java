@@ -1,5 +1,6 @@
 package org.traincontrol.examples;
 
+import java.util.Arrays;
 import javax.swing.JOptionPane;
 import org.traincontrol.automation.Layout;
 import static org.traincontrol.marklin.MarklinControlStation.init;
@@ -77,11 +78,13 @@ public class FullAutonomyExample
             layout.getPoint("Station 2").setLocomotive(data.getLocByName("140 024-1 DB AG"));
     
             //
-            // Now we can run the locomotives!  This method also specifies the desired speed
-            // The layout class will automatically choose and execute an available route
+            // Now we can run the locomotives!  Each runs at its preferred speed (saved with the locomotive), and
+            // the layout automatically chooses and executes an available route, one journey after another
             //
-            layout.runLocomotive(data.getLocByName("SNCF 422365"), 30);
-            layout.runLocomotive(data.getLocByName("140 024-1 DB AG"), 50);
+            data.getLocByName("SNCF 422365").setPreferredSpeed(30);
+            data.getLocByName("140 024-1 DB AG").setPreferredSpeed(50);
+            layout.setLocomotivesToRun(Arrays.asList(data.getLocByName("SNCF 422365"), data.getLocByName("140 024-1 DB AG")));
+            layout.runLocomotives();
         }
     
 	/**
