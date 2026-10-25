@@ -9,14 +9,12 @@ import org.traincontrol.util.I18n;
 
 /**
  * A strip of autonomy notices: the message wrapped to the strip's width, as tall as it needs up to three lines, and
- * scrolled past that (OB-366).  It is hidden while it has nothing to say.
+ * scrolled past that (OB-366).  Hidden while it has nothing to say.
  *
- * In the autonomy editor it floats over the bottom of the diagram (see floatOver), with an X that hides it until the
- * next notice, so the diagram keeps its size and place whatever the strip says.  Above the main window's diagram it is
- * a header that grows to what it says and has no X: what it says there is a state with a button to act on it, which a
- * dismissed strip would leave nowhere to act.
- *
- * It is not a popup: a modal for "that tile is now one way" would be worse than saying nothing.
+ * In the autonomy editor it floats over the bottom of the diagram (see floatOver) with an X that hides it until the
+ * next notice, so the diagram never moves.  Above the main window's diagram it is a header with no X: what it says
+ * there is a state with a button to act on it, which a dismissed strip would leave nowhere to act.  Not a popup: a
+ * modal for "that tile is now one way" would be worse than saying nothing.
  *
  * @author Adam
  */
@@ -29,20 +27,14 @@ public class AutonomyBanner extends JPanel
     private static final int LINGER_MS = 6000;
 
     /**
-     * The longest an ordinary message will stay, however much of it there is.
-     *
-     * Six seconds is right for a sentence and wrong for a list of a dozen stations and the reason each
-     * one was refused - which is the same banner, and is an answer somebody asked for rather than a
-     * notice they happened to be near. The time grows with the reading, up to this.
+     * The longest an ordinary message stays, however much of it there is: the time grows with the reading, up to this,
+     * for the long answers somebody asked for.
      */
     private static final int LINGER_MAX_MS = 30000;
 
     /**
-     * Roughly the time to read one character, in milliseconds.
-     *
-     * Two hundred words a minute is about a thousand characters, which is sixty milliseconds each;
-     * this is deliberately slower, because banner text is read once, in passing, by somebody who was
-     * looking at their railway a moment ago.
+     * Roughly the time to read one character, deliberately slower than 200 words a minute: banner text is read once, in
+     * passing.
      */
     private static final int MS_PER_CHARACTER = 90;
 
@@ -59,40 +51,25 @@ public class AutonomyBanner extends JPanel
     private static final Color WARNING_TEXT = new Color(120, 80, 0);
 
     /**
-     * What a banner message is set in, shared so that anything sitting beside one can match it rather
-     * than guess at it.
-     *
-     * FOURTEEN, which is what docs/UI-standards.md calls regular text (OB-151). Adam: "increase font
-     * size of 'this layout has an autonomy' and 'this page is left out of autonomy' slightly, to match
-     * the standard size."
-     *
-     * Changing it here moves the strip's notices too: the excluded-page label and the findings count
-     * both take this font rather than naming a size of their own, which is why one number was enough.
+     * What a banner message is set in, shared so that anything beside one can match it.  FOURTEEN, which
+     * docs/UI-standards.md calls regular text (OB-151).  The excluded-page label and the findings count take this font
+     * rather than naming a size of their own.
      */
     public static final java.awt.Font MESSAGE_FONT =
         new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 14);
 
     /**
-     * The message itself.
-     *
-     * A JEditorPane rather than a JLabel, and in a scroll pane.  A one-line label suits "this tile is
-     * now one way" and fails the answer to "why is it not moving", which is a train, a dozen stations
-     * and the reason each one was refused: an answer somebody asked a question to get.
-     *
-     * An editor pane wraps to the width it is given, which a label will not do without being told a
-     * pixel count; the scroll pane caps how tall the bar can grow and hands over the rest.  So a
-     * sentence still occupies one line and a long answer can be read.
+     * The message itself: a JEditorPane in a scroll pane rather than a JLabel, since a label fits "this tile is now one
+     * way" but not "why is it not moving" (a train, a dozen stations and each reason).  The pane wraps to the width it
+     * is given and the scroll pane caps how tall the bar can grow.
      */
     private final javax.swing.JEditorPane message = new javax.swing.JEditorPane();
 
     private final javax.swing.JScrollPane scroller = new javax.swing.JScrollPane(message);
 
     /**
-     * The one thing the message invites the user to do, where there is one.
-     *
-     * On the track diagram the banner is not only used for things that just happened - it also carries
-     * "this layout has a setup nobody has loaded", and a sentence saying so with no way to act on it is
-     * a sentence that has to be read twice and then acted on somewhere else.
+     * The one thing the message invites the user to do, where there is one: the banner also carries states such as
+     * "this layout has a setup nobody has loaded", which need a way to act.
      */
     private final javax.swing.JButton action = new javax.swing.JButton();
 
@@ -207,12 +184,9 @@ public class AutonomyBanner extends JPanel
 
     /**
      * Floats this strip over the bottom of a diagram's visible area, inside its frame and just above its horizontal
-     * scrollbar, with an X at its top right that hides it until the next notice (OB-366; Adam: "I'd rather have the
-     * band float and have an x to dismiss each time it surfaces, so the user can be in control.").
-     *
-     * A JLayeredPane holds the two: the diagram fills it and is laid out as if the strip were not there, so it never
-     * moves for a notice, and the strip lies on a higher layer, which the layered pane paints again over whatever the
-     * diagram repaints or scrolls under it.
+     * scrollbar, with an X at its top right that hides it until the next notice (OB-366).  A JLayeredPane holds the
+     * two: the diagram fills it and never moves for a notice, and the strip lies on a higher layer that is painted
+     * again over whatever the diagram repaints or scrolls under it.
      *
      * @param diagram the diagram's scroll pane
      * @return what to mount where the scroll pane was
@@ -378,12 +352,9 @@ public class AutonomyBanner extends JPanel
     }
 
     /**
-     * How long to leave a message up, from how much of it there is.
+     * How long to leave a message up, from how much of it there is; HTML markup is not counted, so a table does not win
+     * time for its own tags.
      *
-     * HTML markup is not counted - it is not read - so a list built as a table does not win time for
-     * its own tags.
-     *
-     * @param text the message, possibly HTML
      * @return milliseconds, between the ordinary linger and the cap
      */
     private static int lingerFor(String text)
@@ -406,10 +377,8 @@ public class AutonomyBanner extends JPanel
     }
 
     /**
-     * Says something and leaves it there - for a state the user is in, rather than a thing that just
-     * happened.  "Now click the far end of the run" has to survive until they do.
-     *
-     * @param text
+     * Says something and leaves it there, for a state the user is in: "Now click the far end of the run" must survive
+     * until they do.
      */
     public void showUntilChanged(String text)
     {
@@ -639,23 +608,12 @@ public class AutonomyBanner extends JPanel
     }
 
     /**
-     * Centers one child in its container, and never lays it out taller than the container is.
-     *
-     * - **Centered** (OB-151).  A message shorter than the band gets the leftover space split equally above and below
-     *   it, where the band is taller than the message: at its one-line floor, or beside the offer button.
-     *
-     * - **Never taller than the band** (OB-191).  A message LONGER than the band is given exactly the
-     *   band.  That is what makes the scroll pane's viewport smaller than its own contents, which is
-     *   the only condition under which an AS_NEEDED scrollbar appears - so the part that does not fit
-     *   becomes reachable rather than merely absent.
-     *
-     * `GridBagLayout` can express neither half safely.  `BOTH` gives the whole band to a one-line
-     * notice and loses the centring; `HORIZONTAL` keeps the preferred height and, when the band is
-     * smaller, shrinks toward the child's MINIMUM - five pixels, measured - rather than to the band.
-     * What is wanted is `min(preferred, band)`, and that is a sentence rather than a setting.
-     *
-     * ONE CHILD, deliberately: this is not a general layout, and a second child would silently be
-     * ignored.  The container it is given holds the message and nothing else.
+     * Centers one child in its container, and never lays it out taller than the container is.  Centered (OB-151): a
+     * shorter message gets the leftover space split above and below.  Never taller than the band (OB-191): a LONGER
+     * message is given exactly the band, which makes the scroll pane's viewport smaller than its contents, the only
+     * condition under which an AS_NEEDED scrollbar appears.  `GridBagLayout` can express neither half safely (`BOTH`
+     * loses the centring; `HORIZONTAL` shrinks toward the child's five-pixel minimum): what is wanted is
+     * `min(preferred, band)`.  ONE CHILD, deliberately; a second would be ignored.
      */
     private static final class CentredButNeverTaller implements java.awt.LayoutManager
     {
@@ -673,10 +631,9 @@ public class AutonomyBanner extends JPanel
 
             int wants = only.getPreferredSize().height;
 
-            // AND NEVER NOTHING.  A text component reports its preferred height by laying its view out at the size it
-            // currently has, so one given no height reports none, and `min(0, band)` keeps it there pass after pass.
-            // The first pass of a message never laid out (at `pack()` the viewport has no extent) lands in that state.
-            // So a child that asks for nothing is given the band, which lets it measure itself on the next pass.
+            // AND NEVER NOTHING: a text component reports its preferred height by laying its view out at the size it
+            // has, so one given no height reports none and `min(0, band)` keeps it there.  A child that asks for
+            // nothing is given the band.
             int height = wants <= 0 ? band : Math.min(wants, band);
 
             only.setBounds(pad.left, pad.top + (band - height) / 2, width, height);
