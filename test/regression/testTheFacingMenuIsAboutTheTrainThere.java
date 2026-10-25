@@ -24,12 +24,10 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * After a run, the Facing menu is about the train the railway has on the square, and turns that one.
  *
- * After a run the setup still names each square's pre-run occupant (behaviour.md 6a), and nothing captures before the
- * diagram's right-click.  The menu took its train from the setup: with P placed on a square in the setup and T standing
- * there on the railway, it was titled "P is facing", ticked T's facing, and a click wrote P's record and moved P - found
- * on no copy of the square, so nothing moved.  T was not turned and the operator's correction was dropped without a
- * word.  With nothing placed there in the setup there was no menu at all.  The same shape one door along: `flipFacing`
- * was keyed on the railway's train by `4be3798a`, and this menu was not.
+ * After a run the setup still names each square's pre-run occupant (behaviour.md 6a).  The menu took its train from
+ * the setup: with P placed in the setup and T standing there on the railway, it was titled "P is facing" and a click
+ * moved P, found on no copy of the square, so T was not turned and the correction was dropped silently.  The same shape
+ * one door along: `flipFacing` is keyed on the railway's train, and this menu was not.
  *
  * Asked through the real door, as `testTheTailCanBeGivenInTheEditor` asks it: `AutonomyEditorPanel.buildFacingMenu`,
  * which both surfaces serve, and its item clicked.
@@ -103,8 +101,6 @@ public class testTheFacingMenuIsAboutTheTrainThere
     /**
      * The setup has P on a square where two facings can be chosen; the railway has T there instead.  The menu names T,
      * and choosing the other facing stands T on the copy facing that way, leaving P's record alone.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testAfterARunTheMenuTurnsTheTrainTheRailwayHasThere() throws Exception
@@ -120,7 +116,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
 
             Layout running = model.getAutoLayout();
 
-            // A SQUARE THE SETUP HAS A TRAIN ON, where the railway has it too and two facings can be chosen.
+            // A square the setup has a train on, where the railway has it too and two facings can be chosen.
             TileKey square = null;
             Point copy = null;
             String inTheSetup = null;
@@ -149,7 +145,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
             if (square == null) throw new AssertionError("no placed train on the snapshot stands where two facings can be"
                 + " chosen");
 
-            // AND A TRAIN ON NO SQUARE, of the railway or the setup.
+            // And a train on no square, of the railway or the setup.
             String setupText = session.snapshotSetup().toString();
             String onTheRailway = null;
 
@@ -166,7 +162,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
 
             if (onTheRailway == null) throw new AssertionError("every locomotive is placed somewhere");
 
-            // AFTER A RUN: the railway has T where the setup still has P.
+            // After a run: the railway has T where the setup still has P.
             Side recordedWas = session.getFacing(square);
 
             running.moveLocomotive(null, copy.getName(), false);
@@ -248,12 +244,9 @@ public class testTheFacingMenuIsAboutTheTrainThere
 
     /**
      * A train standing on a square no track leads out of gets the Facing menu grayed, with the reason in its tooltip,
-     * rather than no menu (OB-347, Adam 2026-10-13: *"the locomotive is facing menu gets hidden when there is no way
-     * out.  rather than hiding it, grey it out."*).
+     * rather than no menu (OB-347).
      *
      * MUTATION: return null for no facing again, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testWithNoWayOutTheMenuIsGreyedNotHidden() throws Exception
@@ -269,10 +262,9 @@ public class testTheFacingMenuIsAboutTheTrainThere
 
             Layout running = model.getAutoLayout();
 
-            // A SQUARE WITH NO FACING TO CHOOSE, MADE HERE.  Every square the snapshot builds has a copy facing some way,
-            // so none of them is one - the claim used to skip for want of it.  A square of a page the build has no copy
-            // of is: a free locomotive placed on it in the setup is the train the menu names when the railway has none
-            // there, and nothing leads out of a square the railway does not have.
+            // A square with no facing to choose, made here: every square the snapshot builds has a copy facing some
+            // way, but a free locomotive placed in the setup on a square of a page the build has no copy of is the
+            // train the menu names, and nothing leads out of a square the railway does not have.
             TileKey square = null;
 
             for (TileKey tile : session.getGraph().getTiles().keySet())
@@ -289,7 +281,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
             assertNotNull(square, "precondition: every square of the snapshot has a facing to choose, so there is no"
                 + " square to stand a train on that nothing leads out of");
 
-            // A LOCOMOTIVE PLACED NOWHERE, of the railway or the setup
+            // A locomotive placed nowhere, of the railway or the setup
             String setupText = session.snapshotSetup().toString();
             String named = null;
 
@@ -357,19 +349,14 @@ public class testTheFacingMenuIsAboutTheTrainThere
     }
 
     /**
-     * On its way to a square it may turn at, without turning, a train's label already faces the way it will stand (OB-314).
+     * On its way to a square it may turn at, without turning, a train's label already faces the way it will stand
+     * (OB-314).  The path to such a square ends on its turning copy, which faces the other way, and the label reads the
+     * facing of the copy the train holds, so until it arrived the label showed it reversed.
      *
-     * Adam, 2026-10-03: *"when sending et22-245 from topmainr2inter to bottommainb, the label at bottommainb shows arrival
-     * arrive facting west, not east, as if it would be reversed. But on arrival, it gets fixed."*  The path to a square
-     * trains may turn at routinely ends on its TURNING copy, which faces the other way, and the label reads the facing of
-     * the copy the train holds - so until it arrived, and was stood on the plain copy, the label showed it reversed.
-     *
-     * A train sent onto a turning copy with KEEP DIRECTION answered, the sensors played by hand so nothing arrives before
-     * the label is read.
+     * A train sent onto a turning copy with keep direction answered, the sensors played by hand so nothing arrives
+     * before the label is read.
      *
      * MUTATION: let the reading take the copy the path ends on again, and this fails.
-     *
-     * @throws Exception from the window or the run
      */
     @Test
     public void testOnItsWayTheLabelFacesTheWayItWillStand() throws Exception
@@ -378,7 +365,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
 
         assertNotNull(running, "precondition: no running railway");
 
-        // A MAY-TURN SQUARE: a turning copy and a plain copy, reached by one approach, facing different ways
+        // A may-turn square: a turning copy and a plain copy, reached by one approach, facing different ways
         org.traincontrol.automation.Point turning = null, plain = null, approach = null;
 
         TileKey square = null;
@@ -429,7 +416,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
 
         if (turning == null) throw new AssertionError("the snapshot has no free may-turn square with an approach to both copies");
 
-        // A TRAIN STANDING NOWHERE
+        // A train standing nowhere
         String train = null;
 
         for (String name : model.getLocList())
@@ -441,8 +428,8 @@ public class testTheFacingMenuIsAboutTheTrainThere
 
         final org.traincontrol.base.Locomotive loc = model.getLocByName(train);
 
-        // SIMULATED, so the route's switches confirm without a Central Station; the label is read the moment the train
-        // sets off, long before a simulated arrival
+        // Simulated, so the route's switches confirm without a Central Station; the label is read the moment the train
+        // sets off
         final boolean simulating = running.isSimulate();
 
         running.setSimulate(true);
@@ -477,7 +464,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
             }
         };
 
-        // WHAT THE RAILWAY SAYS, for a dispatch that does not go
+        // What the railway says, for a dispatch that does not go
         final java.util.List<String> said = java.util.Collections.synchronizedList(new java.util.ArrayList<String>());
 
         java.util.logging.Handler listening = new java.util.logging.Handler()
@@ -528,7 +515,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
             assertTrue(running.getActiveLocomotives().containsKey(loc), "precondition: the train arrived before the label"
                 + " could be read");
 
-            // ON ITS WAY: what the label reads
+            // On its way: what the label reads
             shown = session.facingOnTheRailway(square, running);
         }
         finally
@@ -559,19 +546,15 @@ public class testTheFacingMenuIsAboutTheTrainThere
     }
 
     /**
-     * While its route is set, before it sets off, a train's label already faces the way it will stand.
+     * While its route is set, before it sets off, a train's label already faces the way it will stand.  OB-314's answer
+     * was kept beside the journey, written only at the hand-over, after the claim had reserved the turning copy; it is
+     * kept with the claim now.
      *
-     * OB-314's answer was kept beside the journey, which is written only at the hand-over, after the route's switches are
-     * set - and the claim reserves the turning copy long before.  So for the length of the route setting the label read
-     * the turning copy and showed the train the wrong way round, then turned as it set off: on the real railway, the
-     * Central Station's confirmations as well.  The answer is kept with the claim now, and read through it.
-     *
-     * The dispatch held at its hand-over, its claim taken and its route set, by holding the journeys' map's monitor; the
-     * label read on another thread, with a time limit, so a reading that waits for the hand-over fails rather than hangs.
+     * The dispatch is held at its hand-over, its claim taken and its route set, by holding the journeys' map's monitor;
+     * the label is read on another thread with a time limit, so a reading that waits for the hand-over fails rather
+     * than hangs.
      *
      * MUTATION: keep the answer only from the hand-over again, and this fails.
-     *
-     * @throws Exception from the window or the run
      */
     @Test
     public void testWhileItsRouteIsSetTheLabelFacesTheWayItWillStand() throws Exception
@@ -580,7 +563,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
 
         assertNotNull(running, "precondition: no running railway");
 
-        // A MAY-TURN SQUARE: a turning copy and a plain copy, reached by one approach, facing different ways
+        // A may-turn square: a turning copy and a plain copy, reached by one approach, facing different ways
         org.traincontrol.automation.Point turning = null, plain = null, approach = null;
 
         TileKey square = null;
@@ -749,16 +732,12 @@ public class testTheFacingMenuIsAboutTheTrainThere
     }
 
     /**
-     * A train flipped on its way to a square it may turn at, without turning, is turned from the way it will stand there
-     * (OB-372), as its label reads it (OB-314): the path ends on the TURNING copy, which faces the other way, so a flip
-     * taken from that copy wrote the facing the train would have had anyway.
-     *
-     * `flipFacing` asked directly: its one caller, `followTheTurn`, declines while a train holds a path.  The approach is
-     * a square with no second facing, so the flip cannot act there instead.
+     * A train flipped on its way to a square it may turn at, without turning, is turned from the way it will stand
+     * there (OB-372), as its label reads it (OB-314).  `flipFacing` is asked directly, since its one caller,
+     * `followTheTurn`, declines while a train holds a path; the approach is a square with no second facing, so the flip
+     * cannot act there.
      *
      * MUTATION: let `flipFacing` read the facing of the copy the path ends on again, and this fails.
-     *
-     * @throws Exception from the window or the run
      */
     @Test
     public void testAFlipOnItsWayTurnsTheWayItWillStand() throws Exception
@@ -767,7 +746,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
 
         assertNotNull(running, "precondition: no running railway");
 
-        // A MAY-TURN SQUARE with two facings to flip between, reached from a square with one
+        // A may-turn square with two facings to flip between, reached from a square with one
         org.traincontrol.automation.Point turning = null, plain = null, approach = null;
 
         TileKey square = null;
