@@ -24,41 +24,34 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * The covered-track shading on the SCREEN follows the train, and comes off when it leaves (OB-180).
  *
- * Adam: **"when a train is manually moved to a new station in the track diagram viewer using control+X
- * and V, its former shaded icons are not reset."**
+ * Adam: "when a train is manually moved to a new station in the track diagram viewer using control+X and V, its former
+ * shaded icons are not reset."
  *
- * **This is the first test in this suite that asserts about drawn pixels rather than about the model,
- * and OB-180 is the argument for it.** The covered set was computed correctly the whole time. What was
- * broken is that nothing repainted the tiles whose state had changed: a tile decides its wash when it is
- * DRAWN, and tiles are only drawn when their own accessory, feedback or route changes - none of which a
- * train moving is. Every assertion the suite could make - on `edgesCoveredByStandingTrains`, on
- * `tilesCoveredByStandingTrains`, on the model, on the source - answered identically with the defect
- * present and with it fixed.
+ * **This asserts about drawn pixels rather than the model.**  The covered set was computed correctly the whole time;
+ * nothing repainted the tiles whose state had changed, since a tile decides its wash when it is DRAWN and is only drawn
+ * when its own accessory, feedback or route changes.  Every model assertion answered identically with the defect
+ * present and fixed.
  *
- * **The grid is held open across the whole test, and that is the point.** `DiagramExport.render` builds a
- * fresh grid per call, and a fresh label always works its wash out correctly - so a test written on it
- * would have passed with the defect in place. `support.Rendered` keeps one grid and paints it again, so
- * what is compared is what an operator looking at an open window would have seen.
+ * **The grid is held open across the whole test:** `DiagramExport.render` builds a fresh grid per call, and a fresh
+ * label always works its wash out correctly.  `support.Rendered` keeps one grid and paints it again, so what is
+ * compared is what an operator looking at an open window would have seen.
  *
- * **But painting the whole grid again is not what an open window does** (FR-136, issue 19).  A snapshot paints every
- * tile, and a tile works out its mark as it is painted, so the AFTER snapshot came out right with nothing asking for a
- * redraw at all - this claim stayed green with the redraw taken out.  A window redraws only where it is asked to, so the
- * AFTER state is also taken that way: the COVERED picture, with only the areas production asked to repaint painted again
+ * **But painting the whole grid again is not what an open window does** (FR-136, issue 19): a snapshot paints every
+ * tile, so the AFTER state came out right with nothing asking for a redraw.  The AFTER state is also taken the way a
+ * window does it: the COVERED picture with only the areas production asked to repaint painted again
  * (`support.RepaintRecorder`), and every square the train marked must be back to the BARE picture there.
  *
- * **The round trip is Adam's** (2026-09-08): put the train somewhere, take it away again, and the
- * picture must come back to what it was. Three snapshots of one grid:
+ * Three snapshots of one grid:
  *
  * | | |
  * |---|---|
  * | BARE | nothing standing anywhere |
- * | COVERED | the train placed, and a square its tail lies across carries the orange mark (MT-309; it was "is darker than it was" while the mark was a gray wash) |
+ * | COVERED | the train placed, and a square its tail lies across carries the orange mark (MT-309) |
  * | AFTER | the train moved away, and that square is EXACTLY the bare image again |
  *
- * MUTATION: removing the `repaintTheWashWhereItChanged` call from
- * `CoveredTrackView.workOutCoveredTrack` leaves the AFTER picture as the screen shows it orange - the train
- * has gone and the track it lay across still carries its mark, because nothing asked for those tiles to
- * be redrawn - which is the defect, seen.
+ * MUTATION: removing the `repaintTheWashWhereItChanged` call from `CoveredTrackView.workOutCoveredTrack` leaves the
+ * AFTER picture orange: the train has gone and the track it lay across still carries its mark, which is the defect,
+ * seen.
  *
  * @author Adam
  */
@@ -83,19 +76,10 @@ public class testTheShadingIsRedrawnWhenATrainMoves
             throw new SkipException("looking at what is drawn needs a display");
         }
 
-        // BEFORE THE MODEL (OB-111): init reads the layout preference too, so opening the sandbox
-        // afterwards would leave the model on Adam's real railway.
-        // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111, and `test/layouts/live-snapshot`).
-        //
-        // This opened `cs2_sample_layout`, whose placements and lengths move as Adam runs trains on it
-        // - so on 2026-09-09 this class reported "no standing train covers any track here" against a
-        // working tree where every train had been driven away, and a class that skips everything reads
-        // as a green one.  `live-snapshot` is the same railway with the clock stopped at `e6f4649c`,
-        // which is the state these assertions were written against.
-        //
-        // `Scenario.folderFor` rather than a path: it is the only naming of a fixture folder that
-        // cannot spell its way out to the operator's own railway, and `LayoutSandbox` still copies
-        // what it names before anything reads it.
+        // BEFORE THE MODEL (OB-111): init reads the layout preference too.  THE FROZEN COPY, NOT THE RAILWAY HE IS
+        // OPERATING (`test/layouts/live-snapshot`): `cs2_sample_layout`'s placements and lengths move as Adam runs
+        // trains on it, and a class that skips everything reads as green.  `Scenario.folderFor` is the only naming of a
+        // fixture folder that cannot spell its way out to the operator's own railway.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
         model = support.TestStation.simulatedInDebug();
@@ -136,11 +120,7 @@ public class testTheShadingIsRedrawnWhenATrainMoves
         if (sandbox != null) sandbox.close();
     }
 
-    /**
-     * The wash goes on where a train stands and comes off where it no longer does.
-     *
-     * @throws Exception on a failure to build or to paint
-     */
+    /** The wash goes on where a train stands and comes off where it no longer does. */
     @Test
     public void testTheWashGoesOnAndComesOffTheSameSquare() throws Exception
     {
@@ -150,8 +130,7 @@ public class testTheShadingIsRedrawnWhenATrainMoves
 
         assertNotNull(built, "the configuration did not build, so there is no railway to stand on");
 
-        // A MEASURED RAILWAY.  The wash only appears behind a train whose tail is longer than the
-        // track it is standing on, and that needs lengths - which most squares do not carry.
+        // A MEASURED RAILWAY: the wash only appears behind a train whose tail is longer than the track it stands on.
         measureEverything(10);
 
         model.parseAuto(session.buildConfiguration());
@@ -166,9 +145,7 @@ public class testTheShadingIsRedrawnWhenATrainMoves
 
         train.setTrainLength(60);
 
-        // THE PAGE THE WASH IS ACTUALLY ON.  Insisting on page one made this fail at its own
-        // precondition - "no placement on this page left any square covered" - which is the right
-        // failure for a test that would otherwise pass vacuously, and the wrong page to be looking at.
+        // THE PAGE THE WASH IS ACTUALLY ON: insisting on page one failed at the test's own precondition.
         TileKey somewhereCovered = placeSoSomethingIsCovered(built, null, train);
 
         assertNotNull(somewhereCovered,
@@ -199,8 +176,8 @@ public class testTheShadingIsRedrawnWhenATrainMoves
                 "the search found a covered square on " + page.getName() + " a moment ago and cannot"
                 + " now, so this is not stable enough to assert on");
 
-            // EVERY SQUARE THE TRAIN MARKS ON THIS PAGE, for the screen's half below: the first one found may be the square
-            // the train stands on, which the station's own caption and icon redraw for reasons of their own.
+            // EVERY SQUARE THE TRAIN MARKS ON THIS PAGE, for the screen's half below: the first one found may be the
+            // square the train stands on, which the station's own caption and icon redraw for reasons of their own.
             support.CoveredMarks.settle(ui);
 
             Set<TileKey> markedHere = new LinkedHashSet<>();
@@ -226,13 +203,9 @@ public class testTheShadingIsRedrawnWhenATrainMoves
             support.Rendered.save(bare, new File(OUT, "bare.png"));
             support.Rendered.save(withTrain, new File(OUT, "covered.png"));
 
-            // ORANGE, NOT DARKER (MT-309).
-            //
-            // This asked whether the square had got darker, which was the right question while the
-            // mark was a gray wash over the whole tile.  Adam has replaced that with a line along the
-            // road the train is on - "instead of shading the entire tiles, we need to draw a line
-            // (let's say in orange)" - and a line over a few pixels of a mostly white square does not
-            // move its mean brightness by a whole point.  What it does is put orange on it.
+            // ORANGE, NOT DARKER (MT-309): the mark is a line along the road the train is on (Adam: "instead of shading
+            // the entire tiles, we need to draw a line (let's say in orange)"), which does not move a mostly white
+            // square's mean brightness by a whole point; what it does is put orange on it.
             assertTrue(support.Rendered.hasTheTrainMark(darkTile),
                 "the square at " + covered + " is reported as covered and is drawn without the train"
                 + " mark on it (mean brightness " + support.Rendered.brightness(darkTile)
@@ -250,8 +223,7 @@ public class testTheShadingIsRedrawnWhenATrainMoves
             view.settle();
 
             // WHAT THE OPERATOR SEES (issue 19): the picture taken with the train there, redrawn only where the window
-            // asked for a redraw.  Before the full repaint below, which paints every tile and so answers right whatever
-            // was asked.
+            // asked, before the full repaint below, which paints every tile and so answers right whatever was asked.
             BufferedImage onScreen = screen.redrawWhereAsked(withTrain, view.host());
 
             support.Rendered.save(onScreen, new File(OUT, "on-screen.png"));
@@ -292,17 +264,8 @@ public class testTheShadingIsRedrawnWhenATrainMoves
     }
 
     /**
-     * Puts the train down until some square of this page is covered, and says which.
-     *
-     * Searched rather than named: which squares carry a tail depends on the lengths, the shape of the
-     * run-in and where the reduction put its Points, and a hard-coded square is a guess that goes stale
-     * the first time any of those changes.
-     *
-     * @param built the railway
-     * @param page the page being drawn
-     * @param train the locomotive
-     * @return the covered square, or null when no placement covered anything on this page
-     * @throws Exception on a failure to refresh
+     * Puts the train down until some square of this page is covered, and says which (null when none): searched rather
+     * than named, as which squares carry a tail depends on the lengths and the reduction.
      */
     private TileKey placeSoSomethingIsCovered(Layout built, LayoutDiagram page, Locomotive train)
         throws Exception
@@ -315,16 +278,9 @@ public class testTheShadingIsRedrawnWhenATrainMoves
 
             built.moveLocomotive(train.getName(), station.getName(), false);
 
-            // AND WHICH SIDE IT CAME IN BY, which `moveLocomotive` does not set and the tail walk
-            // cannot do without.
-            //
-            // `edgesCoveredByStandingTrains` matches the stored arrival side against the geometry on
-            // its first hop and stops when nothing matches - so a train simply MOVED onto a square
-            // covers nothing at all, and an earlier version of this test searched the whole railway
-            // and correctly reported that there was no wash anywhere to look at.
-            //
-            // The operator doors do this too: a hand placement asks or assumes the side, and this is
-            // the same value by the same rule.
+            // AND WHICH SIDE IT CAME IN BY, which `moveLocomotive` does not set and the tail walk cannot do without:
+            // `edgesCoveredByStandingTrains` matches the stored arrival side against the geometry on its first hop, so
+            // a train merely MOVED onto a square covers nothing.  The operator doors do this too.
             for (String side : org.traincontrol.gui.autonomy.ArrivalSidePrompt.sidesOf(built, station))
             {
                 station.setArrivedFrom(side);
@@ -349,11 +305,7 @@ public class testTheShadingIsRedrawnWhenATrainMoves
         return null;
     }
 
-    /**
-     * Takes every train off the railway.
-     *
-     * @param built the railway
-     */
+    /** Takes every train off the railway. */
     private void clearEveryTrain(Layout built)
     {
         for (Point point : built.getPoints())
@@ -372,11 +324,7 @@ public class testTheShadingIsRedrawnWhenATrainMoves
         }
     }
 
-    /**
-     * Gives every square the reduction knows a length, so tails have something to be measured against.
-     *
-     * @param units the length
-     */
+    /** Gives every square the reduction knows a length, so tails have something to be measured against. */
     private void measureEverything(int units)
     {
         java.util.Set<TileKey> everyTile = new java.util.LinkedHashSet<>();
@@ -392,8 +340,8 @@ public class testTheShadingIsRedrawnWhenATrainMoves
             }
         }
 
-        // COLLECTED FIRST, THEN WRITTEN.  setTileLength rebuilds the reducer, so walking its own
-        // collections while writing to it re-derives the graph under the iterator.
+        // COLLECTED FIRST, THEN WRITTEN: setTileLength rebuilds the reducer, which would re-derive the graph under the
+        // iterator.
         for (TileKey tile : everyTile) session.setTileLength(tile, units);
     }
 }
