@@ -14,39 +14,23 @@ import javax.swing.JPanel;
 import javax.swing.Timer;
 
 /**
- * The "still drawing" mark shown in place of a track diagram while its tiles are being decoded.
+ * The "still drawing" mark shown in place of a track diagram while its tiles are being decoded.  Text labels appear at
+ * once and the track a second later, which reads as the diagram being wrong and then correcting itself; one thing that
+ * says "not yet" is honest about the same wait.
  *
- * A diagram used to appear in two stages: its text labels at once, because text needs no image, and
- * the track a second or so later as the decodes came back off the pool.  The order is an accident of
- * how the work is split, but it reads as the diagram being wrong and then correcting itself - the
- * labels look like they are floating on nothing.  Showing one thing that says "not yet" is honest
- * about the same wait.
+ * An hourglass rather than a turning arc (FR-024).  Adam: "change the very large spinner shown on top of loading track
+ * diagrams to a large gray hourglass icon instead.  animate if possible."
  *
- * An hourglass rather than a turning arc (FR-024).  Adam: "change the very large spinner shown on top
- * of loading track diagrams to a large gray hourglass icon instead.  animate if possible."  An arc
- * says only "busy"; sand running through says how far along the wait is even though neither of them
- * actually knows, and at the size this is drawn over a full diagram the arc read as a target sitting
- * on the page rather than as a wait.
+ * Drawn rather than loaded from a GIF, which is one more asset to ship, scale for high-DPI and keep in step with the
+ * theme.  The turn at the end of each cycle is free: an emptied hourglass turned through half a circle is pixel for
+ * pixel a full one, so the sand never jumps back up the glass.  Only the turn rotates; the drain is drawn upright (see
+ * the halfTurns comment in paintComponent).
  *
- * Drawn rather than loaded from a GIF, because an animation file is one more asset to ship, scale for
- * a high-DPI screen and keep in step with the theme.  Four curves and a timer are fewer moving
- * parts.
- *
- * The turn at the end of each cycle is free: an emptied hourglass turned through half a circle is
- * pixel for pixel a full one, so there is no frame where the sand jumps back up the glass.
- * (That used to describe the whole loop, drawn by rotating rather than by resetting; as of 2026-08-29
- * only the turn itself rotates and the drain is always drawn upright - see the halfTurns comment in
- * paintComponent - so "loops by rotating" is now true of the twelve turn frames only.)
- *
- * The timer is started and stopped with the component's visibility on screen, so one left in a window
- * nobody is looking at is not repainting a hidden pixel sixteen times a second.
+ * The timer runs only while the component is visible on screen.
  */
 public class LoadingSpinner extends JPanel
 {
-    /**
-     * How often the sand advances.  About sixteen steps a second is smooth enough to read as motion
-     * and slow enough that it costs nothing; a wait indicator is not something anybody studies.
-     */
+    /** How often the sand advances: about sixteen steps a second reads as motion and costs nothing. */
     private static final int FRAME_MS = 60;
 
     /** Frames the sand takes to run through - about three seconds. */
@@ -64,11 +48,8 @@ public class LoadingSpinner extends JPanel
     private static final Color SAND_GREY = new Color(158, 158, 158);
 
     /**
-     * How wide the glass is as a fraction of its height.
-     *
-     * Half, and it wants to be no more.  Wider than that and the bulbs read as a bow tie however
-     * they are drawn - which is what the first attempt at this looked like on the diagram.  The
-     * curved profile does most of the work; this stops the proportions undoing it.
+     * How wide the glass is as a fraction of its height.  Wider and the bulbs read as a bow tie however they are drawn;
+     * the curved profile does most of the work and this stops the proportions undoing it.
      */
     private static final double ASPECT = 0.5;
 
@@ -76,36 +57,23 @@ public class LoadingSpinner extends JPanel
     private static final double FILL = 0.68;
 
     /**
-     * The tallest the glass is ever drawn, whatever it is given room for (OB-129).
-     *
-     * Adam asked for it half the size. It used to be a fraction of a component capped at 400, so about
-     * 272 tall; the component is now the size of the diagram it covers, which would make a fraction
-     * LARGER rather than smaller. A ceiling says the size it should be regardless of the space.
+     * The tallest the glass is ever drawn, whatever it is given room for (OB-129).  The component is now the size of
+     * the diagram it covers, so a fraction would grow it; a ceiling keeps the size asked for.
      */
     private static final double MAX_GLASS_H = 136.0;
 
     private final Timer timer;
 
     /**
-     * When the animation started, for working out which frame is due.
-     *
-     * The frame used to be a counter incremented once per tick, which is wrong for a Swing timer: it
-     * fires on the event thread and coalesces when that thread is busy - and the whole purpose of this
-     * component is to be on screen while a diagram build floods it. A second of ticks arrived as one
-     * and the sand crawled, which is what OB-129 reports.
+     * When the animation started, for working out which frame is due.  A Swing timer coalesces ticks when the event
+     * thread is busy, which a diagram build floods, so a per-tick counter made the sand crawl (OB-129).
      */
     private long startedAt;
 
     /**
-     * Frames since the animation started, modulo two whole cycles.
-     *
-     * Two whole cycles used to be load-bearing, because the drawing alternated between upright
-     * and inverted and one cycle left it standing on its head. As of 2026-08-29 the drain is always
-     * drawn upright and only the twelve turn frames rotate (see the halfTurns comment in
-     * paintComponent), so every frame `n` now renders identically to `n + CYCLE_FRAMES` and the true
-     * period is one cycle, not two. `frameAt` and `advanceOneFrame` still wrap at `CYCLE_FRAMES * 2`
-     * regardless - harmless, since the second cycle is a silent repeat of the first, but the field is
-     * twice the size it needs to be for what it now draws.
+     * Frames since the animation started, modulo two whole cycles.  The drain is drawn upright and only the twelve turn
+     * frames rotate, so frame `n` renders like `n + CYCLE_FRAMES` and the true period is one cycle; `frameAt` and
+     * `advanceOneFrame` still wrap at `CYCLE_FRAMES * 2`, harmlessly.
      */
     private int frame;
 
@@ -113,8 +81,7 @@ public class LoadingSpinner extends JPanel
     {
         setOpaque(false);
 
-        // Matches the diagram's own background so the swap to the finished grid is not also a flash of
-        // a different color
+        // Matches the diagram's own background, so the swap to the finished grid is not a flash of another color.
         setBackground(Color.WHITE);
 
         timer = new Timer(FRAME_MS, e ->
@@ -128,11 +95,8 @@ public class LoadingSpinner extends JPanel
     }
 
     /**
-     * Which frame is due after a given time on screen.
-     *
-     * Static and taking the elapsed time so the clock can be checked without waiting for one: every
-     * existing test of this class drives `advanceOneFrame` by hand, which is exactly why a broken
-     * timer went unnoticed.
+     * Which frame is due after a given time on screen.  Static and taking the elapsed time so the clock can be checked
+     * without waiting for one.
      *
      * @param elapsedMs milliseconds since the animation started
      * @return the frame to draw, within the two cycles the drawing alternates over
@@ -165,13 +129,8 @@ public class LoadingSpinner extends JPanel
     }
 
     /**
-     * A default only, and only when nobody has said otherwise.
-     *
-     * This used to return 120x120 unconditionally, which quietly overrode all three callers (LayoutGrid.showWhenTilesAreReady, BusyDialog and StartupSplash):
-     * the grid asks for the space the diagram is about to take so that nothing jumps when the two are
-     * swapped, the busy dialog asks for something small enough to sit above a line of text, and the
-     * splash asks for its own fixed size. None of them got what they asked for, and the grid's comment
-     * described a behavior that could not happen.
+     * A default only, and only when nobody has said otherwise: the callers (LayoutGrid.showWhenTilesAreReady,
+     * BusyDialog, StartupSplash) each ask for their own size.
      */
     @Override
     public Dimension getPreferredSize()
@@ -191,25 +150,16 @@ public class LoadingSpinner extends JPanel
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
             int at = frame % CYCLE_FRAMES;
-            // `turns` no longer reaches the drawing - see below.  int turns = frame / CYCLE_FRAMES;
 
             // How much of the sand has run through, and how far round the glass has been turned.  The
             // sand is all the way through before the turn starts, which is what makes the turn
             // invisible.
             double drained;
 
-            // NOT `turns` - the drain is always drawn upright (Adam, 2026-08-29).
-            //
-            // The sand is anchored at the bottom of each region: the upper bulb fills from its level
-            // DOWN to the waist, the lower from its level DOWN to the plate. Rotating that mid-fall
-            // inverts the anchors, so the upper sand hangs from the top of the glass with a gap above
-            // the waist and the pile in the lower bulb floats - which is what "weird in how it
-            // empties" was.
-            //
-            // The rotation is for the TURN, and only there does it have to agree with an upright
-            // glass. At the endpoints it does, exactly: a full lower bulb [0, bulbH] rotated is
-            // [-bulbH, 0], which is a full upper bulb. So the seam is pixel for pixel and the drain
-            // never leaves its feet.
+            // The drain is always drawn upright, not rotated by `turns`: the sand is anchored at the bottom of each
+            // region, so rotating mid-fall inverts the anchors and the upper sand would hang from the top of the glass
+            // with a gap above the waist.  The rotation is for the TURN only, where it agrees with an upright glass at
+            // the endpoints (a full lower bulb rotated is a full upper bulb), so the seam is pixel for pixel.
             double halfTurns = 0;
 
             if (at < DRAIN_FRAMES)
@@ -222,14 +172,10 @@ public class LoadingSpinner extends JPanel
                 halfTurns += (at - DRAIN_FRAMES + 1) / (double) TURN_FRAMES;
             }
 
-            // Centered on the VISIBLE part of this component, not the whole of it. This
-            // component is sized to the whole diagram page (LayoutGrid.showWhenTilesAreReady), which
-            // on a page bigger than the LayoutArea viewport put the glass's true center off whatever
-            // screenful the operator happens to be scrolled to - the "blank page" symptom OB-129 was
-            // filed for, arrived at by a different route. getVisibleRect() is the standard way to ask
-            // a component what part of itself is actually on screen inside a JScrollPane; it degrades
-            // to the full bounds outside one, and the empty-rect guard covers the moment before this
-            // component has ever been laid out.
+            // Centered on the VISIBLE part of this component: it is sized to the whole diagram page, and on a page
+            // bigger than the viewport the glass's true center is off whatever screenful the operator is scrolled to
+            // (OB-129).  getVisibleRect() degrades to the full bounds outside a JScrollPane; the empty-rect guard
+            // covers the moment before the first layout.
             java.awt.Rectangle visible = getVisibleRect();
 
             if (visible.isEmpty())
@@ -254,11 +200,8 @@ public class LoadingSpinner extends JPanel
     }
 
     /**
-     * Draws the glass and its sand, centered on the origin of the transform it is given.
-     *
-     * Kept apart from the frame arithmetic above so the shape can be reasoned about on its own:
-     * everything here is a function of the three numbers passed in, with no reference to what frame it
-     * is or which way up the glass has been turned.
+     * Draws the glass and its sand, centered on the origin of the transform it is given.  Kept apart from the frame
+     * arithmetic so the shape is a function of the three numbers passed in.
      *
      * @param g2 a graphics already translated to the center and rotated to the current turn
      * @param glassW the width across the plates
@@ -277,16 +220,10 @@ public class LoadingSpinner extends JPanel
 
         float line = (float) Math.max(1.5, glassW * 0.05);
 
-        // the silhouette
-        //
-        // Curved sides rather than two triangles.  A triangle pair meeting at a point is equally a bow
-        // tie, and on a diagram that is how the first attempt at this read; the pinch just below each
-        // plate is the whole of what makes it an hourglass instead.  Adding an outer frame was the
-        // other way to settle it, and drew a rectangle with an X in it - worse.
-        //
-        // One closed path, anticlockwise from the top left, so the same shape both outlines the glass
-        // and bounds the sand below.  Control points sit high and wide, which keeps the curve close to
-        // the plate before it turns in hard toward the waist.
+        // the silhouette: curved sides rather than two triangles, which read as a bow tie, and an outer frame drew a
+        // rectangle with an X in it.  One closed path, anticlockwise from the top left, so the same shape outlines the
+        // glass and bounds the sand.  Control points sit high and wide to stay close to the plate before turning in
+        // hard.
         Path2D.Double glass = new Path2D.Double();
 
         glass.moveTo(-halfW, -bulbH);
@@ -297,15 +234,9 @@ public class LoadingSpinner extends JPanel
         glass.quadTo(halfW * 0.78, -bulbH * 0.12, halfW, -bulbH);
         glass.closePath();
 
-        // the sand, drawn first so the outline stays crisp over it
-        //
-        // Cut out of the silhouette rather than drawn as its own shape: a level is a horizontal line
-        // across the glass, whatever the glass happens to be shaped like, and intersecting says that
-        // once instead of restating the profile in a second place that then has to be kept in step.
-        //
-        // The level itself goes as the square root of what is left, because the bulb narrows toward
-        // the waist - so the surface drops fast at first and creeps at the end, which is what real
-        // sand does and what a straight interpolation gets visibly wrong.
+        // the sand, drawn first so the outline stays crisp over it.  Cut out of the silhouette rather than drawn as its
+        // own shape, so the profile is not restated in a second place.  The level goes as the square root of what is
+        // left because the bulb narrows toward the waist: the surface drops fast, then creeps, as real sand does.
         double remaining = Math.sqrt(Math.max(0.0, 1.0 - drained));
 
         Area inside = new Area(glass);
@@ -356,8 +287,7 @@ public class LoadingSpinner extends JPanel
     }
 
     /**
-     * Whether the sand is running, for a test that wants to know the animation is live rather than a
-     * still picture.
+     * Whether the sand is running, for a test that wants to know the animation is live.
      *
      * @return true while the timer is advancing frames
      */
@@ -367,11 +297,8 @@ public class LoadingSpinner extends JPanel
     }
 
     /**
-     * Advances the animation by one frame without waiting for the timer.
-     *
-     * Public so that a test can step the cycle and photograph it. Waiting on the real timer would mean
-     * a test that sleeps, and one that is a race on a slow machine; stepping is the same arithmetic
-     * with the clock taken out of it.
+     * Advances the animation by one frame without waiting for the timer.  Public so a test can step the cycle without
+     * sleeping, which would race on a slow machine.
      *
      * @return the frame counter afterwards, which advances and wraps rather than growing
      */
@@ -383,10 +310,7 @@ public class LoadingSpinner extends JPanel
     }
 
     /**
-     * Which frame is showing.
-     *
-     * So a test can watch the TIMER move it, rather than moving it itself - which is what every test
-     * of this class did, and why a clock that never ticked went unnoticed (OB-129).
+     * Which frame is showing, so a test can watch the TIMER move it rather than moving it itself (OB-129).
      *
      * @return the current frame
      */
