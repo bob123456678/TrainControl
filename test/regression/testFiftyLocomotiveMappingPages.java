@@ -13,27 +13,15 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 
 /**
- * The locomotive mapping pages stop at fifty, in the method as well as in the menu (FR-033, MT-383).
+ * The locomotive mapping pages stop at fifty, in the method as well as in the menu (FR-033, MT-383; Adam: "too much
+ * manual effort.  add an automated test for this.").
  *
- * Adam, 2026-09-13: **"too much manual effort.  add an automated test for this."**  Adding fifty pages
- * by hand to find out whether the fifty-first is refused is exactly the kind of counting a person
- * should not be asked to do, and it is the kind a test does not mind.
+ * Both halves: `canAddLocMappingPage` is what the menu grays itself on, and `addLocMappingPage` refuses again on its
+ * own account (its javadoc: "A guard that lives only in the interface is a guard the next caller does not have.").  NOT
+ * asserted: that loading cannot exceed fifty.  `setViewListener` grows the count past the ceiling on purpose, since a
+ * saved state can hold more pages than the preference knows about and clamping would throw away their mappings.
  *
- * **Both halves, because the point of FR-033 was that there are two.**  `canAddLocMappingPage` is what
- * the menu grays itself on; `addLocMappingPage` refuses again on its own account, and its javadoc says
- * why - *"this method is public and the greying is one caller's manners, not the rule.  A guard that
- * lives only in the interface is a guard the next caller does not have."*  That is
- * `guard-and-affordance-same-question`, and a test that checked only the graying would pass with the
- * method's own refusal deleted.
- *
- * **What is deliberately NOT asserted: that loading cannot exceed fifty.**  `setViewListener` grows the
- * count past the ceiling without asking, on purpose, and the comment beside it gives the reason - a
- * saved state can hold more pages than the preference knows about, and clamping on load would throw
- * away every mapping past the fiftieth.  So the two sides look inconsistent and must stay that way.
- * Asserting symmetry here would be asserting the data loss that comment refuses.
- *
- * The window is built through `LayoutSandbox` (OB-111), so the layout preference is a throwaway copy
- * and Adam's own railway is never opened.
+ * The window is built through `LayoutSandbox` (OB-111), so Adam's own railway is never opened.
  *
  * @author Adam
  */
@@ -48,12 +36,7 @@ public class testFiftyLocomotiveMappingPages
     /** What the user-wide store said before this class ran; -1 when it said nothing. */
     private static int storedWas;
 
-    /**
-     * Builds the window on a throwaway layout.
-     *
-     * @throws Exception when the window cannot be built, which is a broken harness rather than a
-     *         failing guard
-     */
+    /** Builds the window on a throwaway layout. */
     @BeforeClass
     public static void setUpClass() throws Exception
     {
@@ -72,27 +55,15 @@ public class testFiftyLocomotiveMappingPages
 
         pagesWere = pages();
 
-        // AND WHAT THE STORE SAYS, because the passing path is not the only path.
-        //
-        // Nothing here writes the preference and the comment below says so - but under the mutation
-        // this class documents, `addLocMappingPage` succeeds and writes 51 to the store itself before
-        // the assertion can object.  The run that CATCHES the regression would then leave Adam's
-        // window opening with fifty-one mapping tabs: the same damage, from the same store, that the
-        // rewrite exists to prevent.
-        //
-        // Two lines, and the sentence becomes true however this class dies.
+        // AND WHAT THE STORE SAYS, because the passing path is not the only path: under the mutation this class
+        // documents, `addLocMappingPage` succeeds and writes 51 to the store before the assertion can object.
         storedWas = TrainControlUI.getPrefs()
             .getInt(TrainControlUI.LOC_MAPPING_PAGES_PREF, -1);
     }
 
     /**
-     * Puts the page count back, and the layout preference with it.
-     *
-     * The pages are a PREFERENCE, so leaving fifty behind would change what Adam's own window opens
-     * with - which is the kind of damage `LayoutSandbox` exists to prevent for the layout and does not
-     * cover for this.
-     *
-     * @throws Exception from the window
+     * Puts the page count back, and the layout preference with it: the pages are a PREFERENCE, so leaving fifty behind
+     * would change what Adam's window opens with.
      */
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
@@ -105,9 +76,8 @@ public class testFiftyLocomotiveMappingPages
 
                 javax.swing.SwingUtilities.invokeAndWait(() -> setPages(back));
 
-                // AND THE STORE GOES BACK TO WHAT IT SAID, whether or not this class was
-                // what changed it.  `alwaysRun`, so a failed or mutated run undoes it too - which is
-                // the run that can have written it.
+                // AND THE STORE GOES BACK TO WHAT IT SAID, whether or not this class changed it: `alwaysRun`, so a
+                // failed or mutated run undoes it too.
                 java.util.prefs.Preferences store =
                     TrainControlUI.getPrefs();
 
@@ -144,23 +114,10 @@ public class testFiftyLocomotiveMappingPages
     {
         final int ceiling = TrainControlUI.MAX_LOC_MAPPINGS;
 
-        // AT THE CEILING BY REFLECTION, NOT BY FILLING (and this is the whole design of the test).
-        //
-        // `addLocMappingPage` writes the page count into the Java Preferences on every successful
-        // add, and that store is USER-WIDE and outlives the JVM. Filling to fifty therefore wrote
-        // fifty into Adam's own settings; the first version of this test hung, was killed, and its
-        // teardown never ran - so his window would have opened with fifty mapping tabs, and
-        // `ui.testEveryLanguageFits` failed on a tab strip wanting 3307 pixels.
-        //
-        // The fill was never what this claims. The CEILING is, and setting the count directly touches
-        // no preference - so nothing on the passing path can leave one wrong, which matters more than
-        // exercising an add loop that `addLocMappingPage`'s own callers exercise anyway.
-        //
-        // NOT "however it dies", which the first wording claimed and a later check disproved: the mutation
-        // this class documents - deleting the guard from `addLocMappingPage` - makes the call below
-        // succeed, and a successful add writes the count to the preference before anything here can
-        // object.  A test that is deliberately broken can still leave 51 behind. What it cannot do is
-        // leave fifty behind by passing, which is what happened.
+        // AT THE CEILING BY REFLECTION, NOT BY FILLING: `addLocMappingPage` writes the page count into the user-wide
+        // Java Preferences on every successful add, and filling to fifty once left fifty in Adam's own settings.
+        // Setting the count directly touches no preference.  A deliberately broken run (the guard deleted) can still
+        // leave 51 behind.
         setPages(ceiling);
 
         assertEquals(pages(), ceiling,
@@ -171,13 +128,8 @@ public class testFiftyLocomotiveMappingPages
             "at " + ceiling + " pages the window still says another may be added, so the menu item"
             + " that asks this stays live at the ceiling (FR-033)");
 
-        // AND THE GUARD, which is a separate rule and not the menu's manners.  Called directly, as
-        // any other caller would: the count must not move.
-        //
-        // ON A DAEMON THREAD, because the refusal is a MODAL DIALOG.  `addLocMappingPage` says no by
-        // showing one, so calling it through `invokeAndWait` deadlocks: the event thread goes into the
-        // dialog's own loop and never comes back.  This test hung for twenty minutes that way before
-        // the dialog was the answer rather than the obstacle.
+        // AND THE GUARD, a separate rule and not the menu's manners, called directly: the count must not move.  ON A
+        // DAEMON THREAD, because the refusal is a MODAL DIALOG and invokeAndWait would deadlock in its loop.
         int atTheCeiling = pages();
 
         Thread refusing = new Thread(() -> ui.addLocMappingPage());
@@ -186,9 +138,8 @@ public class testFiftyLocomotiveMappingPages
 
         refusing.start();
 
-        // The dialog is the refusal, so it is asserted rather than merely dismissed: a guard that
-        // returns quietly would pass a count check just as well, and the operator would be left
-        // pressing a menu item that does nothing.
+        // The dialog is the refusal, so it is asserted rather than merely dismissed: a guard that returns quietly would
+        // pass a count check.
         java.awt.Window refusal = waitForDialog(12000);
 
         assertNotNull(refusal,
@@ -210,19 +161,9 @@ public class testFiftyLocomotiveMappingPages
     }
 
     /**
-     * The refusal dialog, identified by what it says, or null if it does not appear in time.
-     *
-     * **NOT "the first showing dialog".**  That is what this asked, and the window it waits
-     * on is a whole `TrainControlUI`: a layout warning, a reconciliation report or anything else it
-     * chooses to show would satisfy it, be asserted as the refusal, and then be DISPOSED by the caller
-     * - which is a test that passes while proving nothing and closes something it did not open.
-     *
-     * Matched on the message rather than the title, because the title of a `showMessageDialog` comes
-     * from the look and feel and the message is the sentence the guard was given.  Read in the same
-     * language the application is running in, so this does not quietly become an English-only test.
-     *
-     * @param ceilingMs how long to wait
-     * @return the dialog showing the too-many-pages refusal
+     * The refusal dialog, identified by what it says, or null if it does not appear in time.  NOT "the first showing
+     * dialog": another warning would satisfy it and then be DISPOSED by the caller.  Matched on the message, read in
+     * the language the application runs in, since the title comes from the look and feel.
      */
     private static java.awt.Window waitForDialog(long ceilingMs) throws Exception
     {
@@ -244,21 +185,10 @@ public class testFiftyLocomotiveMappingPages
         return null;
     }
 
-    /**
-     * Whether a dialog carries this sentence anywhere inside it.
-     *
-     * A `showMessageDialog` builds its own component tree - a JOptionPane holding a label - so the
-     * text is found by walking it rather than by asking the window.
-     *
-     * @param inside the window
-     * @param sentence what the guard says
-     * @return whether it is in there
-     */
+    /** Whether a dialog carries this sentence anywhere inside it, found by walking its component tree. */
     private static boolean says(java.awt.Component inside, String sentence)
     {
-        // THE OPTION PANE'S OWN MESSAGE FIRST.  `showMessageDialog` keeps the sentence as the pane's
-        // message and renders it into labels that may be wrapped, split or marked up, so comparing
-        // the rendered text is a test of the look and feel rather than of the guard.
+        // THE OPTION PANE'S OWN MESSAGE FIRST: the rendered labels may be wrapped, split or marked up.
         if (inside instanceof javax.swing.JOptionPane
             && sentence.equals(String.valueOf(((javax.swing.JOptionPane) inside).getMessage())))
         {
@@ -284,30 +214,15 @@ public class testFiftyLocomotiveMappingPages
     }
 
     /**
-     * How many mapping pages the window has now, through the door the rest of the program uses.
-     *
-     * NOT BY REFLECTION.  This was `getDeclaredField("numLocMappings")` throwing
-     * `SkipException` on a miss, and it is called from `@BeforeClass` - so renaming the field would
-     * have skipped the whole class from its own setup and the suite would have read green, with
-     * nothing about the ceiling asked at all.  `test-green-is-not-no-failures`.
-     *
-     * A public accessor for the count already existed.  What has no public door is SETTING it, and
-     * `setPages` says what it does about that.
-     *
-     * @return the count the window would act on
+     * How many mapping pages the window has now, through the door the rest of the program uses, NOT BY REFLECTION: a
+     * renamed field would skip the whole class from `@BeforeClass` and the suite would read green.
      */
     private static int pages()
     {
         return ui.getNumLocMappings();
     }
 
-    /**
-     * Sets the window's page count without touching the stored preference.
-     *
-     * The preference is user-wide and outlives the JVM, so a test that writes it can leave Adam's
-     * window opening with whatever the test happened to need - which is what happened, at fifty. The
-     * count is a field; the ceiling rules read the field; so the field is all this needs.
-     */
+    /** Sets the window's page count without touching the stored preference, which is user-wide and outlives the JVM. */
     private static void setPages(int to)
     {
         try
@@ -320,12 +235,8 @@ public class testFiftyLocomotiveMappingPages
         }
         catch (ReflectiveOperationException e)
         {
-            // FAIL, NOT SKIP.
-            //
-            // This is not a fixture that has moved - it is the only way this class reaches the
-            // ceiling, so a miss means the claim below it is not being asked.  Skipping would report
-            // that as green.  If `numLocMappings` is ever renamed, this sentence is the instruction:
-            // set the count some other way, do not delete the claim.
+            // FAIL, NOT SKIP: this is the only way the class reaches the ceiling, so a miss means the claim is not
+            // being asked.  If `numLocMappings` is renamed, set the count some other way; do not delete the claim.
             throw new AssertionError("this class sets the page count by reflection because nothing"
                 + " public does it, and the field it needs is gone: " + e + ". The ceiling claim"
                 + " cannot be asked without it - give the window a way to set the count, or point"
