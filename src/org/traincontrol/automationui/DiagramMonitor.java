@@ -18,27 +18,24 @@ import org.traincontrol.automationui.TileOverlay.State;
 /**
  * Turns what the running layout is doing into what each tile should show.
  *
- * The autonomy model deals in Points and Edges; the diagram deals in tiles.  The bridge is the tile path
- * every reduced edge kept when it was built - the same data lock derivation uses - so nothing has to be
- * recomputed from geometry while trains are moving.
+ * The autonomy model deals in Points and Edges, the diagram in tiles; the bridge is the tile path every reduced edge
+ * kept when it was built (the same data lock derivation uses), so nothing is recomputed from geometry while trains
+ * move.
  *
- * Deliberately not a Swing class.  It computes a map of tile to overlay and hands it to whatever wants
- * to paint it, which is what lets it be tested without a screen.
+ * Deliberately not a Swing class: it computes a map of tile to overlay and hands it to whatever paints it, so it can be
+ * tested without a screen.
  *
- * Threading: the layout fires its callback from whichever thread moved a train, sometimes while holding
- * its own monitor.  So firing does nothing but set a flag, and a worker does the work - if the callback
- * did the computing, a slow repaint would hold up the railway.
+ * Threading: the layout fires its callback from whichever thread moved a train, sometimes holding its own monitor, so
+ * firing only sets a flag and a worker does the work; computing in the callback would let a slow repaint hold up the
+ * railway.
  *
  * @author Adam
  */
 public class DiagramMonitor
 {
     /**
-     * Receives a complete picture of what every tile should show.
-     *
-     * Complete rather than incremental: the alternative is tracking what changed since last time, and a
-     * missed change leaves a tile lit after its train has gone - which looks exactly like a train that
-     * is still there.
+     * Receives a complete picture of what every tile should show.  Complete rather than incremental: a missed change
+     * would leave a tile lit after its train has gone, which looks exactly like a train still there.
      */
     public interface Publisher
     {
@@ -60,13 +57,12 @@ public class DiagramMonitor
     private final LayoutSource layoutSource;
     private final Publisher publisher;
 
-    // Swapped wholesale rather than mutated: setEdges runs on the event thread while compute iterates
-    // on the driver's timer thread, and clearing a map under an iterator is a ConcurrentModification
-    // that the tick would swallow silently - the overlay would just quietly stop being right.
+    // Swapped wholesale rather than mutated: setEdges runs on the event thread while compute iterates on the driver's
+    // timer thread, and clearing a map under an iterator is a ConcurrentModification the tick would swallow silently.
     private volatile Map<String, ReducedEdge> edgesByName = new LinkedHashMap<>();
     private volatile Map<String, TileKey> pointTiles = new LinkedHashMap<>();
 
-    // Which way a train standing on each Point faces, for the icon of a parked one (Adam, 2026-10-01).
+    // Which way a train standing on each Point faces, for the icon of a parked one.
     private volatile Map<String, org.traincontrol.automationui.TilePorts.Side> facings = new LinkedHashMap<>();
 
     // The trains the setup records where the railway stands them on no Point, and their facings.
@@ -94,10 +90,8 @@ public class DiagramMonitor
     /**
      * Replaces what is being watched, after a rebuild.
      *
-     * Keyed by NAME rather than by tile, because that is the only thing the running Layout and the
-     * derived graph share: Edge.getName() is "start -> end" over Point names, and those names are what
-     * the builder wrote into the generated file.  Anything else would be this class guessing at a join
-     * the builder already made.
+     * Keyed by NAME rather than by tile, because that is the only thing the running Layout and the derived graph share:
+     * Edge.getName() is "start -> end" over Point names, which the builder wrote into the generated file.
      *
      * @param edgesByName
      * @param pointTiles
@@ -115,8 +109,8 @@ public class DiagramMonitor
     }
 
     /**
-     * Which way a train standing on each Point faces: the icon of a parked train turns to it (Adam, 2026-10-01), as a
-     * running one's turns to its path.
+     * Which way a train standing on each Point faces: the icon of a parked train turns to it, as a running one's turns
+     * to its path.
      *
      * @param facings Point name to the side of its square a train's front faces there
      */
@@ -135,10 +129,9 @@ public class DiagramMonitor
     public void setTrainsOnNoPoint(Map<TileKey, org.traincontrol.automationui.TilePorts.Side> trains,
         java.util.Set<TileKey> paused)
     {
-        // THE GRAY BEFORE THE TRAINS IT IS DRAWN ON, and never an empty set between (OB-343).  A frame on the
-        // monitor's thread reads the trains and then asks of each whether it is paused, so the frame that reads the new trains
-        // finds the new set already there.  This used to write the trains through the one-argument form, which emptied the set
-        // first, and a frame between the two writes drew a paused train as one that runs.
+        // The gray before the trains it is drawn on, and never an empty set between (OB-343): a frame on the monitor's
+        // thread reads the trains and then asks of each whether it is paused, so the new trains must find the new set
+        // already there.
         this.pausedOnNoPoint = paused == null ? Collections.<TileKey>emptySet() : new java.util.HashSet<>(paused);
 
         this.onNoPoint = trains == null ? new LinkedHashMap<TileKey, org.traincontrol.automationui.TilePorts.Side>()
@@ -159,32 +152,18 @@ public class DiagramMonitor
     private volatile java.util.Set<TileKey> pausedOnNoPoint = Collections.emptySet();
 
     /**
-     * Forgets what was last published, so the next refresh publishes even an identical picture.
+     * Forgets what was last published, so the next refresh publishes even an identical picture: for after the screen
+     * was cleared behind this class's back, when tiles that were wiped and show nothing need the same picture again.
      *
-     * For after the screen has been cleared behind this class's back: refresh() suppresses a publish
-     * whose picture has not changed, which is right for a burst of movement and wrong for tiles that
-     * were wiped and now show nothing - to them, the same picture is news.
-     *
-     * **SYNCHRONIZED, on the same monitor as `refresh()`**. `refresh()` holds it because the
-     * compare-against-published is a check then a set; this is the set half of that same field, and it
-     * was taking no lock at all. The threads really are different - the driver's timer thread ticks
-     * `refreshIfDirty()` while `clear()` reaches here from the event thread - so a tick already inside
-     * `refresh()`, between `compute()` and `published = overlays`, would overwrite the invalidate. The
-     * identical picture is then suppressed as unchanged and the wiped tiles stay blank until something
-     * moves, which is the outcome this method exists to prevent.
-     *
-     * `published` is volatile, so visibility was never the problem; only the check-then-set was.
+     * **SYNCHRONIZED, on the same monitor as `refresh()`**, whose compare-against-published is a check then a set.  The
+     * driver's timer thread ticks `refreshIfDirty()` while `clear()` reaches here from the event thread, so a tick
+     * between `compute()` and `published = overlays` would overwrite the invalidate, the identical picture would be
+     * suppressed as unchanged, and the wiped tiles would stay blank until something moves.
      */
     public synchronized void invalidate()
     {
         published = Collections.emptyMap();
     }
-
-    // indexEdges and indexPoints stood here: two public helpers that built these maps from
-    // uniqueNames.  Nothing called them - the driver takes both from the builder, which knows about the
-    // split - and they indexed BASE names only, so anything that had started calling them would have
-    // got a monitor that silently missed every split copy.  Deleted rather than fixed: the builder
-    // already answers this correctly and a second answer is what this whole area keeps going wrong on.
 
     /**
      * Registers with a layout.  Additive: other callbacks on the same layout are untouched.
@@ -232,14 +211,13 @@ public class DiagramMonitor
     }
 
     /**
-     * Recomputes and publishes unconditionally - used when the grid has been rebuilt and the tiles have
-     * lost whatever they were showing, which is not something the layout would fire about.
+     * Recomputes and publishes unconditionally, for when the grid was rebuilt and the tiles lost what they showed,
+     * which the layout would not fire about.
      *
-     * Synchronized because the compare-against-published is a check then a set, and this is called from
-     * both the driver's timer thread and the event thread.  Two overlapping calls could publish out of
-     * order, leaving the older picture on screen and the newer one recorded - after which the newer one
-     * is suppressed as unchanged and the diagram stays wrong until something else moves.  It is short
-     * and holds no other lock, so it cannot hold up the railway.
+     * Synchronized because the compare-against-published is a check then a set, called from both the driver's timer
+     * thread and the event thread: overlapping calls could leave the older picture on screen and the newer one
+     * recorded, and the newer is then suppressed as unchanged.  Short and holds no other lock, so it cannot hold up the
+     * railway.
      */
     public synchronized void refresh()
     {
@@ -261,11 +239,8 @@ public class DiagramMonitor
     }
 
     /**
-     * Works out what every tile should show.
-     *
-     * Reads the layout's own view of what is running rather than tracking movements itself: a monitor
-     * that accumulated state would drift, and drift here means a tile still lit after its train has
-     * gone, which reads as a train that is still there.
+     * Works out what every tile should show, reading the layout's own view of what is running rather than tracking
+     * movements: accumulated state would drift, leaving a tile lit after its train has gone.
      */
     Map<TileKey, TileOverlay> compute()
     {
@@ -308,17 +283,15 @@ public class DiagramMonitor
                 }
             }
 
-            // The whole run as one sequence of squares, rather than each edge on its own.
-            //
-            // A line has to know what is on EITHER side of a square to be drawn through it, and an edge
-            // alone does not: the square where two edges meet is the Point between them, and taken one
-            // edge at a time its line would stop dead in the middle of that square and start again.
+            // The whole run as one sequence of squares: a line has to know what is on either side of a square to be
+            // drawn through it, and taken one edge at a time it would stop dead in the middle of the square where two
+            // edges meet.
             List<TileKey> run = new java.util.ArrayList<>();
             List<State> states = new java.util.ArrayList<>();
 
-            // WHAT THE RUN HAS GIVEN BACK BEHIND THE TRAIN is drawn as nothing (Adam, FR-106: "In non automic, would the
-            // dark gray fade go away where unlocked?"): the driven line says the track is still held, and under
-            // non-atomic routes the tail hands it back as it clears it - under atomic routes, nothing until the run ends
+            // What the run has given back behind the train is drawn as nothing (FR-106): the driven line says the track
+            // is still held, and under non-atomic routes the tail hands it back as it clears it, under atomic routes
+            // only when the run ends.
             Set<Edge> givenBack = layout.releasedBehind(entry.getKey());
 
             for (Edge edge : path)
@@ -353,25 +326,14 @@ public class DiagramMonitor
 
             lay(overlays, run, states);
 
-            // and the locomotive itself, at the point it has most recently reached.
-            //
-            // THROUGH THE ONE RULE.  `getLocomotiveLocation` returns an ARBITRARY one of
-            // the several points a running train reserves at once - the reservation legitimately
-            // holds them all - so the marker could jump to a point the train had not reached yet.
-            // The milestones are in the order they were reached, so the last is where the train
-            // actually is, and a stationary train reserves only one point, which is the fallback.
-            //
-            // That paragraph was written here, then again in `AutoLocomotiveStatus`, and a third
-            // time in the covered-track walk; the fourth reader - the diagram's tail overlay - did
-            // not write it and drew the orange in the wrong place.  `Layout.whereTheTrainIs` is
-            // those two lines with the reasoning attached.
+            // And the locomotive itself, at the point it has most recently reached, through the one rule:
+            // `getLocomotiveLocation` returns an ARBITRARY one of the several points a running train reserves, so the
+            // marker could jump ahead.  `Layout.whereTheTrainIs` takes the last milestone, with a stationary train's
+            // single point as the fallback.
             Point at = layout.whereTheTrainIs(entry.getKey());
 
-            // Whether it is actually running, which is what decides the icon (FR-027).
-            //
-            // Asked of the LOCOMOTIVE rather than of the path: a train with a path can be standing
-            // still, waiting at a platform or held while another route clears, and those are exactly
-            // the ones Adam did not want marked as running.
+            // Whether it is actually running, which decides the icon (FR-027): asked of the LOCOMOTIVE, not the path,
+            // since a train with a path can stand waiting at a platform or held while another route clears.
             boolean running = entry.getKey() != null && entry.getKey().getSpeed() > 0;
 
             if (at != null)
@@ -380,8 +342,8 @@ public class DiagramMonitor
             }
         }
 
-        // AND EVERY TRAIN PARKED WITH NO PATH (Adam, 2026-10-01): "when a train is standing somewhere, can we show its
-        // locomotive icon on top of the station in the track diagram viewer ... same icon as when a run is started."
+        // And every train parked with no path: its locomotive icon on top of the station, the same icon as when a run
+        // is started.
         markTheParkedTrains(overlays, layout, active.keySet());
 
         // everything held clear so those paths can run - and NOT what an edge the run has given back held clear:
@@ -425,11 +387,9 @@ public class DiagramMonitor
     }
 
     /**
-     * Adds one square to a run, unless it is already the square the run is standing on.
-     *
-     * Consecutive edges share the Point between them, so a run built by concatenating them names that
-     * square twice - and a square listed twice is a line drawn from itself to itself, which is a blob
-     * in the middle of the track.
+     * Adds one square to a run, unless it is already the square the run is standing on: consecutive edges share the
+     * Point between them, and a square listed twice is a line drawn from itself to itself, a blob in the middle of the
+     * track.
      */
     public static void append(List<TileKey> run, List<State> states, TileKey tile, State state)
     {
@@ -442,18 +402,13 @@ public class DiagramMonitor
     }
 
     /**
-     * Turns a run of squares into a line through each of them.
+     * Turns a run of squares into a line through each of them.  Which way the line enters and leaves is read off the
+     * squares either side, exactly as the editor reads it for a tested path, so the two views draw the same picture of
+     * the same question.
      *
-     * Which way the line enters and leaves is read off the squares either side, exactly as the editor
-     * reads it for a tested path - the two views draw the same picture of the same question, one before
-     * the train runs and one while it does.
-     *
-     * Null at the ends of the run, where the line stops in the middle of the square rather than running
-     * off into track nobody claimed, and null again either side of a jump between pages: a link has no
-     * side on this grid to be drawn as, and the answer to that is a line that stops.
-     *
-     * Public so the geometry can be tested without a railway.  Everything above it needs a running
-     * Layout with trains on it and cannot be reached from a test at all; this needs a list of squares.
+     * Null at the ends of the run, where the line stops in the middle of the square rather than running off into track
+     * nobody claimed, and either side of a jump between pages, which has no side on this grid.  Public so the geometry
+     * can be tested without a railway.
      */
     public static void lay(Map<TileKey, TileOverlay> into, List<TileKey> run, List<State> states)
     {
@@ -477,10 +432,9 @@ public class DiagramMonitor
 
     /**
      * Marks every train the railway holds that has no path: the locomotive a run draws, on the square it stands on,
-     * facing the way it stands (Adam, 2026-10-01).
-     *
-     * A train in `active` is left to the run's own mark, at the point it last reached: the several points a running
-     * train reserves all answer it as their occupant, and marking those would draw it more than once.
+     * facing the way it stands.  A train in `active` is left to the run's own mark at the point it last reached; the
+     * several points a running train reserves all answer it as occupant, and marking those would draw it more than
+     * once.
      *
      * @param into the picture
      * @param layout the running layout
@@ -580,10 +534,8 @@ public class DiagramMonitor
     }
 
     /**
-     * Marks the tile a locomotive is standing on.
-     *
-     * The running Layout knows a Point only by name, so the tile comes from the index the builder's
-     * names produced rather than from the Point itself, which has never heard of tiles.
+     * Marks the tile a locomotive is standing on.  The running Layout knows a Point only by name, so the tile comes
+     * from the index the builder's names produced.
      *
      * @param into the picture
      * @param at the Point the train is on
@@ -600,15 +552,12 @@ public class DiagramMonitor
 
         if (tile == null) return;
 
-        // STANDING STILL, THE LOCOMOTIVE STANDING THERE, facing its way - not the dot (OB-317; Adam, 2026-10-03: "when
-        // autonomy is started and the blue path painted for a train, the locomotive icon disappears on the starting
-        // station ... it needs to be added to the starting path / kept where it is standing").  The path line under it
+        // Standing still, the locomotive standing there, facing its way, not the dot (OB-317): the path line under it
         // says it holds a path; running, it is the run's own icon.
         //
-        // FACING THE WAY IT WILL STAND (Adam, 2026-10-07, on MT-701: "the locomotive icon direction doesn't always match the
-        // arrow (arrow is correct) when arriving at a may reverse station").  A train that kept its direction at a square
-        // it may turn at stops on the square's turning copy, and is stood on the plain copy only once its run is done -
-        // so it faced the turning copy's way until then.  The copy it will stand on, as the caption's arrow asks
+        // Facing the way it will stand (MT-701): a train that kept its direction at a square it may turn at stops on
+        // the square's turning copy and is stood on the plain copy only once its run is done, so it faced the turning
+        // copy's way until then.  The copy it will stand on, as the caption's arrow asks
         // (`AutonomySession.facingOnTheRailway`, OB-314), when that is another copy of the same square.
         Point facingCopy = will != null && will != at && will.isSamePlaceAs(at) ? will : at;
 
