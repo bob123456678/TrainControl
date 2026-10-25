@@ -16,24 +16,18 @@ import org.traincontrol.automation.Point;
 /**
  * A frozen copy of Adam's railway, whose ground truth cannot move.
  *
- * **Why it exists.**  Eighteen classes in this suite open `cs2_sample_layout` - his real, live railway
- * - because complex pathing and random-movement checks need geometry no hand-authored fixture is going
- * to have.  That folder changes as he operates it, so those tests' ground truth moves underneath them:
- * on 2026-09-09 three of them broke that way in one morning, one having picked its subject out of the
- * live railway by a property he had since changed.
+ * Many classes in this suite open `cs2_sample_layout`, his real, live railway, because complex pathing and
+ * random-movement checks need geometry no hand-authored fixture is going to have; it changes as he operates it, so
+ * those tests' ground truth moved underneath them.  `test/layouts/live-snapshot` is the same railway taken out of `git
+ * show HEAD:` (not the working tree, which carries uncommitted operating changes) and checked in; its README records
+ * the commit.  It is the base Adam asked mutations to be built on: *"make sure you still have a copy of the live layout
+ * for ones that require complex pathing and random movement checks.  I'd recommend using these complex setups as the
+ * base for mutations."*
  *
- * `test/layouts/live-snapshot` is the same railway taken out of `git show HEAD:` - not the working tree,
- * which carries uncommitted operating changes - and checked in.  Its README records the commit.  It is
- * the base Adam asked mutations to be built on: *"make sure you still have a copy of the live layout for
- * ones that require complex pathing and random movement checks.  I'd recommend using these complex
- * setups as the base for mutations."*
- *
- * **What this class asserts** is that the snapshot is still a railway rather than a skeleton, and that
- * the numbers are exactly what they were when it was frozen.  Exact, not "more than a few": a snapshot
- * that can drift is not a snapshot, and the failure mode this is guarding against is the one
- * `LayoutSandbox.wiredPages` documents - a railway of ninety connections arriving as five edges, with
- * every test on top of it passing because an assertion about a square that has no edges is usually an
- * assertion about null.
+ * This class asserts that the snapshot is still a railway rather than a skeleton, and that the numbers are exactly what
+ * they were when it was frozen: a snapshot that can drift is not a snapshot, and the failure it guards against is the
+ * one `LayoutSandbox.wiredPages` documents, a railway of ninety connections arriving as five edges with every test on
+ * top of it passing.
  *
  * @author Adam
  */
@@ -41,9 +35,7 @@ public class testTheFrozenRailwayIsStillTheRailway
 {
     private static support.Scenario scenario;
 
-    /**
-     * The pages the snapshot holds, in the order the index names them.
-     */
+    /** The pages the snapshot holds, in the order the index names them. */
     private static final String[] PAGES =
     {
         "1 - Main", "2 - Bottom", "3 - Top Parking", "4 - Combined", "5 - Test"
@@ -52,8 +44,8 @@ public class testTheFrozenRailwayIsStillTheRailway
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        // The sandbox is opened inside Scenario.open, BEFORE the model is built (OB-111). Nothing here
-        // can reach cs2_sample_layout: the scenario is a checked-in copy and the copy is sandboxed.
+        // The sandbox is opened inside Scenario.open, BEFORE the model is built (OB-111); the scenario is a checked-in
+        // copy.
         scenario = support.Scenario.open("live-snapshot");
 
         scenario.getModel().stop();
@@ -65,9 +57,7 @@ public class testTheFrozenRailwayIsStillTheRailway
         if (scenario != null) scenario.close();
     }
 
-    /**
-     * Every page the railway is drawn on is there.
-     */
+    /** Every page the railway is drawn on is there. */
     @Test
     public void testTheSnapshotHoldsTheWholeRailway() throws Exception
     {
@@ -82,20 +72,18 @@ public class testTheFrozenRailwayIsStillTheRailway
     /**
      * And it reduces to a real graph rather than to a handful of disconnected sensors.
      *
-     * The counts are the ones measured when the snapshot was taken.  They are pinned rather than
-     * bounded because the folder is checked in and nothing but an edit can move them: a change here is
-     * either somebody editing the fixture or the reduction changing its mind, and both want saying out
-     * loud.
+     * The counts are the ones measured when the snapshot was taken, pinned rather than bounded because nothing but an
+     * edit can move them: a change here is either somebody editing the fixture or the reduction changing its mind, and
+     * both want saying out loud.
      */
     @Test
     public void testTheSnapshotStillReducesToARailway() throws Exception
     {
         Layout built = scenario.build();
 
-        // REFROZEN 2026-09-23 from Adam's measured layout (`e36df979`).  The first freeze reduced to 128 edges and
-        // built 96 Points and 149 edges; his one-way marks, compulsory turn at BottomMainC and barred arrivals of that
-        // day take arrival sides away, and an arrival side that is gone is an edge and a copy that are not built.  The
-        // five pages are byte-identical to the first freeze, so this is the setup moving, not the diagram.
+        // REFROZEN from Adam's measured layout (`e36df979`): his one-way marks, compulsory turn at BottomMainC and
+        // barred arrivals take arrival sides away, and an arrival side that is gone is an edge and a copy that are not
+        // built.  The five pages are byte-identical to the first freeze, so this is the setup moving, not the diagram.
         int reduced = scenario.getSession().getReducer().getEdges().size();
 
         // WHAT A REFRESH OF THE SNAPSHOT CHANGES (FR-136): all three figures, here and in its README.
@@ -119,9 +107,8 @@ public class testTheFrozenRailwayIsStillTheRailway
     /**
      * And a train can be routed across it, which is what the snapshot is kept for.
      *
-     * A hand-authored scenario is three or four sensors on one page; this one has ninety-six Points,
-     * five pages and portals between them, and it is the only fixture in the suite where a path finder
-     * has anything to find.
+     * A hand-authored scenario is three or four sensors on one page; this one has ninety-six Points, five pages and
+     * portals between them, and is the only fixture in the suite where a path finder has anything to find.
      */
     @Test
     public void testAPathCanBeFoundAcrossTheFrozenRailway() throws Exception
@@ -140,9 +127,8 @@ public class testTheFrozenRailwayIsStillTheRailway
 
         assertFalse(stations.isEmpty(), "the frozen railway has no stations on it at all");
 
-        // A SAMPLE RATHER THAN THE WHOLE CENSUS: ninety-six Points is nine thousand pairs, and the
-        // claim being made is that this railway is connected enough to route on, not that every pair
-        // is reachable - plenty of them legitimately are not, and the room and terminus rules say so.
+        // A SAMPLE RATHER THAN THE WHOLE CENSUS: the claim is that this railway is connected enough to route on, not
+        // that every pair is reachable (plenty legitimately are not, and the room and terminus rules say so).
         for (int i = 0; i < stations.size() && pairsTried < 40; i += 3)
         {
             for (int j = i + 1; j < stations.size() && pairsTried < 40; j += 7)
@@ -168,9 +154,9 @@ public class testTheFrozenRailwayIsStillTheRailway
     /**
      * The scenario is a COPY, and nothing here can reach the original.
      *
-     * Asserted rather than assumed because it is the rule the whole library rests on, and OB-111 is the
-     * record of what it costs when a test reads the operator's own folder: his railway is rewritten with
-     * different line endings, and on one occasion a change he had made himself was masked by the churn.
+     * Asserted rather than assumed because the whole library rests on it, and OB-111 records what it costs when a test
+     * reads the operator's own folder (his railway rewritten with different line endings, and once a change of his own
+     * masked by the churn).
      */
     @Test
     public void testNothingIsPointedAtTheOperatorsOwnRailway() throws Exception
