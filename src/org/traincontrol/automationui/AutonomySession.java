@@ -7569,7 +7569,8 @@ public class AutonomySession
      * @param keep the heading the train had before it was moved, or null when that is not known
      * @param landedOn the copy the running layout chose - accepted and deliberately NOT used, because
      *        `StationIndex.speakerAt` says that on an empty square "any copy will do", so it is copy 0
-     *        and evidence of nothing.
+     *        and evidence of nothing.  Recording it was a bug.  Kept in the signature so that a
+     *        caller reaching for it finds this sentence rather than the idea
      * @return the side to record, or null to record nothing
      */
     public static Side facingAfterAPaste(Map<String, Side> held, Side keep, String landedOn)
@@ -7673,7 +7674,7 @@ public class AutonomySession
     }
 
     /**
-     * Records a facing and stands the train on the copy that faces that way.
+     * Records a facing AND stands the train on the copy that faces that way.
      *
      * Adam's ruling that `flipFacing` updates the running layout holds for a facing chosen by hand too.
      *
