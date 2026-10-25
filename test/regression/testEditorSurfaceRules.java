@@ -158,11 +158,8 @@ public class testEditorSurfaceRules
         // convention twenty lines down: "adding a writer means saying here which file it is in and why
         // it is allowed to be a second one".  A THIRD write still fails, and the message says what to
         // ask about it.
-        // FIVE OVER THE PROGRAM: the editor's two, and the three in the files the list below names -
-        // GraphLocAssign.commitAndRecord, the diagram's placeFacing and the window's rememberPlacement.
-        // The edit-or-assign door does not write the facing itself, because the TRACK DIAGRAM has the
-        // same item and an assignment made there has to be recorded too.  Adam: "there needs to
-        // be parity across the board."  A sixth write fails, and the message says what to ask about it.
+        // FIVE OVER THE PROGRAM: the editor's two, GraphLocAssign.commitAndRecord, the diagram's placeFacing and the
+        // window's rememberPlacement.  Adam: "there needs to be parity across the board."
         assertEquals(writes, 5,
             "the facing is written from " + writes + " places in the program. Five are known.  Two are the "
             + "autonomy editor's: the facing menu in EditorTileMenus (which moves the railway too, SPEC-B4) and "
