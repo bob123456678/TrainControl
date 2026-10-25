@@ -80,7 +80,7 @@ public class testRouteCapture
 
     /**
      * A captured line becomes a row the new editor can show: it keeps commands as rows rather than text, so a captured
-     * line has to survive one more step than it used to.
+     * line has to survive one more step.
      */
     @Test
     public void testACapturedLineBecomesAnEditableRow() throws Exception
