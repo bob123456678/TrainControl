@@ -7673,8 +7673,9 @@ public class AutonomySession
     }
 
     /**
-     * Records a facing and stands the train on the copy that faces that way (Adam: `flipFacing` updates the railway
-     * too).
+     * Records a facing and stands the train on the copy that faces that way.
+     *
+     * Adam's ruling that `flipFacing` updates the running layout holds for a facing chosen by hand too.
      *
      * The railway's train here first: after a run the setup names the pre-run occupant (behaviour.md 6a).  The setup's
      * record is written only where the railway has that train, or none.
