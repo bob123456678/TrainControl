@@ -2606,8 +2606,8 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Why a typed name may not go on this square, as unusable or as another square's (FR-120), or null; the prompts
-     * that ask again on a refusal ask this.
+     * Why a typed name may not go on this square, as unusable or as another square's (FR-120), or null; every prompt
+     * that names a square asks this.
      */
     private String whyNotNamed(TileKey tile, String name)
     {
@@ -3625,8 +3625,8 @@ public class AutonomyEditorPanel extends JPanel
             name = name.replace("\"", "");
         }
 
-        // A name ending like a builder copy's is refused, and said.
-        String refused = AutonomySession.whyNotAPointName(name);
+        // A name ending like a builder copy's, or another square's, is refused, and said.
+        String refused = whyNotNamed(tile, name);
 
         if (refused != null)
         {

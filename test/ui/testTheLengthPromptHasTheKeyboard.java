@@ -497,6 +497,139 @@ public class testTheLengthPromptHasTheKeyboard
         }
     }
 
+    /**
+     * Rename... on a square's right-click menu refuses a name another square already has, says so, and renames nothing
+     * (OB-376, the walk's sibling door).
+     *
+     * MUTATION: `promptName` asking `AutonomySession.whyNotAPointName(name)` instead of `whyNotNamed`: red, as no
+     * refusal appears and the square takes the other's name.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testRenameRefusesATakenName() throws Exception
+    {
+        // A NAMED SQUARE ON THE PAGE, and A NAME ANOTHER SQUARE HAS, plain text so the refusal's markup is not in the way
+        final org.traincontrol.automationui.TileGraph.TileKey[] target = new org.traincontrol.automationui.TileGraph.TileKey[1];
+        final String[] itsName = new String[1];
+        final String[] taken = new String[1];
+        final javax.swing.JMenuItem[] rename = new javax.swing.JMenuItem[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            for (org.traincontrol.automationui.GraphReducer.ReducedPoint point : session.getReducer().getPoints().values())
+            {
+                String name = session.getStore().getPointName(point.getTile());
+
+                if (target[0] == null && PAGE.equals(point.getTile().getPage()) && name != null && !name.trim().isEmpty()
+                    && editor.getAutonomyPanel().canBeNamed(point.getTile()))
+                {
+                    target[0] = point.getTile();
+                    itsName[0] = name;
+                }
+            }
+
+            if (target[0] == null) return;
+
+            for (org.traincontrol.automationui.TileGraph.TileKey other : session.getStore().getNamedTiles())
+            {
+                String name = session.getStore().getPointName(other);
+
+                if (taken[0] == null && !other.equals(target[0]) && name != null && name.trim().matches("[A-Za-z0-9 ]+")
+                    && !name.trim().equalsIgnoreCase(itsName[0].trim()))
+                {
+                    taken[0] = name.trim();
+                }
+            }
+
+            // THE REAL MENU's item, as the right-click builds it
+            javax.swing.JPopupMenu menu = editor.getAutonomyPanel().buildTileMenu(target[0],
+                model.getLayout(PAGE).getComponent(target[0].getX(), target[0].getY()));
+
+            for (java.awt.Component c : menu.getComponents())
+            {
+                if (c instanceof javax.swing.JMenuItem
+                    && I18n.t("autosetup.ui.menuRename").equals(((javax.swing.JMenuItem) c).getText()))
+                {
+                    rename[0] = (javax.swing.JMenuItem) c;
+                }
+            }
+        });
+
+        assertNotNull(target[0], "precondition: " + PAGE + " has no named square that can be renamed");
+        assertNotNull(taken[0], "precondition: no other square has a plain name to reuse");
+        assertNotNull(rename[0], "precondition: " + target[0] + "'s menu has no Rename... item");
+
+        try
+        {
+            SwingUtilities.invokeLater(rename[0]::doClick);
+
+            javax.swing.JDialog prompt = awaitInputPrompt();
+
+            type(fieldIn(prompt), taken[0]);
+
+            javax.swing.JDialog refusal = awaitMessage(prompt, prompt.getTitle(), "\"" + taken[0] + "\", another"
+                + " square's name, was typed into Rename... and no refusal appeared");
+
+            final String[] said = new String[1];
+
+            SwingUtilities.invokeAndWait(() -> said[0] = String.valueOf(findPane(refusal.getContentPane()).getMessage()));
+
+            closeMessage(refusal);
+
+            assertTrue(said[0].contains(I18n.f("autosetup.ui.errorPointNameTaken", taken[0])),
+                "Rename's refusal of a taken name does not say it is taken: " + said[0]);
+
+            final String[] now = new String[1];
+
+            SwingUtilities.invokeAndWait(() -> now[0] = session.getStore().getPointName(target[0]));
+
+            assertEquals(now[0], itsName[0], "Rename... gave " + target[0] + " another square's name");
+        }
+        finally
+        {
+            closeEveryPrompt();
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                session.setPointName(target[0], itsName[0]);
+                editor.getAutonomyPanel().refresh();
+            });
+        }
+    }
+
+    /** A showing option pane that asks for text: Rename's prompt. */
+    private static javax.swing.JDialog awaitInputPrompt() throws Exception
+    {
+        long giveUp = System.currentTimeMillis() + 10000;
+
+        while (System.currentTimeMillis() < giveUp)
+        {
+            final javax.swing.JDialog[] found = new javax.swing.JDialog[1];
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                for (java.awt.Window window : java.awt.Window.getWindows())
+                {
+                    if (window instanceof javax.swing.JDialog && window.isShowing())
+                    {
+                        JOptionPane pane = findPane(((javax.swing.JDialog) window).getContentPane());
+
+                        if (pane != null && pane.getWantsInput()) found[0] = (javax.swing.JDialog) window;
+                    }
+                }
+            });
+
+            if (found[0] != null) return found[0];
+
+            Thread.sleep(50);
+        }
+
+        fail("Rename... showed no prompt.  Showing now: " + showing());
+
+        return null;
+    }
+
     /** The prompt's text field, found rather than waited for: this claim is about the answer, not the keyboard. */
     private static javax.swing.JTextField fieldIn(javax.swing.JDialog prompt) throws Exception
     {
