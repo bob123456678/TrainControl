@@ -14,39 +14,23 @@ import static org.testng.Assert.assertTrue;
 import org.testng.annotations.Test;
 
 /**
- * Every count the reference documents quote is the count the store holds (VD14, VD15).
+ * Every count the reference documents quote is the count the store holds.  Numbers counted by hand from a file the
+ * same commit is still editing went stale three validation rounds running, so each one below is read out of the
+ * document and compared with the thing it describes, and the failure message says what to write instead.
  *
- * **Why this exists.**  Three validation rounds in a row found a stale number in a reference document,
- * and the third one found the pattern rather than another instance: *"every one of these numbers is
- * counted by hand from a file the same commit is still editing.  Until one of them is COMPUTED, a
- * fourth round will find a fourth stale count."*  Two were wrong inside the very sentence written to
- * apologize for the previous wrong one - the Inbox count three times, the finding count twice - and one
- * "correction" reversed a pair of numbers that had been right.
+ * ROWS ARE NOT FINDINGS: a finding written up in two documents has a row for each, so the `finding` table holds more
+ * rows than findings.  Both are checked here, against the mirror's rows and its distinct refs.
  *
- * So the numbers are no longer trusted to a reader's care.  Each one below is read out of the document
- * and compared with the thing it describes, and the failure message says what to write instead.
+ * The review total is not a constant of this test: a guard whose expectation is its subject's own claim checks
+ * nothing but its own arithmetic.  What the README states is four countable things (files deleted per round, reviews
+ * per round, the two for-Adam notes that are the difference, and the spelled-out total), and this asks whether they
+ * agree with each other.
  *
- * **ROWS ARE NOT FINDINGS.**  A finding written up in two documents has a row for each, so
- * the `finding` table holds more rows than findings - 3,726 against 3,369 when this was written - and
- * three documents had quoted the row count as a finding count.  Both are checked here, against the
- * mirror's rows and its distinct refs, so the distinction cannot quietly collapse again.
+ * MUTATION: change by one any number a claim below reads, and the matching claim names it.  For the spelled-out
+ * total, the edit is the WORDS ("Two hundred and eight" to "Two hundred and nine"), because every edit to the digits
+ * is caught by an earlier claim first.
  *
- * **AND THE REVIEW TOTAL IS NO LONGER A CONSTANT OF THIS TEST.**  It used to be `208`, which
- * is the number the document says: a guard whose expectation is its subject's own claim checks nothing
- * but its own arithmetic.  What the README now states is four countable things - files deleted per
- * round, reviews per round, the two for-Adam notes that are the difference, and the spelled-out total -
- * and this asks whether they agree with each other.  Which of those files counted as a review is a
- * judgment no test can make; how the stated numbers relate is arithmetic, and that is where it went
- * wrong, twice.
- *
- * MUTATION: change by one any number a claim below reads, and the matching claim names it.
- * For the spelled-out total, the edit is the WORDS - "Two hundred and eight" to "Two hundred and
- * nine" - because every edit to the digits is caught by an earlier claim first: change `143` and `65`
- * together and the file total fails at 211 against 210; change `143` alone and the for-Adam
- * difference fails at 1 against the two notes it names.  The first version of this sentence named
- * exactly that unreachable mutation.
- *
- * **THE STORE ALSO HANDS OUT THE NEXT ROUND (FR-136).**  With the review documents deleted the folder cannot say which
+ * THE STORE ALSO HANDS OUT THE NEXT ROUND (FR-136).  With the review documents deleted the folder cannot say which
  * round is next, so `catalog-findings.py --next PREFIX` reads it from the store, `--check-unused REF` refuses one
  * already there, and no mode of the tool can rebuild the catalog from the documents that remain.  The claims that
  * run it need `python` on the path, as the tool does.
@@ -56,21 +40,13 @@ import org.testng.annotations.Test;
 public class testTheRecordsCountTheStore
 {
     /**
-     * The mirror is the store's Java-readable projection - the same file the citation guard reads.
-     *
-     * **THIS CLASS NEVER OPENS `triage.db`, and cannot:** there is no SQLite driver on this
-     * project's classpath, which is the reason the mirror exists at all.  What makes reading it the
-     * same as reading the store is `triagedb.verify_findings_mirror`, which every `sync` now runs -
-     * before that, a store written without a render left this counting rows that were no longer
-     * there, and it could not have known.
+     * The mirror is the store's Java-readable projection, the same file the citation guard reads.  This class never
+     * opens `triage.db` (there is no SQLite driver on the classpath); `triagedb.verify_findings_mirror`, which every
+     * `sync` runs, is what makes reading the mirror the same as reading the store.
      */
     private static final String MIRROR = "docs/manual-tests/findings.tsv";
 
-    /**
-     * The finding counts behaviour.md quotes are the store's own, rows and findings.
-     *
-     * @throws Exception on a failure to read
-     */
+    /** The finding counts behaviour.md quotes are the store's own, rows and findings. */
     @Test
     public void testTheFindingCountIsTheStoresOwn() throws Exception
     {
@@ -104,15 +80,9 @@ public class testTheRecordsCountTheStore
     }
 
     /**
-     * The review-document arithmetic in `docs/reviews/README.md` agrees with itself.
-     *
-     * Which files counted as reviews is a judgment no test can make; how the four numbers the README
-     * states relate to each other is arithmetic, and that is where it went wrong - "143 on 2026-09-08
-     * and 63 more on 2026-09-21" stood beside "two hundred and eight" for a day, and a validation round
-     * later re-derived the total from `git` alone and got 207, because the two for-Adam notes the
-     * sentence excludes are the difference between the files git counts and the reviews it means.
-     *
-     * @throws Exception on a failure to read
+     * The review-document arithmetic in `docs/reviews/README.md` agrees with itself.  Which files counted as reviews
+     * is a judgment no test can make; how the four numbers the README states relate is arithmetic, and that is where
+     * it went wrong (two for-Adam notes are the difference between the files git counts and the reviews it means).
      */
     @Test
     public void testTheDeletedReviewsAddUp() throws Exception
@@ -142,8 +112,8 @@ public class testTheRecordsCountTheStore
             + " and " + halves.group(2) + " files - and for that round they must be equal: no for-Adam note was"
             + " deleted that day (VD18-T9)");
 
-        // AND THE SECOND ROUND'S TWO PLACES: "(44 in `docs/reviews/` itself and 21 in three dated folders
-        // beside it)" was read by nothing, so 44 could become 43 with every claim here green
+        // AND THE SECOND ROUND'S TWO PLACES: "(44 in `docs/reviews/` itself and 21 in three dated folders beside it)"
+        // was read by nothing, so 44 could become 43 with every claim here green
         Matcher places = Pattern.compile("([0-9]+) in .docs/reviews/. itself and ([0-9]+) in").matcher(said);
 
         assertTrue(places.find(), "docs/reviews/README.md no longer says where the 2026-09-21 round's files were, so the"
@@ -181,8 +151,8 @@ public class testTheRecordsCountTheStore
             "the README's for-Adam sentence quotes " + notes.group(2) + " reviews against the "
             + reviews + " it states above");
 
-        // ONE NEEDLE, NOT TWO: "2026-09-03-questions-for-adam.md" ends with "-for-adam.md" as well,
-        // so counting both names counted that file twice and this claim failed at 3 against 2.
+        // ONE NEEDLE, NOT TWO: "2026-09-03-questions-for-adam.md" also ends with "-for-adam.md", so counting both names
+        // counted that file twice.
         assertEquals(occurrences(said, "-for-adam.md"),
             files - reviews,
             "the README says the difference between " + files + " files and " + reviews
@@ -191,8 +161,7 @@ public class testTheRecordsCountTheStore
             + " how this arithmetic"
             + " came to be re-derived twice");
 
-        // THE SPELLED-OUT TOTAL, DERIVED.  It used to be compared with a constant `208` in
-        // this file, which is the document's own claim written down twice.
+        // THE SPELLED-OUT TOTAL, DERIVED, not compared with a constant that would be the document's own claim twice.
         String words = spelled(reviews + second);
 
         assertTrue(said.toLowerCase().contains(words + " review documents"),
@@ -205,18 +174,13 @@ public class testTheRecordsCountTheStore
     private static final String DUMP = "docs/manual-tests/dump/";
 
     /**
-     * The dump holds the record whole: every test once, in tag order, each record's text opening with its
-     * own anchor, and every comment on a test or an issue the dump holds, numbered from nought without a gap.
-     *
-     * The dump is the only form of the tests a Java test can read, and `triagedb.py verify` - which proves
-     * it is the store's own rows - needs Python.  What can be held here is that it is whole: a dump cut
-     * short, written from the wrong store, or merged badly by hand leaves a comment on nothing, a gap in a
-     * test's comments, or two records for one tag.
+     * The dump holds the record whole: every test once, in tag order, each record's text opening with its own anchor,
+     * and every comment on a test or an issue the dump holds, numbered from nought without a gap.  It is the only form
+     * of the tests a Java test can read (`triagedb.py verify` needs Python); a dump cut short, written from the wrong
+     * store or merged badly leaves a comment on nothing, a gap in a test's comments, or two records for one tag.
      *
      * MUTATION: add a record `[comment MT-9999 0]` to comments.txt, or delete any comment record but a
      * test's last, and this names it.
-     *
-     * @throws Exception on a failure to read
      */
     @Test
     public void testTheDumpHoldsTheRecordWhole() throws Exception
@@ -304,10 +268,9 @@ public class testTheRecordsCountTheStore
     // ---------------------------------------------------------------- the next round comes from the store (FR-136)
 
     /**
-     * Loads `catalog-findings.py` and `triagedb` as modules, for the claims that call its functions.
-     *
-     * The stand-in refs in the scripts are written with a tilde (`ZZ~A1`) and turned into dashes by `fix`, because
-     * `testEveryCitationResolves` reads every finding-shaped id in this file as a citation, and these are not findings.
+     * Loads `catalog-findings.py` and `triagedb` as modules, for the claims that call its functions.  Stand-in refs
+     * are written with a tilde (`ZZ~A1`) and turned into dashes by `fix`, because `testEveryCitationResolves` reads
+     * every finding-shaped id in this file as a citation.
      */
     private static final String LOAD = String.join("\n",
         "import importlib.util, io, os, sys, tempfile",
@@ -320,20 +283,14 @@ public class testTheRecordsCountTheStore
         "    return [r.replace('~', '-') for r in refs]",
         "");
 
-    /**
-     * What a python process printed and returned.
-     */
+    /** What a python process printed and returned. */
     private static final class Ran
     {
         final int exit;
         final String out;
         final String err;
 
-        /**
-         * @param exit the exit code
-         * @param out standard output
-         * @param err standard error
-         */
+        /** The exit code, standard output and standard error. */
         Ran(int exit, String out, String err)
         {
             this.exit = exit;
@@ -342,13 +299,7 @@ public class testTheRecordsCountTheStore
         }
     }
 
-    /**
-     * Runs python at the repository root, as `python args...`.
-     *
-     * @param args the script and its arguments
-     * @return what it did
-     * @throws Exception if python cannot be started or does not finish
-     */
+    /** Runs python at the repository root, as `python args...`. */
     private static Ran python(String... args) throws Exception
     {
         File out = File.createTempFile("catalog-out", ".txt");
@@ -387,13 +338,7 @@ public class testTheRecordsCountTheStore
         }
     }
 
-    /**
-     * The tool, as the command line runs it.
-     *
-     * @param args its arguments
-     * @return what it did
-     * @throws Exception if python cannot be run
-     */
+    /** The tool, as the command line runs it. */
     private static Ran tool(String... args) throws Exception
     {
         List<String> all = new ArrayList<>();
@@ -404,13 +349,7 @@ public class testTheRecordsCountTheStore
         return python(all.toArray(new String[0]));
     }
 
-    /**
-     * A python script that loads the tool, run to completion.
-     *
-     * @param body its statements after the loading ones
-     * @return what it printed
-     * @throws Exception if it fails to run, or python exits non-zero
-     */
+    /** A python script that loads the tool, run to completion; it fails when python exits non-zero. */
     private static String script(String... body) throws Exception
     {
         File file = File.createTempFile("catalog-claim", ".py");
@@ -431,13 +370,7 @@ public class testTheRecordsCountTheStore
         }
     }
 
-    /**
-     * The refs in the mirror whose prefix is this one, with the round each belongs to (no number is round 1).
-     *
-     * @param prefix e.g. RSA
-     * @return ref to round
-     * @throws Exception on a failure to read
-     */
+    /** The refs in the mirror whose prefix is this one, with the round each belongs to (no number is round 1). */
     private static java.util.Map<String, Integer> roundsInTheMirror(String prefix) throws Exception
     {
         java.util.Map<String, Integer> out = new java.util.TreeMap<>();
@@ -458,13 +391,7 @@ public class testTheRecordsCountTheStore
         return out;
     }
 
-    /**
-     * The highest round the mirror holds for a prefix.
-     *
-     * @param prefix e.g. RSA
-     * @return the number
-     * @throws Exception on a failure to read
-     */
+    /** The highest round the mirror holds for a prefix. */
     private static int highestRound(String prefix) throws Exception
     {
         int highest = 0;
@@ -477,13 +404,9 @@ public class testTheRecordsCountTheStore
     }
 
     /**
-     * `--next` prints one past the highest round the store holds, for the prefixes that run to many rounds and for
-     * ones whose first round has no number.
-     *
-     * The expected value is counted here from the mirror, which `--next` cross-checks against the database before it
-     * answers, so a tool that read a folder (empty by design) or sorted the numbers as text would print another.
-     *
-     * @throws Exception on a failure to run the tool
+     * `--next` prints one past the highest round the store holds, for the prefixes that run to many rounds and for ones
+     * whose first round has no number.  The expected value is counted here from the mirror, which `--next` cross-checks
+     * against the database, so a tool that read a folder or sorted the numbers as text would print another.
      */
     @Test
     public void testTheNextRoundIsOnePastTheHighestTheStoreHolds() throws Exception
@@ -504,11 +427,7 @@ public class testTheRecordsCountTheStore
         }
     }
 
-    /**
-     * Round numbers are counted, not sorted as text, and a prefix is not a prefix of another prefix.
-     *
-     * @throws Exception on a failure to run python
-     */
+    /** Round numbers are counted, not sorted as text, and a prefix is not a prefix of another prefix. */
     @Test
     public void testRoundNumbersAreCountedAndPrefixesAreWholeWords() throws Exception
     {
@@ -533,8 +452,6 @@ public class testTheRecordsCountTheStore
 
     /**
      * A prefix the store has never used is refused unless `--new` says it is one; `--new` on a used prefix is refused.
-     *
-     * @throws Exception on a failure to run the tool
      */
     @Test
     public void testAPrefixTheStoreHasNeverUsedIsRefused() throws Exception
@@ -555,11 +472,7 @@ public class testTheRecordsCountTheStore
         assertEquals(tool("--next", "RSA", "--new").exit, 1, "--new must not be accepted for a prefix in use");
     }
 
-    /**
-     * `--check-unused` refuses a ref, or a whole round, the store already holds, and passes the next ones.
-     *
-     * @throws Exception on a failure to run the tool
-     */
+    /** `--check-unused` refuses a ref, or a whole round, the store already holds, and passes the next ones. */
     @Test
     public void testARefOrRoundAlreadyInTheStoreIsRefused() throws Exception
     {
@@ -605,11 +518,7 @@ public class testTheRecordsCountTheStore
             + " some ref carries its number");
     }
 
-    /**
-     * The store's refs include the dead citations, and a store that disagrees with its mirror hands out nothing.
-     *
-     * @throws Exception on a failure to run python
-     */
+    /** The store's refs include the dead citations, and a store that disagrees with its mirror hands out nothing. */
     @Test
     public void testTheStoreAndItsMirrorMustAgreeBeforeANumberIsHandedOut() throws Exception
     {
@@ -643,12 +552,8 @@ public class testTheRecordsCountTheStore
 
     /**
      * The full rebuild refuses while the store holds a document the folder it re-reads does not, however many
-     * documents the folder holds.
-     *
-     * The folder is 25 stand-in documents, past the "enough documents" floor, so only the stored-documents check
-     * stands between this and replacing the table.  `--check` is used so that a failure here writes nothing.
-     *
-     * @throws Exception on a failure to run python
+     * documents the folder holds.  The folder is 25 stand-ins, past the "enough documents" floor, so only the
+     * stored-documents check stands between this and replacing the table; `--check` writes nothing.
      */
     @Test
     public void testTheFullRebuildRefusesWhileTheStoreHoldsADocumentTheFolderLacks() throws Exception
@@ -678,8 +583,6 @@ public class testTheRecordsCountTheStore
     /**
      * Loading rows over the table refuses to drop a stored document the rows do not name, and merging a round
      * leaves every other document's rows alone.
-     *
-     * @throws Exception on a failure to run python
      */
     @Test
     public void testNoLoadOrMergeDropsADocumentsRowsThatIsNotBeingReplaced() throws Exception
@@ -710,12 +613,9 @@ public class testTheRecordsCountTheStore
     }
 
     /**
-     * `--add` refuses a document that shares its name with a deleted round's and makes another round, because
-     * pruning is by document name; and `--add --check` writes nothing.
-     *
-     * The store is only read here: both runs are `--check`, and the claim holds the store's bytes.
-     *
-     * @throws Exception on a failure to run the tool
+     * `--add` refuses a document that shares its name with a deleted round's and makes another round, because pruning
+     * is by document name; and `--add --check` writes nothing.  Both runs are `--check`, and the claim holds the
+     * store's bytes.
      */
     @Test
     public void testAddRefusesADocumentThatWouldTakeAnotherRoundsRows() throws Exception
@@ -759,11 +659,7 @@ public class testTheRecordsCountTheStore
         }
     }
 
-    /**
-     * The two procedure documents tell a round to take its number from the store.
-     *
-     * @throws Exception on a failure to read
-     */
+    /** The two procedure documents tell a round to take its number from the store. */
     @Test
     public void testTheProcedureDocumentsSendARoundToTheStoreForItsNumber() throws Exception
     {
@@ -779,12 +675,7 @@ public class testTheRecordsCountTheStore
 
     // ---------------------------------------------------------------- the counting
 
-    /**
-     * The rows in the mirror: its data rows, less the dead-citation roll at the foot.
-     *
-     * @return the count
-     * @throws Exception on a failure to read
-     */
+    /** The rows in the mirror: its data rows, less the dead-citation roll at the foot. */
     private static int rowsInTheMirror() throws Exception
     {
         int rows = 0;
@@ -799,12 +690,7 @@ public class testTheRecordsCountTheStore
         return rows;
     }
 
-    /**
-     * The findings in the mirror: its distinct refs, which is fewer than its rows.
-     *
-     * @return the count
-     * @throws Exception on a failure to read
-     */
+    /** The findings in the mirror: its distinct refs, which is fewer than its rows. */
     private static int findingsInTheMirror() throws Exception
     {
         java.util.Set<String> refs = new java.util.HashSet<>();
@@ -819,12 +705,7 @@ public class testTheRecordsCountTheStore
         return refs.size();
     }
 
-    /**
-     * Whether a line of the mirror is a finding row rather than a comment or the dead-citation roll.
-     *
-     * @param line as read
-     * @return true when it counts
-     */
+    /** Whether a line of the mirror is a finding row rather than a comment or the dead-citation roll. */
     private static boolean isAFinding(String line)
     {
         if (line.trim().isEmpty() || line.startsWith("#")) return false;
@@ -842,34 +723,19 @@ public class testTheRecordsCountTheStore
         return false;
     }
 
-    /**
-     * A number as the documents write it, with thousands separators.
-     *
-     * @param value the number
-     * @return "3,448"
-     */
+    /** A number as the documents write it, with thousands separators ("3,448"). */
     private static String count(int value)
     {
         return String.format("%,d", value);
     }
 
-    /**
-     * A number as the document writes it, without them.
-     *
-     * @param said "3,448"
-     * @return the number
-     */
+    /** A number as the document writes it, without them. */
     private static int number(String said)
     {
         return Integer.parseInt(said.replace(",", ""));
     }
 
-    /**
-     * A number up to 999 in words, the way the README spells its total.
-     *
-     * @param value the number
-     * @return "two hundred and eight"
-     */
+    /** A number up to 999 in words, the way the README spells its total. */
     private static String spelled(int value)
     {
         String[] ones = {"zero", "one", "two", "three", "four", "five", "six", "seven", "eight",
@@ -906,13 +772,7 @@ public class testTheRecordsCountTheStore
         return out.toString();
     }
 
-    /**
-     * How many times one string occurs in another.
-     *
-     * @param text the whole
-     * @param needle what to count
-     * @return the count
-     */
+    /** How many times one string occurs in another. */
     private static int occurrences(String text, String needle)
     {
         int count = 0;
@@ -922,25 +782,13 @@ public class testTheRecordsCountTheStore
         return count;
     }
 
-    /**
-     * A document with its line breaks turned into spaces, so a phrase the file wraps still reads.
-     *
-     * @param path where
-     * @return the text, flowed
-     * @throws Exception on a failure to read
-     */
+    /** A document with its line breaks turned into spaces, so a phrase the file wraps still reads. */
     private static String flowed(String path) throws Exception
     {
         return read(path).replace(String.valueOf((char) 10), " ").replaceAll("  +", " ");
     }
 
-    /**
-     * A file, whole.
-     *
-     * @param path where
-     * @return its text, with the line endings normalized so a regex need not care
-     * @throws Exception on a failure to read
-     */
+    /** A file, whole, with the line endings normalized so a regex need not care. */
     private static String read(String path) throws Exception
     {
         return new String(Files.readAllBytes(new File(path).toPath()), StandardCharsets.UTF_8)
