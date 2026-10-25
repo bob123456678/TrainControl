@@ -31,14 +31,12 @@ import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * The track diagram's right-click Place, and Control+X then Control+V, keep a train's heading - on the frozen copy of
- * Adam's railway with its bars as he left them, so BottomMainA takes no arrivals from the east (Adam, 2026-09-25:
- * automated tests supersede the MTs they answer).
+ * The track diagram's right-click Place, and Control+X then Control+V, keep a train's heading, on the frozen copy of
+ * Adam's railway with its bars as he left them, so BottomMainA takes no arrivals from the east.
  *
- * His own 75 407 DB, from the run's copy of his locomotive data, made the active locomotive the way the window makes one
- * active; read back where the steps read it - the diagram's *... Is Facing* menu, and the autonomy editor's Why not
- * Moving?.  MT-581 is BottomMainB, which holds both headings; MT-585 and MT-498 are BottomMainA facing west, the way no
- * train may arrive there.
+ * His own 75 407 DB, made the active locomotive the way the window makes one; read back where the steps read it: the
+ * diagram's *... Is Facing* menu, and the autonomy editor's Why not Moving?.  MT-581 is BottomMainB, which holds both
+ * headings; MT-585 and MT-498 are BottomMainA facing west, the way no train may arrive there.
  *
  * @author Adam
  */
@@ -117,10 +115,8 @@ public class testThePlaceDoorsKeepTheHeading
     }
 
     /**
-     * The active locomotive, as the window makes one: mapped to the key button in use, and checked before every claim.
-     *
-     * Set, never toggled: `mapLocToCurrentButton` takes a train OFF a button that already holds it, and the run's copy
-     * of the operator's UIState.data may already have this train under the button in use.
+     * The active locomotive, as the window makes one, checked before every claim.  Set, never toggled:
+     * `mapLocToCurrentButton` takes a train OFF a button that already holds it.
      */
     @BeforeMethod
     public static void hisTrainIsActive() throws Exception
@@ -172,8 +168,6 @@ public class testThePlaceDoorsKeepTheHeading
      * three times over from each heading, placed back between (MT-581).
      *
      * MUTATION: have the right-click Place choose a copy that is not the heading's, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheRightClickPlaceAtBottomMainBKeepsTheHeading() throws Exception
@@ -215,12 +209,10 @@ public class testThePlaceDoorsKeepTheHeading
     }
 
     /**
-     * At BottomMainA, which takes no arrivals from the east, the right-click Place keeps a train facing west - and Why
+     * At BottomMainA, which takes no arrivals from the east, the right-click Place keeps a train facing west, and Why
      * not Moving? says trains may not arrive there facing that way, so autonomy will not start it there (MT-585).
      *
      * MUTATION: let the right-click Place choose among the copies trains may arrive at only, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheRightClickPlaceAtBottomMainAKeepsWest() throws Exception
@@ -251,11 +243,9 @@ public class testThePlaceDoorsKeepTheHeading
     }
 
     /**
-     * A train facing west at BottomMainA is still facing west there after Control+X and Control+V on BottomMainA (MT-498).
+     * A train facing west at BottomMainA is still facing west there after Control+X and Control+V (MT-498).
      *
      * MUTATION: have the paste choose among the copies trains may arrive at only, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testACutAndPasteAtBottomMainAKeepsWest() throws Exception
@@ -283,15 +273,12 @@ public class testThePlaceDoorsKeepTheHeading
      * Placed from the autonomy editor, the tail question is the list, in front of the editor, and choosing TunnelPre in
      * it answers it (MT-575).
      *
-     * His 75 407 DB, given a length of 5, put on Tunnel from the editor's own Place door with "arrived from the north" -
-     * the editor opened as Autonomy > Edit Autonomy opens it.  The question must not wait on the main window's diagram,
-     * whose squares the editor covers; it is the list, owned by the editor so it opens over it, and the answer picked
-     * there is the road the train stands on.
+     * His 75 407 DB, given a length of 5, put on Tunnel from the editor's own Place door with "arrived from the north".
+     * The question must not wait on the main window's diagram, whose squares the editor covers: it is the list, owned
+     * by the editor so it opens over it.
      *
      * MUTATION: put the question on the diagram with the editor open, or hang the list from the main window, and this
      * fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testFromTheEditorTheTailQuestionIsTheListInFrontOfIt() throws Exception
@@ -504,21 +491,15 @@ public class testThePlaceDoorsKeepTheHeading
     }
 
     /**
-     * With the autonomy editor open but minimized, the tail question's list belongs to the main window - where it can be
-     * seen - and not to the minimized editor.
+     * With the autonomy editor open but minimized, the tail question's list belongs to the main window, where it can be
+     * seen, and not to the minimized editor: on Windows a window owned by a minimized frame is hidden, so the question
+     * was a modal nobody could see.
      *
-     * MT-575 hung the list from the editor whenever one was open, and a minimized editor is still open: on Windows a
-     * window owned by a minimized frame is hidden, so the question was a modal nobody could see, holding the application
-     * until the editor was restored.  Asked here for his 75 407 DB, 5 long, on Tunnel from the north, as the main
-     * window's own doors ask it.
-     *
-     * NO DOOR REACHES THIS TODAY: every main-window door that asks the question refuses while an editor is
-     * open, a minimized one included, and the editor's own door cannot be used while it is minimized.  So this pins the
-     * owner rule itself, asked as a door would ask it, against the day a door does reach it.
+     * NO DOOR REACHES THIS TODAY: every main-window door that asks the question refuses while an editor is open, and
+     * the editor's own door cannot be used while it is minimized.  So this pins the owner rule itself, asked as a door
+     * would ask it, against the day a door does reach it.
      *
      * MUTATION: hang the list from any editor that is open, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testWithTheEditorMinimisedTheTailQuestionBelongsToTheMainWindow() throws Exception
@@ -641,9 +622,8 @@ public class testThePlaceDoorsKeepTheHeading
     }
 
     /**
-     * Closes the editor as its window's close button does, answering Yes to leaving without saving - so the window lets
-     * the layout be edited again.  A close answered with anything else keeps the editor, and one disposed then leaves the
-     * main window believing an editor is still open, which refuses the next claim's.
+     * Closes the editor as its window's close button does, answering Yes to leaving without saving; a close answered
+     * otherwise keeps the editor, and one disposed leaves the main window believing an editor is still open.
      */
     private static void closeTheEditor(java.awt.Window editor) throws Exception
     {
@@ -1085,9 +1065,8 @@ public class testThePlaceDoorsKeepTheHeading
     }
 
     /**
-     * The railway as the model has it NOW.  Turning a train with the Facing menu saves the setup and rebuilds the
-     * running railway, so a railway read once and kept is the one before - a train moved on it stands nowhere the menus
-     * look.
+     * The railway as the model has it NOW: turning a train with the Facing menu rebuilds the running railway, so a
+     * railway read once and kept is the one before.
      */
     private static Layout railway()
     {
