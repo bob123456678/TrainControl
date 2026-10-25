@@ -52,21 +52,14 @@ public class LayoutPopupUI extends PositionAwareJFrame
      */
     private void drawGrid(boolean fit)
     {
-        // The grid being replaced is told to stop first.
-        //
-        // A LayoutGrid keeps two Swing timers - one that shows the diagram when its tiles have
-        // decoded, one that puts a spinner up if they are slow - and both go on firing into the panel
-        // after the panel has been emptied.  The outgoing grid then drops a spinner into the page the
-        // NEW grid has just drawn.  Both other places that build a grid over an existing panel call
-        // this; this one did not.
+        // The grid being replaced is told to stop first: a LayoutGrid keeps two Swing timers (show the diagram when its
+        // tiles have decoded, put up a spinner if slow) that go on firing after the panel is emptied, dropping a
+        // spinner into the page the NEW grid just drew.  Every place that builds a grid over an existing panel does
+        // this.
         if (this.grid != null) this.grid.discard();
 
-        // NOT EMPTIED HERE - the grid does it, at the right moment.
-        //
-        // This is the position the flicker fix moved `removeAll` OUT of: emptying the panel before
-        // the build leaves it blank for the whole of it, and the build is where the image decoding
-        // is.  Doing it here made the constructor's own swap a no-op for this window, so the popup
-        // kept the flicker while the two other diagram windows lost it.
+        // Not emptied here, the grid does it at the right moment: emptying the panel before the build leaves it blank
+        // for the whole of it (the image decoding), which is the flicker.
 
         LayoutGrid grid = new LayoutGrid(this.layout, size,
             this.ExtLayoutPanel, 
@@ -80,9 +73,8 @@ public class LayoutPopupUI extends PositionAwareJFrame
 
         setTitle(titleWith(this.parent.getWindowTitleString()));
 
-        // A caption redraw is not a new page: the window stays as the operator left it, and what is remembered for it is
-        // theirs.  Packing it to its natural size, and saving that, undid a size they had chosen on every caption gesture
-        // in the autonomy editor on this page (OB-341).
+        // A caption redraw is not a new page: the window stays as the operator left it and what is remembered for it is
+        // theirs; packing it to its natural size and saving that undid a size they had chosen (OB-341).
         if (fit)
         {
             // Scale the popup according to the size of the layout
