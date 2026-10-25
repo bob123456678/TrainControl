@@ -851,7 +851,6 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
             Layout.Destinations destinations = layout.explainDestinationsGrouped(locomotive, byHand);
 
             java.util.Map<String, String> reasons = destinations.getReasons();
-            java.util.Set<String> barredPoints = destinations.getBarred();
 
             java.util.Map<String, String> choosable = new java.util.TreeMap<>();
             java.util.Map<String, String> barred = new java.util.TreeMap<>();
@@ -860,22 +859,8 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
             {
                 if (entry.getValue() == null) continue;
 
-                String station = stationName(layout.getPoint(entry.getKey()));
-
-                if (barredPoints.contains(entry.getKey()))
-                {
-                    // Only when no copy of it has already gone into the other group.
-                    if (!choosable.containsKey(station) && !barred.containsKey(station))
-                    {
-                        barred.put(station, entry.getValue());
-                    }
-                }
-                else
-                {
-                    barred.remove(station);
-
-                    if (!choosable.containsKey(station)) choosable.put(station, entry.getValue());
-                }
+                destinations.fileUnderStation(entry.getKey(), stationName(layout.getPoint(entry.getKey())), choosable,
+                    barred);
             }
 
             if (choosable.isEmpty() && barred.isEmpty())

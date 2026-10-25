@@ -85,7 +85,6 @@ final class EditorWhy extends SettledQuestion
         org.traincontrol.automation.Layout.Destinations grouped = layout.explainDestinationsGrouped(standing, byHand);
 
         java.util.Map<String, String> reasons = grouped.getReasons();
-        java.util.Set<String> neverChosenPoints = grouped.getBarred();
 
         // STATIONS FIRST, THEN BERTHS, EACH ALPHABETICAL (FR-080: *"show all stations first, then show berths (non-autonomy
         // stations), both in alphabetical order"*), grouped as `AutoLocomotiveStatus.whyNotReport` groups its window (a station
@@ -160,20 +159,7 @@ final class EditorWhy extends SettledQuestion
             {
                 // One line per station.  The first reason is the one that would have stopped it; the
                 // others are the same square's other arrival sides saying the same thing.
-                if (neverChosenPoints.contains(entry.getKey()))
-                {
-                    // Only when no copy of it has already gone into the other group.
-                    if (!choosable.containsKey(station) && !neverChosen.containsKey(station))
-                    {
-                        neverChosen.put(station, entry.getValue());
-                    }
-                }
-                else
-                {
-                    neverChosen.remove(station);
-
-                    if (!choosable.containsKey(station)) choosable.put(station, entry.getValue());
-                }
+                grouped.fileUnderStation(entry.getKey(), station, choosable, neverChosen);
             }
         }
 

@@ -4466,6 +4466,33 @@ public class Layout
         {
             return barred;
         }
+
+        /**
+         * Files one point's reason under the station it is a copy of: a station is choosable if any of its copies is,
+         * and barred only while none is; each group keeps the first reason it was given.
+         *
+         * @param point a point name from getReasons
+         * @param station the station it is a copy of, as shown
+         * @param choosable the stations autonomy could choose, to their reason
+         * @param neverChosen the stations it never would, to their reason
+         */
+        public void fileUnderStation(String point, String station, java.util.Map<String, String> choosable,
+            java.util.Map<String, String> neverChosen)
+        {
+            if (barred.contains(point))
+            {
+                if (!choosable.containsKey(station) && !neverChosen.containsKey(station))
+                {
+                    neverChosen.put(station, reasons.get(point));
+                }
+            }
+            else
+            {
+                neverChosen.remove(station);
+
+                if (!choosable.containsKey(station)) choosable.put(station, reasons.get(point));
+            }
+        }
     }
 
     /**
