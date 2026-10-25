@@ -16,32 +16,23 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * Whether a square has a way through it: the question MT-367 turned on, asked directly at last.
  *
- * **Why this class exists, which is a story about coverage rather than about railways.**  `hasAWayThrough`
- * used to skip the copy it was being asked about.  That is wrong in principle - ask it about a plain
- * copy and it answered "there is no way to stand here without being turned round" while BEING the way
- * through - and it was repaired on 2026-09-13.
+ * `hasAWayThrough` used to skip the copy it was being asked about, so asked about a plain copy it answered "there is no
+ * way to stand here without being turned round" while BEING the way through.  The repair had nothing that could fail:
+ * both callers inside `Layout` hand it a copy already established as a terminus or reversing point, which is never the
+ * answer, and the method was private.  A rule no test can tell apart from its own defect has no coverage.  Adam: "make
+ * it public and add the tests."
  *
- * The validation round after that found the repair had nothing that could fail.  Both callers
- * inside `Layout` hand it a copy they have already established is a terminus or a reversing point, and
- * such a copy is never the answer, so skipping it or counting it gives the identical answer at every
- * call the program can make.  The method was private, so no test could ask it either.  A rule that no
- * test can tell apart from its own defect has no coverage, however green the suite is.
- *
- * Adam, 2026-09-13: **"make it public and add the tests."**
- *
- * **The three shapes, which are the three answers the rule has:**
+ * The three shapes are the three answers the rule has:
  *
  *   - a PLAIN square answers true about its own copy - the case the old skip got wrong;
- *   - a COMPULSORY turn answers false from every copy - a terminus, or a reversing point with no plain
- *     sibling;
- *   - a MAY-TURN square answers true from either copy, because one of its copies is plain. This is the
- *     case MT-367 was reported against: *"EN57-947 is not allowed to go to BottomMainB, even though it
- *     'may' reverse (is not a terminus)"*, and it is why the flag on a single copy cannot be read for
- *     this - `AutonomyBuilder` emits the turning copy of a may-turn square with `terminus: true`.
+ *   - a COMPULSORY turn answers false from every copy - a terminus, or a reversing point with no plain sibling;
+ *   - a MAY-TURN square answers true from either copy, because one of its copies is plain.  This is the case MT-367
+ *     was reported against ("EN57-947 is not allowed to go to BottomMainB, even though it 'may' reverse (is not a
+ *     terminus)"), and why the flag on a single copy cannot be read: `AutonomyBuilder` emits the turning copy of a
+ *     may-turn square with `terminus: true`.
  *
- * Built by hand rather than from the frozen railway, because the three shapes have to sit side by side
- * and the middle one - a square whose copies ALL turn - is what a fixture has to state rather than
- * find.
+ * Built by hand rather than from the frozen railway, because the three shapes have to sit side by side and the middle
+ * one, a square whose copies ALL turn, is what a fixture has to state rather than find.
  *
  * @author Adam
  */
@@ -74,10 +65,9 @@ public class testWhatHasAWayThrough
     /**
      * A plain square is its own way through, which is what the skip got wrong.
      *
-     * MUTATION, run 2026-09-13: restoring `if (copy == square) continue;` fails this claim, and the
-     * plain-copy half of `testAMayTurnSquareAnswersFromEitherCopy` below. A later run found every claim
-     * in `testAMayTurnStationIsNotATerminus` and `testTheArrivalHonoursTheAnswer` passing under the same
-     * mutation, which is the whole reason this class was written.
+     * MUTATION: restoring `if (copy == square) continue;` fails this claim, and the plain-copy half of
+     * `testAMayTurnSquareAnswersFromEitherCopy` below; `testAMayTurnStationIsNotATerminus` and
+     * `testTheArrivalHonoursTheAnswer` stay green under it, which is why this class was written.
      */
     @Test
     public void testAPlainSquareIsItsOwnWayThrough()
@@ -99,10 +89,8 @@ public class testWhatHasAWayThrough
     }
 
     /**
-     * A square whose every copy turns trains has none.
-     *
-     * The other end of the rule, and the control for the claim above: without it, a method that always
-     * answered true would pass.
+     * A square whose every copy turns trains has none: the control for the claim above, since a method that always
+     * answered true would pass it.
      */
     @Test
     public void testACompulsoryTurnHasNoWayThrough()
@@ -124,11 +112,8 @@ public class testWhatHasAWayThrough
     }
 
     /**
-     * And a may-turn square answers true from the copy that turns, because its sibling does not.
-     *
-     * This is the case Adam reported MT-367 against, and the reason the flag on one copy cannot answer
-     * it: `AutonomyBuilder` emits the turning copy of a square trains MAY turn at with `terminus:
-     * true`, exactly like a real terminus. What tells them apart is the other copy.
+     * And a may-turn square answers true from the copy that turns, because its sibling does not (the case MT-367 was
+     * reported against).  What tells a may-turn copy from a real terminus is the other copy.
      */
     @Test
     public void testAMayTurnSquareAnswersFromEitherCopy()
@@ -163,12 +148,8 @@ public class testWhatHasAWayThrough
     // Fixtures
 
     /**
-     * The three shapes side by side: a plain square, a compulsory turn, and one trains may turn at.
-     *
-     * The may-turn square is two Points sharing a `block`, which is how the builder says two copies
-     * are one piece of track - one of them a turning copy, the other plain.
-     *
-     * @return the graph
+     * The three shapes side by side: a plain square, a compulsory turn, and one trains may turn at.  The may-turn
+     * square is two Points sharing a `block`, how the builder says two copies are one piece of track.
      */
     private static Layout threeShapes()
     {
