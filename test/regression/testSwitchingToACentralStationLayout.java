@@ -10,30 +10,16 @@ import support.SourceOf;
 /**
  * OB-127: a failed switch to a Central Station layout asked about pages that had just been loaded.
  *
- * Adam: "several offers to init a new layout when I select 'switch to CS layout' and it fails.  then a
- * warning window showing the invalid 5 page list pops up and vanishes on its own."
- *
- * The switch stores an EMPTY STRING in the layout-path preference and clears the layout list. Two
- * methods then read that preference and disagreed about what the empty string meant: `isLocalLayout`
- * read it with an empty-string default and answered "not local", while `getLocalLayoutPath` read it
- * with a null default and handed the empty string straight back. An empty path is not nothing -
- * `new File("")` is the working directory - so the index question was asked about whatever index was
- * lying there, against a layout list that had just been emptied, and every page in it came back
- * absent.
- *
- * Two halves, tested separately because they fail separately: the mechanism, and the agreement.
+ * The switch stores an EMPTY STRING in the layout-path preference and clears the layout list.  `isLocalLayout` and
+ * `getLocalLayoutPath` disagreed about what the empty string meant (`new File("")` is the working directory), so the
+ * index question was asked about whatever index lay there and every page came back absent.  Two halves, tested
+ * separately because they fail separately: the mechanism, and the agreement.
  *
  * @author Adam
  */
 public class testSwitchingToACentralStationLayout
 {
-    /**
-     * An index plus an emptied layout list reports every page in the index as absent.
-     *
-     * This is the reproduction, and it needs no Central Station and no window: the pages Adam was
-     * shown are exactly what this returns. It is not asserting a defect - this function is behaving
-     * correctly - it is pinning WHY the wrong caller must never reach it.
-     */
+    /** An index plus an emptied layout list reports every page in the index as absent: the reproduction, no window. */
     @Test
     public void testAnEmptyLayoutListMakesEveryIndexedPageAbsent() throws Exception
     {
@@ -63,11 +49,8 @@ public class testSwitchingToACentralStationLayout
     }
 
     /**
-     * The two readers of the layout-path preference agree about the empty string.
-     *
-     * `isLocalLayout` is the one that was right. Whatever `getLocalLayoutPath` hands back has to mean
-     * the same thing, because eight callers use it and only three of them defended against the empty
-     * string by hand.
+     * The two readers of the layout-path preference agree about the empty string: `isLocalLayout` was right, and
+     * `getLocalLayoutPath` must mean the same, because eight callers use it.
      *
      * MUTATION: putting the null default back on `getLocalLayoutPath` fails this.
      */
@@ -95,17 +78,10 @@ public class testSwitchingToACentralStationLayout
     }
 
     /**
-     * A grayed diagram tab is not opened by the program either (OB-128).
+     * A grayed diagram tab is not opened by the program either (OB-128): `setEnabledAt` stops only the user, and Add
+     * Blank Page used to select the tab before asking for a name.  Nine methods now come through one guarded door.
      *
-     * Adam: "go to manage pages -&gt; add blank page.  then just close the popup.  layout tab is opened,
-     * with old track diagram still visible in the window."
-     *
-     * `setEnabledAt` stops the USER picking a tab and does nothing about the program picking it. Add
-     * Blank Page selected the tab as its FIRST statement, before asking for a name, so closing the
-     * prompt left it open on the railway a failed Central Station switch had just unloaded. Nine
-     * methods picked that tab by index; they now come through this one.
-     *
-     * MUTATION: dropping the isEnabledAt guard fails this. Reverting any of the nine call sites to
+     * MUTATION: dropping the isEnabledAt guard fails this.  Reverting any of the nine call sites to
      * setSelectedIndex fails the structural test below.
      */
     @Test
@@ -115,7 +91,6 @@ public class testSwitchingToACentralStationLayout
 
         try
         {
-            // Inside the try, so nothing can leave the preference behind.
             sandbox = support.LayoutSandbox.open();
 
             final org.traincontrol.gui.TrainControlUI[] built =
@@ -166,25 +141,14 @@ public class testSwitchingToACentralStationLayout
         }
     }
 
-    /**
-     * The Layout menu asks when it opens, and an unloaded layout empties the panel (OB-128).
-     *
-     * Adam: "grey out inaccessible options: manage, edit, popup all layouts.  You can make this check
-     * when the layout menu opens, and before any menu option is clicked.  Also, properly deactivate
-     * the layout panel."
-     */
+    /** The Layout menu asks when it opens, and an unloaded layout empties the panel (OB-128). */
     @Test
     public void testTheLayoutMenuAndPanelAreDeactivatedTogether() throws Exception
     {
         String body = SourceOf.declaration("private void guardLayoutMenu()");
 
-        // MANAGE PAGES IS NOT NAMED HERE ANY MORE.
-        //
-        // This used to require guardLayoutMenu to write `modifyLocalLayoutMenu.setEnabled` itself,
-        // which made it a second writer of a property `applyLayoutEditingAvailability` already owns -
-        // and the two asked different questions, so they disagreed during every diagram rebuild. What
-        // Adam asked for was the answer being FRESH when the menu opens, not this method doing the
-        // writing, and both hold once the menu asks the owner. That is asserted below instead.
+        // The answer is fresh when the menu opens because the menu asks `applyLayoutEditingAvailability`, the one owner
+        // of that property, rather than guardLayoutMenu writing it too; that is asserted below.
         for (String item : new String[] { "editPageMenu", "popUpAllMenuItem" })
         {
             assertTrue(body.contains(item + ".setEnabled("),
@@ -205,9 +169,8 @@ public class testSwitchingToACentralStationLayout
             "something selects the track diagram tab by index again, so it reaches straight past "
             + "the greying - and assumes the diagram is tab 1 while it is at it");
 
-        // Seven since OB-359 took the legacy editor and Edit Current Page off the menu: two of the nine
-        // converted doors went with them.  Counted as CALLS over the program, so the declaration is not one of them,
-        // and the eighth is the autonomy viewer's door (FR-136).
+        // Counted as CALLS over the program, so the declaration is not one of them: seven doors since OB-359, and the
+        // eighth is the autonomy viewer's door (FR-136).
         assertTrue(SourceOf.occurrences("showLayoutTab();") >= 8,
             "fewer doors go through showLayoutTab than the seven left of the nine that were converted, "
             + "and the autonomy viewer's, so one has found another way to open the tab");
@@ -218,31 +181,13 @@ public class testSwitchingToACentralStationLayout
             + "keeps the previous railway mounted and it looks entirely live");
     }
 
-    /** How many test classes build a model without a sandbox today - see the ratchet above. */
     /**
-     * How many test classes build a model without a sandbox today - see the ratchet above.
-     *
-     * **54 since 2026-10-17, down from 55: `testRouteInventory` opens a sandbox before it builds its model (C6).**
-     *
-     * **55 since 2026-09-08, down from 56, and the drop is the point of a ratchet.** The first full
-     * battery in a while found this at 59: four classes had joined the population since it was pinned
-     * - `testATrainCoversTheTrackBehindIt`, `testATrainTooLongIsRefusedTheBerth`,
-     * `testLengthRulesUnderRandomLayouts` and `testTheKeyboardDrag` - and every one of them was
-     * building a model against whatever railway the machine has, which on Adam's is his own.
-     *
-     * They were sandboxed rather than pinned. `testTheKeyboardDrag` is the instructive one: it already
-     * opened a sandbox inside ONE test method, which reads as careful and is not the same thing - `init`
-     * runs in `@BeforeClass` and had already loaded his railway by then.
+     * How many test classes build a model without a sandbox today; MODELS_WITHOUT_A_SANDBOX_NAMES pins which.  Lower
+     * it when one is repaired.
      */
     private static final int MODELS_WITHOUT_A_SANDBOX = 54;
 
-    /**
-     * WHICH classes, not just how many.
-     *
-     * A bare count can absorb a repair and a new violation in the same round: fix one class, break a
-     * different one, and 56 stays 56 while the test stays green. Pinning the names means a swap shows
-     * up as a failure naming both the file that is missing and the file that is not.
-     */
+    /** WHICH classes, so a repair and a new violation in the same round cannot cancel out. */
     private static final String[] MODELS_WITHOUT_A_SANDBOX_NAMES = {
         "testAMovedTileCarriesItsSetup.java",
         "testARouteDoesNotThrowSwitchesUnderATrain.java",
@@ -315,19 +260,10 @@ public class testSwitchingToACentralStationLayout
     }
 
     /**
-     * Start is not offered over a layout that lives on the Central Station, which Start refuses.
-     *
-     * `whyAutonomyStartIsRefused`'s first test is `isRemoteLayout`, and the diagram's right-click menu decides
-     * whether to offer Start by `canStartAutonomy` - which asked the button and the setup's errors and not that.  Its
-     * javadoc said the button is always disabled on a remote layout, so the term would be dead weight; but an
-     * `autonomy.json` loads on a Central Station layout and enables the button, and the menu then offered what the
-     * handler refused.
-     *
-     * The button is enabled here directly, which is the state a loaded JSON graph leaves it in.
+     * Start is not offered over a layout that lives on the Central Station, which Start refuses.  An `autonomy.json`
+     * can enable the button there, and `canStartAutonomy` used to ask only the button and the setup's errors.
      *
      * MUTATION: take `isRemoteLayout` out of `canStartAutonomy` and this fails.
-     *
-     * @throws Exception from the window or reflection
      */
     @Test
     public void testStartIsNotOfferedOverACentralStationLayout() throws Exception
@@ -360,8 +296,7 @@ public class testSwitchingToACentralStationLayout
                     + " Station, and pressing it is refused with 'autonomy needs a layout on this computer' - the"
                     + " menu offering what the handler refuses (REG-C3)");
 
-                // AND THE GRAYED ITEM SAYS THE REFUSAL'S OWN REASON.  Its tooltip is this sentence; over
-                // a Central Station layout it told the operator to wait for trains, which is no reason at all.
+                // AND THE GRAYED ITEM SAYS THE REFUSAL'S OWN REASON: its tooltip is this sentence.
                 assertEquals(ui.whyAutonomyWillNotStart(),
                     org.traincontrol.util.I18n.t("autosetup.ui.menuNoSetupPossible"), "the greyed Start explains"
                     + " itself with a reason that is not the refusal's: over a Central Station layout it is that"
@@ -404,18 +339,8 @@ public class testSwitchingToACentralStationLayout
     }
 
     /**
-     * "Is a layout loaded" is stored once and read everywhere (OB-127, OB-128).
-     *
-     * Adam: "we just need a layout loaded flag in the TrainControlUI class, rather than something that
-     * infers" - after watching the window show a track diagram while telling him no layout was loaded
-     * and offering, every few seconds, to make him one.
-     *
-     * `getLayoutList().isEmpty()` was asked at sixteen places, each answering for whatever instant its
-     * own code happened to run in. The diagram was painted when the list was full; the offer was made
-     * when it was empty; neither was wrong about its own moment.
-     *
-     * The invariant is ONE WRITER. A cached answer with several writers is worse than the inference it
-     * replaced, because the inference was at least current for the instant it ran.
+     * "Is a layout loaded" is stored once and read everywhere (OB-127, OB-128).  The invariant is ONE WRITER: a cached
+     * answer with several writers is worse than the inference it replaced.
      *
      * MUTATION: a second assignment to layoutLoaded fails this, and so does a reader going back to
      * asking the model.
@@ -445,9 +370,7 @@ public class testSwitchingToACentralStationLayout
     }
 
     /**
-     * The stored answer agrees with the model it was taken from.
-     *
-     * The structural test above cannot catch a flag that is written once and written WRONG.
+     * The stored answer agrees with the model it was taken from; the structural test cannot catch a flag written WRONG.
      */
     @Test
     public void testTheStoredAnswerMatchesTheModel() throws Exception
@@ -456,7 +379,6 @@ public class testSwitchingToACentralStationLayout
 
         try
         {
-            // Inside the try, so nothing can leave the preference behind.
             sandbox = support.LayoutSandbox.open();
 
             org.traincontrol.marklin.MarklinControlStation model =
@@ -494,18 +416,9 @@ public class testSwitchingToACentralStationLayout
     }
 
     /**
-     * The scanner that decides what is code does not lose its place (2026-08-31).
-     *
-     * Both cases here are real code from this suite, and each hid a window from the check that keeps
-     * the battery off Adam's own railway:
-     *
-     *   - a CHARACTER LITERAL holding a quote, at testARenameReachesTheTimetableOnScreen.java:96,
-     *     which a scanner that does not know what a character literal is reads as the start of a
-     *     string - blanking the rest of the file, and with it that class's window;
-     *   - a STRING holding a line-comment marker, which the regex that used to strip comments first
-     *     cut in half, leaving every quote after it meaning the opposite of what it says.
-     *
-     * Twenty-three files in this suite have odd quote parity under that old two-step parse.
+     * The scanner that decides what is code does not lose its place: a CHARACTER LITERAL holding a quote (as in
+     * testARenameReachesTheTimetableOnScreen) and a STRING holding a line-comment marker each hid a window from the
+     * check that keeps the battery off Adam's own railway.
      *
      * MUTATION: reading the two in the other order, or dropping the character-literal mode, fails
      * one of the first two assertions; blanking nothing fails the third.
@@ -553,15 +466,9 @@ public class testSwitchingToACentralStationLayout
     }
 
     /**
-     * A class is exempt from the count rule only when its own sandbox is in a setup method.
-     *
-     * The exemption switches off the rule that a class needs as many sandbox opens as it builds
-     * windows. It first asked whether the file held any @Before annotation at all - true of seven of
-     * the sixteen windowed classes - and then looked back a fixed distance from the enclosing
-     * method's header, which reaches over the PREVIOUS method's body and finds ITS annotation. Both
-     * let a plain test with three windows and one sandbox through.
-     *
-     * The fixture is that second case, in this codebase's own formatting.
+     * A class is exempt from the count rule only when its own sandbox is in a setup method.  A file-wide @Before, or a
+     * fixed lookback that reaches over the previous method's body, let a plain test with three windows and one sandbox
+     * through.
      *
      * MUTATION: putting back a fixed-distance lookback fails the first assertion; bounding it so
      * tightly that a method's own annotations fall outside fails the second.
@@ -608,17 +515,9 @@ public class testSwitchingToACentralStationLayout
     }
 
     /**
-     * Nothing in the suite opens the operator\u2019s own railway (OB-111).
-     *
-     * Building a `TrainControlUI`, or calling `MarklinControlStation.init`, reads the layout
-     * preference - and on Adam\u2019s machine that names his live layout. The suite then reads it,
-     * writes it back with different line endings, and on 2026-08-28 raised a MODAL offer to create a
-     * track diagram in the middle of a battery, which waits for a click no test will make. He watched
-     * it happen: "The layout popup is coming up as the battery runs."
-     *
-     * Asserted over every test file rather than fixed one class at a time, which is how it kept coming
-     * back: today alone, two classes had the sandbox AFTER the model instead of before it, one had
-     * none, and one more built a window with none.
+     * Nothing in the suite opens the operator's own railway (OB-111): building a `TrainControlUI` or calling
+     * `MarklinControlStation.init` reads the layout preference, and a window can raise a MODAL offer no test answers.
+     * Asserted over every test file rather than fixed one class at a time.
      *
      * MUTATION: removing any sandbox, or moving one below the thing it protects, fails this.
      */
@@ -643,42 +542,17 @@ public class testSwitchingToACentralStationLayout
 
             String code = body.replaceAll("(?s)/\\*.*?\\*/", "").replaceAll("//[^\\n]*", "");
 
-            // THE WINDOW, which is what reads AND writes the layout and can raise the modal offer.
+            // THE WINDOW is a hard rule: it has no offenders, and it writes the folder and can raise a modal dialog
+            // into the middle of a battery.  The MODEL is a ratchet instead, below: 56 pre-existing violations would
+            // make a hard rule one somebody deletes rather than obeys.
             //
-            // Deliberately not every class that builds a MODEL. Those read the operator’s layout
-            // too and it is worth settling, but it is a wider sweep than this rule - some of them
-            // parse test/test_layout directly on purpose - and a check that fails for twenty classes
-            // nobody has looked at is a check that gets disabled.
-            // THE WINDOW is a hard rule: it has no offenders, and it is the case that writes the
-            // folder and can raise a modal dialog into the middle of a battery.
+            // QUALIFIED OR NOT, AND EVERY ONE OF THEM, NOT THE FIRST: seven of the sixteen windowed classes write
+            // `new org.traincontrol.gui.TrainControlUI()`, and a class with several test methods needs each window
+            // checked.
             //
-            // The MODEL is a ratchet instead, below. `MarklinControlStation.init` reads the same
-            // preference and is the half that actually loads the pages, so those classes open the
-            // operator\u2019s railway too - but 56 of them do, and a rule that fails for 56 pre-existing
-            // violations is one somebody deletes rather than obeys.
-            // QUALIFIED OR NOT, AND EVERY ONE OF THEM, NOT THE FIRST (2026-08-31).
-            //
-            // This was `code.indexOf("new TrainControlUI()")` and it asked two questions wrongly.
-            //
-            // It matched only the UNQUALIFIED constructor, and seven of the sixteen classes that
-            // build a window write `new org.traincontrol.gui.TrainControlUI()` - among them one with
-            // five sandbox/window pairs - so the half this file calls a hard rule never saw them.
-            //
-            // And it compared FIRST occurrences, so a class with several test methods was checked
-            // once: add a method that builds a window, forget the sandbox, and the first pair still
-            // reads correctly while the new one opens the operator's own layout.
-            //
-            // That is not a hypothetical route in. It is how his railway was damaged on 2026-08-30,
-            // and this check is what was written afterwards to stop it happening again.
-            //
-            // String literals are blanked as well as comments, because this method's own needles are
-            // string literals in this file and would otherwise count as windows built here.
-            // THE RAW SOURCE, not the comment-stripped copy (2026-08-31, second round).
-            //
-            // Stripping comments with a regex first is what broke this: `"file:///" + x` loses its
-            // closing quote to the // rule, and every quote after it in the file then means the
-            // opposite of what it says. Twenty-three files in this suite have odd quote parity that
-            // way. One scanner does both, in the order the compiler does.
+            // THE RAW SOURCE, blanked of strings and comments by one scanner in the order the compiler reads: a regex
+            // that strips comments first loses the closing quote of `"file:///" + x`, and this method's own needles are
+            // string literals.
             String scan = withoutStringsAndComments(body);
 
             java.util.List<Integer> windows = indicesOf(scan, WINDOW_BUILT);
@@ -688,18 +562,9 @@ public class testSwitchingToACentralStationLayout
 
             checked++;
 
-            // Both scoping patterns are in use and both are correct: testBusyDialogInteraction and
-            // testRenderingCost open one in @BeforeClass and build windows in several methods;
-            // testLayoutEditorBulkEdits opens one per method. Counting tells those apart from the
-            // case that is wrong - a window nobody guarded - without having to know which method
-            // anything sits in, which lexical scoping gets wrong for a window built in a helper.
-            // A SANDBOX INSIDE A SETUP METHOD, not merely a file that has one somewhere.
-            //
-            // This asked `SETUP_METHOD.matcher(scan).find()` over the whole file, which is true of
-            // seven of the sixteen classes that build a window - so for those the count rule was off
-            // altogether, and the case this check was repaired to catch was still uncaught.
-            // testUiStateIsNotLostWhenUnreadable is the demonstration: it has a @BeforeClass for
-            // something else and opens its sandbox outside it, with a comment saying so.
+            // Both scoping patterns are in use (one sandbox in @BeforeClass, or one per method), so count rather than
+            // locate: a window nobody guarded is the wrong case.  A SANDBOX INSIDE A SETUP METHOD counts for the class,
+            // not merely a file that has one somewhere.
             boolean setUpForTheClass = false;
 
             for (int open : sandboxes)
@@ -728,95 +593,13 @@ public class testSwitchingToACentralStationLayout
             }
         }
 
-        // A scan that matched nothing would pass while proving nothing.
-        // THE NUMBER, not a floor (2026-08-31, third round).
-        //
-        // A floor three below the real count can absorb three classes silently dropping out of view,
-        // which is the staleness it exists to catch.  The model half of this same test pins NAMES for
-        // that reason.  If this fails because a class was legitimately added or removed, change the
-        // number and say so in the commit - that is the point of it being exact.
-        // 20 as of 2026-09-02, and the two added that day are both windows on purpose:
-        // testTheWindowTakesTheKeyboard calls display() because OB-170 is about what START-UP does to
-        // the keyboard, and testTheAutonomyEditorKnowsWhichSquare builds a LayoutEditor because
-        // MT-258's shortcut reads a field only the editor's own hover handler sets. Both open their
-        // sandbox before the model, as the rule above requires. (18 was testThePaletteStillPlacesTiles,
-        // added the same day for OB-169.)
-        // TWENTY-TWO since 2026-09-08, and the two that arrived are the ones that look at what is
-        // DRAWN: `ui.testTheShadingIsRedrawnWhenATrainMoves` and `core.testTheShadingFollowsTheTrain`,
-        // both written for OB-180 - a defect no assertion about the model could see, because the
-        // covered set was right the whole time and nothing repainted the tiles.
-        //
-        // TWENTY-THREE since 2026-09-08, and the one that arrived is
-        // `regression.testTheMenusComeBackAtOneMoment`, written for OB-187.  It builds a window
-        // because the defect is about the order start-up puts the menu bar together in - the bar is
-        // grayed before the autonomy menu is added to it - and only a real `setViewListener` runs
-        // that order.  Its sandbox is opened before the model, as the rule above requires.
-        //
-        // The number is deliberately a hard count rather than a floor: a class that builds a window
-        // opens the operator's railway if it gets the sandbox wrong, so each new one is worth a moment
-        // of somebody's attention rather than a silently rising number.
-        // TWENTY-FIVE since 2026-09-08, and the two that arrived both assert on what is DRAWN,
-        // which is the only way either defect could be seen:
-        //
-        // - `regression.testTheHomeLabelIsDrawnOnce` (MT-337) - a station named twice drew its home
-        //   locomotive twice, once on the tile and once on the offset label.  Nothing about the model
-        //   is wrong in that state, so it is counted off the built captions in a real `LayoutGrid`.
-        // - `regression.testTheDiagramIsNotRebuiltForAnArrow` (MT-334) - "it still flickers, but
-        //   less".  A rebuild replaces every `LayoutLabel` and an annotation refresh does not, so the
-        //   assertion is object identity across a real editor's tiles.
-        //
-        // Both open their sandbox before the model, as the rule above requires.
-        //
-        // - `regression.testEscapeClosesTheEditor` (FR-065) - Escape has to be pressed on a real
-        //   window and the window then has to be asked whether it closed.  It builds a `LayoutEditor`
-        //   per test, on `live-snapshot` through `Scenario.folderFor`, with the sandbox opened before
-        //   the model as the rule above requires.
-        //
-        // TWENTY-NINE since 2026-09-10.  The three that have arrived since this was 26 all need a
-        // window for the same reason: what they ask about is a property of a menu ITEM or of the
-        // editor's own state rather than of the panel, so the only way to ask is to build one.
-        //
-        //   - `testTheBulkClearSaysWhatCancelDoes` (OB-194; `testTheBulkClearWarnsThatCancelWillNotUndoIt`
-        //     until 2026-09-14), the warning on the Bulk Tools menu;
-        //   - `testClearAllTrackLengths` (FR-069), the item beside it;
-        //   - `testTheHoveredSquareIsForgotten` (OB-198), which square the editor thinks the pointer
-        //     is over.
-        //
-        // All three sandbox `live-snapshot` through `Scenario.folderFor`, opened before the model, as
-        // the rule above requires.
-        //
-        // THIRTY-ONE since 2026-09-10, and the two that arrived are the X8 round's:
-        //
-        //   - `testCutWithNothingHovered`, which asks what Cut arms when the pointer is
-        //     not over a square - a property of the editor's own clipboard state, so there has to
-        //     be an editor;
-        //   - `testDeleteForgetsTheWholeSquare`, which deletes a square through the real
-        //     `delete(LayoutLabel)` door, and a label only exists once a grid has been built.
-        //
-        // Both sandbox `live-snapshot` through `Scenario.folderFor`, opened before the model.
-        //
-        // THIRTY-TWO since the validation of that round: `testTheDiagramCeiling`
-        // builds editors over pages past MAX_SIZE, because the ceiling is a property of the
-        // editor and the pages it asks about have to exist.  It sandboxes `single-switch`, opened
-        // before the model, and the pages it measures are built in memory.
-        //
-        // THIRTY-FOUR since 2026-09-11, and both arrivals need a real window for the same reason -
-        // what they ask about belongs to the window rather than to a panel:
-        //
-        //   - `testAPlacedTrainRecordsWhereItCameFrom` builds the assign dialog, which
-        //     takes a `TrainControlUI` and reads the locomotive list off it;
-        //   - `testTheKeyMapReachesTheWholeWindow` (Adam, 2026-09-11) presses keys at components in
-        //     the window and asks what the map did, which is a question about a window or nothing.
-        //
-        // Both sandbox through `Scenario.folderFor` / `LayoutSandbox.open()`, opened before the
-        // model, as the rule above requires.  Neither was pinned here when it was written, which is
-        // what was caught later - see the note at the ratchet itself.
+        // A scan that matched nothing would pass while proving nothing, so the number is exact, not a floor: a class
+        // that builds a window opens the operator's railway if it gets the sandbox wrong, so each new one is worth a
+        // moment of somebody's attention.  If this fails because a class was legitimately added or removed, change the
+        // number in the commit.  The model half pins NAMES for the same reason.
 
-        // AND THE MODEL HALF, ratcheted (2026-08-28).
-        //
-        // These read the same preference and load the same railway; they simply cannot raise a dialog,
-        // and there are too many to fix in one round. Pinned so the number can only fall - a new one
-        // fails this, and repairing one is a matter of lowering MODELS_WITHOUT_A_SANDBOX by one.
+        // AND THE MODEL HALF, ratcheted: it cannot raise a dialog and there are too many to fix at once, so the
+        // number can only fall (repairing one lowers MODELS_WITHOUT_A_SANDBOX by one).
         int loose = 0;
 
         java.util.List<String> looseNames = new java.util.ArrayList<>();
@@ -835,23 +618,14 @@ public class testSwitchingToACentralStationLayout
             String raw = new String(java.nio.file.Files.readAllBytes(f.toPath()),
                 java.nio.charset.StandardCharsets.UTF_8);
 
-            // ONE SCAN FOR BOTH INDICES.
-            //
-            // These are compared with each other, so they have to come from the same string - a first
-            // attempt took `builds` from the comment-stripped copy and the sandbox from the scanned
-            // one, which are different lengths, and the comparison became meaningless: 56 loose files
-            // became 77 with nothing having changed in the suite.
+            // ONE SCAN FOR BOTH INDICES: they are compared with each other, so they must come from the same string.
             String code = withoutStringsAndComments(raw);
 
             int builds = earliest(code, "MarklinControlStation.init(", "= init(null", "TestStation.simulated");
 
             if (builds < 0) continue;
 
-            // The same needle the window half uses, so an overload with arguments counts (2026-08-31).
-            //
-            // This was the literal "LayoutSandbox.open()", empty parentheses and all, so the first
-            // class to call LayoutSandbox.open(folder) read as a class with no sandbox and pushed this
-            // ratchet one over its pin. The two halves must agree about what a sandbox looks like.
+            // The same needle the window half uses, so an overload with arguments counts.
             java.util.List<Integer> opens = indicesOf(code, SANDBOX_OPENED);
 
             int sandbox = opens.isEmpty() ? -1 : opens.get(0);
@@ -877,9 +651,7 @@ public class testSwitchingToACentralStationLayout
             + "real railway");
 
 
-        // The count alone can absorb a repair and a new violation in the same round: fix one
-        // class, break a different one, and the number never moves. Pin WHICH classes too, so a swap
-        // fails and names both files.
+        // The count alone can absorb a repair and a new violation in the same round: pin WHICH classes too.
         java.util.Collections.sort(looseNames);
 
         java.util.List<String> pinned = new java.util.ArrayList<>(
@@ -895,66 +667,10 @@ public class testSwitchingToACentralStationLayout
             + "lower MODELS_WITHOUT_A_SANDBOX; if a new one appeared, give it a sandbox instead of "
             + "adding it to the list.");
 
-        // AND THE TWO STALENESS RATCHETS, LAST OF ALL (2026-09-11).
-        //
-        // **A staleness detector that runs before a safety check is worse than no ratchet**, and this
-        // method is where that was learnt.  `checked` was pinned at 32 and had been 34 since three
-        // test classes were added on 2026-09-11; TestNG stops a method at its first failed assertion,
-        // so for as long as that number was stale the FOUR assertions after it never ran - including
-        // the offender list above, which is the whole reason this method exists and the check written
-        // after Adam's railway was damaged on 2026-08-30.
-        //
-        // The class read as "one failure, a number wants bumping" while running one of its five
-        // checks.  Moving the count below the offender list is not enough - there were three more
-        // detectors between them - so the rule is the stronger one: every SAFETY assertion first, in
-        // descending order of what it protects, and every number that merely records where we are
-        // afterwards.  A stale ratchet now hides nothing.
-        // 42 since 2026-09-14: ui.testBulkToolsHoldsTheWholeLayoutTools, ui.testOnlyAStationHoldsAnotherBack,
-        // ui.testReturnHomeShowsItIsWorking and ui.testTheEditorNamesItsShortcuts, each opening a sandbox first.
-        // 43 since 2026-09-14: regression.testCancelUndoesAutonomyEdits (OB-223), which opens a sandbox first.
-        // 44 the same day: regression.testTheTailCanBeGivenInTheEditor, which opens a sandbox first too.
-        // 45 on 2026-09-15: regression.testPathTypeRedrawsTheTestInTheEditor (OB-225), which opens a sandbox first.
-        // 46 on 2026-09-16: regression.testAWalkMovesTheFlashOn (OB-231), which opens a sandbox first.
-        // 49 on 2026-09-19, three at once, each opening a sandbox first: the toolbar buttons,
-        // the canceled function copy and the export's grid.
-        // 50 on 2026-09-20: the declined setup edit (MT-267, MT-326), which opens a sandbox first too.
-        // 51 on 2026-09-23: ui.testTheLengthPromptHasTheKeyboard (MT-474), which opens a sandbox first.
-        // 52 the same day: ui.testAStartLoadsOnlyAGraphSomebodyAskedFor, which opens a sandbox first.
-        // 53 on 2026-09-24: regression.testTheFacingMenuIsAboutTheTrainThere, which opens a sandbox first.
-        // 54 the same day: regression.testALegacyImportUnticksLoadAutonomy, which opens a sandbox first.
-        // 55 the same day: regression.testALocalLayoutNeverWritesAutonomyJson (OB-254), which opens a sandbox first.
-        // 56 the same day: regression.testTheOldAutonomyTabIsGone and regression.testTheAutonomyMenuLinksItsDocumentation
-        // (OB-254), each opening a sandbox first, and ui.testAStartLoadsOnlyAGraphSomebodyAskedFor retired with the JSON
-        // start-up load it was about.
-        // 57 the same day: regression.testTheVisibleElementsHeadingIsSpacedLikeTheOthers (OB-289), which opens a sandbox first.
-        // 59 the same day: regression.testANewStraightJoinsTheTrackBesideIt (OB-292) and regression.testTheTailIsPickedOnTheDiagram
-        // (FR-100), each opening a sandbox first.
-        // 60 on 2026-09-24's validation round: regression.testAHandSendIsRefusedWhileTheSetupIsBroken asks a real window,
-        // opening a sandbox first.
-        // 62 on the third round: regression.testARouteDrivenLocomotiveIsNotEdited (OB-287) and
-        // regression.testApplyIsGreyedWithNothingToApply (FR-098) each build a window, opening a sandbox first.
-        // 61 on 2026-09-25: regression.testALegacyImportUnticksLoadAutonomy became testALegacyImportLeavesLoadAutonomyAlone,
-        // which reads the import doors and builds no window.
-        // 62 later that day: regression.testTheImportDoorReadsAnOldFile drives the Autonomy menu's Import on a real
-        // window (Adam: automated tests supersede the MTs they answer), opening a sandbox first.
-        // 63 the same day: regression.testTheRoutesImportDoorAsksByName drives Routes > Import on a real window, on
-        // the run's own copy of the data, opening a sandbox first.
-        // 64 the same day: regression.testASetupMovesToAOnePageLayout imports his setup onto MT-380's one-page
-        // layout through the Autonomy menu, opening a sandbox first.
-        // Still 64 on 2026-09-29: regression.testNoSetupEditDuringARun, which took RLV12's window claims out of the import
-        // door's class when that ran out of memory with them, builds its windows through that class's openTheWindow - seen
-        // here once, in that class - and each of its claims opens a sandbox first.
-        // Still 64 on 2026-10-09: ui.testTheActiveTickPausesATrain (FR-117) takes the window `init` builds, which this
-        // count does not read as building one; it opens a sandbox first.
-        // 65 on 2026-10-12: core.testControlStationFaults asks the real Resync question (OB-338) of a window it builds,
-        // opening a sandbox first.
-        // 66 on 2026-10-14: ui.testATrainWithNoWayOutFacesAlongItsTrack (OB-348) reads the facing and the tail off the
-        // track diagram of a window it builds, opening a sandbox first.
-        // 67 on 2026-10-19: ui.testTheTrackEditorByHand (FR-136 Phase 6) drives the track editor its window opens, opening a
-        // sandbox first.
-        // 69 on 2026-10-19: ui.testTheAutonomyEditorsQuestionsChangeTheSetup and ui.testStartingAutonomyFromTheWindow
-        // (FR-136 Phase 6) each build a window, opening a sandbox first.
-        // 70 on 2026-10-25: ui.testALocomotiveIconIsCachedForTheSizeItWasAskedAt, which opens a sandbox first.
+        // THE STALENESS RATCHETS, LAST OF ALL: TestNG stops a method at its first failed assertion, so a stale number
+        // placed before a safety check hides it.  Every SAFETY assertion comes first and the numbers that merely record
+        // where we are come after.  Raise the count when a class that builds a window and opens its sandbox first is
+        // added.
         assertEquals(checked, 70,
             checked + " test classes were found to build a window, not the 70 there were when this "
             + "was pinned. Fewer means the pattern has gone stale and is checking less than it "
@@ -967,30 +683,17 @@ public class testSwitchingToACentralStationLayout
             + " recorded. Lower MODELS_WITHOUT_A_SANDBOX to " + loose + " so the improvement is kept.");
     }
 
-    /**
-     * Where a window is built, qualified or not - the hole that hid seven classes from this check.
-     */
+    /** Where a window is built, qualified or not. */
     private static final java.util.regex.Pattern WINDOW_BUILT =
         java.util.regex.Pattern.compile("new\\s+(?:org\\.traincontrol\\.gui\\.)?TrainControlUI\\s*\\(");
 
-    /**
-     * Where a sandbox is opened - with or WITHOUT arguments.
-     *
-     * This required empty parentheses until 2026-08-31, when LayoutSandbox gained an overload that
-     * takes the folder to copy, so that a test can reason about the operator's own stations from a
-     * copy of them. The first class to use it read as a class with no sandbox at all, which is the
-     * failure mode this whole check exists to prevent - reported by the model ratchet, one file over
-     * its pinned count.
-     */
+    /** Where a sandbox is opened, with or without arguments (LayoutSandbox.open(folder) is an overload). */
     private static final java.util.regex.Pattern SANDBOX_OPENED =
         java.util.regex.Pattern.compile("LayoutSandbox\\.open\\s*\\(");
 
     private static final java.util.regex.Pattern SETUP_METHOD =
         java.util.regex.Pattern.compile("@Before(?:Class|Method|Test)");
 
-    /**
-     * Every index at which a pattern matches, in order.
-     */
     private static java.util.List<Integer> indicesOf(String body, java.util.regex.Pattern p)
     {
         java.util.List<Integer> out = new java.util.ArrayList<>();
@@ -1003,20 +706,9 @@ public class testSwitchingToACentralStationLayout
     }
 
     /**
-     * String literals, character literals and comments blanked, in one pass over the raw source.
-     *
-     * Every other character keeps its place, so indices taken from the result can be compared with
-     * one another - which is all this check does with them.
-     *
-     * Written as one scanner because doing it in two steps is what went wrong. A regex that strips
-     * comments first eats the closing quote of any string containing a line-comment marker, and a
-     * scanner that then looks for quotes has its state inverted from there on. And a character
-     * literal holding a quote - which is real code in this suite, in a replace() call - does the same
-     * thing to a scanner that does not know what a character literal is. A class that builds a window
-     * went unchecked for exactly that reason.
-     *
-     * @param raw the file, as it is on disk
-     * @return the same length of text, with everything that is not code blanked
+     * String literals, character literals and comments blanked in one pass, every other character keeping its place.
+     * One scanner on purpose: stripping comments with a regex first eats the closing quote of a string holding a
+     * line-comment marker, and a scanner unaware of character literals reads a quote inside one as a string.
      */
     private static String withoutStringsAndComments(String raw)
     {
@@ -1081,10 +773,8 @@ public class testSwitchingToACentralStationLayout
     }
 
     /**
-     * Whether the code at this index sits inside a method carrying a @Before annotation.
-     *
-     * The enclosing method is found by this codebase's own formatting - a method header is a line
-     * beginning with four spaces and a modifier - and the annotations sit immediately above it.
+     * Whether the code at this index sits inside a method carrying a @Before annotation.  The method is found by this
+     * codebase's own formatting: a header is a line beginning with four spaces and a modifier.
      */
     private static boolean inASetupMethod(String scan, int at)
     {
@@ -1096,15 +786,8 @@ public class testSwitchingToACentralStationLayout
 
         if (header < 0) return false;
 
-        // BOUNDED AT THE PREVIOUS METHOD'S CLOSING BRACE, not at a fixed distance.
-        //
-        // A fixed lookback runs backwards over the previous method's BODY and finds that method's
-        // annotation: a short @BeforeClass above a window-building @Test made the whole class look
-        // set up, and three windows behind one sandbox were waved through.  That is the same hole
-        // this method replaced, one step narrower.
-        //
-        // A method's annotations sit between the end of the method before it and its own header, so
-        // that is the region to read - and nothing outside it can belong to this method.
+        // BOUNDED AT THE PREVIOUS METHOD'S CLOSING BRACE, not at a fixed distance: a fixed lookback reads the previous
+        // method's body and finds its annotation.  A method's annotations sit between that brace and its own header.
         int from = scan.lastIndexOf(CLOSING_BRACE, header);
 
         if (from < 0) from = 0;
@@ -1167,19 +850,11 @@ public class testSwitchingToACentralStationLayout
     }
 
     /**
-     * A first launch makes a track diagram; every later start still asks.
+     * A first launch makes a track diagram; every later start still asks.  The half worth writing down is PRESENT
+     * versus READABLE: a database file that exists and will not load is not a first launch, and treating it as empty
+     * replaces a setup with a blank one (`testUiStateIsNotLostWhenUnreadable`).
      *
-     * Adam: "if the app is started FOR THE FIRST TIME (there exist no DB files yet) and there is no
-     * layout, create one instead of prompting the user."
-     *
-     * The half worth writing down is PRESENT versus READABLE. A database file that exists and will not
-     * load is not a first launch - it is a machine whose state we have just failed to read, and
-     * treating it as empty is how a setup gets replaced by a blank one. `restoreState` draws the same
-     * line in its own words, and `testUiStateIsNotLostWhenUnreadable` is what happens when it is drawn
-     * wrongly.
-     *
-     * MUTATION: passing a constant at the call site fails the last assertion - which is the mutation
-     * that passed when only the rule was tested.
+     * MUTATION: passing a constant at the call site fails the last assertion.
      */
     @Test
     public void testAFirstLaunchIsNotAsked() throws Exception
@@ -1227,21 +902,13 @@ public class testSwitchingToACentralStationLayout
     }
 
     /**
-     * Start-up shows the notice on its own window, and never hides that window on the way in.
+     * Start-up shows the notice on its own window (FR-041), and never hides that window on the way in: the call that
+     * takes the notice down sat in the `finally` of the window build, so it ran on the success path too.
      *
-     * Adam: "while connecting to the CS and before the main UI loads, show a loading popup/overlay
-     * like the cs2 sync one" (FR-041), and then **"can we avoid having the window close and then
-     * reopen?"** (2026-09-03) - which is the second half of this test and was a real defect: the call
-     * that takes the notice down sat in the `finally` of the window build, so it ran on the SUCCESS
-     * path too, hid the window a moment after showing it, and `display()` showed it again.
+     * Read rather than run: a test that put a start-up notice on the screen would do it on every battery.  Every test
+     * builds its model with showUI false, and the gate below keeps it that way.
      *
-     * Read rather than run, for the reason FR-041's test gave: a test that put a start-up notice on
-     * the screen would do it on every battery, which is the complaint he made about a modal dialog
-     * appearing while one ran.  Every test builds its model with showUI false, and the gate below is
-     * what keeps it that way.
-     *
-     * MUTATION this catches: putting `connectingFailed()` back in the finally after
-     * `latch.countDown()`, which is exactly the defect he reported.
+     * MUTATION this catches: putting `connectingFailed()` back in the finally after `latch.countDown()`.
      */
     @Test
     public void testTheStartupNoticeGoesOnTheWindowAndStaysThere() throws Exception
@@ -1249,13 +916,8 @@ public class testSwitchingToACentralStationLayout
         String init = SourceOf.declaration("public static MarklinControlStation init(String initIP, boolean simulate,"
             + " boolean showUI, boolean autoPowerOn, boolean debug)");
 
-        // NO SECOND WINDOW, WHICH IS OB-170 (2026-09-03).
-        //
-        // The notice used to be a splash - a top-level window of its own - and showing one during
-        // start-up spends the single chance a process gets to put a window in the foreground, so the
-        // main window arrived into the foreground of whatever launched us and the keyboard was dead.
-        // Seven passes went at that from the window's end; Adam's own experiment settled it in one
-        // run, by suppressing the splash.
+        // NO SECOND WINDOW (OB-170): showing a splash during start-up spends the one chance a process gets to put a
+        // window in the foreground, and the keyboard was dead.
         assertEquals(SourceOf.occurrences("StartupSplash.show("), 0,
             "start-up shows a second window again, which is OB-170: it spends the one chance this "
             + "process gets at the foreground, and the main window then arrives into somebody else's");
@@ -1282,18 +944,14 @@ public class testSwitchingToACentralStationLayout
             "the notice goes up after the connection is attempted, which is the whole of the wait it "
             + "exists to cover");
 
-        // AND TAKEN DOWN WHEN THE START-UP FAILS.  It is on the window now, so taking it down means
-        // taking the window with it - which is right for a failure and wrong for anything else.
+        // AND TAKEN DOWN WHEN THE START-UP FAILS: it is on the window now, so that takes the window with it.
         assertTrue(init.contains("!built.get() && theUI != null) theUI.connectingFailed()"),
             "a failed window build leaves a window standing that says it is connecting, with the "
             + "error dialog in front of it - which is the symptom FR-041 exists to remove, wearing "
             + "the fix's own clothes");
 
-        // AND NOT ON THE WAY IN.  This is the defect Adam reported: **"can we avoid having the window
-        // close and then reopen?"**
-        //
-        // The `finally` below runs on every path out of the window build, success included.  Anything
-        // in it that hides the window hides one that is about to be shown again by `display()`.
+        // AND NOT ON THE WAY IN: the `finally` below runs on every path out of the window build, success included, so
+        // anything in it that hides the window hides one `display()` is about to show again.
         int countDown = init.indexOf("latch.countDown();");
 
         assertTrue(countDown > 0, "the latch has moved, so the region below means nothing");
@@ -1327,30 +985,14 @@ public class testSwitchingToACentralStationLayout
     }
 
     /**
-     * A sandbox is opened inside a `try`.
+     * A sandbox is opened inside a `try`.  Weaker than "closed on every path": it buys a handler to put the close in,
+     * and no early return between the open and that handler can skip it.  It does not check that a `close()` is
+     * present.
      *
-     * **That is what this checks, and it is weaker than "closed on every path", which is what it used
-     * to be called**. An open inside a `try` whose handler closes nothing would pass. What
-     * the shape buys is that there IS a handler to put the close in, and that the close cannot be
-     * skipped by an early return between the two - which is how all eight offenders failed.
-     *
-     * `close()` is what returns the layout preference to whatever the operator had, and the
-     * preference is machine-global: a run that does not close leaves TrainControl opening a folder
-     * under %TEMP% the next time Adam starts it.  The rule above - `testNoTestOpensTheOperatorsRailway`
-     * - says a sandbox must be opened BEFORE the window.  This is the other half, and it is weaker
-     * than it sounds: having opened one there is a handler to close it in, and no early return
-     * between the open and that handler can skip it - which is how all eight offenders failed.  It
-     * does not check that a `close()` is present.
-     *
-     * **Four ways out that are easy to miss**, and all four were in the suite when this was written:
-     * a window constructor that throws, `MarklinControlStation.init` failing to bind its port, an
-     * assertion in the set-up part of a test - and `SkipException`, which is not a failure at all but
-     * an ordinary outcome, thrown on any machine where the icon folder cannot be created.
-     *
-     * The shape asked for is one sentence long, so it can be obeyed without reading this: **the open
-     * goes inside a `try`.**  Setup methods are exempt because their `@AfterClass(alwaysRun = true)`
-     * teardown runs even when the set-up threw - which is the reason
-     * that exemption is safe to grant.
+     * `close()` returns the machine-global layout preference to whatever the operator had.  Easy-to-miss ways out: a
+     * window constructor that throws, `MarklinControlStation.init` failing to bind its port, an assertion in the
+     * set-up part of a test, and `SkipException`.  Setup methods are exempt because their
+     * `@AfterClass(alwaysRun = true)` teardown runs even when the set-up threw.
      *
      * MUTATION: moving any of these opens back above its `try` fails this.
      */
@@ -1406,17 +1048,7 @@ public class testSwitchingToACentralStationLayout
             + "inside the try");
     }
 
-    /**
-     * Whether an offset sits inside a `try` block.
-     *
-     * By walking the braces from the top of the file rather than by looking for the word nearby: a
-     * `try` five lines above may belong to a block that has already closed, and a `try` far above may
-     * still be open.  Only the stack knows.
-     *
-     * @param scan the source with its strings and comments already removed
-     * @param at where to ask about
-     * @return true if some enclosing block is a try
-     */
+    /** Whether an offset sits inside a `try` block, found by walking the braces from the top of the file. */
     private static boolean insideATry(String scan, int at)
     {
         java.util.List<Boolean> stack = new java.util.ArrayList<>();
@@ -1438,12 +1070,7 @@ public class testSwitchingToACentralStationLayout
         return stack.contains(Boolean.TRUE);
     }
 
-    /**
-     * Whether the brace at {@code brace} is the one that opens a try block.
-     *
-     * Both spellings: `try {`, and `try (...) {` for try-with-resources, which closes its own
-     * subject and would otherwise read as an ordinary block and hide a real enclosing try.
-     */
+    /** Whether the brace at {@code brace} opens a try block: `try {` or `try (...) {` (try-with-resources). */
     private static boolean opensATry(String scan, int brace)
     {
         int j = brace - 1;
