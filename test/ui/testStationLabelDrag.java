@@ -59,7 +59,7 @@ public class testStationLabelDrag
 
     /**
      * Both places that join a name to an arrow go through the one rule: the caption showing one train, and the crowded
-     * caption showing two.  They used to join with `+` in different files, and two spellings of one rule are two rules.
+     * caption showing two.  Joining with `+` in different files would be two spellings of one rule, which is two rules.
      *
      * MUTATION: putting `cut + arrow` back in LayoutGrid fails this.
      */
