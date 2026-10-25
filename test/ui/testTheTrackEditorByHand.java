@@ -100,9 +100,7 @@ public class testTheTrackEditorByHand
         }
     }
 
-    /**
-     * An editor a failed claim left open is closed without saving, so the next claim opens its own.
-     */
+    /** An editor a failed claim left open is closed without saving, so the next claim opens its own. */
     @AfterMethod(alwaysRun = true)
     public void closeWhatIsLeft() throws Exception
     {
@@ -256,13 +254,11 @@ public class testTheTrackEditorByHand
     {
         LayoutEditor editor = open();
 
-        // Two squares of the branch, picked
         Mouse.click(square(editor, 5, 2), MouseEvent.BUTTON1, 1, InputEvent.SHIFT_DOWN_MASK);
         Mouse.click(square(editor, 7, 2), MouseEvent.BUTTON1, 1, InputEvent.SHIFT_DOWN_MASK);
 
         assertEquals(editor.getSelection().size(), 2, "shift-clicking two squares did not pick them");
 
-        // And the pointer over a third
         Mouse.enter(square(editor, 0, 3));
 
         key(editor, KeyEvent.VK_DELETE, false);
@@ -1183,11 +1179,9 @@ public class testTheTrackEditorByHand
     }
 
     /**
-     * Switching the editor between Track Diagram and Autonomy Setup in the sidebar a few times leaves no listener behind
-     * on the diagram's viewport.
-     *
-     * Each entry into autonomy mode floats a new strip over the diagram, which follows the viewport's size, and leaving
-     * must let go of it or the old strips stay alive and revalidate on every resize.
+     * Switching the editor between Track Diagram and Autonomy Setup a few times leaves no listener behind on the
+     * diagram's viewport: each entry floats a new strip that follows the viewport's size, and leaving must let go of
+     * it.
      *
      * MUTATION: drop the `autonomyBanner.letGoOfTheDiagram()` call in LayoutEditor.setAutonomyMode and the count grows
      * with each round trip.
