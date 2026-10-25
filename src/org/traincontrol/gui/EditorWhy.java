@@ -25,10 +25,8 @@ final class EditorWhy extends SettledQuestion
     /**
      * Composes the answer on a worker thread rather than painting one: the stations autonomy could choose, then the
      * ones it never will, each alphabetical, with the page named for a station that is not on the train's (FR-080).
-     *
-     * The report and the lines are built into a value object and handed over instead of being written into the banner
-     * and into `traces` from here: `traces` is read by the paint, so a worker writing into it would be drawing on the
-     * diagram from the wrong thread.
+     * Built into a value object and handed over: `traces` is read by the paint, so writing it from here would draw from
+     * the wrong thread.
      *
      * @param layout the railway
      * @param index the square-to-Point translation
@@ -40,8 +38,8 @@ final class EditorWhy extends SettledQuestion
     AutonomyEditorPanel.WhyAnswer composeWhy(org.traincontrol.automation.Layout layout,
         org.traincontrol.automationui.StationIndex index, AutonomyEditorPanel.WhySetup setup, TileKey tile, boolean byHand)
     {
-        // Which train is standing here, asked of the LAYOUT rather than of the setup, because the layout's opinion of
-        // where trains are decides what runs.
+        // Which train is standing here, asked of the layout rather than the setup, whose opinion of where trains are
+        // decides what runs.
         org.traincontrol.base.Locomotive standing = null;
 
         // Through StationIndex, the one place that knows a square is several Points and which ones.
@@ -58,17 +56,17 @@ final class EditorWhy extends SettledQuestion
 
         if (standing == null)
         {
-            // NOTHING DRAWN AND NOTHING CLEARED, which is what a null trace map means: the three answers that are not
-            // about a train leave whatever was on the diagram alone.
+            // Nothing drawn and nothing cleared (a null trace map): the three answers that are not about a train leave
+            // the diagram alone.
             return new AutonomyEditorPanel.WhyAnswer(I18n.t("autosetup.ui.whyNoTrainHere"), false, null);
         }
 
-        // The lines this answer draws, built here and installed by the paint.  Empty rather than null from here on: an
-        // answer about a train that draws nothing has to TAKE the previous answer's lines off the diagram.
+        // The lines this answer draws, installed by the paint.  Empty rather than null from here on: an answer about a
+        // train that draws nothing has to take the previous answer's lines off the diagram.
         java.util.Map<TileKey, java.util.List<org.traincontrol.automationui.TileAnnotation.Trace>>
             drawn = new java.util.LinkedHashMap<>();
 
-        // FOR THE TIER ASKED: by hand, only what stops a route of any kind.
+        // For the tier asked: by hand, only what stops a route of any kind.
         String cannotStart = layout.explainCannotStart(standing, byHand);
 
         if (cannotStart != null)
@@ -77,17 +75,17 @@ final class EditorWhy extends SettledQuestion
                 AutonomyEditorPanel.escape(standing.getName()), AutonomyEditorPanel.escape(cannotStart)) + unsavedWarning(), true, drawn);
         }
 
-        // THE REASONS AND WHICH OF THEM AUTONOMY WOULD NEVER CHOOSE, taken under one lock so a station cannot be
-        // printed under the wrong heading.
+        // The reasons and which autonomy would never choose, taken under one lock so a station cannot be printed under
+        // the wrong heading.
         org.traincontrol.automation.Layout.Destinations grouped = layout.explainDestinationsGrouped(standing, byHand);
 
         java.util.Map<String, String> reasons = grouped.getReasons();
 
-        // STATIONS FIRST, THEN BERTHS, EACH ALPHABETICAL (FR-080: *"show all stations first, then show berths (non-autonomy
-        // stations), both in alphabetical order"*), grouped as `AutoLocomotiveStatus.whyNotReport` groups its window (a station
-        // with any copy autonomy could choose is filed with the choosable ones).  AND BY PAGE FIRST (MT-429): the page this editor
-        // shows, or where the panel has no page the page the train stands on, then the others in page-name order.  Each shown
-        // name's key is recorded before it is filed.
+        // Stations first, then berths, each alphabetical (FR-080: *"show all stations first, then show berths
+        // (non-autonomy stations), both in alphabetical order"*), grouped as `AutoLocomotiveStatus.whyNotReport` groups
+        // its window (a station with any copy autonomy could choose is filed with the choosable ones).  And by page
+        // first (MT-429): the page this editor shows, or where it has none the page the train stands on, then the
+        // others in page-name order.
         final String currentPage = editor.page != null ? editor.page : tile.getPage();
 
         final java.util.Map<String, String[]> sortKey = new java.util.HashMap<>();
@@ -110,27 +108,25 @@ final class EditorWhy extends SettledQuestion
         java.util.Map<String, String> choosable = new java.util.TreeMap<>(byPageThenName);
         java.util.Map<String, String> neverChosen = new java.util.TreeMap<>(byPageThenName);
 
-        // FROM THE EVENT THREAD'S COPIES, and never from the session: this runs on WhyRenderer.
+        // From the event thread's copies, never from the session: this runs on WhyRenderer.
         java.util.Set<TileKey> mustTurn = setup.mustTurn;
         java.util.Set<TileKey> mayTurn = setup.mayTurn;
 
-        // The red arrows, so the routes drawn here are routes a train would actually be offered (OB-120): drawing a run
-        // into a station that refuses arrivals from that side answers wrongly, in the direction that wastes the most
-        // time.
+        // The red arrows, so the routes drawn here are routes a train would be offered (OB-120): a run into a station
+        // that refuses arrivals from that side answers wrongly, in the direction that wastes the most time.
         java.util.Map<TileKey, java.util.Set<org.traincontrol.automationui.TilePorts.Side>> barred = setup.barred;
 
-        // Collapsed to STATIONS, the way the locomotive panel's tooltip does: the reasons come back keyed by the running
-        // graph's Points, and a square is several of those, so a derived-graph station would appear three times over under
-        // generated names the user never chose.
+        // Collapsed to stations, as the locomotive panel's tooltip does: the reasons are keyed by the running graph's
+        // Points and a square is several, so a derived-graph station would appear three times under names the user
+        // never chose.
         for (java.util.Map.Entry<String, String> entry : reasons.entrySet())
         {
             TileKey where = index.squareOf(entry.getKey());
 
             String station = where == null ? entry.getKey() : editor.describeTile(where);
 
-            // AND ITS PAGE, where that is not the current page (FR-080: *"If a point is on another page, show it"*;
-            // MT-429): a name with no page is a name somebody has to go and look for, or two different squares that read
-            // as one.
+            // And its page, where that is not the current page (FR-080: *"If a point is on another page, show it"*;
+            // MT-429): a name with no page is one somebody has to go and look for, or two squares that read as one.
             String nameOnly = station;
 
             boolean elsewhere = where != null && where.getPage() != null && !where.getPage().equals(currentPage);
@@ -147,7 +143,7 @@ final class EditorWhy extends SettledQuestion
                 // Drawn, so "where can it go" is read off the track rather than out of a list
                 if (where != null && setup.reducer != null)
                 {
-                    // AND THE CLOSED SQUARES, so this tool and the findings panel walk one railway.
+                    // And the closed squares, so this tool and the findings panel walk one railway.
                     editor.trace(drawn, setup.reducer.findPath(tile, where, mayTurn, mustTurn, barred,
                         setup.shut), tile, true, where);
                 }
@@ -160,9 +156,9 @@ final class EditorWhy extends SettledQuestion
             }
         }
 
-        // "Nowhere to go", with nothing after it, is not an answer: "every station refused this train" cannot be told from "there
-        // were no stations to refuse it", which need opposite things done.  So when nothing was considered, say what the setup
-        // holds.
+        // "Nowhere to go", with nothing after it, is not an answer: "every station refused this train" cannot be told
+        // from "there were no stations to refuse it", which need opposite things done.  So when nothing was considered,
+        // say what the setup holds.
         String going = available.isEmpty()
             ? I18n.t("autosetup.ui.whyNowhere")
             : I18n.f("autosetup.ui.whyCanGo", available.size(), AutonomyEditorPanel.escape(join(new java.util.ArrayList<>(available))));
@@ -183,9 +179,9 @@ final class EditorWhy extends SettledQuestion
                 AutonomyEditorPanel.escape(describeBlock(layout.getLocomotiveLocation(standing)))));
         }
 
-        // The reason behind the reason: "No track route leads there", said once per station, is what a SEVERED railway looks like
-        // (a switch or signal drawn without an accessory address cannot be routed over), the answer to the wrong question.  So
-        // when nothing is available and the setup has blocking findings, say that first.
+        // The reason behind the reason: "No track route leads there", said once per station, is what a severed railway
+        // looks like (a switch or signal drawn without an accessory address cannot be routed over), so with nothing
+        // available and blocking findings, say that first.
         if (available.isEmpty())
         {
             int blockingFindings = countBlockingFindings();
@@ -202,10 +198,8 @@ final class EditorWhy extends SettledQuestion
     }
 
     /**
-     * How many findings would stop this setup being built at all.
-     *
-     * The same list the findings box shows, counted rather than read: a report that says a train cannot
-     * go anywhere is describing a symptom, and when there are blocking findings they are the cause.
+     * How many findings would stop this setup being built at all: the list the findings box shows, counted, since
+     * blocking findings are the cause of a train that cannot go anywhere.
      */
     private int countBlockingFindings()
     {
@@ -220,11 +214,9 @@ final class EditorWhy extends SettledQuestion
     }
 
     /**
-     * How many stations the running setup holds at all.
-     *
-     * Counted from the RUNNING layout rather than from the store, because that is what the answer is
-     * about: the store can hold a station the last build refused, and the question being asked is why
-     * the train in front of the user is not moving now.
+     * How many stations the running setup holds at all, counted from the running layout rather than the store: the
+     * store can hold a station the last build refused, and the question is why the train in front of the user is not
+     * moving now.
      */
     private static int countStations(org.traincontrol.automation.Layout layout)
     {
@@ -248,8 +240,8 @@ final class EditorWhy extends SettledQuestion
 
         for (org.traincontrol.automation.Point point : layout.getPoints())
         {
-            // THE RULE, ASKED, rather than spelled out again: a third copy of it, without `!isReversing()`,
-            // overcounted every reversing station, and the number feeds "why is nothing considered".
+            // The rule, asked rather than spelled out again: a third copy without `!isReversing()` overcounted every
+            // reversing station.
             if (layout.isSendableDestination(point)) count++;
         }
 
@@ -257,10 +249,8 @@ final class EditorWhy extends SettledQuestion
     }
 
     /**
-     * One headed group of "station: reason" lines for the why answer, left out entirely when it is empty.
-     *
-     * The headings are the locomotive panel's window's own, for FR-080: the same two groups under the
-     * same two names.  An empty heading reads as a group that failed to load, so there is none.
+     * One headed group of "station: reason" lines for the why answer, left out entirely when it is empty (an empty
+     * heading reads as a group that failed to load).  The headings are the locomotive panel window's own (FR-080).
      *
      * @param into the answer being built
      * @param heading the group's heading, already translated
@@ -279,10 +269,8 @@ final class EditorWhy extends SettledQuestion
     }
 
     /**
-     * What the train is standing on, for a report that has nothing else to say.
-     *
-     * The block matters here and nowhere else in this report: every station sharing a block with the
-     * train is skipped before it can be given a reason, so on a layout where one block holds all the
+     * What the train is standing on, for a report that has nothing else to say.  The block matters only here: every
+     * station sharing a block with the train is skipped before it is given a reason, so with one block holding all the
      * platforms the considered list comes back empty and nothing says why.
      */
     private static String describeBlock(org.traincontrol.automation.Point standing)
@@ -293,9 +281,8 @@ final class EditorWhy extends SettledQuestion
     }
 
     /**
-     * A line warning that this answer is about the SAVED setup, when there are edits that are not in it.
-     *
-     * Only when there are: a caveat printed every time is a caveat nobody reads.
+     * A line warning that this answer is about the SAVED setup, when there are edits that are not in it; only then,
+     * since a caveat printed every time is a caveat nobody reads.
      *
      * @return the warning, or an empty string when the setup is saved
      */
