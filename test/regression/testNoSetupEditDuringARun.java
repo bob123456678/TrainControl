@@ -32,34 +32,26 @@ import static regression.testTheImportDoorReadsAnOldFile.putTheFolderBack;
 import static regression.testTheImportDoorReadsAnOldFile.startAnsweringYes;
 
 /**
- * No setup edit is made while trains run, at any door (Adam, 2026-09-28: *"There should be no setup edit possible during a
- * run"*), and nothing written for a train under way moves it off its path - RLV12's findings, on the live snapshot's
- * window.
+ * No setup edit is made while trains run, at any door (Adam: *"There should be no setup edit possible during a run"*),
+ * and nothing written for a train under way moves it off its path.
  *
- * Its own class because the import door's ran out of its 512 MB with these seven beside it: every window a test opens
- * keeps its threads, and the class then died in TestNG's report with no summary to say so (2026-09-29).  The window, the
- * dispatch and the answering are that class's helpers, shared.
+ * Its own class so the import door's class stays within its heap: every window a test opens keeps its threads.  The
+ * window, dispatch and answering helpers are shared with that class.
  *
  * @author Adam
  */
 public class testNoSetupEditDuringARun
 {
     /**
-     * The pages an old-file import says it left out stay out when the import then fails (OB-302).
+     * The pages an old-file import says it left out stay out when the import then fails (OB-302).  The exclusion is the
+     * setup's shared half, not the imported configuration, so the import's rollback must not undo it.
      *
-     * The import shuts a page whose sensors repeat an earlier page's, and says so, before it reads the file.  Its rollback
-     * snapshot was taken BEFORE that, so a file that then failed put the setup back as it was before the exclusion too:
-     * the page came back into autonomy, and the message about leaving it out was the last word anybody was given.  The
-     * exclusion is the setup's shared half, not the configuration being imported, so it is not the import's to undo.
-     *
-     * "4 - Combined" repeats "1 - Main"'s sensors, and the frozen railway has it out; it is put back in here as a page
-     * nobody has decided about - neither out nor turned back on - which is the state the import acts on.  The
-     * file is his own with a timetable that is not a list, broken as `testAFileItCannotReadLeavesTheSetupAsItWas` breaks
-     * it.  Here rather than beside that claim, because the import door's class holds as many windows as its heap does.
+     * "4 - Combined" repeats "1 - Main"'s sensors; it is put back in here as a page nobody has decided about, the state
+     * the import acts on.  The file has a timetable that is not a list, broken as
+     * `testAFileItCannotReadLeavesTheSetupAsItWas` breaks it; here because the import door's class holds as many
+     * windows as its heap does.
      *
      * MUTATION: take the snapshot before the exclusion again, and this fails.
-     *
-     * @throws Exception from the window or the import
      */
     @Test
     public void testAPageTheImportLeftOutStaysOutWhenTheFileFails() throws Exception
@@ -148,8 +140,7 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * The store's own record of the pages somebody turned back on, which has no door to take a page off it - for a test
-     * that needs a page nobody has decided about (OB-302).
+     * The store's own record of the pages somebody turned back on, which has no door to take a page off it (OB-302).
      *
      * @param session the session
      * @return the live set
@@ -166,15 +157,11 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * No train is sent from the Auto tab while the editor is open.  Start, Execute Timetable, Return Home and
-     * the diagram's menu refuse while an editor holds the diagram, and the rule that no setup edit is made during a run
-     * rests on it, since the editor cannot be opened while trains run.  The Auto tab's double-click never asked: an editor
-     * opened at rest stayed open for the run it sent, and a square clicked in it wrote the setup and left an edit waiting
-     * against the running railway.  Refused, and said, as those doors say it.
+     * No train is sent from the Auto tab while the editor is open.  Start, Execute Timetable, Return Home and the
+     * diagram's menu already refuse; the Auto tab's double-click must too, or an editor opened at rest stays open for
+     * the run it sent and a square clicked in it writes the setup against the running railway.
      *
      * MUTATION: take the editor question out of the Auto tab's double-click, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheAutoTabSendsNoTrainWhileTheEditorIsOpen() throws Exception
@@ -336,13 +323,10 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * The diagram's own Edit Locomotive item, opened at rest, refuses and says so when clicked after a run began.
-     * No factory builds it, so round 13's refusal missed it: the dialog opened, and OK wrote the placement,
-     * the facing and the tail into the setup and saved it while trains ran.
+     * The diagram's own Edit Locomotive item, opened at rest, refuses and says so when clicked after a run began.  No
+     * factory builds it, so the factories' refusal does not cover it.
      *
      * MUTATION: let the item open its dialog while trains run, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheDiagramsEditLocomotiveRefusesOnceTrainsRun() throws Exception
@@ -458,14 +442,11 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * A tail question answered once trains run writes nothing, and the log says why.  The question waits on
-     * the diagram with the window live - for up to half an hour - and Start or a hand send in the wait is not refused; its
-     * answer then wrote the road into the setup and onto the running railway.  Every door that asks it takes where to
-     * write from `whereTheAnswerGoes`, so that is where the answer is dropped.
+     * A tail question answered once trains run writes nothing, and the log says why.  The question can wait on the
+     * diagram while Start or a hand send goes unrefused; every door takes where to write from `whereTheAnswerGoes`, so
+     * that is where the answer is dropped.
      *
      * MUTATION: let `whereTheAnswerGoes` answer while trains run, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testATailAnsweredOnceTrainsRunIsNotWritten() throws Exception
@@ -545,14 +526,11 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * Following a direction change leaves a train under way on its path.  `moveOntoFacingCopy` stands a train
-     * on another copy of its square, which sweeps it off every other point - the whole of a locked path.  An earlier rule
-     * kept one caller from reaching a train under way; the direction follow's `flipFacing` still did, and stood it on a
-     * square in the middle of its path.  The rule is in the primitive now.
+     * Following a direction change leaves a train under way on its path.  `moveOntoFacingCopy` stands a train on
+     * another copy of its square, which sweeps it off every other point; the rule that stops it is in that primitive,
+     * so `flipFacing` is covered too.
      *
      * MUTATION: stand a train under way on another copy, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testFollowingADirectionChangeLeavesATrainUnderWayOnItsPath() throws Exception
@@ -612,13 +590,11 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * A direction change followed after a run began writes nothing.  The Central Station's thread decides at
-     * rest and posts the work to the event thread, which ran it later without asking again - so a hand send queued ahead
-     * of it was under way when it landed, and the setup was written during the run.  The posted work asks again.
+     * A direction change followed after a run began writes nothing.  The Central Station's thread decides at rest and
+     * posts the work to the event thread, where a hand send queued ahead may be under way, so the posted work asks
+     * again.
      *
      * MUTATION: let the posted work follow the change while trains run, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testADirectionChangeFollowedOnceTrainsRunWritesNothing() throws Exception
@@ -757,13 +733,10 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * Every kind of setup item on the diagram refuses once trains run - a plain item, a check box, a choice of one and a
-     * direction.  The refusal went into four factories, and the claim for it clicked a check box: the other
-     * three could lose theirs with nothing going red.
+     * Every kind of setup item on the diagram refuses once trains run - a plain item, a check box, a choice of one and
+     * a direction - each in its own factory, so a refusal lost from one must turn this red.
      *
      * MUTATION: take the refusal out of any one factory, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testEveryKindOfSetupItemRefusesOnceTrainsRun() throws Exception
@@ -961,12 +934,9 @@ public class testNoSetupEditDuringARun
 
     /**
      * A turn owed to a train still locking its path from where it turned is not written.  The rule asks
-     * `isAlreadyUnderway`, which counts a train that has claimed its path and not yet set off; the claim for it waited
-     * until the train was running, so a rule that asked only whether it was running passed it.
+     * `isAlreadyUnderway`, which also counts a train that has claimed its path and not yet set off.
      *
      * MUTATION: ask only whether the train is running, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testATurnOwedToATrainStillLockingItsPathIsNotWritten() throws Exception
@@ -1109,14 +1079,11 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * No train is sent from the diagram's destinations while the editor is open (Adam, 2026-09-29: *"can all
-     * the checks go through a single door?"*).  The diagram's menu is built only with no editor open, and its destination
-     * items asked nothing about one when clicked - so a menu opened before the editor and clicked after it sent the train
-     * under it, as the Auto tab's list did.  Both hand doors send through one door now, and it asks.
+     * No train is sent from the diagram's destinations while the editor is open (Adam: *"can all the checks go through
+     * a single door?"*).  The menu is built only with no editor open, so a menu opened before the editor and clicked
+     * after it must still be refused, by the one door both hand doors send through.
      *
      * MUTATION: take the editor question out of the one door, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheDiagramsDestinationsSendNoTrainWhileTheEditorIsOpen() throws Exception
@@ -1274,19 +1241,16 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * A send queued ahead of the editor's build is not sent.  The editor is asked for on the event thread and
-     * built in a task posted after it, and the one gate asked only whether the editor's window existed - so a send that
-     * ran between the two passed it, and the editor opened over the run it started.  The event thread is held here, as a
-     * slow refresh holds it, with an Auto tab double-click and the editor's request queued behind it.
+     * A send queued ahead of the editor's build is not sent.  The editor is asked for on the event thread and built in
+     * a task posted after it, and the gate asked only whether the editor's window existed.  The event thread is held
+     * here, as a slow refresh holds it, with an Auto tab double-click and the editor's request queued behind it.
      *
      * The send is queued AHEAD of the editor's request, so the gate finds no editor on its way; what refuses here is
-     * the editor's build, which looks at the railway again and opens no editor over a run -
-     * testTheGateRefusesWhileAnEditorIsOnItsWay reaches the gate's own "on its way".
+     * the editor's build, which looks at the railway again.  testTheGateRefusesWhileAnEditorIsOnItsWay reaches the
+     * gate.
      *
      * MUTATION: let the editor's posted build skip its second look at the railway, with the gate seeing only an
      * editor already built, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testASendQueuedAheadOfTheEditorsBuildIsNotSent() throws Exception
@@ -1389,18 +1353,15 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * The one gate counts an editor on its way as open.  Edit Layout sets `editorOnItsWay` before it posts the
-     * editor's build, and until that build has run the gate must refuse every door in the editor's own words.  The
-     * build's second look at the railway does not make this redundant: a hand send hands its train to a thread and
-     * returns, so the railway can still read idle when the build asks.
+     * The one gate counts an editor on its way as open.  Edit Layout sets `editorOnItsWay` before it posts the editor's
+     * build, and until that build has run the gate must refuse every door in the editor's own words.  The build's
+     * second look does not make this redundant: a hand send hands its train to a thread, so the railway can still read
+     * idle.
      *
-     * testASendQueuedAheadOfTheEditorsBuildIsNotSent cannot reach this: its send is queued ahead of the editor's
-     * request, so no editor is on its way when the gate is asked, and the build's second look is what refuses there.
+     * testASendQueuedAheadOfTheEditorsBuildIsNotSent cannot reach this: no editor is on its way when its gate is asked.
      *
      * MUTATION: let the gate see only an editor already built, or let the editor's question forget the editor on its
      * way, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheGateRefusesWhileAnEditorIsOnItsWay() throws Exception
@@ -1462,14 +1423,11 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * Start's worker looks again, at its event-thread moment, for an editor that has come since the press.  An
-     * armed route makes the worker ask the operator before it comes back, and the editor asked for just after Start is
-     * built while that question waits - the railway still reads idle, so the build's own second look lets it open.  When
-     * the worker comes back the editor is open, and only the worker's look stops the trains starting under it.
+     * Start's worker looks again, at its event-thread moment, for an editor that has come since the press.  An armed
+     * route makes the worker ask the operator before it comes back; an editor asked for meanwhile is built while that
+     * question waits, so only the worker's look stops the trains starting under it.
      *
      * MUTATION: let Start's worker start the trains without asking again whether an editor has come, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testStartsWorkerLooksAgainOnceTheEditorHasOpened() throws Exception
@@ -1581,19 +1539,16 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * Start pressed ahead of the editor's request does not run under the editor.  Start's click asks the gate
-     * and starts its worker, and the worker comes back to the event thread for the atomic-routes gate before it starts
-     * the trains - behind an editor asked for in between, whose request found nothing running yet.  So the worker asks
+     * Start pressed ahead of the editor's request does not run under the editor.  The worker comes back to the event
+     * thread for the atomic-routes gate before it starts the trains, behind an editor asked for in between, so it asks
      * again there.
      *
-     * In this claim's order the worker is back before the editor's build, and the build's own second look at the
-     * railway is what refuses; testStartsWorkerLooksAgainOnceTheEditorHasOpened holds the worker on a question
-     * so that the build runs first.
+     * In this claim's order the worker is back before the editor's build, and the build's own second look is what
+     * refuses; testStartsWorkerLooksAgainOnceTheEditorHasOpened holds the worker on a question so that the build runs
+     * first.
      *
      * MUTATION: let Start's worker start the trains without asking again whether an editor has come, with the
      * editor's build skipping its second look, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testStartQueuedAheadOfTheEditorsBuildDoesNotRunUnderIt() throws Exception
@@ -1686,13 +1641,10 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * An editor asked for at rest is not built over a run that began before its build ran, and the Edit button comes back.
-     * The request asked whether trains run and posted the build, which asked nothing.  Return Home's
-     * planning stands in for the run here: it is what makes the window busy with nothing yet moving.
+     * An editor asked for at rest is not built over a run that began before its build ran, and the Edit button comes
+     * back.  Return Home's planning stands in for the run: it makes the window busy with nothing yet moving.
      *
      * MUTATION: let the posted build open the editor without asking again, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testAnEditorIsNotBuiltOverARunBegunBeforeItsBuild() throws Exception
@@ -1795,13 +1747,10 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * The diagram's Edit Locomotive refuses at OK once a run has begun while its dialog was open.  The run is
-     * begun from the answering thread, which is how one starts while the dialog holds the window: the scripting door,
-     * `requestStartAutonomy`, is on no window.
+     * The diagram's Edit Locomotive refuses at OK once a run has begun while its dialog was open.  The run is begun
+     * from the answering thread, as one starts while the dialog holds the window: the scripting door is on no window.
      *
      * MUTATION: take the refusal at OK out, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheDiagramsEditLocomotiveRefusesAtOkOnceARunBegins() throws Exception
@@ -2101,14 +2050,11 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * A train's length is not changed while trains run (Adam, MT-141: *"Never allow any modifications to a
-     * running layout.  This includes locomotive database"*).  The locomotive's Autonomy train length item wrote the
-     * length straight onto the running train, 0 included, and a non-atomic run hands the track behind a train back by that
-     * number.  Refused at the click, and again at OK for a dialog that was open when a run began; at rest it writes.
+     * A train's length is not changed while trains run (Adam, MT-141: *"Never allow any modifications to a running
+     * layout.  This includes locomotive database"*).  The Autonomy train length item wrote the length onto the running
+     * train, 0 included.  Refused at the click, and at OK for a dialog open when a run began; at rest it writes.
      *
      * MUTATION: let the dialog's answer, or the click, through while trains run, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testATrainsLengthIsNotChangedWhileTrainsRun() throws Exception
@@ -2207,15 +2153,11 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * The Auto tab sends no train while Return Home owns the railway.  It asked only whether autonomy's own flag
-     * was up, and that is down while Return Home plans - so a train sent by hand then was dispatched under the planner,
-     * and the press of Return Home was spent on positions the railway no longer had.  A second hand send while another
-     * runs stays allowed from the Auto tab (Adam, 2026-08-31, OB-164: *"The user can rely on full autonomy or the panels
-     * to send trains more clearly."*).
+     * The Auto tab sends no train while Return Home owns the railway: autonomy's own flag is down while Return Home
+     * plans, so a hand send then ran under the planner.  A second hand send while another runs stays allowed from the
+     * Auto tab (Adam, OB-164: *"The user can rely on full autonomy or the panels to send trains more clearly."*).
      *
      * MUTATION: let the Auto tab's double-click ask only whether autonomy is running, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheAutoTabSendsNothingWhileReturnHomeOwnsTheRailway() throws Exception
@@ -2313,13 +2255,10 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * The Auto tab offers no paths while Return Home owns the railway.  Round 16 made the double-click send
-     * nothing then, and it said nothing - under a list that still read "Double-click a path to execute".  The list is
-     * hidden while a staging flow owns the railway, as it is while autonomy runs, so the offer and the refusal agree.
+     * The Auto tab offers no paths while Return Home owns the railway, so the offer and the double-click's refusal
+     * agree; the list is hidden then, as it is while autonomy runs.
      *
      * MUTATION: let the Auto tab show its paths while Return Home plans, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheAutoTabOffersNoPathsWhileReturnHomeOwnsTheRailway() throws Exception
@@ -2417,14 +2356,10 @@ public class testNoSetupEditDuringARun
 
     /**
      * Closing TrainControl while trains run warns, lets the operator keep it open, and changes nothing about the trains
-     * (Adam, 2026-09-29: *"If autonomy, display a warning popup to the user allowing them to keep the app open,
-     * or to proceed to close.  For simplicity, don't change train state here."*).  The close pressed Graceful Stop before
-     * it asked, so keeping the window open still ended the run, and its question spoke of saving rather than of the
-     * trains left moving.
+     * (Adam: *"If autonomy, display a warning popup to the user allowing them to keep the app open, or to proceed to
+     * close.  For simplicity, don't change train state here."*).  Keeping the window open must not end the run.
      *
      * MUTATION: let the close stop the run before it asks, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testClosingWhileTrainsRunWarnsAndLeavesTheTrainsAlone() throws Exception
@@ -2593,14 +2528,11 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * A page ticked out and back in from the Autonomy menu keeps its timetable entries: the tick checks the
-     * findings before its reload, that check's build put the entries set aside back into the stored timetable, and the
-     * reload's fold of the railway built without the page wrote over them.  Driven through the menu: opened as a click
-     * opens it, and the page's item in "Pages with Autonomy Enabled" clicked.
+     * A page ticked out and back in from the Autonomy menu keeps its timetable entries: the tick's findings check puts
+     * the set-aside entries back into the stored timetable, and the reload's fold of the railway built without the page
+     * must not write over them.  Driven through the menu as a click opens it.
      *
      * MUTATION: let a build for inspection keep what it settled, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testAPageTickedBackInFromTheAutonomyMenuKeepsItsEntries() throws Exception
@@ -2876,15 +2808,12 @@ public class testNoSetupEditDuringARun
 
     /**
      * Start Autonomy and Start Timetable, in a session started in simulation with Simulate not ticked in the autonomy
-     * settings, warn first (Adam, 2026-09-30: "adding a warning popup when you start autonomy when the app is in simulate,
-     * and simulate isn't checked") - the trains are sent and wait for sensors no simulation reports, so they start and
-     * never move.  Declined, nothing starts.  Asked of every door that sends trains, by the one gate - Return Home and a
-     * hand send too - once the gate's own refusals have passed: a press the gate refuses, the power off, is
-     * refused and not asked.
+     * settings, warn first (Adam: "adding a warning popup when you start autonomy when the app is in simulate, and
+     * simulate isn't checked"): the trains would wait for sensors no simulation reports.  Declined, nothing starts.
+     * Asked of every door that sends trains, by the one gate, once its own refusals have passed: a press the gate
+     * refuses, the power off, is refused and not asked.
      *
      * MUTATION: start without asking, and this fails.  So does asking before the gate's refusals, or not at a hand send.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testStartingUnsimulatedInASimulationWarnsFirst() throws Exception
@@ -3092,13 +3021,11 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * A session started in simulation has Echo Sent Commands on (Adam, 2026-09-30: "auto-enable echo in simulate too"):
-     * without it the simulation answers nothing it sends - the power, a switch, a route - so autonomy cannot run there.
-     * Where the stored choice was off, it says so.
+     * A session started in simulation has Echo Sent Commands on (Adam: "auto-enable echo in simulate too"): without it
+     * the simulation answers nothing it sends, so autonomy cannot run there.  Where the stored choice was off, it says
+     * so.
      *
      * MUTATION: take the stored choice as it is, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testASimulationStartsWithEchoOn() throws Exception
@@ -3194,15 +3121,11 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * Start Timetable stops at an entry the railway cannot run, and the window says which and why (Adam, 2026-09-30:
-     * "stop the timetable run upon encountering an invalid path, and let the user know").  Refused and passed over, the
-     * train's later entries started where it was not, and the run stood for minutes before it gave up saying only that
-     * the track never became free.  And so after a Graceful Stop pressed earlier in the session, whose flag kept
-     * the dialog from being shown.
+     * Start Timetable stops at an entry the railway cannot run, and the window says which and why (Adam: "stop the
+     * timetable run upon encountering an invalid path, and let the user know").  So too after a Graceful Stop pressed
+     * earlier in the session, whose flag kept the dialog from being shown.
      *
      * MUTATION: say the run stopped without its reason, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testATimetableStoppedAtAnEntryItCannotRunSaysWhy() throws Exception
@@ -3342,8 +3265,8 @@ public class testNoSetupEditDuringARun
 
             while (!asked.contains(said) && System.currentTimeMillis() < until) Thread.sleep(200);
 
-            // SAYING MORE WHEN IT FAILS: red twice in a full battery (rounds 28 and 33) with nothing asked at all, and green
-            // alone six times of six - so the railway's state and the log's end go into the message
+            // SAYING MORE WHEN IT FAILS: the railway's state and the log's end go into the message, for a red that
+            // shows only in a full battery
             if (!asked.contains(said))
             {
                 org.traincontrol.automation.Layout now = ui[0].getModel().getAutoLayoutIfLoaded();
@@ -3380,12 +3303,10 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * Export waits for autonomy to stop, as Import does (Adam, 2026-09-30, MT-601: "Export should also only be allowed
-     * once we are stopped").  Refused at once, with no file chooser.
+     * Export waits for autonomy to stop, as Import does (Adam, MT-601: "Export should also only be allowed once we are
+     * stopped").  Refused at once, with no file chooser.
      *
      * MUTATION: let Export run while autonomy runs, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testExportWaitsForAutonomyToStop() throws Exception
@@ -3503,13 +3424,10 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * New Configuration, Rename and Add Configuration wait for autonomy to stop, as Import, Export and Delete do:
-     * each wrote the setup during a run - New made its copy of where the trains stood before the run the
-     * configuration the next start resumes.  Refused before anything is asked.
+     * New Configuration, Rename and Add Configuration wait for autonomy to stop, as Import, Export and Delete do: each
+     * wrote the setup during a run.  Refused before anything is asked.
      *
      * MUTATION: let New Configuration ask its name while autonomy runs, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheConfigurationDoorsWaitForAutonomyToStop() throws Exception
@@ -3606,14 +3524,11 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * The Autonomy menu grays what changes the setup while autonomy runs, saying why on one line, and gives it back at rest
-     * (Adam, MT-613 and MT-626: "why not grey out the whole menu while running?"): each door refused on its own, after
-     * the click.  Autonomy Settings and Documentation stay live - they change nothing; Export Raw Graph as JSON is grayed
-     * with the rest (Adam, MT-633).
+     * The Autonomy menu grays what changes the setup while autonomy runs, saying why on one line, and gives it back at
+     * rest (Adam, MT-613: "why not grey out the whole menu while running?").  Autonomy Settings and Documentation stay
+     * live - they change nothing; Export Raw Graph as JSON is grayed with the rest (MT-633).
      *
      * MUTATION: leave the menu live while autonomy runs, or the debug export, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheAutonomyMenuIsGreyedWhileAutonomyRuns() throws Exception
@@ -3703,13 +3618,11 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * The Layout menu grays what changes the diagram or the folder while autonomy runs, saying why, and gives each back as
-     * it was at rest (Adam, 2026-10-01: "Grey layout: grey the relevant options, but we need to keep open CS3 web app
-     * available").  Opening the folder, the pop-outs, the picture and the CS3 web app are left as they were.
+     * The Layout menu grays what changes the diagram or the folder while autonomy runs, saying why, and gives each back
+     * at rest (Adam: "Grey layout: grey the relevant options, but we need to keep open CS3 web app available").
+     * Opening the folder, the pop-outs, the picture and the CS3 web app are left as they were.
      *
      * MUTATION: leave the menu live while autonomy runs, and this fails; so does a grayed item left gray at rest.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheLayoutMenuIsGreyedWhileAutonomyRuns() throws Exception
@@ -3854,14 +3767,11 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * Export after a run writes where the run left the trains and the settings as they now are: it wrote the
-     * configuration as its file last had it - each train where it stood before the run, the pace as at the load - and an
-     * export after a run is the only kind there is since Export waits for autonomy to stop.  It folds the running railway
-     * in first, as New Configuration does.
+     * Export after a run writes where the run left the trains and the settings as they now are, folding the running
+     * railway in first as New Configuration does; an export after a run is the only kind, since Export waits for
+     * autonomy.
      *
      * MUTATION: export the file as it is, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testExportAfterARunWritesWhereTheTrainsAre() throws Exception
@@ -3975,14 +3885,11 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * Start Timetable pressed while autonomy's trains are still finishing after a Graceful Stop is refused, and the stop
-     * being carried out is not forgotten: the press lowered the flag before its busy refusal, so the strip's
-     * grayed Graceful Stop went for the rest of the coast-down.  It is lowered once that refusal has passed, as Return
-     * Home lowers its own.
+     * Start Timetable pressed while autonomy's trains are still finishing after a Graceful Stop is refused, and the
+     * stop being carried out is not forgotten: the strip's grayed Graceful Stop must stay gray for the rest of the
+     * coast-down, so the flag is lowered once that refusal has passed, as Return Home lowers its own.
      *
      * MUTATION: lower it at the press, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testStartTimetableInAGracefulStopKeepsTheStop() throws Exception
@@ -4090,13 +3997,11 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * The Auto tab refuses a setting while autonomy is busy, not only while a train runs: its handlers asked
-     * the railway whether it ran, so during Return Home's planning - autonomy busy, nothing moving yet - a setting was
-     * written under the plan, from the Autonomy Settings item the menu leaves live.
+     * The Auto tab refuses a setting while autonomy is busy, not only while a train runs: during Return Home's planning
+     * nothing moves yet, but a setting written then goes under the plan, from the Autonomy Settings item the menu
+     * leaves live.
      *
      * MUTATION: ask the railway alone, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheAutoTabRefusesASettingWhileAutonomyIsBusy() throws Exception
@@ -4190,14 +4095,12 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * Layouts > Create New Layout is refused while autonomy runs, before its folder window opens, as every
-     * other Layout menu door that changes the diagram is (MT-141): a folder chosen switched the layout, synced with the
-     * Central Station and reset the autonomy session under the moving trains, taking Graceful Stop off the window.
+     * Layouts > Create New Layout is refused while autonomy runs, before its folder window opens, as every other Layout
+     * menu door that changes the diagram is (MT-141): a folder chosen would switch the layout and reset the autonomy
+     * session under the moving trains.
      *
      * MUTATION: open the folder window whatever runs, and this fails; so does `RunGates.refuseWhileARunHoldsTheSetup` giving a layout
      * door the locomotive sentence again (OB-370).
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testCreateNewLayoutWaitsForAutonomyToStop() throws Exception
@@ -4289,12 +4192,10 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * Once a configuration exists, Manage offers one door to a new one - New Configuration, a copy - and no Add (Adam,
-     * 2026-10-01: "One door: do it").
+     * Once a configuration exists, Manage offers one door to a new one - New Configuration, a copy - and no Add (Adam:
+     * "One door: do it").
      *
      * MUTATION: put Add back on Manage, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testManageOffersOneDoorToANewConfiguration() throws Exception
@@ -4349,13 +4250,11 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * New Configuration answered No copies the configuration without its trains or its timetable, and everything else as
-     * it is - each station's rules, the settings - and the one copied keeps its trains (Adam, 2026-10-01: "One door: do
-     * it").  Through the real question.
+     * New Configuration answered No copies the configuration without its trains or its timetable, and everything else
+     * as it is - each station's rules, the settings - and the one copied keeps its trains (Adam: "One door: do it").
+     * Through the real question.
      *
      * MUTATION: copy the trains whatever the answer, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testANewConfigurationCanStartWithoutItsTrains() throws Exception
@@ -4476,14 +4375,10 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * New Configuration after a run copies where the trains are, and leaves the configuration running the one the next
-     * start resumes: it copied the file's record - each train where it stood before the run - and made the
-     * copy the configuration to resume, while the exit's fold went into the one running.  The next start then placed a
-     * train on a square it had left.
+     * New Configuration after a run copies where the trains are now and leaves the configuration running the one the
+     * next start resumes; copying the file's record would place a train on a square it had left.
      *
      * MUTATION: copy the file as it is, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testANewConfigurationAfterARunCopiesWhereTheTrainsAre() throws Exception
@@ -4547,7 +4442,7 @@ public class testNoSetupEditDuringARun
 
             answeringWith(asked, going, "RSA10 copy");
 
-            // WITH THE TRAINS: this claim is about where they are copied from, not about the question (round 34)
+            // WITH THE TRAINS: this claim is about where they are copied from, not about the question
             org.traincontrol.gui.AutonomyViewerPanel.answerCopyTrainsForTests(javax.swing.JOptionPane.YES_OPTION);
 
             SwingUtilities.invokeAndWait(() -> ui[0].getAutonomyViewerPanel().duplicate());
@@ -4647,12 +4542,10 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * Start Autonomy forgets a Graceful Stop pressed in an earlier run: the flag was cleared only by Return
-     * Home's press, so a later run read as one whose stop was still being carried out.
+     * Start Autonomy forgets a Graceful Stop pressed in an earlier run, so a later run does not read as one whose stop
+     * is still being carried out.
      *
      * MUTATION: keep the earlier stop's flag at Start Autonomy's press, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testStartAutonomyForgetsAnEarlierGracefulStop() throws Exception
@@ -4736,15 +4629,12 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * No train is sent while the diagram reloads after a page door: Duplicate Current Page, Add Blank Page and
-     * Combine Linked Pages hand the reset over to a worker, and a press of Start in between ran the railway built before
-     * the door - the reset at the end then forgot it mid-run, and where the run left the trains was never written.  The
-     * one gate refuses from the door's change until the reset has run, and opens again after.
+     * No train is sent while the diagram reloads after a page door: Duplicate Current Page, Add Blank Page and Combine
+     * Linked Pages hand the reset over to a worker, and a Start in between would run the railway built before the door.
+     * The one gate refuses from the door's change until the reset has run, and opens again after.
      *
      * MUTATION: leave the refresh out of the gate, count none at the hand-over or none across Combine's worker, and this
      * fails; never count one down, and its last part fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testNoTrainIsSentWhileAPageDoorReloadsTheDiagram() throws Exception
@@ -4985,14 +4875,11 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * No train is sent between the track editor's Save or Cancel and the reset its refresh ends in: the refresh
-     * was counted only by the hand-over the editor posted as it closed, so an event queued while its handler ran - a train
-     * sent from the diagram, Return Home - found neither an editor nor a refresh, and ran on the railway the reset then
-     * forgot.
+     * No train is sent between the track editor's Save or Cancel and the reset its refresh ends in: an event queued
+     * while the editor's handler ran (a train sent from the diagram, Return Home) must find the refresh counted, not
+     * only the hand-over the editor posts as it closes.
      *
      * MUTATION: count the refresh from the posted hand-over alone again, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testNoTrainIsSentWhileTheTrackEditorHandsOver() throws Exception
@@ -5119,13 +5006,10 @@ public class testNoSetupEditDuringARun
 
     /**
      * No train is sent between the autonomy editor's Save or Cancel and the hand-over that follows its window closing:
-     * it was posted after the window went and counted nowhere, so an event queued while the editor's own
-     * handler ran found neither an editor nor a refresh - and after Cancel's "exit without saving" a train sent there ran
-     * on the discarded setup, which the next fold then wrote back.
+     * an event queued while the editor's handler ran must find the hand-over counted, or after Cancel's "exit without
+     * saving" a train sent there runs on the discarded setup, which the next fold writes back.
      *
      * MUTATION: post the hand-over after the window closes, counted nowhere, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testNoTrainIsSentWhileTheAutonomyEditorHandsOver() throws Exception
@@ -5244,20 +5128,16 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * The Auto tab's settings, Execute Timetable and the capture toggle are grayed while autonomy is busy, each saying why,
-     * and given back with their own tooltips once it is not (Adam, 2026-10-02: "Implement the two grey usability fixes").
-     * Each handler refused while busy - a slider moved and a dialog snapped it back - but offered first.  A click on a
-     * grayed setting says nothing: its handler listens for the mouse, which a grayed control still hears.  Graceful Stop
-     * offered counts as busy, as Start leaves it before its run is counted; and what Execute Timetable's own press grayed
-     * is not given back by the refresh.
-     *
-     * Activate Routes is grayed the same way, and a control its owner grayed while busy says why too.
+     * The Auto tab's settings, Execute Timetable and the capture toggle are grayed while autonomy is busy, each saying
+     * why, and given back with their own tooltips once it is not (Adam: "Implement the two grey usability fixes").  A
+     * click on a grayed setting says nothing: its handler listens for the mouse, which a grayed control still hears.
+     * Graceful Stop offered counts as busy, as Start leaves it before its run is counted; what Execute Timetable's own
+     * press grayed is not given back by the refresh.  Activate Routes is grayed the same way, and a control its owner
+     * grayed says why too.
      *
      * MUTATION: gray nothing, leave the tooltips, put the refusal up on a grayed click or leave a slider where it was let
      * go, ask the railway alone, give back what another owner grayed, gray Activate Routes with no reason, or leave an
      * owner's gray saying nothing, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheAutoTabIsGreyedWhileAutonomyIsBusy() throws Exception
@@ -5461,12 +5341,9 @@ public class testNoSetupEditDuringARun
 
     /**
      * A run started with Start Autonomy grays what waits for the trains, and its Graceful Stop gives it back once the
-     * trains have stopped (Adam, 2026-10-02: "Implement the two grey usability fixes") - the refreshes at each end of a
-     * real run, not only the rule.
+     * trains have stopped (Adam: "Implement the two grey usability fixes"): the refreshes at each end of a real run.
      *
      * MUTATION: gray nothing, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testARunGreysTheAutoTabAndItsStopGivesItBack() throws Exception
@@ -5547,8 +5424,8 @@ public class testNoSetupEditDuringARun
 
             assertTrue(ui[0].isShowingSomethingRuns(), "Start does not show that autonomy runs (OB-309)");
 
-            // AND THE TRACK DIAGRAM'S STRIP, on the Graceful Stop it stands in for (Adam, 2026-10-03: "Can we show the
-            // spinner next to start/graceful stop on the track diagram viewer page as well?")
+            // AND THE TRACK DIAGRAM'S STRIP, on the Graceful Stop it stands in for (Adam: "Can we show the spinner next
+            // to start/graceful stop on the track diagram viewer page as well?")
             final org.traincontrol.gui.AutonomyOverlayToggle strip =
                 (org.traincontrol.gui.AutonomyOverlayToggle) control(ui[0], "autonomyOverlayToggle");
 
