@@ -12,39 +12,16 @@ import org.traincontrol.base.ThreeWaySwitch;
 import support.SourceOf;
 
 /**
- * A row that looks right and means nothing.
- *
- * Adam turned an accessory row into a locomotive command and got a command for a locomotive called
- * "3".  Nothing refused it: the address had simply stayed behind in the column that had become the
- * name column, the row built, the route saved, and it did nothing whatever when it ran.  A route
- * that quietly does nothing is the worst thing this editor can produce, because there is no error
- * anywhere to lead anybody back to it.
- *
- * Two things had to change and both are tested here.  Changing the kind clears the row, because the
- * two kinds' columns hold different sorts of thing and only both happen to accept text; and Save
- * checks each row against the layout, because "there is no locomotive called 3" is a question only
- * the layout can answer.
+ * A row that looks right and means nothing: an accessory row turned into a locomotive command used to build, save and
+ * do nothing when run.  Changing the kind clears the row, and Save checks each row against the layout; both are tested
+ * here.
  */
 public class testRouteEditorValidation
 {
     /**
-     * A manual route saves with the sensor field left blank (OB-178).
-     *
-     * Adam: *"if a route's auto-fire checkbox is unchecked, and the s88 field is blank, the save will
-     * still fail asking the user to input an integer.  just treat this as 0."*
-     *
-     * **Blank is the answer a manual route gives.** The field only means anything with auto-fire on,
-     * which has its own rule; without it the route is fired by hand and has no sensor. Refusing the
-     * empty field made a perfectly good route unsaveable, and the message asked for an integer as
-     * though something wrong had been typed.
-     *
-     * **And the two halves parsed it separately**, which is the other half of the defect: relaxing the
-     * check without the save would have turned a refusal into an exception. One reader now.
-     *
-     * **What is NOT asserted, and why.** The field is digits-only, so letters cannot be typed into it
-     * and `enteredS88`'s -1 branch is unreachable from the UI. It is kept as a defense rather than
-     * removed - the field could gain another door - but a test for it would be a check that cannot
-     * fail, so this says so instead of pretending.
+     * A manual route saves with the sensor field left blank (OB-178); Adam: "just treat this as 0."  The save and the
+     * check share one reader.  The field is digits-only, so `enteredS88`'s -1 branch is unreachable from the UI and
+     * not asserted.
      *
      * MUTATION: make `enteredS88` return -1 for an empty field and the first assertion fails; drop
      * the auto-fire rule and the second does.
@@ -64,8 +41,8 @@ public class testRouteEditorValidation
         final java.util.List<String> zero = new java.util.ArrayList<>();
         final java.util.List<String> letters = new java.util.ArrayList<>();
 
-        // THE FIELD IS DIGITS-ONLY and drops anything else typed into it, spaces and letters among it, so the editor would
-        // be handed an empty field in their place.  The filter is taken off so that what is set is what the editor reads.
+        // The field is digits-only and drops anything else typed, so the filter is taken off: what is set is what the
+        // editor reads.
         final javax.swing.JTextField s88 = (javax.swing.JTextField) privateField(editor, "s88Field");
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
@@ -77,16 +54,14 @@ public class testRouteEditorValidation
 
             blank.addAll(editor.problemsForTest());
 
-            // THE OTHER HALF, which must keep refusing: a route that fires ITSELF has nothing to fire
-            // it without a sensor, and would sit in the list marked automatic doing nothing.
+            // THE OTHER HALF, which must keep refusing: a route that fires ITSELF has nothing to fire it without a
+            // sensor.
             editor.setAutoFireForTest(true);
 
             automatic.addAll(editor.problemsForTest());
 
-            // A SPACE, not letters.  The field is digits-only (`digitsOnlyField`), so "east" cannot
-            // be typed into it at all - asserting that it is refused would be testing a state the UI
-            // cannot reach, which is a check that can never fail.  A field holding only whitespace
-            // must read as none, like an empty one.
+            // A SPACE, not letters: the field is digits-only, so "east" cannot be typed.  Whitespace alone must read as
+            // none.
             editor.setAutoFireForTest(false);
             editor.setS88TextForTest("   ");
 
@@ -136,12 +111,7 @@ public class testRouteEditorValidation
         }
     }
 
-    /**
-     * Changing the kind does not leave the old target behind.
-     *
-     * The one Adam found.  Tested through the table model, which is the thing that was wrong - the
-     * row it built is what got saved.
-     */
+    /** Changing the kind does not leave the old target behind, tested through the table model whose row got saved. */
     @Test
     public void testChangingTheKindClearsTheRow() throws Exception
     {
@@ -169,26 +139,9 @@ public class testRouteEditorValidation
     }
 
     /**
-     * The route editor asks about a LOGICAL address.
-     *
-     * It checked the number the operator types - counting from one - against `MAX_MM2_ADDRESS`, which
-     * is RAW and counts from zero. Exactly one address per protocol was refused here and accepted by
-     * the diagram editor, which converts before it asks. The fix shipped with no test:
-     * `grep -rn "isValidLogicalAddress" test/` found nothing, and putting the defect back verbatim left
-     * this class, `testRouteEditorRoundTripCases` and `core.testAccessory` all green.
-     *
-     * **Why this is a shape check and not a behavioral one, which is worth knowing about this whole
-     * class.** Its editors are built as `new RouteEditorFrame(null, null)` - no parent window, so no
-     * model - and `problemsWith` returns at `if (parent == null || parent.getModel() == null)` before
-     * it reaches any per-row rule. So NO row-level complaint is reachable from this fixture: not the
-     * address, not "no such locomotive", not "no such route". The behavioral version of this test was
-     * written first and passed on an editor that never looked at the address at all; a control that
-     * asked whether address 99999 is complained about is what caught it. Measured, 2026-09-11.
-     *
-     * The rule itself is asserted behaviorally, at both ends of both protocols, by
-     * `core.testAccessory.testTheTopLogicalAddressOfEachProtocolIsValid`. What is left for here is that
-     * this door asks that rule rather than the raw one - which is the half that was wrong, and the
-     * half a shape check can see.
+     * The route editor asks about a LOGICAL address, not `MAX_MM2_ADDRESS` (raw, counted from zero).  A shape check:
+     * the editors here have no parent window, so `problemsWith` returns before any per-row rule.  The rule itself is
+     * asserted by `core.testAccessory.testTheTopLogicalAddressOfEachProtocolIsValid`.
      *
      * MUTATION: put `Accessory.isValidAddress(address, speaks)` back in `addressProblem` and this fails.
      *
@@ -210,9 +163,7 @@ public class testRouteEditorValidation
             + "is how these two editors came to disagree in the first place");
     }
 
-    /**
-     * A three-way row starts with the pause its two motors need.
-     */
+    /** A three-way row starts with the pause its two motors need. */
     @Test
     public void testAThreeWayRowStartsWithItsPause() throws Exception
     {
@@ -234,9 +185,7 @@ public class testRouteEditorValidation
         close(frame);
     }
 
-    /**
-     * A three-way row is saved as the two commands it stands for, in order.
-     */
+    /** A three-way row is saved as the two commands it stands for, in order. */
     @Test
     public void testAThreeWayIsSavedAsBothOfItsCommands() throws Exception
     {
@@ -275,10 +224,8 @@ public class testRouteEditorValidation
     }
 
     /**
-     * The two messages that refuse a name say what is refused: a comma, and only a comma.  Brackets have been
-     * allowed since Adam's ruling of 2026-09-04 (*"bracketed loc names should just be allowed"*) and `isNameUsable`
-     * refuses only the comma, but both messages went on saying a name "cannot contain a comma or a bracket" - telling an
-     * operator renaming "SBB 460 (2)" a rule the program does not have.  Read from the English bundle.
+     * The two messages that refuse a name say what is refused: a comma, and only a comma, since brackets are allowed
+     * (Adam: "bracketed loc names should just be allowed").  Read from the English bundle.
      *
      * MUTATION: put "or a bracket" back in either and this fails.
      *
@@ -313,9 +260,7 @@ public class testRouteEditorValidation
 
     /**
      * With Automatically Fire off, the conditions say above themselves, in red, that they are only checked when it is
-     * on; ticking it takes the warning away, and a route with no conditions has none (Adam, 2026-10-18: "a message that
-     * states these conditions are only evaluated when Automatically Fire is set to on" - and no triangle, which did not
-     * render).
+     * on; ticking it takes the warning away, and a route with no conditions has none.
      *
      * MUTATION: show the reading alone whatever the tick, or leave the warning up once it is ticked, and this fails.
      *
@@ -409,24 +354,8 @@ public class testRouteEditorValidation
         }
     }
     /**
-     * Deleting an unrelated condition does not turn a leading "or" into "and".
-     *
-     * **A silent change to when a route fires**, in the route editor that is a headline 3.0.0 feature,
-     * over a path no test covered.
-     *
-     * `(A or B) and C` loads as `[A(1), or(1), B(1), and(0), C(0)]` - `ConditionOutline.write` bumps a
-     * cross-operator left child a level, and `toExpression`'s own comment says such a condition *"opens
-     * as an outline whose first row is one level in"*.
-     *
-     * Delete `C`, which has nothing to do with the group, and the table is left with
-     * `[A(1), or(1), B(1)]`. `tidy()` then forced row 0 flat - `at == 0 ? 0` - giving
-     * `[A(0), or(1), B(1)]`, which reads back as **`A and B`**: the `or` is alone in a one-item
-     * sub-run with nothing to join, so the level-0 word defaults to AND.
-     *
-     * **And nothing objected.** `problems()` does not flag it - one joiner alone at its depth is not a
-     * disagreement - so no row went red, and `everythingWrong`'s only condition-shape gate is
-     * `hasProblems()`. Save wrote the changed meaning, which is the hazard the comment two lines above
-     * that gate names: *"the route would then fire at times nobody asked for."*
+     * Deleting an unrelated condition does not turn a leading "or" into "and": `tidy()` once forced row 0 flat, so
+     * `(A or B) and C` minus `C` read as `A and B` with nothing in red, and Save wrote the changed meaning.
      *
      * MUTATION: restoring `at == 0 ? 0` fails the second assertion.
      */
@@ -472,21 +401,9 @@ public class testRouteEditorValidation
     }
 
     /**
-     * Deleting the FIRST condition of a group takes the group's own word, not the outer one.
-     *
-     * **Found by a validation of the fix beside this one.**  `removeAt` was given a depth comparison
-     * for a deleted WORD on 2026-09-21 and its other half - a deleted CONDITION - kept preferring
-     * `rows.get(line - 1)` unconditionally.  For the first row of a group that is the OUTER word, one
-     * level shallower.
-     *
-     * So deleting the `2` of `1 or (2 and 3)` removed the `or`: the outline became `[1(0), and(1),
-     * 3(1)]`, which reads `1 and 3` - a different condition from the one anybody typed - and the
-     * surviving word went red as JOINS_NOTHING, so Save refused the route with no way out but Discard.
-     * One keystroke changed when the route fires AND made it unsavable.
-     *
-     * The word that belongs to a row is the adjacent joiner at the SAME depth.  A word at another depth
-     * is left alone, and `tidy()` sweeps one that ends up with nothing on one side, which is what it is
-     * for.
+     * Deleting the FIRST condition of a group takes the group's own word, not the outer one: deleting the `2` of
+     * `1 or (2 and 3)` once removed the `or`, changing when the route fires and leaving the word red.  The word that
+     * belongs to a row is the adjacent joiner at the SAME depth.
      *
      * MUTATION: put `if (line - 1 >= 0 && rows.get(line - 1).isJoiner()) rows.remove(line - 1);` back
      * without the depth test and the second claim goes red, reading `And(x,x)`.
@@ -513,8 +430,8 @@ public class testRouteEditorValidation
 
             javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(outline));
 
-            // THE EXACT SHAPE, because `startsWith("Or(")` is satisfied by a FLAT outline and the whole
-            // claim below is about depth.
+            // THE EXACT SHAPE, because `startsWith("Or(")` is satisfied by a FLAT outline and the claim below is about
+            // depth.
             assertEquals(reads(frame), "Or(x,Group(And(x,x)))",
                 "the fixture is not an OR in front of a bracketed group, so nothing below is about one: "
                 + reads(frame));
@@ -522,9 +439,8 @@ public class testRouteEditorValidation
             // THE FIRST CONDITION OF THE GROUP, which is row 2.
             javax.swing.SwingUtilities.invokeAndWait(() -> frame.deleteConditionForTest(2));
 
-            // AND THE EXACT SHAPE AFTER IT, for the same reason.  `assertFalse(startsWith
-            // ("And("))` ruled out ONE wrong answer: it passed just as happily for an outline swept down
-            // to a single condition - one keystroke silently deleting two - or emptied altogether.
+            // AND THE EXACT SHAPE AFTER IT: a startsWith check passes for an outline swept down to one condition, or
+            // emptied.
             assertEquals(reads(frame), "Or(x,Group(x))",
                 "deleting the first condition of the group did not leave `1 or (3)`.  The word that"
                 + " belongs to a row is the joiner at its own depth; taking the OUTER one turns this"
@@ -536,12 +452,8 @@ public class testRouteEditorValidation
                 + " and holds " + frame.conditionRowsForTest().size() + ": "
                 + frame.conditionRowsForTest());
 
-            // AND THE CONDITIONS ARE STILL SAVEABLE, which is the half of the defect the shape does
-            // not show: the word left behind by the old branch joined nothing, `whatIsWrong` flagged
-            // it, and Save refused the route with no way out but Discard.
-            //
-            // The CONDITION complaint only, not the whole gate: this fixture is conditions and nothing
-            // else, so `everythingWrong` rightly also wants a name and a command.
+            // AND STILL SAVEABLE: the word the old branch left joined nothing and Save refused.  The CONDITION
+            // complaint only, since this fixture has no name or command.
             assertFalse(frame.problemsForTest().contains(I18n.t("route.ui.frameLogicDisagrees")),
                 "the outline left by deleting one condition disagrees with itself, so Save refuses the"
                 + " route and the only way out is Discard: " + frame.problemsForTest());
@@ -553,23 +465,9 @@ public class testRouteEditorValidation
     }
 
     /**
-     * Deleting a joining word takes the term it joins with it, leaving no orphan (OB-240).
-     *
-     * Adam's note on MT-469, 2026-09-21: *"in the layout view, we can review [remove] operators (like and)
-     * without deleting the conditions they are linked to.  This permanently leaves an orphan entry.  Any
-     * linked entries should also be deleted."*
-     *
-     * **The orphan is not only untidy - it changes when the route fires.**  Taking the word out left the
-     * two conditions with nothing between them.  `tidy()` sweeps a word with nothing on one side and two
-     * words in a row, and a RUN WITH NO WORD AT ALL is legal to it; `ConditionOutline.toExpression` then
-     * folds such a run with AND.  So deleting an `or` turned it into an `and`, `whatIsWrong` returned
-     * empty for the shape, no row went red, and Save wrote a route that fires at times nobody asked for
-     * - the hazard `everythingWrong`'s own comment names.
-     *
-     * **Two shapes, because the term after a word is not always one line.**  `1 or 2`, where it is, and
-     * `1 or (2 and 3)`, where it is a whole group one level in - `ConditionOutline.write` puts a group's
-     * rows a level deeper.  Removing only the group's first line would leave `and 3` behind, tidy() would
-     * sweep the now-leading word, and the same wordless run would arrive by another road.
+     * Deleting a joining word takes the term it joins with it, leaving no orphan (OB-240).  An orphan changes when the
+     * route fires: `tidy()` allows a run with no word and `toExpression` folds it with AND.  Two shapes, `1 or 2` and
+     * `1 or (2 and 3)`, since the term after a word may be a whole group.
      *
      * MUTATION: put back the bare `rows.remove(line)` for a joiner and the first pair of claims goes red
      * with `And(x,x)`; keep the single-line removal but drop the group loop and the second does.
@@ -640,26 +538,9 @@ public class testRouteEditorValidation
     }
 
     /**
-     * FR-068: a nested group that is NOT the first term can be built here, by indenting.
-     *
-     * Adam, 2026-09-09: **"it should be representable already in the UI, right?"**  The question came
-     * out of MT-320, which was about the editor MISREADING `3 or ((1 or 2) and 4)` when a route
-     * already had it.  This is the other half: can somebody who has no such route make one?
-     *
-     * **Yes, and this is the gesture.**  Seven lines are typed flat - which is what the plus does,
-     * every new condition arriving at the depth of the one above - and then indented, twice for the
-     * innermost pair.  Nothing else is used: no file, no capture, no loading.
-     *
-     * The condition built is `3 or (4 and (1 or 2))`, which is Adam's condition with the AND's two
-     * sides the other way round.  That is not a dodge and it is not an accident either, so it is
-     * written down: **a line may be at most one level deeper than the line above it**
-     * (`ConditionTable.indent`), and the outline `ConditionOutline.of` writes for a group in the
-     * AND's LEFT position steps from depth 0 straight to depth 2 - the OR at 0, the AND at 1, the
-     * bracket at 2, with no depth-1 line in front of the bracket to indent from.  Written with the
-     * group on the RIGHT, every step is one, and AND means the same thing either way round.
-     *
-     * So the shape is available; the particular ORDER the loader writes it in is not typeable, and a
-     * route that arrives carrying it opens and reads correctly, which is what MT-320 settled.
+     * FR-068 (MT-320): a nested group that is NOT the first term can be built by indenting.  Seven lines are typed flat, as the
+     * plus does, then indented into `3 or (4 and (1 or 2))`: the group goes on the right because a line may be at most
+     * one level deeper than the line above it (`ConditionTable.indent`).
      *
      * MUTATION: dropping `ConditionTable.indent`'s one-level rule does not fail this (it only ever
      * admits more); forcing every indent to be refused does, at the first assertion.
@@ -673,8 +554,7 @@ public class testRouteEditorValidation
 
         try
         {
-            // FLAT, which is the only shape the plus can produce: a new condition takes the depth of
-            // the line above it, and the first line is always at the outermost level.
+            // FLAT, the only shape the plus can produce: a new condition takes the depth of the line above it.
             java.util.List<org.traincontrol.base.ConditionOutline.Row> typed =
                 new java.util.ArrayList<>();
 
@@ -691,9 +571,8 @@ public class testRouteEditorValidation
 
             javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(typed));
 
-            // PRECONDITION: typed flat, it is one level that disagrees with itself - an OR and an AND
-            // side by side - which is exactly the state the editor draws in red and refuses to save.
-            // Indenting is the way out of it, and that is what this test is about.
+            // PRECONDITION: typed flat, it is one level that disagrees with itself, the state the editor draws in red
+            // and refuses to save.
             assertFalse(org.traincontrol.base.ConditionOutline.problems(
                 frame.conditionRowsForTest()).isEmpty(),
                 "seven lines typed flat with both words on them should be flagged as a level that "
@@ -723,11 +602,8 @@ public class testRouteEditorValidation
                 + org.traincontrol.base.ConditionOutline.problems(frame.conditionRowsForTest())
                 + " in " + depths(frame));
 
-            // AND THE RULE THAT DECIDES WHICH ORDER IS TYPEABLE, measured rather than claimed in
-            // prose above.  Line 2 sits immediately after the outer OR, which is at depth 0, so it
-            // can never be deeper than 1 - and depth 2 is exactly where `ConditionOutline.of` puts
-            // the bracket when the group is the AND's LEFT child.  That is the whole reason the
-            // group is built on the right here.
+            // THE RULE THAT DECIDES WHICH ORDER IS TYPEABLE: line 2 follows the outer OR at depth 0 so it can never be
+            // deeper than 1, and `ConditionOutline.of` puts a left-child group's bracket at depth 2.
             final String before = depths(frame);
 
             javax.swing.SwingUtilities.invokeAndWait(() -> frame.indentConditionForTest(2, 1));
@@ -749,23 +625,10 @@ public class testRouteEditorValidation
         }
     }
 
+    /** The depths of the outline, for a failure message. */
     /**
-     * The depths of the outline, for a failure message.
-     *
-     * A condition outline that has gone wrong has gone wrong in its INDENTATION, and the meaning
-     * alone does not say where.
-     */
-    /**
-     * A condition that starts with a group can be built by indenting (2026-09-14).
-     *
-     * Adam: *"the first condition for some reason cannot be indented for proper grouping."*  The rule is that a
-     * line may be at most one level deeper than the line above it, and the first line has no line above it -
-     * so it was refused outright, and `(2 or 3) and (1 or 4)` could not be typed.  The first line now counts as
-     * having an unindented line above it.
-     *
-     * The gesture, from four conditions typed flat: the first condition in, then the OR after it, then the second
-     * condition; then the second pair the same way.  The word goes in before the condition after it, because
-     * indenting a line brings everything already indented under it along.
+     * A condition that starts with a group can be built by indenting (Adam: "the first condition for some reason cannot
+     * be indented for proper grouping.").  The first line now counts as having an unindented line above it.
      */
     @Test
     public void testAConditionThatStartsWithAGroupCanBeBuilt() throws Exception
@@ -805,12 +668,8 @@ public class testRouteEditorValidation
     }
 
     /**
-     * A joining word indented on its own is shown in red, not read silently as nothing (2026-09-14).
-     *
-     * The other half of Adam's report: an OR indented past the conditions either side of it was read as nothing,
-     * and "2 or 3" became "2 and 3" with nothing in red.  The indent is allowed - building a group one row at a
-     * time passes through exactly that state - but the word joins nothing at its depth, so it is flagged and Save
-     * refuses it until the conditions beside it are indented too.
+     * A joining word indented on its own is shown in red, not read as nothing; Save refuses it until its neighbors are
+     * indented too.
      */
     @Test
     public void testAWordIndentedAloneIsFlagged() throws Exception
@@ -843,10 +702,8 @@ public class testRouteEditorValidation
     }
 
     /**
-     * "Reads as" says the joining words in bold and the settings in the color of what they do (2026-09-14).
-     *
-     * Adam: *"In the 'reads as', can we also bold the operators, make on/straight/green green and off/turn/red
-     * red?"*  Colored by the WORD, because the same true/false means "on" for a sensor and "turn" for a switch.
+     * "Reads as" says the joining words in bold and the settings in the color of what they do, colored by the WORD
+     * because the same true/false means "on" for a sensor and "turn" for a switch.
      */
     @Test
     public void testReadsAsBoldsTheWordsAndColoursTheSettings() throws Exception
@@ -889,16 +746,9 @@ public class testRouteEditorValidation
     }
 
     /**
-     * Choosing the kind a condition line already is leaves it alone (2026-09-14).
-     *
-     * Adam: *"I start with Switch 1.  Then I set address to 40, which makes it a Signal.  Then, if I click on
-     * Kind -> Signal and exit out, it snaps back to Switch 1."*  A drop-down commits what it holds when it
-     * closes, chosen or not, and the condition table reset a line to its kind's starting address on every
-     * commit of the Kind cell - so any line, a sensor as much as a signal, went back to address 1.  At a
-     * signal's address it then showed as a Switch, because address 1 is not a signal.
-     *
-     * Without a layout every accessory reads as a switch, so the claim uses a switch and a sensor; the reset
-     * it pins did not look at the kind at all.
+     * Choosing the kind a condition line already is leaves it alone: the table reset a line to its kind's starting
+     * address on every commit of the Kind cell.  A switch and a sensor are used since without a layout every accessory
+     * reads as a switch.
      */
     @Test
     public void testChoosingTheKindALineAlreadyIsKeepsIt() throws Exception
@@ -940,12 +790,7 @@ public class testRouteEditorValidation
         }
     }
 
-    /**
-     * Switch and Signal are one command, so moving a line between them keeps its address (2026-09-14).
-     *
-     * A condition is stored as an accessory command whichever of the two it is called, so resetting the
-     * address when the other word is chosen threw away the only thing the line said.
-     */
+    /** Switch and Signal are one command, so moving a line between them keeps its address. */
     @Test
     public void testSwitchingBetweenSwitchAndSignalKeepsTheAddress() throws Exception
     {
@@ -977,12 +822,8 @@ public class testRouteEditorValidation
     }
 
     /**
-     * A red word carries a warning triangle, and its tooltip says which of the two things is wrong (2026-09-14).
-     *
-     * Adam: *"For the red operators, can we add a warning triangle icon with a tooltip explaining what's wrong
-     * next to it?"*  Two different reasons turn a word red and they are fixed differently, so the tooltip
-     * names the one that applies.  The cell is read as the table PAINTS it, and the renderer is one label
-     * reused down the column, so a line that is not flagged must carry neither.
+     * A red word carries a warning triangle whose tooltip says which of the two things is wrong.  The cell is read as
+     * the table PAINTS it, and the renderer reuses one label down the column, so an unflagged line must carry neither.
      */
     @Test
     public void testARedWordCarriesAWarningThatSaysWhy() throws Exception
@@ -998,9 +839,9 @@ public class testRouteEditorValidation
 
             javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(mixed));
 
-            // Each cell is read the moment it is painted: the renderer hands back ONE label for every cell, so
-            // holding two references and reading them afterwards reads the last cell painted twice.  The
-            // flagged line is painted first on purpose, so the second read is the one a stale warning shows in.
+            // Each cell is read the moment it is painted: the renderer hands back ONE label, so reading two references
+            // afterwards reads the last cell twice.  The flagged line is painted first so the second read is where a
+            // stale warning shows.
             final Painted[] cell = new Painted[2];
 
             javax.swing.SwingUtilities.invokeAndWait(() ->
@@ -1222,11 +1063,8 @@ public class testRouteEditorValidation
     }
 
     /**
-     * The SHAPE of the expression the outline currently means - "And(Or(x,x),x)".
-     *
-     * The class name of the top node alone is not enough: `(A or B) and C` is a NodeAnd whichever way
-     * the group inside it reads, which is what made the first version of this helper unable to tell
-     * the defect from the fix.
+     * The SHAPE of the expression the outline means - "And(Or(x,x),x)"; the top node's class alone cannot tell `(A or
+     * B) and C` from its defect.
      */
     private static String reads(org.traincontrol.gui.RouteEditorFrame frame)
     {
@@ -1268,11 +1106,8 @@ public class testRouteEditorValidation
     }
 
     /**
-     * The two train-at-a-sensor kinds say they are autonomy's, and the reading says which way round each one is (FR-141).
-     *
-     * Adam: *also, this is referring to autonomy, correct?  Prefix with "Autonomy: " if so.*  It is: `Route.evaluate`
-     * asks autonomy's record of where the train is, not the sensor.  The labels are read from the English bundle, so the
-     * claim is about the words Adam reads rather than about a key.
+     * The two train-at-a-sensor kinds say they are autonomy's, and the reading says which way round each is (FR-141);
+     * Adam: Prefix with "Autonomy: " if so.  The labels are read from the English bundle.
      *
      * MUTATION: read a not-at command as AUTO_LOCOMOTIVE in `CommandRow.of` and the reading says "at" for both lines.
      */
@@ -1338,11 +1173,8 @@ public class testRouteEditorValidation
     }
 
     /**
-     * Choosing Not At on an At line, or the other way, keeps its train and its sensor (FR-141).
-     *
-     * One condition asked either way round, so choosing the other kind turns the question round and changes nothing
-     * else - the way Switch and Signal keep their address.  Without a layout there is no first locomotive to start a
-     * new line on, so a reset would leave the line unbuildable and the choice would not take at all.
+     * Choosing Not At on an At line, or the other way, keeps its train and its sensor (FR-141): one condition asked
+     * either way round, as Switch and Signal keep their address.
      *
      * MUTATION: drop the at-or-not-at arm in the condition table's `setValueAt` and the kind does not change.
      */
@@ -1383,10 +1215,8 @@ public class testRouteEditorValidation
     }
 
     /**
-     * A train-at-a-sensor line's setting says it is the sensor's address (FR-141).
-     *
-     * Adam: *"setting" in this cas is/should be the sensor address, can it be made clearer?*  The cell paints the number
-     * as a sensor address and its tooltip says what it is, on both kinds; a sensor line's own setting is left as it was.
+     * A train-at-a-sensor line's setting says it is the sensor's address (FR-141): the cell paints it as one with a
+     * tooltip, on both kinds; a sensor line's own setting is left as it was.
      *
      * MUTATION: have `ConditionTable.shownAs` hand back the value as it is and the first assertion fails.
      */
