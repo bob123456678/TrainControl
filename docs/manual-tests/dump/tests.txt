@@ -32336,3 +32336,76 @@ body:
 tail:
 | ---
 |
+
+[test MT-820]
+ordinal: 819
+anchor: mt-820
+date: 2026-10-24
+title: While a run holds the setup, its refusals give one of two messages (3.0.3 duplication work)
+disposition: needs test
+from: FR-136
+written: 2026-10-24
+reopened: no
+body:
+| <a id="mt-820"></a>
+| ### MT-820 - 2026-10-24 - While a run holds the setup, its refusals give one of two messages (3.0.3 duplication work)
+|
+| **Disposition:** needs test
+| **From:** FR-136
+|
+| **Written:** 2026-10-24
+|
+| **Steps**
+|
+| 1. Before you start, File > Backup TrainControl Data.  Open your railway's layout with autonomy loaded, and start autonomy.
+| 2. While it runs, try each of these and read the message: in the autonomy setup's menus, `New Configuration...`, `Rename...` and `Import...`; in the timetable's right-click menu, `Clear Timetable` and `Restart Timetable`; on the autonomy settings, move a slider.
+| 3. Still while it runs, try the autonomy setup's `Export...`.
+| 4. Stop autonomy and wait for the trains to stand.  Run a long route by hand, and while it runs repeat steps 2 and 3, then try `Load this configuration` and `Stop Using Autonomy`.
+| 5. Let the route finish.
+|
+| **Expected**
+|
+| - Steps 2 and 4: each refusal says "Edits are not allowed while autonomy or routes are running."  A slider you moved goes back to where it was.
+| - Steps 3 and 4: Export, Load this configuration and Stop Using Autonomy say "Wait for the active locomotives to stop."
+| - Nothing is changed by any of the refused actions.
+|
+| *What this is:* the 3.0.3 duplication work (cluster 45).  The setup's refusals while a run holds it are now asked in one place and give one of two messages, where 3.0.2 gave several different ones.
+|
+tail:
+| ---
+|
+
+[test MT-821]
+ordinal: 820
+anchor: mt-821
+date: 2026-10-24
+title: A switch key looks the same when clicked, switched from outside and repainted (3.0.3 duplication work)
+disposition: needs test
+from: FR-136
+written: 2026-10-24
+reopened: no
+body:
+| <a id="mt-821"></a>
+| ### MT-821 - 2026-10-24 - A switch key looks the same when clicked, switched from outside and repainted (3.0.3 duplication work)
+|
+| **Disposition:** needs test
+| **From:** FR-136
+|
+| **Written:** 2026-10-24
+|
+| **Steps**
+|
+| 1. Open the keyboard tab and click a switch key twice.
+| 2. Change that switch from the Central Station (or a route), and look at its key.
+| 3. Go to another keyboard page and back.
+|
+| **Expected**
+|
+| - Step 1: the key turns red and underlined, then green and plain, looking exactly as in 3.0.2.
+| - Steps 2 and 3: the key follows the switch's state with the same look.
+|
+| *What this is:* the 3.0.3 duplication work (cluster 43).  The switch key's colors are now set in one place; nothing visible should change.
+|
+tail:
+| ---
+|

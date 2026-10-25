@@ -38661,23 +38661,23 @@ status_note: A D finding: checked and clean (3.0.2 validation round 5, RSA75 (ev
 line: 16
 severity: B
 title: AutomationAPI.md invites running the new examples on a real railway, and RunTrainsOnAGraph would leave a train running there
-disposition: Open
+disposition: Fixed - `2179b67d`: AutomationAPI.md cautions that the examples' graph, sensors, addresses and train are invented and what they do run as is; RunTrainsOnAGraph stops every train where it is if the graceful stop gives up.
 evidence: AutomationAPI.md:53
 commit_id: 3c7d8c8d
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: Fixed in 2179b67d (the caution, and the example stops its train) - 3.0.3 validation round 1, RSA76 (b6f3dfcb..ab54c48b; 0 A, 2 B, 14 C) (2026-10-24)
 
 [finding RSA76-B2 in RSA76.md]
 line: 30
 severity: B
 title: The AutomationAPI.md progress-callback sample does not compile as written, and once renamed it stops the run on its first sensor
-disposition: Follow-up: older than the range (`902c647c`, 2026-08-19); not a 3.0.3 regression
+disposition: Fixed - `2179b67d`: the progress callback uses the layout the sample holds.
 evidence: AutomationAPI.md:193
 commit_id: 902c647c
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: Fixed in 2179b67d (the sample uses its own layout) - 3.0.3 validation round 1, RSA76 (b6f3dfcb..ab54c48b; 0 A, 2 B, 14 C) (2026-10-24)
 
 [finding RSA76-C1 in RSA76.md]
 line: 44
@@ -38694,34 +38694,34 @@ status_note:
 line: 126
 severity: C
 title: Several of the range's claims reach their door by reflection or a test hook, not the user's gesture
-disposition: Open
+disposition: Follow-up - next release: drive OB-365, FR-144 and OB-370's doors by the user's gesture; claims for OB-367's renderer and FullAutonomyExample.
 evidence:
 commit_id:
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: Follow-up for the next release (plan section 8) - 3.0.3 validation round 1, RSA76 (b6f3dfcb..ab54c48b; 0 A, 2 B, 14 C) (2026-10-24)
 
 [finding RSA76-C11 in RSA76.md]
 line: 139
 severity: C
 title: OB-369's sample now writes preferred speeds into the user's locomotive database
-disposition: Open
+disposition: Fixed - `2179b67d`: the sample and the examples warn that setPreferredSpeed changes the stored preset.
 evidence: Layout.java:1812
 commit_id: 4b013b52
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: Fixed in 2179b67d (the warning) - 3.0.3 validation round 1, RSA76 (b6f3dfcb..ab54c48b; 0 A, 2 B, 14 C) (2026-10-24)
 
 [finding RSA76-C12 in RSA76.md]
 line: 147
 severity: C
 title: AutomationAPI.md's new text and the new examples are not US English, and two sentences are not true
-disposition: Open
+disposition: Fixed - `2179b67d`, `0c064002`: US English in the doc and examples (with BuildAGraph's printed text and its claim), and line 44's two sentences corrected.
 evidence: AutomationAPI.md:46
 commit_id:
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: Fixed in 2179b67d (US English, line 44) - 3.0.3 validation round 1, RSA76 (b6f3dfcb..ab54c48b; 0 A, 2 B, 14 C) (2026-10-24)
 
 [finding RSA76-C13 in RSA76.md]
 line: 162
@@ -38738,12 +38738,12 @@ status_note:
 line: 170
 severity: C
 title: The code split off LayoutEditor and AutonomyEditorPanel missed the Phase 2 comment trim
-disposition: Open
+disposition: Fixed - `74450314`, `410f7e88`: the four split-off files and SessionImport trimmed to the lean rule, comment-only (840 classes, identical bytecode); the ratchet banked.
 evidence: LayoutEditorSelection.java:73
 commit_id: aecaf627
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: Fixed in 74450314 (comment-only trim) - 3.0.3 validation round 1, RSA76 (b6f3dfcb..ab54c48b; 0 A, 2 B, 14 C) (2026-10-24)
 
 [finding RSA76-C2 in RSA76.md]
 line: 54
@@ -38782,29 +38782,29 @@ status_note:
 line: 80
 severity: C
 title: DD-B9: Test a Path and the findings now disagree at a station whose stopping copy cannot leave
-disposition: Open
+disposition: Follow-up - next release: Test a Path should start from the stopping copies as the findings now do; both are warnings and neither blocks Start.
 evidence:
 commit_id: c7e0ca6b
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: Follow-up for the next release (plan section 8) - 3.0.3 validation round 1, RSA76 (b6f3dfcb..ab54c48b; 0 A, 2 B, 14 C) (2026-10-24)
 
 [finding RSA76-C6 in RSA76.md]
 line: 94
 severity: C
 title: DD-B9's checker claim checks BuiltReach against a copy of its own rule
-disposition: Open
+disposition: Follow-up - next release: an independent oracle (Layout's own path search between station pairs) for the DD-B9 checker claim.
 evidence:
 commit_id:
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: Follow-up for the next release (plan section 8) - 3.0.3 validation round 1, RSA76 (b6f3dfcb..ab54c48b; 0 A, 2 B, 14 C) (2026-10-24)
 
 [finding RSA76-C7 in RSA76.md]
 line: 102
 severity: C
 title: OB-370's sentence names autonomy or routes when Return Home, a hand send or a graceful stop holds the setup, and it drops the remedy
-disposition: Open
+disposition: Open: Adam's call (the sentence names autonomy or routes when Return Home, a hand send or a graceful stop holds the setup, and has no remedy). The tracker receipt's 62d9fe37 is on branch ob370; dev has the same patch as 3e00f243.
 evidence: RunGates.java:72
 commit_id: 3e00f243
 cited_by:
@@ -38841,8 +38841,8 @@ disposition: Not a defect
 evidence:
 commit_id: fb2feef8
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: A D finding: checked and clean (3.0.3 validation round 1, RSA76 (b6f3dfcb..ab54c48b; 0 A, 2 B, 14 C) (2026-10-24))
 
 [finding RSA76-D10 in RSA76.md]
 line: 321
@@ -38852,8 +38852,8 @@ disposition: Not a defect
 evidence:
 commit_id: 4b013b52
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: A D finding: checked and clean (3.0.3 validation round 1, RSA76 (b6f3dfcb..ab54c48b; 0 A, 2 B, 14 C) (2026-10-24))
 
 [finding RSA76-D11 in RSA76.md]
 line: 329
@@ -38863,8 +38863,8 @@ disposition: Not a defect
 evidence:
 commit_id:
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: A D finding: checked and clean (3.0.3 validation round 1, RSA76 (b6f3dfcb..ab54c48b; 0 A, 2 B, 14 C) (2026-10-24))
 
 [finding RSA76-D12 in RSA76.md]
 line: 347
@@ -38874,8 +38874,8 @@ disposition: Not a defect
 evidence:
 commit_id:
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: A D finding: checked and clean (3.0.3 validation round 1, RSA76 (b6f3dfcb..ab54c48b; 0 A, 2 B, 14 C) (2026-10-24))
 
 [finding RSA76-D13 in RSA76.md]
 line: 355
@@ -38885,8 +38885,8 @@ disposition: Not a defect
 evidence:
 commit_id: 0e8437bf
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: A D finding: checked and clean (3.0.3 validation round 1, RSA76 (b6f3dfcb..ab54c48b; 0 A, 2 B, 14 C) (2026-10-24))
 
 [finding RSA76-D14 in RSA76.md]
 line: 370
@@ -38896,8 +38896,8 @@ disposition: Not a defect
 evidence:
 commit_id: d3e7965c
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: A D finding: checked and clean (3.0.3 validation round 1, RSA76 (b6f3dfcb..ab54c48b; 0 A, 2 B, 14 C) (2026-10-24))
 
 [finding RSA76-D2 in RSA76.md]
 line: 207
@@ -38907,8 +38907,8 @@ disposition: Not a defect
 evidence: AutonomyEditorPanel.java:3527
 commit_id: a1b3c64d
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: A D finding: checked and clean (3.0.3 validation round 1, RSA76 (b6f3dfcb..ab54c48b; 0 A, 2 B, 14 C) (2026-10-24))
 
 [finding RSA76-D3 in RSA76.md]
 line: 219
@@ -38918,8 +38918,8 @@ disposition: Not a defect
 evidence: LayoutRightclickAutonomyMenu.java:1055
 commit_id: 7eac943a
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: A D finding: checked and clean (3.0.3 validation round 1, RSA76 (b6f3dfcb..ab54c48b; 0 A, 2 B, 14 C) (2026-10-24))
 
 [finding RSA76-D4 in RSA76.md]
 line: 234
@@ -38929,8 +38929,8 @@ disposition: Not a defect
 evidence: AutonomyEditorPanel.java:1713
 commit_id: 50eb7c9a
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: A D finding: checked and clean (3.0.3 validation round 1, RSA76 (b6f3dfcb..ab54c48b; 0 A, 2 B, 14 C) (2026-10-24))
 
 [finding RSA76-D5 in RSA76.md]
 line: 249
@@ -38940,8 +38940,8 @@ disposition: Not a defect
 evidence: AutonomySession.java:1863
 commit_id: 83b84a85
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: A D finding: checked and clean (3.0.3 validation round 1, RSA76 (b6f3dfcb..ab54c48b; 0 A, 2 B, 14 C) (2026-10-24))
 
 [finding RSA76-D6 in RSA76.md]
 line: 261
@@ -38951,8 +38951,8 @@ disposition: Not a defect
 evidence:
 commit_id: 0b12b0ab
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: A D finding: checked and clean (3.0.3 validation round 1, RSA76 (b6f3dfcb..ab54c48b; 0 A, 2 B, 14 C) (2026-10-24))
 
 [finding RSA76-D7 in RSA76.md]
 line: 276
@@ -38962,8 +38962,8 @@ disposition: Not a defect
 evidence: CoveredTrackView.java:165
 commit_id: b0db0ddd
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: A D finding: checked and clean (3.0.3 validation round 1, RSA76 (b6f3dfcb..ab54c48b; 0 A, 2 B, 14 C) (2026-10-24))
 
 [finding RSA76-D8 in RSA76.md]
 line: 290
@@ -38973,8 +38973,8 @@ disposition: Not a defect
 evidence:
 commit_id:
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: A D finding: checked and clean (3.0.3 validation round 1, RSA76 (b6f3dfcb..ab54c48b; 0 A, 2 B, 14 C) (2026-10-24))
 
 [finding RSA76-D9 in RSA76.md]
 line: 302
@@ -38984,8 +38984,8 @@ disposition: Not a defect
 evidence:
 commit_id:
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: A D finding: checked and clean (3.0.3 validation round 1, RSA76 (b6f3dfcb..ab54c48b; 0 A, 2 B, 14 C) (2026-10-24))
 
 [finding RSA8-B1 in RSA8.md]
 line: 26
