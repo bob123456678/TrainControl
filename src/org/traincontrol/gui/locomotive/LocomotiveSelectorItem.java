@@ -61,11 +61,8 @@ public final class LocomotiveSelectorItem extends javax.swing.JPanel
         }
         else
         {
-            // A PLACEHOLDER RATHER THAN NOTHING (FR-054).
-            //
-            // Adam: "for locomotives without an icon, add a placeholder rather than nothing." A blank
-            // where a picture goes reads as a list that has failed to load rather than as a
-            // locomotive nobody has given a picture to.
+            // A placeholder rather than nothing (FR-054; Adam: "for locomotives without an icon, add a placeholder
+            // rather than nothing."): a blank reads as a list that has failed to load.
             locIcon.setIcon(new javax.swing.ImageIcon(
                 org.traincontrol.gui.locomotive.LocomotivePlaceholder.image(142)));
 
@@ -209,16 +206,10 @@ public final class LocomotiveSelectorItem extends javax.swing.JPanel
         }
         else
         {
-            // NO ACTIVE BUTTON MEANS NOTHING TO NAME.
-            //
-            // `getKeyForCurrentButton()` ends `return -1` when no button is selected, and this
-            // formatted that straight into the sentence - so the operator was told to map the
-            // locomotive to button U+FFFF. The sibling item on the right-click menu has asked this
-            // question since it was written and says why: *"(char) -1 painted as U+FFFF garbage."*
-            //
-            // It omits the item; this is a dialog the operator has already asked for, so it answers
-            // instead - with the other half of the sentence, which is that there is no active button
-            // to map to.
+            // No active button means nothing to name: `getKeyForCurrentButton()` ends `return -1`, and formatting that
+            // into the sentence told the operator to map the locomotive to button U+FFFF.  The sibling right-click item
+            // omits itself; this is a dialog the operator asked for, so it answers with the other half of the sentence,
+            // that there is no active button to map to.
             int key = this.selector.getUI().getKeyForCurrentButton();
 
             JOptionPane.showMessageDialog(
