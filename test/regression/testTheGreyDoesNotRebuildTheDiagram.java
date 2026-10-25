@@ -30,52 +30,37 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * MT-334's shape, asked of the gray wash that came back on 2026-09-09.
+ * MT-334's shape, asked of the gray wash that came back.
  *
- * Adam asked for the wash back beside the line and said how: *"That plus the line, **drawn and
- * refreshed carefully**, should do the trick."*  This codebase has already paid for the other kind of
- * refresh - MT-334 was the whole diagram being rebuilt because one pathing arrow changed, 384 tiles
- * out of 384, and what he saw was the page flickering.
+ * Adam asked for the wash back beside the line: "That plus the line, **drawn and refreshed carefully**, should do the
+ * trick."  MT-334 was the whole diagram being rebuilt because one pathing arrow changed, and he saw the page flicker.
  *
- * **Two things are asserted, and they are different claims.**
+ * Two different claims are asserted:
  *
- * - **No rebuild.**  The tiles of the page are collected as objects before the gesture and again
- *   after, and compared by identity.  A rebuild replaces every `LayoutLabel` in the grid; a refresh
- *   leaves them where they are.  That is exactly how `testTheDiagramIsNotRebuiltForAnArrow` measures
- *   the same failure, and it is the measurement that failure has.
+ * - **No rebuild.**  The page's tiles are collected as objects before and after the gesture and compared by identity
+ *   (as `testTheDiagramIsNotRebuiltForAnArrow` does): a rebuild replaces every `LayoutLabel`, a refresh does not.
  *
- * - **And only what changed is redrawn.**  Identity alone would be satisfied by a refresh that told
- *   every tile on the page to repaint - no flicker from rebuilding, but a full-page repaint on every
- *   train movement, and the refresh runs whenever anything about a train changes.  So a counting
- *   `RepaintManager` is installed for the duration of the gesture and records which components were
- *   made dirty.  Every one of them has to be a tile of a square whose state actually changed.
+ * - **Only what changed is redrawn.**  Identity alone would pass a refresh that repaints every tile on every train
+ *   movement, so a counting `RepaintManager` records which components were made dirty, and each must be a tile of a
+ *   square whose state actually changed.
  *
- * **The changed squares are worked out from the railway, not from the window.**  `blockedSquares()`
- * translates `Layout.edgesCoveredByStandingTrains` through the reducer here, the same way
- * `ui.testBlockedTrackIsGreyWhileAutonomyRuns` does and for the same reason: asking the window under
- * test what the right answer is agrees with it whatever it says.
+ * The changed squares are worked out from the railway, not from the window: `blockedSquares()` translates
+ * `Layout.edgesCoveredByStandingTrains` through the reducer, as `ui.testBlockedTrackIsGreyWhileAutonomyRuns` does,
+ * because asking the window what the right answer is agrees with it whatever it says.
  *
- * **THE GESTURE IS A TRAIN LENGTH NOW, AND IT USED TO BE STARTING AUTONOMY**.  The gray was
- * fenced on a running railway, so starting and stopping a run was what put the wash on and took it
- * off.  Adam, 2026-09-09: *"yes, this greyout should appear at idle and be regenerated if a placement
- * or train/track length is changed."*  With the fence gone, starting a run changes not one square -
- * this class would have gone on passing while measuring nothing, which is the failure mode the
- * repository keeps finding.  So it measures one of the three gestures he named instead, and the train
- * length is the one worth taking: it is the only one that needs no rebuild to take effect, which is
- * what leaves the repaint count as the only thing moving.
+ * The gesture is a TRAIN LENGTH.  The gray was once fenced on a running railway, so starting autonomy put the wash on;
+ * Adam: "yes, this greyout should appear at idle and be regenerated if a placement or train/track length is changed."
+ * With the fence gone, starting a run changes no square and this class would have measured nothing.  The train length
+ * is the only one of his three gestures that needs no rebuild, which leaves the repaint count as the only thing moving.
  *
- * **THROUGH THE DOOR.**  `TrainControlUI.applyTrainLength` is everything `promptTrainLength` does once
- * its dialog has answered; nothing here calls the window's own recompute, because a refresh the test
- * asked for would pass whether or not the door asks for one.
- *
- * **Both directions of the gesture.**  Measuring the train puts the wash on and unmeasuring it takes
- * the wash off, and the second is the half a set comparison makes easy to forget - it is the half
- * OB-180 was reported about.
+ * THROUGH THE DOOR: `TrainControlUI.applyTrainLength` is everything `promptTrainLength` does once its dialog has
+ * answered; nothing here calls the window's own recompute.  BOTH directions: unmeasuring the train takes the wash off
+ * (OB-180).
  *
  * MUTATION: make `repaintTheWashWhereItChanged` repaint every registered tile and
- * `testMeasuringTheTrainRedrawsOnlyTheSquaresThatChanged` fails.  Drop the blocked set from the
- * comparison it makes and `testUnmeasuringTheTrainTakesTheWashOffAgain` fails with nothing redrawn.
- * Take `blockedTrackChanged()` out of `applyTrainLength` and both fail with nothing redrawn at all.
+ * `testMeasuringTheTrainRedrawsOnlyTheSquaresThatChanged` fails.  Drop the blocked set from the comparison it makes and
+ * `testUnmeasuringTheTrainTakesTheWashOffAgain` fails with nothing redrawn.  Take `blockedTrackChanged()` out of
+ * `applyTrainLength` and both fail with nothing redrawn at all.
  *
  * @author Adam
  */
@@ -131,17 +116,10 @@ public class testTheGreyDoesNotRebuildTheDiagram
             throw new SkipException("building a page of tiles needs a display");
         }
 
-        // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111, and `test/layouts/live-snapshot`).
-        //
-        // This opened `cs2_sample_layout`, whose placements and lengths move as Adam runs trains on it
-        // - so on 2026-09-09 this class reported "no standing train covers any track here" against a
-        // working tree where every train had been driven away, and a class that skips everything reads
-        // as a green one.  `live-snapshot` is the same railway with the clock stopped at `e6f4649c`,
-        // which is the state these assertions were written against.
-        //
-        // `Scenario.folderFor` rather than a path: it is the only naming of a fixture folder that
-        // cannot spell its way out to the operator's own railway, and `LayoutSandbox` still copies
-        // what it names before anything reads it.
+        // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111, `test/layouts/live-snapshot`):
+        // `cs2_sample_layout`'s placements and lengths move as Adam runs trains on it, and a class that skips
+        // everything reads as green.  `Scenario.folderFor` is the only naming of a fixture folder that cannot spell its
+        // way out to his own railway.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
         model = support.TestStation.simulatedWithWindowInDebug();
@@ -201,9 +179,8 @@ public class testTheGreyDoesNotRebuildTheDiagram
 
         SwingUtilities.invokeAndWait(() ->
         {
-            // popup = true lays the grid out to its own natural size; master = null keeps it out of
-            // editor mode, which is where the marks are drawn.  The same construction support.Rendered
-            // uses.
+            // popup = true lays the grid out to its natural size; master = null keeps it out of editor mode, where the
+            // marks are drawn (as support.Rendered does).
             grid = new LayoutGrid(page, TILE, HOST, null, true, ui);
         });
 
@@ -226,27 +203,16 @@ public class testTheGreyDoesNotRebuildTheDiagram
         {
             SwingUtilities.invokeAndWait(() -> RepaintManager.setCurrentManager(counter));
 
-            // THE TRAIN IS UNMEASURED TO BEGIN WITH, so the gesture below is what puts the wash on.
-            //
-            // This used to start and stop AUTONOMY, because the gray was fenced on a running railway.
-            // That fence is gone (Adam 2026-09-09: *"yes, this greyout should appear at idle
-            // and be regenerated if a placement or train/track length is changed"*), so starting a run
-            // no longer changes a single square and the measurement would have been of nothing at all.
-            // The gesture that adds and removes the wash at idle is one of the three he named, and
-            // this class takes the train length: it is the only one of the three that needs no rebuild
-            // to take effect, which is what lets the claim be about repaints alone.
-            //
-            // A length of zero is how this railway says "not set", and an unmeasured train covers
-            // nothing.
+            // THE TRAIN IS UNMEASURED TO BEGIN WITH, so the gesture below is what puts the wash on (zero is how this
+            // railway says "not set", and an unmeasured train covers nothing).  Starting autonomy would change no
+            // square now that the gray is not fenced on a running railway.
             SwingUtilities.invokeAndWait(() -> ui.applyTrainLength(train, 0));
 
             settleMarks();
 
             counter.clear();
 
-            // THE GESTURE: the train is measured, and the window recomputes what is covered.  THROUGH
-            // THE DOOR, and nothing here asks for a refresh - `applyTrainLength` is what
-            // `promptTrainLength` calls once the dialog has answered.
+            // THE GESTURE, THROUGH THE DOOR: nothing here asks for a refresh.
             SwingUtilities.invokeAndWait(() -> ui.applyTrainLength(train, MEASURED));
 
             settleMarks();
@@ -372,20 +338,13 @@ public class testTheGreyDoesNotRebuildTheDiagram
     // ---------------------------------------------------------------- counting the repaints
 
     /**
-     * A RepaintManager that writes down which components were made dirty.
-     *
-     * Recorded BEFORE `super`, so what is counted is the `repaint()` calls production made rather than
-     * the subset Swing decided to act on - a component that is not on screen is exactly the case where
-     * the two differ, and every component here is offscreen.
-     */
-    /**
      * A tile whose picture changes - a switch thrown, a sensor occupied - redraws its own neighborhood, not the whole
-     * window it sits in (speed, 2026-10-04).
+     * window it sits in.
      *
-     * `LayoutLabel.setImageOnEDT` repainted the tile and then its `parent` - the panel the diagram sits in, which on the
-     * main window is the whole tab and in the editor the whole window - so every switch, signal and sensor event during a
-     * run redrew everything.  The tile's own repaint already goes through the diagram's panel, which draws overlapping
-     * children together (OB-172); the squares around it are redrawn as a train's icon is (MT-642).
+     * `LayoutLabel.setImageOnEDT` also repainted the tile's `parent` (the whole tab on the main window), so every
+     * switch, signal and sensor event during a run redrew everything.  The tile's own repaint already goes through the
+     * diagram's panel, which draws overlapping children together (OB-172); the squares around it are redrawn as a
+     * train's icon is (MT-642).
      *
      * MUTATION: repaint the parent again, and this fails.
      *
@@ -482,12 +441,9 @@ public class testTheGreyDoesNotRebuildTheDiagram
     }
 
     /**
-     * A refresh of the station captions that changes nothing lays nothing out again (speed, 2026-10-04).
-     *
-     * `updateStationLabels` revalidated and repainted each caption's PARENT - the whole page - for every station, on every
-     * publish of the running diagram (up to five times a second) and at each path's start and end, changed or not.  A
-     * caption that changes revalidates and repaints itself (`JLabel.setText`, `setBackground`); one that does not needs
-     * nothing.
+     * A refresh of the station captions that changes nothing lays nothing out again.  `updateStationLabels` revalidated
+     * and repainted each caption's PARENT, the whole page, on every publish of the running diagram (up to five times a
+     * second); a caption that changes revalidates and repaints itself.
      *
      * MUTATION: revalidate the captions' parent again, and this fails.
      *
@@ -551,11 +507,9 @@ public class testTheGreyDoesNotRebuildTheDiagram
     }
 
     /**
-     * Refreshing the static autonomy layer with nothing changed redraws no square (speed, 2026-10-04).
-     *
-     * `showStaticAutonomyLayer` cleared every square's mark and then set them all again - on every edit - so the check that
-     * skips an unchanged mark never saw one, and every marked square was redrawn twice.  It sets each mark, and clears only
-     * the squares that dropped out.
+     * Refreshing the static autonomy layer with nothing changed redraws no square: `showStaticAutonomyLayer` cleared
+     * every mark and set them all again, so the unchanged-mark check never saw one.  It now clears only the squares
+     * that dropped out.
      *
      * LAST IN THE CLASS: it shows the main window's static layer, and the tests about the gray count every square redrawn
      * - with the layer showing, the main window's own squares are among them.
@@ -620,6 +574,7 @@ public class testTheGreyDoesNotRebuildTheDiagram
         }
     }
 
+    /** A RepaintManager that records the `repaint()` calls production made, BEFORE Swing filters them (offscreen). */
     private static final class Counting extends RepaintManager
     {
         private final Set<JComponent> dirty = new LinkedHashSet<>();
@@ -662,20 +617,13 @@ public class testTheGreyDoesNotRebuildTheDiagram
         /**
          * The DIAGRAM SQUARES among them, which is what this class is about.
          *
-         * The gesture is `applyTrainLength`, and that door does two things: it tells the marks to
-         * recompute and it refreshes the autonomy findings, because FR-046 warns about a train with
-         * no length and that warning has to go when the length arrives.  The second dirties the strip
-         * at the top of the window - five components that belong to no square of the diagram - and
-         * counting those as squares redrawn accused the wash of repainting free track.
+         * `applyTrainLength` also refreshes the autonomy findings (FR-046 warns about a train with no length), which
+         * dirties the strip at the top of the window: five components that belong to no square, whose counting accused
+         * the wash of repainting free track.  A `LayoutLabel` is one square and nothing else is.
          *
-         * MT-334 is the PAGE flickering, so the population is the page's tiles.  A `LayoutLabel` is
-         * one square of the diagram and nothing else is; the caption labels beside a station are
-         * `StationCaption`s and the strip is not a tile at all.
-         *
-         * KNOWN LIMIT, stated rather than left to be found: a full-page repaint asked for by
-         * repainting the CONTAINER would dirty the container and not its children, and would be
-         * invisible here.  The identity comparison in `testMeasuringTheTrainDoesNotRebuildThePage`
-         * is what catches the rebuild; this catches the refresh that touches too many squares.
+         * KNOWN LIMIT: a full-page repaint asked for by repainting the CONTAINER dirties the container, not its
+         * children, and is invisible here; the identity comparison in `testMeasuringTheTrainDoesNotRebuildThePage`
+         * catches the rebuild, and this catches the refresh that touches too many squares.
          */
         synchronized Set<JComponent> seenTiles()
         {
@@ -691,29 +639,9 @@ public class testTheGreyDoesNotRebuildTheDiagram
     }
 
     /**
-     * Every on-screen tile of every square whose covered or blocked state the gesture changed.
-     *
-     * **BOTH MARKS, and it used to be the blocked one alone.**  While the gesture was starting and
-     * stopping autonomy that was right: the line was drawn either way, so only the wash moved and the
-     * squares that changed were exactly the blocked ones.  A train LENGTH moves both - the line is as
-     * long as the train and the wash is the whole of the edges its tail reaches - so a covered square
-     * losing its line is a square this gesture legitimately redraws, and counting it as a stray
-     * accused the window of repainting free track.
-     *
-     * A square can be on screen more than once, which is why this asks the registry rather than the
-     * grid.
-     *
-     * @return the tiles that are allowed to have been redrawn
-     */
-    /**
-     * Which SQUARES a set of redrawn tiles belong to, for an assertion message that can be acted on.
-     *
-     * A `LayoutLabel` does not say which square it is - `setSquare` has no getter - so this asks the
-     * registry the other way round, over every square the reduction knows.  A tile that belongs to no
-     * such square is reported as unknown, which is itself the answer: it is not a square of the graph.
-     *
-     * @param tiles the tiles to name
-     * @return the squares, as text
+     * Which SQUARES a set of redrawn tiles belong to, for an assertion message that can be acted on.  A `LayoutLabel`
+     * has no square getter, so this asks the registry the other way round; a tile that belongs to no square of the
+     * graph is reported as unknown.
      */
     private static String nameThem(java.util.Collection<JComponent> tiles)
     {
@@ -762,6 +690,11 @@ public class testTheGreyDoesNotRebuildTheDiagram
         return out;
     }
 
+    /**
+     * Every on-screen tile of every square whose covered or blocked state the gesture changed.  BOTH marks: a train
+     * LENGTH moves the line as well as the wash, so a covered square losing its line is legitimately redrawn.  Asks the
+     * registry rather than the grid, since a square can be on screen more than once.
+     */
     private static Set<JComponent> tilesOfTheChangedSquares()
     {
         Set<TileKey> changed = new LinkedHashSet<>(blocked);
@@ -779,13 +712,8 @@ public class testTheGreyDoesNotRebuildTheDiagram
     }
 
     /**
-     * The squares the train is DRAWN on while it is measured, worked out from the railway.
-     *
-     * The same source as `blockedSquares` - `Layout.edgesCoveredByStandingTrains` - but the endpoints
-     * kept, because a train standing at a sensor is drawn standing there.  The window's own
-     * `isTrackCovered` is not asked, for the reason `blockedSquares` gives.
-     *
-     * @return the covered squares
+     * The squares the train is DRAWN on while it is measured, worked out from the railway: the same source as
+     * `blockedSquares`, endpoints kept because a train standing at a sensor is drawn there.
      */
     private static Set<TileKey> coveredSquares()
     {
@@ -856,10 +784,8 @@ public class testTheGreyDoesNotRebuildTheDiagram
     // ---------------------------------------------------------------- the railway's own answer
 
     /**
-     * The squares the railway holds blocked, worked out from the covered EDGES - the same translation
-     * `ui.testBlockedTrackIsGreyWhileAutonomyRuns` makes, and stated there.
-     *
-     * @return the blocked squares
+     * The squares the railway holds blocked, worked out from the covered EDGES as in
+     * `ui.testBlockedTrackIsGreyWhileAutonomyRuns`.
      */
     private static Set<TileKey> blockedSquares()
     {
@@ -900,11 +826,8 @@ public class testTheGreyDoesNotRebuildTheDiagram
     // ---------------------------------------------------------------- the fixture
 
     /**
-     * WAITS for the marks a gesture asked for, without asking for them.
-     *
-     * The difference between this and `refreshCoveredTrack` below is the whole point of the gesture
-     * block above: calling the window's own recompute after the door would prove that the recompute
-     * works, which is not the claim.
+     * WAITS for the marks a gesture asked for, without asking for them: calling the window's own recompute after the
+     * door would prove that the recompute works, which is not the claim.
      */
     private static void settleMarks() throws Exception
     {
@@ -915,10 +838,8 @@ public class testTheGreyDoesNotRebuildTheDiagram
 
     private static void refreshCoveredTrack() throws Exception
     {
-        // AND WAITED FOR (OB-192).  The window works the marks out on a worker now, because asking
-        // for them on the event thread meant waiting on the `Layout` monitor a dispatch holds - so
-        // asking and reading are two moments, and `support.CoveredMarks` is the one place that knows
-        // it.
+        // AND WAITED FOR (OB-192): the window works the marks out on a worker (the event thread would wait on the
+        // `Layout` monitor a dispatch holds), so asking and reading are two moments, known to `support.CoveredMarks`.
         support.CoveredMarks.refresh(ui);
 
         pump();
