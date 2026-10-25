@@ -325,7 +325,7 @@ public class testTheShadingIsRedrawnWhenATrainMoves
             //
             // The operator doors do this too: a hand placement asks or assumes the side, and this is
             // the same value by the same rule.
-            for (String side : org.traincontrol.gui.ArrivalSidePrompt.sidesOf(built, station))
+            for (String side : org.traincontrol.gui.autonomy.ArrivalSidePrompt.sidesOf(built, station))
             {
                 station.setArrivedFrom(side);
 

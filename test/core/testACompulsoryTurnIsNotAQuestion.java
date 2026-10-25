@@ -14,7 +14,7 @@ import org.traincontrol.automation.Point;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.LayoutDiagram;
-import org.traincontrol.gui.ManualReversalPrompt;
+import org.traincontrol.gui.autonomy.ManualReversalPrompt;
 import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.file.CS2File;

@@ -521,7 +521,7 @@ public class testTheGreyDoesNotRebuildTheDiagram
 
             for (JComponent c : counter.seen())
             {
-                if (c instanceof org.traincontrol.gui.StationCaption) captions.add(c);
+                if (c instanceof org.traincontrol.gui.widgets.StationCaption) captions.add(c);
             }
 
             if (captions.isEmpty()) throw new AssertionError("no station caption on the window's page was refreshed");
@@ -582,7 +582,7 @@ public class testTheGreyDoesNotRebuildTheDiagram
             settle();
 
             // PRECONDITION: squares of the window's page wear a mark, so a clear would redraw them
-            java.lang.reflect.Field tilesField = org.traincontrol.gui.DiagramTileRegistry.class.getDeclaredField("tiles");
+            java.lang.reflect.Field tilesField = org.traincontrol.gui.autonomy.DiagramTileRegistry.class.getDeclaredField("tiles");
 
             tilesField.setAccessible(true);
 

@@ -960,7 +960,7 @@ public class testAutonomyDiagramStore
             "precondition: this reconciliation must have dropped ONLY tile properties, or the text "
             + "below could be produced by one of the other two lists");
 
-        String said = org.traincontrol.gui.AutonomyReport.describe(report);
+        String said = org.traincontrol.gui.autonomy.AutonomyReport.describe(report);
 
         assertFalse(said.isEmpty(),
             "a save that dropped track lengths and directions says nothing at all - isClean() counts "

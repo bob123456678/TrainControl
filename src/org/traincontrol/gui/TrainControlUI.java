@@ -123,6 +123,36 @@ import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.Point;
 import org.traincontrol.automation.TimetablePath;
 import org.traincontrol.base.Locomotive;
+import org.traincontrol.gui.autonomy.AutoJSONExport;
+import org.traincontrol.gui.autonomy.AutoLocomotiveStatus;
+import org.traincontrol.gui.autonomy.AutonomyBanner;
+import org.traincontrol.gui.autonomy.DiagramExport;
+import org.traincontrol.gui.autonomy.DiagramMonitorDriver;
+import org.traincontrol.gui.autonomy.DiagramTileRegistry;
+import org.traincontrol.gui.autonomy.ManualReversalPrompt;
+import org.traincontrol.gui.autonomy.RightClickTimetableMenu;
+import org.traincontrol.gui.layouteditor.LayoutEditor;
+import org.traincontrol.gui.locomotive.AddLocomotive;
+import org.traincontrol.gui.locomotive.CurrentKeyRow;
+import org.traincontrol.gui.locomotive.LocButtonTransferHandler;
+import org.traincontrol.gui.locomotive.LocomotiveFunctionAssign;
+import org.traincontrol.gui.locomotive.LocomotiveKeyboardMapping;
+import org.traincontrol.gui.locomotive.LocomotivePlaceholder;
+import org.traincontrol.gui.locomotive.LocomotiveSelector;
+import org.traincontrol.gui.locomotive.LocomotiveStats;
+import org.traincontrol.gui.locomotive.RightClickFunctionMenu;
+import org.traincontrol.gui.locomotive.RightClickMenuListener;
+import org.traincontrol.gui.locomotive.RightClickPageMenu;
+import org.traincontrol.gui.locomotive.UsageHistogram;
+import org.traincontrol.gui.widgets.About;
+import org.traincontrol.gui.widgets.BackupAction;
+import org.traincontrol.gui.widgets.BusyDialog;
+import org.traincontrol.gui.widgets.HandScrollListener;
+import org.traincontrol.gui.widgets.PositionAwareJFrame;
+import org.traincontrol.gui.widgets.QuickFileChooser;
+import org.traincontrol.gui.widgets.StartupSplash;
+import org.traincontrol.gui.widgets.StationCaption;
+import org.traincontrol.gui.widgets.UpdateFlow;
 import org.traincontrol.model.View;
 import org.traincontrol.model.ViewListener;
 import org.json.JSONObject;
@@ -146,7 +176,7 @@ import org.traincontrol.util.SelfUpdate;
 public class TrainControlUI extends PositionAwareJFrame implements View 
 {
     // Data save file name
-    static final String DATA_FILE_NAME = "UIState.data";
+    public static final String DATA_FILE_NAME = "UIState.data";
     public static final String AUTONOMY_FILE_NAME = "autonomy.json";
     
     // External resources
@@ -340,12 +370,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     // Download & Update from its question to the exit (FR-125): armed by `closeForTheUpdate` before it asks for the
     // exit, disarmed whatever the exit does, taken by `WindowClosed`.
-    final SelfUpdate.HandOver updateHandOver = new SelfUpdate.HandOver();
+    public final SelfUpdate.HandOver updateHandOver = new SelfUpdate.HandOver();
 
     private final UpdateFlow updateFlow = new UpdateFlow(this);
 
     /** The Help > Download Update item, which shows a download's progress. */
-    javax.swing.JMenuItem downloadUpdateMenuItem()
+    public javax.swing.JMenuItem downloadUpdateMenuItem()
     {
         return this.downloadUpdateMenuItem;
     }
@@ -1675,7 +1705,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /** The file a stored image URL names, or null when it names no readable file: `new File(url)` keeps the scheme. */
-    static File fileOf(String url)
+    public static File fileOf(String url)
     {
         if (url == null) return null;
 
@@ -4631,7 +4661,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /** Delegates to `RunGates.refuseWhileARunHoldsTheSetup`. */
-    boolean refuseWhileARunHoldsTheSetup(Component source)
+    public boolean refuseWhileARunHoldsTheSetup(Component source)
     {
         return RunGates.refuseWhileARunHoldsTheSetup(this, source, null);
     }
@@ -4750,7 +4780,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * `refusedToSendATrain`, `whyThisPathCannotBeTaken`, the reversal question, `refusedForAnEditorOnItsWay` again
      * and the atomic-routes gate; the dispatch then runs on its own thread, as it holds the railway's monitor (OB-192).
      */
-    void sendATrainByHand(final Layout railway, final List<org.traincontrol.automation.Edge> path,
+    public void sendATrainByHand(final Layout railway, final List<org.traincontrol.automation.Edge> path,
         final Locomotive train)
     {
         if (railway == null || path == null || path.isEmpty() || train == null) return;
@@ -5008,7 +5038,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /** An editor window has gone: Edit and the doors beside it ask again.  Called from `LayoutEditor.dispose`. */
-    void editorWindowClosed()
+    public void editorWindowClosed()
     {
         if (javax.swing.SwingUtilities.isEventDispatchThread())
         {
@@ -5351,7 +5381,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             // Where its tail is, asked BEFORE anything moves: a dismissed prompt refuses the placement and leaves the
             // train on the clipboard, unlike the other two nulls `forPlacement` answers.
-            tailAtTheLanding = org.traincontrol.gui.ArrivalSidePrompt.forPlacement(
+            tailAtTheLanding = org.traincontrol.gui.autonomy.ArrivalSidePrompt.forPlacement(
                 this.model == null ? null : this.model.getAutoLayout(), point,
                 facingAtTheLanding == null ? null : facingAtTheLanding.name(),
             // The build's sides, which the model reads too (OB-182): the geometric answer names where the neighboring
@@ -5359,7 +5389,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 mayTurnHere(aimed), this,
                 getAutonomySession() == null ? null : getAutonomySession().unbarredArrivalSides(aimed));
 
-            if (tailAtTheLanding == null && org.traincontrol.gui.ArrivalSidePrompt.wouldAsk(
+            if (tailAtTheLanding == null && org.traincontrol.gui.autonomy.ArrivalSidePrompt.wouldAsk(
                 this.model == null ? null : this.model.getAutoLayout(), point,
                 mayTurnHere(aimed), getAutonomySession() == null
                     ? null : getAutonomySession().unbarredArrivalSides(aimed)))
@@ -5376,10 +5406,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 java.util.Collection<org.traincontrol.automationui.TilePorts.Side> canHold =
                     getAutonomySession().facingsFor(aimed).values();
 
-                if (org.traincontrol.gui.FacingPrompt.wouldAsk(canHold))
+                if (org.traincontrol.gui.autonomy.FacingPrompt.wouldAsk(canHold))
                 {
                     // Named as the square: a copy's name states a heading, which is what this asks.
-                    facingChosenAtTheLanding = org.traincontrol.gui.FacingPrompt.forPlacement(
+                    facingChosenAtTheLanding = org.traincontrol.gui.autonomy.FacingPrompt.forPlacement(
                         canHold, facingAtTheLanding, getAutonomySession().baseNameOf(point.getName()), this);
 
                     if (facingChosenAtTheLanding == null) return true;
@@ -17620,7 +17650,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * waits for the first, as two at once would share a staging file and an archive name.  Returns the archive, or no
      * archive, and what could not be saved.
      */
-    BackupAction.BackupOutcome backupData()
+    public BackupAction.BackupOutcome backupData()
     {
         synchronized (this.oneBackupAtATime)
         {
@@ -17635,7 +17665,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private final BackupAction backupAction = new BackupAction(this);
 
     /** File > Backup TrainControl Data, which a backup grays while it runs. */
-    javax.swing.JMenuItem backupDataMenuItem()
+    public javax.swing.JMenuItem backupDataMenuItem()
     {
         return this.backupDataMenuItem;
     }
@@ -18810,7 +18840,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * (FR-129).  Adam: "There should be no setup edit possible during a run".  Doors that send trains keep their own
      * question.
      */
-    boolean aRunHoldsTheSetup()
+    public boolean aRunHoldsTheSetup()
     {
         return somethingIsRunning(this.model, this.stagingFlowActive || theAutoTabWaits());
     }
@@ -19506,7 +19536,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Answers the update question in place of the user, in a test: given the buttons and the default, returns the index
      * pressed.
      */
-    static volatile java.util.function.BiFunction<Object[], Object, Integer> updateQuestionForTests;
+    public static volatile java.util.function.BiFunction<Object[], Object, Integer> updateQuestionForTests;
 
     /**
      * Sets `updateQuestionForTests`; the hook returns the index pressed, -1 for the window closed, null for the real
@@ -19614,7 +19644,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Why this window's update cannot start now, or null (FR-125): `whyAnUpdateMustWait` with everything the Auto tab
      * waits for.
      */
-    String whyThisUpdateMustWait()
+    public String whyThisUpdateMustWait()
     {
         return whyAnUpdateMustWait(this.model, this.stagingFlowActive || theAutoTabWaits());
     }
@@ -19648,7 +19678,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * have started.  The update is disarmed whatever the exit does (`HandOver.exitWith`), so a throwing exit cannot
      * leave it armed for a later, ordinary exit.
      */
-    void closeNowForTheUpdate(final File jar, final File download)
+    public void closeNowForTheUpdate(final File jar, final File download)
     {
         try
         {
@@ -23003,7 +23033,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /** `getLocalLayoutPath`, for the window's collaborators in this package. */
-    String localLayoutPath()
+    public String localLayoutPath()
     {
         return getLocalLayoutPath();
     }

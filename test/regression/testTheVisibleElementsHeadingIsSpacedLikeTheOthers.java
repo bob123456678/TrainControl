@@ -15,7 +15,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.base.LayoutDiagram;
-import org.traincontrol.gui.LayoutEditor;
+import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
@@ -63,9 +63,9 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
 
         // THE EDITOR AT ITS OWN SIZE, NOT THE OPERATOR'S: the run copies his settings for this folder, and with "remember window
         // location" on, the editor opens at his saved bounds, where nothing may lie under the band.  Set, never toggled.
-        rememberedWas = TrainControlUI.getPrefs().get(org.traincontrol.gui.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION, null);
+        rememberedWas = TrainControlUI.getPrefs().get(org.traincontrol.gui.widgets.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION, null);
 
-        TrainControlUI.getPrefs().putBoolean(org.traincontrol.gui.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION, false);
+        TrainControlUI.getPrefs().putBoolean(org.traincontrol.gui.widgets.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION, false);
 
         model = support.TestStation.simulatedInDebug();
 
@@ -96,8 +96,8 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
         }
         finally
         {
-            if (rememberedWas == null) TrainControlUI.getPrefs().remove(org.traincontrol.gui.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION);
-            else TrainControlUI.getPrefs().put(org.traincontrol.gui.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION, rememberedWas);
+            if (rememberedWas == null) TrainControlUI.getPrefs().remove(org.traincontrol.gui.widgets.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION);
+            else TrainControlUI.getPrefs().put(org.traincontrol.gui.widgets.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION, rememberedWas);
 
             if (sandbox != null) sandbox.close();
         }
@@ -229,7 +229,7 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
 
         try
         {
-            final org.traincontrol.gui.AutonomyBanner notices = notices(editor);
+            final org.traincontrol.gui.autonomy.AutonomyBanner notices = notices(editor);
             final javax.swing.JViewport diagram = diagram(editor);
 
             final java.awt.Rectangle before = onScreen(diagram);
@@ -295,7 +295,7 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
 
         try
         {
-            final org.traincontrol.gui.AutonomyBanner notices = notices(editor);
+            final org.traincontrol.gui.autonomy.AutonomyBanner notices = notices(editor);
 
             say(editor, notices, lines(1));
 
@@ -311,7 +311,7 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
 
                 java.awt.Component text = area.getViewport().getView();
 
-                int line = text.getFontMetrics(org.traincontrol.gui.AutonomyBanner.MESSAGE_FONT).getHeight();
+                int line = text.getFontMetrics(org.traincontrol.gui.autonomy.AutonomyBanner.MESSAGE_FONT).getHeight();
 
                 java.awt.Insets pad = notices.getInsets();
 
@@ -365,7 +365,7 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
 
         try
         {
-            final org.traincontrol.gui.AutonomyBanner notices = notices(editor);
+            final org.traincontrol.gui.autonomy.AutonomyBanner notices = notices(editor);
             final javax.swing.JViewport diagram = diagram(editor);
 
             say(editor, notices, lines(4));
@@ -433,7 +433,7 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
 
         try
         {
-            final org.traincontrol.gui.AutonomyBanner notices = notices(editor);
+            final org.traincontrol.gui.autonomy.AutonomyBanner notices = notices(editor);
             final javax.swing.JViewport diagram = diagram(editor);
 
             say(editor, notices, lines(6));
@@ -503,9 +503,9 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
         return built[0];
     }
 
-    private static org.traincontrol.gui.AutonomyBanner notices(LayoutEditor editor) throws ReflectiveOperationException
+    private static org.traincontrol.gui.autonomy.AutonomyBanner notices(LayoutEditor editor) throws ReflectiveOperationException
     {
-        return (org.traincontrol.gui.AutonomyBanner) field(editor, "autonomyBanner");
+        return (org.traincontrol.gui.autonomy.AutonomyBanner) field(editor, "autonomyBanner");
     }
 
     /** What the diagram shows on screen: its scroll pane's viewport. */
@@ -515,7 +515,7 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
     }
 
     /** Says a notice that stays, and lets the window lay out what it now holds. */
-    private static void say(final LayoutEditor editor, final org.traincontrol.gui.AutonomyBanner notices,
+    private static void say(final LayoutEditor editor, final org.traincontrol.gui.autonomy.AutonomyBanner notices,
         final String notice) throws Exception
     {
         SwingUtilities.invokeAndWait(() -> notices.showUntilChanged(notice));
@@ -533,7 +533,7 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
     }
 
     /** Presses the band's X where it is drawn, found by its tooltip, as a pointer would. */
-    private static void dismiss(final LayoutEditor editor, final org.traincontrol.gui.AutonomyBanner notices)
+    private static void dismiss(final LayoutEditor editor, final org.traincontrol.gui.autonomy.AutonomyBanner notices)
         throws Exception
     {
         final String tip = org.traincontrol.util.I18n.t("autosetup.ui.tooltipDismissNotice");

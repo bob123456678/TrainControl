@@ -17,9 +17,9 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TileOverlay;
 import org.traincontrol.automationui.TilePorts.Side;
 import org.traincontrol.gui.AutonomyEditorPanel;
-import org.traincontrol.gui.DiagramMonitorDriver;
-import org.traincontrol.gui.LayoutEditor;
-import org.traincontrol.gui.StationCaption;
+import org.traincontrol.gui.autonomy.DiagramMonitorDriver;
+import org.traincontrol.gui.layouteditor.LayoutEditor;
+import org.traincontrol.gui.widgets.StationCaption;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
@@ -912,7 +912,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
         // EVERY QUESTION A PLACEMENT MAY ASK, answered so nothing waits for a person
         List<Side> sides = session.unbarredArrivalSides(PLATFORM);
 
-        org.traincontrol.gui.ArrivalSidePrompt.answerForTests(sides == null || sides.isEmpty() ? "N" : sides.get(0).name());
+        org.traincontrol.gui.autonomy.ArrivalSidePrompt.answerForTests(sides == null || sides.isEmpty() ? "N" : sides.get(0).name());
         org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
     }
 
@@ -997,7 +997,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
     /** Takes this class's train off the railway, wherever it stands, and puts the questions' dialogs back. */
     private static void liftIt() throws Exception
     {
-        org.traincontrol.gui.ArrivalSidePrompt.answerForTests(null);
+        org.traincontrol.gui.autonomy.ArrivalSidePrompt.answerForTests(null);
         org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
 
         SwingUtilities.invokeAndWait(() ->

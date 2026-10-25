@@ -136,7 +136,7 @@ public class testARouteDrivenLocomotiveIsNotEdited
             // THE MULTI-UNIT DOOR, from the locomotive database's menu (Adam, 2026-10-03) ...
             final javax.swing.JPopupMenu[] database = new javax.swing.JPopupMenu[1];
 
-            SwingUtilities.invokeAndWait(() -> database[0] = new org.traincontrol.gui.RightClickSelectorMenu(window, null, loc));
+            SwingUtilities.invokeAndWait(() -> database[0] = new org.traincontrol.gui.locomotive.RightClickSelectorMenu(window, null, loc));
 
             final javax.swing.JMenuItem fromTheDatabase = multiUnitItemIn(database[0]);
 
@@ -164,13 +164,13 @@ public class testARouteDrivenLocomotiveIsNotEdited
 
             SwingUtilities.invokeAndWait(() -> window.mapLocToCurrentButton(LOC));
 
-            final Class<?> listenerClass = Class.forName("org.traincontrol.gui.RightClickMenuListener");
+            final Class<?> listenerClass = Class.forName("org.traincontrol.gui.locomotive.RightClickMenuListener");
 
             final Object listener = listenerClass.getConstructor(TrainControlUI.class, javax.swing.JButton.class)
                 .newInstance(window, button);
 
             final java.lang.reflect.Constructor<?> make = Class.forName(
-                "org.traincontrol.gui.RightClickMenuListener$RightClickMenu").getDeclaredConstructor(listenerClass,
+                "org.traincontrol.gui.locomotive.RightClickMenuListener$RightClickMenu").getDeclaredConstructor(listenerClass,
                 TrainControlUI.class);
 
             make.setAccessible(true);
@@ -715,7 +715,7 @@ public class testARouteDrivenLocomotiveIsNotEdited
 
                     JOptionPane pane = paneIn((java.awt.Container) window);
 
-                    if (pane == null || !(pane.getMessage() instanceof org.traincontrol.gui.LocomotiveAddressChange)) continue;
+                    if (pane == null || !(pane.getMessage() instanceof org.traincontrol.gui.locomotive.LocomotiveAddressChange)) continue;
 
                     try
                     {

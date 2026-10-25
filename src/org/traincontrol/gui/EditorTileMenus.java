@@ -820,7 +820,7 @@ final class EditorTileMenus
             // UNBARRED (OB-204): this menu records where a train CAME FROM, and a side nothing may
             // arrive by is not one of those.  The "Trains May Arrive" menu above still offers every
             // side, because its whole job is to open and close them.
-            org.traincontrol.gui.ArrivalSidePrompt.sidesOf(editor.session.unbarredArrivalSides(target)));
+            org.traincontrol.gui.autonomy.ArrivalSidePrompt.sidesOf(editor.session.unbarredArrivalSides(target)));
 
         final String recorded = editor.session.getArrivedFrom(target);
 
@@ -843,7 +843,7 @@ final class EditorTileMenus
 
         for (final String side : sides)
         {
-            menu.add(editor.radio(group, org.traincontrol.gui.ArrivalSidePrompt.labelFor(side),
+            menu.add(editor.radio(group, org.traincontrol.gui.autonomy.ArrivalSidePrompt.labelFor(side),
                 "autosetup.ui.hintArrivedFrom",
                 side.equals(recorded),
                 () ->
@@ -877,7 +877,7 @@ final class EditorTileMenus
         {
             javax.swing.JRadioButtonMenuItem gone = new javax.swing.JRadioButtonMenuItem(
                 I18n.f("autosetup.ui.arrivedFromNotOnTrack",
-                    org.traincontrol.gui.ArrivalSidePrompt.labelFor(recordedButGone)), true);
+                    org.traincontrol.gui.autonomy.ArrivalSidePrompt.labelFor(recordedButGone)), true);
 
             // Not in the group, and not enabled: it is a statement about the square, not a choice.
             gone.setEnabled(false);

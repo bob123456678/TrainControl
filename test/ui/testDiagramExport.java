@@ -13,7 +13,7 @@ import org.testng.annotations.Test;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent;
-import org.traincontrol.gui.DiagramExport;
+import org.traincontrol.gui.autonomy.DiagramExport;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 
@@ -410,12 +410,12 @@ public class testDiagramExport
 
         boolean retiredWas = TrainControlUI.getPrefs().getBoolean(RETIRED_COORDINATES_PREF, false);
 
-        final org.traincontrol.gui.LayoutEditor[] editor = new org.traincontrol.gui.LayoutEditor[1];
+        final org.traincontrol.gui.layouteditor.LayoutEditor[] editor = new org.traincontrol.gui.layouteditor.LayoutEditor[1];
 
         try
         {
             SwingUtilities.invokeAndWait(() ->
-                editor[0] = new org.traincontrol.gui.LayoutEditor(page, 30, ui, 0));
+                editor[0] = new org.traincontrol.gui.layouteditor.LayoutEditor(page, 30, ui, 0));
 
             TrainControlUI.getPrefs().putBoolean(RETIRED_COORDINATES_PREF, false);
 
@@ -435,7 +435,7 @@ public class testDiagramExport
 
                 if (on)
                 {
-                    assertTrue(border instanceof org.traincontrol.gui.AxisRuler,
+                    assertTrue(border instanceof org.traincontrol.gui.widgets.AxisRuler,
                         "the grid is on and the editor's diagram carries " + border + ", so the "
                         + "numbers are drawn nowhere.  Adam: \"coordinates should always be on with "
                         + "the grid\" - and the only other setting in play here is the retired "
@@ -444,7 +444,7 @@ public class testDiagramExport
                 }
                 else
                 {
-                    assertFalse(border instanceof org.traincontrol.gui.AxisRuler,
+                    assertFalse(border instanceof org.traincontrol.gui.widgets.AxisRuler,
                         "the grid is off and the editor's diagram still carries a ruler, so the "
                         + "numbers outlived the thing they number");
                 }
@@ -458,7 +458,7 @@ public class testDiagramExport
                     new org.traincontrol.gui.LayoutGrid(page, 30, forViewer, null, true, ui));
 
                 assertFalse(inViewer[0].getContainer().getBorder()
-                        instanceof org.traincontrol.gui.AxisRuler,
+                        instanceof org.traincontrol.gui.widgets.AxisRuler,
                     "the running diagram carries the coordinate ruler with the grid " + on + " - "
                     + "Adam: \"they are visible in the track diagram viewer when they shouldn't be\"");
             }
@@ -478,7 +478,7 @@ public class testDiagramExport
                 new org.traincontrol.gui.LayoutGrid(page, 30, fresh, editor[0], true, ui));
 
             assertTrue(outOfTheBox[0].getContainer().getBorder()
-                    instanceof org.traincontrol.gui.AxisRuler,
+                    instanceof org.traincontrol.gui.widgets.AxisRuler,
                 "with nothing stored for either setting the editor's diagram carries no ruler, so the "
                 + "numbers are off out of the box - and the grid, whose default is on, is what they "
                 + "are supposed to follow");
@@ -493,7 +493,7 @@ public class testDiagramExport
 
             if (editor[0] != null)
             {
-                final org.traincontrol.gui.LayoutEditor open = editor[0];
+                final org.traincontrol.gui.layouteditor.LayoutEditor open = editor[0];
 
                 SwingUtilities.invokeAndWait(() -> open.dispose());
             }

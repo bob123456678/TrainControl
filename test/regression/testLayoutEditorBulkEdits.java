@@ -14,7 +14,7 @@ import org.traincontrol.automationui.TileGraph.Direction;
 import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts;
-import org.traincontrol.gui.LayoutEditor;
+import org.traincontrol.gui.layouteditor.LayoutEditor;
 
 /**
  * Moving or copying a whole line of squares at once, and what happens to the setup underneath it.
@@ -486,7 +486,7 @@ public class testLayoutEditorBulkEdits
             try
             {
                 java.lang.reflect.Field picked =
-                    org.traincontrol.gui.LayoutEditor.class.getDeclaredField("selection");
+                    org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredField("selection");
 
                 picked.setAccessible(true);
 
@@ -610,7 +610,7 @@ public class testLayoutEditorBulkEdits
         support.LayoutSandbox sandbox = null;
         org.traincontrol.marklin.MarklinControlStation model = null;
         final org.traincontrol.gui.TrainControlUI[] ui = new org.traincontrol.gui.TrainControlUI[1];
-        final org.traincontrol.gui.LayoutEditor[] editor = new org.traincontrol.gui.LayoutEditor[1];
+        final org.traincontrol.gui.layouteditor.LayoutEditor[] editor = new org.traincontrol.gui.layouteditor.LayoutEditor[1];
 
         try
         {
@@ -660,10 +660,10 @@ public class testLayoutEditorBulkEdits
             sessionField.set(ui[0], session);
 
             javax.swing.SwingUtilities.invokeAndWait(() ->
-                editor[0] = new org.traincontrol.gui.LayoutEditor(diagram, 30, ui[0], 0));
+                editor[0] = new org.traincontrol.gui.layouteditor.LayoutEditor(diagram, 30, ui[0], 0));
 
             java.lang.reflect.Method drawGrid =
-                org.traincontrol.gui.LayoutEditor.class.getDeclaredMethod("drawGrid");
+                org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredMethod("drawGrid");
             drawGrid.setAccessible(true);
 
             javax.swing.SwingUtilities.invokeAndWait(() ->

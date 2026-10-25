@@ -504,7 +504,7 @@ public class testAPendingTurnSurvivesTheRebuild
      */
     private static int arrowPixels() throws Exception
     {
-        java.lang.reflect.Field last = org.traincontrol.gui.DiagramTileRegistry.class.getDeclaredField("lastAnnotated");
+        java.lang.reflect.Field last = org.traincontrol.gui.autonomy.DiagramTileRegistry.class.getDeclaredField("lastAnnotated");
 
         last.setAccessible(true);
 
@@ -940,8 +940,8 @@ public class testAPendingTurnSurvivesTheRebuild
 
         final javax.swing.JPanel owner = new javax.swing.JPanel();
 
-        final org.traincontrol.gui.StationCaption onPageA = new org.traincontrol.gui.StationCaption();
-        final org.traincontrol.gui.StationCaption onPageB = new org.traincontrol.gui.StationCaption();
+        final org.traincontrol.gui.widgets.StationCaption onPageA = new org.traincontrol.gui.widgets.StationCaption();
+        final org.traincontrol.gui.widgets.StationCaption onPageB = new org.traincontrol.gui.widgets.StationCaption();
 
         onPageA.putClientProperty(TrainControlUI.LAYOUT_STATION_BUILD, new Object());
         onPageB.putClientProperty(TrainControlUI.LAYOUT_STATION_BUILD, new Object());
@@ -1143,9 +1143,9 @@ public class testAPendingTurnSurvivesTheRebuild
         // REMEMBER WINDOW LOCATION ON, the operator's own choice put back below, with whatever was kept for the window
         final java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
 
-        final String rememberWas = prefs.get(org.traincontrol.gui.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION, null);
+        final String rememberWas = prefs.get(org.traincontrol.gui.widgets.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION, null);
 
-        prefs.putBoolean(org.traincontrol.gui.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION, true);
+        prefs.putBoolean(org.traincontrol.gui.widgets.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION, true);
 
         org.traincontrol.gui.LayoutPopupUI popup = null;
         String kept = null;
@@ -1255,8 +1255,8 @@ public class testAPendingTurnSurvivesTheRebuild
                 for (String suffix : new String[] {"_x", "_y", "_width", "_height", "_state"}) prefs.remove(kept + suffix);
             }
 
-            if (rememberWas == null) prefs.remove(org.traincontrol.gui.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION);
-            else prefs.put(org.traincontrol.gui.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION, rememberWas);
+            if (rememberWas == null) prefs.remove(org.traincontrol.gui.widgets.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION);
+            else prefs.put(org.traincontrol.gui.widgets.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION, rememberWas);
 
             pump();
         }

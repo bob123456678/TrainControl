@@ -684,7 +684,7 @@ public class testAPasteDoesNotTurnTheTrainRound
 
         for (TileKey square : mayTurn)
         {
-            if (org.traincontrol.gui.FacingPrompt.wouldAsk(session.facingsFor(square).values()))
+            if (org.traincontrol.gui.autonomy.FacingPrompt.wouldAsk(session.facingsFor(square).values()))
             {
                 asked++;
             }
@@ -697,15 +697,15 @@ public class testAPasteDoesNotTurnTheTrainRound
         // Asserting that over the railway's own squares would be asserting a property of the loop:
         // `choicesFor` walks the four compass points and takes each at most once, so it cannot repeat
         // whatever it is given. This gives it something to collapse.
-        assertEquals(org.traincontrol.gui.FacingPrompt.choicesFor(
+        assertEquals(org.traincontrol.gui.autonomy.FacingPrompt.choicesFor(
             java.util.Arrays.asList(Side.E, Side.E, Side.N, Side.E)),
             java.util.Arrays.asList(Side.N, Side.E),
             "three copies facing east and one facing north should offer two headings, north first -"
             + " compass order, so the buttons do not move between squares - and the offering instead"
-            + " came back as " + org.traincontrol.gui.FacingPrompt.choicesFor(
+            + " came back as " + org.traincontrol.gui.autonomy.FacingPrompt.choicesFor(
                 java.util.Arrays.asList(Side.E, Side.E, Side.N, Side.E)));
 
-        assertFalse(org.traincontrol.gui.FacingPrompt.wouldAsk(
+        assertFalse(org.traincontrol.gui.autonomy.FacingPrompt.wouldAsk(
             java.util.Arrays.asList(Side.E, Side.E, Side.E)),
             "three copies all facing east put a question to the operator, whose three buttons are the"
             + " same answer. Collapsing them is what leaves one choice, and one choice is not a"
@@ -717,12 +717,12 @@ public class testAPasteDoesNotTurnTheTrainRound
             + " is never put and this claim cannot fail");
 
         // AND NOT ANYWHERE ELSE.  A square with one heading has nothing to ask, whatever it is.
-        assertFalse(org.traincontrol.gui.FacingPrompt.wouldAsk(
+        assertFalse(org.traincontrol.gui.autonomy.FacingPrompt.wouldAsk(
             java.util.Arrays.asList(Side.E)),
             "a square that can hold exactly one heading still puts a question to the operator, whose"
             + " only answer is the one the paste would have used anyway");
 
-        assertFalse(org.traincontrol.gui.FacingPrompt.wouldAsk(java.util.Collections.emptyList()),
+        assertFalse(org.traincontrol.gui.autonomy.FacingPrompt.wouldAsk(java.util.Collections.emptyList()),
             "a square that can hold no heading at all still puts a question, and the dialog has no"
             + " buttons on it");
 
@@ -761,9 +761,9 @@ public class testAPasteDoesNotTurnTheTrainRound
     {
         for (Side heading : Side.values())
         {
-            String facing = org.traincontrol.gui.FacingPrompt.labelFor(heading);
+            String facing = org.traincontrol.gui.autonomy.FacingPrompt.labelFor(heading);
 
-            String arrival = org.traincontrol.gui.ArrivalSidePrompt.labelFor(heading.name());
+            String arrival = org.traincontrol.gui.autonomy.ArrivalSidePrompt.labelFor(heading.name());
 
             assertFalse(facing == null || facing.trim().isEmpty(),
                 "the facing question has no label for " + heading);

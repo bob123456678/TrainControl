@@ -10,6 +10,7 @@ import java.util.List;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.event.AncestorEvent;
 import javax.swing.event.AncestorListener;
+import org.traincontrol.gui.autonomy.ArrivalSidePrompt;
 import org.traincontrol.util.I18n;
 
 /**

@@ -533,7 +533,7 @@ public class testWhyStuck
         final org.traincontrol.automation.Point end = layout.getPoint("WS11_B");
 
         java.lang.reflect.Method dash =
-            org.traincontrol.gui.AutoLocomotiveStatus.class.getDeclaredMethod(
+            org.traincontrol.gui.autonomy.AutoLocomotiveStatus.class.getDeclaredMethod(
                 "notChosenByAutonomy", org.traincontrol.automation.Point.class,
                 org.traincontrol.base.Locomotive.class);
 

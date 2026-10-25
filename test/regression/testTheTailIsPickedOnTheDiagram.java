@@ -453,7 +453,7 @@ public class testTheTailIsPickedOnTheDiagram
 
         final TunnelQuestion q = tunnelQuestion();
 
-        final org.traincontrol.gui.LayoutEditor[] editor = new org.traincontrol.gui.LayoutEditor[1];
+        final org.traincontrol.gui.layouteditor.LayoutEditor[] editor = new org.traincontrol.gui.layouteditor.LayoutEditor[1];
 
         java.lang.reflect.Field open = TrainControlUI.class.getDeclaredField("openEditor");
 
@@ -469,7 +469,7 @@ public class testTheTailIsPickedOnTheDiagram
         {
             javax.swing.SwingUtilities.invokeAndWait(() ->
             {
-                editor[0] = new org.traincontrol.gui.LayoutEditor(model.getLayout("1 - Main"), 30, ui, 0);
+                editor[0] = new org.traincontrol.gui.layouteditor.LayoutEditor(model.getLayout("1 - Main"), 30, ui, 0);
                 editor[0].pack();
             });
 
@@ -1491,8 +1491,8 @@ public class testTheTailIsPickedOnTheDiagram
             cancelTheQuestion();
 
             TailCrossedPrompt.answerForTests(null);
-            org.traincontrol.gui.FacingPrompt.answerForTests(null);
-            org.traincontrol.gui.ArrivalSidePrompt.answerForTests(null);
+            org.traincontrol.gui.autonomy.FacingPrompt.answerForTests(null);
+            org.traincontrol.gui.autonomy.ArrivalSidePrompt.answerForTests(null);
 
             takeDownDialogs();
 
@@ -1610,8 +1610,8 @@ public class testTheTailIsPickedOnTheDiagram
             cancelTheQuestion();
 
             TailCrossedPrompt.answerForTests(null);
-            org.traincontrol.gui.FacingPrompt.answerForTests(null);
-            org.traincontrol.gui.ArrivalSidePrompt.answerForTests(null);
+            org.traincontrol.gui.autonomy.FacingPrompt.answerForTests(null);
+            org.traincontrol.gui.autonomy.ArrivalSidePrompt.answerForTests(null);
 
             if (editor != null)
             {
@@ -1726,8 +1726,8 @@ public class testTheTailIsPickedOnTheDiagram
         cutFacing.setAccessible(true);
         cutFacing.set(ui, org.traincontrol.automationui.TilePorts.Side.S);
 
-        org.traincontrol.gui.FacingPrompt.answerForTests(org.traincontrol.automationui.TilePorts.Side.S);
-        org.traincontrol.gui.ArrivalSidePrompt.answerForTests("N");
+        org.traincontrol.gui.autonomy.FacingPrompt.answerForTests(org.traincontrol.automationui.TilePorts.Side.S);
+        org.traincontrol.gui.autonomy.ArrivalSidePrompt.answerForTests("N");
         TailCrossedPrompt.answerForTests(null);
 
         final java.util.concurrent.atomic.AtomicBoolean returned = new java.util.concurrent.atomic.AtomicBoolean(false);
@@ -2103,7 +2103,7 @@ public class testTheTailIsPickedOnTheDiagram
 
         ExecutorService asker = Executors.newSingleThreadExecutor();
 
-        final org.traincontrol.gui.LayoutEditor[] editor = new org.traincontrol.gui.LayoutEditor[1];
+        final org.traincontrol.gui.layouteditor.LayoutEditor[] editor = new org.traincontrol.gui.layouteditor.LayoutEditor[1];
 
         java.lang.reflect.Field open = TrainControlUI.class.getDeclaredField("openEditor");
 
@@ -2133,7 +2133,7 @@ public class testTheTailIsPickedOnTheDiagram
             // AS THE LIST, with an editor open
             javax.swing.SwingUtilities.invokeAndWait(() ->
             {
-                editor[0] = new org.traincontrol.gui.LayoutEditor(model.getLayout("1 - Main"), 30, ui, 0);
+                editor[0] = new org.traincontrol.gui.layouteditor.LayoutEditor(model.getLayout("1 - Main"), 30, ui, 0);
                 editor[0].pack();
             });
 

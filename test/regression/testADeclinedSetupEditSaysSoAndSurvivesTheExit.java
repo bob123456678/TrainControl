@@ -484,7 +484,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
 
         final String train = model.getLocList().get(0);
 
-        final org.traincontrol.gui.DiagramMonitorDriver driver = ui.getDiagramMonitorDriver();
+        final org.traincontrol.gui.autonomy.DiagramMonitorDriver driver = ui.getDiagramMonitorDriver();
 
         final boolean[] stood = new boolean[1];
 
@@ -1471,13 +1471,13 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
     {
         final boolean was = ui.isAlwaysOnTop();
 
-        final org.traincontrol.gui.AddLocomotive[] child = new org.traincontrol.gui.AddLocomotive[1];
+        final org.traincontrol.gui.locomotive.AddLocomotive[] child = new org.traincontrol.gui.locomotive.AddLocomotive[1];
 
         SwingUtilities.invokeAndWait(() ->
         {
             ui.setAlwaysOnTop(false);
 
-            child[0] = new org.traincontrol.gui.AddLocomotive(model, ui);
+            child[0] = new org.traincontrol.gui.locomotive.AddLocomotive(model, ui);
 
             child[0].pack();
         });

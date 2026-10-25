@@ -7,7 +7,7 @@ import java.util.List;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.base.LayoutDiagramComponent;
-import org.traincontrol.gui.LayoutEditor;
+import org.traincontrol.gui.layouteditor.LayoutEditor;
 import support.SourceOf;
 
 /**

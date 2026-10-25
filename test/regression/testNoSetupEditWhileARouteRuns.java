@@ -380,7 +380,7 @@ public class testNoSetupEditWhileARouteRuns
 
         final Answering answering = new Answering();
 
-        final org.traincontrol.gui.LayoutEditor[] editor = new org.traincontrol.gui.LayoutEditor[1];
+        final org.traincontrol.gui.layouteditor.LayoutEditor[] editor = new org.traincontrol.gui.layouteditor.LayoutEditor[1];
 
         try
         {
@@ -434,7 +434,7 @@ public class testNoSetupEditWhileARouteRuns
                     + " greyed while a route runs, does not say why: " + tab.getToolTipText());
 
                 // ITS SAVE, pressed while a route runs
-                final java.lang.reflect.Method save = org.traincontrol.gui.LayoutEditor.class
+                final java.lang.reflect.Method save = org.traincontrol.gui.layouteditor.LayoutEditor.class
                     .getDeclaredMethod("saveButtonActionPerformed", java.awt.event.ActionEvent.class);
 
                 save.setAccessible(true);
@@ -469,7 +469,7 @@ public class testNoSetupEditWhileARouteRuns
 
             if (editor[0] != null)
             {
-                final org.traincontrol.gui.LayoutEditor closing = editor[0];
+                final org.traincontrol.gui.layouteditor.LayoutEditor closing = editor[0];
 
                 SwingUtilities.invokeAndWait(closing::dispose);
             }
@@ -600,7 +600,7 @@ public class testNoSetupEditWhileARouteRuns
 
         final Answering answering = new Answering();
 
-        final org.traincontrol.gui.LayoutEditor[] editor = new org.traincontrol.gui.LayoutEditor[1];
+        final org.traincontrol.gui.layouteditor.LayoutEditor[] editor = new org.traincontrol.gui.layouteditor.LayoutEditor[1];
 
         final java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
 
@@ -638,7 +638,7 @@ public class testNoSetupEditWhileARouteRuns
             final JMenuItem tick = ((javax.swing.JMenu) atRest.get(I18n.t("autosetup.ui.btnExcludePage"))).getItem(0);
             final JMenuItem editPage = ((javax.swing.JMenu) atRest.get(I18n.t("autosetup.ui.menuEditAutonomy"))).getItem(0);
 
-            final java.lang.reflect.Method save = org.traincontrol.gui.LayoutEditor.class
+            final java.lang.reflect.Method save = org.traincontrol.gui.layouteditor.LayoutEditor.class
                 .getDeclaredMethod("saveButtonActionPerformed", java.awt.event.ActionEvent.class);
 
             save.setAccessible(true);
@@ -810,7 +810,7 @@ public class testNoSetupEditWhileARouteRuns
 
             if (editor[0] != null)
             {
-                final org.traincontrol.gui.LayoutEditor closing = editor[0];
+                final org.traincontrol.gui.layouteditor.LayoutEditor closing = editor[0];
 
                 SwingUtilities.invokeAndWait(closing::dispose);
             }
@@ -1015,7 +1015,7 @@ public class testNoSetupEditWhileARouteRuns
 
         final Answering answering = new Answering();
 
-        final org.traincontrol.gui.LayoutEditor[] editor = new org.traincontrol.gui.LayoutEditor[1];
+        final org.traincontrol.gui.layouteditor.LayoutEditor[] editor = new org.traincontrol.gui.layouteditor.LayoutEditor[1];
 
         try
         {
@@ -1033,7 +1033,7 @@ public class testNoSetupEditWhileARouteRuns
             // OPENED AT REST
             SwingUtilities.invokeAndWait(() ->
             {
-                editor[0] = new org.traincontrol.gui.LayoutEditor(page, 30, window, 0);
+                editor[0] = new org.traincontrol.gui.layouteditor.LayoutEditor(page, 30, window, 0);
 
                 editor[0].render();
 
@@ -1178,7 +1178,7 @@ public class testNoSetupEditWhileARouteRuns
 
             if (editor[0] != null)
             {
-                final org.traincontrol.gui.LayoutEditor closing = editor[0];
+                final org.traincontrol.gui.layouteditor.LayoutEditor closing = editor[0];
 
                 SwingUtilities.invokeAndWait(closing::dispose);
             }
@@ -1905,7 +1905,7 @@ public class testNoSetupEditWhileARouteRuns
 
             settle();
 
-            final javax.swing.JButton banner = ((org.traincontrol.gui.AutonomyBanner) fieldOf("autonomyDiagramBanner", ui))
+            final javax.swing.JButton banner = ((org.traincontrol.gui.autonomy.AutonomyBanner) fieldOf("autonomyDiagramBanner", ui))
                 .getActionButton();
 
             assertTrue(banner.isShowing() || banner.getParent() != null, "precondition: the banner has no button");
@@ -2263,10 +2263,10 @@ public class testNoSetupEditWhileARouteRuns
     {
         final List<javax.swing.JMenuItem> out = new ArrayList<>();
 
-        final Class<?> menuClass = Class.forName("org.traincontrol.gui.RightClickTimetableMenu$RightClickMenu");
+        final Class<?> menuClass = Class.forName("org.traincontrol.gui.autonomy.RightClickTimetableMenu$RightClickMenu");
 
         final java.lang.reflect.Constructor<?> make = menuClass.getDeclaredConstructor(
-            org.traincontrol.gui.RightClickTimetableMenu.class, TrainControlUI.class, java.awt.event.MouseEvent.class);
+            org.traincontrol.gui.autonomy.RightClickTimetableMenu.class, TrainControlUI.class, java.awt.event.MouseEvent.class);
 
         make.setAccessible(true);
 
@@ -2275,7 +2275,7 @@ public class testNoSetupEditWhileARouteRuns
             try
             {
                 javax.swing.JPopupMenu menu = (javax.swing.JPopupMenu) make.newInstance(
-                    new org.traincontrol.gui.RightClickTimetableMenu(ui), ui, null);
+                    new org.traincontrol.gui.autonomy.RightClickTimetableMenu(ui), ui, null);
 
                 for (Component child : menu.getComponents())
                 {
@@ -2487,18 +2487,18 @@ public class testNoSetupEditWhileARouteRuns
 
     /** The track editor's Autonomy tab, in an unshown track editor built now on this page; the last one is disposed. */
     private static javax.swing.AbstractButton modeTab(final TrainControlUI ui,
-        final org.traincontrol.base.LayoutDiagram page, final org.traincontrol.gui.LayoutEditor[] editor) throws Exception
+        final org.traincontrol.base.LayoutDiagram page, final org.traincontrol.gui.layouteditor.LayoutEditor[] editor) throws Exception
     {
         closeTheProbe(editor);
 
-        final java.lang.reflect.Method mount = org.traincontrol.gui.LayoutEditor.class.getDeclaredMethod("mountSidebar");
+        final java.lang.reflect.Method mount = org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredMethod("mountSidebar");
 
         mount.setAccessible(true);
 
         // ITS SIDEBAR, which `render` mounts - without showing the window or taking the diagram for editing
         SwingUtilities.invokeAndWait(() ->
         {
-            editor[0] = new org.traincontrol.gui.LayoutEditor(page, 30, ui, 0);
+            editor[0] = new org.traincontrol.gui.layouteditor.LayoutEditor(page, 30, ui, 0);
 
             try
             {
@@ -2510,7 +2510,7 @@ public class testNoSetupEditWhileARouteRuns
             }
         });
 
-        java.lang.reflect.Field field = org.traincontrol.gui.LayoutEditor.class.getDeclaredField("autonomyModeButton");
+        java.lang.reflect.Field field = org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredField("autonomyModeButton");
 
         field.setAccessible(true);
 
@@ -2518,11 +2518,11 @@ public class testNoSetupEditWhileARouteRuns
     }
 
     /** Disposes the track editor `modeTab` built, if there is one: an editor window counts as an open editor. */
-    private static void closeTheProbe(final org.traincontrol.gui.LayoutEditor[] editor) throws Exception
+    private static void closeTheProbe(final org.traincontrol.gui.layouteditor.LayoutEditor[] editor) throws Exception
     {
         if (editor[0] == null) return;
 
-        final org.traincontrol.gui.LayoutEditor closing = editor[0];
+        final org.traincontrol.gui.layouteditor.LayoutEditor closing = editor[0];
 
         editor[0] = null;
 

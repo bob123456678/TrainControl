@@ -11,7 +11,7 @@ import static org.testng.Assert.*;
 import org.testng.SkipException;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
-import org.traincontrol.gui.BusyDialog;
+import org.traincontrol.gui.widgets.BusyDialog;
 
 /**
  * The spinner that now stands in front of a Central Station sync, and the ways it could go wrong.
@@ -169,7 +169,7 @@ public class testBusyDialogInteraction
     public void testWorkThatThrowsStillDismissesTheDialog() throws Exception
     {
         final AtomicBoolean finished = new AtomicBoolean(false);
-        final java.util.concurrent.atomic.AtomicReference<org.traincontrol.gui.BusyDialog> captured =
+        final java.util.concurrent.atomic.AtomicReference<org.traincontrol.gui.widgets.BusyDialog> captured =
             new java.util.concurrent.atomic.AtomicReference<>();
 
         SwingUtilities.invokeAndWait(() ->
@@ -187,7 +187,7 @@ public class testBusyDialogInteraction
                     // Bounded, because a dialog appearing is an acknowledgment rather than a railway
                     // event, and this file waits on acknowledgements with a deadline. If it never
                     // appears the wait ends and the assertion says exactly that.
-                    org.traincontrol.gui.BusyDialog seen = null;
+                    org.traincontrol.gui.widgets.BusyDialog seen = null;
 
                     long until = System.currentTimeMillis() + 5000;
 
@@ -220,7 +220,7 @@ public class testBusyDialogInteraction
             "work that threw left the dialog up - it is undecorated and application modal, so that is "
             + "a frozen program with no way out");
 
-        org.traincontrol.gui.BusyDialog dialog = captured.get();
+        org.traincontrol.gui.widgets.BusyDialog dialog = captured.get();
 
         assertNotNull(dialog, "no BusyDialog was showing while the work ran, so this proves nothing "
             + "about whether one was ever dismissed");
@@ -235,13 +235,13 @@ public class testBusyDialogInteraction
      * The BusyDialog currently on screen, if any - found rather than handed back, because run()
      * builds it as a local and never exposes it.
      */
-    private static org.traincontrol.gui.BusyDialog findShowingBusyDialog()
+    private static org.traincontrol.gui.widgets.BusyDialog findShowingBusyDialog()
     {
         for (java.awt.Window w : java.awt.Window.getWindows())
         {
-            if (w instanceof org.traincontrol.gui.BusyDialog && w.isShowing())
+            if (w instanceof org.traincontrol.gui.widgets.BusyDialog && w.isShowing())
             {
-                return (org.traincontrol.gui.BusyDialog) w;
+                return (org.traincontrol.gui.widgets.BusyDialog) w;
             }
         }
 

@@ -5,7 +5,7 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import javax.swing.SwingUtilities;
 import org.traincontrol.base.Locomotive;
-import org.traincontrol.gui.LocomotiveFunctionAssign;
+import org.traincontrol.gui.locomotive.LocomotiveFunctionAssign;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;

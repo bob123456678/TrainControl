@@ -6,7 +6,7 @@ import java.util.Set;
 import javax.swing.JLabel;
 import javax.swing.SwingUtilities;
 import org.traincontrol.base.LayoutDiagram;
-import org.traincontrol.gui.DiagramExport;
+import org.traincontrol.gui.autonomy.DiagramExport;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.testng.Assert.assertEquals;

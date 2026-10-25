@@ -8,6 +8,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import javax.swing.JPanel;
 import org.traincontrol.base.LayoutDiagram;
+import org.traincontrol.gui.widgets.PositionAwareJFrame;
 import org.traincontrol.util.I18n;
 
 /**

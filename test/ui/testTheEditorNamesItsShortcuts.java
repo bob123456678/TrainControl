@@ -16,7 +16,7 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.gui.AutonomyEditorPanel;
-import org.traincontrol.gui.LayoutEditor;
+import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
@@ -558,7 +558,7 @@ public class testTheEditorNamesItsShortcuts
 
             final org.traincontrol.base.LayoutDiagramComponent what = component;
 
-            final java.lang.reflect.Constructor<?> make = Class.forName("org.traincontrol.gui.LayoutEditorRightclickMenu")
+            final java.lang.reflect.Constructor<?> make = Class.forName("org.traincontrol.gui.layouteditor.LayoutEditorRightclickMenu")
                 .getConstructor(LayoutEditor.class, TrainControlUI.class, org.traincontrol.gui.LayoutLabel.class,
                     org.traincontrol.base.LayoutDiagramComponent.class);
 
@@ -2257,7 +2257,7 @@ public class testTheEditorNamesItsShortcuts
             for (java.awt.Component c : squares.getComponents())
             {
                 // the address label itself (it was a plain label holding HTML until round 102 gave it a halo)
-                if (c instanceof org.traincontrol.gui.AddressLabel)
+                if (c instanceof org.traincontrol.gui.widgets.AddressLabel)
                 {
                     for (java.awt.Component s : squares.getComponents())
                     {

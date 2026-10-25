@@ -1,0 +1,329 @@
+package org.traincontrol.gui.locomotive;
+
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import javax.swing.*;
+import org.traincontrol.gui.TrainControlUI;
+import org.traincontrol.util.I18n;
+import org.traincontrol.base.Locomotive;
+
+/**
+ * Right‑click menu for locomotive function buttons.
+ * Provides: apply preset, save preset, edit function.
+ * @author Adam
+ */
+public class RightClickFunctionMenu extends MouseAdapter
+{
+    private final TrainControlUI tcui;
+    private final Locomotive activeLoc;
+    private final int fNumber;
+
+    public RightClickFunctionMenu(TrainControlUI tcui, Locomotive loc, int fNumber)
+    {
+        this.tcui = tcui;
+        this.activeLoc = loc;
+        this.fNumber = fNumber;
+    }
+
+    // mousePressed/mouseReleased overrides used to live here, extending MouseAdapter as
+    // though this were registered as a mouse listener on the function button. It never is - the only
+    // caller, TrainControlUI.EditFunction, constructs this and calls showPopup(evt) directly - so
+    // those two overrides never ran. Removed rather than left behind, since dead listener methods on
+    // a class that keeps a live isPopupTrigger() branch look like the real wiring at a glance.
+
+    public void showPopup(MouseEvent e)
+    {
+        JToggleButton button = (JToggleButton) e.getSource();
+        FunctionPopupMenu menu = new FunctionPopupMenu(button);
+        menu.show(e.getComponent(), e.getX(), e.getY());
+    }
+
+    /**
+     * Inner popup menu class
+     */
+    final class FunctionPopupMenu extends JPopupMenu
+    {
+        public FunctionPopupMenu(JToggleButton button)
+        {
+            JMenuItem menuItem = new JMenuItem(I18n.f("loc.ui.editFunction", fNumber));
+            menuItem.addActionListener(ev -> openEditDialog(button));
+            add(menuItem);
+            
+            addSeparator();
+            
+            menuItem = new JMenuItem(
+                I18n.t("loc.ui.menuApplySavedFunctionPreset")
+            );
+            menuItem.addActionListener(event -> tcui.applyPreferredFunctions(activeLoc));
+            menuItem.setToolTipText("Alt-P");
+            add(menuItem);
+            
+            menuItem = new JMenuItem(
+                I18n.t("loc.ui.menuSaveFunctionsAsPreset")
+            );
+            menuItem.addActionListener(event -> tcui.savePreferredFunctions(activeLoc));
+            menuItem.setToolTipText("Alt-S");
+            add(menuItem);
+            
+            menuItem = new JMenuItem(
+                I18n.t("loc.ui.menuTurnOffFunctions")
+            );
+            menuItem.addActionListener(event -> tcui.locFunctionsOff(activeLoc));
+            menuItem.setToolTipText("Alt-O");
+            add(menuItem);
+
+            // WHICH FUNCTION AUTONOMY USES, said on the function itself (FR-045).
+            //
+            // Adam: "add a checkbox right click entry to designate the function as the autonomy
+            // departure function, and another as the autonomy arrival function... Only show these
+            // controls if autonomy is loaded."
+            //
+            // The two slots already existed on the Locomotive and could only be filled from a pair of
+            // dropdowns in the autonomy editor's Edit Locomotive view. That is a long way to go to say
+            // "this horn is the one that sounds when it leaves", and it is a statement about this
+            // function, which is where the tick belongs.
+            //
+            // ONE PER SLOT is the model's rule rather than one enforced here: each slot is a single
+            // Integer, so ticking F3 does not add it, it replaces whatever held the slot. That makes
+            // these read as a radio choice spread across the functions - ticking one unticks another.
+            //
+            // When a DIFFERENT function holds the slot the item stays clickable, shows unticked, and
+            // says which function has it; choosing it moves the slot here, because that is what the
+            // user just asked for.  See autonomySlot, which is where that is done.  This said the item
+            // was DISABLED in that case, which the method has never done.
+            //
+            // Both may be the same function, which Adam asked for explicitly and which the model
+            // allows: two Integers, nothing stopping them being equal.
+            if (tcui.isAutonomyLoaded())
+            {
+                addSeparator();
+
+                add(autonomySlot(true));
+                add(autonomySlot(false));
+            }
+                                    
+            addSeparator();
+
+            menuItem = new JMenuItem(
+                I18n.f("loc.ui.menuApplySavedSpeedPreset", activeLoc.getPreferredSpeed())
+            );
+            menuItem.addActionListener(event -> tcui.applyPreferredSpeed(activeLoc));
+            menuItem.setToolTipText("Alt-V");
+            add(menuItem);
+            
+            menuItem = new JMenuItem(
+                I18n.t("loc.ui.menuSaveSpeedAsPreset")
+            );
+            menuItem.addActionListener(event -> tcui.savePreferredSpeed(activeLoc));
+            menuItem.setToolTipText("Alt-U");
+            add(menuItem);
+        }
+
+
+        /**
+         * A tick for one of the two autonomy slots (FR-045).
+         *
+         * Ticked when THIS function holds the slot. Unticking clears it, which is the one thing the
+         * dropdowns in the autonomy editor cannot say without a blank entry.
+         *
+         * When ANOTHER function holds the slot the item still shows, ticked off, and says which one -
+         * so the answer to "why can I not tick this" is on the item rather than discovered by trying.
+         * Choosing it moves the slot here, because that is what the user just asked for.
+         *
+         * @param departure true for the departure slot, false for arrival
+         * @return the item
+         */
+        private javax.swing.JCheckBoxMenuItem autonomySlot(boolean departure)
+        {
+            Integer held = departure ? activeLoc.getDepartureFunc() : activeLoc.getArrivalFunc();
+
+            boolean mine = held != null && held == fNumber;
+
+            String label = I18n.t(departure
+                ? "loc.ui.menuAutonomyDepartureFunction" : "loc.ui.menuAutonomyArrivalFunction");
+
+            // Which function has it, when it is not this one.  A slot pointing somewhere else is the
+            // commonest reason a tick is not where somebody expects it.
+            if (held != null && held != fNumber) label = label + "  (F" + held + ")";
+
+            javax.swing.JCheckBoxMenuItem item = new javax.swing.JCheckBoxMenuItem(label, mine);
+
+            item.addActionListener(event ->
+            {
+                Integer now = item.isSelected() ? Integer.valueOf(fNumber) : null;
+
+                if (departure) activeLoc.setDepartureFunc(now);
+                else activeLoc.setArrivalFunc(now);
+
+                // Not logged, deliberately. Every other slot change in this application says so in the
+                // log, and this one would need two more strings in eight bundles to say something the
+                // menu already shows: reopen it and the tick is where it now belongs, with the other
+                // slot naming whichever function holds it. Worth adding if the silence is ever
+                // confusing; not worth sixteen translations before anybody has been confused.
+            });
+
+            return item;
+        }
+        /**
+         * Calls the same logic you currently have in EditFunction(...)
+         */
+        private void openEditDialog(JToggleButton b)
+        {
+            if (!b.isEnabled()) return;
+
+            LocomotiveFunctionAssign edit =
+                new LocomotiveFunctionAssign(activeLoc, tcui, fNumber, true);
+
+            // Focus the icon selector when the dialog actually shows.  This used to be a bare
+            // focusImages() after showOptionDialog returned - the modal was already disposed, so
+            // it never did anything.  The ancestor listener is the same pattern GraphLocAssign
+            // uses for its dropdown.
+            edit.addAncestorListener(new javax.swing.event.AncestorListener()
+            {
+                @Override
+                public void ancestorRemoved(javax.swing.event.AncestorEvent event) {}
+
+                @Override
+                public void ancestorMoved(javax.swing.event.AncestorEvent event) {}
+
+                @Override
+                public void ancestorAdded(javax.swing.event.AncestorEvent event)
+                {
+                    edit.focusImages();
+                }
+            });
+
+            // THE SAME TWO TICKS, ON THE DIALOG (FR-045).
+            //
+            // Adam: "Add checkboxes to the full edit function popup, remembering that no 2 functions
+            // should ever be selectable."  They are the same two slots the menu offers, and the same
+            // rule: a slot is one Integer, so ticking here takes it from wherever it was.
+            //
+            // On the dialog rather than in the panel because the panel is a form - anything added
+            // inside it has to go through the designer, and a component declared by hand in a
+            // GEN-BEGIN block is deleted the next time somebody opens the form. Wrapping is the same
+            // answer OB-148 reached for the autonomy strip.
+            //
+            // They follow the panel's own function dropdown, because switching function inside it
+            // changes what a tick would be about.
+            javax.swing.JComponent shown = edit;
+
+            // What Cancel puts back - see the else branch at the bottom of this method.
+            //
+            // Taken before the autonomy block rather than inside it, because the restore is outside
+            // it: with no autonomy loaded the two ticks are never built and these are unchanged, so
+            // putting them back is a no-op rather than a special case.
+            final Integer departureWas = activeLoc.getDepartureFunc();
+            final Integer arrivalWas = activeLoc.getArrivalFunc();
+
+            if (tcui.isAutonomyLoaded())
+            {
+                final javax.swing.JCheckBox departure = new javax.swing.JCheckBox();
+                final javax.swing.JCheckBox arrival = new javax.swing.JCheckBox();
+
+                final int[] editing = { fNumber };
+
+                Runnable follow = () ->
+                {
+                    Integer d = activeLoc.getDepartureFunc();
+                    Integer a = activeLoc.getArrivalFunc();
+
+                    departure.setText(I18n.t("loc.ui.menuAutonomyDepartureFunction")
+                        + (d != null && d != editing[0] ? "  (F" + d + ")" : ""));
+
+                    arrival.setText(I18n.t("loc.ui.menuAutonomyArrivalFunction")
+                        + (a != null && a != editing[0] ? "  (F" + a + ")" : ""));
+
+                    departure.setSelected(d != null && d == editing[0]);
+                    arrival.setSelected(a != null && a == editing[0]);
+                };
+
+                follow.run();
+
+                departure.addActionListener(ev ->
+                {
+                    activeLoc.setDepartureFunc(departure.isSelected() ? editing[0] : null);
+                    follow.run();
+                });
+
+                arrival.addActionListener(ev ->
+                {
+                    activeLoc.setArrivalFunc(arrival.isSelected() ? editing[0] : null);
+                    follow.run();
+                });
+
+                edit.setOnFunctionChanged(now ->
+                {
+                    editing[0] = now;
+                    follow.run();
+                });
+
+                javax.swing.JPanel slots = new javax.swing.JPanel();
+                slots.setLayout(new javax.swing.BoxLayout(slots, javax.swing.BoxLayout.Y_AXIS));
+                slots.setBorder(javax.swing.BorderFactory.createEmptyBorder(8, 4, 0, 4));
+                slots.setOpaque(false);
+                slots.add(departure);
+                slots.add(arrival);
+
+                javax.swing.JPanel stacked = new javax.swing.JPanel(new java.awt.BorderLayout());
+                stacked.setOpaque(false);
+                stacked.add(edit, java.awt.BorderLayout.CENTER);
+                stacked.add(slots, java.awt.BorderLayout.SOUTH);
+
+                shown = stacked;
+            }
+
+            int result = JOptionPane.showOptionDialog(
+                tcui,
+                shown,
+                I18n.f("loc.ui.dialogEditLocomotiveFunctions", activeLoc.getName()),
+                JOptionPane.OK_CANCEL_OPTION,
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                TrainControlUI.OK_CANCEL_OPTS,
+                TrainControlUI.OK_CANCEL_OPTS[0]
+            );
+
+
+            if (result == JOptionPane.OK_OPTION)
+            {
+                edit.doApply();
+            }
+            else
+            {
+                // CANCEL PUTS THE TWO SLOTS BACK.
+                //
+                // Their tick boxes write straight to the locomotive, because the label beside each one
+                // names whichever function currently holds the slot and it has to follow the tick as
+                // it moves.  Everything else in this dialog waits for OK, so Cancel used to discard
+                // the icon and the trigger and keep the slot move - and which function fires on
+                // departure is a thing somebody opens this dialog to LOOK at.
+                //
+                // Restored rather than deferred, so the preview stays honest and Cancel still means
+                // cancel.  Its sibling door applies at commit time instead (GraphLocAssign.commitChanges).
+                activeLoc.setDepartureFunc(departureWas);
+                activeLoc.setArrivalFunc(arrivalWas);
+
+                // AND THE COPIED FUNCTIONS.  Copy Customizations is the third door that
+                // writes straight through, for the same reason the slots do - the panel shows the
+                // other locomotive's functions the moment it is pressed - and it was the one the
+                // comment above was wrong about.
+                edit.undoCopiedCustomizations();
+
+                // AND THE WINDOW IS TOLD (Adam, 2026-09-22, on MT-466): *"they are correctly undone
+                // by cancel in the single function editor, but you must trigger a repaint on the
+                // target locomotive.  Add this."*
+                //
+                // The undo above puts the icons back on the LOCOMOTIVE, which is where Copy
+                // Customizations wrote them - and nothing in this window reads a locomotive again
+                // until the model sends it a message.  So Cancel restored the data and left the
+                // button faces showing the other locomotive's icons until something unrelated
+                // happened to repaint them, which reads as Cancel not having worked.
+                //
+                // FORCED, because the ordinary repaint is a no-op when nothing the window watches
+                // has changed - and what changed here is exactly what it does not watch.
+                tcui.repaintLoc(true, java.util.Arrays.asList(activeLoc));
+            }
+        }
+    }
+}

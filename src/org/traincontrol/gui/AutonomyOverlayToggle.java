@@ -3,6 +3,7 @@ package org.traincontrol.gui;
 import java.awt.FlowLayout;
 import javax.swing.JCheckBox;
 import javax.swing.JPanel;
+import org.traincontrol.gui.autonomy.AutonomyBanner;
 import org.traincontrol.util.I18n;
 
 /**

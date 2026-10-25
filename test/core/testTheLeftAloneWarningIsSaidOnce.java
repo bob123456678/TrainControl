@@ -5,7 +5,7 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomyCompanionStore.Reconciliation;
-import org.traincontrol.gui.AutonomyReport;
+import org.traincontrol.gui.autonomy.AutonomyReport;
 
 /**
  * "The setup was left alone" is said once for a set of missing pages, not on every save.

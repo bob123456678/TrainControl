@@ -2170,8 +2170,8 @@ public class testTheActiveTickPausesATrain
     {
         final javax.swing.AbstractButton[] found = new javax.swing.AbstractButton[1];
 
-        final java.lang.reflect.Field loco = Class.forName("org.traincontrol.gui.AutoLocomotiveStatus").getDeclaredField("locomotive");
-        final java.lang.reflect.Field pause = Class.forName("org.traincontrol.gui.AutoLocomotiveStatus").getDeclaredField("pauseButton");
+        final java.lang.reflect.Field loco = Class.forName("org.traincontrol.gui.autonomy.AutoLocomotiveStatus").getDeclaredField("locomotive");
+        final java.lang.reflect.Field pause = Class.forName("org.traincontrol.gui.autonomy.AutoLocomotiveStatus").getDeclaredField("pauseButton");
 
         loco.setAccessible(true);
         pause.setAccessible(true);
@@ -2395,9 +2395,9 @@ public class testTheActiveTickPausesATrain
 
             for (java.awt.Component c : all)
             {
-                if (!(c instanceof org.traincontrol.gui.AutoLocomotiveStatus)) continue;
+                if (!(c instanceof org.traincontrol.gui.autonomy.AutoLocomotiveStatus)) continue;
 
-                String name = ((org.traincontrol.gui.AutoLocomotiveStatus) c).getLocomotive().getName();
+                String name = ((org.traincontrol.gui.autonomy.AutoLocomotiveStatus) c).getLocomotive().getName();
 
                 if (ours.contains(name)) names.add(name);
             }
@@ -3095,7 +3095,7 @@ public class testTheActiveTickPausesATrain
 
         driverField.setAccessible(true);
 
-        java.lang.reflect.Field monitorField = org.traincontrol.gui.DiagramMonitorDriver.class.getDeclaredField("monitor");
+        java.lang.reflect.Field monitorField = org.traincontrol.gui.autonomy.DiagramMonitorDriver.class.getDeclaredField("monitor");
 
         monitorField.setAccessible(true);
 

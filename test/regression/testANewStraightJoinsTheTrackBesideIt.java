@@ -11,7 +11,7 @@ import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
-import org.traincontrol.gui.LayoutEditor;
+import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.LayoutGrid;
 import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.gui.TrainControlUI;

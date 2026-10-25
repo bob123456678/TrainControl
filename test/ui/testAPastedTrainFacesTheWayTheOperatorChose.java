@@ -17,8 +17,8 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts.Side;
 import org.traincontrol.base.Locomotive;
-import org.traincontrol.gui.ArrivalSidePrompt;
-import org.traincontrol.gui.FacingPrompt;
+import org.traincontrol.gui.autonomy.ArrivalSidePrompt;
+import org.traincontrol.gui.autonomy.FacingPrompt;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
@@ -349,7 +349,7 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
     @Test
     public void testAPastedTrainShowsItsLocomotiveOnTheStation() throws Exception
     {
-        final org.traincontrol.gui.DiagramMonitorDriver driver = ui.getDiagramMonitorDriver();
+        final org.traincontrol.gui.autonomy.DiagramMonitorDriver driver = ui.getDiagramMonitorDriver();
 
         // THE DIAGRAM WATCHING THIS RAILWAY, whatever the overlay's tick box was left at
         SwingUtilities.invokeAndWait(() ->

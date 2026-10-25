@@ -388,7 +388,7 @@ public class testTheAutoTabWaitsForTheTrains
             // THE TRACK EDITOR, USED LAST
             answeringYes(() -> ui[0].openLayoutEditor(null, Boolean.FALSE, null, true));
 
-            org.traincontrol.gui.LayoutEditor first = theEditor(ui[0]);
+            org.traincontrol.gui.layouteditor.LayoutEditor first = theEditor(ui[0]);
 
             assertNotNull(first, "precondition: the track editor did not open");
 
@@ -414,7 +414,7 @@ public class testTheAutoTabWaitsForTheTrains
                 }
             });
 
-            org.traincontrol.gui.LayoutEditor opened = theEditor(ui[0]);
+            org.traincontrol.gui.layouteditor.LayoutEditor opened = theEditor(ui[0]);
 
             assertNotNull(opened, "Edit Autonomy Paths in Track Diagram opened no editor");
 
@@ -501,7 +501,7 @@ public class testTheAutoTabWaitsForTheTrains
 
             answeringYes(() -> ui[0].openLayoutEditor(null, Boolean.TRUE, null, true));
 
-            final org.traincontrol.gui.LayoutEditor editor = theEditor(ui[0]);
+            final org.traincontrol.gui.layouteditor.LayoutEditor editor = theEditor(ui[0]);
 
             assertNotNull(editor, "precondition: the autonomy editor did not open");
 
@@ -606,7 +606,7 @@ public class testTheAutoTabWaitsForTheTrains
 
             answeringYes(() -> ui[0].openLayoutEditor(null, Boolean.FALSE, null, true));
 
-            final org.traincontrol.gui.LayoutEditor again = theEditor(ui[0]);
+            final org.traincontrol.gui.layouteditor.LayoutEditor again = theEditor(ui[0]);
 
             assertNotNull(again, "precondition: the track editor did not open again");
 
@@ -683,7 +683,7 @@ public class testTheAutoTabWaitsForTheTrains
 
             answeringYes(() -> ui[0].openLayoutEditor(null, Boolean.TRUE, null, true));
 
-            final org.traincontrol.gui.LayoutEditor editor = theEditor(ui[0]);
+            final org.traincontrol.gui.layouteditor.LayoutEditor editor = theEditor(ui[0]);
 
             assertNotNull(editor, "precondition: the autonomy editor did not open");
 
@@ -1170,7 +1170,7 @@ public class testTheAutoTabWaitsForTheTrains
 
             answeringYes(() -> ui[0].openLayoutEditor(null, Boolean.FALSE, null, true));
 
-            final org.traincontrol.gui.LayoutEditor editor = theEditor(ui[0]);
+            final org.traincontrol.gui.layouteditor.LayoutEditor editor = theEditor(ui[0]);
 
             assertNotNull(editor, "precondition: the track editor did not open");
 
@@ -1178,7 +1178,7 @@ public class testTheAutoTabWaitsForTheTrains
 
             pages.add(aPageThatFailsToDraw(failing, ui[0]), failing, failing);
 
-            final java.lang.reflect.Method arrive = org.traincontrol.gui.LayoutEditor.class.getDeclaredMethod("arriveAt",
+            final java.lang.reflect.Method arrive = org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredMethod("arriveAt",
                 String.class, boolean.class);
 
             arrive.setAccessible(true);
@@ -1297,14 +1297,14 @@ public class testTheAutoTabWaitsForTheTrains
 
             answeringYes(() -> ui[0].openLayoutEditor(null, Boolean.FALSE, null, true));
 
-            final org.traincontrol.gui.LayoutEditor editor = theEditor(ui[0]);
+            final org.traincontrol.gui.layouteditor.LayoutEditor editor = theEditor(ui[0]);
 
             assertNotNull(editor, "precondition: the track editor did not open");
 
             assertFalse(editor.isAutonomyMode(), "precondition: the editor opened was not the track editor");
 
             // A TILE TURNED through the editor's own rotate: a station on the page shown
-            java.lang.reflect.Field shown = org.traincontrol.gui.LayoutEditor.class.getDeclaredField("layout");
+            java.lang.reflect.Field shown = org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredField("layout");
 
             shown.setAccessible(true);
 
@@ -1326,7 +1326,7 @@ public class testTheAutoTabWaitsForTheTrains
 
             final int before = page.getComponent(turned.getX(), turned.getY()).getOrientation();
 
-            java.lang.reflect.Field gridField = org.traincontrol.gui.LayoutEditor.class.getDeclaredField("grid");
+            java.lang.reflect.Field gridField = org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredField("grid");
 
             gridField.setAccessible(true);
 
@@ -1399,7 +1399,7 @@ public class testTheAutoTabWaitsForTheTrains
      */
     private static int editorWindows(TrainControlUI ui) throws ReflectiveOperationException
     {
-        java.lang.reflect.Field parent = org.traincontrol.gui.LayoutEditor.class.getDeclaredField("parent");
+        java.lang.reflect.Field parent = org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredField("parent");
 
         parent.setAccessible(true);
 
@@ -1407,7 +1407,7 @@ public class testTheAutoTabWaitsForTheTrains
 
         for (java.awt.Frame frame : java.awt.Frame.getFrames())
         {
-            if (frame instanceof org.traincontrol.gui.LayoutEditor && frame.isDisplayable() && parent.get(frame) == ui) count++;
+            if (frame instanceof org.traincontrol.gui.layouteditor.LayoutEditor && frame.isDisplayable() && parent.get(frame) == ui) count++;
         }
 
         return count;
@@ -1420,9 +1420,9 @@ public class testTheAutoTabWaitsForTheTrains
      * @param editor the editor
      * @throws Exception from the event thread
      */
-    private static void waitForTheSwitch(TrainControlUI ui, org.traincontrol.gui.LayoutEditor editor) throws Exception
+    private static void waitForTheSwitch(TrainControlUI ui, org.traincontrol.gui.layouteditor.LayoutEditor editor) throws Exception
     {
-        java.lang.reflect.Field latch = org.traincontrol.gui.LayoutEditor.class.getDeclaredField("changingPage");
+        java.lang.reflect.Field latch = org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredField("changingPage");
 
         latch.setAccessible(true);
 
@@ -1685,7 +1685,7 @@ public class testTheAutoTabWaitsForTheTrains
 
             answeringYes(() -> ui[0].openLayoutEditor(null, Boolean.TRUE, null, true));
 
-            final org.traincontrol.gui.LayoutEditor editor = theEditor(ui[0]);
+            final org.traincontrol.gui.layouteditor.LayoutEditor editor = theEditor(ui[0]);
 
             assertNotNull(editor, "precondition: the autonomy editor did not open");
 
@@ -1785,7 +1785,7 @@ public class testTheAutoTabWaitsForTheTrains
      * @return its editor once it is showing, within twenty seconds, or null
      * @throws Exception from the event thread
      */
-    private static org.traincontrol.gui.LayoutEditor theEditor(TrainControlUI ui) throws Exception
+    private static org.traincontrol.gui.layouteditor.LayoutEditor theEditor(TrainControlUI ui) throws Exception
     {
         java.lang.reflect.Field open = TrainControlUI.class.getDeclaredField("openEditor");
 
@@ -1797,7 +1797,7 @@ public class testTheAutoTabWaitsForTheTrains
         {
             SwingUtilities.invokeAndWait(() -> { });
 
-            org.traincontrol.gui.LayoutEditor editor = (org.traincontrol.gui.LayoutEditor) open.get(ui);
+            org.traincontrol.gui.layouteditor.LayoutEditor editor = (org.traincontrol.gui.layouteditor.LayoutEditor) open.get(ui);
 
             if (editor != null && editor.isDisplayable()) return editor;
 

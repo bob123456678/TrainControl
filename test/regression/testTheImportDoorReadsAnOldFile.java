@@ -3511,9 +3511,9 @@ public class testTheImportDoorReadsAnOldFile
                 java.lang.reflect.Field open = TrainControlUI.class.getDeclaredField("openEditor");
                 open.setAccessible(true);
 
-                final org.traincontrol.gui.LayoutEditor editor = (org.traincontrol.gui.LayoutEditor) open.get(ui[0]);
+                final org.traincontrol.gui.layouteditor.LayoutEditor editor = (org.traincontrol.gui.layouteditor.LayoutEditor) open.get(ui[0]);
 
-                java.lang.reflect.Field gridField = org.traincontrol.gui.LayoutEditor.class.getDeclaredField("grid");
+                java.lang.reflect.Field gridField = org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredField("grid");
                 gridField.setAccessible(true);
 
                 final org.traincontrol.gui.LayoutLabel square =
@@ -3647,7 +3647,7 @@ public class testTheImportDoorReadsAnOldFile
 
         open.setAccessible(true);
 
-        org.traincontrol.gui.LayoutEditor editor = null;
+        org.traincontrol.gui.layouteditor.LayoutEditor editor = null;
 
         long until = System.currentTimeMillis() + 20000;
 
@@ -3655,7 +3655,7 @@ public class testTheImportDoorReadsAnOldFile
         {
             SwingUtilities.invokeAndWait(() -> { });
 
-            editor = (org.traincontrol.gui.LayoutEditor) open.get(ui);
+            editor = (org.traincontrol.gui.layouteditor.LayoutEditor) open.get(ui);
 
             if (editor != null && editor.getAutonomyPanel() != null) break;
 
@@ -3681,7 +3681,7 @@ public class testTheImportDoorReadsAnOldFile
 
         open.setAccessible(true);
 
-        final org.traincontrol.gui.LayoutEditor editor = (org.traincontrol.gui.LayoutEditor) open.get(ui);
+        final org.traincontrol.gui.layouteditor.LayoutEditor editor = (org.traincontrol.gui.layouteditor.LayoutEditor) open.get(ui);
 
         if (editor == null) return;
 

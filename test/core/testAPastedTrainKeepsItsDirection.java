@@ -957,7 +957,7 @@ public class testAPastedTrainKeepsItsDirection
 
             if (key == null) continue;
 
-            java.util.List<String> sides = org.traincontrol.gui.ArrivalSidePrompt.sidesOf(
+            java.util.List<String> sides = org.traincontrol.gui.autonomy.ArrivalSidePrompt.sidesOf(
                 model.getAutoLayout(), candidate);
 
             if (sides.isEmpty()) continue;
@@ -1060,7 +1060,7 @@ public class testAPastedTrainKeepsItsDirection
 
             if (key == null) continue;
 
-            java.util.List<String> sides = org.traincontrol.gui.ArrivalSidePrompt.sidesOf(
+            java.util.List<String> sides = org.traincontrol.gui.autonomy.ArrivalSidePrompt.sidesOf(
                 model.getAutoLayout(), candidate);
 
             if (sides.isEmpty()) continue;

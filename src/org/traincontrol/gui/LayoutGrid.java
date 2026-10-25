@@ -20,6 +20,12 @@ import org.traincontrol.base.Accessory;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.base.Locomotive;
+import org.traincontrol.gui.autonomy.DiagramTileRegistry;
+import org.traincontrol.gui.layouteditor.LayoutEditor;
+import org.traincontrol.gui.widgets.AddressLabel;
+import org.traincontrol.gui.widgets.AxisRuler;
+import org.traincontrol.gui.widgets.LoadingSpinner;
+import org.traincontrol.gui.widgets.StationCaption;
 import org.traincontrol.util.I18n;
 
 /**

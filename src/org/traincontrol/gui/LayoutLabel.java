@@ -22,6 +22,7 @@ import javax.swing.border.Border;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.automationui.TileOverlay;
+import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.util.I18n;
 import org.traincontrol.util.ImageUtil;
 

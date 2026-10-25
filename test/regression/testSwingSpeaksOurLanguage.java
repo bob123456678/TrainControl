@@ -184,7 +184,7 @@ public class testSwingSpeaksOurLanguage
 
         final javax.swing.JFileChooser[] made = new javax.swing.JFileChooser[1];
 
-        javax.swing.SwingUtilities.invokeAndWait(() -> made[0] = new org.traincontrol.gui.QuickFileChooser());
+        javax.swing.SwingUtilities.invokeAndWait(() -> made[0] = new org.traincontrol.gui.widgets.QuickFileChooser());
 
         java.lang.reflect.Method usesShellFolder = Class.forName("sun.swing.FilePane")
             .getMethod("usesShellFolder", javax.swing.JFileChooser.class);
@@ -207,7 +207,7 @@ public class testSwingSpeaksOurLanguage
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
         {
-            javax.swing.JFileChooser chooser = new org.traincontrol.gui.QuickFileChooser(here.getPath());
+            javax.swing.JFileChooser chooser = new org.traincontrol.gui.widgets.QuickFileChooser(here.getPath());
 
             javax.swing.JComboBox<?> lookIn = lookInOf(chooser);
 
@@ -290,7 +290,7 @@ public class testSwingSpeaksOurLanguage
 
             javax.swing.SwingUtilities.invokeAndWait(() ->
             {
-                javax.swing.JFileChooser chooser = new org.traincontrol.gui.QuickFileChooser(base.toString());
+                javax.swing.JFileChooser chooser = new org.traincontrol.gui.widgets.QuickFileChooser(base.toString());
 
                 // as a double-click on it does
                 chooser.setCurrentDirectory(link.toFile());
@@ -333,7 +333,7 @@ public class testSwingSpeaksOurLanguage
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
         {
-            quick.addAll(detailsHeadings(new org.traincontrol.gui.QuickFileChooser(here)));
+            quick.addAll(detailsHeadings(new org.traincontrol.gui.widgets.QuickFileChooser(here)));
             swing.addAll(detailsHeadings(new javax.swing.JFileChooser(here)));
         });
 
@@ -359,13 +359,13 @@ public class testSwingSpeaksOurLanguage
 
         TrainControlUI.installLookAndFeel();
 
-        java.lang.reflect.Field counted = org.traincontrol.gui.QuickFileChooser.class.getDeclaredField("asked");
+        java.lang.reflect.Field counted = org.traincontrol.gui.widgets.QuickFileChooser.class.getDeclaredField("asked");
 
         counted.setAccessible(true);
 
         // AS THE WINDOW OPENS: nothing asked yet - any ask of the choosers before this one finished first
-        java.lang.reflect.Field asking = org.traincontrol.gui.QuickFileChooser.class.getDeclaredField("asking");
-        java.lang.reflect.Field places = org.traincontrol.gui.QuickFileChooser.class.getDeclaredField("places");
+        java.lang.reflect.Field asking = org.traincontrol.gui.widgets.QuickFileChooser.class.getDeclaredField("asking");
+        java.lang.reflect.Field places = org.traincontrol.gui.widgets.QuickFileChooser.class.getDeclaredField("places");
 
         asking.setAccessible(true);
         places.setAccessible(true);
@@ -379,11 +379,11 @@ public class testSwingSpeaksOurLanguage
         int before = ((java.util.concurrent.atomic.AtomicInteger) counted.get(null)).get();
 
         // THE WINDOW'S OWN ASK, and a chooser at once, while it is under way - and two more after
-        org.traincontrol.gui.QuickFileChooser.askTheShellAhead();
+        org.traincontrol.gui.widgets.QuickFileChooser.askTheShellAhead();
 
         for (int i = 0; i < 3; i++)
         {
-            javax.swing.SwingUtilities.invokeAndWait(() -> lookInOf(new org.traincontrol.gui.QuickFileChooser()));
+            javax.swing.SwingUtilities.invokeAndWait(() -> lookInOf(new org.traincontrol.gui.widgets.QuickFileChooser()));
         }
 
         int after = ((java.util.concurrent.atomic.AtomicInteger) counted.get(null)).get();
@@ -408,7 +408,7 @@ public class testSwingSpeaksOurLanguage
 
         TrainControlUI.installLookAndFeel();
 
-        Class<?> quick = org.traincontrol.gui.QuickFileChooser.class;
+        Class<?> quick = org.traincontrol.gui.widgets.QuickFileChooser.class;
 
         java.lang.reflect.Field desktops = quick.getDeclaredField("desktops");
         java.lang.reflect.Field asking = quick.getDeclaredField("asking");
@@ -445,13 +445,13 @@ public class testSwingSpeaksOurLanguage
             desktops.set(null, java.util.Collections.singletonList(standIn.toFile()));
 
             // ASKED WITH THE STAND-IN AS THE DESKTOP
-            org.traincontrol.gui.QuickFileChooser.askTheShellAhead();
+            org.traincontrol.gui.widgets.QuickFileChooser.askTheShellAhead();
 
             ((java.util.concurrent.Future<?>) asking.get(null)).get(60, java.util.concurrent.TimeUnit.SECONDS);
 
             int before = ((java.util.concurrent.atomic.AtomicInteger) counted.get(null)).get();
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> lookInOf(new org.traincontrol.gui.QuickFileChooser()));
+            javax.swing.SwingUtilities.invokeAndWait(() -> lookInOf(new org.traincontrol.gui.widgets.QuickFileChooser()));
 
             assertEquals(((java.util.concurrent.atomic.AtomicInteger) counted.get(null)).get() - before, 0, "precondition:"
                 + " the shell was asked again with nothing changed");
@@ -461,7 +461,7 @@ public class testSwingSpeaksOurLanguage
 
             standIn.toFile().setLastModified(standIn.toFile().lastModified() + 10000);
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> lookInOf(new org.traincontrol.gui.QuickFileChooser()));
+            javax.swing.SwingUtilities.invokeAndWait(() -> lookInOf(new org.traincontrol.gui.widgets.QuickFileChooser()));
 
             assertEquals(((java.util.concurrent.atomic.AtomicInteger) counted.get(null)).get() - before, 0, "a file saved on"
                 + " the Desktop had the shell asked again for a list that holds only folders (RSA40-C3)");
@@ -469,7 +469,7 @@ public class testSwingSpeaksOurLanguage
             // A FOLDER MADE ON IT
             java.nio.file.Files.createDirectory(standIn.resolve("made"));
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> lookInOf(new org.traincontrol.gui.QuickFileChooser()));
+            javax.swing.SwingUtilities.invokeAndWait(() -> lookInOf(new org.traincontrol.gui.widgets.QuickFileChooser()));
 
             assertEquals(((java.util.concurrent.atomic.AtomicInteger) counted.get(null)).get() - before, 1, "a folder made on"
                 + " the Desktop did not have the shell asked again for the Look In list (RSA39-C1)");
@@ -506,8 +506,8 @@ public class testSwingSpeaksOurLanguage
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
         {
-            icons[0] = new org.traincontrol.gui.QuickFileChooser().getFileSystemView().getSystemIcon(file);
-            icons[1] = new org.traincontrol.gui.QuickFileChooser().getFileSystemView().getSystemIcon(file);
+            icons[0] = new org.traincontrol.gui.widgets.QuickFileChooser().getFileSystemView().getSystemIcon(file);
+            icons[1] = new org.traincontrol.gui.widgets.QuickFileChooser().getFileSystemView().getSystemIcon(file);
         });
 
         assertNotNull(icons[0], "precondition: the shell gives " + file + " no icon");

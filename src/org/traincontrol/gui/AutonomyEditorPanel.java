@@ -28,6 +28,10 @@ import org.traincontrol.automationui.TileGraph;
 import org.traincontrol.automationui.TileGraph.Direction;
 import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
+import org.traincontrol.gui.autonomy.AutonomyBanner;
+import org.traincontrol.gui.autonomy.AutonomyReport;
+import org.traincontrol.gui.autonomy.FacingPrompt;
+import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.util.I18n;
 
 /**
@@ -730,7 +734,7 @@ public class AutonomyEditorPanel extends JPanel
      * Pins the column, and the buttons stretched across it, to a width: a long sentence cannot widen it.
      * @param width from {@link #widestText}, so it ends where its words end (MT-825)
      */
-    void setColumnWidth(int width)
+    public void setColumnWidth(int width)
     {
         this.width = width;
 
@@ -751,7 +755,7 @@ public class AutonomyEditorPanel extends JPanel
      * not jump when one appears.  A dropdown's phrases and a wrapped sentence take the column's width; they do not set
      * it.
      */
-    static int widestText(java.awt.Component... roots)
+    public static int widestText(java.awt.Component... roots)
     {
         int widest = 0;
 
@@ -1761,7 +1765,7 @@ public class AutonomyEditorPanel extends JPanel
      * A tooltip that wraps instead of running off the screen, which Swing does with a long one.
      * @return the same text, wrapped
      */
-    static String wrapped(String text)
+    public static String wrapped(String text)
     {
         if (text == null || text.trim().isEmpty()) return text;
 

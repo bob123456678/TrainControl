@@ -17,7 +17,7 @@ import org.traincontrol.automation.Point;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.Locomotive;
-import org.traincontrol.gui.ArrivalSidePrompt;
+import org.traincontrol.gui.autonomy.ArrivalSidePrompt;
 import org.traincontrol.gui.GraphLocAssign;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;

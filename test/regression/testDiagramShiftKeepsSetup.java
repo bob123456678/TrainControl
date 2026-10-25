@@ -312,7 +312,7 @@ public class testDiagramShiftKeepsSetup
         support.LayoutSandbox sandbox = null;
         org.traincontrol.marklin.MarklinControlStation model = null;
         final org.traincontrol.gui.TrainControlUI[] ui = new org.traincontrol.gui.TrainControlUI[1];
-        final org.traincontrol.gui.LayoutEditor[] editor = new org.traincontrol.gui.LayoutEditor[1];
+        final org.traincontrol.gui.layouteditor.LayoutEditor[] editor = new org.traincontrol.gui.layouteditor.LayoutEditor[1];
 
         try
         {
@@ -368,14 +368,14 @@ public class testDiagramShiftKeepsSetup
             sessionField.set(ui[0], session);
 
             javax.swing.SwingUtilities.invokeAndWait(() ->
-                editor[0] = new org.traincontrol.gui.LayoutEditor(diagram, 30, ui[0], 0));
+                editor[0] = new org.traincontrol.gui.layouteditor.LayoutEditor(diagram, 30, ui[0], 0));
 
             java.lang.reflect.Method drawGrid =
-                org.traincontrol.gui.LayoutEditor.class.getDeclaredMethod("drawGrid");
+                org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredMethod("drawGrid");
             drawGrid.setAccessible(true);
 
             java.lang.reflect.Field hoveredY =
-                org.traincontrol.gui.LayoutEditor.class.getDeclaredField("lastHoveredY");
+                org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredField("lastHoveredY");
             hoveredY.setAccessible(true);
 
             javax.swing.SwingUtilities.invokeAndWait(() ->

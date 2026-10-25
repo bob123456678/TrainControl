@@ -19,6 +19,8 @@ import java.util.zip.ZipFile;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import org.traincontrol.base.LayoutDiagram;
+import org.traincontrol.gui.layouteditor.LayoutEditor;
+import org.traincontrol.gui.widgets.QuickFileChooser;
 import org.traincontrol.util.I18n;
 import org.traincontrol.util.Util;
 

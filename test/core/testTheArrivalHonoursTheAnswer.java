@@ -464,7 +464,7 @@ public class testTheArrivalHonoursTheAnswer
             loc.setReversible(false);
 
             assertFalse(layout.turnsOnArrival(may, loc,
-                org.traincontrol.gui.ManualReversalPrompt.KEEP_DIRECTION),
+                org.traincontrol.gui.autonomy.ManualReversalPrompt.KEEP_DIRECTION),
                 "a locomotive that cannot reverse arrived at a square where turning is OPTIONAL - it"
                 + " has a plain copy of its own - and was turned anyway. Adam, MT-368: \"I get the"
                 + " prompt, but I shouldn't because the train is not reversible.\" KEEP_DIRECTION's"
@@ -538,7 +538,7 @@ public class testTheArrivalHonoursTheAnswer
             loc.setReversible(false);
 
             assertTrue(layout.turnsOnArrival(terminus, loc,
-                org.traincontrol.gui.ManualReversalPrompt.KEEP_DIRECTION),
+                org.traincontrol.gui.autonomy.ManualReversalPrompt.KEEP_DIRECTION),
                 "a locomotive that cannot reverse arrived at a compulsory terminus and was NOT turned."
                 + " Backing in is how it gets there - the reversal is part of the journey rather than"
                 + " a preference - so the rule that spares it at a may-turn square must not reach"
@@ -1228,12 +1228,12 @@ public class testTheArrivalHonoursTheAnswer
             }
         };
 
-        assertEquals(org.traincontrol.gui.ManualReversalPrompt.destinationAskedAbout(everywhere, rail,
+        assertEquals(org.traincontrol.gui.autonomy.ManualReversalPrompt.destinationAskedAbout(everywhere, rail,
             java.util.Arrays.asList(rail.getEdge("NAS", "NAT"))), null, "the operator is asked whether to keep the"
             + " direction at a square no copy of which faces on from the train's approach - an answer the arrival cannot"
             + " honour (RSA49-A1)");
 
-        assertEquals(org.traincontrol.gui.ManualReversalPrompt.destinationAskedAbout(everywhere, rail,
+        assertEquals(org.traincontrol.gui.autonomy.ManualReversalPrompt.destinationAskedAbout(everywhere, rail,
             java.util.Arrays.asList(rail.getEdge("NAQ", "NAT"))), rail.getPoint("NAT"), "the operator is no longer asked"
             + " at a may-turn square whose plain copy the train's approach reaches");
 
@@ -1318,7 +1318,7 @@ public class testTheArrivalHonoursTheAnswer
             assertEquals(plain.getCurrentLocomotive(), x, "precondition: the kept train was not stood on the plain copy");
 
             sendByHand(rail, x, java.util.Arrays.asList(rail.getEdge("TBP", "TBC")),
-                org.traincontrol.gui.ManualReversalPrompt.KEEP_DIRECTION, c);
+                org.traincontrol.gui.autonomy.ManualReversalPrompt.KEEP_DIRECTION, c);
 
             assertEquals(onward.getCurrentLocomotive(), x, "precondition: the second send did not arrive");
 

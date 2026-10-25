@@ -7,6 +7,7 @@ import javax.swing.JPopupMenu;
 import org.traincontrol.automation.Edge;
 import org.traincontrol.automation.Point;
 import org.traincontrol.base.Locomotive;
+import org.traincontrol.gui.autonomy.AutonomyReport;
 import org.traincontrol.util.I18n;
 
 /**
@@ -1066,14 +1067,14 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
             // nothing left to decline.
             // THE UNBARRED SIDES, here and in the `wouldAsk` below it (OB-204): the two have to be handed the same list
             // or one asks a question the other does not expect an answer to.
-            tail = org.traincontrol.gui.ArrivalSidePrompt.forPlacement(running, landing,
+            tail = org.traincontrol.gui.autonomy.ArrivalSidePrompt.forPlacement(running, landing,
                 facing == null ? null : facing.name(), mayTurnHere(), ui,
                 session == null ? null : session.unbarredArrivalSides(station));
 
             // A DISMISSAL, and not the other two nulls: `forPlacement` also answers null when
             // the square offers nothing to choose between, and refusing to place there would be a
             // silent, permanent refusal with no dialog to explain it.
-            if (tail == null && org.traincontrol.gui.ArrivalSidePrompt.wouldAsk(running, landing,
+            if (tail == null && org.traincontrol.gui.autonomy.ArrivalSidePrompt.wouldAsk(running, landing,
                 mayTurnHere(), session == null ? null : session.unbarredArrivalSides(station)))
             {
                 return;

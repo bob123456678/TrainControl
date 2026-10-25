@@ -29,6 +29,7 @@ import org.traincontrol.base.NodeExpression;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.base.Route;
 import org.traincontrol.base.ThreeWaySwitch;
+import org.traincontrol.gui.widgets.RowIcons;
 import org.traincontrol.util.I18n;
 
 /**

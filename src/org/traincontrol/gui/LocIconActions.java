@@ -16,6 +16,8 @@ import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import org.traincontrol.base.Locomotive;
+import org.traincontrol.gui.locomotive.LocIconCropDialog;
+import org.traincontrol.gui.widgets.QuickFileChooser;
 import org.traincontrol.util.I18n;
 import org.traincontrol.util.Util;
 

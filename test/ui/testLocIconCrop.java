@@ -396,8 +396,8 @@ public class testLocIconCrop
 
         double[] wanted = { 250.5, 200.25, 0.4, 2.5, 0.7 };
 
-        org.traincontrol.gui.LocIconCropDialog.CropPanel restored =
-            new org.traincontrol.gui.LocIconCropDialog.CropPanel(picture, 100, 50);
+        org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel restored =
+            new org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel(picture, 100, 50);
 
         restored.setSize(600, 420);
         restored.setView(wanted);
@@ -408,8 +408,8 @@ public class testLocIconCrop
         restored.copyViewInto(got);
 
         // THE CONTROL: what the same panel does with no view to open on.
-        org.traincontrol.gui.LocIconCropDialog.CropPanel plain =
-            new org.traincontrol.gui.LocIconCropDialog.CropPanel(picture, 100, 50);
+        org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel plain =
+            new org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel(picture, 100, 50);
 
         plain.setSize(600, 420);
         plain.getScale();
@@ -439,8 +439,8 @@ public class testLocIconCrop
         }
 
         // An unusable view is ignored rather than believed.
-        org.traincontrol.gui.LocIconCropDialog.CropPanel nonsense =
-            new org.traincontrol.gui.LocIconCropDialog.CropPanel(picture, 100, 50);
+        org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel nonsense =
+            new org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel(picture, 100, 50);
 
         nonsense.setSize(600, 420);
         nonsense.setView(new double[] { 1, 2, Double.NaN, 4, 5 });
@@ -476,8 +476,8 @@ public class testLocIconCrop
         java.awt.image.BufferedImage picture =
             new java.awt.image.BufferedImage(800, 600, java.awt.image.BufferedImage.TYPE_INT_RGB);
 
-        org.traincontrol.gui.LocIconCropDialog.CropPanel first =
-            new org.traincontrol.gui.LocIconCropDialog.CropPanel(picture, 100, 50);
+        org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel first =
+            new org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel(picture, 100, 50);
 
         first.setSize(600, 420);
         first.setView(new double[] { 250.5, 200.25, 0.4, 2.5, 0.7 });
@@ -490,8 +490,8 @@ public class testLocIconCrop
         first.copyViewInto(saved);
 
         // ANOTHER SHAPE OF DIALOG: tall rather than wide
-        org.traincontrol.gui.LocIconCropDialog.CropPanel again =
-            new org.traincontrol.gui.LocIconCropDialog.CropPanel(picture, 100, 50);
+        org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel again =
+            new org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel(picture, 100, 50);
 
         again.setSize(420, 640);
         again.setView(saved);
@@ -500,8 +500,8 @@ public class testLocIconCrop
         java.awt.Rectangle reopened = again.sourceRect();
 
         // THE CONTROL: the five numbers alone, in the same tall dialog
-        org.traincontrol.gui.LocIconCropDialog.CropPanel byZoom =
-            new org.traincontrol.gui.LocIconCropDialog.CropPanel(picture, 100, 50);
+        org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel byZoom =
+            new org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel(picture, 100, 50);
 
         byZoom.setSize(420, 640);
         byZoom.setView(java.util.Arrays.copyOf(saved, 5));
@@ -596,8 +596,8 @@ public class testLocIconCrop
             paint.dispose();
         }
 
-        org.traincontrol.gui.LocIconCropDialog.CropPanel panel =
-            new org.traincontrol.gui.LocIconCropDialog.CropPanel(source, OUT_WIDTH, OUT_HEIGHT);
+        org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel panel =
+            new org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel(source, OUT_WIDTH, OUT_HEIGHT);
 
         panel.setSize(600, 420);
         panel.setZoomFraction(0.0);
@@ -611,7 +611,7 @@ public class testLocIconCrop
             "the rectangle at full zoom-out no longer overhangs the source, so this test is not "
             + "exercising the branch it is about: " + region);
 
-        java.lang.reflect.Method contentOf = org.traincontrol.gui.LocIconCropDialog.CropPanel.class
+        java.lang.reflect.Method contentOf = org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel.class
             .getDeclaredMethod("contentOf", java.awt.Rectangle.class);
 
         contentOf.setAccessible(true);
@@ -1597,7 +1597,7 @@ public class testLocIconCrop
     @Test
     public void testTheCropWindowIsOwnedByTheWindowItIsGiven() throws Exception
     {
-        java.lang.reflect.Method ownerOf = org.traincontrol.gui.LocIconCropDialog.class.getDeclaredMethod("ownerOf",
+        java.lang.reflect.Method ownerOf = org.traincontrol.gui.locomotive.LocIconCropDialog.class.getDeclaredMethod("ownerOf",
             java.awt.Component.class);
 
         ownerOf.setAccessible(true);

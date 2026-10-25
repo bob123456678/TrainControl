@@ -5,7 +5,7 @@ import javax.swing.SwingUtilities;
 import static org.testng.Assert.assertTrue;
 import org.testng.SkipException;
 import org.testng.annotations.Test;
-import org.traincontrol.gui.PositionAwareJFrame;
+import org.traincontrol.gui.widgets.PositionAwareJFrame;
 import org.traincontrol.gui.TrainControlUI;
 
 /**

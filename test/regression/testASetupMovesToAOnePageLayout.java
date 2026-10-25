@@ -267,7 +267,7 @@ public class testASetupMovesToAOnePageLayout
     @SuppressWarnings("unchecked")
     private static void forgetWhatWasSaid() throws Exception
     {
-        java.lang.reflect.Field said = Class.forName("org.traincontrol.gui.AutonomyReport").getDeclaredField("ALREADY_SAID");
+        java.lang.reflect.Field said = Class.forName("org.traincontrol.gui.autonomy.AutonomyReport").getDeclaredField("ALREADY_SAID");
 
         said.setAccessible(true);
 

@@ -60,14 +60,14 @@ public class testDismissingTheReversalPromptKeepsTheDirection
     @Test
     public void testOnlyAnExplicitNoReverses() throws Exception
     {
-        assertFalse(org.traincontrol.gui.ManualReversalPrompt.reverseFor(0),
+        assertFalse(org.traincontrol.gui.autonomy.ManualReversalPrompt.reverseFor(0),
             "Yes means keep the direction, so it must not reverse");
 
-        assertTrue(org.traincontrol.gui.ManualReversalPrompt.reverseFor(1),
+        assertTrue(org.traincontrol.gui.autonomy.ManualReversalPrompt.reverseFor(1),
             "No means do not keep the direction, so it must reverse - if this fails the prompt now"
             + " does nothing at all and the ruling is unimplemented rather than inverted");
 
-        assertFalse(org.traincontrol.gui.ManualReversalPrompt.reverseFor(
+        assertFalse(org.traincontrol.gui.autonomy.ManualReversalPrompt.reverseFor(
             javax.swing.JOptionPane.CLOSED_OPTION),
             "ACC4-1: Escape and the X answer CLOSED_OPTION (-1), and an operator who dismisses a"
             + " question has not asked for anything to happen. This reversed the train at every"
@@ -88,7 +88,7 @@ public class testDismissingTheReversalPromptKeepsTheDirection
         {
             if (chose == 1) continue;
 
-            assertFalse(org.traincontrol.gui.ManualReversalPrompt.reverseFor(chose),
+            assertFalse(org.traincontrol.gui.autonomy.ManualReversalPrompt.reverseFor(chose),
                 "an answer of " + chose + " reverses a train. Only No does, and No is index 1 in"
                 + " TrainControlUI.YES_NO_OPTS - every other value is either a dialog that was not"
                 + " answered or one nobody has thought about, and neither is a request to turn.");

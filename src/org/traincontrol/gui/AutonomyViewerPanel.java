@@ -22,6 +22,8 @@ import org.traincontrol.automationui.AutonomyChecks;
 import org.traincontrol.automationui.AutonomyCompanionStore;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.base.Locomotive;
+import org.traincontrol.gui.autonomy.AutonomyReport;
+import org.traincontrol.gui.widgets.QuickFileChooser;
 import org.traincontrol.util.I18n;
 
 /**
@@ -164,7 +166,7 @@ public class AutonomyViewerPanel extends JPanel
      */
     static final java.awt.Font FONT_LIST = new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 12);
 
-    static final java.awt.Color HEADING_COLOUR = new java.awt.Color(0, 0, 115);
+    public static final java.awt.Color HEADING_COLOUR = new java.awt.Color(0, 0, 115);
     static final java.awt.Color BOX_BORDER = new java.awt.Color(204, 204, 204);
 
     static final java.awt.Color ERROR_COLOUR = new java.awt.Color(170, 0, 0);

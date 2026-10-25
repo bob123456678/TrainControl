@@ -17,7 +17,7 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.AutonomyEditorPanel;
-import org.traincontrol.gui.LayoutEditor;
+import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.TailCrossedPrompt;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
@@ -297,8 +297,8 @@ public class testTheTailCanBeGivenInTheEditor
 
             settle();
 
-            org.traincontrol.gui.ArrivalSidePrompt.answerForTests(side);
-            org.traincontrol.gui.FacingPrompt.answerForTests(heading);
+            org.traincontrol.gui.autonomy.ArrivalSidePrompt.answerForTests(side);
+            org.traincontrol.gui.autonomy.FacingPrompt.answerForTests(heading);
             TailCrossedPrompt.answerForTests(farthest.getFarthest().getName());
 
             final java.lang.reflect.Field cut = TrainControlUI.class.getDeclaredField("cutLocomotive");
@@ -349,8 +349,8 @@ public class testTheTailCanBeGivenInTheEditor
         finally
         {
             TailCrossedPrompt.answerForTests(null);
-            org.traincontrol.gui.ArrivalSidePrompt.answerForTests(null);
-            org.traincontrol.gui.FacingPrompt.answerForTests(null);
+            org.traincontrol.gui.autonomy.ArrivalSidePrompt.answerForTests(null);
+            org.traincontrol.gui.autonomy.FacingPrompt.answerForTests(null);
             f.close();
         }
     }
@@ -656,8 +656,8 @@ public class testTheTailCanBeGivenInTheEditor
 
             settle();
 
-            org.traincontrol.gui.ArrivalSidePrompt.answerForTests(side);
-            org.traincontrol.gui.FacingPrompt.answerForTests(heading);
+            org.traincontrol.gui.autonomy.ArrivalSidePrompt.answerForTests(side);
+            org.traincontrol.gui.autonomy.FacingPrompt.answerForTests(heading);
             TailCrossedPrompt.answerForTests(answer);
 
             try
@@ -693,8 +693,8 @@ public class testTheTailCanBeGivenInTheEditor
             finally
             {
                 TailCrossedPrompt.answerForTests(null);
-                org.traincontrol.gui.ArrivalSidePrompt.answerForTests(null);
-                org.traincontrol.gui.FacingPrompt.answerForTests(null);
+                org.traincontrol.gui.autonomy.ArrivalSidePrompt.answerForTests(null);
+                org.traincontrol.gui.autonomy.FacingPrompt.answerForTests(null);
             }
         }
 
@@ -715,8 +715,8 @@ public class testTheTailCanBeGivenInTheEditor
             final org.traincontrol.automationui.TilePorts.Side heading =
                 session.facingOf(train.getName(), model.getAutoLayout());
 
-            org.traincontrol.gui.ArrivalSidePrompt.answerForTests(side);
-            org.traincontrol.gui.FacingPrompt.answerForTests(heading);
+            org.traincontrol.gui.autonomy.ArrivalSidePrompt.answerForTests(side);
+            org.traincontrol.gui.autonomy.FacingPrompt.answerForTests(heading);
             TailCrossedPrompt.answerForTests(answer);
 
             try
@@ -752,8 +752,8 @@ public class testTheTailCanBeGivenInTheEditor
             finally
             {
                 TailCrossedPrompt.answerForTests(null);
-                org.traincontrol.gui.ArrivalSidePrompt.answerForTests(null);
-                org.traincontrol.gui.FacingPrompt.answerForTests(null);
+                org.traincontrol.gui.autonomy.ArrivalSidePrompt.answerForTests(null);
+                org.traincontrol.gui.autonomy.FacingPrompt.answerForTests(null);
             }
         }
 

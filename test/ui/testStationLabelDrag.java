@@ -2,7 +2,7 @@ package ui;
 
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
-import org.traincontrol.gui.StationCaption;
+import org.traincontrol.gui.widgets.StationCaption;
 import support.SourceOf;
 
 /**

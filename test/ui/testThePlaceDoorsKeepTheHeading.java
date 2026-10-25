@@ -21,9 +21,9 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts.Side;
 import org.traincontrol.base.Locomotive;
-import org.traincontrol.gui.ArrivalSidePrompt;
+import org.traincontrol.gui.autonomy.ArrivalSidePrompt;
 import org.traincontrol.gui.AutonomyEditorPanel;
-import org.traincontrol.gui.FacingPrompt;
+import org.traincontrol.gui.autonomy.FacingPrompt;
 import org.traincontrol.gui.TailCrossedPrompt;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
@@ -417,7 +417,7 @@ public class testThePlaceDoorsKeepTheHeading
                     // THE SIDE, where the dialog asks it: at a square whose copies are the directions, the copy says it.
                     javax.swing.JComboBox<?> sides = (javax.swing.JComboBox<?>) side.get(assign);
 
-                    if (sides != null) sides.setSelectedItem(org.traincontrol.gui.ArrivalSidePrompt.labelFor("N"));
+                    if (sides != null) sides.setSelectedItem(org.traincontrol.gui.autonomy.ArrivalSidePrompt.labelFor("N"));
                 }
                 catch (ReflectiveOperationException failed)
                 {

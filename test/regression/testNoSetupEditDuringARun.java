@@ -216,11 +216,11 @@ public class testNoSetupEditDuringARun
 
             // THE AUTO TAB'S LIST OF PATHS for a standing train, as the window built it
             java.lang.reflect.Field panelField = TrainControlUI.class.getDeclaredField("autoLocPanel");
-            java.lang.reflect.Field pathsField = org.traincontrol.gui.AutoLocomotiveStatus.class.getDeclaredField("paths");
+            java.lang.reflect.Field pathsField = org.traincontrol.gui.autonomy.AutoLocomotiveStatus.class.getDeclaredField("paths");
             java.lang.reflect.Field listField =
-                org.traincontrol.gui.AutoLocomotiveStatus.class.getDeclaredField("locAvailPaths");
+                org.traincontrol.gui.autonomy.AutoLocomotiveStatus.class.getDeclaredField("locAvailPaths");
             java.lang.reflect.Field locField =
-                org.traincontrol.gui.AutoLocomotiveStatus.class.getDeclaredField("locomotive");
+                org.traincontrol.gui.autonomy.AutoLocomotiveStatus.class.getDeclaredField("locomotive");
 
             panelField.setAccessible(true);
             pathsField.setAccessible(true);
@@ -238,7 +238,7 @@ public class testNoSetupEditDuringARun
 
                 for (Component c : ((javax.swing.JPanel) panelField.get(ui[0])).getComponents())
                 {
-                    if (chosen != null || !(c instanceof org.traincontrol.gui.AutoLocomotiveStatus)) continue;
+                    if (chosen != null || !(c instanceof org.traincontrol.gui.autonomy.AutoLocomotiveStatus)) continue;
 
                     List<?> paths = (List<?>) pathsField.get(c);
                     javax.swing.JList<?> list = (javax.swing.JList<?>) listField.get(c);
@@ -2012,9 +2012,9 @@ public class testNoSetupEditDuringARun
     private static Object[] anAutoTabListOfPaths(TrainControlUI ui) throws Exception
     {
         java.lang.reflect.Field panelField = TrainControlUI.class.getDeclaredField("autoLocPanel");
-        java.lang.reflect.Field pathsField = org.traincontrol.gui.AutoLocomotiveStatus.class.getDeclaredField("paths");
-        java.lang.reflect.Field listField = org.traincontrol.gui.AutoLocomotiveStatus.class.getDeclaredField("locAvailPaths");
-        java.lang.reflect.Field locField = org.traincontrol.gui.AutoLocomotiveStatus.class.getDeclaredField("locomotive");
+        java.lang.reflect.Field pathsField = org.traincontrol.gui.autonomy.AutoLocomotiveStatus.class.getDeclaredField("paths");
+        java.lang.reflect.Field listField = org.traincontrol.gui.autonomy.AutoLocomotiveStatus.class.getDeclaredField("locAvailPaths");
+        java.lang.reflect.Field locField = org.traincontrol.gui.autonomy.AutoLocomotiveStatus.class.getDeclaredField("locomotive");
 
         panelField.setAccessible(true);
         pathsField.setAccessible(true);
@@ -2029,7 +2029,7 @@ public class testNoSetupEditDuringARun
 
             for (Component c : ((javax.swing.JPanel) panelField.get(ui)).getComponents())
             {
-                if (!(c instanceof org.traincontrol.gui.AutoLocomotiveStatus)) continue;
+                if (!(c instanceof org.traincontrol.gui.autonomy.AutoLocomotiveStatus)) continue;
 
                 List<?> paths = (List<?>) pathsField.get(c);
                 javax.swing.JList<?> list = (javax.swing.JList<?>) listField.get(c);
@@ -2385,7 +2385,7 @@ public class testNoSetupEditDuringARun
     private static boolean anAutoTabListIsShowing(final TrainControlUI ui) throws Exception
     {
         final java.lang.reflect.Field panelField = TrainControlUI.class.getDeclaredField("autoLocPanel");
-        final java.lang.reflect.Field listField = org.traincontrol.gui.AutoLocomotiveStatus.class
+        final java.lang.reflect.Field listField = org.traincontrol.gui.autonomy.AutoLocomotiveStatus.class
             .getDeclaredField("locAvailPaths");
 
         panelField.setAccessible(true);
@@ -2400,7 +2400,7 @@ public class testNoSetupEditDuringARun
             {
                 for (Component c : ((javax.swing.JPanel) panelField.get(ui)).getComponents())
                 {
-                    if (c instanceof org.traincontrol.gui.AutoLocomotiveStatus
+                    if (c instanceof org.traincontrol.gui.autonomy.AutoLocomotiveStatus
                         && ((Component) listField.get(c)).isVisible()) showing[0] = true;
                 }
             }
@@ -5035,7 +5035,7 @@ public class testNoSetupEditDuringARun
             {
                 SwingUtilities.invokeAndWait(() -> ui[0].openLayoutEditor("1 - Main", false, null));
 
-                org.traincontrol.gui.LayoutEditor shown = null;
+                org.traincontrol.gui.layouteditor.LayoutEditor shown = null;
 
                 long until = System.currentTimeMillis() + 20000;
 
@@ -5043,7 +5043,7 @@ public class testNoSetupEditDuringARun
                 {
                     SwingUtilities.invokeAndWait(() -> { });
 
-                    shown = (org.traincontrol.gui.LayoutEditor) open.get(ui[0]);
+                    shown = (org.traincontrol.gui.layouteditor.LayoutEditor) open.get(ui[0]);
 
                     if (shown != null && shown.isDisplayable()) break;
 
@@ -5052,9 +5052,9 @@ public class testNoSetupEditDuringARun
 
                 assertTrue(shown != null && shown.isDisplayable(), "precondition: the track editor did not open: " + asked);
 
-                final org.traincontrol.gui.LayoutEditor editor = shown;
+                final org.traincontrol.gui.layouteditor.LayoutEditor editor = shown;
 
-                final java.lang.reflect.Method press = org.traincontrol.gui.LayoutEditor.class.getDeclaredMethod(button,
+                final java.lang.reflect.Method press = org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredMethod(button,
                     java.awt.event.ActionEvent.class);
 
                 press.setAccessible(true);
@@ -5166,12 +5166,12 @@ public class testNoSetupEditDuringARun
             {
                 openTheEditorFor(ui[0], new TileKey("1 - Main", 22, 6), null);
 
-                final org.traincontrol.gui.LayoutEditor editor = (org.traincontrol.gui.LayoutEditor) open.get(ui[0]);
+                final org.traincontrol.gui.layouteditor.LayoutEditor editor = (org.traincontrol.gui.layouteditor.LayoutEditor) open.get(ui[0]);
 
                 assertTrue(editor != null && editor.isDisplayable() && editor.getAutonomyPanel() != null,
                     "precondition: the autonomy editor did not open");
 
-                final java.lang.reflect.Method press = org.traincontrol.gui.LayoutEditor.class.getDeclaredMethod(button,
+                final java.lang.reflect.Method press = org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredMethod(button,
                     java.awt.event.ActionEvent.class);
 
                 press.setAccessible(true);

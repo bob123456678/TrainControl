@@ -7,7 +7,7 @@ import javax.swing.JComboBox;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
-import org.traincontrol.gui.LocomotiveFunctionAssign;
+import org.traincontrol.gui.locomotive.LocomotiveFunctionAssign;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;

@@ -1796,7 +1796,7 @@ public class testAutonomyDiagramMonitor
 
         assertTrue(spread <= 16, "a square autonomy will not choose is not drawn grey (FR-103): " + parking);
 
-        int label = org.traincontrol.gui.StationCaption.PILL_GREY.getRed();
+        int label = org.traincontrol.gui.widgets.StationCaption.PILL_GREY.getRed();
 
         assertTrue(parking.getRed() < label && parking.getRed() >= label - 90, "a square autonomy will not choose is not"
             + " a medium dark grey just darker than the grey station labels (" + label + ") (FR-103): " + parking);

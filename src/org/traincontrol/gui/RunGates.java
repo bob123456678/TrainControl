@@ -9,7 +9,7 @@ import org.traincontrol.util.I18n;
  * diagram, and the sentence each refusal shows.  Static, over the window, whose doors keep a delegator each; every
  * field stays on `TrainControlUI`.
  */
-final class RunGates
+public final class RunGates
 {
     private RunGates()
     {
@@ -64,7 +64,7 @@ final class RunGates
     }
 
     /** What a door that edits the setup, the diagram, the timetable or the settings says while a run holds the setup. */
-    static final String NO_EDITS_WHILE_RUNNING = "ui.main.errorNoEditsWhileRunning";
+    public static final String NO_EDITS_WHILE_RUNNING = "ui.main.errorNoEditsWhileRunning";
 
     /** What a door that would start, send, export or load, rather than edit, says while a run holds the setup. */
     static final String WAIT_FOR_THE_TRAINS = "autolayout.ui.errorWaitForActiveLocomotivesToStop";

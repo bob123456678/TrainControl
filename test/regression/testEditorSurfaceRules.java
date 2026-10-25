@@ -8,7 +8,7 @@ import java.util.Arrays;
 import java.util.List;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
-import org.traincontrol.gui.LayoutEditor;
+import org.traincontrol.gui.layouteditor.LayoutEditor;
 import support.SourceOf;
 
 /**
@@ -443,15 +443,15 @@ public class testEditorSurfaceRules
         // this computer last clicked: the layout editor's border is legitimately null with the grid off.  A guard
         // whose answer comes from the environment is not a guard.  Both states are checked explicitly.
         javax.swing.border.Border editing =
-            org.traincontrol.gui.LayoutEditor.restingBorder(false, false, true);
+            org.traincontrol.gui.layouteditor.LayoutEditor.restingBorder(false, false, true);
 
         javax.swing.border.Border autonomy =
-            org.traincontrol.gui.LayoutEditor.restingBorder(false, true, true);
+            org.traincontrol.gui.layouteditor.LayoutEditor.restingBorder(false, true, true);
 
         javax.swing.border.Border palette =
-            org.traincontrol.gui.LayoutEditor.restingBorder(true, true, true);
+            org.traincontrol.gui.layouteditor.LayoutEditor.restingBorder(true, true, true);
 
-        assertNull(org.traincontrol.gui.LayoutEditor.restingBorder(false, false, false),
+        assertNull(org.traincontrol.gui.layouteditor.LayoutEditor.restingBorder(false, false, false),
             "with the grid off the layout editor must rest in no border at all (MT-127)");
 
         assertTrue(editing instanceof javax.swing.border.LineBorder,
@@ -468,7 +468,7 @@ public class testEditorSurfaceRules
             "the two editors reserve different room for the same grid, so a tile is a pixel narrower "
             + "in one of them (OB-091)");
 
-        assertNull(org.traincontrol.gui.LayoutEditor.restingBorder(false, true, false),
+        assertNull(org.traincontrol.gui.layouteditor.LayoutEditor.restingBorder(false, true, false),
             "with the grid off the autonomy editor must rest in no border either - that is MT-127, "
             + "and it is about this state rather than the one above");
 
@@ -4603,14 +4603,14 @@ public class testEditorSurfaceRules
         g.setColor(ground);
         g.fillRect(0, 0, size, size);
 
-        org.traincontrol.gui.RowIcons.copy(size, java.awt.Color.WHITE).paintIcon(null, g, 0, 0);
+        org.traincontrol.gui.widgets.RowIcons.copy(size, java.awt.Color.WHITE).paintIcon(null, g, 0, 0);
 
         g.dispose();
 
         // The front sheet, as the mark measures it: asked of RowIcons rather than worked out again here, where a
         // copy of its proportions would go on sampling the old place after the mark moved (FR-136)
         java.lang.reflect.Method sheet =
-            org.traincontrol.gui.RowIcons.class.getDeclaredMethod("frontSheet", int.class, int.class);
+            org.traincontrol.gui.widgets.RowIcons.class.getDeclaredMethod("frontSheet", int.class, int.class);
 
         sheet.setAccessible(true);
 

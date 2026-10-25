@@ -6,7 +6,7 @@ import static org.testng.Assert.*;
 import org.testng.SkipException;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
-import org.traincontrol.gui.AutonomyBanner;
+import org.traincontrol.gui.autonomy.AutonomyBanner;
 
 /**
  * OB-191: "why not moving" painted the paths and then said nothing.

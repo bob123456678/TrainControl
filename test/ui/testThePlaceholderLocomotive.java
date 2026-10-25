@@ -4,7 +4,7 @@ import java.awt.image.BufferedImage;
 
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
-import org.traincontrol.gui.LocomotivePlaceholder;
+import org.traincontrol.gui.locomotive.LocomotivePlaceholder;
 
 /**
  * The stand-in picture for a locomotive with no icon is the one Adam described (FR-054).

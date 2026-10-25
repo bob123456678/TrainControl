@@ -28,7 +28,7 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.gui.AutonomyEditorPanel;
-import org.traincontrol.gui.LayoutEditor;
+import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
@@ -147,7 +147,7 @@ public class testTheAutonomyEditorsQuestionsChangeTheSetup
     @AfterMethod(alwaysRun = true)
     public void closeTheEditor() throws Exception
     {
-        org.traincontrol.gui.FacingPrompt.answerForTests(null);
+        org.traincontrol.gui.autonomy.FacingPrompt.answerForTests(null);
 
         if (editor != null)
         {

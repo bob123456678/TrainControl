@@ -7,7 +7,7 @@ import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
-import org.traincontrol.gui.RightClickPageMenu;
+import org.traincontrol.gui.locomotive.RightClickPageMenu;
 import org.traincontrol.gui.TrainControlUI;
 import support.SourceOf;
 
@@ -1519,7 +1519,7 @@ public class testLocMappingPages
 
             assertNotNull(set, "the row has no setContent");
 
-            Class<?> contentClass = Class.forName("org.traincontrol.gui.CurrentKeyRow$Content");
+            Class<?> contentClass = Class.forName("org.traincontrol.gui.locomotive.CurrentKeyRow$Content");
 
             Object content = contentClass.getConstructor(String.class, int.class, String.class, String.class, String.class)
                 .newInstance("Q", p.page, "Egypt jgy Alt", "Multi-Unit", "5120");
@@ -1954,7 +1954,7 @@ public class testLocMappingPages
 
         try
         {
-            rule = Class.forName("org.traincontrol.gui.CurrentKeyRow").getMethod("pageWords", int.class, String.class,
+            rule = Class.forName("org.traincontrol.gui.locomotive.CurrentKeyRow").getMethod("pageWords", int.class, String.class,
                 boolean.class, java.util.function.UnaryOperator.class);
         }
         catch (NoSuchMethodException none)
@@ -2238,8 +2238,8 @@ public class testLocMappingPages
     @Test
     public void testANameWithNoRoomLeavesTheNumberAloneAndAnUnnamedPageIsWhole() throws Exception
     {
-        Class<?> rowClass = Class.forName("org.traincontrol.gui.CurrentKeyRow");
-        Class<?> contentClass = Class.forName("org.traincontrol.gui.CurrentKeyRow$Content");
+        Class<?> rowClass = Class.forName("org.traincontrol.gui.locomotive.CurrentKeyRow");
+        Class<?> contentClass = Class.forName("org.traincontrol.gui.locomotive.CurrentKeyRow$Content");
 
         java.lang.reflect.Constructor<?> make = contentClass.getConstructor(String.class, int.class, String.class, String.class,
             String.class, boolean.class);
@@ -2427,7 +2427,7 @@ public class testLocMappingPages
     {
         RightClickPageMenu outer = new RightClickPageMenu(ui);
 
-        Class<?> menuClass = Class.forName("org.traincontrol.gui.RightClickPageMenu$RightClickMenu");
+        Class<?> menuClass = Class.forName("org.traincontrol.gui.locomotive.RightClickPageMenu$RightClickMenu");
 
         Constructor<?> make = menuClass.getDeclaredConstructors()[0];
 
@@ -2479,7 +2479,7 @@ public class testLocMappingPages
     {
         try
         {
-            java.lang.reflect.Field gap = Class.forName("org.traincontrol.gui.CurrentKeyRow").getField("GAP");
+            java.lang.reflect.Field gap = Class.forName("org.traincontrol.gui.locomotive.CurrentKeyRow").getField("GAP");
 
             gap.setAccessible(true);
 
