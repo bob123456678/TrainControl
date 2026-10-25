@@ -3048,18 +3048,8 @@ public class AutonomyEditorPanel extends JPanel
      */
     public boolean offersAHome(TileKey tile)
     {
-        if (tile == null || session == null || session.getGraph() == null) return false;
-
-        LayoutDiagramComponent onPage = componentAt(tile);
-
-        if (pageOf(tile) != null && (onPage == null || onPage.isText())) return false;
-
-        if (isIgnored(tile)) return false;
-
-        TileKey target = leaderOf(tile);
-
-        return session.getReducer() != null && session.getReducer().getPoints().containsKey(target)
-            && session.getStore().isStation(target);
+        // The squares that take a maximum train length: a station's Point.
+        return offersAMaximumTrainLength(tile);
     }
 
     void promptHome(TileKey tile)
