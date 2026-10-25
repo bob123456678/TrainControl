@@ -114,10 +114,10 @@ public final class RunGates
     {
         if (!ui.isLayoutEditorOpen()) return false;
 
-        // The dialog goes to the event thread; the ANSWER does not wait for it (OB-078): two callers ask this from a raw worker thread
-        // (editRoute and the route-duplicate loop), and a modal JOptionPane built off the EDT mispaints and can deadlock.
-        // invokeLater rather than invokeAndWait: the caller has already decided to refuse, and blocking until a dialog is dismissed
-        // would hold a worker and, from the EDT, deadlock outright.
+        // The dialog goes to the event thread; the ANSWER does not wait for it (OB-078): two callers ask this from a
+        // raw worker thread, and a modal JOptionPane built off the EDT mispaints and can deadlock.  invokeLater rather
+        // than invokeAndWait: blocking until a dialog is dismissed would hold a worker and, from the EDT, deadlock
+        // outright.
         if (javax.swing.SwingUtilities.isEventDispatchThread())
         {
             JOptionPane.showMessageDialog(ui, I18n.t("autosetup.ui.menuEditorOpen"));
@@ -162,12 +162,10 @@ public final class RunGates
     }
 
     /**
-     * Why a train may not be sent by hand right now, or null when it may (MT-263; Adam: "Start autonomy doesn't run autonomy, as
-     * expected - I get an error message saying errors must first be fixed.  Good.  But trains can still be moved manually via both the
-     * track diagram viewer and the autonomy tab, which should throw an error instead.").  A hand send runs over the railway the same
-     * setup built, so it is refused on the question Start is refused on - `autonomyHasErrors`.  Both hand doors ask it before the
-     * reversal question, so nothing is asked about a journey that is going to be refused; Execute Timetable and Return Home ask it too
-     * - named for the hand doors, where it was first asked.
+     * Why a train may not be sent by hand right now, or null when it may (MT-263).  Adam: "trains can still be moved
+     * manually via both the track diagram viewer and the autonomy tab, which should throw an error instead."  A hand
+     * send runs over the railway the same setup built, so it is refused on the question Start is refused on -
+     * `autonomyHasErrors` - asked before the reversal question; Execute Timetable and Return Home ask it too.
      *
      * @return the sentence to show, or null
      */
@@ -181,11 +179,10 @@ public final class RunGates
     }
 
     /**
-     * The words for a refused hand send: the setup's own - *"This setup cannot be used yet"*, with however many things
-     * there are to deal with - and never Start's, which say AUTONOMY cannot start.  Through the Start rule rather than
-     * beside it, so each sentence is still chosen in one place: the error findings where there are any, since those are
-     * what the editor lists, and otherwise the problems that stop the setup being built (`errors` and `blocking` are
-     * the counts).  Returns the sentence, already translated.
+     * The words for a refused hand send: the setup's own - *"This setup cannot be used yet"*, with the count - never
+     * Start's, which say AUTONOMY cannot start.  Through the Start rule so each sentence is chosen in one place: the
+     * error findings where there are any, otherwise the problems that stop the setup being built.  Returns it
+     * translated.
      */
     static String whyAHandSendIsRefused(int errors, int blocking)
     {
