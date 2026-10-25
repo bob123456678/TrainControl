@@ -36,11 +36,7 @@ public class ReactToEvents
     /** The route the example stores, and removes again at the end. */
     public static final String ROUTE = "Example sensor route";
 
-    /**
-     * @param station the Central Station to watch
-     * @return a line of text for each reaction
-     * @throws Exception when a command fails
-     */
+    /** Runs the three reactions on the Central Station given and returns a line of text for each. */
     public static List<String> run(MarklinControlStation station) throws Exception
     {
         final List<String> found = Collections.synchronizedList(new ArrayList<String>());
@@ -159,11 +155,7 @@ public class ReactToEvents
         return found;
     }
 
-    /**
-     * A sensor must hold its state for a moment to count, so the example holds each one a little longer than that.
-     *
-     * @throws InterruptedException when interrupted
-     */
+    /** A sensor must hold its state for a moment to count, so the example holds each one a little longer than that. */
     private static void holdForAWhile() throws InterruptedException
     {
         Thread.sleep(450);
