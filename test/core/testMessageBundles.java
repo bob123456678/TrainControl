@@ -1006,9 +1006,15 @@ public class testMessageBundles
         assertTrue(keysInConstants > 30, "precondition: the constants gave only " + keysInConstants + " keys the other roads"
             + " do not see");
 
-        File[] forms = new File("src/org/traincontrol/gui").listFiles((dir, name) -> name.endsWith(".form"));
+        // Walked, not listed: the forms live in gui's sub-packages too.
+        List<File> forms = new ArrayList<>();
 
-        assertTrue(forms != null && forms.length > 0, "precondition: no .form files were found under src/org/traincontrol/gui");
+        try (java.util.stream.Stream<java.nio.file.Path> walked = Files.walk(new File("src/org/traincontrol/gui").toPath()))
+        {
+            walked.filter(path -> path.toString().endsWith(".form")).forEach(path -> forms.add(path.toFile()));
+        }
+
+        assertTrue(!forms.isEmpty(), "precondition: no .form files were found under src/org/traincontrol/gui");
 
         for (File file : forms)
         {

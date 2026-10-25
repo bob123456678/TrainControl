@@ -92,11 +92,11 @@ public class testJavadocsAreAttached
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "base" + File.separator + "RouteCommand.java (1)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
-            + "gui" + File.separator + "AutoLocomotiveStatus.java (2)",
+            + "gui" + File.separator + "autonomy" + File.separator + "AutoLocomotiveStatus.java (2)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "gui" + File.separator + "AutonomyViewerPanel.java (2)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
-            + "gui" + File.separator + "DiagramTileRegistry.java (1)",
+            + "gui" + File.separator + "autonomy" + File.separator + "DiagramTileRegistry.java (1)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "gui" + File.separator + "LayoutLabel.java (1)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator

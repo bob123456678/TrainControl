@@ -510,8 +510,9 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
      * Every source file of the packages that draw the application.
      *
      * @return the files
+     * @throws java.io.IOException if a folder cannot be walked
      */
-    private static List<File> surfaceSources()
+    private static List<File> surfaceSources() throws java.io.IOException
     {
         List<File> out = new ArrayList<>();
 
@@ -522,9 +523,10 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
             assertTrue(folder.isDirectory(),
                 "run this from the project root - " + folder.getAbsolutePath() + " is not there");
 
-            for (File child : folder.listFiles())
+            // Walked, not listed: gui has sub-packages.
+            try (java.util.stream.Stream<java.nio.file.Path> walked = java.nio.file.Files.walk(folder.toPath()))
             {
-                if (child.getName().endsWith(".java")) out.add(child);
+                walked.filter(path -> path.toString().endsWith(".java")).forEach(path -> out.add(path.toFile()));
             }
         }
 

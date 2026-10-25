@@ -207,14 +207,18 @@ public class testEveryWindowWearsTheApplicationsLook
     {
         Map<String, String> windows = new LinkedHashMap<>();
 
-        File[] files = new File(GUI).listFiles();
+        // Walked, not listed: window classes live in gui's sub-packages too.
+        List<File> files = new ArrayList<>();
 
-        assertTrue(files != null && files.length > 0, "cannot read " + GUI);
+        try (java.util.stream.Stream<java.nio.file.Path> walked = Files.walk(new File(GUI).toPath()))
+        {
+            walked.filter(path -> path.toString().endsWith(".java")).forEach(path -> files.add(path.toFile()));
+        }
+
+        assertTrue(!files.isEmpty(), "cannot read " + GUI);
 
         for (File f : files)
         {
-            if (!f.getName().endsWith(".java")) continue;
-
             String source = new String(Files.readAllBytes(f.toPath()), StandardCharsets.UTF_8);
 
             if (!isAWindow(source)) continue;
@@ -233,7 +237,7 @@ public class testEveryWindowWearsTheApplicationsLook
         {
             if (asksAtClassLoad(window.getValue())) continue;
 
-            // Or it inherits the block from a window class in this package that has one.
+            // Or it inherits the block from a window class under gui that has one.
             if (inheritsTheAsk(window.getValue(), windows)) continue;
 
             bare.add(window.getKey());
@@ -349,7 +353,7 @@ public class testEveryWindowWearsTheApplicationsLook
     }
 
     /**
-     * Whether this class extends another window in this package that asks for the look and feel.
+     * Whether this class extends another window under gui that asks for the look and feel.
      */
     private static boolean inheritsTheAsk(String source, Map<String, String> windows)
     {

@@ -83,7 +83,7 @@ public class testNoSelfRecursiveWrappers
 
     private static final String SESSION = "src/org/traincontrol/automationui/AutonomySession.java";
 
-    private static final String EDITOR = "src/org/traincontrol/gui/LayoutEditor.java";
+    private static final String EDITOR = "src/org/traincontrol/gui/layouteditor/LayoutEditor.java";
 
     private static final String AUTONOMY_EDITOR = "src/org/traincontrol/gui/AutonomyEditorPanel.java";
 
@@ -93,8 +93,8 @@ public class testNoSelfRecursiveWrappers
      * owner's file and class name, and the prefix the collaborator calls its owner by (`ui.`, `owner.`, `editor.`).
      */
     private static final String[][] COLLABORATORS = {
-        { "backupAction", "src/org/traincontrol/gui/BackupAction.java", "BackupAction", WINDOW, "TrainControlUI", "ui." },
-        { "updateFlow", "src/org/traincontrol/gui/UpdateFlow.java", "UpdateFlow", WINDOW, "TrainControlUI", "ui." },
+        { "backupAction", "src/org/traincontrol/gui/widgets/BackupAction.java", "BackupAction", WINDOW, "TrainControlUI", "ui." },
+        { "updateFlow", "src/org/traincontrol/gui/widgets/UpdateFlow.java", "UpdateFlow", WINDOW, "TrainControlUI", "ui." },
         { "locIconActions", "src/org/traincontrol/gui/LocIconActions.java", "LocIconActions", WINDOW, "TrainControlUI",
             "ui." },
         { "layoutFileActions", "src/org/traincontrol/gui/LayoutFileActions.java", "LayoutFileActions", WINDOW,
@@ -105,11 +105,11 @@ public class testNoSelfRecursiveWrappers
             "AutonomySession", "owner." },
         { "sessionRuns", "src/org/traincontrol/automationui/SessionRuns.java", "SessionRuns", SESSION,
             "AutonomySession", "owner." },
-        { "selectionOps", "src/org/traincontrol/gui/LayoutEditorSelection.java", "LayoutEditorSelection", EDITOR,
+        { "selectionOps", "src/org/traincontrol/gui/layouteditor/LayoutEditorSelection.java", "LayoutEditorSelection", EDITOR,
             "LayoutEditor", "editor." },
-        { "reshapeOps", "src/org/traincontrol/gui/LayoutEditorReshape.java", "LayoutEditorReshape", EDITOR,
+        { "reshapeOps", "src/org/traincontrol/gui/layouteditor/LayoutEditorReshape.java", "LayoutEditorReshape", EDITOR,
             "LayoutEditor", "editor." },
-        { "undoOps", "src/org/traincontrol/gui/LayoutEditorUndo.java", "LayoutEditorUndo", EDITOR,
+        { "undoOps", "src/org/traincontrol/gui/layouteditor/LayoutEditorUndo.java", "LayoutEditorUndo", EDITOR,
             "LayoutEditor", "editor." },
         { "autonomySettingsTab", "src/org/traincontrol/gui/AutonomySettingsTab.java", "AutonomySettingsTab", WINDOW,
             "TrainControlUI", "ui." },

@@ -4401,7 +4401,7 @@ public class testEditorSurfaceRules
         excused.put("automationui/AutonomySession.java",
             "names the runtime rule in a comment, and narrows a set deliberately (MON-C1)");
 
-        excused.put("gui/AutoLocomotiveStatus.java",
+        excused.put("gui/autonomy/AutoLocomotiveStatus.java",
             "a DELIBERATE lock-free copy - the rule is synchronized on the Layout and this runs on the"
             + " event thread three times per repaint. Kept honest by testWhyStuck"
             + " .testTheDashAgreesWithTheRule, which compares its answer with the rule's over every"
