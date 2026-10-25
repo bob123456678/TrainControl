@@ -29276,6 +29276,87 @@ text:
 | Validated on your *Works* of 2026-10-21.
 |
 
+[comment MT-804 0]
+who: Adam
+date: 2026-10-24
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-24 (triage).** Works.
+|
+| *Run against commit 76d7c9f1, in Dansk - build\classes, compiled 24 Oct 23:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-805 0]
+who: Adam
+date: 2026-10-25
+kind: verdict
+verdict: Does not work
+text:
+| **Adam, 2026-10-25 (triage).** Does not work.
+|
+| Failed: there is now always a gap to the right of the dropdown, with the submit buttons being wider than before.  The gap between the buttons and the dropdown and the edge should be the same, and the overall width should be the width of the dropdown.
+|
+| *Run against commit 76d7c9f1, in Dansk - build\classes, compiled 24 Oct 23:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-809 0]
+who: Adam
+date: 2026-10-25
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-25 (triage).** Works.
+|
+| *Run against commit 76d7c9f1, in Dansk - build\classes, compiled 24 Oct 23:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-810 0]
+who: Adam
+date: 2026-10-25
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-25 (triage).** Works.
+|
+| *Run against commit 76d7c9f1, in Dansk - build\classes, compiled 24 Oct 23:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-814 0]
+who: Adam
+date: 2026-10-25
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-25 (triage).** Works.
+|
+| *Run against commit 76d7c9f1, in Dansk - build\classes, compiled 24 Oct 23:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-815 0]
+who: Adam
+date: 2026-10-25
+kind: verdict
+verdict: Works, with notes
+text:
+| **Adam, 2026-10-25 (triage).** Works, with notes.
+|
+| This test works, but shouldn't a name that's already taken be refused?
+|
+| *Run against commit 76d7c9f1, in Dansk - build\classes, compiled 24 Oct 23:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-819 0]
+who: Adam
+date: 2026-10-25
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-25 (triage).** Works.
+|
+| *Run against commit 76d7c9f1, in Dansk - build\classes, compiled 24 Oct 23:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
 [comment MT-820 0]
 who: Claude
 date: 2026-10-24
@@ -29285,6 +29366,39 @@ text:
 | **Claude, 2026-10-24.**
 |
 | Replaced by MT-822: these steps click items that are grayed out while a run holds the setup, so the expected messages never appear (RSA77-C1). Run MT-822 instead.
+|
+
+[comment MT-820 1]
+who: Adam
+date: 2026-10-25
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-25 (triage).** Works.
+|
+| *Run against commit 76d7c9f1, in Dansk - build\classes, compiled 24 Oct 23:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-821 0]
+who: Adam
+date: 2026-10-25
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-25 (triage).** Works.
+|
+| *Run against commit 76d7c9f1, in Dansk - build\classes, compiled 24 Oct 23:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-822 0]
+who: Adam
+date: 2026-10-25
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-25 (triage).** Works.
+|
+| *Run against commit 76d7c9f1, in Dansk - build\classes, compiled 24 Oct 23:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 |
 
 [comment OB-331 0]

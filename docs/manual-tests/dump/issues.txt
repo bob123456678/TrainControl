@@ -575,6 +575,26 @@ text:
 | Adam, 2026-10-20: "we need a way to mass indent everything so that a new condition can we wrapped around an existing long set of conditions.  for example, if current state is a or b or c, and i want to go to (a or b or c) and d, I would mass in dent a or b or c.  and when moving d, it should let me move it to the top d and (a or b or c) without messing the ranking."
 |
 
+[issue FR-145]
+ordinal: 44
+inbox: yes
+kind: feature request
+title: easy switching between layouts
+filed: 2026-10-25
+filed_at: 2026-10-25 00:09
+raised_from: noticed while testing - not from a particular test
+build: commit 76d7c9f1, in Dansk - build\classes, compiled 24 Oct 23:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+text:
+| ### FR-145 - 2026-10-25 - easy switching between layouts
+|
+| **Kind:** feature request  
+| **Raised from:** noticed while testing - not from a particular test  
+| **Filed:** 2026-10-25 00:09  
+| **Build:** commit 76d7c9f1, in Dansk - build\classes, compiled 24 Oct 23:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+|
+| 3.1.0 feature: history in the menu of the last 5 layouts, for easy switching
+|
+
 [issue OB-324]
 ordinal: 19
 inbox: yes
@@ -929,4 +949,24 @@ text:
 | **Filed:** 2026-10-24 20:14
 |
 | Found while merging the placement doors into one helper (3.0.3 duplication work, cluster 96).  LayoutRightclickAutonomyMenu.placeFacing writes the placement into the setup (session.placeLocomotive, setFacing) and then saves only under 'if (facing != null && session != null && setupStands)'.  Where no copy of the station can give a facing (OB-350's case: a station no train can leave), the placement is saved only if the tail question was put, which saves before asking.  Otherwise it stays in memory, and the locomotive dialog's own comment names the symptom of a missing save: the placement is gone at the next configuration load.  The paste and the locomotive dialog save in that case.  Also: when this door's save fails, the error is logged only in debug mode and only its message; the other two doors always log it.  To do: show it with a test (place there by right-click, reload the configuration, the train is gone), then save whenever the placement was written, and log a failed save as the other doors do.
+|
+
+[issue OB-374]
+ordinal: 45
+inbox: yes
+kind: bug
+title: sizes in screenshot export
+filed: 2026-10-25
+filed_at: 2026-10-25 00:11
+raised_from: noticed while testing - not from a particular test
+build: commit 76d7c9f1, in Dansk - build\classes, compiled 24 Oct 23:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+text:
+| ### OB-374 - 2026-10-25 - sizes in screenshot export
+|
+| **Kind:** bug  
+| **Raised from:** noticed while testing - not from a particular test  
+| **Filed:** 2026-10-25 00:11  
+| **Build:** commit 76d7c9f1, in Dansk - build\classes, compiled 24 Oct 23:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+|
+| layout -> screenshot doesn't offer the medium size.  Also, we don't need to be verbose on the pixels, since the users can tell based on what they normally use. 3.0.4 fix.
 |
