@@ -937,4 +937,30 @@ public class testWhyStuck
             "a station somebody has genuinely called this keeps its name - taking brackets off "
             + "anything that has them would rename real places to make an internal one read better");
     }
+
+    /**
+     * The (i) a card shows when hovering explains why it is not moving is a picture that loads.
+     *
+     * `AutoLocomotiveStatus` lives in `gui.autonomy` and the picture in `gui/resources`, so its lookup is anchored on
+     * `TrainControlUI` as every other is; a path relative to its own package finds nothing, and the card loses its mark
+     * without a word.
+     *
+     * MUTATION: look it up as `AutoLocomotiveStatus.class.getResource("resources/info.gif")` and this fails.
+     *
+     * @throws Exception on a failure to reach the mark
+     */
+    @Test
+    public void testTheWhyMarkLoads() throws Exception
+    {
+        java.lang.reflect.Method markFor = org.traincontrol.gui.autonomy.AutoLocomotiveStatus.class.getDeclaredMethod(
+            "markFor", boolean.class, boolean.class);
+
+        markFor.setAccessible(true);
+
+        javax.swing.ImageIcon info = (javax.swing.ImageIcon) markFor.invoke(null, false, true);
+
+        assertNotNull(info, "a card with a reason to hover for has no (i): resources/info.gif was not found");
+        assertEquals(info.getImageLoadStatus(), java.awt.MediaTracker.COMPLETE, "the (i) did not load");
+        assertTrue(info.getIconWidth() > 0, "the (i) is empty");
+    }
 }

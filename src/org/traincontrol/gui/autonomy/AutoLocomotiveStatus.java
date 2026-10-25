@@ -125,7 +125,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
 
     private static javax.swing.ImageIcon loadInfoIcon()
     {
-        java.net.URL url = AutoLocomotiveStatus.class.getResource("resources/info.gif");
+        java.net.URL url = TrainControlUI.class.getResource("resources/info.gif");
 
         return url == null ? null : new javax.swing.ImageIcon(url);
     }
