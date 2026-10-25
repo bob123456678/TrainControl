@@ -19971,7 +19971,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /** Presses a handler for the editor, which is `pageActionFrom` while it runs, for the calls that take no event. */
-    private void pressFromTheEditor(LayoutEditor editor, java.util.function.Consumer<java.awt.event.ActionEvent> handler)
+    private void pressFromTheEditor(LayoutEditor editor,
+        java.util.function.Consumer<java.awt.event.ActionEvent> handler)
     {
         pageActionFrom = editor;
 
