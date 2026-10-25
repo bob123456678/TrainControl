@@ -402,6 +402,7 @@ Tab icons provided by Freepik.
 
 ## Changelog
 
+* v3.0.4
 * v3.0.3 [10/25/2026]
     - Locomotive Control
         - The window for choosing a locomotive's icon now has a `Clear Local Locomotive Icon` button, so the icon can be cleared where it is set.
