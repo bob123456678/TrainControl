@@ -30,6 +30,7 @@ import org.traincontrol.base.RouteCommand;
 import org.traincontrol.base.Route;
 import org.traincontrol.base.ThreeWaySwitch;
 import org.traincontrol.gui.widgets.RowIcons;
+import org.traincontrol.gui.widgets.DetailsArea;
 import org.traincontrol.util.I18n;
 
 /**
@@ -2484,31 +2485,14 @@ public class RouteEditorFrame extends JFrame
         }
     }
 
-    /**
-     * The problems as a list somebody can read down.
-     *
-     * Numbered, because "there are four things wrong" and "here are four sentences" are different
-     * amounts of help - and capped, because a route pasted in from somewhere else can have a fault
-     * in every row and a dialog taller than the screen has no buttons on it.
-     */
-    private static String listed(List<String> wrong)
+    /** The problems numbered, for the Details list: a route pasted in can have a fault in every row. */
+    private static List<String> listed(List<String> wrong)
     {
-        StringBuilder out = new StringBuilder();
+        List<String> out = new java.util.ArrayList<>();
 
-        int shown = Math.min(wrong.size(), 12);
+        for (int at = 0; at < wrong.size(); at++) out.add((at + 1) + ".  " + wrong.get(at));
 
-        for (int at = 0; at < shown; at++)
-        {
-            out.append("\n    ").append(at + 1).append(".  ").append(wrong.get(at));
-        }
-
-        if (wrong.size() > shown)
-        {
-            out.append("\n\n").append(I18n.f("route.ui.frameAndMoreProblems",
-                String.valueOf(wrong.size() - shown)));
-        }
-
-        return out.toString();
+        return out;
     }
 
     /**
@@ -3164,7 +3148,7 @@ public class RouteEditorFrame extends JFrame
             String[] answers = { I18n.t("route.ui.frameGoAndFixIt"), I18n.t("route.ui.frameDiscard") };
 
             int answer = JOptionPane.showOptionDialog(this,
-                I18n.f("route.ui.frameCannotSaveYet", listed(wrong)),
+                DetailsArea.message(I18n.t("route.ui.frameCannotSaveYet"), listed(wrong)),
                 I18n.t("route.ui.frameCannotSaveYetTitle"),
                 JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null, answers, answers[0]);
 

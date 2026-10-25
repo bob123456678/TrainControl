@@ -91,6 +91,7 @@ public final class Answering implements AutoCloseable
     }
 
     private final List<String> asked = Collections.synchronizedList(new ArrayList<>());
+    private final List<PopupShape> shapes = Collections.synchronizedList(new ArrayList<>());
     private final AtomicBoolean going = new AtomicBoolean(true);
     private volatile Thread watching;
     private volatile File toChoose;
@@ -127,6 +128,7 @@ public final class Answering implements AutoCloseable
                     {
                         String message = textOf(pane.getMessage());
 
+                        answering.shapes.add(PopupShape.of(pane));
                         answering.asked.add(message);
 
                         answer(pane, rule.apply(message), answering.asked);
@@ -175,6 +177,17 @@ public final class Answering implements AutoCloseable
         synchronized (asked)
         {
             return new ArrayList<>(asked);
+        }
+    }
+
+    /**
+     * @return how each question looked on screen, in the order asked
+     */
+    public List<PopupShape> shapes()
+    {
+        synchronized (shapes)
+        {
+            return new ArrayList<>(shapes);
         }
     }
 

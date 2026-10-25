@@ -159,6 +159,51 @@ public class testDownloadUpdateFetchesTheNewVersion
     }
 
     /**
+     * The notice naming where the download went is no wider than about 640 px: the path, one long word, wraps where it
+     * must, where it made the notice over 1,200 px wide.
+     *
+     * MUTATION: show the notice as plain text again, and this fails.
+     *
+     * @throws Exception from the window or the server
+     */
+    @Test
+    public void testTheDownloadedNoticeFitsTheScreen() throws Exception
+    {
+        final AbstractButton item = item();
+
+        final String download = I18n.t("ui.update.download");
+
+        support.PopupShape notice;
+
+        NoFileManager guard = new NoFileManager();
+
+        System.setSecurityManager(guard);
+
+        try (Answering answering = Answering.start(message -> message.startsWith(firstLineOfTheQuestion())
+            ? Answering.press(download) : Answering.press(I18n.t("ui.ok"))))
+        {
+            SwingUtilities.invokeLater(item::doClick);
+
+            assertTrue(answering.awaitAsked(2, 30000), "the download never said it had finished: " + answering.asked());
+
+            notice = answering.shapes().get(1);
+
+            assertTrue(Components.waitFor(() -> !guard.asked.isEmpty(), 10000), "the download did not show its folder");
+        }
+        finally
+        {
+            System.setSecurityManager(null);
+        }
+
+        assertEquals(notice.sentence, I18n.f("ui.infoDownloadedUpdateReplaceExistingJar", target().getAbsolutePath()),
+            "precondition: this is not the notice of where the download is");
+
+        assertTrue(notice.width <= support.PopupShape.MAX_WIDTH, "the notice is " + notice.width + " px wide: " + notice);
+
+        assertTrue(Components.waitFor(() -> item.isEnabled(), 10000), "Download Update is not itself again");
+    }
+
+    /**
      * Download fetches the new version to the place the notice names, and asks for that folder to be shown.  The menu
      * item is back to itself afterwards.
      *

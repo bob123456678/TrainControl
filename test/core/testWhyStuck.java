@@ -718,7 +718,7 @@ public class testWhyStuck
 
         // The exception in the words, read from the English bundle: no placeholder carries it.
         assertTrue(java.util.ResourceBundle.getBundle("org.traincontrol.resources.messages", java.util.Locale.ROOT)
-            .getString("autolayout.why.startReachesNoStationEitherWay").contains("unless every train turns round there"),
+            .getString("autolayout.why.startReachesNoStationEitherWay").contains("not where every train turns round"),
             "the either-way sentence sends the operator to open a side under Trains May Arrive... without GUI4-C3's"
             + " exception - at a station every train turns round at, that makes the setup refuse to load (RLU3-C1)");
     }

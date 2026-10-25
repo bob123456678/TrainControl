@@ -2183,6 +2183,70 @@ public class testTheTailIsPickedOnTheDiagram
         }
     }
 
+    /**
+     * The tail question as the list, with an editor open, is no wider than about 640 px: its sentence wraps, where its
+     * HTML had no width and the question was over 1,000 px wide.
+     *
+     * MUTATION: take the width off the question's HTML, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testTheListQuestionFitsTheScreen() throws Exception
+    {
+        TailCrossedPrompt.answerForTests(null);
+
+        final TunnelQuestion q = tunnelQuestion();
+
+        ExecutorService asker = Executors.newSingleThreadExecutor();
+
+        final org.traincontrol.gui.layouteditor.LayoutEditor[] editor = new org.traincontrol.gui.layouteditor.LayoutEditor[1];
+
+        java.lang.reflect.Field open = TrainControlUI.class.getDeclaredField("openEditor");
+
+        open.setAccessible(true);
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                editor[0] = new org.traincontrol.gui.layouteditor.LayoutEditor(model.getLayout("1 - Main"), 30, ui, 0);
+                editor[0].pack();
+            });
+
+            open.set(ui, editor[0]);
+
+            Future<TailCrossedPrompt.Answer> listed = asker.submit(() ->
+                TailCrossedPrompt.askAfterPlacement(q.layout, q.tunnel, "N", 5, "OB tail train", ui, null));
+
+            final javax.swing.JOptionPane pane = findPane(awaitTheQuestion().getContentPane());
+
+            assertNotNull(pane, "precondition: the tail question as the list has no option pane");
+
+            support.PopupShape shown = support.PopupShape.of(pane);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> pane.setValue(org.traincontrol.util.I18n.t("ui.cancel")));
+
+            listed.get(10, TimeUnit.SECONDS);
+
+            assertTrue(shown.sentence.startsWith(org.traincontrol.util.I18n.t("autolayout.ui.askTailCrossed")
+                .split("\\{0\\}")[0].trim()), "precondition: this is not the tail question: " + shown);
+
+            assertTrue(shown.width <= support.PopupShape.MAX_WIDTH, "the tail question is " + shown.width + " px wide: "
+                + shown);
+        }
+        finally
+        {
+            takeDownDialogs();
+
+            open.set(ui, null);
+
+            if (editor[0] != null) javax.swing.SwingUtilities.invokeAndWait(() -> editor[0].dispose());
+
+            asker.shutdownNow();
+        }
+    }
+
     /** The tail question once it is on screen, by its title. */
     private static javax.swing.JDialog awaitTheQuestion() throws Exception
     {

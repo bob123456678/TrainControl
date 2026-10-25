@@ -203,6 +203,80 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
+     * The import's report is its counts and where they went, with what it could not do in a scrolling Details list under
+     * them and in the log, in a popup no wider than about 640 px.  His MT-491 file leaves points with no sensor and things
+     * it does not bring, which made a report of over 100 words.
+     *
+     * MUTATION: put the left-behind lines back into the report's text, and this fails.
+     *
+     * @throws Exception from the window or the import
+     */
+    @Test
+    public void testTheReportListsWhatItCouldNotDoUnderItsCounts() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
+
+            ui[0] = openTheWindow();
+
+            Answerer answerer = pressImport(ui[0], MT491, "MT-491 report", Collections.<String>emptySet());
+
+            String opening = before(I18n.t("autosetup.ui.infoLegacyImported"), "{0}");
+
+            support.PopupShape report = null;
+
+            for (support.PopupShape shown : answerer.shapes) if (shown.sentence.startsWith(opening)) report = shown;
+
+            assertNotNull(report, "the import showed no report: " + answerer.said);
+
+            assertFalse(report.details.isEmpty(), "the report lists nothing under its counts, where the file left points"
+                + " with no sensor: " + report);
+
+            for (String paragraph : report.sentence.split("\n\n"))
+            {
+                assertTrue(support.PopupShape.words(paragraph) <= 30, "a paragraph above the list is "
+                    + support.PopupShape.words(paragraph) + " words long: " + report);
+            }
+
+            String log = logged();
+
+            for (String line : report.details)
+            {
+                assertFalse(report.sentence.contains(line), "a listed line is in the report's text too: " + line);
+
+                assertTrue(log.contains(line), "a line of the Details list is not in the log: " + line);
+            }
+
+            assertTrue(report.width <= support.PopupShape.MAX_WIDTH, "the report is " + report.width + " px wide: "
+                + report);
+        }
+        finally
+        {
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
      * A second import of the same file, from the menu into the same configuration, keeps a change made by hand between the
      * two: it fills what is missing and does not replace what is there (MT-298).
      *
@@ -290,21 +364,12 @@ public class testTheImportDoorReadsAnOldFile
 
             List<String> said = importFromTheMenu(ui[0], MT298, "MT-298 import");
 
-            // ASKED WHAT IT DOES: an old file fills gaps, so the door does not ask to replace.
-            // AND SAYS WHAT COUNTS AS NOT SET: a setting at its default, a home taken off or an emptied
-            // exclusion list reads as a gap, and takes the file's.  The whole question is compared, since `said` holds
-            // whole dialogs.
-            assertTrue(said.contains(I18n.f("autosetup.ui.confirmImportFillsGaps", "MT-298 import") + "  "
-                + I18n.t("autosetup.ui.importTakesTheFilesForDefaults") + "  "
-                + I18n.f("autosetup.ui.importKeepsTheStationMaximums", "MT-298 import")), "importing an old file into a configuration of"
-                + " that name did not ask whether to fill in what it does not have, saying what counts as not having it"
+            // ASKED WHAT IT DOES: an old file fills gaps, so the door does not ask to replace.  What counts as not set
+            // is Automation.md's rule, not the question's.  The whole question is compared, since `said` holds whole
+            // dialogs.
+            assertTrue(said.contains(I18n.f("autosetup.ui.confirmImportFillsGaps", "MT-298 import")), "importing an old"
+                + " file into a configuration of that name did not ask whether to fill in what it does not have"
                 + " (RLA3-B1): " + said);
-
-            // AND THE ONE SETTING A DEFAULT DOES NOT GIVE UP: every station of a configuration that has been
-            // loaded records its maximum, no limit included, so the file's maximum is kept out
-            assertTrue(said.stream().anyMatch(q -> q.contains(I18n.t("autosetup.ui.importTakesTheFilesForDefaults") + "  "
-                + I18n.f("autosetup.ui.importKeepsTheStationMaximums", "MT-298 import"))), "the question said a setting at"
-                + " its default takes the file's value, and did not say a station's maximum is kept (RLV12-C6): " + said);
 
             assertFalse(said.contains(I18n.f("autosetup.ui.confirmImportOverwrites", "MT-298 import")), "importing an old"
                 + " file into a configuration of that name asked to replace it, and then filled gaps: " + said);
@@ -940,17 +1005,9 @@ public class testTheImportDoorReadsAnOldFile
 
             // AND THE QUESTION SAID NONE WOULD BE PLACED
             // THE WHOLE QUESTION, since `said` holds whole dialogs
-            assertTrue(said.contains(I18n.f("autosetup.ui.confirmImportFillsGapsInUse", inUse) + "  "
-                + I18n.t("autosetup.ui.importTakesTheFilesForDefaults") + "  "
-                + I18n.f("autosetup.ui.importKeepsTheStationMaximums", inUse)), "the question into " + inUse + ", the"
-                + " configuration in use, promised the file's trains, and Yes placed none (RLU4-C3), or did not say what"
-                + " counts as not set (RLA3-B1): " + said);
-
-            // AND THAT THE STATIONS KEEP THEIR MAXIMA: into the configuration in use, the file's never arrive
-            assertTrue(said.stream().anyMatch(q -> q.contains(I18n.t("autosetup.ui.importTakesTheFilesForDefaults") + "  "
-                + I18n.f("autosetup.ui.importKeepsTheStationMaximums", inUse))), "the question into " + inUse + " said a"
-                + " setting at its default takes the file's value, and did not say its stations keep their maxima"
-                + " (RLV12-C6): " + said);
+            assertTrue(said.contains(I18n.f("autosetup.ui.confirmImportFillsGapsInUse", inUse)), "the question into "
+                + inUse + ", the configuration in use, promised the file's trains, and Yes placed none (RLU4-C3): "
+                + said);
         }
         finally
         {
@@ -5510,6 +5567,7 @@ public class testTheImportDoorReadsAnOldFile
         private final Set<String> no;
         private final List<String> said = Collections.synchronizedList(new ArrayList<>());
         private final List<Integer> heights = Collections.synchronizedList(new ArrayList<>());
+        private final List<support.PopupShape> shapes = Collections.synchronizedList(new ArrayList<>());
         private final Set<Object> handled = Collections.newSetFromMap(new java.util.IdentityHashMap<>());
         private volatile boolean running = true;
         private volatile boolean chose = false;
@@ -5584,6 +5642,7 @@ public class testTheImportDoorReadsAnOldFile
 
                     said.add(text);
                     heights.add(window.getHeight());
+                    shapes.add(support.PopupShape.of(pane));
 
                     final Object[] options = pane.getOptions();
 
@@ -5617,6 +5676,12 @@ public class testTheImportDoorReadsAnOldFile
         {
             text.append(String.valueOf(((javax.swing.JLabel) component).getText()).replaceAll("<[^>]*>", "")
                 .replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&")).append('\n');
+        }
+
+        // A Details area (DetailsArea) and the sentence above it are text areas
+        if (component instanceof javax.swing.text.JTextComponent)
+        {
+            text.append(((javax.swing.text.JTextComponent) component).getText()).append('\n');
         }
 
         if (component instanceof javax.swing.JList)

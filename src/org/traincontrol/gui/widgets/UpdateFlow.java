@@ -172,13 +172,9 @@ public final class UpdateFlow
 
                 javax.swing.SwingUtilities.invokeLater(() ->
                 {
-                    JOptionPane.showMessageDialog(
-                        this.ui,
-                        I18n.f(
-                            "ui.infoDownloadedUpdateReplaceExistingJar",
-                            f.getAbsolutePath()
-                        )
-                    );
+                    // Wrapped: the path is one long word, and made the popup wider than the screen
+                    JOptionPane.showMessageDialog(this.ui, DetailsArea.wrapped(
+                        I18n.f("ui.infoDownloadedUpdateReplaceExistingJar", f.getAbsolutePath())));
 
                     this.ui.showFileExplorer(new File(f.getAbsoluteFile().toString()).getParentFile());
                 });

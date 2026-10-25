@@ -74,7 +74,7 @@ public class testCommentsStayLean
     };
 
     /** Comment lines carrying a history marker, as they stand.  Lower it whenever some go; never raise it. */
-    private static final int HISTORY_ALLOWED = 307;
+    private static final int HISTORY_ALLOWED = 306;
 
     /** WHICH files carry them, so that a swap between files fails and names both.  Files at zero are not listed. */
     private static final String[] HISTORY_BY_FILE = {
@@ -108,7 +108,7 @@ public class testCommentsStayLean
         "src/org/traincontrol/gui/AutonomyMenu.java (13)",
         "src/org/traincontrol/gui/AutonomyOverlayToggle.java (9)",
         "src/org/traincontrol/gui/autonomy/AutonomyReport.java (3)",
-        "src/org/traincontrol/gui/AutonomyViewerPanel.java (20)",
+        "src/org/traincontrol/gui/AutonomyViewerPanel.java (19)",
         "src/org/traincontrol/gui/widgets/BusyDialog.java (3)",
         "src/org/traincontrol/gui/locomotive/CurrentKeyRow.java (9)",
         "src/org/traincontrol/gui/autonomy/DiagramMonitorDriver.java (4)",

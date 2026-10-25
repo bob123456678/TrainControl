@@ -468,7 +468,7 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
             assertEquals(asked.size(), 1, "pressing the item asked " + asked.size() + " questions: " + asked);
 
             assertTrue(asked.get(0).contains(I18n.f("autolayout.ui.confirmPlaceEveryTrainAtHomeByHand", 0, 0)
-                .split("\n")[2]), "the confirmation does not say the trains must be moved by hand: " + asked);
+                .split("\\? ", 2)[1]), "the confirmation does not say the trains must be moved by hand: " + asked);
 
             assertEquals(session.placementsAutonomyWillWrite(), before, "answering No changed the setup");
 

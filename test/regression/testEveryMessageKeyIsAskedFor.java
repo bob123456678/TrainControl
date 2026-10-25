@@ -105,6 +105,10 @@ public class testEveryMessageKeyIsAskedFor
         "autosetup.ui.leftBehindOne",
         "autosetup.ui.leftBehindFew",
 
+        // The import's guessed facings, <key> + I18n.countForm the same way
+        "autosetup.ui.facingsGuessedOne",
+        "autosetup.ui.facingsGuessedFew",
+
         // RouteEditorFrame.settingLabel -> route.ui.setting.<word>, the setting words a route stores (OB-367)
         "route.ui.setting.",
     };

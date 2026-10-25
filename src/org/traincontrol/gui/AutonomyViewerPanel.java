@@ -24,6 +24,7 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.autonomy.AutonomyReport;
 import org.traincontrol.gui.widgets.QuickFileChooser;
+import org.traincontrol.gui.widgets.DetailsArea;
 import org.traincontrol.util.I18n;
 
 /**
@@ -1223,16 +1224,8 @@ public class AutonomyViewerPanel extends JPanel
             String question = format != AutonomySession.ImportFormat.LEGACY_GRAPH ? "autosetup.ui.confirmImportOverwrites"
                 : intoTheOneInUse ? "autosetup.ui.confirmImportFillsGapsInUse" : "autosetup.ui.confirmImportFillsGaps";
 
-            // AN OLD FILE'S QUESTION SAYS WHAT COUNTS AS NOT SET (Adam, 2026-09-28: keep the gap-fill, say so).
-            // A default is stored as nothing, so a setting returned to its default, a home taken off or an emptied
-            // exclusion list reads as a gap and takes the file's - which "nothing already set is changed" did not say.  And
-            // the one setting that does not: once the configuration has been loaded, every station records its maximum, no
-            // limit included, so the file's maximum is kept out.
-            String asked = format != AutonomySession.ImportFormat.LEGACY_GRAPH ? I18n.f(question, name.trim())
-                : I18n.f(question, name.trim()) + "  " + I18n.t("autosetup.ui.importTakesTheFilesForDefaults")
-                    + "  " + I18n.f("autosetup.ui.importKeepsTheStationMaximums", name.trim());
-
-            int replace = JOptionPane.showOptionDialog(ui, asked,
+            // What counts as not set (a default, a home taken off, an emptied list) is Automation.md's, not the question's.
+            int replace = JOptionPane.showOptionDialog(ui, I18n.f(question, name.trim()),
                 I18n.t("autosetup.ui.title"), JOptionPane.YES_NO_OPTION,
                 JOptionPane.QUESTION_MESSAGE, null,
                 TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]);
@@ -1348,8 +1341,8 @@ public class AutonomyViewerPanel extends JPanel
             ? I18n.f("autosetup.ui.errorNameInUse", typed) : otherwise;
     }
 
-    /** A blank line between two paragraphs of a dialog, as a constant so no script has to escape it. */
-    private static final String NEWLINES = System.lineSeparator() + System.lineSeparator();
+    /** A blank line between two paragraphs of a dialog: "\n", which a text area breaks at, not the system's ending. */
+    private static final String NEWLINES = "\n\n";
 
     /**
      * Chooses the configuration named at the Import prompt, creating it where there is none of that name - the
@@ -1445,7 +1438,8 @@ public class AutonomyViewerPanel extends JPanel
 
     private void showLocomotivesLeftOutLines(String configuration, java.util.List<String> lines)
     {
-        JOptionPane.showMessageDialog(ui, locomotivesLeftOutMessage(configuration, lines),
+        JOptionPane.showMessageDialog(ui,
+            DetailsArea.message(I18n.f("autosetup.ui.locomotivesLeftOut", configuration), lines),
             I18n.t("autosetup.ui.titleLocomotivesLeftOut"), JOptionPane.WARNING_MESSAGE);
     }
 
@@ -1464,28 +1458,6 @@ public class AutonomyViewerPanel extends JPanel
         final java.util.List<String> lines = linesFor(leftOut);
 
         ui.whenTheConnectingNoticeIsGone(() -> showLocomotivesLeftOutLines(configuration, lines));
-    }
-
-    /**
-     * What the dialog shows: the sentence, and the list under it, at most ten lines high.
-     *
-     * @param configuration the configuration's name
-     * @param lines one line for each locomotive
-     * @return the dialog's message
-     */
-    static javax.swing.JComponent locomotivesLeftOutMessage(String configuration, java.util.List<String> lines)
-    {
-        javax.swing.JList<String> list = new javax.swing.JList<>(lines.toArray(new String[0]));
-
-        list.setVisibleRowCount(Math.min(10, Math.max(3, lines.size())));
-
-        javax.swing.JPanel panel = new javax.swing.JPanel(new java.awt.BorderLayout(0, 8));
-
-        panel.add(new javax.swing.JLabel(AutonomyEditorPanel.wrappedAt(
-            I18n.f("autosetup.ui.locomotivesLeftOut", configuration), 420)), java.awt.BorderLayout.NORTH);
-        panel.add(new JScrollPane(list), java.awt.BorderLayout.CENTER);
-
-        return panel;
     }
 
     /**
@@ -1691,27 +1663,28 @@ public class AutonomyViewerPanel extends JPanel
             // the box still loaded the old graph at start; since OB-254 it resumes the active setup, which the import has
             // just made, so the untick was what kept the imported setup from loading at the next start.
 
-            String unmatched = result.unmatched.isEmpty()
-                ? "" : "\n\n" + String.join(", ", result.unmatched);
+            // The sentence counts; what it could not do goes under it in a Details list, and to the log.
+            java.util.List<String> details = new java.util.ArrayList<>();
+
+            if (!result.unmatched.isEmpty()) details.add(String.join(", ", result.unmatched));
 
             // The ones this database does not hold are not named here: they have a list of their own, below (OB-349)
             if (!result.duplicateLocomotives.isEmpty())
             {
-                unmatched += "\n\n" + I18n.f("autosetup.ui.infoLegacyDuplicateLocs",
-                    String.join(", ", result.duplicateLocomotives));
+                details.add(I18n.f("autosetup.ui.infoLegacyDuplicateLocs",
+                    String.join(", ", result.duplicateLocomotives)));
             }
 
             // And the ones this configuration already has standing somewhere, which stay there
             if (!result.alreadyPlaced.isEmpty())
             {
-                unmatched += "\n\n" + I18n.f("autosetup.ui.infoLegacyAlreadyPlaced",
-                    String.join(", ", result.alreadyPlaced));
+                details.add(I18n.f("autosetup.ui.infoLegacyAlreadyPlaced", String.join(", ", result.alreadyPlaced)));
             }
 
             // And the homes it already has, which stay too
             if (!result.homesKept.isEmpty())
             {
-                unmatched += "\n\n" + I18n.f("autosetup.ui.infoLegacyHomesKept", String.join(", ", result.homesKept));
+                details.add(I18n.f("autosetup.ui.infoLegacyHomesKept", String.join(", ", result.homesKept)));
             }
 
             // AND WHAT IT LEFT ON A SQUARE ALREADY TAKEN, and the homes it named twice (OB-304): each a choice the
@@ -1719,29 +1692,28 @@ public class AutonomyViewerPanel extends JPanel
             // skipped or counted without a word until now.
             if (!result.squareTaken.isEmpty())
             {
-                unmatched += "\n\n" + I18n.f("autosetup.ui.infoLegacySquareTaken",
-                    String.join(", ", result.squareTaken));
+                details.add(I18n.f("autosetup.ui.infoLegacySquareTaken", String.join(", ", result.squareTaken)));
             }
 
             if (!result.homeSquareTaken.isEmpty())
             {
-                unmatched += "\n\n" + I18n.f("autosetup.ui.infoLegacyHomeSquareTaken",
-                    String.join(", ", result.homeSquareTaken));
+                details.add(I18n.f("autosetup.ui.infoLegacyHomeSquareTaken",
+                    String.join(", ", result.homeSquareTaken)));
             }
 
             if (result.duplicateHomes > 0)
             {
-                unmatched += "\n\n" + I18n.f("autosetup.ui.infoLegacyDuplicateHomes", result.duplicateHomes);
+                details.add(I18n.f("autosetup.ui.infoLegacyDuplicateHomes", result.duplicateHomes));
             }
 
             // And the trains it did not place, into the configuration running
             if (!result.notPlacedInUse.isEmpty())
             {
-                unmatched += "\n\n" + I18n.f("autosetup.ui.infoLegacyNotPlacedInUse",
+                details.add(I18n.f("autosetup.ui.infoLegacyNotPlacedInUse",
                     String.join(", ", result.notPlacedInUse), into,
                     // THE DOOR THAT PUTS DOWN A TRAIN THE DIAGRAM DOES NOT HAVE: "Place <train>", for the train
                     // chosen in the main window - "Place Locomotive..." lists only the trains already standing
-                    I18n.f("layout.ui.menuPlaceLocomotive", String.valueOf((char) 0x2026)));
+                    I18n.f("layout.ui.menuPlaceLocomotive", String.valueOf((char) 0x2026))));
             }
 
             // AND WHAT IT DID NOT BRING (MT-257 item 3).
@@ -1771,7 +1743,8 @@ public class AutonomyViewerPanel extends JPanel
             // paragraph, and this is something to read once and then check on the diagram.
             if (result.facingsInvented > 0 && ui.getModel() != null)
             {
-                ui.getModel().log(I18n.f("autosetup.ui.facingsGuessed", result.facingsInvented));
+                ui.getModel().log(I18n.f("autosetup.ui.facingsGuessed" + I18n.countForm(result.facingsInvented),
+                    result.facingsInvented));
             }
 
             // AND THE ONES THE FILE STATES AND THIS DIAGRAM CANNOT HOLD, by name: stood the only way their
@@ -1806,12 +1779,16 @@ public class AutonomyViewerPanel extends JPanel
                 ui.getModel().log(listForTheLog(I18n.t("autosetup.ui.importSharedSquaresHeading"), result.namesNotKept));
             }
 
-            JOptionPane.showMessageDialog(ui, I18n.f("autosetup.ui.infoLegacyImported",
-                result.matched, result.placed, result.reversing, result.settings,
-                result.skipped, result.unmatched.size()) + unmatched
-                + (result.namesNotKept.isEmpty() ? "" : NEWLINES + sharedSquaresSentence(result.namesNotKept.size()))
-                + (left.isEmpty() ? "" : NEWLINES + leftBehindSentence(left.size()))
-                + NEWLINES + where);
+            if (!result.namesNotKept.isEmpty()) details.add(sharedSquaresSentence(result.namesNotKept.size()));
+
+            if (!left.isEmpty()) details.add(leftBehindSentence(left.size()));
+
+            String counted = I18n.f("autosetup.ui.infoLegacyImported", result.matched, result.placed, result.reversing,
+                result.settings, result.skipped, result.unmatched.size()) + NEWLINES + where;
+
+            if (!details.isEmpty() && ui.getModel() != null) ui.getModel().log(listForTheLog(counted, details));
+
+            JOptionPane.showMessageDialog(ui, details.isEmpty() ? counted : DetailsArea.message(counted, details));
 
             logLocomotivesLeftOut(into, leftOut);
             showLocomotivesLeftOut(into, leftOut);

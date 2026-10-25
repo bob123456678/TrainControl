@@ -147,6 +147,7 @@ import org.traincontrol.gui.locomotive.UsageHistogram;
 import org.traincontrol.gui.widgets.About;
 import org.traincontrol.gui.widgets.BackupAction;
 import org.traincontrol.gui.widgets.BusyDialog;
+import org.traincontrol.gui.widgets.DetailsArea;
 import org.traincontrol.gui.widgets.HandScrollListener;
 import org.traincontrol.gui.widgets.PositionAwareJFrame;
 import org.traincontrol.gui.widgets.QuickFileChooser;
@@ -5102,36 +5103,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /** An editor asked for and not yet shown; read by `anEditorIsOpenOrOnItsWay`.  Event thread only. */
     private boolean editorOnItsWay;
-
-    /** Breaks every line over 90 characters at spaces (a line with no space stays whole), so a dialog fits. */
-    static String wrappedToFit(String text)
-    {
-        final int columns = 90;
-
-        if (text == null) return null;
-
-        StringBuilder out = new StringBuilder();
-
-        for (String line : text.split("\n", -1))
-        {
-            if (out.length() > 0) out.append('\n');
-
-            while (line.length() > columns)
-            {
-                int at = line.lastIndexOf(' ', columns);
-
-                if (at <= 0) break;
-
-                out.append(line, 0, at).append('\n');
-
-                line = line.substring(at + 1);
-            }
-
-            out.append(line);
-        }
-
-        return out.toString();
-    }
 
     /**
      * The layout editor's window while one is open where it can be seen, or null: for a question that has to open in
@@ -19469,10 +19440,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         final java.util.List<String> savedArmed = json == null
             ? java.util.Collections.<String>emptyList() : this.model.routesSavedArmed(json);
 
-        // No is the default: an import that starts nothing cannot surprise anybody.  Routes by name (MT-496), wrapped:
-        // many routes made a dialog wider than the screen.
+        // No is the default: an import that starts nothing cannot surprise anybody.  Routes by name (MT-496), in a
+        // Details list under the question.
         final boolean arm = !savedArmed.isEmpty() && JOptionPane.showOptionDialog(this,
-            wrappedToFit(I18n.f("route.ui.confirmRearmImported", String.join(", ", savedArmed))),
+            DetailsArea.message(I18n.f("route.ui.confirmRearmImported", savedArmed.size()), savedArmed),
             I18n.t("route.ui.confirmRearmImportedTitle"),
             JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, YES_NO_OPTS, YES_NO_OPTS[1])
             == JOptionPane.YES_OPTION;
@@ -19534,13 +19505,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 for (String[] pair : this.model.getRoutesSplitByLastImport()) split.add(pair[0]);
 
-                JOptionPane.showMessageDialog(this, (rearmed[0] > 0
+                String notice = rearmed[0] > 0
                     ? I18n.f(org.traincontrol.marklin.MarklinControlStation.IMPORTED_ROUTES_REARMED, added[0],
                         rearmed[0])
                     : I18n.f(org.traincontrol.marklin.MarklinControlStation.IMPORTED_ROUTES_NOTICE, added[0],
-                        I18n.t("ui.main.bulkEnable"), I18n.t("route.ui.menuEnableAutoExecution")))
-                    + (split.isEmpty() ? "" : "\n\n" + wrappedToFit(I18n.f("route.ui.infoImportSplitStopRoutes",
-                        String.join(", ", split)))));
+                        I18n.t("ui.main.bulkEnable"), I18n.t("route.ui.menuEnableAutoExecution"));
+
+                JOptionPane.showMessageDialog(this, split.isEmpty() ? notice
+                    : DetailsArea.message(notice + "\n\n" + I18n.t("route.ui.infoImportSplitStopRoutes"), split));
             });
     }//GEN-LAST:event_importRoutesMenuItemActionPerformed
 

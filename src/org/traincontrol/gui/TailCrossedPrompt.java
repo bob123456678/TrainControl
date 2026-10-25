@@ -529,8 +529,9 @@ public class TailCrossedPrompt
 
                 javax.swing.JPanel panel = new javax.swing.JPanel(new java.awt.BorderLayout(0, 8));
 
-                panel.add(new javax.swing.JLabel("<html>" + escape(I18n.f("autolayout.ui.askTailCrossed", train, station))
-                    .replace("\n", "<br>") + "</html>"), java.awt.BorderLayout.NORTH);
+                panel.add(new javax.swing.JLabel("<html><div style='width:320px'>"
+                    + escape(I18n.f("autolayout.ui.askTailCrossed", train, station)).replace("\n", "<br>")
+                    + "</div></html>"), java.awt.BorderLayout.NORTH);
                 panel.add(new javax.swing.JScrollPane(list), java.awt.BorderLayout.CENTER);
 
                 // OK AND CANCEL, NO "NOT KNOWN" (Adam, 2026-10-09, asked what told the two apart - for a train just put

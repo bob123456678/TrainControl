@@ -284,8 +284,9 @@ public class testAnAnsweredZeroIsNotMissing
         assertFalse(notices.isEmpty(), "precondition: the editor lists nothing under Worth tidying on his railway: "
             + everything);
 
-        // The wording of 2026-09-29's message pass (Adam: "lighter touch")
+        // The wording of 2026-09-29's message pass (Adam: "lighter touch"), and of the refusing notice's shorter one
         String stands = "stands across that switch here and may block other trains until it leaves";
+        String blocks = "longer trains block the switch";
 
         java.util.Map<String, Integer> figures = new java.util.LinkedHashMap<>();
 
@@ -301,9 +302,10 @@ public class testAnAnsweredZeroIsNotMissing
 
             for (String row : notices)
             {
-                if (row.contains(" " + platform.getKey() + " ") || row.contains(platform.getKey() + " is set for a train"))
+                if (row.contains(" " + platform.getKey() + " ") || row.contains(" " + platform.getKey() + ",")
+                    || row.contains(platform.getKey() + " is set for a train"))
                 {
-                    if (row.contains(stands)) line = row;
+                    if (row.contains(stands) || row.contains(blocks)) line = row;
                 }
             }
 
@@ -316,10 +318,9 @@ public class testAnAnsweredZeroIsNotMissing
             }
             else
             {
-                String refused = "Coming in the shortest way, over " + platform.getValue() + ", a train"
-                    + " longer than " + platform.getValue() + " is refused instead.";
+                String refused = "over " + platform.getValue() + " are refused on the shortest way in";
 
-                assertTrue(line.indexOf(refused) > line.indexOf(stands), platform.getKey() + " does not say, after the"
+                assertTrue(line.indexOf(refused) > line.indexOf(blocks) && line.indexOf(blocks) >= 0, platform.getKey() + " does not say, after the"
                     + " sentence about standing across the switch, that a train longer than " + platform.getValue()
                     + " coming in the shortest way is refused (MT-583): " + line);
             }
