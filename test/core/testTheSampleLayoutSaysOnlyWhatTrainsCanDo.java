@@ -327,7 +327,7 @@ public class testTheSampleLayoutSaysOnlyWhatTrainsCanDo
 
     /**
      * The One-Way tool sets the runs of the two squares clicked, as well as the track between them, and leaves nothing
-     * for the correction to bring into line (OB-361).  It used to set only the squares between, leaving 10,3 both ways
+     * for the correction to bring into line (OB-361): setting only the squares between would leave 10,3 both ways
      * in a run one way (the shipped sample) and 5,1's run both ways from end to end.
      *
      * MUTATION: leave the clicked squares' runs out again, and this fails.
