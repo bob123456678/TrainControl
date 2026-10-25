@@ -327,7 +327,7 @@ text:
 
 [issue FR-109]
 ordinal: 16
-inbox: yes
+inbox: no
 kind: feature request
 title: for 3.0.4: rename, delete and add pages from the layout editor
 filed: 2026-10-04
@@ -415,7 +415,7 @@ text:
 
 [issue FR-124]
 ordinal: 23
-inbox: yes
+inbox: no
 kind: feature request
 title: for 3.0.4: Restore from Backup in the File menu
 filed: 2026-10-11
@@ -577,7 +577,7 @@ text:
 
 [issue FR-145]
 ordinal: 44
-inbox: yes
+inbox: no
 kind: feature request
 title: for 3.0.4: easy switching between layouts
 filed: 2026-10-25

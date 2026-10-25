@@ -32676,3 +32676,132 @@ body:
 tail:
 | ---
 |
+
+[test MT-829]
+ordinal: 828
+anchor: mt-829
+date: 2026-10-25
+title: File > Restore from Backup puts a backup back, layout included, after saving the current data as a before-restore backup
+disposition: needs test
+from: FR-124
+written: 2026-10-25
+reopened: no
+body:
+| <a id="mt-829"></a>
+| ### MT-829 - 2026-10-25 - File > Restore from Backup puts a backup back, layout included, after saving the current data as a before-restore backup
+|
+| **Disposition:** needs test
+| **From:** FR-124
+|
+| **Written:** 2026-10-25
+|
+| **Steps**
+|
+| 1. `File` > `Backup TrainControl Data`, and note the file name it gives.
+| 2. Change things you will recognize: add a locomotive, rename a keyboard page, and add a page to the layout.
+| 3. `File` > `Restore from Backup`.  The chooser opens in `tc_backup`; pick the file from step 1.
+| 4. Read the question, then press Cancel.
+| 5. Do step 3 again and press Restore.
+| 6. Start TrainControl again.
+| 7. Open the `tc_backup` folder beside TrainControl.
+| 8. Start a route or autonomy, then choose `File` > `Restore from Backup`.
+|
+| **Expected**
+|
+| - Step 4: the question lists the locomotive database with its routes, the window state and keyboard pages, and the layout with the folder it goes into.  After Cancel nothing has changed and no new file is in `tc_backup`.
+| - Step 5: a message names a file ending in `-before-restore.zip` and says TrainControl will close; after OK it closes.
+| - Step 6: the locomotive from step 2 is gone, and the keyboard page name and the layout's pages are as they were at step 1.
+| - Step 7: the `-before-restore.zip` file is there.  Restoring it brings the step 2 changes back.
+| - Step 8: it refuses with "Edits are not allowed while autonomy or routes are running." and no chooser opens.
+|
+| *What this is:* FR-124.  Adam: "we also need to figure out how to restore layouts.  And we probably need to take a shadow backup so the user can manually revert."  Restore checks the whole backup before writing anything, saves the current data as a `before-restore` backup, puts the backup's data and layout back, and closes TrainControl so nothing it still holds can be saved over the restored files.
+|
+tail:
+| ---
+|
+
+[test MT-830]
+ordinal: 829
+anchor: mt-830
+date: 2026-10-25
+title: Layouts > Recent Layouts lists the last five layouts opened
+disposition: needs test
+from: FR-145
+written: 2026-10-25
+reopened: no
+body:
+| <a id="mt-830"></a>
+| ### MT-830 - 2026-10-25 - Layouts > Recent Layouts lists the last five layouts opened
+|
+| **Disposition:** needs test
+| **From:** FR-145
+|
+| **Written:** 2026-10-25
+|
+| **Steps**
+|
+| 1. `Layouts` > `Open Layout...` and open layout A, then open layout B the same way.
+| 2. Open `Layouts` > `Recent Layouts`.
+| 3. Click A.
+| 4. Open `Recent Layouts` again.
+| 5. Close TrainControl, rename folder B, start TrainControl, and click B in `Recent Layouts`.
+| 6. Start a route or autonomy and open the Layouts menu.
+|
+| **Expected**
+|
+| - Step 2: A is listed and B, the open one, is not.  Pointing at A shows its full path.
+| - Step 3: A opens, as through `Open Layout...`.
+| - Step 4: B is listed and A is not.  Never more than five are listed.
+| - Step 5: one message says B's folder is no longer there; B leaves the list and the open layout is unchanged.
+| - Step 6: `Recent Layouts` is grayed out, and pointing at it says why.
+|
+| *What this is:* FR-145.  Adam: "history in the menu of the last 5 layouts, for easy switching".
+|
+tail:
+| ---
+|
+
+[test MT-831]
+ordinal: 830
+anchor: mt-831
+date: 2026-10-25
+title: Add, rename and delete pages from the layout editor, with the window kept open
+disposition: needs test
+from: FR-109
+written: 2026-10-25
+reopened: no
+body:
+| <a id="mt-831"></a>
+| ### MT-831 - 2026-10-25 - Add, rename and delete pages from the layout editor, with the window kept open
+|
+| **Disposition:** needs test
+| **From:** FR-109
+|
+| **Written:** 2026-10-25
+|
+| **Steps**
+|
+| 1. `File` > `Backup TrainControl Data` first.  Open a local layout with at least two pages, pick page A in the main window and press Edit.
+| 2. Leave the editor open on A, and in the main window's page list pick another page, B.
+| 3. In the editor, `Manage Pages` > `Rename Current Page`.  Note the name offered, then press Cancel.
+| 4. Turn a square in the editor so it has unsaved work.  `Manage Pages` > `Rename Current Page`, type a new name, OK, and answer Save when asked about the unsaved work.
+| 5. `Manage Pages` > `Add Blank Page`, type a name, OK.
+| 6. `Manage Pages` > `Delete Current Page` and answer No.  Then do it again and answer Yes.
+| 7. Switch the editor to the autonomy editor, go back to the renamed page, and rename it back to A's name.
+| 8. Start a route and try `Manage Pages` > `Add Blank Page`.
+|
+| **Expected**
+|
+| - Throughout: the editor window stays open, without closing, reopening or flashing, and every question appears over the editor.
+| - Step 3: the name offered is A's, not B's.  After Cancel nothing else is asked and the editor is still on A.
+| - Step 4: the name is asked for first, then the unsaved work.  The editor then shows A under its new name, with the turned square.
+| - Step 5: the editor shows the new empty page.
+| - Step 6: No leaves the editor on the blank page; Yes deletes it and the editor shows another page.
+| - Step 7: the editor stays the autonomy editor.
+| - Step 8: one message refuses it, and the editor stays as it was.
+|
+| *What this is:* FR-109, rename, delete and add pages from the layout editor.  Adam: "Keep the window open, no flash".  Using an item also selects the edited page in the main window.
+|
+tail:
+| ---
+|

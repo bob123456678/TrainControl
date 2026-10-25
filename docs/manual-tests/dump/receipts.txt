@@ -4082,3 +4082,27 @@ kind: bug
 what: Layout > Screenshot offers Small, Medium and Large by the pop-out window's names, without pixel counts (e02a9f5d)
 state: needs test
 became: MT-827
+
+[receipt FR-124]
+seq: 510
+filed: 2026-10-11
+kind: feature request
+what: File > Restore from Backup, with a before-restore backup and the layout folder (b51abca6)
+state: needs test
+became: MT-829
+
+[receipt FR-145]
+seq: 511
+filed: 2026-10-25
+kind: feature request
+what: Layouts > Recent Layouts, the last five (b51abca6)
+state: needs test
+became: MT-830
+
+[receipt FR-109]
+seq: 512
+filed: 2026-10-04
+kind: feature request
+what: Manage Pages menu in the layout editor, window kept open (63818b2e)
+state: needs test
+became: MT-831

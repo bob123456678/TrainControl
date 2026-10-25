@@ -370,7 +370,9 @@ To make a backup, select "Backup TrainControl Data" from the File menu.  This sa
 
 If your track diagram is on the Central Station, TrainControl offers to download it first so that it is included.  On a CS3, the backup also includes the Central Station's own locomotive, route and accessory data.
 
-To restore, close TrainControl, unzip the archive next to the JAR file, and start TrainControl again.  `LocDB.data` and `UIState.data` go next to the JAR; the layout folder can go anywhere, and you select it with "Open Layout...".
+To restore, select "Restore from Backup" from the File menu and pick the zip file.  TrainControl shows what the backup holds and what it will replace, saves your current data first as a backup whose name ends in `before-restore`, puts the backup back, and closes; start it again to use the restored data.  To undo a restore, restore the `before-restore` file.
+
+You can also restore by hand: close TrainControl, unzip the archive next to the JAR file, and start TrainControl again.  `LocDB.data` and `UIState.data` go next to the JAR; the layout folder can go anywhere, and you select it with "Open Layout...".
 
 ## Support TrainControl
 
@@ -403,7 +405,11 @@ Tab icons provided by Freepik.
 ## Changelog
 
 * v3.0.4
+    - UI
+        - `File` > `Restore from Backup` puts back a backup made with `Backup TrainControl Data`: your locomotives and routes, the window state and keyboard pages, cropped locomotive icons and the layout folder.  It shows what will be replaced first, saves your current data as a backup whose name ends in `before-restore` (restore that file to undo), and then closes TrainControl; start it again to use the restored data.
+        - The `Layouts` menu has `Recent Layouts`, the last five layouts you opened, for quick switching.
     - Track Diagram
+        - The layout editor has a `Manage Pages` menu to add a blank page, or rename or delete the page being edited, without leaving the editor.
         - `Save Current Track Diagram as a Picture...` now offers Small, Medium and Large, the same sizes as the pop-out window, without spelling out pixel counts.
     - Autonomy Bug Fixes
         - In the autonomy editor, `Test a Path` now starts a train the way it stands at the station, so it no longer draws a route the setup check says a train there cannot take.
