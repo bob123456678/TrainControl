@@ -3,18 +3,6 @@
 # store (py -3 docs/manual-tests/triagedb.py show MT-123).  Only the Java tests read it, having no SQLite.
 # A record is a [header] line and one field per line; every line of a text field is written behind "| ".
 
-[dead IND-M1]
-cited_by: testAdvancedRoutes.java
-
-[dead IND-M4]
-cited_by: Layout.java,testHomeStaging.java
-
-[dead INT-A1]
-cited_by: testAdvancedRoutes.java
-
-[dead INT-A2]
-cited_by: testAdvancedRoutes.java
-
 [dead LD-9]
 cited_by: AutonomyEditorPanel.java,testHomeAssignmentRules.java
 
