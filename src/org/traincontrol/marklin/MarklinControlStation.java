@@ -34,6 +34,7 @@ import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Function;
 import java.util.function.IntSupplier;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -1106,31 +1107,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public TreeMap<String, Long> getDailyRuntimeStats(int days, long offset)
     {
-        // Stepped a calendar day at a time rather than by a fixed 86400000 ms.  A day is 23 or 25 hours long
-        // across a DST transition, so a fixed step could land twice on one date (the TreeMap would overwrite
-        // the earlier entry) or skip one.
-        LocalDate day = LocalDate.now().minusDays(offset);
-
-        TreeMap stats = new TreeMap<>(Comparator.reverseOrder());
-
         // Snapshot the locomotive list once - it does not change across the day-by-day loop,
         // so there is no need to allocate a fresh copy on every iteration.
         List<Locomotive> locs = this.getLocomotives();
 
-        for (int i = 0; i < Math.abs(days); i++)
-        {
-            // ISO_LOCAL_DATE is yyyy-MM-dd, the same key Locomotive.getDate produces
-            final String key = day.format(DateTimeFormatter.ISO_LOCAL_DATE);
-
-            stats.put(
-                key,
-                locs.stream().mapToLong(loco -> loco.getRuntimeOnDay(key)).sum()
-            );
-
-            day = day.minusDays(1);
-        }
-
-        return stats;
+        return dailyStats(days, offset, key -> locs.stream().mapToLong(loco -> loco.getRuntimeOnDay(key)).sum());
     }
     
     /**
@@ -1142,22 +1123,35 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public TreeMap<String, Integer> getDailyCountStats(int days, long offset)
     {
-        // Calendar days, not fixed 86400000 ms steps - see getDailyRuntimeStats
-        LocalDate day = LocalDate.now().minusDays(offset);
-
-        TreeMap stats = new TreeMap<>(Comparator.reverseOrder());
-
         // Snapshot the locomotive list once - it does not change across the day-by-day loop.
         List<Locomotive> locs = this.getLocomotives();
 
+        return dailyStats(days, offset, key -> locs.stream().mapToInt(loco -> loco.getRuntimeOnDay(key) > 0 ? 1 : 0).sum());
+    }
+    
+    /**
+     * One figure for each calendar day, newest first, from the current date less the offset.
+     *
+     * Stepped a calendar day at a time rather than by a fixed 86400000 ms.  A day is 23 or 25 hours long
+     * across a DST transition, so a fixed step could land twice on one date (the TreeMap would overwrite
+     * the earlier entry) or skip one.
+     * @param days
+     * @param offset
+     * @param figure the figure for a day, given its yyyy-MM-dd key as Locomotive.getDate produces it
+     * @return 
+     */
+    private <T> TreeMap<String, T> dailyStats(int days, long offset, Function<String, T> figure)
+    {
+        LocalDate day = LocalDate.now().minusDays(offset);
+
+        TreeMap<String, T> stats = new TreeMap<>(Comparator.reverseOrder());
+
         for (int i = 0; i < Math.abs(days); i++)
         {
+            // ISO_LOCAL_DATE is yyyy-MM-dd, the same key Locomotive.getDate produces
             final String key = day.format(DateTimeFormatter.ISO_LOCAL_DATE);
 
-            stats.put(
-                key,
-                locs.stream().mapToInt(loco -> loco.getRuntimeOnDay(key) > 0 ? 1 : 0).sum()
-            );
+            stats.put(key, figure.apply(key));
 
             day = day.minusDays(1);
         }
@@ -1174,7 +1168,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public int getTotalLocStats(int days, long offset)
     {
-        // Calendar days, not fixed 86400000 ms steps - see getDailyRuntimeStats (a skipped date would drop a
+        // Calendar days, not fixed 86400000 ms steps - see dailyStats (a skipped date would drop a
         // day's locomotives from the count).
         LocalDate day = LocalDate.now().minusDays(offset);
 
