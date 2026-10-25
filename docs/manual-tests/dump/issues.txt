@@ -478,7 +478,7 @@ text:
 
 [issue FR-136]
 ordinal: 28
-inbox: yes
+inbox: no
 kind: feature request
 title: for 3.0.3: refactor code for efficiency
 filed: 2026-10-18
@@ -500,7 +500,7 @@ text:
 
 [issue FR-138]
 ordinal: 29
-inbox: yes
+inbox: no
 kind: feature request
 title: for 3.0.3: more example code for the Java API, beyond what the Readme has
 filed: 2026-10-18
