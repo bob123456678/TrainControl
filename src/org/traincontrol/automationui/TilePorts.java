@@ -14,33 +14,22 @@ import org.traincontrol.base.LayoutDiagramComponent.componentType;
 /**
  * The port map: which sides of a track diagram tile are connected to each other.
  *
- * This is the seed for autonomy's tile graph.  Geometry proposes the connections; the user confirms or
- * corrects them in the diagram editor, so a misreading here shows up as a visibly wrong line rather than
- * as a silently wrong edge.
+ * The seed for autonomy's tile graph.  Geometry proposes the connections and the user corrects them in the diagram
+ * editor, so a misreading here shows up as a visibly wrong line rather than a silently wrong edge.
  *
- * The map is uniformly state-indexed: ports(type, orientation, state) returns the routes that exist in
- * that state.  Switches REPLACE their routes when thrown rather than adding to them - a SWITCH_LEFT is
- * N-S unswitched and S-W switched, with N unreachable once thrown - so there is no notion of a "common"
- * leg, a "branch", or a toe anywhere in this class.  Non-switch tiles have a single state.
+ * The map is uniformly state-indexed: ports(type, orientation, state) returns the routes that exist in that state.
+ * Switches REPLACE their routes when thrown rather than adding to them (a SWITCH_LEFT is N-S unswitched and S-W
+ * switched), so there is no notion of a "common" leg, a "branch", or a toe anywhere in this class.  Non-switch tiles
+ * have a single state.
  *
- * Orientation follows getImage: the icon is rotated by (4 - orientation) * 90 degrees clockwise, so
- * orientation o applies (4 - o) quarter turns of N->E->S->W.  The domain of valid orientations is
- * whatever LayoutDiagramComponent.getNumOrientations() allows for the type (1, 2 or 4) - asking for
- * orientation 3 of a STRAIGHT is a bug, not a rotation.
+ * Orientation follows getImage: the icon is rotated by (4 - orientation) * 90 degrees clockwise.  Valid orientations
+ * are whatever LayoutDiagramComponent.getNumOrientations() allows for the type (1, 2 or 4); asking for orientation 3 of
+ * a STRAIGHT is a bug, not a rotation.
  *
- * The table below was verified tile by tile against the icon art: `assets/automation/tile-ports.png` is drawn from
- * it, over that art.
- *
- * It used to say "that script holds the same data; if this table changes, change it there too" - a
- * Python copy of the whole port map, kept in step by hand.  It went stale, as a copy kept in step by
- * hand does: it still marked the LINK side UNCONFIRMED long after d4d5b7ba confirmed it, and a
- * verification that has to be hand-synchronized with the thing it verifies is a second opinion with the
- * same author.  The script is retired; its table lives in
- * testAutonomyDiagramPorts.testTheWholePortTableIsWhatTheMapSaysItIs, where it is executed rather than
- * remembered, and where adding a tile type without stating its ports fails the build.
- *
- * The PNG is kept: a picture checked against the artwork by eye is a different kind of evidence from a
- * test, and it is the evidence this table was originally built from.
+ * The table was verified tile by tile against the icon art, and `assets/automation/tile-ports.png` is drawn from it
+ * over that art; a picture checked by eye is a different kind of evidence from a test, so it is kept.  The whole table
+ * is executed in testAutonomyDiagramPorts.testTheWholePortTableIsWhatTheMapSaysItIs, where adding a tile type without
+ * stating its ports fails the build.
  *
  * @author Adam
  */
@@ -83,14 +72,11 @@ public class TilePorts
     }
 
     /**
-     * A path through a tile between two of its sides.
-     *
-     * Normally traversable both ways.  A CUSTOM_PERM_* turnout - a defective switch with no address,
-     * which cannot be thrown - is the exception: it may only be entered from a branch and left at the
-     * toe, because with the blades stuck in an unknown position a facing move cannot choose a branch,
-     * while a trailing move merges safely whatever the blades are doing.  That restriction lives here
-     * because it is a property of the hardware, not a user choice; user-authored direction is stored
-     * separately and ANDs with it.
+     * A path through a tile between two of its sides, normally traversable both ways.  A CUSTOM_PERM_* turnout (a
+     * defective switch with no address, which cannot be thrown) may only be entered from a branch and left at the toe:
+     * with the blades stuck in an unknown position a facing move cannot choose a branch, while a trailing move merges
+     * safely.  That is a property of the hardware, so it lives here; user-authored direction is stored separately and
+     * ANDs with it.
      */
     public static class Route
     {
@@ -205,9 +191,8 @@ public class TilePorts
         /**
          * The accessory settings that must be commanded for this state to hold.
          *
-         * Every address the tile has is always specified - a three-way's straight route commands both of
-         * its addresses to straight, not neither - because straight and thrown always differentiate and
-         * leaving an address unmentioned would let a previously thrown branch stay selected.
+         * Every address the tile has is always specified (a three-way's straight route commands both addresses to
+         * straight), because leaving one unmentioned would let a previously thrown branch stay selected.
          * @return
          */
         public Map<AccessorySlot, accessorySetting> getCommands()
@@ -256,11 +241,9 @@ public class TilePorts
         // The contact is on the E-S curve as drawn - the second road, which `contactRoad` names
         fixed(componentType.FEEDBACK_DOUBLE_CURVE, route(Side.N, Side.W), route(Side.E, Side.S));
 
-        // A signal does not branch - topologically it is a straight - but it must be GREEN for a train to
-        // pass, so traversing one carries a command just as throwing a switch does.  Expressing that here
-        // rather than in the reducer means the reducer needs no special case: it gathers commands along a
-        // path uniformly, and a signal contributes one like anything else.  Setting other signals to RED
-        // for safety is left to conditional routes, which is where users already do it.
+        // A signal does not branch but must be GREEN for a train to pass, so traversing one carries a command just as
+        // throwing a switch does.  Expressing that here lets the reducer gather commands along a path uniformly, with
+        // no special case.  Setting other signals to RED is left to conditional routes.
         signalled(componentType.SIGNAL, accessorySetting.GREEN, route(Side.E, Side.W));
 
         // An uncoupler has an address too, but firing it is an operation the user asks for, not a
@@ -335,18 +318,14 @@ public class TilePorts
         // A turntable connects any radial to any other under manual control and has no static port map.
         TERMINATOR.put(componentType.TURNTABLE, Boolean.TRUE);
 
-        // A route button is TRANSPARENT: it carries no track meaning of its own, and whatever line it is
-        // sitting on runs beneath it.
+        // A route button is TRANSPARENT: it carries no track meaning of its own and whatever line it sits on runs
+        // beneath it.  Its art touches no border and its orientation says nothing, so what it conducts depends on what
+        // is next to it, which this pure function of type and orientation cannot see: TileGraph resolves it from the
+        // neighbors.
         //
-        // It is drawn as a pair of arrows and its art touches no border, so nothing about which sides
-        // connect can be read from the icon - and its orientation says nothing either, the same drehung
-        // appearing in horizontal and vertical runs alike.  What it conducts therefore depends on what is
-        // next to it, which is not something this class can see: TilePorts is a pure function of type and
-        // orientation.  TileGraph resolves it from the neighbors.
-        //
-        // This matters because layouts thread them through running lines - the sample layout has 43 - so
-        // treating them as decoration severs those lines, while treating them as a fixed crossing invents
-        // track for a button someone placed beside the rails and breaks any button placed on a curve.
+        // Layouts thread them through running lines (the sample layout has 43), so treating them as decoration severs
+        // those lines, while treating them as a fixed crossing invents track for a button placed beside the rails and
+        // breaks one placed on a curve.
         fixed(componentType.ROUTE);
         TRANSPARENT.put(componentType.ROUTE, Boolean.TRUE);
 
@@ -381,13 +360,13 @@ public class TilePorts
     }
 
     /**
-     * The road of a sensor square its contact is on, at this orientation - its only road on a straight or a curve, and on
-     * a double curve the curve its art draws the contact on (MT-712; Adam, 2026-10-10: *"the station gets rendered on the
-     * track without the sensor rather than the one with the sensor"*): the E-S curve as drawn, turned with the square.
-     * The ports are turned the way the art is (`ports`), in their order, so that is the second road at every orientation.
+     * The road of a sensor square its contact is on, at this orientation: its only road on a straight or a curve, and
+     * on a double curve the E-S curve as drawn, turned with the square (MT-712; Adam: *"the station gets rendered on
+     * the track without the sensor rather than the one with the sensor"*).  The ports are turned the way the art is
+     * (`ports`), in their order, so that is the second road at every orientation.
      *
-     * Where a station's badge is drawn.  What a train on the other curve reaches is a separate question: the diagram does
-     * not say which track is wired to the contact, and the reduction makes one Point of the square (GraphReducer).
+     * Where a station's badge is drawn.  What a train on the other curve reaches is a separate question: the diagram
+     * does not say which track is wired to the contact, and the reduction makes one Point of the square (GraphReducer).
      *
      * @param type the square's type
      * @param orientation its orientation
@@ -480,13 +459,11 @@ public class TilePorts
     }
 
     /**
-     * True if a square of this type is never given a length and no length rule reads one (OB-273).
-     *
-     * Adam, 2026-09-23: *"a route tile should not need or accept a length.  it just implicitly connects things
-     * as if it were a crossing."*  So a route tile is in no piece of Mass Assign Lengths, takes no share of one,
-     * is not asked about on its own, and is never reported as unmeasured.  **The one list of such types**, asked
-     * once here, because two lists that must agree is how OB-233 happened: route tiles are the only entry today,
-     * and text and labels never lie on a leg at all.
+     * True if a square of this type is never given a length and no length rule reads one (OB-273).  Adam: *"a route
+     * tile should not need or accept a length.  it just implicitly connects things as if it were a crossing."*  So a
+     * route tile is in no piece of Mass Assign Lengths, takes no share of one, is not asked about on its own, and is
+     * never reported as unmeasured.  **The one list of such types**, asked once here because two lists that must agree
+     * is how OB-233 happened.
      *
      * @param type the tile's type
      * @return true when the square takes no length
@@ -516,14 +493,9 @@ public class TilePorts
     }
 
     /**
-     * The side every route of this type touches in every position - the toe of a turnout.
-     *
-     * Derived, not declared: it is whatever the port map already says, so it cannot drift away from the
-     * table above.  A turnout has one because every position fans out from the same place; a double slip
-     * has none, and neither does plain track with more than one route.
-     *
-     * Used for one thing only - the direction default runs base to forks, i.e. away from this side - so a
-     * type with no toe simply defaults to bidirectional.
+     * The side every route of this type touches in every position - the toe of a turnout.  Derived from the port map so
+     * it cannot drift from the table; a double slip has none, and neither does plain track with more than one route.
+     * Used only for the direction default, which runs base to forks, so a type with no toe defaults to bidirectional.
      *
      * @param type
      * @param orientation
@@ -583,9 +555,8 @@ public class TilePorts
     /**
      * How many distinct orientations a tile type has.
      *
-     * Asks LayoutDiagramComponent rather than answering itself. It used to be a verbatim copy of that
-     * method's body - and the copies agreed only for as long as nobody added a tile type with
-     * an axis of symmetry, which is a promise about the future rather than a property of the code.
+     * Asks LayoutDiagramComponent rather than answering itself: a verbatim copy of its body agreed only until somebody
+     * added a tile type with an axis of symmetry.
      *
      * @param type
      * @return
