@@ -13,34 +13,24 @@ import static org.testng.Assert.assertTrue;
 import org.testng.annotations.Test;
 
 /**
- * An arrow on the diagram points at the same page after the page list changes.
+ * An arrow on the diagram points at the same page after the page list changes.  A link tile holds a POSITION in the
+ * name-sorted page list (Adam: "let's make artikel be the sorted index of the page"), so adding, renaming,
+ * duplicating, deleting or combining a page changes what every arrow means, and
+ * `LayoutDiagram.writeIndexAndKeepLinksAimed` re-aims them.
  *
- * **A link tile holds a POSITION in the name-sorted page list** (Adam, 2026-09-10: *"right now, let's
- * make artikel be the sorted index of the page"*), so adding, renaming, duplicating, deleting or
- * combining a page changes what every arrow means. `LayoutDiagram.writeIndexAndKeepLinksAimed` re-aims
- * them, and this is what says it works.
- *
- * **Written because the fix shipped with no test and was wrong**. It resolved the destination
- * against the list the CALLER handed in, and four of the five gestures hand over a list that is not
- * sorted: a rename puts the new name back in the old slot, an add, a duplicate and a combine append.
- * So the re-aim was a no-op in the two cases it was written from, and nothing in the suite noticed -
- * `grep` for `repointPageLinks|writeIndexAndKeepLinksAimed` over `test/` returned nothing at all.
- *
- * Driven at `writeIndexAndKeepLinksAimed` rather than through the window: that method is where the rule
- * lives, it is what both page-editing classes call, and it takes the caller's list as an argument - so
- * an unsorted list is exactly the input that has to be pinned, and it can be handed over directly.
+ * The first version resolved the destination against the list the CALLER handed in, and four of the five gestures
+ * hand over a list that is not sorted (a rename puts the new name in the old slot; an add, a duplicate and a combine
+ * append).  So it is driven at `writeIndexAndKeepLinksAimed` directly, where an unsorted list can be handed over.
  */
 public class testTheArrowsKeepTheirAim
 {
     /**
-     * Adding a page whose name sorts into the MIDDLE leaves every arrow on the same page.
-     *
-     * The name is the one Combine Linked Pages offers by default - `"<page> and neighbors"` - which
-     * sorts immediately after the page it was made from rather than last. That is what makes the
-     * caller's appended list differ from the sorted one.
+     * Adding a page whose name sorts into the MIDDLE leaves every arrow on the same page.  The name is the one
+     * Combine Linked Pages offers by default (`"<page> and neighbors"`), which sorts right after the page it was made
+     * from rather than last, so the caller's appended list differs from the sorted one.
      *
      * MUTATION: re-aim against `layoutList` as handed in, instead of a sorted copy, and this fails with
-     * the arrow on "2 - Bottom" - the same wrong answer the finding reported.
+     * the arrow on "2 - Bottom".
      */
     @Test
     public void testAddingAPageInTheMiddleLeavesTheArrowsAimed() throws Exception
@@ -87,10 +77,8 @@ public class testTheArrowsKeepTheirAim
     }
 
     /**
-     * An arrow whose page is deleted points at nothing, rather than at whatever took its place.
-     *
-     * Adam, 2026-09-10: *"set the ID to -1.  This shouldn't throw any errors, and simply resolve to
-     * nothing when clicked.  Then, the user can set it to the right page on their next edit."*
+     * An arrow whose page is deleted points at nothing, rather than at whatever took its place (Adam: "set the ID to
+     * -1.  This shouldn't throw any errors, and simply resolve to nothing when clicked").
      */
     @Test
     public void testAnArrowToADeletedPagePointsAtNothing() throws Exception
@@ -109,9 +97,7 @@ public class testTheArrowsKeepTheirAim
         assertTrue(aimed.tile.linksNowhere(), "and it reports itself as linking nowhere");
     }
 
-    /**
-     * An arrow that already pointed at nothing is left alone.
-     */
+    /** An arrow that already pointed at nothing is left alone. */
     @Test
     public void testAnArrowThatPointsNowhereIsNotDisturbed() throws Exception
     {
@@ -125,21 +111,13 @@ public class testTheArrowsKeepTheirAim
     }
 
     /**
-     * Add Page leaves the page it was invoked from aimed correctly, ON DISK.
+     * Add Page leaves the page it was invoked from aimed correctly, ON DISK.  The tests above drive the rule; these
+     * drive the gesture, because the first fix repaired the arithmetic and left the sequence alone: all three of Add,
+     * Duplicate and Rename wrote a page file before the arrows were corrected.  Asserted on the FILE, because the
+     * in-memory correction is thrown away by the refresh that follows each gesture.
      *
-     * **The tests above drive the rule; these drive the gesture.** The first fix repaired the arithmetic of the
-     * re-aim and left the sequence alone, and the test it shipped with called
-     * `writeIndexAndKeepLinksAimed` directly - so the battery was green while all three of Add, Duplicate
-     * and Rename wrote a page file before the arrows were corrected. A rule tested at the rule says
-     * nothing about the call, which is the trap this project has hit before.
-     *
-     * Asserted on the FILE, because that is what survives: the in-memory correction is thrown away by the
-     * refresh that follows every one of these gestures, so an assertion on the tile would have passed
-     * while the railway kept the old numbers.
-     *
-     * Add Page blanks the CURRENT page's object to write it out as the new blank page. The re-aim used
-     * to run after that, over a page with no tiles - so the original file, belonging to the page the
-     * operator had open, was the one page never corrected.
+     * Add Page blanks the CURRENT page's object to write it out as the new blank page, so a re-aim that ran after that
+     * saw a page with no tiles and the original file was never corrected.
      *
      * MUTATION: move the re-aim back below `page.saveChanges(newLayoutName, duplicate)` and this fails
      * with the arrow still on 2.
@@ -151,11 +129,8 @@ public class testTheArrowsKeepTheirAim
     }
 
     /**
-     * Duplicate Page writes the COPY with corrected arrows.
-     *
-     * The copy is written from the source page as it stands and is not in the model when a later re-aim
-     * runs, so nothing ever corrected it - the source and its copy disagreed about where the same arrow
-     * goes.
+     * Duplicate Page writes the COPY with corrected arrows: it is written from the source page and is not in the model
+     * when a later re-aim runs.
      *
      * MUTATION: as above.
      */
@@ -166,28 +141,21 @@ public class testTheArrowsKeepTheirAim
     }
 
     /**
-     * A renamed page's own arrows are corrected in the file the rename writes.
-     *
-     * The re-aim deliberately skipped the renamed page, on the stated ground that the rename writes the
-     * same object under its new name so the correction travels with it. That is true of the OBJECT and
-     * false of the ORDER: the rename's write happened 128 lines earlier. Every page's arrows were
-     * corrected except the renamed page's own.
+     * A renamed page's own arrows are corrected in the file the rename writes: the re-aim skipped the renamed page on
+     * the ground that the correction travels with the object, which is true of the OBJECT and false of the ORDER.
      *
      * MUTATION: as above.
      */
     @Test
     public void testARenamedPageKeepsItsOwnArrowsOnDisk() throws Exception
     {
-        // 1 - Main is renamed, not 2 - Bottom: the arrow on Bottom points at Main, which does not
-        // move, so that case would pass with the re-aim deleted.  Main's own first arrow points at
-        // 3 - Top Parking, which moves from position 2 to position 1 when Main leaves the front of the
-        // alphabet.
+        // 1 - Main is renamed, not 2 - Bottom: Bottom's arrow points at Main, which does not move, so that case would
+        // pass with the re-aim deleted.  Main's own first arrow points at 3 - Top Parking, which moves from position 2
+        // to 1.
         assertArrowOnDiskAfterGesture("rename", 1);
     }
 
-    /**
-     * What an arrow ended up aimed at.
-     */
+    /** What an arrow ended up aimed at. */
     private static class Aimed
     {
         int raw;
@@ -196,17 +164,10 @@ public class testTheArrowsKeepTheirAim
     }
 
     /**
-     * Builds a one-page layout carrying a single arrow, runs the real re-aim over it, and reports where
-     * the arrow ended up.
-     *
-     * The pages are built by hand rather than read from a fixture because what is under test is the
-     * ARITHMETIC between two page lists, and a fixture would fix one of them.
-     *
-     * @param was the page list as it stands, name-sorted, as `getLayoutList` gives it
-     * @param now the page list the caller passes to the writer - deliberately not sorted
-     * @param renamed old name to new name, or null
-     * @param pointsAt the arrow's stored number, indexing into `was`
-     * @return where the arrow points afterwards
+     * Builds a one-page layout carrying a single arrow, runs the real re-aim over it, and reports where the arrow
+     * ended up.  Built by hand because what is under test is the ARITHMETIC between two page lists, and a fixture
+     * would fix one of them.  `was` is the sorted list, `now` the caller's (deliberately unsorted), `pointsAt` indexes
+     * into `was`.
      */
     private static Aimed repoint(List<String> was, List<String> now, Map<String, String> renamed,
         int pointsAt) throws Exception
@@ -261,9 +222,7 @@ public class testTheArrowsKeepTheirAim
         }
     }
 
-    /**
-     * Removes a temporary folder and everything in it.
-     */
+    /** Removes a temporary folder and everything in it. */
     private static void deleteTree(File where)
     {
         File[] children = where.listFiles();
@@ -277,24 +236,14 @@ public class testTheArrowsKeepTheirAim
     }
 
     /**
-     * Runs one real page gesture over a three-page layout and reports where the arrow points in the
-     * FILE afterwards.
-     *
-     * The fixture is `live-snapshot`, a frozen copy of Adam's own five pages, whose `1 - Main` carries
-     * three arrows - the first aimed at `3 - Top Parking`, position 2 of the five. Adding a page that
-     * sorts second moves that destination to position 3.
-     *
-     * @param gesture "add", "duplicate" or "rename"
-     * @param expected where that arrow must point afterwards
+     * Runs one real page gesture over a three-page layout and reports where the arrow points in the FILE afterwards.
+     * The fixture is `live-snapshot`, whose `1 - Main` carries three arrows, the first aimed at `3 - Top Parking`,
+     * position 2 of the five; adding a page that sorts second moves that destination to position 3.
      */
     private static void assertArrowOnDiskAfterGesture(String gesture, int expected) throws Exception
     {
-        // OPENED INSIDE THE TRY.
-        //
-        // A sandbox takes the machine-global layout preference - the one the APPLICATION reads - and
-        // gives it back in close().  Anything that throws between the open and the try leaves that
-        // preference pointing at a folder under %TEMP%, which is the railway TrainControl opens the next
-        // time it starts.  That is not hypothetical: it happened yesterday and cost two battery classes.
+        // OPENED INSIDE THE TRY: a sandbox takes the machine-global layout preference and gives it back in close(), so
+        // anything that throws between the open and the try leaves it pointing at a folder under %TEMP%.
         support.LayoutSandbox sandbox = null;
 
         try
@@ -320,14 +269,8 @@ public class testTheArrowsKeepTheirAim
                 null);
 
             // WHICH FILE HOLDS THE ANSWER IS DIFFERENT FOR EACH GESTURE.
-            //
-            // This asked about `subject` for both Add and Duplicate, and for Duplicate that is the
-            // SOURCE - which the old code corrected anyway.  Measured by the validator: the Duplicate
-            // case passed against the commit before the fix, so it was pinning nothing.
-            //
-            //   Add       the new page is blank, so the file that matters is the ORIGINAL - and it is
-            //             the one the old order never corrected, because Add blanks that object before
-            //             the re-aim can see it.
+            //   Add       the new page is blank, so the file that matters is the ORIGINAL, which the old order never
+            //             corrected because Add blanks that object before the re-aim can see it.
             //   Duplicate the COPY, which is written from the source and was never corrected.
             //   Rename    the renamed page's own new file.
             String page = "add".equals(gesture) ? subject : made;
@@ -338,8 +281,7 @@ public class testTheArrowsKeepTheirAim
                 + "in-memory correction is discarded by the refresh that follows every one of these "
                 + "gestures, so only the file matters (T10-B1, T10-B2, T10-B3)");
 
-            // A duplicate leaves TWO files that must agree - the copy and the page it was made from.
-            // They disagreed before the fix, which is the shape of the defect.
+            // A duplicate leaves TWO files that must agree: the copy and the page it was made from.
             if ("duplicate".equals(gesture))
             {
                 assertEquals(arrowInFile(sandbox, subject), expected,
@@ -352,9 +294,7 @@ public class testTheArrowsKeepTheirAim
         }
     }
 
-    /**
-     * The `.artikel` of the first `pfeil` tile in a page's file.
-     */
+    /** The `.artikel` of the first `pfeil` tile in a page's file. */
     private static int arrowInFile(support.LayoutSandbox sandbox, String page) throws Exception
     {
         File file = new File(new File(sandbox.getFolder(), "config/gleisbilder"), page + ".cs2");
