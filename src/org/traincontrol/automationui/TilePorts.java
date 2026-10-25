@@ -17,55 +17,41 @@ import org.traincontrol.base.LayoutDiagramComponent.componentType;
  * The seed for autonomy's tile graph.  Geometry proposes the connections and the user corrects them in the diagram
  * editor, so a misreading here shows up as a visibly wrong line rather than a silently wrong edge.
  *
- * The map is uniformly state-indexed: ports(type, orientation, state) returns the routes that exist in that state.
- * Switches REPLACE their routes when thrown rather than adding to them (a SWITCH_LEFT is N-S unswitched and S-W
- * switched), so there is no notion of a "common" leg, a "branch", or a toe anywhere in this class.  Non-switch tiles
- * have a single state.
+ * The map is state-indexed: ports(type, orientation, state) returns the routes that exist in that state.  Switches
+ * REPLACE their routes when thrown rather than adding to them (a SWITCH_LEFT is N-S unswitched and S-W switched), so
+ * there is no "common" leg, branch or toe in this class.  Non-switch tiles have a single state.
  *
  * Orientation follows getImage: the icon is rotated by (4 - orientation) * 90 degrees clockwise.  Valid orientations
- * are whatever LayoutDiagramComponent.getNumOrientations() allows for the type (1, 2 or 4); asking for orientation 3 of
- * a STRAIGHT is a bug, not a rotation.
+ * are what LayoutDiagramComponent.getNumOrientations() allows for the type; asking for orientation 3 of a STRAIGHT is
+ * a bug, not a rotation.
  *
- * The table was verified tile by tile against the icon art, and `assets/automation/tile-ports.png` is drawn from it
- * over that art; a picture checked by eye is a different kind of evidence from a test, so it is kept.  The whole table
- * is executed in testAutonomyDiagramPorts.testTheWholePortTableIsWhatTheMapSaysItIs, where adding a tile type without
+ * The table was verified tile by tile against the icon art (`assets/automation/tile-ports.png` is drawn from it), and
+ * testAutonomyDiagramPorts.testTheWholePortTableIsWhatTheMapSaysItIs executes all of it, so adding a tile type without
  * stating its ports fails the build.
  *
  * @author Adam
  */
 public class TilePorts
 {
-    /**
-     * A side of a tile.  Clockwise order, which is what rotation walks.
-     */
+    /** A side of a tile, in clockwise order (which is what rotation walks). */
     public static enum Side
     {
         N, E, S, W;
 
-        /**
-         * Rotates this side by the given number of quarter turns clockwise.
-         * @param quarterTurns
-         * @return
-         */
+        /** Rotates this side by the given number of quarter turns clockwise. */
         public Side rotateClockwise(int quarterTurns)
         {
             return values()[(ordinal() + ((quarterTurns % 4) + 4) % 4) % 4];
         }
 
-        /**
-         * The side directly across the tile.
-         * @return
-         */
+        /** The side directly across the tile. */
         public Side opposite()
         {
             return rotateClockwise(2);
         }
     }
 
-    /**
-     * Which of a tile's accessories a command applies to.  A three-way turnout is the only type that
-     * uses SECONDARY, via LayoutDiagramComponent.getAccessory2().
-     */
+    /** Which of a tile's accessories a command applies to; SECONDARY is a three-way turnout's second. */
     public static enum AccessorySlot
     {
         PRIMARY, SECONDARY
@@ -74,9 +60,8 @@ public class TilePorts
     /**
      * A path through a tile between two of its sides, normally traversable both ways.  A CUSTOM_PERM_* turnout (a
      * defective switch with no address, which cannot be thrown) may only be entered from a branch and left at the toe:
-     * with the blades stuck in an unknown position a facing move cannot choose a branch, while a trailing move merges
-     * safely.  That is a property of the hardware, so it lives here; user-authored direction is stored separately and
-     * ANDs with it.
+     * a facing move cannot choose a branch with the blades stuck, while a trailing move merges safely.  That is
+     * hardware, so it lives here; user-authored direction is stored separately and ANDs with it.
      */
     public static class Route
     {
@@ -101,29 +86,19 @@ public class TilePorts
             return b;
         }
 
-        /**
-         * The only side this route may be traveled toward, or null when it is traversable both ways.
-         * @return
-         */
+        /** The only side this route may be traveled toward, or null when it is traversable both ways. */
         public Side getDirectedToward()
         {
             return directedToward;
         }
 
-        /**
-         * @param side
-         * @return true if this route touches the given side
-         */
+        /** True if this route touches the given side. */
         public boolean touches(Side side)
         {
             return a == side || b == side;
         }
 
-        /**
-         * The far side of this route from the one given, or null if it does not touch that side.
-         * @param from
-         * @return
-         */
+        /** The far side of this route from the one given, or null if it does not touch that side. */
         public Side other(Side from)
         {
             if (a == from) return b;
@@ -131,22 +106,14 @@ public class TilePorts
             return null;
         }
 
-        /**
-         * Whether a train may enter at the given side and leave at the other.
-         * @param from
-         * @return
-         */
+        /** Whether a train may enter at the given side and leave at the other. */
         public boolean isTraversableFrom(Side from)
         {
             if (!touches(from)) return false;
             return directedToward == null || directedToward == other(from);
         }
 
-        /**
-         * Rotates this route by the given number of quarter turns clockwise.
-         * @param quarterTurns
-         * @return
-         */
+        /** Rotates this route by the given number of quarter turns clockwise. */
         public Route rotateClockwise(int quarterTurns)
         {
             return new Route(
@@ -168,10 +135,7 @@ public class TilePorts
         }
     }
 
-    /**
-     * One switch position (or the single position of a fixed tile): the routes it offers and the
-     * accessory settings that select it.
-     */
+    /** One switch position (or a fixed tile's only one): its routes and the accessory settings that select it. */
     public static class TileState
     {
         private final List<Route> routes;
@@ -189,11 +153,8 @@ public class TilePorts
         }
 
         /**
-         * The accessory settings that must be commanded for this state to hold.
-         *
-         * Every address the tile has is always specified (a three-way's straight route commands both addresses to
-         * straight), because leaving one unmentioned would let a previously thrown branch stay selected.
-         * @return
+         * The accessory settings that must be commanded for this state to hold.  Every address the tile has is always
+         * specified (a three-way's straight route commands both to straight), or a thrown branch would stay selected.
          */
         public Map<AccessorySlot, accessorySetting> getCommands()
         {
@@ -230,7 +191,6 @@ public class TilePorts
 
     static
     {
-        // plain track
         fixed(componentType.STRAIGHT, route(Side.E, Side.W));
         fixed(componentType.CURVE, route(Side.E, Side.S));
         fixed(componentType.DOUBLE_CURVE, route(Side.N, Side.W), route(Side.E, Side.S));
@@ -241,25 +201,21 @@ public class TilePorts
         // The contact is on the E-S curve as drawn - the second road, which `contactRoad` names
         fixed(componentType.FEEDBACK_DOUBLE_CURVE, route(Side.N, Side.W), route(Side.E, Side.S));
 
-        // A signal does not branch but must be GREEN for a train to pass, so traversing one carries a command just as
-        // throwing a switch does.  Expressing that here lets the reducer gather commands along a path uniformly, with
-        // no special case.  Setting other signals to RED is left to conditional routes.
+        // A signal must be GREEN for a train to pass, so traversing one carries a command just as throwing a switch
+        // does and the reducer gathers commands along a path uniformly.  Other signals are set RED by conditional
+        // routes.
         signalled(componentType.SIGNAL, accessorySetting.GREEN, route(Side.E, Side.W));
 
         // An uncoupler has an address too, but firing it is an operation the user asks for, not a
         // condition of passing over the tile, so nothing is commanded when a path crosses one.
         fixed(componentType.UNCOUPLER, route(Side.E, Side.W));
 
-        // crossings
-        // Two independent through routes that share the tile.  They never join, but they do conflict:
-        // one physical crossing, so edges using either are mutually exclusive.
+        // Two independent through routes that share the tile: they never join but do conflict (one physical crossing).
         fixed(componentType.CROSSING, route(Side.N, Side.S), route(Side.E, Side.W));
 
-        // Grade separated - one track physically above the other - so the two routes neither join nor
-        // conflict.  This is the single exception to "shared tile means mutually exclusive".
+        // Grade separated, so the routes neither join nor conflict: the one exception to "shared tile is exclusive".
         fixed(componentType.OVERPASS, route(Side.N, Side.S), route(Side.E, Side.W));
 
-        // dead ends and portals
         fixed(componentType.END, stub(Side.N));
 
         // A tunnel connects normally on its visible side; its continuation is a user-paired tile.
@@ -271,7 +227,6 @@ public class TilePorts
         fixed(componentType.LINK, stub(Side.W));
         PORTAL.put(componentType.LINK, Boolean.TRUE);
 
-        // switches
         // Thrown replaces the route set rather than adding to it.
         switched(componentType.SWITCH_LEFT,
             state(commands(accessorySetting.STRAIGHT), route(Side.N, Side.S)),
@@ -298,7 +253,6 @@ public class TilePorts
             state(commands(accessorySetting.STRAIGHT), route(Side.N, Side.S), route(Side.E, Side.W)),
             state(commands(accessorySetting.TURN), route(Side.N, Side.W), route(Side.S, Side.E)));
 
-        // defective switches
         // No address, so they cannot be thrown: trailing moves only, into the toe at S.
         fixed(componentType.CUSTOM_PERM_LEFT,
             into(Side.S, Side.N), into(Side.S, Side.W));
@@ -309,7 +263,6 @@ public class TilePorts
         fixed(componentType.CUSTOM_PERM_THREEWAY,
             into(Side.S, Side.N), into(Side.S, Side.W), into(Side.S, Side.E));
 
-        // not routable
         // Scissors are a drawing convention: two tiles depicting one double slip.  Their topology cannot
         // be expressed per tile, so a diagram carrying one cannot be used for autonomy at all.
         DISQUALIFIED.put(componentType.CUSTOM_SCISSORS, Boolean.TRUE);
@@ -318,18 +271,13 @@ public class TilePorts
         // A turntable connects any radial to any other under manual control and has no static port map.
         TERMINATOR.put(componentType.TURNTABLE, Boolean.TRUE);
 
-        // A route button is TRANSPARENT: it carries no track meaning of its own and whatever line it sits on runs
-        // beneath it.  Its art touches no border and its orientation says nothing, so what it conducts depends on what
-        // is next to it, which this pure function of type and orientation cannot see: TileGraph resolves it from the
-        // neighbors.
-        //
-        // Layouts thread them through running lines (the sample layout has 43), so treating them as decoration severs
-        // those lines, while treating them as a fixed crossing invents track for a button placed beside the rails and
-        // breaks one placed on a curve.
+        // A route button is TRANSPARENT: its art touches no border and its orientation says nothing, so what it
+        // conducts depends on its neighbors, which this pure function of type and orientation cannot see: TileGraph
+        // resolves it.  Layouts thread them through running lines (the sample layout has 43): treating them as
+        // decoration severs those lines, while a fixed crossing invents track for a button placed beside the rails.
         fixed(componentType.ROUTE);
         TRANSPARENT.put(componentType.ROUTE, Boolean.TRUE);
 
-        // decoration
         fixed(componentType.LAMP);
         fixed(componentType.TEXT);
     }
@@ -341,7 +289,6 @@ public class TilePorts
     /**
      * The routes a tile of this type offers, in the given state, at the given orientation.
      *
-     * @param type
      * @param orientation 0 .. getNumOrientations() - 1 for the type
      * @param state 0 .. getStateCount() - 1 for the type
      * @return the routes, empty for decorative, disqualified, terminator and unmapped types
@@ -362,14 +309,10 @@ public class TilePorts
     /**
      * The road of a sensor square its contact is on, at this orientation: its only road on a straight or a curve, and
      * on a double curve the E-S curve as drawn, turned with the square (MT-712; Adam: *"the station gets rendered on
-     * the track without the sensor rather than the one with the sensor"*).  The ports are turned the way the art is
-     * (`ports`), in their order, so that is the second road at every orientation.
+     * the track without the sensor rather than the one with the sensor"*).  That is the second of `ports` at every
+     * orientation, and where a station's badge is drawn.  What a train on the other curve reaches is separate: the
+     * diagram does not say which track is wired to the contact, and the reduction makes one Point of the square.
      *
-     * Where a station's badge is drawn.  What a train on the other curve reaches is a separate question: the diagram
-     * does not say which track is wired to the contact, and the reduction makes one Point of the square (GraphReducer).
-     *
-     * @param type the square's type
-     * @param orientation its orientation
      * @return the road, or null for a square with none
      */
     public static Route contactRoad(componentType type, int orientation)
@@ -381,12 +324,7 @@ public class TilePorts
         return type == componentType.FEEDBACK_DOUBLE_CURVE && roads.size() == 2 ? roads.get(1) : roads.get(0);
     }
 
-    /**
-     * The accessory settings that select the given state.  Empty for tiles with nothing to command.
-     * @param type
-     * @param state
-     * @return
-     */
+    /** The accessory settings that select the given state; empty for tiles with nothing to command. */
     public static Map<AccessorySlot, accessorySetting> commands(componentType type, int state)
     {
         List<TileState> states = PORTS.get(type);
@@ -399,11 +337,7 @@ public class TilePorts
         return states.get(state).getCommands();
     }
 
-    /**
-     * How many positions this type has: 1 for fixed track, 2 for an ordinary switch, 3 for a three-way.
-     * @param type
-     * @return
-     */
+    /** How many positions this type has: 1 for fixed track, 2 for an ordinary switch, 3 for a three-way. */
     public static int getStateCount(componentType type)
     {
         List<TileState> states = PORTS.get(type);
@@ -412,10 +346,8 @@ public class TilePorts
     }
 
     /**
-     * True if this type carries a second, user-paired port to a tile elsewhere - a tunnel or a page link.
-     * The pairing is authored, never inferred, and an unpaired portal simply does not connect.
-     * @param type
-     * @return
+     * True if this type carries a second, user-paired port to a tile elsewhere (a tunnel or a page link).  The pairing
+     * is authored, never inferred; an unpaired portal simply does not connect.
      */
     public static boolean hasPortal(componentType type)
     {
@@ -423,35 +355,24 @@ public class TilePorts
     }
 
     /**
-     * True if a diagram carrying this type cannot be used for autonomy.  Scissors tiles are a drawing
-     * convention rather than a routing element, so they are refused rather than ignored: ignoring one
-     * would leave a hole that traces quietly route around.
-     * @param type
-     * @return
+     * True if a diagram carrying this type cannot be used for autonomy.  Scissors are a drawing convention, refused
+     * rather than ignored: ignoring one would leave a hole that traces quietly route around.
      */
     public static boolean isDisqualified(componentType type)
     {
         return DISQUALIFIED.containsKey(type);
     }
 
-    /**
-     * True if autonomy stops at this type rather than routing through it.
-     * @param type
-     * @return
-     */
+    /** True if autonomy stops at this type rather than routing through it. */
     public static boolean isTerminator(componentType type)
     {
         return TERMINATOR.containsKey(type);
     }
 
     /**
-     * True if this type carries no track of its own but lets whatever line it sits on pass beneath it.
-     *
-     * A route button is the case: it is a control placed on the diagram, and what it conducts - a
-     * straight run, a curve, or nothing at all if it was placed beside the rails - is decided entirely by
-     * what is next to it.  That is context this class cannot see, so callers resolve it themselves.
-     * @param type
-     * @return
+     * True if this type carries no track of its own but lets whatever line it sits on pass beneath it.  A route button
+     * is the case: what it conducts depends on what is next to it, context this class cannot see, so callers resolve
+     * it.
      */
     public static boolean isTransparent(componentType type)
     {
@@ -460,25 +381,16 @@ public class TilePorts
 
     /**
      * True if a square of this type is never given a length and no length rule reads one (OB-273).  Adam: *"a route
-     * tile should not need or accept a length.  it just implicitly connects things as if it were a crossing."*  So a
-     * route tile is in no piece of Mass Assign Lengths, takes no share of one, is not asked about on its own, and is
-     * never reported as unmeasured.  **The one list of such types**, asked once here because two lists that must agree
-     * is how OB-233 happened.
-     *
-     * @param type the tile's type
-     * @return true when the square takes no length
+     * tile should not need or accept a length.  it just implicitly connects things as if it were a crossing."*  So it
+     * is in no piece of Mass Assign Lengths, takes no share of one, and is never reported as unmeasured.  **The one
+     * list of such types**, asked once here because two lists that must agree is how OB-233 happened.
      */
     public static boolean takesNoLength(componentType type)
     {
         return isTransparent(type);
     }
 
-    /**
-     * True if this type has any routes at all in any state - false for decoration, turntables and
-     * disqualified tiles.
-     * @param type
-     * @return
-     */
+    /** True if this type has routes in any state (false for decoration, turntables and disqualified tiles). */
     public static boolean isRoutable(componentType type)
     {
         if (isDisqualified(type) || isTerminator(type)) return false;
@@ -493,13 +405,9 @@ public class TilePorts
     }
 
     /**
-     * The side every route of this type touches in every position - the toe of a turnout.  Derived from the port map so
-     * it cannot drift from the table; a double slip has none, and neither does plain track with more than one route.
-     * Used only for the direction default, which runs base to forks, so a type with no toe defaults to bidirectional.
-     *
-     * @param type
-     * @param orientation
-     * @return the common side, or null if the routes share none
+     * The side every route of this type touches in every position (the toe of a turnout), derived from the port map so
+     * it cannot drift from the table; null when the routes share none (a double slip, or plain track with several
+     * routes).  Used only for the direction default, which runs base to forks, so no toe defaults to bidirectional.
      */
     public static Side deriveToe(componentType type, int orientation)
     {
@@ -541,9 +449,8 @@ public class TilePorts
     }
 
     /**
-     * Guards the orientation against the type's rotational symmetry.  A STRAIGHT has two distinct
-     * orientations, a CROSSING one; asking beyond that is a caller bug, so it is reduced rather than
-     * silently producing a rotation the diagram can never contain.
+     * Reduces the orientation by the type's rotational symmetry (a STRAIGHT has two distinct orientations, a CROSSING
+     * one), so a caller bug cannot produce a rotation the diagram can never contain.
      */
     private static int normalizeOrientation(componentType type, int orientation)
     {
@@ -553,37 +460,26 @@ public class TilePorts
     }
 
     /**
-     * How many distinct orientations a tile type has.
-     *
-     * Asks LayoutDiagramComponent rather than answering itself: a verbatim copy of its body agreed only until somebody
-     * added a tile type with an axis of symmetry.
-     *
-     * @param type
-     * @return
+     * How many distinct orientations a tile type has.  Asks LayoutDiagramComponent rather than answering itself: a
+     * verbatim copy of its body agreed only until somebody added a tile type with an axis of symmetry.
      */
     public static int numOrientations(componentType type)
     {
         return org.traincontrol.base.LayoutDiagramComponent.getNumOrientations(type);
     }
 
-    // table construction helpers
-
     private static Route route(Side a, Side b)
     {
         return new Route(a, b, null);
     }
 
-    /**
-     * A route that may only be traveled toward the given side.
-     */
+    /** A route that may only be traveled toward the given side. */
     private static Route into(Side toward, Side from)
     {
         return new Route(from, toward, toward);
     }
 
-    /**
-     * A single open port - a dead end, or the visible side of a portal tile.
-     */
+    /** A single open port: a dead end, or the visible side of a portal tile. */
     private static Route stub(Side side)
     {
         return new Route(side, side, null);
@@ -611,9 +507,7 @@ public class TilePorts
         return new TileState(list, commands);
     }
 
-    /**
-     * A fixed tile that nonetheless requires an accessory setting to be passed - a signal.
-     */
+    /** A fixed tile that nonetheless requires an accessory setting to be passed (a signal). */
     private static void signalled(componentType type, accessorySetting setting, Route... routes)
     {
         List<Route> list = new ArrayList<>();
