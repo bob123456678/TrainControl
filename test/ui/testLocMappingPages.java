@@ -378,8 +378,7 @@ public class testLocMappingPages
 
                 p.sandbox = support.LayoutSandbox.open();
 
-                p.model = support.TestStationAddress.withNoStation(
-                    () -> org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false));
+                p.model = support.TestStation.simulated();
 
                 javax.swing.SwingUtilities.invokeAndWait(() ->
                 {

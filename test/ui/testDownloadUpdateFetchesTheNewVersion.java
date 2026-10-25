@@ -106,7 +106,7 @@ public class testDownloadUpdateFetchesTheNewVersion
         latestWas = TrainControlUI.LATEST_VERSION;
         urlWas = TrainControlUI.LATEST_DOWNLOAD_URL;
 
-        model = support.TestStationAddress.withNoStation(() -> MarklinControlStation.init(null, true, true, false, false));
+        model = support.TestStation.simulatedWithWindow();
 
         ui = (TrainControlUI) model.getGUI();
 

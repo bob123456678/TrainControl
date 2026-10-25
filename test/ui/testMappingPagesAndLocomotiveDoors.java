@@ -92,7 +92,7 @@ public class testMappingPagesAndLocomotiveDoors
 
         sandbox = support.LayoutSandbox.open();
 
-        model = support.TestStationAddress.withNoStation(() -> MarklinControlStation.init(null, true, true, false, true));
+        model = support.TestStation.simulatedWithWindowInDebug();
 
         ui = (TrainControlUI) model.getGUI();
 

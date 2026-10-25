@@ -63,8 +63,7 @@ public class testTheLengthPromptHasTheKeyboard
 
         // THE WHOLE APPLICATION, as testNonAtomicRoutesNeedTheirLengths starts it: only its own start-up puts the
         // setup's trains on the running railway, and the walk is about those.
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, true, false, true));
+        model = support.TestStation.simulatedWithWindowInDebug();
 
         model.setNetworkCommState(false);
 

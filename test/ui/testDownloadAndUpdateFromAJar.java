@@ -166,7 +166,7 @@ public class testDownloadAndUpdateFromAJar
         sizeWas = TrainControlUI.LATEST_DOWNLOAD_SIZE;
         digestWas = TrainControlUI.LATEST_DOWNLOAD_DIGEST;
 
-        model = support.TestStationAddress.withNoStation(() -> MarklinControlStation.init(null, true, true, false, false));
+        model = support.TestStation.simulatedWithWindow();
 
         ui = (TrainControlUI) model.getGUI();
 

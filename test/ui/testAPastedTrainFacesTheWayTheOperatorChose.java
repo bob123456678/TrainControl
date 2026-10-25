@@ -67,8 +67,7 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
         // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111).
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, true, false, true));
+        model = support.TestStation.simulatedWithWindowInDebug();
         model.setNetworkCommState(false);
 
         ui = (TrainControlUI) model.getGUI();

@@ -61,8 +61,7 @@ public class testDiagramExport
         // window looked at the copy. The comment that used to stand here named only the window.
         sandbox = support.LayoutSandbox.open();
 
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, true));
+        model = support.TestStation.simulatedInDebug();
 
         model.stop();
 

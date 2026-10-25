@@ -87,7 +87,7 @@ public class testDrivingFromTheKeyboard
 
         // In debug, so that what the station would have been sent is logged (WireRecorder); the window is the model's own,
         // so the power's echo reaches it as it does in the application
-        model = support.TestStationAddress.withNoStation(() -> MarklinControlStation.init(null, true, true, false, true));
+        model = support.TestStation.simulatedWithWindowInDebug();
 
         ui = (TrainControlUI) model.getGUI();
 

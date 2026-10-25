@@ -58,8 +58,7 @@ public class testOnlyAStationHoldsAnotherBack
 
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, true));
+        model = support.TestStation.simulatedInDebug();
 
         SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
 

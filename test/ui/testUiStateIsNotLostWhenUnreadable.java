@@ -146,8 +146,7 @@ public class testUiStateIsNotLostWhenUnreadable
 
         Files.write(live.toPath(), "this is not a serialised anything".getBytes(StandardCharsets.UTF_8));
 
-        MarklinControlStation model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, true));
+        MarklinControlStation model = support.TestStation.simulatedInDebug();
 
         model.stop();
 

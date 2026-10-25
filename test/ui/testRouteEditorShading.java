@@ -186,8 +186,7 @@ public class testRouteEditorShading
         {
             sandbox = support.LayoutSandbox.open();
 
-            model = support.TestStationAddress.withNoStation(
-                () -> org.traincontrol.marklin.MarklinControlStation.init(null, true, true, false, true));
+            model = support.TestStation.simulatedWithWindowInDebug();
 
             model.setNetworkCommState(false);
 

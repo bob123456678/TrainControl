@@ -24,7 +24,6 @@ import org.traincontrol.base.RouteCommand;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinRoute;
-import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
  * The route list turns a mark beside every route that is running (FR-137).
@@ -70,7 +69,7 @@ public class testTheRouteListShowsWhatRuns
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
         // The window is the model's own, so the notices a route sends reach it as they do in the application
-        model = support.TestStationAddress.withNoStation(() -> init(null, true, true, false, true));
+        model = support.TestStation.simulatedWithWindowInDebug();
 
         ui = (TrainControlUI) model.getGUI();
 

@@ -95,8 +95,7 @@ public class testARunsCaptionsSpeakInItsColours
                 .standing(new org.traincontrol.automationui.TileGraph.TileKey("1 - Main", 0, 11), MOVER, "E", "N")
                 .standing(new org.traincontrol.automationui.TileGraph.TileKey("1 - Main", 20, 12), "75 407 DB", "E", "W");
 
-            model = support.TestStationAddress.withNoStation(
-                () -> MarklinControlStation.init(null, true, true, false, true));
+            model = support.TestStation.simulatedWithWindowInDebug();
             model.setNetworkCommState(false);
 
             // ITS TRAINS' LENGTHS, CLEARED: a length is the database's working state, and his 3505 SP of four units
@@ -340,8 +339,7 @@ public class testARunsCaptionsSpeakInItsColours
 
             sandbox.simulated();
 
-            model = support.TestStationAddress.withNoStation(
-                () -> MarklinControlStation.init(null, true, true, false, true));
+            model = support.TestStation.simulatedWithWindowInDebug();
             model.setNetworkCommState(false);
 
             ui = (TrainControlUI) model.getGUI();

@@ -76,8 +76,7 @@ public class testTheActiveTickPausesATrain
         databaseModified = databaseFile.lastModified();
         databaseLength = databaseFile.length();
 
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, true, false, true));
+        model = support.TestStation.simulatedWithWindowInDebug();
         model.setNetworkCommState(false);
 
         ui = (TrainControlUI) model.getGUI();

@@ -63,8 +63,7 @@ public class testARenameReachesTheTimetableOnScreen
     {
         sandbox = support.LayoutSandbox.open();
 
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, false));
+        model = support.TestStation.simulated();
         model.stop();
 
         model.newMM2Locomotive(BEFORE, ADDRESS);

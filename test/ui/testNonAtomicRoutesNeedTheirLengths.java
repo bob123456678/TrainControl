@@ -83,8 +83,7 @@ public class testNonAtomicRoutesNeedTheirLengths
         // THE FROZEN COPY of the operator's railway, not the railway he is operating (OB-111).
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, true, false, true));
+        model = support.TestStation.simulatedWithWindowInDebug();
 
         model.setNetworkCommState(false);
 

@@ -53,7 +53,7 @@ public class testThePageMenuEditsTheLayoutFolder
 
         sandbox = support.LayoutSandbox.open();
 
-        model = support.TestStationAddress.withNoStation(() -> MarklinControlStation.init(null, true, true, false, false));
+        model = support.TestStation.simulatedWithWindow();
 
         ui = (TrainControlUI) model.getGUI();
 

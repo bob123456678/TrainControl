@@ -79,8 +79,7 @@ public class testADiagramClickAsksFirst
             "element\n .id=0x10208\n .typ=signal\n .artikel=40\n".getBytes(StandardCharsets.UTF_8),
             StandardOpenOption.APPEND);
 
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, true, false, true));
+        model = support.TestStation.simulatedWithWindowInDebug();
 
         model.setNetworkCommState(false);
 

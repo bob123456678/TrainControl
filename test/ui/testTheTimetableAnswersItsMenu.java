@@ -26,7 +26,6 @@ import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
-import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.util.I18n;
 import support.Answering;
 import support.Components;
@@ -64,7 +63,7 @@ public class testTheTimetableAnswersItsMenu
 
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = support.TestStationAddress.withNoStation(() -> init(null, true, true, false, true));
+        model = support.TestStation.simulatedWithWindowInDebug();
 
         ui = (TrainControlUI) model.getGUI();
 

@@ -81,8 +81,7 @@ public class testDiagramLooksRight
         // window looks at the copy.
         sandbox = support.LayoutSandbox.open();
 
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, true));
+        model = support.TestStation.simulatedInDebug();
 
         javax.swing.SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
 
