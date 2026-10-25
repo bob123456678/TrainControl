@@ -1920,8 +1920,19 @@ public class TileGraph
     {
         Map<RouteId, Route> routes = roads(tile);
 
-        List<Side> sides = armsOf(routes.values());
+        return armMask(tile, routes, armsOf(routes.values()));
+    }
 
+    /**
+     * The same over roads and arms the caller has gathered itself.
+     *
+     * @param tile the square
+     * @param routes the roads to count
+     * @param sides the arms the mask is over
+     * @return the mask
+     */
+    public int armMask(TileKey tile, Map<RouteId, Route> routes, List<Side> sides)
+    {
         int mask = 0;
 
         for (Map.Entry<RouteId, Route> entry : routes.entrySet())
@@ -1930,6 +1941,25 @@ public class TileGraph
         }
 
         return mask;
+    }
+
+    /**
+     * The arms open in a mask over `arms`, in words ("N, W").
+     *
+     * @param mask the mask, as `armMask` answers it
+     * @param arms the arms it is over
+     * @return the open arms, comma-separated; empty when none is open
+     */
+    public static String armsInWords(int mask, List<Side> arms)
+    {
+        List<String> open = new ArrayList<>();
+
+        for (int i = 0; i < arms.size(); i++)
+        {
+            if ((mask & (1 << i)) != 0) open.add(String.valueOf(arms.get(i)));
+        }
+
+        return String.join(", ", open);
     }
 
     /**

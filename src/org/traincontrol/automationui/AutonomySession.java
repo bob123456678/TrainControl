@@ -423,19 +423,8 @@ public class AutonomySession
                 : component != null && !component.toSimpleString().isEmpty() ? component.toSimpleString()
                 : I18n.t("autosetup.log.followsItsArrowsSquare");
 
-            List<Side> arms = graph.armsOf(square);
-
-            int mask = graph.armMask(square);
-
-            List<String> open = new ArrayList<>();
-
-            for (int i = 0; i < arms.size(); i++)
-            {
-                if ((mask & (1 << i)) != 0) open.add(String.valueOf(arms.get(i)));
-            }
-
             out.put(square, I18n.f("autosetup.log.followsItsArrows", what, square.getX() + "," + square.getY(),
-                square.getPage(), String.join(", ", open)));
+                square.getPage(), TileGraph.armsInWords(graph.armMask(square), graph.armsOf(square))));
         }
 
         return out;

@@ -891,7 +891,7 @@ public class testTwoYsMakeACrossing
      * that one way - a train may leave by the toe and by no other arm.  The submenus learned to tick what is in force;
      * the boxes went on reading the stored `BOTH` and ticked every arm.
      *
-     * MUTATION: read the stored direction in `AutonomyEditorPanel.armMask` again, and this fails.
+     * MUTATION: read the stored direction in `TileGraph.armMask`, which the editor's asks, and this fails.
      *
      * @throws Exception from the panel
      */

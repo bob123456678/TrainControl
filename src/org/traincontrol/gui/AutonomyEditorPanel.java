@@ -4717,27 +4717,9 @@ public class AutonomyEditorPanel extends JPanel
         Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes,
         java.util.List<org.traincontrol.automationui.TilePorts.Side> sides)
     {
-        int mask = 0;
+        TileGraph graph = session.getGraph();
 
-        for (Map.Entry<RouteId, org.traincontrol.automationui.TilePorts.Route> entry
-            : routes.entrySet())
-        {
-            org.traincontrol.automationui.TilePorts.Route route = entry.getValue();
-
-            Direction direction = inForce(session.getGraph().getDirection(target, entry.getKey()), route);
-
-            if (direction == Direction.BOTH || direction == Direction.TOWARD_A)
-            {
-                mask |= 1 << sides.indexOf(route.getA());
-            }
-
-            if (direction == Direction.BOTH || direction == Direction.TOWARD_B)
-            {
-                mask |= 1 << sides.indexOf(route.getB());
-            }
-        }
-
-        return mask;
+        return graph == null ? 0 : graph.armMask(target, routes, sides);
     }
 
     /** The open arms in words ("N, W"), or the whole-tile answer when all or none are open. */
@@ -4747,14 +4729,7 @@ public class AutonomyEditorPanel extends JPanel
 
         if (mask == (1 << sides.size()) - 1) return I18n.t("autosetup.ui.dirBoth");
 
-        java.util.List<String> open = new java.util.ArrayList<>();
-
-        for (int i = 0; i < sides.size(); i++)
-        {
-            if ((mask & (1 << i)) != 0) open.add(String.valueOf(sides.get(i)));
-        }
-
-        return I18n.f("autosetup.ui.dirOpenArms", String.join(", ", open));
+        return I18n.f("autosetup.ui.dirOpenArms", TileGraph.armsInWords(mask, sides));
     }
 
     /** The next state: both ways, one way, the other way, closed. */
