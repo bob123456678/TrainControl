@@ -3528,12 +3528,12 @@ RSA75-C4	RSA75.md	Closed	Ruled - kept (Adam, 2026-10-18: *"no, keep simulate in 
 RSA75-C5	RSA75.md	Closed	Fixed - `9d7bcabf`.	The Readme's 3.0.2 changelog named none of this round's user-visible changes
 RSA75-C6	RSA75.md	Closed	Fixed - `9d7bcabf`.	Automation.md quoted the old wait-for-a-route message, which now names the route
 RSA75-D1	RSA75.md	Closed	Checked - clean (but C1 to C4).	OB-361's correction, OB-357's redraw, FR-137's notices, the refusal naming, OB-358, OB-360, FR-139, OB-359 and the sample
-RSA76-B1	RSA76.md	-	Open	AutomationAPI.md invites running the new examples on a real railway, and RunTrainsOnAGraph would leave a train running there
-RSA76-B2	RSA76.md	-	Follow-up: older than the range (`902c647c`, 2026-08-19); not a 3.0.3 regression	The AutomationAPI.md progress-callback sample does not compile as written, and once renamed it stops the run on its first sensor
+RSA76-B1	RSA76.md	Closed	Fixed - `2179b67d`: AutomationAPI.md cautions that the examples' graph, sensors, addresses	AutomationAPI.md invites running the new examples on a real railway, and RunTrainsOnAGraph would leave a train running there
+RSA76-B2	RSA76.md	Closed	Fixed - `2179b67d`: the progress callback uses the layout the sample holds.	The AutomationAPI.md progress-callback sample does not compile as written, and once renamed it stops the run on its first sensor
 RSA76-C1	RSA76.md	-	Open	OB-366's three-line cap also shortens the main window's autonomy strip
 RSA76-C10	RSA76.md	Closed	Follow-up - next release: drive OB-365, FR-144 and OB-370's doors by the user's gesture; c	Several of the range's claims reach their door by reflection or a test hook, not the user's gesture
-RSA76-C11	RSA76.md	-	Open	OB-369's sample now writes preferred speeds into the user's locomotive database
-RSA76-C12	RSA76.md	-	Open	AutomationAPI.md's new text and the new examples are not US English, and two sentences are not true
+RSA76-C11	RSA76.md	Closed	Fixed - `2179b67d`: the sample and the examples warn that setPreferredSpeed changes the st	OB-369's sample now writes preferred speeds into the user's locomotive database
+RSA76-C12	RSA76.md	Closed	Fixed - `2179b67d`, `0c064002`: US English in the doc and examples (with BuildAGraph's pri	AutomationAPI.md's new text and the new examples are not US English, and two sentences are not true
 RSA76-C13	RSA76.md	-	Open: Adam's call	The Readme's v3.0.3 list has no line for FR-138's six API examples
 RSA76-C14	RSA76.md	Closed	Fixed - `74450314`, `410f7e88`: the four split-off files and SessionImport trimmed to the 	The code split off LayoutEditor and AutonomyEditorPanel missed the Phase 2 comment trim
 RSA76-C2	RSA76.md	-	Open	Each entry into autonomy mode adds a viewport listener that is never removed
