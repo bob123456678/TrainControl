@@ -6928,19 +6928,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 was == null ? java.util.Collections.<org.traincontrol.automationui.TileGraph.TileKey,
                     java.util.Set<org.traincontrol.automationui.TileGraph.RouteId>>emptyMap() : was;
 
-            java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> changed = new java.util.HashSet<>(before.keySet());
-
-            changed.addAll(now.keySet());
-
-            for (java.util.Iterator<org.traincontrol.automationui.TileGraph.TileKey> key = changed.iterator(); key.hasNext();)
-            {
-                org.traincontrol.automationui.TileGraph.TileKey at = key.next();
-
-                java.util.Set<org.traincontrol.automationui.TileGraph.RouteId> then = before.get(at);
-                java.util.Set<org.traincontrol.automationui.TileGraph.RouteId> after = now.get(at);
-
-                if (then == null ? after == null : then.equals(after)) key.remove();
-            }
+            java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> changed = squaresWhoseRoadsChanged(before, now);
 
             // And the squares beside a line that changed (the rounded end): a square's line ends rounded where the train goes no further,
             // which the square beside decides - so a train that grows or shrinks by a square changes how its last square ends, and that
@@ -6965,17 +6953,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             java.util.Map<org.traincontrol.automationui.TileGraph.TileKey, java.util.Set<org.traincontrol.automationui.TileGraph.RouteId>> greyAfter =
                 nowBlocked == null ? java.util.Collections.<org.traincontrol.automationui.TileGraph.TileKey, java.util.Set<org.traincontrol.automationui.TileGraph.RouteId>>emptyMap() : nowBlocked;
 
-            java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> greySquares = new java.util.HashSet<>(greyBefore.keySet());
-
-            greySquares.addAll(greyAfter.keySet());
-
-            for (org.traincontrol.automationui.TileGraph.TileKey at : greySquares)
-            {
-                java.util.Set<org.traincontrol.automationui.TileGraph.RouteId> then = greyBefore.get(at);
-                java.util.Set<org.traincontrol.automationui.TileGraph.RouteId> after = greyAfter.get(at);
-
-                if (then == null ? after != null : !then.equals(after)) changed.add(at);
-            }
+            changed.addAll(squaresWhoseRoadsChanged(greyBefore, greyAfter));
 
             for (org.traincontrol.automationui.TileGraph.TileKey key : changed)
             {
@@ -6991,6 +6969,30 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // the worst case here is the defect it repairs, not a new one.
             if (this.model != null) this.model.log(cannotRedraw.getMessage());
         }
+    }
+
+    /** The squares in either map whose set of roads is not the same in both, gained and lost alike. */
+    private static java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> squaresWhoseRoadsChanged(
+        java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
+            java.util.Set<org.traincontrol.automationui.TileGraph.RouteId>> was,
+        java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
+            java.util.Set<org.traincontrol.automationui.TileGraph.RouteId>> now)
+    {
+        java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> changed = new java.util.HashSet<>(was.keySet());
+
+        changed.addAll(now.keySet());
+
+        for (java.util.Iterator<org.traincontrol.automationui.TileGraph.TileKey> key = changed.iterator(); key.hasNext();)
+        {
+            org.traincontrol.automationui.TileGraph.TileKey at = key.next();
+
+            java.util.Set<org.traincontrol.automationui.TileGraph.RouteId> then = was.get(at);
+            java.util.Set<org.traincontrol.automationui.TileGraph.RouteId> after = now.get(at);
+
+            if (then == null ? after == null : then.equals(after)) key.remove();
+        }
+
+        return changed;
     }
 
     /**

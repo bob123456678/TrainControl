@@ -1045,6 +1045,12 @@ public class testATrainCoversTheTrackBehindIt
 
         String ui = SourceOf.declaration("    void repaintTheWashWhereItChanged(");
 
+        // Both marks are compared by one helper, asked once for each.
+        String diff = SourceOf.declaration("java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> squaresWhoseRoadsChanged(");
+
+        assertTrue(ui.contains("changed = squaresWhoseRoadsChanged(before, now)"),
+            "the covered squares are no longer compared road by road, so a train that moves leaves its line behind");
+
         // THE UNION, THEN WHAT DID NOT CHANGE TAKEN BACK OUT (MT-309).
         //
         // This asked for the symmetric difference in its exact spelling - `if (!changed.remove(key))
@@ -1053,11 +1059,11 @@ public class testATrainCoversTheTrackBehindIt
         // one road now, so a square can stay covered while what it has to draw changes.  The redraw
         // walks the union of the two sets and drops the squares whose answer is the same, which is
         // the symmetric difference plus exactly that case.
-        assertTrue(ui.contains("changed.addAll(now.keySet())"),
+        assertTrue(diff.contains("changed.addAll(now.keySet())"),
             "the redraw no longer walks both sets, so one of the two directions is not being"
             + " repainted - either the mark is not put on, or it is not taken off");
 
-        assertTrue(ui.contains("if (then == null ? after == null : then.equals(after)) key.remove()"),
+        assertTrue(diff.contains("if (then == null ? after == null : then.equals(after)) key.remove()"),
             "the redraw repaints every square in either set rather than the ones that changed, which"
             + " is the whole-diagram repaint the targeted one exists to avoid (MT-334)");
 
@@ -1069,15 +1075,15 @@ public class testATrainCoversTheTrackBehindIt
         // way the line is: the union of both sets, and a square added wherever its roads differ.  Both
         // directions fall out of that one comparison - a square that has stopped being blocked has roads
         // before and none after, one just blocked the other way round - and each is asked for below.
-        assertTrue(ui.contains("greySquares.addAll(greyAfter.keySet())"),
+        assertTrue(diff.contains("changed.addAll(now.keySet())"),
             "the grey diff no longer walks both sets, so a square that has just become blocked is not"
             + " redrawn - it goes on being drawn as free track until something unrelated repaints it");
 
-        assertTrue(ui.contains("new java.util.HashSet<>(greyBefore.keySet())"),
+        assertTrue(diff.contains("new java.util.HashSet<>(was.keySet())"),
             "the grey diff no longer starts from the old set, so a square that has stopped being blocked"
             + " is not redrawn - the grey stays on track nothing blocks, on every square once a train moves");
 
-        assertTrue(ui.contains("if (then == null ? after != null : !then.equals(after)) changed.add(at)"),
+        assertTrue(ui.contains("changed.addAll(squaresWhoseRoadsChanged(greyBefore, greyAfter))"),
             "the grey diff does not add a square whose blocked roads changed, in either direction");
 
         assertTrue(ui.contains("label.refreshCoveredMark()"),
