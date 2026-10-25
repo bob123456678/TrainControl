@@ -307,8 +307,6 @@ public class testNonAtomicRoutesNeedTheirLengths
      * `autolayout.warnAtomicRoutesKeptOn` and `autolayout.warnAtomicRoutesKeptOnTrains` leaves every behavioral claim
      * green while the operator is told to measure track when a train's length is wrong.  A text claim because the log
      * has no reader (a private `JTextArea`): the track branch names the track key and the train branch the train key.
-     *
-     * @throws Exception on a failure to read the source
      */
     @Test
     public void testTheFileDoorLogsTheHalfItFound() throws Exception
@@ -385,8 +383,6 @@ public class testNonAtomicRoutesNeedTheirLengths
      *
      * MUTATION: delete the call from `startAutonomyActionPerformed` and this goes red; move it below
      * the `runLocomotives` call and it goes red too, which is the half a `contains` would miss.
-     *
-     * @throws Exception on a failure to read the source
      */
     @Test
     public void testStartAsksBeforeItDispatchesAnything() throws Exception
@@ -415,8 +411,6 @@ public class testNonAtomicRoutesNeedTheirLengths
      * as well.
      *
      * MUTATION: delete the call from any one of the four and this names that one.
-     *
-     * @throws Exception on a failure to read the source
      */
     @Test
     public void testEveryDispatchDoorAsksTheGate() throws Exception
@@ -460,8 +454,6 @@ public class testNonAtomicRoutesNeedTheirLengths
      * press must not have switched the running railway to atomic.
      *
      * MUTATION: move the call back above the refusals and this fails.
-     *
-     * @throws Exception from reading the source
      */
     @Test
     public void testExecuteTimetableAsksTheGateAfterItsRefusals() throws Exception
@@ -496,8 +488,6 @@ public class testNonAtomicRoutesNeedTheirLengths
      * refused press should change nothing".
      *
      * MUTATION: move either call back above its refusals and this fails.
-     *
-     * @throws Exception from reading the source
      */
     @Test
     public void testStartAndReturnHomeAskTheGateAfterTheirRefusals() throws Exception
@@ -545,8 +535,6 @@ public class testNonAtomicRoutesNeedTheirLengths
      *
      * MUTATION: take the `return` out of any door's catch, or Execute Timetable's `setEnabled(true)`, and this fails
      * naming the door.
-     *
-     * @throws Exception reading the source
      */
     @Test
     public void testAGateThatFailsStopsEveryRunDoor() throws Exception
