@@ -21,29 +21,23 @@ import org.traincontrol.marklin.MarklinLocomotive;
 /**
  * Where a train actually goes, counted, against the operator's own railway (MT-231, OB-156).
  *
- * Adam, after trying to test the priority rules by hand: "make an automated test case for this against
- * the current layout, by varying the priority dynamically at test time.  use bottommainA/B/C, as these
- * are all reachable by a train arriving from tunnel.  try at least 10 combinations of priorities.  as
- * validation, make sure the distribution is as expected."
+ * Adam, after trying to test the priority rules by hand: "make an automated test case for this against the current
+ * layout, by varying the priority dynamically at test time.  use bottommainA/B/C, as these are all reachable by a train
+ * arriving from tunnel.  try at least 10 combinations of priorities.  as validation, make sure the distribution is as
+ * expected."
  *
- * **This counts DECISIONS, not journeys.**  `pickPath` is the whole of the rule under test: it reads
- * the priorities, ranks the destinations and hands back a route.  Executing that route would add
- * several seconds per sample and change nothing about the answer, so the sampling calls pickPath
- * directly and never starts a locomotive.  That is also why no delay setting appears here - there is
- * nothing to wait for.  (The fixtures' minDelay/maxDelay are 0 and 1 regardless, which is the other
- * half of what he asked for.)
+ * This counts DECISIONS, not journeys: `pickPath` is the whole of the rule under test, so the sampling calls it
+ * directly and never starts a locomotive (executing the route would add seconds per sample and change nothing, and no
+ * delay setting appears here for the same reason).
  *
- * THE FIXTURE IS HIS RAILWAY, frozen.  `test/test_layout_snapshot` carries the legacy autonomy.json
- * this loads, and BottomMainA, BottomMainB and BottomMainC really are the three destinations a train
- * leaving Tunnel can reach - which is why he named them.  Their priorities are set here, per case, so
- * the file is read and never written.
+ * The fixture is his railway, frozen: `test/test_layout_snapshot` carries the legacy autonomy.json this loads, and
+ * BottomMainA, B and C really are the three destinations a train leaving Tunnel can reach.  Their priorities are set
+ * here, per case, so the file is read and never written.
  *
- * ON RANDOMNESS.  `pickPath` shuffles its destinations with a Random this test cannot seed, so these
- * assertions are statistical.  They are written to be decisive rather than tight: "this station is
- * never chosen" and "each of these is chosen at least a tenth of the time" over 400 samples.  A rule
- * that ignored priority would fail the first by hundreds of counts, not by one or two, and a rule that
- * always picked the same station would fail the second the same way.  Nothing here is within a
- * standard deviation of passing by luck.
+ * The assertions are statistical, since `pickPath` shuffles with a Random this test cannot seed, and written to be
+ * decisive rather than tight: "this station is never chosen" and "each of these is chosen at least a tenth of the time"
+ * over 400 samples.  A rule that ignored priority would fail the first by hundreds of counts, and one that always
+ * picked the same station would fail the second the same way.
  */
 public class testStationPriorityDistribution
 {
@@ -56,10 +50,8 @@ public class testStationPriorityDistribution
     private static final String FROM = "Tunnel";
 
     /**
-     * How many decisions each case counts.
-     *
-     * Large enough that "never chosen" and "roughly a third" are separated by hundreds of counts, and
-     * cheap because a decision is a graph search and not a train.
+     * How many decisions each case counts: enough that "never chosen" and "roughly a third" are separated by hundreds
+     * of counts, and cheap because a decision is a graph search and not a train.
      */
     private static final int SAMPLES = 400;
 
@@ -75,15 +67,9 @@ public class testStationPriorityDistribution
     private static support.LayoutSandbox sandbox;
 
     /**
-     * BEFORE THE MODEL, not just before a window (OB-111).
-     *
-     * MarklinControlStation.init reads the saved layout-path preference, and on the operator's machine
-     * that names his own railway - so a model built without this loads it, and the battery's guard on
-     * that folder fires.  It did: this class was the fifty-seventh to build a model without a sandbox,
-     * and testNoTestOpensTheOperatorsRailway counted it.
-     *
-     * The layout this class actually reads is the frozen snapshot, loaded by hand from JSON.  The
-     * sandbox is about what init does on the way to giving us a model at all.
+     * BEFORE THE MODEL, not just before a window (OB-111): MarklinControlStation.init reads the saved layout-path
+     * preference, which on the operator's machine names his own railway.  The layout this class reads is the frozen
+     * snapshot, loaded by hand from JSON; the sandbox is about what init does on the way to giving us a model at all.
      */
     @BeforeClass
     public void connect() throws Exception
@@ -96,9 +82,8 @@ public class testStationPriorityDistribution
     @AfterClass(alwaysRun = true)
     public void disconnect() throws Exception
     {
-        // PUT BACK. `init()` opens Adam's own locomotive database rather than an empty one, so the
-        // length this class sets on whatever the snapshot parks at FROM was a change to one of his
-        // trains that outlived the run.
+        // PUT BACK: `init()` opens Adam's own locomotive database, so a length set on whatever the snapshot parks at
+        // FROM would outlive the run.
         giveTheLengthsBack();
 
         if (model != null) model.stop();
@@ -106,25 +91,16 @@ public class testStationPriorityDistribution
         if (sandbox != null) sandbox.close();
     }
     /**
-     * The lengths this class has changed on Adam's own locomotives, and what they were.
-     *
-     * `MarklinControlStation.init` opens his real locomotive database rather than an empty one, and
-     * the layout sandbox does not freeze it - it copies the layout folder and nothing else. So a
-     * length set on a borrowed train is a change to his railway that outlives the run.
-     *
-     * A map rather than a field per site, because what gets borrowed here is "whatever is standing",
-     * and how many that is depends on the snapshot.
+     * The lengths this class has changed on Adam's own locomotives, and what they were: `MarklinControlStation.init`
+     * opens his real locomotive database and the layout sandbox does not freeze it.  A map rather than a field per
+     * site, because what gets borrowed is "whatever is standing".
      */
     private static final java.util.Map<org.traincontrol.base.Locomotive, Integer> LENGTHS_WE_CHANGED =
         new java.util.LinkedHashMap<>();
 
     /**
-     * Remembers a borrowed train's length before this class writes over it.
-     *
-     * FIRST VALUE WINS: a train measured twice in one run must go back to what it was before the
-     * FIRST change, not to what the previous claim left on it.
-     *
-     * @param loc the borrowed train
+     * Remembers a borrowed train's length before this class writes over it; the FIRST value wins, so a train measured
+     * twice goes back to what it was before the first change.
      */
     private static void borrowTheLengthOf(org.traincontrol.base.Locomotive loc)
     {
@@ -134,11 +110,8 @@ public class testStationPriorityDistribution
     }
 
     /**
-     * Puts every borrowed length back.
-     *
-     * Each on its own, so one failure does not keep the others borrowed. A length left behind is
-     * silent: nothing on screen says a train is measured at fifty, and the next thing to read it is
-     * the anti-collision rule.
+     * Puts every borrowed length back, each on its own so one failure does not keep the others borrowed (a length left
+     * behind is silent).
      */
     private static void giveTheLengthsBack()
     {
@@ -161,14 +134,9 @@ public class testStationPriorityDistribution
     /**
      * A rule that respects priority never leaves the highest band that has somewhere to go (OB-156).
      *
-     * Twelve combinations, which is Adam's "at least 10".  Each names the stations that share the top
-     * priority; every sample must land on one of those and never on the others, however reachable they
-     * are.
-     *
-     * That single assertion is what "uses the station priority and randomly chooses from the highest
-     * available" means, and it is the half he thought was missing.  It was not missing - it was called
-     * "At Random", which said nothing about priority.  It is now called what it does, and this is the
-     * measurement that says so.
+     * Twelve combinations, which is Adam's "at least 10".  Each names the stations that share the top priority; every
+     * sample must land on one of those and never on the others, however reachable they are.  That is what "uses the
+     * station priority and randomly chooses from the highest available" means.
      */
     @Test
     public void testTheHighestPriorityBandIsTheOnlyOneUsed() throws Exception
@@ -208,9 +176,8 @@ public class testStationPriorityDistribution
 
             for (String station : expected)
             {
-                // A TENTH, which is what this class's own javadoc promises and what its sibling
-                // asserts.  One sample in four hundred satisfied "> 0", and a 399-to-1
-                // split is exactly the fixed order this message says it is ruling out.
+                // A TENTH, as the class javadoc promises and the sibling asserts: a 399-to-1 split is the fixed order
+                // this rules out.
                 assertTrue(seen.getOrDefault(station, 0) >= SAMPLES / 10,
                     station + " shares the highest priority and was chosen "
                     + seen.getOrDefault(station, 0) + " times in " + SAMPLES + " - so the band is not "
@@ -233,11 +200,9 @@ public class testStationPriorityDistribution
     /**
      * The completely random rule ignores priority, which is the half that did not exist (OB-156).
      *
-     * Adam: "let's have one completely random, and one that respects priority."
-     *
-     * Same fixture, same three stations, the same lopsided priorities - and now all three have to turn
-     * up, because this rule is blind to the thing the other one obeys.  Ten per cent is far below an
-     * even third and far above the nothing the banded rule gives the losers.
+     * Adam: "let's have one completely random, and one that respects priority."  Same fixture, same three stations, the
+     * same lopsided priorities - and now all three have to turn up, because this rule is blind to the thing the other
+     * one obeys.  Ten per cent is far below an even third and far above the nothing the banded rule gives the losers.
      */
     @Test
     public void testTheCompletelyRandomRuleIgnoresPriority() throws Exception
@@ -274,9 +239,8 @@ public class testStationPriorityDistribution
     /**
      * And the two rules really do disagree, on one set of priorities (OB-156).
      *
-     * The control.  Without it, both tests above pass if the two rules are the same rule - the banded
-     * one would simply never be asked about a station it excludes.  Here they are asked the same
-     * question and have to answer differently.
+     * The control: without it, both tests above pass if the two rules are the same rule, the banded one never being
+     * asked about a station it excludes.  Here they are asked the same question and have to answer differently.
      */
     @Test
     public void testTheTwoRandomRulesAreNotTheSameRule() throws Exception
@@ -302,9 +266,7 @@ public class testStationPriorityDistribution
             + "under two names: " + blind);
     }
 
-    /**
-     * The operator's railway as it was frozen, loaded fresh so no case can leak into the next.
-     */
+    /** The operator's railway as it was frozen, loaded fresh so no case can leak into the next. */
     private static Layout snapshot() throws Exception
     {
         File json = new File("test/test_layout_snapshot/config/autonomy_legacy/autonomy.json");
@@ -323,26 +285,17 @@ public class testStationPriorityDistribution
                 + "this test is measuring something else - see MT-231, where Adam named these four");
         }
 
-        // EVERY OTHER TRAIN IS TAKEN OFF THE RAILWAY FIRST.
-        //
-        // The snapshot is a real railway at rest, so it has locomotives parked all over it - and a
-        // train standing anywhere along the way makes isPathClear refuse the route, whatever the
-        // priorities say.  BottomMainC is reachable by bfs and was still never chosen, for exactly
-        // that reason: somebody was in the way.
-        //
-        // Clearing them leaves a question about the RULE rather than about where his trains happened
-        // to be parked on the day the snapshot was taken.  The train under test keeps its place.
+        // EVERY OTHER TRAIN IS TAKEN OFF THE RAILWAY FIRST: the snapshot has locomotives parked all over it, and a
+        // train standing anywhere along the way makes isPathClear refuse the route whatever the priorities say
+        // (BottomMainC was reachable by bfs and never chosen for that reason).  The train under test keeps its place.
         for (org.traincontrol.automation.Point point : layout.getPoints())
         {
             if (!FROM.equals(point.getName())) point.setLocomotive(null);
         }
 
-        // WHY A STATION MIGHT NOT COUNT, said here rather than as a puzzling distribution.
-        //
-        // pickPath skips a destination that is not a station, is switched off, is a reversing point,
-        // is not an automatic destination, or has a train standing anywhere on its block.  Any of
-        // those makes a station invisible to every rule at once - which reads downstream as "priority
-        // is being ignored" when it is nothing of the kind.
+        // WHY A STATION MIGHT NOT COUNT: pickPath skips a destination that is not a station, is switched off, is a
+        // reversing point, is not an automatic destination, or has a train standing anywhere on its block.  Any of
+        // those makes a station invisible to every rule at once, which reads downstream as "priority is being ignored".
         for (String name : new String[] {A, B, C})
         {
             org.traincontrol.automation.Point point = layout.getPoint(name);
@@ -357,11 +310,9 @@ public class testStationPriorityDistribution
                 + " excluded=" + point.getExcludedLocs());
         }
 
-        // AND THAT A TRAIN LEAVING FROM HERE CAN ACTUALLY GET THERE.
-        //
-        // Adam named these three because "these are all reachable by a train arriving from tunnel".
-        // If the frozen graph disagrees, every distribution below is a measurement of the graph rather
-        // than of the rule, so it is said here and not discovered as a puzzling count.
+        // AND THAT A TRAIN LEAVING FROM HERE CAN ACTUALLY GET THERE: Adam named these three because "these are all
+        // reachable by a train arriving from tunnel".  If the frozen graph disagrees, every distribution below measures
+        // the graph rather than the rule.
         StringBuilder reach = new StringBuilder();
 
         for (String name : new String[] {A, B, C, "BottomMainCPre", "BottomMainCTerm"})
@@ -384,10 +335,8 @@ public class testStationPriorityDistribution
     }
 
     /**
-     * Puts a locomotive on Tunnel and hands it back.
-     *
-     * The snapshot already stands one there; taking whoever it is avoids inventing a locomotive the
-     * railway has no length or speed for.
+     * Puts a locomotive on Tunnel and hands it back: the one the snapshot already stands there, to avoid inventing one
+     * the railway has no length or speed for.
      */
     private static Locomotive atTunnel(Layout layout) throws Exception
     {
@@ -395,15 +344,10 @@ public class testStationPriorityDistribution
 
         assertNotNull(standing, "nobody is standing at " + FROM + " on the frozen railway");
 
-        // SHORT ENOUGH FOR ALL THREE PLATFORMS.
-        //
-        // BottomMainC takes a train of 2, and the locomotive the snapshot parks at Tunnel is 4 - so
-        // isPathClear refused every route to C on length, and C never appeared in any distribution
-        // however its priority was set.  That is the train-length rule working, and it has its own
-        // tests; here it would only be measuring which platform is longest.
-        //
-        // One, not zero: zero means "unknown length", which the rule waves through entirely, and a
-        // fixture that turns a rule off tests less than one that satisfies it.
+        // SHORT ENOUGH FOR ALL THREE PLATFORMS: BottomMainC takes a train of 2 and the one parked at Tunnel is 4, so
+        // isPathClear refused every route to C on length, which has its own tests.  One, not zero: zero means "unknown
+        // length", which the rule waves through entirely, and a fixture that turns a rule off tests less than one that
+        // satisfies it.
         borrowTheLengthOf(standing);
 
         standing.setTrainLength(1);
@@ -414,9 +358,9 @@ public class testStationPriorityDistribution
     /**
      * Sets the three priorities under test, and flattens every other station that carries one.
      *
-     * Without the flattening these cases would not be about A, B and C at all: the snapshot gives
-     * BottomMainCTerm, TopMainR0, TopMainR1 and TopMainR2 priorities of their own, and a banded rule
-     * would settle one of those bands before it ever looked at these three.
+     * Without the flattening these cases would not be about A, B and C at all: the snapshot gives BottomMainCTerm,
+     * TopMainR0, TopMainR1 and TopMainR2 priorities of their own, and a banded rule would settle one of those bands
+     * before it ever looked at these three.
      */
     private static void prioritise(Layout layout, int a, int b, int c)
     {
@@ -431,10 +375,8 @@ public class testStationPriorityDistribution
     }
 
     /**
-     * Asks for a route SAMPLES times and counts where each one ends.
-     *
-     * Nothing is executed and nothing is locked, so every sample sees the same railway - which is what
-     * makes the counts a measurement of the rule rather than of the order the samples ran in.
+     * Nothing is executed and nothing is locked, so every sample sees the same railway, which makes the counts a
+     * measurement of the rule rather than of the order the samples ran in.
      */
     private static Map<String, Integer> sample(Layout layout, Locomotive loc)
     {
