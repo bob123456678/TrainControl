@@ -82,9 +82,10 @@ DUMP_DIR = os.path.join(HERE, DUMP_NAME)
 
 FINDINGS_MIRROR = os.path.join(HERE, "findings.tsv")
 
-# The reference document that quotes the record's counts (see render_counts)
+# The reference document that quotes the record's counts (see render_counts): the behavior reference's area file
+# that holds "Looking up a citation".
 REFERENCE_DIR = os.path.join(os.path.dirname(HERE), "reference")
-BEHAVIOUR_FILE = os.path.join(REFERENCE_DIR, "behaviour.md")
+BEHAVIOUR_FILE = os.path.join(REFERENCE_DIR, "behaviour", "citations.md")
 
 # The markdown `migrate` reads, once, and nothing else ever does.
 TESTS_MD = "tests.md"
@@ -837,7 +838,7 @@ def findings(conn, ref=None, disposition=None, severity=None, cited=None):
 # --------------------------------------------------------------------------------------------
 
 # The sentence that quotes what the record holds, read by `testTheRecordsCountTheStore` as this does.  One group per
-# value.  A space inside the phrase may be a line break in the file: behaviour.md wraps its sentence.
+# value.  A space inside the phrase may be a line break in the file: behaviour/citations.md wraps its sentence.
 ROWS_QUOTE_RE = re.compile(r"(?<![\d,])(\d[\d,]*)\s+rows\s+for\s+(\d[\d,]*)\s+findings")
 
 
@@ -878,12 +879,12 @@ def _requote(path, pattern, form, choose):
 
 
 def render_finding_counts(conn, behaviour_path=BEHAVIOUR_FILE):
-    """Rewrites the finding counts behaviour.md quotes, from the store.
+    """Rewrites the finding counts behaviour/citations.md quotes, from the store.
 
     A finding written up in two documents has a row for each, so rows and findings differ (VD15-T5).
 
     :param conn: an open connection to the store the findings live in
-    :param behaviour_path: behaviour.md
+    :param behaviour_path: behaviour/citations.md
     :return: the documents it rewrote, none when the counts were right
     """
 
@@ -906,7 +907,7 @@ def render_counts(conn, behaviour_path=BEHAVIOUR_FILE):
     """Rewrites every count the reference documents quote, so none is written by hand.
 
     :param conn: an open connection to the repository's store
-    :param behaviour_path: behaviour.md
+    :param behaviour_path: behaviour/citations.md
     :return: the documents it rewrote
     """
 
@@ -3069,7 +3070,7 @@ def main(argv=None):
     p.add_argument("--store", default=DB_FILE, help="the store whose status notes are checked - a copy, to see the"
                                                      " check fail")
 
-    sub.add_parser("counts", help="rewrite the counts behaviour.md quotes, from the store")
+    sub.add_parser("counts", help="rewrite the counts behaviour/citations.md quotes, from the store")
     sub.add_parser("selftest", help="exercise the store on copies")
 
     args = parser.parse_args(argv)

@@ -46,7 +46,7 @@ public class testTheRecordsCountTheStore
      */
     private static final String MIRROR = "docs/manual-tests/findings.tsv";
 
-    /** The finding counts behaviour.md quotes are the store's own, rows and findings. */
+    /** The finding counts behaviour/citations.md quotes are the store's own, rows and findings. */
     @Test
     public void testTheFindingCountIsTheStoresOwn() throws Exception
     {
@@ -62,20 +62,20 @@ public class testTheRecordsCountTheStore
             + " to keep those two apart, and it cannot do that if the reader has stopped telling them"
             + " apart: a row is a finding in one document, and a finding written up twice has two");
 
-        String flowed = flowed("docs/reference/behaviour.md");
+        String flowed = flowed("docs/reference/behaviour/citations.md");
 
         Matcher both = Pattern.compile("([0-9,]+) rows for ([0-9,]+) findings").matcher(flowed);
 
         assertTrue(both.find(),
-            "behaviour.md no longer says how many rows the store holds for how many findings, in the"
+            "behaviour/citations.md no longer says how many rows the store holds for how many findings, in the"
             + " form this reads, so both numbers are unchecked again - it should say \""
             + count(rows) + " rows for " + count(findings) + " findings\"");
 
         assertEquals(number(both.group(1)), rows,
-            "behaviour.md quotes " + both.group(1) + " rows; the store holds " + count(rows));
+            "behaviour/citations.md quotes " + both.group(1) + " rows; the store holds " + count(rows));
 
         assertEquals(number(both.group(2)), findings,
-            "behaviour.md quotes " + both.group(2) + " findings; the store holds " + count(findings)
+            "behaviour/citations.md quotes " + both.group(2) + " findings; the store holds " + count(findings)
             + " distinct refs in " + count(rows) + " rows");
     }
 
