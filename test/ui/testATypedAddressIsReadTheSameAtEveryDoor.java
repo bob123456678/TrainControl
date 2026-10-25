@@ -100,8 +100,6 @@ public class testATypedAddressIsReadTheSameAtEveryDoor
      *
      * MUTATION: have `Conversion.parseTypedAddress` read "0x" as hex whatever the decoder: the DCC address is then
      * added instead of refused.  Dropping its `mfx` test the other way (never hex) makes the MFX one a refusal.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testAddTakesHexOnlyForMfx() throws Exception
@@ -126,8 +124,6 @@ public class testATypedAddressIsReadTheSameAtEveryDoor
      *
      * MUTATION: `Conversion.parseTypedAddress` reading "0x" as hex whatever the decoder (its `mfx &&` dropped) answers
      * "in use" for the DCC hex address instead of "not a number".
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testCheckDuplicatesTakesHexOnlyForMfx() throws Exception
@@ -149,8 +145,6 @@ public class testATypedAddressIsReadTheSameAtEveryDoor
      *
      * MUTATION: `Conversion.parseTypedAddress` reading "0x" as hex whatever the decoder (its `mfx &&` dropped) lets the
      * DCC locomotive's address change to 16.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testEditTakesHexOnlyForMfx() throws Exception
@@ -170,8 +164,6 @@ public class testATypedAddressIsReadTheSameAtEveryDoor
 
     /**
      * Types into the Add Locomotive dialog and presses Add.
-     *
-     * @return what the program said, in order
      */
     private static List<String> add(String name, String address, boolean mfx) throws Exception
     {
@@ -201,8 +193,6 @@ public class testATypedAddressIsReadTheSameAtEveryDoor
 
     /**
      * Types into the Add Locomotive dialog and presses Check Duplicates.
-     *
-     * @return what the program said, in order
      */
     private static List<String> check(String address, boolean mfx) throws Exception
     {
@@ -231,8 +221,6 @@ public class testATypedAddressIsReadTheSameAtEveryDoor
 
     /**
      * Opens the Change Name or Address dialog for a locomotive, types the address and presses OK.
-     *
-     * @return what the program said after OK, in order
      */
     private static List<String> edit(Locomotive loc, String address) throws Exception
     {
