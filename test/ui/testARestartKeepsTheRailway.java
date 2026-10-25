@@ -29,12 +29,11 @@ import support.Restart;
 /**
  * What the railway was doing when the program closed is what it is doing when it starts again (list 2's restart row).
  *
- * The class starts the program with its window on a copy of the frozen railway, changes the state the way the railway
- * and the operator do - a turnout thrown at the station, a train turned and run from another controller, a route armed,
- * a train put on the diagram with its tail lying back over the track behind it - and then closes the window as its close
- * box does and starts the program again on the same folder and data (`support.Restart`).  Each claim reads one thing
- * back from the program that started second: where the trains stand and face, what their tails cover, the switches, the
- * statistics, and a route the station's sensor still fires.
+ * The class starts the program with its window on a copy of the frozen railway, changes the state as the railway and
+ * the operator do (a turnout thrown at the station, a train turned and run from another controller, a route armed, a
+ * train put on the diagram with its tail lying back over the track behind it), closes the window as its close box does
+ * and starts the program again on the same folder and data (`support.Restart`).  Each claim reads one thing back from
+ * the program that started second.
  *
  * MUTATION: each claim names the line it rests on; see its javadoc.
  *
@@ -224,8 +223,6 @@ public class testARestartKeepsTheRailway
      *
      * MUTATION: in `MarklinSimpleComponent(MarklinRoute)`, `this.routeEnabled = r.isEnabled();` to
      * `this.routeEnabled = false;`.
-     *
-     * @throws Exception from the wait
      */
     @Test
     public void testARouteArmedBeforeTheCloseIsFiredByItsSensorAfterTheStart() throws Exception
@@ -287,9 +284,7 @@ public class testARestartKeepsTheRailway
 
     // ---------------------------------------------------------------- the fixture
 
-    /**
-     * Puts the train on the named copy of a platform, as the diagram's placement does, and says where.
-     */
+    /** Puts the train on the named copy of a platform, as the diagram's placement does, and says where. */
     private static String placeOnAPlatform(Layout railway, String train, String platform)
     {
         List<String> tried = new ArrayList<>();
