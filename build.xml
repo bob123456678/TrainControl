@@ -609,6 +609,7 @@
         <test-one-class class="testARunLeavesItsStateBehind"/>
         <test-one-class class="testTheAutonomyEditorsQuestionsChangeTheSetup"/>
         <test-one-class class="testStartingAutonomyFromTheWindow"/>
+        <test-one-class class="testNoNewCopies"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>

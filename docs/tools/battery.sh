@@ -578,7 +578,7 @@ run_class()
     fi
 
     # NO UPDATE CHECK: support.NoUpdateCheck turns it off in the lane's preference node before any test (FR-136)
-    "$JAVA" $2 $extra -cp "$CP" org.testng.TestNG -listener support.NoUpdateCheck,support.WindowsNotOnTop -testclass "$cls" \
+    "$JAVA" $2 $extra -cp "$CP" org.testng.TestNG -listener support.NoUpdateCheck,support.WindowsNotOnTop,support.DialogWatchdog -testclass "$cls" \
         -d "$S/tng-run/$cls" > "$RUN_OUT" 2>&1 &
 
     local JVM=$!
@@ -661,7 +661,10 @@ run_class()
         # and its other reservation message embeds the size - "Could not reserve enough space for
         # %I64uKB object heap" - so matching the bare sentence matched neither, and the branch was
         # dead for the very incident it was written for.
-        if echo "$out" | grep -qE "Could not reserve enough space|Unable to allocate.*heap"
+        if echo "$out" | grep -q "UNANSWERED DIALOG"
+        then
+            verdict fail "$cls: $(echo "$out" | grep 'UNANSWERED DIALOG' | head -1 | sed 's/^\*\*\* UNANSWERED DIALOG: //; s/ \*\*\*$//')"
+        elif echo "$out" | grep -qE "Could not reserve enough space|Unable to allocate.*heap"
         then
             verdict fail "$cls: DID NOT RUN - no heap (machine busy, rerun)"
         elif echo "$out" | grep -q "OutOfMemoryError"
