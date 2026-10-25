@@ -15,37 +15,25 @@ import org.traincontrol.automation.Point;
 import org.traincontrol.util.I18n;
 
 /**
- * The farthest sensor the tail of a hand-placed train has crossed, which says the road its tail lies on.
+ * The farthest sensor the tail of a hand-placed train has crossed, which says the road its tail lies on.  Adam: **"the
+ * prompt should ask the user to pick from a list and select the farthest sensor the tail of the train recently
+ * crossed."**
  *
- * Adam, 2026-09-14: **"if a train is long, why not ask the user to specify the last sensor it crossed from a list
- * of possible sensors?  Then state will always be fully consistent."**  And: **"the prompt should ask the user to
- * pick from a list and select the farthest sensor the tail of the train recently crossed.  Also, ideally in the
- * autonomy editor, it should allow the user to click to select as well."**
+ * The whole train lies between that sensor and the square it stands on, on the one road between them.  That road is
+ * what `Point.arrivedAlong` holds for a train autonomy drove and what the tail walk follows past a junction (MT-335); a
+ * hand-placed train had none, so its tail stopped at the first fork.
  *
- * **What the answer pins down.**  The tail has crossed a sensor once the whole train has passed it, so the whole
- * train lies between the farthest such sensor and the square it stands on - on the one road between them.  That road
- * is what `Point.arrivedAlong` holds for a train autonomy drove, and what the tail walk follows past a junction
- * (MT-335).  A train placed by hand had none, so its tail stopped at the first fork.
+ * **Asked only when the answer changes something**: where the tail lies past a junction with two roads back and the
+ * roads put it on different track, because it crossed a sensor on one of them or passed the switch they part at
+ * (MT-477).  A tail that ends before the rails part covers the same squares on either road, and two copies of one
+ * square are one road.  A road the tail lies on short of its sensor is offered too, as the way towards that sensor
+ * (MT-477).
  *
- * **Asked only when the answer changes something.**  The side it came in by (`ArrivalSidePrompt`) already picks the
- * first road back; past that the walk follows the only road there is until it reaches a junction.  So the question
- * is put only where the tail lies past a junction with two roads back and the roads put it on different track: it has
- * crossed a sensor on one of them, or it has passed the switch they part at without reaching a sensor on
- * either (MT-477).  A tail that ends before the rails part covers the same squares whichever road it is on, and is not
- * asked about.  Two copies of one square are one road.
- *
- * **A road the tail lies on short of its sensor is offered too, as the way towards that sensor** (Adam, 2026-09-23,
- * MT-477: *"when set to lenth 3, the tail always follows switch 51 turned, rather than facing straight toward rampdown
- * ... technically that length should qualify for the prompt"*).  Until then only crossed sensors were offered, so a
- * three-unit train at BottomSecondary, past switch 51 and four units short of both sensors, was not asked at all, and a
- * four-unit one was offered RampDown alone - the one entry he saw - though it could as well lie up the turned rail.
- *
- * **How far back a sensor may be offered is a suggestion, not the blocking rule.**  Each road back is spent against
- * the train's length using the measured lengths of its edges, and a sensor is offered once the train reaches it,
- * with some of the train left beyond it or none (OB-226).  An unmeasured edge ends a road, because the walk stops there too (*"if no length specified,
- * just stop there"*).  It spends whole edges - the standing square's length included, as the walk spends it (OB-278) -
- * and does not repeat the walk's place-by-place arithmetic, so at a boundary it can offer one sensor more or fewer
- * than the walk would reach - and what blocks track is still the walk, reading the road the operator chose.
+ * **How far back a sensor may be offered is a suggestion, not the blocking rule.**  Each road back is spent against the
+ * train's length by whole edges, the standing square's length included (OB-278), and a sensor is offered once the train
+ * reaches it (OB-226).  An unmeasured edge ends a road, as it stops the walk.  It does not repeat the walk's
+ * place-by-place arithmetic, so at a boundary it can offer one sensor more or fewer than the walk would reach; what
+ * blocks track is still the walk, reading the road the operator chose.
  */
 public class TailCrossedPrompt
 {
@@ -163,11 +151,11 @@ public class TailCrossedPrompt
     /**
      * The road a hand-placed train's tail lies on, asking where the answer matters.
      *
-     * **After the train is down, and named for it.**  The side question is asked BEFORE the move, because its
-     * dismissal refuses the placement (Adam, 2026-09-07: "simply don't place the train") and
-     * `testEditorSurfaceRules.testADismissedArrivalQuestionPlacesNothing` holds that door to it.  This one is
-     * asked after, because its dismissal is Not Known and places the train all the same - and it needs the
-     * side the placement just recorded.
+     * **After the train is down, and named for it.**  The side question is asked BEFORE the move, because its dismissal
+     * refuses the placement (Adam: "simply don't place the train") and
+     * `testEditorSurfaceRules.testADismissedArrivalQuestionPlacesNothing` holds that door to it.  This one is asked
+     * after, because its dismissal is Not Known and places the train all the same, and it needs the side the placement
+     * just recorded.
      *
      * @param layout the running layout
      * @param at the point the train now stands on
@@ -200,16 +188,15 @@ public class TailCrossedPrompt
 
         List<Choice> choices = choicesFor(layout, at, arrivedFrom, trainLength, shown);
 
-        // ON THE DIAGRAM WHERE IT CAN BE (FR-100; Adam, 2026-09-24: *"instead of showing the list of points, highlight
-        // possible squares on the diagram and ask the user to click one.  only show the list if there are options on
-        // another page."*).  Not for one choice, which is answered without asking, nor for a test's answer.
+        // On the diagram where it can be (FR-100; Adam: *"instead of showing the list of points, highlight possible
+        // squares on the diagram and ask the user to click one.  only show the list if there are options on another
+        // page."*).  Not for one choice, which is answered without asking, nor for a test's answer.
         DiagramPick pick = choices.size() > 1 && answeredByATest == null
             ? DiagramPick.of(parent, at, choices, train, shownName(shown, at)) : null;
 
-        // IN FRONT OF THE EDITOR WHERE ONE IS SHOWING (MT-575).  A door reached from the autonomy editor hands this the
-        // main window - the Place dialog's parent - and the list hung from it was centered on, and ordered with, the window
-        // the editor covers.  The editor is where the operator is looking, and where the question was asked from.  Not a
-        // minimized one, which hides what it owns: `openLayoutEditorWindow` answers null for it.
+        // In front of the editor where one is showing (MT-575): a door reached from the autonomy editor hands this the
+        // main window, and a list hung from it was centered on the window the editor covers.  Not a minimized editor,
+        // which hides what it owns: `openLayoutEditorWindow` answers null for it.
         Component over = parent instanceof TrainControlUI && ((TrainControlUI) parent).openLayoutEditorWindow() != null
             ? ((TrainControlUI) parent).openLayoutEditorWindow() : parent;
 
@@ -224,16 +211,14 @@ public class TailCrossedPrompt
     }
 
     /**
-     * Saves what a placement door has written before its tail question waits, and answers what the save reconciled - or
+     * Saves what a placement door has written before its tail question waits, and answers what the save reconciled, or
      * null where it did not save (OB-305).
      *
      * Every placement door writes the train, its facing and its side into the setup in memory, puts this question, and
-     * saved only once it was answered.  Since FR-100 the question waits on the diagram for as long as the operator
-     * likes, with the window live, so a crash in that wait started the next session without the train where it stands.
-     * So the door saves first: only where the question will be put (`wouldAsk`), since elsewhere the door's own save
-     * follows at once; and not while an editor is open or on its way, since the editor holds a copy of the setup and
-     * its own save or Cancel speaks for it.  What a door does with a late answer is unchanged: a setup the
-     * window has let go in the wait is not saved again.
+     * saved only once it was answered; since FR-100 the question waits on the diagram as long as the operator likes
+     * with the window live, so a crash in that wait lost the train.  So the door saves first: only where the question
+     * will be put (`wouldAsk`), and not while an editor is open or on its way, since the editor holds a copy of the
+     * setup.  A setup the window has let go in the wait is not saved again.
      *
      * @param session the setup the door wrote to
      * @param layout the running railway
@@ -266,9 +251,8 @@ public class TailCrossedPrompt
 
     /**
      * What every placement door does once the train is down and its facing written: the tail's side into both stores
-     * (the walk that blocks track reads the live Point; the setup is what survives a restart), the save before the
-     * question waits, the question, and its road written only where the placement still stands, else a dropped answer
-     * logged.
+     * (the walk that blocks track reads the live Point; the setup survives a restart), the save before the question
+     * waits, the question, and its road written only where the placement still stands, else a dropped answer logged.
      *
      * @param point the copy the train was put on, holding it
      * @param train the train's name
@@ -357,10 +341,10 @@ public class TailCrossedPrompt
 
         if (ticked != null) return choices.indexOf(ticked);
 
-        // THE SENSOR NEAREST THE BACK, WHEN THERE IS ONE (FR-088).  Adam, MT-435, 2026-09-15: *"The closest sensor to the
-        // back should be the default selection in the length window, so the user can just click OK if appropriate."*
-        // Asked about several: nearest the back if there is one, nothing chosen otherwise.  Nearest the back is a sensor
-        // no other offered sensor lies beyond on the same road.
+        // The sensor nearest the back, when there is one (FR-088).  Adam: *"The closest sensor to the back should be
+        // the default selection in the length window, so the user can just click OK if appropriate."*  Asked about
+        // several: nearest the back if there is one, nothing chosen otherwise; that is a sensor no other offered sensor
+        // lies beyond on the same road.
         int nearestTheBack = -1;
 
         for (int i = 0; i < choices.size(); i++)
@@ -423,9 +407,8 @@ public class TailCrossedPrompt
         }
 
         /**
-         * Whether an editor was opened while the question waited on the diagram.  The editor holds the setup as
-         * it was when it opened, and its Cancel puts that back; so the door writes nothing into the setup then - as every
-         * main-window door that writes the setup refuses while an editor is open - and says so.
+         * Whether an editor was opened while the question waited on the diagram.  The editor holds the setup as it was
+         * when it opened and its Cancel puts that back, so the door writes nothing into the setup then and says so.
          *
          * @return true where the answer came after an editor opened
          */
@@ -447,14 +430,11 @@ public class TailCrossedPrompt
         }
 
         /**
-         * The road a door should record for the train, in both stores.
-         *
-         * The answer, where there was one.  Otherwise the road the train had ON THE RAILWAY before the door moved it -
-         * kept where it is still on the same square with the same side, and dropped where it is not, because a road
-         * describes one arrival.  Decided from the railway, not the setup: a run writes its arrival on the running
-         * layout alone, and the setup hears of it only at the next capture, so reading the setup erased the road a
-         * train had just driven in on.  Both stores are then written, so they agree - including when the door moved the
-         * train onto another copy of its square, which clears the road there.
+         * The road a door should record for the train, in both stores: the answer where there was one, otherwise the
+         * road the train had ON THE RAILWAY before the door moved it, kept where it is still on the same square with
+         * the same side and dropped otherwise, because a road describes one arrival.  Decided from the railway, not the
+         * setup: a run writes its arrival on the running layout alone, so reading the setup erased the road a train had
+         * just driven in on.
          *
          * @param roadBefore the road the train had on the running layout before the door ran, or null
          * @param sameSquare whether it is on the same square as before
@@ -492,10 +472,8 @@ public class TailCrossedPrompt
     {
         if (choices == null || choices.isEmpty()) return new Reply(false, null);
 
-        // ONE CHOICE IS THE ANSWER, and nothing is shown (Adam, 2026-09-24, on MT-437: *"when a tail question comes up
-        // and there is only one option (len 4 on tunnel), it should auto select that option"*; and on MT-477, *"since
-        // there is only one choice, it should be auto selected without a prompt"*).  Before the test seam, as the
-        // operator is: nobody is asked.
+        // One choice is the answer, and nothing is shown (Adam: *"since there is only one choice, it should be auto
+        // selected without a prompt"*).  Before the test seam, as the operator is: nobody is asked.
         if (choices.size() == 1) return new Reply(true, choices.get(0));
 
         if (answeredByATest != null)
@@ -534,9 +512,9 @@ public class TailCrossedPrompt
                     + "</div></html>"), java.awt.BorderLayout.NORTH);
                 panel.add(new javax.swing.JScrollPane(list), java.awt.BorderLayout.CENTER);
 
-                // OK AND CANCEL, NO "NOT KNOWN" (Adam, 2026-10-09, asked what told the two apart - for a train just put
-                // down they did the same: "drop not known, keep cancel").  Cancel is no answer, and keeps whatever road
-                // the train has; OK with nothing chosen is the same, so no answer is given that nobody chose.
+                // OK and Cancel, no "Not Known" (Adam: "drop not known, keep cancel"): for a train just put down they
+                // did the same.  Cancel is no answer and keeps whatever road the train has; OK with nothing chosen is
+                // the same, so no answer is given that nobody chose.
                 Object[] options = { I18n.t("ui.ok"), I18n.t("ui.cancel") };
 
                 int chose = JOptionPane.showOptionDialog(parent, panel, I18n.t("autolayout.ui.askArrivalSideTitle"),
@@ -628,11 +606,9 @@ public class TailCrossedPrompt
     // ---------------------------------------------------------------- on the diagram (FR-100)
 
     /**
-     * Whether the question goes on the diagram rather than into a list (FR-100).
-     *
-     * Adam, 2026-09-24: *"only show the list if there are options on another page."*  So every choice's sensor is on the
-     * page the train stands on, and drawn somewhere it can be clicked - the main window, or a page of it opened on its
-     * own.
+     * Whether the question goes on the diagram rather than into a list (FR-100).  Adam: *"only show the list if there
+     * are options on another page."*  So every choice's sensor is on the page the train stands on, and drawn somewhere
+     * it can be clicked: the main window, or a page of it opened on its own.
      *
      * @param train the square the train stands on
      * @param squares each choice's sensor square
@@ -656,15 +632,12 @@ public class TailCrossedPrompt
     }
 
     /**
-     * Whether the placement a tail question was asked for still stands when its answer comes back.
-     *
-     * Since FR-100 the question waits on the diagram with the window live - Start, the hand doors, another placement,
-     * a removal all still work while it waits - and each door writes its answer when the answer comes back.  By then the
-     * copy may hold another train, brought there by a run with the road it drove in by; written anyway, the answer put
-     * the first train's road (or none) over it, and that train's tail stopped at the switch with another routed into it.
-     * So a door writes only while the copy still holds the train it placed, with the side and the road the placement left
-     * - and asks it of the running railway's copy, through `whereTheAnswerGoes`, since a rebuild in the wait changes none
-     * of the three on the copy it replaced.
+     * Whether the placement a tail question was asked for still stands when its answer comes back.  Since FR-100 the
+     * question waits on the diagram with the window live, and each door writes its answer when it comes back; by then
+     * the copy may hold another train, brought there by a run with the road it drove in by, and a stale answer would
+     * put the first train's road over it.  So a door writes only while the copy still holds the train it placed, with
+     * the side and road the placement left, asked of the running railway's copy through `whereTheAnswerGoes` (a rebuild
+     * in the wait changes none of the three on the copy it replaced).
      *
      * @param point the copy the train was put on
      * @param placed the train put there, by reference
@@ -681,18 +654,14 @@ public class TailCrossedPrompt
     }
 
     /**
-     * Where a door writes the road a tail question answered, or null when nowhere.
+     * Where a door writes the road a tail question answered, or null when nowhere.  Only the copy of that name on the
+     * railway running NOW: a rebuild in the wait (a setup change from the diagram, a page left out, another
+     * configuration loaded) builds new copies and leaves the old one as it was.
      *
-     * The copy the train was put on is the one asked about only while it is still the running railway's.  A rebuild in
-     * the wait - any setup change from the diagram, a page left out, another configuration loaded - builds new copies
-     * and leaves the old one as it was, so asked of the old one the check always passed, and the answer went to a copy
-     * nothing reads.  So the copy of that name on the railway running NOW is asked: after a rebuild of the same setup
-     * the train is put back on it with its side and the road the running railway had, and the answer belongs there.
-     * And nowhere once the door's setup is not the window's any more (`sameSetup`), a session replaced.  Another
-     * configuration loaded in the wait keeps the session, and the answer follows the train onto the copy that holds it as
-     * it was put (Adam, 2026-09-24: *"Follow the train."*).  And nowhere while trains run (Adam, 2026-09-28:
-     * *"There should be no setup edit possible during a run"*): the question waits with the window live, Start
-     * or a hand send in the wait is not refused, and every door that asks it takes where to write from here.
+     * Nowhere once the door's setup is not the window's any more (`sameSetup`).  Another configuration loaded in the
+     * wait keeps the session, and the answer follows the train onto the copy that holds it (Adam: *"Follow the
+     * train."*).  Nowhere while trains run (Adam: *"There should be no setup edit possible during a run"*): Start or a
+     * hand send in the wait is not refused, so every door that asks takes where to write from here.
      *
      * @param running the railway running now, or null to ask the copy itself
      * @param asked the copy the train was put on when the question was asked
@@ -750,13 +719,11 @@ public class TailCrossedPrompt
      * Whether the setup a door wrote to before its question is still the window's when the answer comes back: the same
      * session.
      *
-     * **Another configuration loaded in the wait is the same setup here** (Adam, 2026-09-24: *"Follow the
-     * train."*).  It keeps the session and rebuilds the railway, and where its copy of the square holds the same train
-     * from the same side with the road it had - which `whereTheAnswerGoes` asks - the answer is about the train in front
-     * of the operator, and goes into the configuration loaded now and onto the railway running.  Dropping it
-     * left the tail he had just given missing from the railway: the track beyond the switch was free to route
-     * another train over.  A door whose setup is not the window's any more saves nothing: the reset that
-     * replaced it wrote what it held.
+     * **Another configuration loaded in the wait is the same setup here** (Adam: *"Follow the train."*).  It keeps the
+     * session and rebuilds the railway, and where its copy of the square holds the same train from the same side with
+     * the road it had (which `whereTheAnswerGoes` asks) the answer goes into the configuration loaded now and onto the
+     * railway running; dropping it left the track beyond the switch free to route another train over.  A door whose
+     * setup is not the window's any more saves nothing: the reset that replaced it wrote what it held.
      *
      * @param asked the session the door wrote to before the question
      * @param now the window's session now
@@ -769,10 +736,10 @@ public class TailCrossedPrompt
     }
 
     /**
-     * Says in the log that an answer was not recorded, and why: the squares go dark whichever way it went, and
-     * the operator could not tell a dropped answer from one that did not work.  Only for an answer - Not known
-     * included, which records that nothing is known; a Cancel asked for nothing to be recorded - and naming the square as
-     * the diagram does, without a remedy that the train having moved or another train standing there makes impossible.
+     * Says in the log that an answer was not recorded, and why: the squares go dark whichever way it went, and the
+     * operator could not tell a dropped answer from one that did not work.  Only for an answer (Not known included; a
+     * Cancel asked for nothing to be recorded), naming the square as the diagram does and offering no remedy, since the
+     * train having moved or another train standing there makes one impossible.
      *
      * @param model where the log goes
      * @param train the train the question was about
@@ -833,12 +800,10 @@ public class TailCrossedPrompt
     }
 
     /**
-     * The same, knowing which click of a run this is - so the rest of a double-click on the sensor that answered is the
-     * question's too: that one double-click, and no later one, since the next click puts the guard down.
-     *
-     * The first click answers and takes the question down; the second arrives with nothing waiting and would reach the
-     * sensor's own click, which flips it - announced as a real sensor change, which an armed route acts on.  Asking to
-     * "click it on the diagram" makes a double-click a natural answer.
+     * The same, knowing which click of a run this is, so the rest of a double-click on the sensor that answered is the
+     * question's too (that one double-click, and no later one, since the next click puts the guard down).  The second
+     * click would otherwise reach the sensor's own click and flip it, announced as a real sensor change which an armed
+     * route acts on.
      *
      * @param label the tile clicked
      * @param clickCount the click's count in its run, from the mouse event
@@ -905,9 +870,9 @@ public class TailCrossedPrompt
 
             TrainControlUI ui = (TrainControlUI) parent;
 
-            // NOT WITH AN EDITOR OPEN.  The autonomy editor's Place door asks from the main window too, and its own
-            // squares are lit with the main window's but do not take the click; the small window goes to the top of a
-            // main window the editor covers.  The list is asked where the operator is working.
+            // Not with an editor open: the autonomy editor's Place door asks from the main window too, its squares are
+            // lit with the main window's but do not take the click, and the small window would go to the top of a main
+            // window the editor covers.  The list is asked where the operator is working.
             if (ui.isLayoutEditorOpen()) return null;
 
             org.traincontrol.automationui.AutonomySession session = ui.getAutonomySession();
@@ -992,8 +957,8 @@ public class TailCrossedPrompt
                 + escape(I18n.f("autosetup.ui.promptTailCrossedOnTheDiagram", train, station)).replace("\n", "<br>")
                 + "</div></html>"), java.awt.BorderLayout.CENTER);
 
-            // CANCEL, AND NO "NOT KNOWN" (Adam, 2026-10-09: "drop not known, keep cancel"): for a train just put down
-            // the two did the same, and Cancel keeps whatever road a train standing still already has.
+            // Cancel, and no "Not Known" (Adam: "drop not known, keep cancel"): for a train just put down the two did
+            // the same, and Cancel keeps whatever road a train standing still already has.
             javax.swing.JButton cancel = new javax.swing.JButton(I18n.t("ui.cancel"));
 
             cancel.addActionListener(e -> finish(new Reply(false, null)));
@@ -1110,13 +1075,12 @@ public class TailCrossedPrompt
     {
         if (layout == null || at == null || arrivedFrom == null || trainLength == null || trainLength <= 0) return;
 
-        // THE FIRST ROAD BACK IS THE SIDE IT CAME IN BY - the tail walk's own first hop, and `entrySideOf` is the one
+        // The first road back is the side it came in by: the tail walk's own first hop, and `entrySideOf` is the one
         // definition of a side both read.
         //
-        // ONLY RAILS THAT ARRIVE HERE (OB-227).  Adam, MT-435, 2026-09-15: *"the blocked orange path crosses switch 99 and
-        // switch 100 instead of going to bottomsecondary, which would require the train to reverse in.  that isn't a
-        // realistic path."*  The road a tail lies on is the one the train DROVE in on, so every rail of it runs towards
-        // the train; a rail laid the other way is one it could only have reached by turning round.
+        // Only rails that arrive here (OB-227): the road a tail lies on is the one the train DROVE in on, so every rail
+        // of it runs towards the train, and a rail laid the other way is one it could only have reached by turning
+        // round.
         Map<String, Edge> firstHops = new LinkedHashMap<>();
 
         for (Edge candidate : layout.getIncomingEdges(at))
@@ -1176,12 +1140,9 @@ public class TailCrossedPrompt
 
         // An unmeasured stretch ends the road: nothing can be said about how much train is left after it.
         //
-        // CROSSED WHEN THE TRAIN REACHES IT (OB-226).  Adam, MT-435, 2026-09-15: *"When 75 407 DB is set to length 3, only
-        // BottomMainAPre is offered (2 away from the station), but Tunnel should also be offered since it is 3 away."*
-        // A train exactly as long as the track to a sensor has its tail at that sensor, and it is offered.
-        //
-        // AN ANSWERED 0 IS WALKED ON (Adam, 2026-09-25): measured track of no length, so a tail reaching its near end has
-        // reached its far end too, as the walk that claims the tail has it (`Edge.isMeasured`).
+        // Crossed when the train reaches it (OB-226): a train exactly as long as the track to a sensor has its tail at
+        // that sensor, and it is offered.  An answered 0 is walked on: measured track of no length, so a tail reaching
+        // its near end has reached its far end too, as the walk that claims the tail has it (`Edge.isMeasured`).
         int beyond = !hop.isMeasured() ? -1 : left - Math.max(0, hop.getLength());
 
         if (beyond < 0)
@@ -1247,19 +1208,17 @@ public class TailCrossedPrompt
 
     /**
      * Whether the tail, with this much train left, lies on different track depending on which of these rails it came in
-     * on (MT-477) - which is when the answer changes what is blocked.
+     * on (MT-477), which is when the answer changes what is blocked.
      *
      * Each rail is spent from the end nearest the train, place by place, as the tail walk spends it: a place is covered
      * once the train reaches into it, and a place measuring nothing is covered for nothing.  Where the rails share
-     * squares - the run up to the switch they part at - a tail that ends before the switch covers the same squares
-     * whichever rail it is on.  An unmeasured rail covers nothing, as the walk stops at one.  A rail with no places, from
-     * a hand-written configuration, cannot say which squares, and is its own track once any train is left for it.
+     * squares (the run up to the switch they part at) a tail that ends before the switch covers the same squares on
+     * either.  An unmeasured rail covers nothing, as the walk stops at one.  A rail with no places, from a hand-written
+     * configuration, is its own track once any train is left for it.
      *
      * **A tail that reaches into the switch has passed it**, though the squares are the same: the last square the rails
-     * share is the one holding the points, and the train lies on one leg of them or the other.  Measured at
-     * BottomSecondary, where Adam met it: the rails from RampDown and BottomCrossover share every square up to switch 51
-     * at 18,11, three units in all, so a three-unit tail ends on the points - *"the tail always follows switch 51 turned,
-     * rather than facing straight toward rampdown ... technically that length should qualify for the prompt"*.
+     * share holds the points, and the train lies on one leg of them or the other (Adam: *"technically that length
+     * should qualify for the prompt"*).
      *
      * @param rails the roads back from one junction, one per piece of metal
      * @param left how much train is left at the junction
@@ -1444,14 +1403,11 @@ public class TailCrossedPrompt
     /**
      * One road back, by the METAL it runs over: the square it comes from and the places the rail crosses (OB-276).
      *
-     * Adam, 2026-09-23: *"when pasting 75 407 DB on bottomsecondary, the tail question lists rampdown twice in the
-     * list."*  Measured on his railway: the two were `RampDown (northbound, reverse) -> BottomSecondary` and
-     * `RampDown (southbound) -> BottomSecondary`, over exactly the same places, 21,7 to 13,11.  The turning copy of the
-     * northbound lane is a train that came in from the south and turned, so it leaves south - by the same rail as the
-     * southbound lane.  Keyed by LANE, as `roadKeyOf(Point)` keys, they were two roads: the list offered one answer
-     * twice, and the junction count behind `wouldAsk` counted a junction that is not there, so the question was put
-     * where both answers describe the same track.  21 such pairs on his railway, at five squares, every one at RampDown
-     * or BottomMainPost.
+     * Measured on a real railway: `RampDown (northbound, reverse) -> BottomSecondary` and `RampDown (southbound) ->
+     * BottomSecondary` run over exactly the same places.  The turning copy of the northbound lane is a train that came
+     * in from the south and turned, so it leaves south, by the same rail as the southbound lane.  Keyed by LANE, as
+     * `roadKeyOf(Point)` keys, they were two roads: the list offered one answer twice and `wouldAsk` counted a junction
+     * that is not there.
      *
      * A balloon's two ends are still two roads: they reach the square by different rails, so their places differ.  A
      * rail with no places - a hand-written configuration, or one from before 3.0.0 - falls back to the lane.
