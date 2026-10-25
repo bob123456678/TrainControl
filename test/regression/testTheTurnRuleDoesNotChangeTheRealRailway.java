@@ -19,28 +19,20 @@ import org.traincontrol.marklin.file.CS2File;
 /**
  * Why the mid-journey turn is not narrowed by geometry: the measurement that stopped it.
  *
- * Adam, 2026-09-08: *"unless you were already emitting reversal commands, then according to the graph,
- * the existing behavior was correct as trains passed through those points.  let's make sure we are not
- * regressing."* He was right, and this is the measurement that says so rather than an argument.
+ * Adam: "unless you were already emitting reversal commands, then according to the graph, the existing behavior was
+ * correct as trains passed through those points.  let's make sure we are not regressing."  His rule: "terminus: always
+ * reverse at the end.  reversing: only reverse if intended at the end or when backing in somewhere per the path, don't
+ * reverse if passing onwards."
  *
- * **His rule.** *"terminus: always reverse at the end.  reversing: only reverse if intended at the end
- * or when backing in somewhere per the path, don't reverse if passing onwards."*
+ * **The code already implements it, through the SPLIT.**  `AutonomyBuilder` gives a may-turn square two copies: a plain
+ * one, which a path passing onwards is routed through, and a turning one carrying `reversing`, which a path BACKING IN
+ * is routed through.  So `current.isReversing()` on a built graph already means "this journey is backing in here".
  *
- * **The code already implements it, through the SPLIT.** `AutonomyBuilder` gives a may-turn square two
- * copies: a plain one, which is what a path passing onwards is routed through, and a turning one
- * carrying `reversing`, which is what a path BACKING IN is routed through. So `current.isReversing()`
- * on a built graph already means "this journey is backing in here", and turning there is exactly
- * "reverse when backing in per the path".
- *
- * **What the narrowing would have done.** I proposed turning only where the next leg leaves by the side
- * the train arrived on. Measured over this railway it names `BottomMainB (westbound, reverse)` - in by
- * E, out by N, four such pairs - a turning copy that has always turned trains and would have stopped.
- * The facings recorded in the setup were written under the old behavior, so they would have disagreed
- * with the railway from that moment. The narrowing was reverted unshipped.
- *
- * The fixture that made the case for it called `setReversing(true)` on a square a straight path runs
- * through, which the builder cannot emit - a through square gets the plain copy. So the journey it
- * showed does not exist on a built railway.
+ * **What the narrowing would have done:** turning only where the next leg leaves by the side the train arrived on names
+ * `BottomMainB (westbound, reverse)` (in by E, out by N, four such pairs), a turning copy that has always turned trains
+ * and would have stopped, so the facings recorded in the setup would have disagreed with the railway.  The narrowing
+ * was reverted unshipped.  The fixture that made the case for it called `setReversing(true)` on a square a straight
+ * path runs through, which the builder cannot emit.
  *
  * @author Adam
  */
@@ -55,13 +47,10 @@ public class testTheTurnRuleDoesNotChangeTheRealRailway
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        // THE FROZEN SNAPSHOT of the real layout, opened before the model, because init reads the layout
-        // preference and would otherwise open the railway itself (OB-111).
-        //
-        // It read a copy of the LIVE folder until 2026-09-14, when the battery went red with "no reversing copy
-        // at all" and no change to the builder: Adam had turned 1 - Main:20,14 from may-turn to must-turn that
-        // afternoon.  A claim about what the builder does to his railway cannot change color because he edited
-        // the railway - which is the reason `live-snapshot` exists.
+        // THE FROZEN SNAPSHOT of the real layout, opened before the model, because init reads the layout preference
+        // (OB-111).  It once read a copy of the LIVE folder, and the battery went red when Adam turned a square from
+        // may-turn to must-turn: a claim about what the builder does to his railway cannot change color because he
+        // edited the railway.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
         model = support.TestStation.simulated();
@@ -88,16 +77,13 @@ public class testTheTurnRuleDoesNotChangeTheRealRailway
     }
 
     /**
-     * A reversing copy can be left by a side other than the one it is entered by - MEASURED BY THE COMPASS: the side
-     * a copy is left by is read here as `entrySideOf(leaving, copy)`, which for an edge that STARTS at the copy falls to
-     * `sideTowards`, the neighbor's compass position (OB-268).  So what this shows is that the compass does not say which
-     * side a reversing copy is left by, and that is what it blocks: a geometric test for "does the next leg need the
-     * turn" would read such a copy as a straight run and stop turning there.  It is not a refutation of section 3's
-     * sentence that a turning copy's only outgoing edges leave by the side the train arrived from, which the builder
-     * guarantees in the metal and this ruler cannot see.  The copies are listed when this fails, so whoever proposes the
-     * narrowing again sees the counter-examples rather than the idea.
-     *
-     * @throws Exception on a failure to read the built graph
+     * A reversing copy can be left by a side other than the one it is entered by - MEASURED BY THE COMPASS: the side a
+     * copy is left by is read as `entrySideOf(leaving, copy)`, which for an edge that STARTS at the copy falls to
+     * `sideTowards`, the neighbor's compass position (OB-268).  So the compass does not say which side a reversing copy
+     * is left by, and a geometric test for "does the next leg need the turn" would read such a copy as a straight run
+     * and stop turning there.  It does not refute that a turning copy's only outgoing edges leave by the side the train
+     * arrived from, which the builder guarantees in the metal and this ruler cannot see.  The copies are listed when
+     * this fails, so whoever proposes the narrowing again sees the counter-examples.
      */
     @Test
     public void testAReversingCopyCanBeLeftByAnotherSide() throws Exception
@@ -151,12 +137,10 @@ public class testTheTurnRuleDoesNotChangeTheRealRailway
             }
         }
 
-        // MEASURED 2026-09-08, and it is why the narrowing was reverted rather than shipped:
-        // `BottomMainB (westbound, reverse)` is entered from the E and left to the N, and there are
-        // four such pairs on this railway. A geometric "only turn if the next leg leaves by the side it came in"
-        // test therefore stops turning trains at a copy that has always turned them, which is a
-        // regression and not a fix - and the facings recorded in the setup were written under the old
-        // behavior, so they would disagree with the railway from that moment.
+        // MEASURED, and why the narrowing was reverted: `BottomMainB (westbound, reverse)` is entered from the E and
+        // left to the N, four such pairs on this railway, so a geometric "only turn if the next leg leaves by the side
+        // it came in" test stops turning trains at a copy that has always turned them, a regression whose facings in
+        // the setup were written under the old behavior.
         assertTrue(wouldChange.size() > 0,
             "every reversing copy on this railway is now left by the side it is entered by. That was"
             + " NOT true on 2026-09-08 - BottomMainB (westbound, reverse) went in by E and out by N -"
