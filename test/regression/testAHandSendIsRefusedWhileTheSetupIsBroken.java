@@ -13,15 +13,14 @@ import support.SourceOf;
 /**
  * A train is not sent by hand while the setup has errors, any more than autonomy is started (MT-263).
  *
- * Adam, 2026-09-24: *"Start autonomy doesn't run autonomy, as expected - I get an error message saying errors must
- * first be fixed.  Good.  But trains can still be moved manually via both the track diagram viewer and the autonomy
- * tab, which should throw an error instead."*  A hand send runs over the railway the same setup built, so the setup
- * that stops autonomy starting stops a hand send too: the same question, `autonomyHasErrors`, at both hand doors - the
- * diagram's right-click destinations and the Auto tab's list of paths - and at the two run doors that dispatch without
- * Start, Execute Timetable and Return Home.
+ * Adam: "Start autonomy doesn't run autonomy, as expected - I get an error message saying errors must first be fixed.
+ * Good.  But trains can still be moved manually via both the track diagram viewer and the autonomy tab, which should
+ * throw an error instead."  A hand send runs over the railway the same setup built, so the same question,
+ * `autonomyHasErrors`, is asked at both hand doors (the diagram's right-click destinations and the Auto tab's list of
+ * paths) and at the two run doors that dispatch without Start, Execute Timetable and Return Home.
  *
- * **Asked of the words, then of the doors**, as `testTheRefusalToStartSaysWhichThing` asks Start's: a behavioral
- * claim would have to raise the modal dialog each door shows, which is how a runner was stranded on 2026-09-09.
+ * Asked of the words, then of the doors, as `testTheRefusalToStartSaysWhichThing` asks Start's: a behavioral claim
+ * would have to raise the modal dialog each door shows.
  *
  * MUTATION: take the refusal out of either door, or ask it after the reversal question, and the second claim fails
  * naming the door; make the window's rule answer nothing for a broken setup, or invert its guard, and the window's
@@ -33,13 +32,11 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
 {
     private static final String REFUSAL = "whyAHandSendIsRefused()";
 
-    /** The one gate every sending door asks (Adam, 2026-09-29), which asks REFUSAL for every door but Start. */
+    /** The one gate every sending door asks, which asks REFUSAL for every door but Start. */
     private static final String GATE = "refusedToSendATrain(false)";
 
     /**
      * The setup's own words, with however many things there are to deal with - and never autonomy's.
-     *
-     * @throws Exception from the reflection
      */
     @Test
     public void testTheRefusalSaysWhatIsWrongWithTheSetup() throws Exception
@@ -72,14 +69,11 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
 
     /**
      * Both hand doors ask it, before the reversal question and before anything is dispatched.
-     *
-     * @throws Exception from the files
      */
     @Test
     public void testBothHandDoorsAskItFirst() throws Exception
     {
-        // THROUGH ONE DOOR (Adam, 2026-09-29: "can all the checks go through a single door?"): both hand doors send through
-        // `sendATrainByHand`, and neither dispatches past it
+        // THROUGH ONE DOOR: both hand doors send through `sendATrainByHand`, and neither dispatches past it
         for (String[] hand : new String[][] {
             {"private void locAvailPathsMouseClicked(", "the Auto tab's list of paths"},
             {"private JMenuItem destinationItem(", "the track diagram's right-click destinations"}})
@@ -105,12 +99,10 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
     }
 
     /**
-     * The two run doors that move trains without Start - Execute Timetable and Return Home - ask it too, before they gray
-     * anything or dispatch.
-     *
-     * The rule's own reason is not about the hand: a timetable run and a Return Home run drive over the railway the same
-     * setup built, through the same dispatch, started by a button with nobody asking the setup.  With the graph broken,
-     * both drove trains over the stale railway the operator had just been told "cannot be used yet".
+     * The two run doors that move trains without Start - Execute Timetable and Return Home - ask it too, before they
+     * gray anything or dispatch: a timetable run and a Return Home run drive over the railway the same setup built, and
+     * with the graph broken both drove trains over the stale railway the operator had just been told "cannot be used
+     * yet".
      *
      * MUTATION: take the refusal out of either run door, and this fails naming it.
      *
@@ -137,10 +129,8 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
 
     /**
      * The window refuses while its setup has an error, and not once it is mended - asked of a real window, not of the
-     * words.
-     *
-     * The first claim asks the sentence; the doors ask the window's own method, whose guard decides.  Inverted, or
-     * answering nothing, it left both claims above green while no hand send was ever refused.
+     * words.  The doors ask the window's own method, whose guard decides: inverted, or answering nothing, it left both
+     * claims above green while no hand send was ever refused.
      *
      * MUTATION: invert the window's guard, or have it answer nothing, and this fails.
      *
@@ -282,8 +272,7 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
 
             assertEquals(outcome[3], "null", "with the setup mended, a hand send is still refused");
 
-            // Adam, 2026-09-24: "Yes, go with your recommendation" - the item grayed with the setup's sentence,
-            // the buttons live and explaining, as Start's is.
+            // The item grayed with the setup's sentence, the buttons live and explaining, as Start's is.
             assertEquals(outcome[6], "true", "precondition: Return Home is not offered on the frozen railway before anything"
                 + " is broken, so its item is greyed for that and nothing below is about the setup (ADU-C6)");
 
@@ -314,15 +303,14 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
      * A setup that is there and will not read is said to be unreadable, with the reason - not called a layout with no
      * folder to keep one in.
      *
-     * `getAutonomySession` caught every failure to open the setup and handed back null, and every door read null as
-     * "this layout cannot hold a setup": the editor's refusal said it needs a local layout folder TrainControl can write
-     * to, and the Autonomy menu that autonomy needs a layout stored on this computer - on a layout stored on this
-     * computer, in the folder the check before it had just found.  A setup.json that will not parse, one written by a
-     * newer TrainControl and a configuration that will not read all arrived that way, with the reason only in the log.
+     * `getAutonomySession` caught every failure to open the setup and handed back null, which every door read as "this
+     * layout cannot hold a setup": the editor's refusal said it needs a local layout folder, on a layout stored on this
+     * computer.  A setup.json that will not parse, one written by a newer TrainControl and a configuration that will
+     * not read all arrived that way, with the reason only in the log.
      *
-     * On a sandboxed copy of the fixture whose setup.json is not JSON, asked of a real window and of its Autonomy menu.
-     * Nothing is pressed, so no dialog is raised.  And the file is as it was afterwards: a setup that cannot be read is
-     * not one anything may write over.
+     * Asked of a real window and its Autonomy menu, on a sandboxed copy whose setup.json is not JSON.  Nothing is
+     * pressed, so no dialog is raised; and the file is as it was afterwards, since an unreadable setup may not be
+     * written over.
      *
      * MUTATION: forget the reason in `getAutonomySession`'s catch, and this fails.
      *
@@ -429,11 +417,9 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
 
     /**
      * The right-click menu asks the setup once where Start is offered: the Return Home item is handed the hand doors'
-     * sentence, worked out only where Start is grayed.
-     *
-     * `AutonomySession.check()` is not cached, and a popup menu is built on the event thread; the walks a
-     * right-click costs are down to one each, and the item asked the whole check twice more on every right-click.
-     * Start offered means the setup has no errors, so the hand doors' sentence is then null without asking.
+     * sentence, worked out only where Start is grayed.  `AutonomySession.check()` is not cached and the menu is built
+     * on the event thread; the item asked the whole check twice more on every right-click.  Start offered means the
+     * setup has no errors, so the sentence is then null without asking.
      *
      * MUTATION: have the item ask the setup itself again, and this fails.
      *
@@ -475,10 +461,8 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
 
     /**
      * Both hand doors say when a train would run into its own tail, after the berth's refusal and before the reversal
-     * question - the third standing refusal with a sentence.
-     *
-     * `isPathClear` still refuses at dispatch without it, but with "check the log" in place of the sentence that names
-     * the longest train that goes - which is what Adam asked a door to say (MT-262).
+     * question - the third standing refusal with a sentence.  `isPathClear` still refuses at dispatch without it, but
+     * with "check the log" in place of the sentence naming the longest train that goes (MT-262).
      *
      * MUTATION: take the own-tail block out of either door, and this fails naming it.
      *
@@ -487,8 +471,8 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
     @Test
     public void testBothHandDoorsSayWhenATrainWouldMeetItsOwnTail() throws Exception
     {
-        // ONE PLACE FOR BOTH (Adam, 2026-09-29): the standing rules are `whyThisPathCannotBeTaken`, which the one hand door
-        // asks before the reversal question
+        // ONE PLACE FOR BOTH: the standing rules are `whyThisPathCannotBeTaken`, which the one hand door asks before
+        // the reversal question
         String body = code("static String whyThisPathCannotBeTaken(");
 
         int berth = body.indexOf("whyABerthCannotHoldIt(");
@@ -507,9 +491,8 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
         assertTrue(asked > 0 && question > asked, "the one hand door asks the reversal question before the standing"
             + " rules, or not at all - a question about a journey that is going to be refused reads as answered");
 
-        // AND OVER THE MAIN WINDOW (the popups sweep, on Adam's MT-703 note): the diagram's menu handed in its own
-        // window, which it has left by the time an item runs, and the question opened under an always-on-top main
-        // window
+        // AND OVER THE MAIN WINDOW (MT-703): the diagram's menu handed in its own window, which it has left by the time
+        // an item runs, and the question opened under an always-on-top main window
         assertTrue(send.substring(question, send.indexOf(";", question)).replaceAll("\\s+", "")
             .startsWith("ManualReversalPrompt.forJourney(getAutonomySession(),this,"), "the one hand door asks whether"
             + " to keep the direction over a window other than the main one - from the diagram's menu, a window the"
@@ -524,13 +507,12 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
 
     /**
      * Over the break MT-263, MT-573 and MT-580 make - 4 - Combined switched back on, whose sensors repeat the other
-     * pages' - every door that would move a train says why it will not, each in its own words, and no train moves (Adam,
-     * 2026-09-25: automated tests supersede the MTs they answer).
+     * pages' - every door that would move a train says why it will not, each in its own words, and no train moves.
      *
-     * The claim above reads the Return Home item as `addReturnHomeItem` builds it, over a station left unnamed.  This one
-     * takes the entries' own break and their own gestures: the track diagram's right-click menu on a station, built as
-     * `showFor` builds it for a right-click, with Start and Return Home read off it; then the Start Autonomy,
-     * Return Home and Execute Timetable buttons pressed, with what each says read off the dialog it raises.
+     * The claim above reads the Return Home item over a station left unnamed; this one takes the entries' own break and
+     * gestures: the diagram's right-click menu on a station, built as `showFor` builds it, with Start and Return Home
+     * read off it; then the Start Autonomy, Return Home and Execute Timetable buttons pressed, with what each says read
+     * off the dialog it raises.
      *
      * MUTATION: take the refusal out of Return Home or Execute Timetable, hand Return Home's item Start's sentence, offer
      * Start's item live, or have Start's press say something other than its tooltip, and this fails naming it.
@@ -577,8 +559,8 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
 
             for (int turn = 0; turn < 4; turn++) javax.swing.SwingUtilities.invokeAndWait(() -> { });
 
-            // RETURN HOME OFFERED BEFORE ANYTHING IS BROKEN (and MT-573's comment of 2026-09-24): a train is away
-            // from its home, so a grayed item or a refused press below is about the setup.
+            // RETURN HOME OFFERED BEFORE ANYTHING IS BROKEN (MT-573): a train is away from its home, so a grayed item
+            // or a refused press below is about the setup.
             Method triage = TrainControlUI.class.getDeclaredMethod("awaitReturnHomeTriage", long.class);
 
             triage.setAccessible(true);
@@ -691,7 +673,7 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
             final String start = seen.get("start");
             final String hand = seen.get("hand");
 
-            // MT-263, as amended on 2026-09-25: Start names the error count, and never says to wait for the trains.
+            // MT-263: Start names the error count, and never says to wait for the trains.
             assertEquals(start, I18n.f("autolayout.ui.errorCannotStartWithErrors", errors), "over the entries' break Start's"
                 + " sentence does not name the " + errors + " error(s) (MT-263, ADD2-C1)");
 
