@@ -21,25 +21,16 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * Deleting a square from the diagram forgets everything the setup wrote about it.
  *
- * **It forgot the caption and left the rest.** `delete` called `forgetCaptionsAt`, which touches the
- * captions map alone, so a deleted platform kept its station membership, point name, length, facing,
- * barred arrivals, signal pairing, blocked flag, portal, link name and its `configurations.points`
- * block - all of it keyed to a square that now holds nothing. Every sibling gesture already reached
- * `forgetTiles`: copy, paste, fill and clear.
- *
- * **What made it a defect rather than a decision** is `clear()`'s own comment, which contrasts itself
- * with this method: *"Deleting one square tells the setup so; emptying the whole page told it nothing
- * at all."* That was not true of `delete`, and `clear`'s argument for why a reconciling save does not
- * rescue it - the window's non-reconciling write on the way out commits the orphans first - applies
- * here word for word.
- *
- * **The caption half is asserted too**, because the fix replaces the call that was doing it. A repair
- * that forgets more must not forget less.
+ * `delete` called `forgetCaptionsAt`, which touches the captions map alone, so a deleted platform kept its station
+ * membership, point name, length, facing, barred arrivals, signal pairing, blocked flag, portal, link name and its
+ * `configurations.points` block, all keyed to a square that now holds nothing.  Every sibling gesture (copy, paste,
+ * fill, clear) already reached `forgetTiles`; `clear()`'s own comment contrasts itself with this method: *"Deleting
+ * one square tells the setup so; emptying the whole page told it nothing at all."*  The caption half is asserted too,
+ * because the fix replaces the call that was doing it: a repair that forgets more must not forget less.
  *
  * ON THE FROZEN RAILWAY, never `cs2_sample_layout` (OB-111).
  *
- * MUTATION: put `forgetCaptionsAt` back in `delete` and the length and name claims fail while the
- * caption claim passes.
+ * MUTATION: put `forgetCaptionsAt` back in `delete` and the length and name claims fail while the caption claim passes.
  *
  * @author Adam
  */
@@ -119,19 +110,15 @@ public class testDeleteForgetsTheWholeSquare
     }
 
     /**
-     * A square carrying a length, a point name and a caption loses all three when its track is deleted.
-     *
-     * Three, not one, and they are three different collections: the length and the name are facts about
-     * the square, and the caption is a reference to it from somewhere else.
+     * A square carrying a length, a point name and a caption loses all three when its track is deleted: three different
+     * collections, the caption a reference to the square from elsewhere.
      */
     @Test
     public void testEverythingWrittenAboutTheSquareGoesWithIt() throws Exception
     {
-        // The grid is private and the delete door takes a LABEL, which is how every gesture in the
-        // window reaches it.  Read the same way `testThePaletteStillPlacesTiles` reads it, and the
-        // square is chosen from the grid rather than named: the editor answers "which square is this
-        // label on" by scanning for the label object, and the blank labels that hold the layout
-        // together are shared, so a square is only usable here if the two directions agree about it.
+        // The grid is private and the delete door takes a LABEL, as every gesture in the window does.  The square is
+        // chosen from the grid rather than named: the blank labels that hold the layout together are shared, so a
+        // square is only usable here if the editor's two directions agree about it.
         java.lang.reflect.Field gridField = LayoutEditor.class.getDeclaredField("grid");
 
         gridField.setAccessible(true);
@@ -192,10 +179,8 @@ public class testDeleteForgetsTheWholeSquare
         assertEquals(session.getStore().getCaptionTarget(label), square,
             "precondition: the caption points at the square");
 
-        // THE LABEL IS RE-FETCHED HERE, not reused from the block above.  `render()` and every repaint
-        // rebuild the grid, so a label held across two EDT blocks is a label the editor no longer
-        // recognizes - `getCoordinates` scans for the object and answers -1,-1 - and `delete` then
-        // looks at the wrong square and quietly does nothing.
+        // The label is re-fetched here, not reused: `render()` and every repaint rebuild the grid, so a label held
+        // across two EDT blocks is one the editor no longer recognizes and `delete` quietly does nothing.
         SwingUtilities.invokeAndWait(() ->
         {
             try
@@ -227,22 +212,14 @@ public class testDeleteForgetsTheWholeSquare
     }
 
     /**
-     * Forgetting squares nothing was ever written about reports that nothing changed.
+     * Forgetting squares nothing was ever written about reports that nothing changed.  `moveTiles` computed the answer
+     * as `builtOver != null && !builtOver.isEmpty()`, true before it had looked at anything, and four call sites read
+     * it as "something was forgotten, so write the setup to disk": deleting a piece of plain track rebuilt the graph
+     * over every page and wrote every file of the setup, once per picked square by `deleteSelection` (the Delete key
+     * and **Delete Selected**).
      *
-     * **The answer used to be manufactured from the size of the list.** `moveTiles` computed it as
-     * `builtOver != null && !builtOver.isEmpty()`, which is true before it has looked at anything, and
-     * four call sites read it as "something was forgotten, so write the setup to disk" - `delete` says
-     * so in as many words, in a comment kept while moving the call onto a method that no longer
-     * honored it.
-     *
-     * So deleting a piece of plain track that no station, name, length or facing had ever been written
-     * about rebuilt the graph over every page and wrote every file of the setup, to a folder under
-     * OneDrive. `deleteSelection` - the Delete key, and **Delete Selected** on the right-click menu -
-     * does that once per picked square.
-     *
-     * MUTATION: put `return builtOver != null && !builtOver.isEmpty();` back at the top of
-     * `AutonomySession.moveTiles` and the first claim fails; make `Kept.forget` return false always and
-     * the second does.
+     * MUTATION: put `return builtOver != null && !builtOver.isEmpty();` back at the top of `AutonomySession.moveTiles`
+     * and the first claim fails; make `Kept.forget` return false always and the second does.
      */
     @Test
     public void testForgettingNothingSaysNothingChanged() throws Exception
