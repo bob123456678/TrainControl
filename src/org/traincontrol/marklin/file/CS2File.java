@@ -2210,22 +2210,7 @@ public final class CS2File
      */
     public static JSONArray parseJSONArray (BufferedReader in) throws IOException
     {
-        // Closes the reader, as parseFile does.  Every caller opens a reader purely to hand to this
-        // method and consumes it exactly once - parseRoutesCS3 picks one of its two firmware branches,
-        // so no reader is read twice - which makes closing here what actually frees the connection.
-        // Without it every CS3 API call leaked one.
-        try (BufferedReader reader = in)
-        {
-            StringBuilder sb = new StringBuilder();
-            String line;
-
-            while ((line = reader.readLine()) != null)
-            {
-                sb.append(line);
-            }
-
-            return new JSONArray(sb.toString());
-        }
+        return new JSONArray(readAndClose(in));
     }
     
     /**
@@ -2236,7 +2221,15 @@ public final class CS2File
      */
     public static JSONObject parseJSONObject (BufferedReader in) throws IOException
     {
-        // Closes the reader - see parseJSONArray
+        return new JSONObject(readAndClose(in));
+    }
+    
+    /**
+     * Reads the stream's lines into one string and closes it.  Every caller opens a reader purely to hand to a parse
+     * method and consumes it exactly once, so closing here is what frees the connection.
+     */
+    private static String readAndClose(BufferedReader in) throws IOException
+    {
         try (BufferedReader reader = in)
         {
             StringBuilder sb = new StringBuilder();
@@ -2247,7 +2240,7 @@ public final class CS2File
                 sb.append(line);
             }
 
-            return new JSONObject(sb.toString());
+            return sb.toString();
         }
     }
     
