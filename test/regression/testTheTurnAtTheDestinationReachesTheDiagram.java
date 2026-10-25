@@ -42,9 +42,9 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * and the RUNNING LAYOUT what they now believe.
  *
  * Two ways it went wrong, which are the two journeys below.  Both come from the drain pivoting on
- * `AutonomySession.getFacing(tile)`, the setup's STORED facing for the arrival square, which behaviour.md 6a declares
- * stale at that moment (and `captureFromLayout` never clears it, so an empty square carries the last occupant's
- * answer):
+ * `AutonomySession.getFacing(tile)`, the setup's STORED facing for the arrival square, which
+ * behaviour/editing-while-running.md 6a declares stale at that moment (and `captureFromLayout` never clears it, so an
+ * empty square carries the last occupant's answer):
  *
  * 1. The turn is lost.  No stored facing means `flipFacing` returns null, and the drain removed the pending record
  *    anyway, so no later refresh can heal it.
@@ -52,8 +52,8 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * flips
  *    to the PRE-turn side, and `moveOntoFacingCopy` stands the locomotive on the copy for the wrong facing.
  *
- * What is reliable at that moment is behaviour.md 4: a train faces the way it will leave, and once turned round the two
- * point the same way while the carriages have not moved.  So the facing of a train that has just turned at its
+ * What is reliable at that moment is behaviour/facing.md 4: a train faces the way it will leave, and once turned round
+ * the two point the same way while the carriages have not moved.  So the facing of a train that has just turned at its
  * destination IS the side it arrived by, which the arrival wrote down itself: an absolute answer that needs no record
  * in sync.  The third test is the other half: a turn the drain could NOT write must still be owed.
  *
@@ -73,8 +73,8 @@ public class testTheTurnAtTheDestinationReachesTheDiagram
     private static Integer trainLengthWas;
 
     /**
-     * Short enough for the track-room rule (behaviour.md 5a) at the may-reverse platform, which measures one unit on
-     * the run in; the real length is restored in the teardown, as `init` opens Adam's own locomotive database.
+     * Short enough for the track-room rule (behaviour/length.md 5a) at the may-reverse platform, which measures one
+     * unit on the run in; the real length is restored in the teardown, as `init` opens Adam's own locomotive database.
      */
     private static final int TRAIN_LENGTH = 1;
 
@@ -494,7 +494,7 @@ public class testTheTurnAtTheDestinationReachesTheDiagram
      *
      * The move is the half the diagram and the next dispatch read: which copy a train is on IS its direction.  The
      * arrival side goes with it: `Point.setLocomotive` clears `arrivedFrom` on every change of occupant, which is wrong
-     * for the same train re-stood on a sibling copy, since turning does not move the carriages (behaviour.md 4).
+     * for the same train re-stood on a sibling copy, since turning does not move the carriages (behaviour/facing.md 4).
      */
     private static void assertStandsOnTheTurningCopy(Turn turn)
     {

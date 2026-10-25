@@ -383,8 +383,8 @@ public class testAStopRouteStandsAlone
     /**
      * A route's emergency stop is sent whatever the model believes about the power: the flag is only the last GO or
      * STOP echo the Central Station sent, so one lost GO would leave a stop route that fired with nobody present
-     * cutting nothing.  behaviour.md 7a: an emergency stop is obeyed whatever else is true; the flag decides only
-     * whether the notice is shown.
+     * cutting nothing.  behaviour/routes.md 7a: an emergency stop is obeyed whatever else is true; the flag decides
+     * only whether the notice is shown.
      *
      * MUTATION: send the stop only while the power flag reads on, and this fails.
      */

@@ -392,7 +392,7 @@ public class testReturnHomeOnRealLayout
      * A train standing on a square that turns trains can still be brought home (MT-463).
      *
      * Adam, on MT-463: *"Could not run this.  make an automated test for this with
-     * appropriate placements."*  The rule is `behaviour.md` section 6 and his ruling: a
+     * appropriate placements."*  The rule is `behaviour/return-home.md` section 6 and his ruling: a
      * plan may rest a train that cannot reverse on a terminus or reversing point only when its next move
      * takes it home, *"a train the railway already had standing on one moves as before"*.  The defect was
      * that second clause: the code asked the SQUARE whether it turns trains, and a square cannot say who

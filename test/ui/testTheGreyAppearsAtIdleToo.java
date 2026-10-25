@@ -60,8 +60,8 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * `ui.testBlockedTrackIsGreyWhileAutonomyRuns` does: asking the window would ask the thing under test for the answer.
  *
  * Unmeasured track makes the tile-length gesture visible: the tail walk "stops at unmeasured track.  Only positive
- * lengths are determinate." (behaviour.md 5c), so every square measured as one unit blocks track and as none blocks
- * nothing.
+ * lengths are determinate." (behaviour/tail.md 5c), so every square measured as one unit blocks track and as none
+ * blocks nothing.
  *
  * MUTATION, both measured:
  * - Put the `isAutonomyBusy()` fence back on the blocked set in `CoveredTrackView.workOutCoveredTrack`: five of the
@@ -427,7 +427,7 @@ public class testTheGreyAppearsAtIdleToo
             + "no-op without an active configuration, with autonomy busy, or with no viewer panel");
 
         // THE GESTURE MOVED THE RAILWAY'S OWN ANSWER, so the comparison is not two copies of one number: unmeasured
-        // squares shorten what a tail can reach (behaviour.md 5c).
+        // squares shorten what a tail can reach (behaviour/tail.md 5c).
         assertNotEquals(railwayBlockedWithTilesUnmeasured, railwayBlockedWithTilesMeasured,
             "the railway blocks exactly the same squares whether every tile measures one unit or "
             + "none, so writing tile lengths changed nothing and there is nothing for the diagram to "

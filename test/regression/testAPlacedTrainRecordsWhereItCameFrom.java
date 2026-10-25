@@ -26,8 +26,8 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * A train put down by the assign dialog records which way it came in.
  *
- * Adam, settling the question `behaviour.md` section 4 had left open: **"the missing arrival side should be set -
- * either from the data, by the user, or randomly"**, then **"proceed with this combo.  Try to reuse the
+ * Adam, settling the question `behaviour/facing.md` section 4 had left open: **"the missing arrival side should be
+ * set - either from the data, by the user, or randomly"**, then **"proceed with this combo.  Try to reuse the
  * machinery/checks of the current popup."**
  *
  * `Layout.edgesCoveredByStandingTrains` walks back from a standing train along the side it came in by and blocks that

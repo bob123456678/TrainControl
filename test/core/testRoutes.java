@@ -634,8 +634,8 @@ public class testRoutes
      * monitor thread and the editor's Test button (which reports what that thread would decide); `execRoute` does not
      * read them, so the play button, the right-click Execute item and a route tile on the diagram all run the route
      * regardless.  Same rule as the tiered destination lists: the operator running a route by hand can see the railway
-     * and the condition cannot (see `behaviour.md` section 7a).  Pinned because the next reader of `execRoute` beside
-     * the monitor loop will see a missing guard.
+     * and the condition cannot (see `behaviour/routes.md` section 7a).  Pinned because the next reader of `execRoute`
+     * beside the monitor loop will see a missing guard.
      *
      * MUTATION: add the monitor's `hasConditions() && !conditions.evaluate(network)` guard to `execRoute` and this
      * fails.

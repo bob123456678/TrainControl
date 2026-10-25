@@ -38,7 +38,7 @@ import org.traincontrol.marklin.file.CS2File;
  * to a longer train. Before it, a train of two units or more was offered nothing at all from seven squares (the bottom
  * main berths) that had offered it 31 to 34 destinations under the berth-only rule. A train with no destination is one
  * autonomy never dispatches and a Return Home that reports `NO_PLAN_FOUND`; the remedy is to measure the track
- * (`behaviour.md` section 5a).
+ * (`behaviour/length.md` section 5a).
  *
  * Read against a `LayoutSandbox` copy of `test/layouts/live-snapshot`, with the three tight tiles set by this class:
  * these figures are what a rule about room does on a railway with no room, not a survey of his track.

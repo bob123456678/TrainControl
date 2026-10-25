@@ -410,7 +410,7 @@ final class StandingTrains
                 // arrived along, through the junction where the fork rule would stop: the edge that ended where the
                 // walk is now, and the candidate reaching back to where it started, matched by place because the walk
                 // may stand on a different copy.  A train with no road (placed by hand, or answered Not Known) keeps
-                // the fork rule; a hand-placed train can be given one (behaviour.md 5c, FR-085).
+                // the fork rule; a hand-placed train can be given one (behaviour/tail.md 5c, FR-085).
                 if (neighbours.size() > 1 && arrivedAlong != null)
                 {
                     // Where the road says it came from - see `cameFromAlong`, shared with the first hop.
@@ -517,8 +517,8 @@ final class StandingTrains
             if (segment.getLength() <= 0 && !segment.isMeasured()) break;
 
             // BOTH DIRECTIONS OF THE SAME RAIL: the graph writes a rail as two `Edge` objects and `isPathClear` looks
-            // the covered set up by Edge identity, so covering A -> B alone left B -> A clear (`behaviour.md` 5c: a
-            // tail fouls the rail whichever way traffic runs).  On a built graph this loop seldom matches, since the
+            // the covered set up by Edge identity, so covering A -> B alone left B -> A clear (`behaviour/tail.md` 5c:
+            // a tail fouls the rail whichever way traffic runs).  On a built graph this loop seldom matches, since the
             // two directions usually run between different COPIES of its squares; the reverse rail is refused by place
             // instead (`anotherTailOn`).
             covered.put(segment, loc);

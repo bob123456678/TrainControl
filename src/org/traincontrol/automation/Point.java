@@ -569,7 +569,7 @@ public class Point
      *
      * Cleared on the same change of occupant that clears `arrivedFrom`, for the same reason: a route
      * describes the train that arrived, not whoever stands here next.  Saved with the point, carried across
-     * a rebuild and captured into the setup; a hand-placed train can be given one (FR-085, behaviour.md 5c).
+     * a rebuild and captured into the setup; a hand-placed train can be given one (FR-085, behaviour/tail.md 5c).
      *
      * @return the edges in the order they were driven, or null when nothing was driven here
      */

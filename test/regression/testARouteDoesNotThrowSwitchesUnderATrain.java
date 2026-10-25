@@ -1768,9 +1768,9 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
     /**
      * A route that cuts the power is never held back, and its stop always goes out.
      *
-     * `behaviour.md` section 7a states this as a rule - *"an emergency stop is obeyed whatever else is true. A route
-     * carrying a stop is never refused at a human door and never has its stop skipped"* - and it has two halves.  Adam
-     * ruled on `MT-247`: *"make test cases for this"*.
+     * `behaviour/routes.md` section 7a states this as a rule - *"an emergency stop is obeyed whatever else is true. A
+     * route carrying a stop is never refused at a human door and never has its stop skipped"* - and it has two halves.
+     * Adam ruled on `MT-247`: *"make test cases for this"*.
      *
      * The first half, that a route with a stop is not screened at the human door, is also held by
      * `testARouteThatCutsThePowerIsNeverHeldUpByTheQuestion` and, by shape, by `testBothDoorsCarveOutTheEmergencyStop`.

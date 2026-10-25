@@ -21,8 +21,8 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * One train's tail claim does not hide another train's on the same place.  The walk that claims the track behind every
  * standing train records ONE train per place, the one walked last, in the order of the railway's map of Points.  Two
  * tails that foul one switch from its two legs both claim its square; when the one recorded is the train being routed
- * (its own tail is never an obstacle to it, behaviour.md 5c) the other's claim is gone and a route leaving over its own
- * tail is cleared into the other train.
+ * (its own tail is never an obstacle to it, behaviour/tail.md 5c) the other's claim is gone and a route leaving over
+ * its own tail is cleared into the other train.
  *
  * The fixture is the smallest with the shape: a switch square S, two berths behind its two legs, a train in each that
  * came in over S and faces back out over it, each asked about with the other standing.  A third train on a rail of its

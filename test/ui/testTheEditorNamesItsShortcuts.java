@@ -897,8 +897,9 @@ public class testTheEditorNamesItsShortcuts
     /**
      * Escape pressed while a box is being drawn drops the box too.
      *
-     * Escape is how a half-made gesture is dropped (behaviour.md 6a, FR-065), so the box being drawn is in the track
-     * editor's list: otherwise the release picks it with picking off, or Escape closes the editor with the button down.
+     * Escape is how a half-made gesture is dropped (behaviour/editing-while-running.md 6a, FR-065), so the box being
+     * drawn is in the track editor's list: otherwise the release picks it with picking off, or Escape closes the editor
+     * with the button down.
      *
      * A box dragged with the button down - once with Control+M's picking, once with Shift and nothing else held - then
      * Escape, then the release.

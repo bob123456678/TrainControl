@@ -570,7 +570,7 @@ public class testATrainCoversTheTrackBehindIt
      * A tail blocks the rail in BOTH directions, because a tail is not directional.
      *
      * The graph encodes facing as one-way edges, so one piece of rail is often two `Edge` objects.
-     * A train lying across it fouls it whichever way traffic runs - `behaviour.md` 5c says so - but
+     * A train lying across it fouls it whichever way traffic runs - `behaviour/tail.md` 5c says so - but
      * the covered set is keyed by Edge, and Edge identity is directional.  So covering A -> B and
      * then routing somebody over B -> A is the case every fixture in this file misses: they are all
      * one-way chains, which is exactly why this went unnoticed.

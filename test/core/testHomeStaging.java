@@ -3260,10 +3260,10 @@ public class testHomeStaging
     /**
      * A train the railway already had standing on a terminus may step aside on its way home.
      *
-     * `behaviour.md` section 6: a plan may rest a train that cannot reverse on a terminus or reversing point only when
-     * its next move takes it home - *"a train the railway already had standing on one moves as before"*.  The test is
-     * whether this plan put the train there, not whether it is STANDING on such a square; otherwise, with its home
-     * occupied, a train found on a terminus cannot step aside and the answer is NO_PLAN_FOUND.
+     * `behaviour/return-home.md` section 6: a plan may rest a train that cannot reverse on a terminus or reversing
+     * point only when its next move takes it home - *"a train the railway already had standing on one moves as
+     * before"*.  The test is whether this plan put the train there, not whether it is STANDING on such a square;
+     * otherwise, with its home occupied, a train found on a terminus cannot step aside and the answer is NO_PLAN_FOUND.
      *
      * LOC_A stands on the terminus HS A and is homed to HS B; LOC_B stands on HS B and is homed to HS A.  LOC_B is kept
      * off the two spare squares, so the only way round is LOC_A stepping aside, LOC_B going home, and LOC_A following,

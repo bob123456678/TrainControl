@@ -125,8 +125,8 @@ public class testAutonomySimulationSanity
      * **This test used to assert that they cancel**, and that was right for a record whose
      * membership was a parity - because the window applied each entry by FLIPPING the facing the setup
      * had stored, and two flips undo each other. The flip has since been taken away: the setup's stored
-     * facing is stale at exactly the moment the drain reads it (behaviour.md 6a), so the window now
-     * writes the facing ABSOLUTELY, from the side the train came in by at the square it turned at.
+     * facing is stale at exactly the moment the drain reads it (behaviour/editing-while-running.md 6a), so the window
+     * now writes the facing ABSOLUTELY, from the side the train came in by at the square it turned at.
      *
      * Once the write is absolute the parity has nothing left to protect. The hazard it was for - *"a
      * shuttle that turned at both ends came back facing the way it started and had its facing flipped

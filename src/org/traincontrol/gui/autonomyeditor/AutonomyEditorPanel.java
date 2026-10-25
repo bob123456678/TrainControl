@@ -5594,7 +5594,7 @@ public class AutonomyEditorPanel extends JPanel
 
     /**
      * What Segment Length shows for this square: the whole run's measure, not the leader's share after Mass Assign
-     * Lengths (`behaviour.md` 5b).
+     * Lengths (`behaviour/length.md` 5b).
      * @param tile any square of the run
      * @return the sum over every square the run covers
      */

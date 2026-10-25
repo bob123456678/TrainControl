@@ -2882,8 +2882,9 @@ public class testMassAssignLengths
     /**
      * After a walk, Segment Length shows the whole run and writes the whole run.  Mass Assign Lengths shares a piece's
      * whole length over every square, so the leader holds only a share, yet the dialog must open on what the run
-     * measures (`behaviour.md` section 5b: *"a run of plain track has one square that speaks for it, and both doors
-     * write there, so measuring a run through both does not count it twice."*) and writing 4 must leave the run at 4.
+     * measures (`behaviour/length.md` section 5b: *"a run of plain track has one square that speaks for it, and both
+     * doors write there, so measuring a run through both does not count it twice."*) and writing 4 must leave the run
+     * at 4.
      */
     @Test
     public void testTheSingleDoorSpeaksForTheWholeRunAfterAWalk() throws Exception

@@ -84,7 +84,7 @@ final class RouteListPanel
                     // reason why nothing happened.  The two cancels differ in size: a REFUSED here happens before the
                     // route starts, so not one command goes out, whereas the midway question is answered inside
                     // `MarklinRoute.execRoute`'s command loop, so every earlier command has gone out and stands;
-                    // behaviour.md section 7a carries both halves.
+                    // behaviour/routes.md section 7a carries both halves.
                     if (answer == TrainControlUI.RouteConflict.REFUSED)
                     {
                         this.ui.getModel().logf("route.cancelledByOperator", picked.getName());

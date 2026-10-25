@@ -244,9 +244,9 @@ public class testTheSuppliedManualTestFilesAreWhatTheySay
             "MT-380's layout index still names several pages, so the arrows on the page it kept index"
             + " into a list that is not there.  The index and the folder must agree");
 
-        // NO ARROWS, because one holds a page's POSITION in the name-sorted list (behaviour.md 8) and a one-page layout
-        // has nowhere for one to point; the application re-aims them when the set of pages changes, but this folder was
-        // trimmed with a text editor.
+        // NO ARROWS, because one holds a page's POSITION in the name-sorted list (behaviour/whole-system.md 8) and a
+        // one-page layout has nowhere for one to point; the application re-aims them when the set of pages changes, but
+        // this folder was trimmed with a text editor.
         String only = text("MT-380-one-page-layout" + File.separator + "layout" + File.separator
             + "config" + File.separator + "gleisbilder" + File.separator + drawn.get(0));
 

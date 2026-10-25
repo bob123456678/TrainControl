@@ -29,8 +29,8 @@ import org.traincontrol.util.I18n;
  *
  * His railway's case: a train that came down RampDown and west along row 11 stands at BottomSecondary with its tail
  * back along that row, and every way to LowerFront comes back east along the same row.  Nothing asked, because a train
- * never blocks itself (behaviour.md 5c): pulling forward off its tail is how a train leaves a berth; coming back to it
- * round a loop is not.
+ * never blocks itself (behaviour/tail.md 5c): pulling forward off its tail is how a train leaves a berth; coming back
+ * to it round a loop is not.
  *
  * The frozen railway, because the loop is his and no hand-drawn fixture has one; LowerFront's size is raised for the
  * test, as he raised it for his, so the station's own limit does not refuse a long train.
@@ -385,11 +385,11 @@ public class testATrainDoesNotRunIntoItsOwnTail
     /**
      * A loop answered 0 all the way round is judged, and a train lying on it is not let round into its own body
      * (OB-300).  Every other length rule reads track answered 0 on purpose as measured track of no length
-     * (behaviour.md 5b) and errs towards refusing; this one judged a return only where the route had run some length,
-     * so a loop answered 0 throughout let a train of any length go round into itself.  A way round is judged once it is
-     * measured: a length on it, or every place on it answered.  A loop nobody measured is still not judged - *"only
-     * apply if lengths are specified"* - nor is one answered everywhere but one square, a switch nobody has given a
-     * length, which `Edge.isMeasured` would not count either.
+     * (behaviour/length.md 5b) and errs towards refusing; this one judged a return only where the route had run some
+     * length, so a loop answered 0 throughout let a train of any length go round into itself.  A way round is judged
+     * once it is measured: a length on it, or every place on it answered.  A loop nobody measured is still not judged -
+     * *"only apply if lengths are specified"* - nor is one answered everywhere but one square, a switch nobody has
+     * given a length, which `Edge.isMeasured` would not count either.
      *
      * Built by hand with the Points' and edges' own constructors (a new `Layout` would retire the loaded railway), and
      * the rule asked directly: a train of 3 lying on A's square, where the loop begins and ends - out by B and C and

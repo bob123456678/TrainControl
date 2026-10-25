@@ -47,7 +47,7 @@ import org.traincontrol.marklin.MarklinLocomotive;
  * `ArrivalSidePrompt.arrivedFrom` takes the one side of the square the train is not pointing at; where several are
  * left, the documented compass assumption picks between them, but only where the build really enters by that side, and
  * otherwise nothing is recorded.  A null arrival side narrows the tail walk; a wrong one sends it down track the train
- * is not on (`behaviour.md` 4).
+ * is not on (`behaviour/facing.md` 4).
  *
  * @author Adam
  */

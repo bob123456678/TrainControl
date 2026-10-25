@@ -1660,8 +1660,8 @@ public class AutonomySession
         // timetable place (as `Layout.copyAfterTheTurn`)
         if (from != null && facing == facingsFor(tile).get(from.getName()) && from.isDestination()) return;
 
-        // And the tail comes with it, which `setLocomotive` clears (behaviour.md 4: turning round at the platform does
-        // not move the tail); read from the copy it was on.
+        // And the tail comes with it, which `setLocomotive` clears (behaviour/facing.md 4: turning round at the
+        // platform does not move the tail); read from the copy it was on.
         final String tail = from == null ? null : from.getArrivedFrom();
 
         // And the route it drove, which it follows back past a junction (MT-335)
@@ -7177,8 +7177,9 @@ public class AutonomySession
     /**
      * Records a facing AND stands the train on the copy that faces that way.
      *
-     * The railway's train here first: after a run the setup names the pre-run occupant (behaviour.md 6a).  The setup's
-     * record is written only where the railway has that train, or none.
+     * The railway's train here first: after a run the setup names the pre-run occupant
+     * (behaviour/editing-while-running.md 6a).  The setup's record is written only where the railway has that train, or
+     * none.
      *
      * Silently a plain `setFacing` when no layout is running, which is every headless use.
      *

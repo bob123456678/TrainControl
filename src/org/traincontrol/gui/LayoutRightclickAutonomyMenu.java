@@ -943,10 +943,10 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         if (arriving)
         {
             // And where its tail is: the same placement by drag asks and blocks the track behind the train, so this
-            // door must too (`behaviour.md` section 4).  Through the same door the paste uses, with the same rule:
-            // forced at a terminus, taken from behind the heading at an ordinary station, asked on a square trains may
-            // turn at.  This door has no dialog of its own (`GraphLocAssign` has a combo), so it is the prompt, as for
-            // a paste.
+            // door must too (`behaviour/facing.md` section 4).  Through the same door the paste uses, with the same
+            // rule: forced at a terminus, taken from behind the heading at an ordinary station, asked on a square
+            // trains may turn at.  This door has no dialog of its own (`GraphLocAssign` has a combo), so it is the
+            // prompt, as for a paste.
             //
             // Before the move, so a dismissal can leave the railway as it was.  The unbarred sides here and in the
             // `wouldAsk` below must be the same list (OB-204).
@@ -969,9 +969,10 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         // half that survives a restart.  A copy `moveLocomotive` declines is closed at this door, which moves with the
         // form that accepts a copy trains may not arrive at, as the paste does.
         //
-        // The remaining case is `behaviour.md` section 6a: a menu is grayed when the popup opens and the action fires
-        // at the click, so autonomy started from another window in between leaves a live item over a running railway.
-        // The refusal is in the method and this caller honors it; its log line is the user-visible half.
+        // The remaining case is `behaviour/editing-while-running.md` section 6a: a menu is grayed when the popup opens
+        // and the action fires at the click, so autonomy started from another window in between leaves a live item over
+        // a running railway.  The refusal is in the method and this caller honors it; its log line is the user-visible
+        // half.
         // WHAT THE TRAIN HAD ON THE RAILWAY, before this door moves it.
         org.traincontrol.automation.Point wasOn = null;
 

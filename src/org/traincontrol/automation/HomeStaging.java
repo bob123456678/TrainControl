@@ -625,8 +625,8 @@ public final class HomeStaging
         // the other's occupant must end on are a real deadlock now that the planner enforces FR-001, and the scan stays
         // out anyway: IMPOSSIBLE names locomotives and asserts that no arrangement exists, and the scan that produced
         // that verdict was wrong three times, each time about a railway that works.  A search that exhausts and answers
-        // NO_PLAN_FOUND is the weaker claim and the true one.  `docs/reference/behaviour.md` section 1 records that as
-        // Adam's own choice, and `testHomeStaging.testTwoHomesThatHoldEachOtherBackAreADeadlock` pins it.
+        // NO_PLAN_FOUND is the weaker claim and the true one.  `behaviour/tiers-and-choice.md` section 1 records that
+        // as Adam's own choice, and `testHomeStaging.testTwoHomesThatHoldEachOtherBackAreADeadlock` pins it.
         //
         // The pairwise scan above stays: it is about two homes on ONE DETECTION SECTION, a fact about the track that no
         // ruling about tiers touches.
@@ -2351,10 +2351,10 @@ public final class HomeStaging
         // facing.  but it's also reasonable to expect that the input facings are ones realistic on the layout.  we
         // shouldn't allow an impossible facing to be saved."*).
         //
-        // A copy is a facing (behaviour.md 3), so the other arrival of the home square is the train turned round, which
-        // counts as home only for a home set with no facing (the square, MT-165).  Where the home was set facing a way,
-        // only a copy FACING that way is home.  Not the copy with the same arrival side: that includes the home copy's
-        // turning twin, which points back at the side it came in by, the train turned round again:
+        // A copy is a facing (behaviour/reversals.md 3), so the other arrival of the home square is the train turned
+        // round, which counts as home only for a home set with no facing (the square, MT-165).  Where the home was set
+        // facing a way, only a copy FACING that way is home.  Not the copy with the same arrival side: that includes
+        // the home copy's turning twin, which points back at the side it came in by, the train turned round again:
         // reported already home at BottomMainB, which trains may turn at.  A copy of the other arrival that has turned
         // faces the home's way, and is home.
         return !home.isHomeFacingFixed() || java.util.Objects.equals(home.getCopyFacing(), where.getCopyFacing());

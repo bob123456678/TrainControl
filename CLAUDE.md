@@ -93,7 +93,8 @@ Drawn from what went wrong here, and from a study of 80 builders' transcripts (2
   by hand.
 - A worktree you were given is clean and on the right commit: start work, don't re-check it.
 - Answer your own questions from the repository first: this file, the brief, `docs/refactor-3.0.3.md`,
-  `docs/reference/behaviour.md`, `triagedb.py show <id>`.  Ask only for a decision that is Adam's.
+  `docs/reference/behaviour.md` (the index of the area files in `docs/reference/behaviour/`), `triagedb.py show <id>`.
+  Ask only for a decision that is Adam's.
 - Report what changed, the evidence (red, green, the Total lines), and what is left.  No screenshots unless asked.
 
 ## Working here

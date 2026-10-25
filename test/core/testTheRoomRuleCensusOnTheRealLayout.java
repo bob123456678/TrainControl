@@ -28,8 +28,8 @@ import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.marklin.file.CS2File;
 
 /**
- * The section 5c census (`behaviour.md`) as something that can be run: across every ordered station pair and each of
- * six train lengths, the journeys the widened track-room rule (MT-262) NEWLY refuses, and where they arrive.
+ * The section 5c census (`behaviour/tail.md`) as something that can be run: across every ordered station pair and each
+ * of six train lengths, the journeys the widened track-room rule (MT-262) NEWLY refuses, and where they arrive.
  *
  * A journey is newly refused when the room behind its destination is measured, is shorter than the train, and the
  * destination is neither a terminus nor a reversing point (the fence `Layout` used to have). The station-capacity rule
@@ -47,8 +47,8 @@ import org.traincontrol.marklin.file.CS2File;
 public class testTheRoomRuleCensusOnTheRealLayout
 {
     /**
-     * Pins `behaviour.md` section 5c, over the snapshot's 37 destination Points: if a number moves, the railway or the
-     * rule has changed.
+     * Pins `behaviour/tail.md` section 5c, over the snapshot's 37 destination Points: if a number moves, the railway or
+     * the rule has changed.
      */
     private static final int ORDERED_PAIRS = 1332;
     /**
@@ -74,9 +74,9 @@ public class testTheRoomRuleCensusOnTheRealLayout
     private static final int FIRST_CENSUS_ADDRESS = 51;
 
     /**
-     * Where every newly refused journey arrives, and the room measured behind each: the berths `behaviour.md` section
-     * 5c names, by their split copies. BottomMainC is a compulsory turn that builds to a terminus, whose refusal is not
-     * new.
+     * Where every newly refused journey arrives, and the room measured behind each: the berths `behaviour/tail.md`
+     * section 5c names, by their split copies. BottomMainC is a compulsory turn that builds to a terminus, whose
+     * refusal is not new.
      */
     private static final String[] BERTHS =
     {
@@ -403,8 +403,8 @@ public class testTheRoomRuleCensusOnTheRealLayout
             + offTheEndOfTheRoute);
         System.out.println("  refusals at a square the train turns at: " + refusedAtATurn);
 
-        // Asserted, not only printed: `behaviour.md` section 5a says every refusal this ruling adds is bounded by a
-        // switch.
+        // Asserted, not only printed: `behaviour/length.md` section 5a says every refusal this ruling adds is bounded
+        // by a switch.
         //
         // This measures the railway, not the guard: the loop is a replica of `whyTooLongForThisRoute`, so removing
         // `comesToRest` from production leaves these numbers where they are and `core.testNonReversibleTrains` is what

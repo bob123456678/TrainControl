@@ -1005,7 +1005,7 @@ public class MarklinRoute extends Route
                             }
                             else if (rc.isStop())
                             {                        
-                                // SENT WHATEVER THE POWER FLAG SAYS (behaviour.md 7a: an
+                                // SENT WHATEVER THE POWER FLAG SAYS (behaviour/routes.md 7a: an
                                 // emergency stop is obeyed whatever else is true).  The flag is only
                                 // the last GO or STOP echo heard, so one lost GO skipped the stop of a
                                 // route that fired with nobody present.  It decides the notice and the

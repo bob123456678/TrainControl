@@ -10,9 +10,9 @@ import org.testng.annotations.Test;
 import support.SourceOf;
 
 /**
- * Every door that changes the railway asks whether it may (`behaviour.md` section 6a: *"The refusal has to be in the
- * method."*): Execute Timetable and Return Home must not start trains under an open editor, and switching layouts or
- * swapping the layout folder must not replace the diagram during a run.
+ * Every door that changes the railway asks whether it may (`behaviour/editing-while-running.md` section 6a: *"The
+ * refusal has to be in the method."*): Execute Timetable and Return Home must not start trains under an open editor,
+ * and switching layouts or swapping the layout folder must not replace the diagram during a run.
  *
  * This pins the half that goes wrong: a door that forgets to ask. It does NOT pin the two guards' own bodies, which are
  * a dialog over a predicate: `refuseWhileAutonomyRunning` is `model.isAutonomyRunning()`, asserted behaviorally by
@@ -344,7 +344,7 @@ public class testTheRefusalsAreAskedAtTheDoors
     }
 
     /**
-     * Every door that puts a train down uses the railway's answer (`behaviour.md` section 4: *"nothing about a
+     * Every door that puts a train down uses the railway's answer (`behaviour/facing.md` section 4: *"nothing about a
      * placement is recorded until the railway has accepted it"*). `Layout.moveLocomotive` returns false rather than
      * throwing when it refuses, and a door that discarded that answer wrote the placement into the setup AND SAVED it,
      * so the next build emitted the train on a square it was never put on.

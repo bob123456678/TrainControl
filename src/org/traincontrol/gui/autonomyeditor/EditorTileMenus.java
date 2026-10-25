@@ -913,8 +913,9 @@ final class EditorTileMenus
             editor.runningLayout == null ? null : editor.runningLayout.get();
 
         // THE TRAIN THE RAILWAY HAS HERE, and only then the setup's.  After a run the setup still names each
-        // square's pre-run occupant (behaviour.md 6a) and nothing captures before this menu, so it would name the setup's
-        // train and tick the railway's, and a click would turn neither.  `setFacingAndMove` turns the one named here.
+        // square's pre-run occupant (behaviour/editing-while-running.md 6a) and nothing captures before this menu, so
+        // it would name the setup's train and tick the railway's, and a click would turn neither.  `setFacingAndMove`
+        // turns the one named here.
         String onTheRailway = editor.session == null ? null : editor.session.trainOnTheRailway(target, showing);
 
         final String standing = onTheRailway != null ? onTheRailway : editor.locomotiveAt(target);
