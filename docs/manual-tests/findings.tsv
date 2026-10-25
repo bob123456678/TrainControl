@@ -3535,7 +3535,7 @@ RSA76-C10	RSA76.md	Closed	Follow-up - next release: drive OB-365, FR-144 and OB-
 RSA76-C11	RSA76.md	-	Open	OB-369's sample now writes preferred speeds into the user's locomotive database
 RSA76-C12	RSA76.md	-	Open	AutomationAPI.md's new text and the new examples are not US English, and two sentences are not true
 RSA76-C13	RSA76.md	-	Open: Adam's call	The Readme's v3.0.3 list has no line for FR-138's six API examples
-RSA76-C14	RSA76.md	-	Open	The code split off LayoutEditor and AutonomyEditorPanel missed the Phase 2 comment trim
+RSA76-C14	RSA76.md	Closed	Fixed - `74450314`, `410f7e88`: the four split-off files and SessionImport trimmed to the 	The code split off LayoutEditor and AutonomyEditorPanel missed the Phase 2 comment trim
 RSA76-C2	RSA76.md	-	Open	Each entry into autonomy mode adds a viewport listener that is never removed
 RSA76-C3	RSA76.md	-	Open	OB-368 makes the Track Directions box narrower in English too
 RSA76-C4	RSA76.md	-	Open	The OB-368 claim reads the override's own answer
