@@ -105,7 +105,7 @@ public class testADirectionChangeIsNotSwallowed
             + " it half-prevents is back: the pre-run direction stays in the baseline and the first"
             + " echo after the run re-follows a reversal the railway already made (REG8-C4)");
 
-        // INSIDE THE METHOD, not across the file (2026-09-11).
+        // INSIDE THE METHOD, not across the file.
         //
         // These two offsets were taken with `ui.indexOf` over the whole of TrainControlUI.java, and
         // `takeReversalsOnArrival()` appears TWICE in it: once in `takeThePendingTurns`, which has
