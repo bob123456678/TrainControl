@@ -8,22 +8,16 @@ import java.util.Set;
 /**
  * The squares a user has picked out in the diagram editor, and the arithmetic of moving them together.
  *
- * Selection is a STATE rather than a modifier held down: squares are picked, they stay picked, and
- * Escape lets them go. That is what makes dragging a group possible at all - a drag needs both hands
- * free, so the selection cannot be something the user is holding a key to maintain.
+ * Selection is a STATE rather than a modifier held down: squares are picked, they stay picked, and Escape lets them go,
+ * so a drag has both hands free.  The geometry lives here rather than in the editor because it can be got wrong quietly
+ * (a group dragged off the edge, a paste landing half outside, a rotation that moves squares instead of turning them)
+ * and arithmetic can be tested where a mouse gesture cannot.
  *
- * The geometry lives here rather than in the editor because it is the part that can be got wrong
- * quietly: a group dragged off the edge of the diagram, a paste that lands half outside it, a rotation
- * that moves squares when it should turn them in place. All of that is arithmetic, and arithmetic can
- * be tested where a mouse gesture cannot.
- *
- * Coordinates are the diagram's own - column then row, origin top left.
+ * Coordinates are the diagram's own: column then row, origin top left.
  */
 public final class TileSelection
 {
-    /**
-     * One square, by position.
-     */
+    /** One square, by position. */
     public static final class At
     {
         private final int x;
@@ -71,12 +65,7 @@ public final class TileSelection
 
     private final Set<At> chosen = new LinkedHashSet<>();
 
-    /**
-     * Picks a square, or unpicks it if it was already picked.
-     *
-     * Toggling rather than adding, because the same gesture has to be able to correct itself - a user
-     * who shift-clicks one square too many should not have to start again.
-     */
+    /** Picks a square, or unpicks it if it was already picked, so the same gesture corrects itself. */
     public void toggle(int x, int y)
     {
         At at = new At(x, y);
@@ -104,28 +93,19 @@ public final class TileSelection
         return chosen.size();
     }
 
-    /**
-     * Lets everything go.  What Escape does.
-     */
+    /** Lets everything go.  What Escape does. */
     public void clear()
     {
         chosen.clear();
     }
 
-    /**
-     * The squares, in the order they were picked.
-     */
+    /** The squares, in the order they were picked. */
     public List<At> all()
     {
         return new ArrayList<>(chosen);
     }
 
-    /**
-     * Everything in a rectangle, which is what dragging a box selects.
-     *
-     * The corners may be given either way round, because a user drags a box in whichever direction
-     * suits them.
-     */
+    /** Everything in a rectangle, which is what dragging a box selects; the corners may be given either way round. */
     public void addRectangle(int fromX, int fromY, int toX, int toY)
     {
         for (int x = Math.min(fromX, toX); x <= Math.max(fromX, toX); x++)
@@ -138,11 +118,8 @@ public final class TileSelection
     }
 
     /**
-     * The squares this selection would occupy if moved by a delta.
-     *
-     * Returned rather than applied, so the caller can check the result before committing to it - a
-     * group dragged past the edge should be refused whole rather than clipped, which would silently
-     * drop track off the side of the diagram.
+     * The squares this selection would occupy if moved by a delta.  Returned rather than applied, so the caller can
+     * refuse a group dragged past the edge whole: clipping would silently drop track off the side of the diagram.
      */
     public List<At> movedBy(int dx, int dy)
     {
@@ -153,12 +130,7 @@ public final class TileSelection
         return out;
     }
 
-    /**
-     * Whether moving by a delta would keep every square on a diagram of this size.
-     *
-     * @param width the diagram's width in squares
-     * @param height its height
-     */
+    /** Whether moving by a delta would keep every square on a diagram of this size. */
     public boolean fitsAfterMove(int dx, int dy, int width, int height)
     {
         for (At at : movedBy(dx, dy))
@@ -173,18 +145,10 @@ public final class TileSelection
     }
 
     /**
-     * The square that drags the whole selection: the top right corner of its bounding box.
-     *
-     * Here rather than in the editor because it is a rule about a selection rather than about a
-     * window, and because a rule that decides where a control appears is worth being able to test
-     * without opening one.
-     *
-     * The corner of the BOX, which need not be a chosen square - an L-shaped selection has an empty
-     * corner.  Being able to grab the corner of the rectangle you can see is worth more than the grip
-     * always sitting on something picked.
-     *
-     * Top RIGHT: a selection is usually dragged out left to right, so the pointer is already over
-     * there when the button comes up.
+     * The square that drags the whole selection: the top right corner of its bounding box.  Here because it is a rule
+     * about a selection, testable without a window.  The corner of the BOX, which need not be a chosen square (an
+     * L-shaped selection has an empty corner): grabbing the corner of the rectangle you can see is worth more than the
+     * grip sitting on something picked.  Top RIGHT, because a selection is usually dragged out left to right.
      *
      * @return the grip's x and y, or null when nothing is picked
      */
@@ -196,18 +160,12 @@ public final class TileSelection
     }
 
     /**
-     * The smallest rectangle holding everything picked, as {minX, minY, maxX, maxY}.
+     * The smallest rectangle holding everything picked, as {minX, minY, maxX, maxY}, or null when nothing is picked.
      *
-     * What a copy takes: the bounding box, INCLUDING squares inside it that were not picked. Copying
-     * only the picked squares would paste a shape with holes in it, and a piece of railway with holes
-     * is not the piece the user pointed at.
-     *
-     * READ THIS BEFORE PAIRING IT WITH A DELETE. What a copy takes and what a delete removes are not
-     * the same set - delete walks the picked squares, this walks the box around them - and that is
-     * what happens when something assumes they match: a cut carried origins for sixteen squares when
-     * two had been emptied, and moved the setup off fourteen that still held their track.
-     *
-     * @return the bounds, or null when nothing is picked
+     * What a copy takes: the bounding box, INCLUDING squares inside it that were not picked, or the paste would be a
+     * shape with holes.  READ THIS BEFORE PAIRING IT WITH A DELETE: delete walks the picked squares, this walks the box
+     * around them, and a cut that assumed they match carried origins for sixteen squares when two had been emptied, and
+     * moved the setup off fourteen that still held their track.
      */
     public int[] bounds()
     {
