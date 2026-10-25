@@ -18,21 +18,13 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.base.Accessory;
 
 /**
- * Return Home reaches a berth that no single path can reach, by stopping on the way.
+ * Return Home reaches a berth that no single path can reach, by stopping on the way (Adam: "yes, return home should
+ * learn to sequence a reversal as two paths.").
  *
- * Adam, on the limitation: "yes, return home should learn to sequence a reversal as two paths."  And
- * on this file: "We need test cases for that return home paradigm."
- *
- * WHAT MAKES IT TWO PATHS.  A path sets every switch it needs before the train departs, so one
- * accessory cannot be asked for two settings on one route.  A journey that turns round and comes back
- * through the junction it went out over asks exactly that.  Measured on his own layout: 2-8-4 3505 SP
- * from TopMainR2 to TopMainR0Park is refused with "Has conflicting commands ([Switch 75 STRAIGHT])",
- * and the same journey split at the reversing point is two clear paths.
- *
- * This is that shape in miniature - one switch, wanted one way to reach the reversing point and the
- * other way to leave it - and the three tests are the three things worth knowing about it: that the
- * single path really is refused (or the rest proves nothing), that the planner gets there anyway, and
- * that it does not invent a stop when the run was clear all along.
+ * A path sets every switch it needs before the train departs, so one accessory cannot be asked for two settings on one
+ * route; a journey that turns round and returns through the same junction asks exactly that.  This is that shape in
+ * miniature, with three tests: the single path really is refused, the planner gets there anyway, and it does not invent
+ * a stop when the run was clear all along.
  */
 public class testReturnHomeSequencesAReversal
 {
@@ -49,12 +41,8 @@ public class testReturnHomeSequencesAReversal
     private static String swtch;
 
     /**
-     * The layout preference, pointed at a throwaway copy before anything is constructed.
-     *
-     * Not optional, and not a formality: the window opens whatever the saved preference names, which on
-     * Adam's machine is his real railway.  The first version of this class went without it and
-     * testSwitchingToACentralStationLayout caught it - "there are now 57 test classes that build a model
-     * without pointing the layout preference at a sandbox first, up from 56".
+     * The layout preference, pointed at a throwaway copy before anything is constructed: the window opens whatever the
+     * saved preference names.
      */
     private static support.LayoutSandbox sandbox;
 
@@ -81,12 +69,7 @@ public class testReturnHomeSequencesAReversal
         if (sandbox != null) sandbox.close();
     }
 
-    /**
-     * The precondition everything else rests on: as ONE path, the journey is refused.
-     *
-     * Without this the two tests below could pass on a layout where the direct route worked, and would
-     * be saying nothing about reversals at all.
-     */
+    /** The precondition everything else rests on: as ONE path, the journey is refused. */
     @Test
     public void testTheJourneyIsRefusedAsASinglePath() throws Exception
     {
@@ -128,9 +111,7 @@ public class testReturnHomeSequencesAReversal
         }
     }
 
-    /**
-     * And Return Home gets the train there, by stopping at the reversing point on the way.
-     */
+    /** And Return Home gets the train there, by stopping at the reversing point on the way. */
     @Test
     public void testReturnHomeGoesViaTheReversingPoint() throws Exception
     {
@@ -167,8 +148,8 @@ public class testReturnHomeSequencesAReversal
             assertEquals(plan.getMoves().get(1).getEnd().getName(), "RH home",
                 "the plan does not finish at the home: " + plan.getMoves());
 
-            // BOTH MOVES ARE THE SAME TRAIN.  A plan of the right length made of two different
-            // trains moves would pass every line above.
+            // BOTH MOVES ARE THE SAME TRAIN: a plan of the right length made of two different trains would pass every
+            // line above.
             assertEquals(plan.getMoves().get(0).getLocomotive().getName(), loc.getName(),
                 "the first move belongs to another locomotive: " + plan.getMoves());
 
@@ -181,13 +162,7 @@ public class testReturnHomeSequencesAReversal
         }
     }
 
-    /**
-     * ...and it does not stop on the way when it does not have to.
-     *
-     * A planner that always went by way of the reversing point would satisfy the test above perfectly
-     * and be wrong: the extra move is a real cost on a real railway, and a train whose home is
-     * straight ahead of it should simply go.
-     */
+    /** ...and it does not stop on the way when it does not have to: the extra move is a real cost on a real railway. */
     @Test
     public void testAnOrdinaryJourneyIsStillOneMove() throws Exception
     {
@@ -224,18 +199,10 @@ public class testReturnHomeSequencesAReversal
     }
 
     /**
-     * The stop may be a square autonomy is not allowed to choose - which is the arrangement Adam asked
-     * about, and it is what makes this usable on his layout.
-     *
-     * "If we made it a 'may reverse' station, unselectable in autonomy, would that allow trains to pass
-     * through and stop there to reverse in manual operation, then allowing the selection of the parking
-     * tracks?"
-     *
-     * Yes, and for homing too.  The two questions are separate ones: `isAutoDestination` says whether
-     * autonomy may send a train there as a destination of its own, and homing is not autonomy choosing
-     * - it is carrying out an instruction the operator has already given.  A reversing square marked
-     * "never pick this" is exactly the right shape for a place that exists only to turn trains round,
-     * and it would have been useless for that if this said no.
+     * The stop may be a square autonomy is not allowed to choose, which is what makes this usable on Adam's layout
+     * (Adam: "If we made it a 'may reverse' station, unselectable in autonomy, would that allow trains to pass through
+     * and stop there to reverse in manual operation").  `isAutoDestination` is about autonomy's own choices, and homing
+     * carries out an instruction the operator already gave.
      */
     @Test
     public void testTheStopMayBeASquareAutonomyWillNotChoose() throws Exception
@@ -278,13 +245,9 @@ public class testReturnHomeSequencesAReversal
     }
 
     /**
-     * But a square that is switched OFF is not one, and the difference is worth stating.
-     *
-     * Out of service means no train stands there, and a reversal is a train standing there - so the
-     * route through it goes with it.  This is the right answer and not an oversight, but it is one
-     * click away from the arrangement above and the two look alike in the editor, so it is pinned:
-     * a later change that quietly let homing use switched-off squares would be driving trains onto
-     * track the operator has taken out of use.
+     * But a square that is switched OFF is not one: no train stands there and a reversal is a train standing there.
+     * Right, but it looks like the arrangement above in the editor, so it is pinned against driving trains onto track
+     * taken out of use.
      */
     @Test
     public void testASwitchedOffSquareIsNotAPlaceToTurnRound() throws Exception
@@ -319,23 +282,11 @@ public class testReturnHomeSequencesAReversal
     }
 
     /**
-     * A train STANDING on a reversing point has already turned, and the reachability proof must agree.
-     *
-     * Two searches in this class ask whether a route turns the train round, and they disagreed
-     * about where the train starts.  `firstClearRoute` sets off with `turned = from.isReversing()` -
-     * "a train already standing on a reversing point sets off turned" - and `connected` set off with
-     * `false`, always.
-     *
-     * That difference would be harmless in a heuristic.  It is not harmless here, because `connected`
-     * is what `plan()` consults to declare a locomotive UNREACHABLE, and unreachable is the one thing
-     * this class claims to have PROVED: the outcome is IMPOSSIBLE, no moves are offered, and the
-     * operator is told to go and look at the track.  A proof may only use rules the runtime actually
-     * enforces.  Being stricter than the executor does not make it safe, it makes it wrong - it refuses
-     * a journey `firstClearRoute` would have routed and blames the railway.
-     *
-     * The shape is the smallest one that separates them: the train is standing on the reversing point
-     * itself, so the turn is behind it before it moves, and nothing further along the way turns
-     * anything.  Start it anywhere else and both searches agree.
+     * A train STANDING on a reversing point has already turned, and the reachability proof must agree:
+     * `firstClearRoute` sets off with `turned = from.isReversing()` and `connected` used `false`.  `connected` is what
+     * `plan()` consults to declare a locomotive UNREACHABLE, so a proof stricter than the executor refuses a journey it
+     * would have routed and blames the railway.  The smallest separating shape: the train stands on the reversing point
+     * itself.
      *
      * MUTATION: putting `turned.add(false)` back in `connected` fails this - the outcome goes to
      * IMPOSSIBLE with the locomotive named as blocked.
@@ -386,35 +337,13 @@ public class testReturnHomeSequencesAReversal
     }
 
     /**
-     * Two berths with nothing between them that turns a train, and the planner now takes it
-     * (Adam, 2026-09-04).
+     * Two berths with nothing between them that turns a train, and the planner now takes it (Adam: "Return home is
+     * manual, take the rule out and say why.").  The train is driven NOSE FIRST into a berth it cannot reverse out of;
+     * it gets home, which is what he asked for, as at `firstClearRoute`'s arrival test.  The `turned` seeding is
+     * untouched: at a reversing point the arrival flip leaves the train trailing, at a terminus it is spent, and the
+     * flag still decides how a route is described.
      *
-     * **This test asserted `NO_PLAN_FOUND` until then, and the change of answer is the ruling.**
-     * *"Return home is manual, take the rule out and say why."*  `mustBackIn` refused a terminus to a
-     * train that cannot reverse unless the route turned it, and this fixture is the sharpest case
-     * there is: berth A to berth B, both termini, nothing on the way that turns anything.
-     *
-     * **WHAT IT COSTS, said plainly, because this is the test that always said it.**  The train is now
-     * driven NOSE FIRST into a berth it cannot reverse out of.  It gets home, which is what he asked
-     * for; whether it can leave again is the question the old rule was protecting, and it is his own
-     * *"otherwise we'd need a third kind of station"* arriving from the other side.
-     *
-     * The reasoning for accepting that is at `firstClearRoute`'s arrival test: pressing Return Home is
-     * the operator asking, a berth is where a train is meant to sit, and his railway carries one
-     * reversing point - so the alternative was `EN57-203` never going home at all.
-     *
-     * **The `turned` seeding is untouched and still right**, and this is still where it is written
-     * down.  `executePath` flips direction on arrival at a terminus and at a reversing point alike, in
-     * one statement - true, and it does not mean the two seed a search the same way.  At a reversing
-     * point the arrival flip leaves the train trailing, so it goes on backing.  At a terminus that flip
-     * is the one that turns a backed-in train round to face OUT; it is spent.
-     * Nothing reads the flag as a rule now,
-     * but it still decides how a route is described, and a wrong description is what the next rule
-     * would be built on.
-     *
-     * MUTATION: putting `mustBackIn` back at `firstClearRoute`'s arrival test returns this to
-     * `NO_PLAN_FOUND`.  (This also named a `|| from.isTerminus()` clause in `firstClearRoute`'s seed, with an
-     * assertion of its own below; the seed is `from.isReversing()` alone and there is no such assertion.)
+     * MUTATION: putting `mustBackIn` back at `firstClearRoute`'s arrival test returns this to `NO_PLAN_FOUND`.
      */
     @Test
     public void testALeavingTerminusDoesNotCountAsHavingBackedIn() throws Exception
@@ -445,12 +374,8 @@ public class testReturnHomeSequencesAReversal
 
             HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
 
-            // THE OUTCOME ITSELF, which is what this test is about.
-            //
-            // Named exactly rather than asserted as "not impossible", which is the shape this had
-            // before and which admitted five of the seven outcomes: if the home assignment ever
-            // stopped taking, `triage()` would answer NO_HOMES before a line of the code under test
-            // ran, and it would stay green while exercising nothing.
+            // THE OUTCOME ITSELF, named exactly: "not impossible" admits five of the seven outcomes, and if the home
+            // assignment stopped taking, `triage()` would answer NO_HOMES before the code under test ran.
             assertEquals(String.valueOf(plan.getOutcome()), "READY",
                 "the planner did not answer READY.  Adam took `mustBackIn` out on 2026-09-04, so a "
                 + "train that cannot reverse is now driven nose first into its berth rather than "
@@ -465,21 +390,9 @@ public class testReturnHomeSequencesAReversal
     }
 
     /**
-     * A journey that has to STOP somewhere on the way is not an impossible journey.
-     *
-     * Found on Adam's own railway, 2026-09-01, after he made the ramp a place trains may stop so that
-     * they could get into the parking berths: the planner's answer went from "no arrangement found" to
-     * **IMPOSSIBLE**, naming a locomotive, for a train whose two-move route he had just built.
-     *
-     * `connected` will not travel THROUGH a terminus - `if (!next.isTerminus())` - which is right for a
-     * single path, because a train arrives at one and cannot drive on past it.  But `connected` is not
-     * asked about a single path.  It is what `plan()` consults to declare a locomotive UNREACHABLE, and
-     * `plan()`'s search ends a move at any station and starts the next one from there.  Stopping at a
-     * terminus and setting off again is an ordinary two-move plan.
-     *
-     * So the proof was stricter than the planner it guards, which is the same defect in a
-     * different limb, and the invariant: **a proof may be looser than the search, never
-     * tighter.**  IMPOSSIBLE sends the operator to look at track that is fine.
+     * A journey that has to STOP somewhere on the way is not an impossible journey.  `connected` will not travel
+     * THROUGH a terminus, right for a single path, but it is what `plan()` consults to declare a locomotive UNREACHABLE
+     * and the plan ends a move at any station.  A proof may be looser than the search, never tighter.
      *
      * MUTATION: restoring `if (!next.isTerminus())` in `connected` makes the outcome IMPOSSIBLE again
      * and fails the first assertion.
@@ -493,8 +406,8 @@ public class testReturnHomeSequencesAReversal
         layout.createPoint("RH stop", true, Integer.toString(FEEDBACK_BASE + 1));
         layout.createPoint("RH end", true, Integer.toString(FEEDBACK_BASE + 2));
 
-        // The only way to the far end is by stopping at a terminus in the middle - which a single path
-        // may not drive through, and a plan of two moves may.
+        // The only way to the far end is by stopping at a terminus in the middle, which a single path may not drive
+        // through.
         layout.getPoint("RH stop").setTerminus(true);
 
         layout.createEdge("RH from", "RH stop");
@@ -531,25 +444,12 @@ public class testReturnHomeSequencesAReversal
     }
 
     /**
-     * Two trains whose only way home is the same single square, one at a time.
+     * Two trains whose only way home is the same single square, one at a time: no other fixture here has a home that
+     * takes TWO moves to reach (`ringWith` has every station one hop from every other).  Neither berth can be reached
+     * in one path, so each train stops at the ramp first and only one fits on it; the plan is a queue.  `misplaced`
+     * gives no credit for getting closer, so a move to the ramp ranks level with shuffling a train somewhere useless.
      *
-     * Adam's railway in miniature, and the shape no fixture in this suite had.  Every staging test is
-     * built on `ringWith`, a four-point ring where every station is one hop from every other - so no
-     * test has ever had a home that takes TWO moves to reach, and the multi-move plans they do assert
-     * are "step aside so another can pass", driven by occupancy rather than by distance.  On a ring the
-     * planner's heuristic cannot be wrong about staging, because there is no staging.
-     *
-     * Here there is.  Neither berth can be reached in one path - the switch would have to be thrown two
-     * ways on one route - so each train must stop at the ramp first, and only one train fits on it.  The
-     * plan is a queue: in to the ramp, out to a berth, and again for the second train.
-     *
-     * **What this catches.** `misplaced` counts trains that are not home and gives no credit for
-     * getting closer, so a move to the ramp costs one and buys nothing the search can see; it ranks
-     * exactly level with shuffling a train somewhere useless.  With two trains and a shared bottleneck
-     * that is enough to lose the plan among the permutations.
-     *
-     * No mutation is named: the search scores `cost + misplaced(next)` and has no separate staging
-     * estimate to swap it for.
+     * No mutation is named: the search scores `cost + misplaced(next)` and has no separate staging estimate to swap.
      */
     @Test
     public void testTwoTrainsQueueThroughOneStagingSquare() throws Exception
@@ -573,8 +473,7 @@ public class testReturnHomeSequencesAReversal
         Edge out1 = layout.createEdge("Q ramp", "Q berth 1");
         Edge out2 = layout.createEdge("Q ramp", "Q berth 2");
 
-        // THE SWITCH THAT MAKES IT TWO MOVES: one way in, the other way out, so no single path can do
-        // both and the ramp has to be a stop rather than somewhere to pass through.
+        // THE SWITCH THAT MAKES IT TWO MOVES: one way in, the other way out, so the ramp has to be a stop.
         in1.addConfigCommand(swtch, accessorySetting.STRAIGHT);
         in2.addConfigCommand(swtch, accessorySetting.STRAIGHT);
         out1.addConfigCommand(swtch, accessorySetting.TURN);
@@ -609,8 +508,7 @@ public class testReturnHomeSequencesAReversal
                 "the plan is not the queue: each train goes to the ramp and then to its berth, which "
                 + "is two moves each: " + plan.getMoves());
 
-            // AND THE RAMP IS NEVER OCCUPIED TWICE, which is what makes it a queue rather than two
-            // independent journeys that happen to be listed one after the other.
+            // AND THE RAMP IS NEVER OCCUPIED TWICE, which makes it a queue rather than two independent journeys.
             String rampHolder = null;
 
             for (HomeStaging.Move move : plan.getMoves())
@@ -637,19 +535,10 @@ public class testReturnHomeSequencesAReversal
     }
 
     /**
-     * A home autonomy will never choose is still a home.
-     *
-     * Adam, 2026-09-01: **"Can Be Chosen in Full Autonomy - does not apply to returning home, of
-     * course.  these should be allowed."**
-     *
-     * It is already true and nothing consulted it - `HomeStaging` does not mention `autoDestination`
-     * anywhere - but "already true and untested" is how a rule gets removed by somebody tidying up.
-     * The whole point of that flag is the parking berth: a square the operator sends trains to and
-     * autonomy leaves alone.  A berth autonomy may not choose but a train may not return to would be
-     * useless, and it is where most of his trains live.
-     *
-     * The sibling above pins the same flag on a square used as a STAGING stop.  This pins it on the
-     * destination itself, which is the case he was talking about.
+     * A home autonomy will never choose is still a home (Adam: "Can Be Chosen in Full Autonomy - does not apply to
+     * returning home, of course.  these should be allowed.").  `HomeStaging` never consulted `autoDestination`, but
+     * "already true and untested" is how a rule gets removed by somebody tidying up.  The sibling above pins the flag
+     * on a staging stop; this pins it on the destination itself.
      *
      * MUTATION: adding `&& at.isAutoDestination()` to `canRest` fails this.
      */
@@ -702,8 +591,8 @@ public class testReturnHomeSequencesAReversal
     }
 
     /**
-     * A start, a reversing point, and a berth beyond it - with one switch that has to be thrown
-     * differently for each leg.
+     * A start, a reversing point, and a berth beyond it, with one switch that has to be thrown differently for each
+     * leg.
      */
     private static Layout reversalLayout() throws Exception
     {
