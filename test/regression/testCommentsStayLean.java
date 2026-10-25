@@ -74,7 +74,7 @@ public class testCommentsStayLean
     };
 
     /** Comment lines carrying a history marker, as they stand.  Lower it whenever some go; never raise it. */
-    private static final int HISTORY_ALLOWED = 306;
+    private static final int HISTORY_ALLOWED = 121;
 
     /** WHICH files carry them, so that a swap between files fails and names both.  Files at zero are not listed. */
     private static final String[] HISTORY_BY_FILE = {
@@ -83,16 +83,8 @@ public class testCommentsStayLean
         "src/org/traincontrol/automation/Point.java (13)",
         "src/org/traincontrol/automation/TimetablePath.java (2)",
         "src/org/traincontrol/automationui/AutonomyBuilder.java (2)",
-        "src/org/traincontrol/automationui/AutonomyChecks.java (2)",
-        "src/org/traincontrol/automationui/AutonomyRefreshCallback.java (1)",
-        "src/org/traincontrol/automationui/DiagramColours.java (7)",
-        "src/org/traincontrol/automationui/DiagramMonitor.java (7)",
         "src/org/traincontrol/automationui/GraphReducer.java (1)",
-        "src/org/traincontrol/automationui/LayoutPageEdit.java (2)",
-        "src/org/traincontrol/automationui/StationIndex.java (3)",
-        "src/org/traincontrol/automationui/TileGraph.java (1)",
-        "src/org/traincontrol/automationui/TileOverlay.java (9)",
-        "src/org/traincontrol/automationui/TilePorts.java (4)",
+        "src/org/traincontrol/automationui/TileOverlay.java (1)",
         "src/org/traincontrol/base/CommandRow.java (1)",
         "src/org/traincontrol/base/ConditionOutline.java (3)",
         "src/org/traincontrol/base/LayoutDiagram.java (1)",
@@ -101,39 +93,11 @@ public class testCommentsStayLean
         "src/org/traincontrol/base/NodeExpression.java (2)",
         "src/org/traincontrol/base/Route.java (3)",
         "src/org/traincontrol/base/RouteCommand.java (4)",
-        "src/org/traincontrol/gui/locomotive/AddLocomotive.java (4)",
-        "src/org/traincontrol/gui/widgets/AddressLabel.java (1)",
-        "src/org/traincontrol/gui/autonomy/ArrivalSidePrompt.java (4)",
-        "src/org/traincontrol/gui/autonomy/AutoLocomotiveStatus.java (7)",
-        "src/org/traincontrol/gui/AutonomyMenu.java (13)",
-        "src/org/traincontrol/gui/AutonomyOverlayToggle.java (9)",
-        "src/org/traincontrol/gui/autonomy/AutonomyReport.java (3)",
-        "src/org/traincontrol/gui/AutonomyViewerPanel.java (19)",
-        "src/org/traincontrol/gui/widgets/BusyDialog.java (3)",
-        "src/org/traincontrol/gui/locomotive/CurrentKeyRow.java (9)",
-        "src/org/traincontrol/gui/autonomy/DiagramMonitorDriver.java (4)",
-        "src/org/traincontrol/gui/autonomy/DiagramTileRegistry.java (1)",
-        "src/org/traincontrol/gui/autonomy/FacingPrompt.java (4)",
-        "src/org/traincontrol/gui/GraphLocAssign.java (9)",
-        "src/org/traincontrol/gui/HomeLocomotiveMenu.java (2)",
-        "src/org/traincontrol/gui/layouteditor/LayoutEditorAddressPopup.java (3)",
-        "src/org/traincontrol/gui/layouteditor/LayoutEditorRightclickMenu.java (3)",
+        "src/org/traincontrol/gui/autonomy/ArrivalSidePrompt.java (1)",
+        "src/org/traincontrol/gui/layouteditor/LayoutEditorRightclickMenu.java (1)",
         "src/org/traincontrol/gui/LayoutLabel.java (1)",
-        "src/org/traincontrol/gui/widgets/LoadingSpinner.java (7)",
-        "src/org/traincontrol/gui/LocIconActions.java (1)",
-        "src/org/traincontrol/gui/locomotive/LocIconCropDialog.java (10)",
-        "src/org/traincontrol/gui/locomotive/LocomotiveMenuItems.java (1)",
-        "src/org/traincontrol/gui/locomotive/LocomotivePlaceholder.java (2)",
-        "src/org/traincontrol/gui/locomotive/LocomotiveSelector.java (2)",
-        "src/org/traincontrol/gui/autonomy/ManualReversalPrompt.java (10)",
-        "src/org/traincontrol/gui/widgets/PositionAwareJFrame.java (3)",
-        "src/org/traincontrol/gui/widgets/QuickFileChooser.java (1)",
-        "src/org/traincontrol/gui/locomotive/RightClickFunctionMenu.java (2)",
-        "src/org/traincontrol/gui/locomotive/RightClickMenuListener.java (2)",
-        "src/org/traincontrol/gui/locomotive/RightClickSelectorMenu.java (1)",
-        "src/org/traincontrol/gui/widgets/StartupSplash.java (1)",
-        "src/org/traincontrol/gui/TailCrossedPrompt.java (15)",
-        "src/org/traincontrol/gui/locomotive/UsageHistogram.java (2)",
+        "src/org/traincontrol/gui/autonomy/ManualReversalPrompt.java (5)",
+        "src/org/traincontrol/gui/locomotive/RightClickFunctionMenu.java (1)",
         "src/org/traincontrol/marklin/MarklinControlStation.java (4)",
         "src/org/traincontrol/marklin/MarklinFeedback.java (1)",
         "src/org/traincontrol/marklin/MarklinLocomotive.java (2)",
@@ -150,30 +114,16 @@ public class testCommentsStayLean
     };
 
     /** Runs of more than 15 `//` lines plus non-javadoc block comments over 15 lines, as they stand.  Never raise it. */
-    private static final int LONG_BLOCKS_ALLOWED = 49;
+    private static final int LONG_BLOCKS_ALLOWED = 26;
 
     /** WHICH files carry them.  Files at zero are not listed. */
     private static final String[] LONG_BLOCKS_BY_FILE = {
         "src/org/traincontrol/automation/Point.java (2)",
         "src/org/traincontrol/automationui/AutonomyBuilder.java (1)",
         "src/org/traincontrol/automationui/GraphReducer.java (1)",
-        "src/org/traincontrol/automationui/LayoutPageEdit.java (4)",
         "src/org/traincontrol/base/ConditionOutline.java (1)",
-        "src/org/traincontrol/gui/locomotive/AddLocomotive.java (1)",
         "src/org/traincontrol/gui/autonomy/AutoLocomotiveStatus.java (2)",
-        "src/org/traincontrol/gui/AutonomyMenu.java (2)",
-        "src/org/traincontrol/gui/AutonomyOverlayToggle.java (2)",
-        "src/org/traincontrol/gui/autonomy/DiagramExport.java (1)",
-        "src/org/traincontrol/gui/autonomy/DiagramTileRegistry.java (1)",
-        "src/org/traincontrol/gui/layouteditor/LayoutEditorRightclickMenu.java (1)",
-        "src/org/traincontrol/gui/LayoutGrid.java (2)",
-        "src/org/traincontrol/gui/LayoutLabel.java (2)",
-        "src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java (1)",
-        "src/org/traincontrol/gui/locomotive/LocIconCropDialog.java (2)",
-        "src/org/traincontrol/gui/locomotive/LocomotiveFunctionAssign.java (1)",
-        "src/org/traincontrol/gui/autonomy/ManualReversalPrompt.java (4)",
-        "src/org/traincontrol/gui/widgets/PositionAwareJFrame.java (1)",
-        "src/org/traincontrol/gui/locomotive/RightClickFunctionMenu.java (1)",
+        "src/org/traincontrol/gui/autonomy/ManualReversalPrompt.java (3)",
         "src/org/traincontrol/marklin/MarklinFeedback.java (1)",
         "src/org/traincontrol/marklin/MarklinLocomotive.java (2)",
         "src/org/traincontrol/marklin/MarklinRoute.java (7)",

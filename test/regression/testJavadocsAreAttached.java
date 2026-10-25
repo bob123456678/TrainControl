@@ -75,7 +75,8 @@ public class testJavadocsAreAttached
     // declaration (PORTAL_ROUTE, LIVE), now one, which takes both files out of the list below.
     // 33 -> 26 on 2026-10-20: FR-136, the comment pass on GraphReducer and AutonomyBuilder put their seven stacked
     // javadocs onto the members they describe, which takes both files out of the list below.
-    private static final int ALLOWED = 16;
+    // 16 -> 12 on 2026-10-25: the comment trim of AutonomyViewerPanel and AutonomyChecks deleted four orphaned javadocs.
+    private static final int ALLOWED = 12;
 
     /**
      * WHICH files carry the orphans, not just how many.
@@ -86,15 +87,11 @@ public class testJavadocsAreAttached
      */
     private static final String[] ORPHANS_BY_FILE = {
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
-            + "automationui" + File.separator + "AutonomyChecks.java (2)",
-        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "base" + File.separator + "CommandRow.java (1)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "base" + File.separator + "RouteCommand.java (1)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "gui" + File.separator + "autonomy" + File.separator + "AutoLocomotiveStatus.java (2)",
-        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
-            + "gui" + File.separator + "AutonomyViewerPanel.java (2)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "gui" + File.separator + "autonomy" + File.separator + "DiagramTileRegistry.java (1)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
