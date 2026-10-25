@@ -27,10 +27,12 @@ import org.traincontrol.automationui.StationIndex;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts.Side;
 import org.traincontrol.base.Accessory;
+import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
+import org.traincontrol.marklin.MarklinLocomotive;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.file.CS2File;
 
@@ -52,7 +54,8 @@ import org.traincontrol.marklin.file.CS2File;
  *
  * The trapped-arrival clause is true by construction now, since `AutonomySession.check` reads the built graph; it is
  * asserted only against the oracle's own filters.  The reachability clauses compare the checker's reach, read off the
- * build's JSON (`BuiltReach`), with a walk of the Layout parseAuto made of it, over this fixture and every scenario.
+ * build's JSON (`BuiltReach`), with what Layout's own route search offers a train on the Layout parseAuto made of it
+ * (`offeredFrom`), over this fixture and every scenario.
  * Dropping the "never split, so no arrival to trap" filter once reported three squares with no arrival at all.
  *
  * The fixture is `test/test_layout`, frozen and wired the way `testAutonomyDiagramSampleLayout` wires it: a diagram
@@ -67,6 +70,7 @@ public class testTheCheckerAgreesWithTheBuild
     private static Layout built;
     private static StationIndex index;
     private static List<AutonomyChecks.Finding> findings;
+    private static Map<TileKey, Set<TileKey>> reachFromEachStation;
 
     /**
      * Reads the sample diagram, opens the setup that ships with it, and builds the railway it names.
@@ -192,8 +196,7 @@ public class testTheCheckerAgreesWithTheBuild
     /**
      * A station the checker says nothing can reach is one no other station's copies reach.
      *
-     * The oracle is a breadth-first walk over the parsed Layout's edges (`walk`), the graph a dispatched train is
-     * actually routed over.
+     * The oracle is the parsed Layout's own route search (`offeredFrom`), what a train standing there is offered.
      *
      * Mutation this must fail: in `AutonomyChecks.checkStations`, invert the reverse direction so a station is reported
      * when something CAN reach it (`if (reachable)` in place of `if (!reachable)`).
@@ -598,27 +601,30 @@ public class testTheCheckerAgreesWithTheBuild
 
     private static Map<TileKey, Set<TileKey>> reachFromEachStation()
     {
+        if (reachFromEachStation != null) return reachFromEachStation;
+
         Map<TileKey, Set<TileKey>> out = new LinkedHashMap<>();
+        Locomotive train = oracleTrain(model);
 
         for (ReducedPoint point : session.getReducer().getPoints().values())
         {
-            if (point.isStation()) out.put(point.getTile(), walk(built, index(), point.getTile()));
+            if (point.isStation()) out.put(point.getTile(), offeredFrom(built, index(), point.getTile(), train));
         }
 
         assertTrue(out.size() > 10, "only " + out.size() + " stations, so reachability proves little");
+
+        reachFromEachStation = out;
 
         return out;
     }
 
     /**
-     * The squares a train sent to one square can be sent on to, walked over the built Layout.
-     *
-     * From the copies a train is sent to there (its destinations), or every copy where it has none; to a destination
-     * copy of another square; never onto a Point switched off (*"inactive really means nothing can pass"*), the start
-     * excepted.  It ignores arrival sides and turning: the builder already wrote those into which Points and edges
-     * exist.
+     * The other squares a train standing alone at `from` is offered, asked of Layout's own route search
+     * (`getPossiblePaths`, the manual send list), so it shares no code with `BuiltReach`, which it checks.  The train
+     * stands on each copy a route can end at there, or on every copy where it has none; the trains standing on the
+     * railway are lifted off for the question and put back after it.
      */
-    static Set<TileKey> walk(Layout layout, StationIndex index, TileKey from)
+    static Set<TileKey> offeredFrom(Layout layout, StationIndex index, TileKey from, Locomotive train)
     {
         List<Point> starts = new ArrayList<>();
 
@@ -629,33 +635,50 @@ public class testTheCheckerAgreesWithTheBuild
 
         if (starts.isEmpty()) starts = index.pointsAt(layout, from);
 
-        Set<String> seen = new LinkedHashSet<>();
-        Deque<Point> queue = new ArrayDeque<>();
+        Map<Point, Locomotive> standing = new LinkedHashMap<>();
 
-        for (Point point : starts)
+        for (Point point : layout.getPoints())
         {
-            if (seen.add(point.getName())) queue.add(point);
+            if (point.getCurrentLocomotive() != null) standing.put(point, point.getCurrentLocomotive());
         }
 
         Set<TileKey> squares = new LinkedHashSet<>();
 
-        while (!queue.isEmpty())
+        try
         {
-            for (Edge edge : layout.getNeighbors(queue.remove()))
+            for (Point point : standing.keySet()) point.setLocomotive(null);
+
+            for (Point start : starts)
             {
-                Point end = edge.getEnd();
+                start.setLocomotive(train);
 
-                if (!end.isActive() || !seen.add(end.getName())) continue;
+                for (List<Edge> path : layout.getPossiblePaths(train, true))
+                {
+                    TileKey square = index.squareOf(path.get(path.size() - 1).getEnd().getName());
 
-                TileKey square = index.squareOf(end.getName());
+                    if (square != null && !square.equals(from)) squares.add(square);
+                }
 
-                if (end.isDestination() && square != null && !square.equals(from)) squares.add(square);
-
-                queue.add(end);
+                start.setLocomotive(null);
             }
+        }
+        finally
+        {
+            for (Point start : starts)
+            {
+                if (train.equals(start.getCurrentLocomotive())) start.setLocomotive(null);
+            }
+
+            for (Map.Entry<Point, Locomotive> was : standing.entrySet()) was.getKey().setLocomotive(was.getValue());
         }
 
         return squares;
+    }
+
+    /** A train no station excludes and of no length, so only the track decides where it is offered. */
+    private static Locomotive oracleTrain(MarklinControlStation station)
+    {
+        return new MarklinLocomotive(station, 1, MarklinLocomotive.decoderType.MM2, "Oracle train");
     }
 
     /**
@@ -665,8 +688,8 @@ public class testTheCheckerAgreesWithTheBuild
      * On the live snapshot the answers once differed: `1 - Main:2,5` and `1 - Main:2,7` are reached only by
      * TopMainR1Inter's copy that trains may not stop at.
      *
-     * MUTATION: let `BuiltReach.bySquare` start from every copy of a station, or let `BuiltReach` pass a Point switched
-     * off, and this fails.
+     * MUTATION: let `BuiltReach.startsOf` give every copy of a station, and this fails.  Letting `BuiltReach` pass a
+     * Point switched off survives: no scenario has a station reached, or left, only through a closed square.
      */
     @Test
     public void testEveryScenarioIsReachedAsItsBuiltRailwayIs() throws Exception
@@ -685,7 +708,7 @@ public class testTheCheckerAgreesWithTheBuild
 
                 if (opened.getReducer() == null) continue;
 
-                // Every station starts a walk, a closed one too; only those in service are judged, a closed one being
+                // Every station is asked, a closed one too; only those in service are judged, a closed one being
                 // said to be closed instead (FR-101).
                 Set<TileKey> stations = new TreeSet<>(BY_KEY);
 
@@ -701,7 +724,9 @@ public class testTheCheckerAgreesWithTheBuild
 
                 Map<TileKey, Set<TileKey>> reach = new LinkedHashMap<>();
 
-                for (TileKey station : stations) reach.put(station, walk(railway, names, station));
+                Locomotive train = oracleTrain(scenario.getModel());
+
+                for (TileKey station : stations) reach.put(station, offeredFrom(railway, names, station, train));
 
                 Set<TileKey> leaveNothing = new TreeSet<>(BY_KEY);
                 Set<TileKey> reachedByNothing = new TreeSet<>(BY_KEY);
