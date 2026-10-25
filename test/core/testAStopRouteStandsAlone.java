@@ -20,6 +20,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.util.I18n;
 import org.traincontrol.util.Util;
+import support.SourceOf;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
@@ -59,7 +60,7 @@ public class testAStopRouteStandsAlone
         // BEFORE the model: `init` reads the machine-global layout preference (OB-111).
         sandbox = support.LayoutSandbox.open();
 
-        model = init(null, true, false, false, true);
+        model = support.TestStation.simulatedInDebug();
     }
 
     @AfterClass(alwaysRun = true)
@@ -131,7 +132,7 @@ public class testAStopRouteStandsAlone
 
             mixed.add(RouteCommand.RouteCommandAccessory(39, Accessory.accessoryDecoderType.MM2, true));
 
-            // A STOP WITH A WAIT AFTER IT, which holds back the command after it (RLA5-C4, RLD5-C3)
+            // A STOP WITH A WAIT AFTER IT, which holds back the command after it
             RouteCommand stop = RouteCommand.RouteCommandStop();
 
             stop.setDelay(700);
@@ -157,7 +158,7 @@ public class testAStopRouteStandsAlone
 
             assertTheSplit(name, I18n.f("route.stopRouteSplitName", name), 48451, true, 1);
 
-            // AND WHAT ELSE IT SAYS IT KEEPS (RLU5-C5): the id its tiles are bound by, the trigger, the conditions, the lock
+            // AND WHAT ELSE IT SAYS IT KEEPS: the id its tiles are bound by, the trigger, the conditions, the lock
             MarklinRoute kept = model.getRoute(name);
 
             assertEquals(kept.getId(), 84951, "the split changed the route's id, which its tiles are bound by");
@@ -179,8 +180,8 @@ public class testAStopRouteStandsAlone
                 + " the route's commands: the one after the stop is not last");
 
             // AND THE START-UP TAKES THAT STEP, after every saved route is restored
-            String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-                "src/org/traincontrol/marklin/MarklinControlStation.java")), java.nio.charset.StandardCharsets.UTF_8);
+            String source = SourceOf.declaration("public MarklinControlStation(NetworkProxy network, View view,"
+                + " boolean autoPowerOn, boolean debug, boolean simulate)");
 
             int restored = source.indexOf("this.restoreState(Util.dataPath(MarklinControlStation.DATA_FILE_NAME))");
             int splitAt = source.indexOf("this.splitRoutesThatMixAStop();", restored);
@@ -204,8 +205,8 @@ public class testAStopRouteStandsAlone
 
     /**
      * The stop route a split makes is numbered as a route made in the editor is - from 1000 up - so a Central Station
-     * sync, which numbers its own routes below, cannot replace it and take the power cut out of the route that fires it
-     * (RLU5-B1, RLA5-C5, RLD5-C2).  Read from a file whose one route is numbered below 1000.
+     * sync, which numbers its own routes below, cannot replace it and take the power cut out of the route that fires it.
+     * Read from a file whose one route is numbered below 1000.
      *
      * @throws Exception from the file or the model
      */
@@ -238,13 +239,13 @@ public class testAStopRouteStandsAlone
 
         assertNotNull(alone, "precondition: " + HIS + " was not split");
 
-        assertTrue(alone.getId() >= 1000, "the split numbered its stop route " + alone.getId() + ", among the numbers"
+        assertTrue(MarklinControlStation.isLocalRouteId(alone.getId()), "the split numbered its stop route " + alone.getId() + ", among the numbers"
             + " a Central Station sync replaces its own routes by (RLU5-B1)");
     }
 
     /**
-     * A route that reaches a split route by two paths - the longer listed first - still counts as cutting the power
-     * (RLV6-C2).  The walk remembered every route it had asked, so the split route, first met too deep to fire its stop,
+     * A route that reaches a split route by two paths - the longer listed first - still counts as cutting the power.
+     * The walk remembered every route it had asked, so the split route, first met too deep to fire its stop,
      * was not asked again by the shorter path that does; the route was then asked about at the human doors, and Cancel
      * called off the power cut.
      *
@@ -392,7 +393,7 @@ public class testAStopRouteStandsAlone
     }
 
     /**
-     * A route's emergency stop is sent whatever the model believes about the power (RSA-C4).  It was skipped while the
+     * A route's emergency stop is sent whatever the model believes about the power.  It was skipped while the
      * power flag read off - and that flag is only the last GO or STOP echo the Central Station sent, so one lost GO left
      * a stop route that fired with nobody present cutting nothing.  behaviour.md 7a: an emergency stop is obeyed whatever
      * else is true.  The flag now decides only whether the notice is shown.
@@ -458,8 +459,8 @@ public class testAStopRouteStandsAlone
     }
 
     /**
-     * The latency cut-off cuts the power whatever the model believes about it (RSA2-C6), as a route's stop does
-     * (RSA-C4): it asked only while the power flag read on, and that flag is only the last echo heard.
+     * The latency cut-off cuts the power whatever the model believes about it, as a route's stop does:
+     * it asked only while the power flag read on, and that flag is only the last echo heard.
      *
      * MUTATION: send the latency cut-off's stop only while the power flag reads on, and this fails.
      *
@@ -468,15 +469,7 @@ public class testAStopRouteStandsAlone
     @Test
     public void testTheLatencyCutOffIsSentWhateverThePowerFlagSays() throws Exception
     {
-        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/TrainControlUI.java")), java.nio.charset.StandardCharsets.UTF_8)
-            .replace("\r\n", "\n");
-
-        int start = source.indexOf("private void checkAutoLayoutLatency(");
-
-        assertTrue(start > 0, "cannot find checkAutoLayoutLatency");
-
-        String body = source.substring(start, source.indexOf("\n    }\n", start));
+        String body = SourceOf.declaration("private void checkAutoLayoutLatency(");
 
         int stop = body.indexOf("this.model.stop();");
 

@@ -51,7 +51,7 @@ public class testReturnHomeShowsItIsWorking
 
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = init(null, true, false, false, true);
+        model = support.TestStation.simulatedInDebug();
 
         SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
 
@@ -59,7 +59,7 @@ public class testReturnHomeShowsItIsWorking
 
         // AND THE STARTUP LOAD OF HIS CONFIGURATION, which this test is about - as openTheWindow waits for it in the
         // import-door claims.  It asked hasAutoLayout the moment the window was up, and passed only because the
-        // autonomy panel's list built an empty Layout as it was made; since RLV7-C2 nothing does, and it skipped.
+        // autonomy panel's list built an empty Layout as it was made; nothing does now, and it skipped.
         final java.util.concurrent.CountDownLatch settled = new java.util.concurrent.CountDownLatch(1);
 
         ui.whenTilesSettled(() -> settled.countDown());
@@ -128,8 +128,6 @@ public class testReturnHomeShowsItIsWorking
             "the plan was released and the button is still turning a minute later, so the mark outlives"
             + " the calculation it was put up for");
     }
-
-    // ---------------------------------------------------------------------------------------------
 
     private static void powerOn() throws Exception
     {

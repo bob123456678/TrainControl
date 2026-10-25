@@ -63,7 +63,7 @@ public class testTheRoutesImportDoorAsksByName
 
         assertEquals(run.initial, NO, "the question does not start on No (MT-496)");
 
-        // WORDS, NOT LINES: the question is wrapped to fit the screen (RLU-C3).
+        // WORDS, NOT LINES: the question is wrapped to fit the screen.
         assertEquals(words(run.question), words(I18n.f("route.ui.confirmRearmImported", String.join(", ", run.savedArmed))),
             "the question does not name the routes saved with automatic firing on (MT-496): " + run.question);
 
@@ -109,12 +109,12 @@ public class testTheRoutesImportDoorAsksByName
     /**
      * A route saved armed that has no sensor to watch is not armed by Yes - the model arms only a route with one, as the
      * right-click item does - and the door neither counts it as armed again (found automating MT-497, 2026-09-25) nor
-     * names it in the question as one Yes will arm (RLU-C2).
+     * names it in the question as one Yes will arm.
      *
      * The door said "on again for the N that were saved with it on", N counted from the file, while the model counted
      * the routes it armed; so a file whose saved-armed route had lost its sensor told the operator a route was armed
      * again that was not, and the log said the opposite.  Such a file is what an export gives of a route whose sensor was
-     * removed while its automatic firing was on (UXR-B6).
+     * removed while its automatic firing was on.
      *
      * MUTATION: count from the file again, or name every route saved armed, and this fails.
      *
@@ -146,12 +146,12 @@ public class testTheRoutesImportDoorAsksByName
                 }
             }
 
-            throw new SkipException("every route in this data has a sensor, so none can be saved armed without one");
+            throw new AssertionError("every route in this data has a sensor, so none can be saved armed without one");
         });
 
         assertNotNull(noSensor[0], "precondition: no route with no sensor was saved armed in the file");
 
-        // THE QUESTION ON SCREEN, not the model's list (RLD2-C4): its names, after the colon, split as they were joined.
+        // THE QUESTION ON SCREEN, not the model's list: its names, after the colon, split as they were joined.
         String asked = words(run.question);
         String opening = words(I18n.f("route.ui.confirmRearmImported", "@@@"));
         String listed = asked.substring(opening.indexOf("@@@"), asked.length() - (opening.length() - opening.indexOf("@@@") - 3));
@@ -171,7 +171,7 @@ public class testTheRoutesImportDoorAsksByName
     }
 
     /**
-     * A route whose name has a letter outside ASCII comes back by the name it was exported with (RLU-A1).
+     * A route whose name has a letter outside ASCII comes back by the name it was exported with.
      *
      * Export writes the file as UTF-8; the door read it in the machine's own character set, which on Java 8 under
      * Windows is a code page - so "Ausfahrt Süd" came back as "Ausfahrt SÃ¼d", and a route's locomotive command naming
@@ -232,7 +232,7 @@ public class testTheRoutesImportDoorAsksByName
 
     /**
      * The line naming the routes an import split fits the screen too: no line of the message after the import runs past a
-     * dialog's width (RLU5-C4, as RLU-C3 for the question).  The file carries one route that mixes an emergency stop with
+     * dialog's width.  The file carries one route that mixes an emergency stop with
      * other commands, which the import splits.
      *
      * MUTATION: put the split routes' line back unwrapped, and this fails.
@@ -303,7 +303,7 @@ public class testTheRoutesImportDoorAsksByName
     }
 
     /**
-     * The question fits the screen however many routes it names: no line of it runs past a dialog's width (RLU-C3).
+     * The question fits the screen however many routes it names: no line of it runs past a dialog's width.
      *
      * The names went into the middle of the first line, joined with commas, and a question does not wrap a line - so a
      * file with many routes saved armed made a dialog wider than the screen, its question past the right-hand edge.
@@ -508,7 +508,7 @@ public class testTheRoutesImportDoorAsksByName
 
     private static TrainControlUI openTheWindow() throws Exception
     {
-        MarklinControlStation model = MarklinControlStation.init(null, true, false, false, true);
+        MarklinControlStation model = support.TestStation.simulatedInDebug();
 
         final TrainControlUI[] made = new TrainControlUI[1];
 

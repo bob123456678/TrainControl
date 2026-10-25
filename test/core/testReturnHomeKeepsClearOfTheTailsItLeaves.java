@@ -20,7 +20,7 @@ import org.traincontrol.marklin.MarklinControlStation;
  * Adam, on MT-335, 2026-09-15: *"The 335 park works, but I get: Could not run EN57-203 from BottomInner (northbound) to
  * TopMainR0Park - the path stayed blocked."*  His log: the plan parked 75 407 DB at BottomMainA first, then routed
  * EN57-203 over BottomMainAPre -> RampDown, and the runtime refused it - *"75 407 DB is standing across BottomMainAPre ->
- * RampDown"*.  The planner modelled only the tails of trains that had not moved yet; a train it has moved has a known
+ * RampDown"*.  The planner modeled only the tails of trains that had not moved yet; a train it has moved has a known
  * road, the route the plan gave it, and its tail lies back along that route.
  *
  * **The shape, on sensors of its own.**  Both trains' routes home share T -> P.  Train A comes from Y and parks at A,
@@ -49,7 +49,7 @@ public class testReturnHomeKeepsClearOfTheTailsItLeaves
     {
         // BEFORE the model: `init` reads the machine-global layout preference (OB-111).
         sandbox = support.LayoutSandbox.open();
-        model = MarklinControlStation.init(null, true, false, false, false);
+        model = support.TestStation.simulated();
 
         assertTrue(model.getLocList().size() >= 3, "precondition: fewer than three locomotives to plan with");
 
@@ -108,7 +108,7 @@ public class testReturnHomeKeepsClearOfTheTailsItLeaves
     }
 
     /**
-     * A plan found only one way round is found, though the other way round reaches the same squares first (MFR-B2).
+     * A plan found only one way round is found, though the other way round reaches the same squares first.
      *
      * The search keyed an arrangement by where the trains stand, and a move's tail by the one chain of moves it kept -
      * so two orders reaching the same squares with different tails were one arrangement, and whichever was found first
@@ -177,10 +177,10 @@ public class testReturnHomeKeepsClearOfTheTailsItLeaves
     }
 
     /**
-     * The retry from the start still has time when the first search spends its share (MFV-B1, claimed as MFW-C3).
+     * The retry from the start still has time when the first search spends its share.
      *
      * OB-228 added a second search, from the railway as it stands, for the arrangement the greedy pass boxes itself
-     * into; MFR-C2 then put both searches on one deadline, so a first search that ran to it left the retry nothing,
+     * into; a later change then put both searches on one deadline, so a first search that ran to it left the retry nothing,
      * and a plan the retry would have found came back NO_PLAN_FOUND.  The budget is shared out now.  The X, Y, Z
      * railway of the claim above needs the retry; sixty sidings Z can wander along keep the first search from running
      * out of arrangements before its time does; and the search's clock is stepped 300 ms a read, so the fifteen-second
@@ -284,8 +284,7 @@ public class testReturnHomeKeepsClearOfTheTailsItLeaves
     }
 
     /**
-     * A road that shares metal with a parked train's tail is refused, and the build's places say when it does not
-     * (AMH-C2).
+     * A road that shares metal with a parked train's tail is refused, and the build's places say when it does not.
      *
      * `passesTheTailsOfTrainsItHasMoved` has two arms.  The first - the edge the mover wants IS one the tail covers -
      * is what the claim above pins.  The second was exercised by nothing: an edge the tail does not cover but which is
@@ -304,7 +303,7 @@ public class testReturnHomeKeepsClearOfTheTailsItLeaves
      * The railway forces the order.  A starts on B's home, so A must move first; A's home is beyond the shared metal,
      * and parking it there three units long leaves its tail over `RS_T -> RS_HA`; B's only road home runs over
      * `RS_P -> RS_Y`, the other edge on that metal.  So B can only go home over A's tail, and the plan for both is
-     * possible exactly when the shared metal is not modelled.
+     * possible exactly when the shared metal is not modeled.
      *
      * MUTATION, both run: dropping the lock-edge loop from `passesTheTailsOfTrainsItHasMoved` fails the first
      * arrangement.  Dropping the `tailLiesOn` continue instead fails all four claims in this class, the control
@@ -344,6 +343,86 @@ public class testReturnHomeKeepsClearOfTheTailsItLeaves
             HomeStaging.Outcome.NO_PLAN_FOUND,
             "B's road runs over the very square A's tail is standing on and the plan sent it anyway, so the places"
             + " refinement has swallowed the rule it was meant to narrow");
+    }
+
+    /**
+     * The tail of a train that never moves closes the roads over its metal, locked or not (OB-184).
+     *
+     * Every other claim in this class has the plan move A, so A's tail is the one `passesTheTailsOfTrainsItHasMoved`
+     * asks about.  Here A is already home and never moves: its tail is the one it left at the START of the plan, and the
+     * only check that sees it is `liesAcrossAtStart`, through `Layout.tailLiesOn` - once for the lock partner (the
+     * lock, with places on both edges) and once for the other copies of the same metal (no lock at all).  The other
+     * three callers of `tailLiesOn` are covered by `anotherTailOn` beside them, so nothing else would notice.
+     *
+     * The same railway as above, with A standing at `RS_HA` from the start, three units long behind a two-unit
+     * approach.  B's only road home runs over `RS_P -> RS_Y`, which shares the square `RS_bridge` with A's
+     * `RS_T -> RS_HA`, so B can only go home over A's tail.  The control puts the squares apart, and is READY.
+     *
+     * MUTATION: make `Layout.tailLiesOn` return false.  Both refusals go READY (the planner offers a move
+     * `Layout.isPathClear` refuses at dispatch, which is OB-073's shape), and the control stays READY.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testATailAStandingTrainHasNotLeftClosesTheRoadsOverItsMetal() throws Exception
+    {
+        trainA.setTrainLength(3);
+        trainB.setTrainLength(1);
+
+        // THE CONTROL FIRST: the same two roads, the squares apart.  Without it, a refusal below could be the fixture
+        // being unsolvable rather than the tail being seen.
+        assertEquals(planWithATrainAlreadyHome(twoRoadsOverOneBridge(2500, true, "RS_bridge", "RS_elsewhere")).getOutcome(),
+            HomeStaging.Outcome.READY,
+            "control: A's tail is on neither of B's squares, so B goes home and nothing below shows the tail being seen");
+
+        // BOTH REFUSALS ARE ASKED BEFORE EITHER IS ASSERTED, so a failure names every one that was missed.
+        HomeStaging.Outcome locked = planWithATrainAlreadyHome(
+            twoRoadsOverOneBridge(2510, true, "RS_bridge", "RS_bridge")).getOutcome();
+        HomeStaging.Outcome unlocked = planWithATrainAlreadyHome(
+            twoRoadsOverOneBridge(2520, false, "RS_bridge", "RS_bridge")).getOutcome();
+
+        String missed = "";
+
+        // THE LOCK, WITH PLACES ON BOTH EDGES: the tail has to lie on a place B's edge runs over.
+        if (locked != HomeStaging.Outcome.NO_PLAN_FOUND)
+        {
+            missed += " The lock partner's tail was not seen (OB-184): " + locked + ".";
+        }
+
+        // NO LOCK AT ALL: the same two roads are two copies of one piece of metal only by their places.
+        if (unlocked != HomeStaging.Outcome.NO_PLAN_FOUND)
+        {
+            missed += " The tail was not seen by place (AUT-B1): " + unlocked + ".";
+        }
+
+        assertEquals(missed, "", "B's road runs over the square the tail of A, standing at home from the start, is lying"
+            + " on, and the plan sent it anyway:");
+    }
+
+    /**
+     * Stands A at its home with its tail behind it, stands B, homes both, and plans.
+     *
+     * A is placed as a run leaves a train: moved, the side it came in by and the road it came along recorded, so its
+     * tail is the one the runtime walks.
+     *
+     * @param layout `twoRoadsOverOneBridge`
+     * @return the plan
+     */
+    private static HomeStaging.Plan planWithATrainAlreadyHome(Layout layout) throws Exception
+    {
+        assertTrue(layout.moveLocomotive(trainA.getName(), "RS_HA", false), "could not stand train A at RS_HA");
+        assertTrue(layout.moveLocomotive(trainB.getName(), "RS_X", false), "could not stand train B at RS_X");
+
+        Edge intoHome = layout.getEdge("RS_T", "RS_HA");
+        Point home = layout.getPoint("RS_HA");
+
+        home.setArrivedFrom(layout.entrySideOf(intoHome, home));
+        home.setArrivedAlong(java.util.Collections.singletonList(intoHome));
+
+        layout.setHomeLocomotive("RS_HA", trainA.getName());
+        layout.setHomeLocomotive("RS_Y", trainB.getName());
+
+        return HomeStaging.snapshot(layout).plan();
     }
 
     /**

@@ -8,6 +8,7 @@ import static org.testng.Assert.assertTrue;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.TileAnnotation;
 import org.traincontrol.automationui.TilePorts.Side;
+import support.ProgramConstants;
 
 /**
  * A tested path's line stays on its rail, however many times the path crosses the square.
@@ -28,7 +29,7 @@ import org.traincontrol.automationui.TilePorts.Side;
  *
  * **Read off the painted pixels.**  Only the eastern quarter of the square is examined, which the
  * diverging leg - drawn from the west edge to the south edge - never reaches, so everything there in a
- * line colour belongs to the straight rail and must lie on it.
+ * line color belongs to the straight rail and must lie on it.
  *
  * @author Adam
  */
@@ -36,8 +37,12 @@ public class testATestedPathStaysOnItsRail
 {
     private static final int SIZE = 60;
 
-    /** The line colours: out, back.  Chevrons are drawn in a third, and are not the line. */
-    private static final int[] LINE = {0xFFD600, 0xFF9628};
+    /** The line colors: out, back.  Chevrons are drawn in a third, and are not the line. */
+    private static final int[] LINE =
+    {
+        ProgramConstants.colour(TileAnnotation.class, "TRACE").getRGB() & 0xFFFFFF,
+        ProgramConstants.colour(TileAnnotation.class, "TRACE_RETURN").getRGB() & 0xFFFFFF
+    };
 
     /**
      * Four passes over a switch keep the straight rail's line as close to it as an ordinary square's.
@@ -80,8 +85,13 @@ public class testATestedPathStaysOnItsRail
             new TileAnnotation.Trace(Side.E, Side.W, true),
             new TileAnnotation.Trace(Side.W, Side.E, false)));
 
-        // Half the stroke (a seventh of the tile), plus the half-ninth offset, plus a pixel of rim.
-        int bound = (int) Math.ceil(SIZE / 7.0 / 2 + SIZE / 18.0 + 1);
+        // Half the stroke, plus the offset a second pass over the same rail is moved aside by, plus a
+        // pixel of rim.  Both are the painter's own: the stroke is a fixed part of the square, and so is
+        // the offset (OB-216: "a small offset as on the other tiles").
+        double strokeParts = ProgramConstants.real(TileAnnotation.class, "TRACE_STROKE_PARTS");
+        double nudgeParts = ProgramConstants.real(TileAnnotation.class, "TRACE_NUDGE_PARTS");
+
+        int bound = (int) Math.ceil(SIZE / strokeParts / 2 + SIZE / nudgeParts + 1);
 
         assertTrue(ordinary >= 0 && ordinary <= bound,
             "an ordinary square's line reaches " + ordinary + "px from its rail; the small offset is at"
@@ -89,10 +99,10 @@ public class testATestedPathStaysOnItsRail
     }
 
     /**
-     * Paints one square and measures how far from the rail's centre line any line-coloured pixel in its
+     * Paints one square and measures how far from the rail's center line any line-colored pixel in its
      * eastern quarter lies.
      *
-     * @return the largest distance in pixels, or -1 when nothing line-coloured was painted there
+     * @return the largest distance in pixels, or -1 when nothing line-colored was painted there
      */
     private static int furthestFromTheRail(List<TileAnnotation.Trace> traces)
     {

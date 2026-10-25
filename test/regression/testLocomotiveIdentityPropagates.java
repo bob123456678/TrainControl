@@ -1,9 +1,6 @@
 package regression;
 
-import java.io.File;
 import java.lang.reflect.Field;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -20,6 +17,7 @@ import org.traincontrol.base.RouteCommand;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinRoute;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.SourceOf;
 
 /**
  * Renaming or deleting a locomotive reaches everything that was holding it.
@@ -52,7 +50,7 @@ public class testLocomotiveIdentityPropagates
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        model = init(null, true, false, false, true);
+        model = support.TestStation.simulatedInDebug();
 
         for (int address : new int[]{47451, 47452, 47453})
         {
@@ -74,7 +72,7 @@ public class testLocomotiveIdentityPropagates
         if (model != null) model.stop();
     }
 
-    // --- autonomy state ---------------------------------------------------------------------------
+    // autonomy state
 
     /**
      * Every collection in the running layout lets go of a deleted locomotive.
@@ -110,6 +108,13 @@ public class testLocomotiveIdentityPropagates
             new org.traincontrol.automation.TimetablePath(going, path, 0)));
 
         assertFalse(layout.getTimetable().isEmpty(), "the timetable entry was not made");
+
+        // THE REFLECTION CAN SEE: before the delete the locomotive IS held, by the run list at least.  Without this the
+        // emptiness asserted after the delete is the answer of a scan that may be looking at nothing.
+        assertTrue(collectionsHolding(layout, going).contains("locomotivesToRun"),
+            "precondition: the scan of the layout's collections does not see the run list holding the locomotive, so"
+            + " 'nothing holds it after the delete' below would be true of any layout.  It sees: "
+            + collectionsHolding(layout, going));
 
         layout.locDeleted(going);
 
@@ -162,7 +167,7 @@ public class testLocomotiveIdentityPropagates
             "the exclusion did not follow");
     }
 
-    // --- home locomotives -------------------------------------------------------------------------
+    // home locomotives
 
     /**
      * A home assignment is held by NAME, so it is the one that breaks on a rename rather than a delete.
@@ -207,7 +212,7 @@ public class testLocomotiveIdentityPropagates
             "the home claim outlived the locomotive, so nothing placed there can ever have a home");
     }
 
-    // --- routes ------------------------------------------------------------------------------------
+    // routes
 
     /**
      * A route names locomotives in its COMMANDS and in its CONDITIONS, and only one was being repaired.
@@ -323,7 +328,7 @@ public class testLocomotiveIdentityPropagates
         assertEquals(route.getRoute().size(), 1, "and nothing of its own was taken away");
     }
 
-    // --- the guard that outlasts all of the above --------------------------------------------------
+    // the guard that outlasts all of the above
 
     /**
      * Every collection of locomotives in the running layout is named in the deletion sweep.
@@ -337,26 +342,30 @@ public class testLocomotiveIdentityPropagates
     @Test
     public void testEveryLocomotiveHolderIsNamedInTheSweep() throws Exception
     {
-        File source = new File("src/org/traincontrol/automation/Layout.java");
+        // The running layout's fields are the holders, read from its whole PACKAGE (FR-136): a cluster split out of
+        // Layout with a locomotive map of its own is still the running layout, and is still swept.
+        String text = SourceOf.codeUnder("src/org/traincontrol/automation/");
 
-        assertTrue(source.isFile(), "cannot find " + source.getAbsolutePath()
-            + " - a test that reads the source cannot pass by not finding it");
+        // Except Return Home's planner, whose maps are a copy of the layout's, taken when the button is pressed
+        // (`HomeStaging.snapshot`) and dropped with the plan - so the deletion sweep has nothing of its to let go of.
+        // That stays true only while nothing in the package keeps a planner in a field, which is asked here.
+        assertFalse(keepsTheHomePlanner(text),
+            "a field of the automation package now keeps Return Home's planner, so its locomotive maps outlive the"
+            + " press and are holders the deletion sweep has to name");
 
-        String text = new String(Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8);
+        text = text.replace(SourceOf.withoutComments(SourceOf.fileDeclaring("public final class HomeStaging")), "");
 
         // The CODE of the sweep, not its prose. A guard about what a method DOES must not be
-        // satisfiable by a comment mentioning the field - which is TD-3, one file over.
-        String sweep = withoutComments(bodyOf(text, "locDeleted"));
-
-        assertNotNull(sweep, "locDeleted is not there any more, so nothing sweeps at all");
+        // satisfiable by a comment mentioning the field.
+        String sweep = SourceOf.withoutComments(SourceOf.body("synchronized public void locDeleted(Locomotive l)"));
 
         List<String> holders = holdersIn(text);
 
         // A regex that stops matching - the nested-generics fix above already shows it has happened
-        // once - returns an empty list and this test passes having swept nothing. Seven holders exist
+        // once - returns an empty list and this test passes having swept nothing. Eleven holders exist
         // in Layout.java today; three is a floor well under that, not a pin on the count.
         assertTrue(holders.size() >= 3,
-            "only " + holders.size() + " locomotive-holding fields were found in Layout.java - the "
+            "only " + holders.size() + " locomotive-holding fields were found in the automation package - the "
             + "patterns holdersIn() looks for have gone stale, and this is now checking almost nothing");
 
         List<String> missing = new ArrayList<>();
@@ -380,6 +389,60 @@ public class testLocomotiveIdentityPropagates
             + "entry that drives it. Sweep it, or say here why it does not need sweeping");
     }
 
+    /** A field declared at class level: its modifiers, then a type (generic or array too) in group 1, then its name. */
+    private static final java.util.regex.Pattern FIELD_DECLARATION = java.util.regex.Pattern.compile(
+        "\n    (?:(?:private|public|protected|static|final|volatile|transient) )*"
+        + "([\\w.]+(?:<[^;=(){}]*>)?(?:\\[\\])*) \\w+\\s*[;=]");
+
+    /**
+     * Whether any field of the code keeps Return Home's planner, as itself or inside a collection, map or array of them.
+     *
+     * @param code the code of the automation package, comments blanked
+     * @return true when a field's type names `HomeStaging`
+     */
+    private static boolean keepsTheHomePlanner(String code)
+    {
+        java.util.regex.Matcher field = FIELD_DECLARATION.matcher(code);
+
+        while (field.find())
+        {
+            if (field.group(1).matches(".*\\bHomeStaging\\b.*")) return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * The search for a field keeping the planner sees the declarations a layout would write, and not what is not one.
+     *
+     * The search used to match only a field typed directly `HomeStaging`, so `List<HomeStaging>` or `Map<String,
+     * HomeStaging.Plan>` went by it.  Driven here over made-up declarations, so it cannot go quiet unnoticed.
+     *
+     * MUTATION: add `private List<HomeStaging> plans = new ArrayList<>();` to `Layout`, and
+     * `testEveryLocomotiveHolderIsNamedInTheSweep` fails; narrow `FIELD_DECLARATION` to the plain type and this does.
+     */
+    @Test
+    public void testTheSearchForAPlannerHeldInAFieldSeesEveryShapeOfField()
+    {
+        assertTrue(keepsTheHomePlanner("\n    private HomeStaging planner;"), "a plain field is not found");
+
+        assertTrue(keepsTheHomePlanner("\n    private HomeStaging.Plan plan = null;"), "a nested type is not found");
+
+        assertTrue(keepsTheHomePlanner("\n    private List<HomeStaging> plans = new ArrayList<>();"),
+            "a list of planners is not found");
+
+        assertTrue(keepsTheHomePlanner("\n    private final Map<String, HomeStaging.Plan> byName = new HashMap<>();"),
+            "a map of plans, with a space inside the type, is not found");
+
+        assertTrue(keepsTheHomePlanner("\n    static HomeStaging[] all;"), "an array of planners is not found");
+
+        assertFalse(keepsTheHomePlanner("\n    private int plans;\n    private List<Edge> edges = new ArrayList<>();"),
+            "fields that do not keep a planner are flagged");
+
+        assertFalse(keepsTheHomePlanner("\n    public HomeStaging planFor(Locomotive l)\n    {\n        HomeStaging local = null;"),
+            "a method that returns a planner, or a local variable, is flagged as a field");
+    }
+
     /**
      * Nothing compares a home or a placement against a NAME.
      *
@@ -398,36 +461,24 @@ public class testLocomotiveIdentityPropagates
     @Test
     public void testNoHomeOrPlacementIsComparedWithAName() throws Exception
     {
-        File src = new File("src");
+        // Every line of the program's code, comments blanked, in every file.
+        String[] lines = SourceOf.allCode().split("\n");
 
-        assertTrue(src.isDirectory(), "cannot find " + src.getAbsolutePath()
-            + " - a test that reads the source cannot pass by not finding it");
-
-        List<File> sources = new ArrayList<>();
-
-        collect(src, sources);
-
-        // A wrong working directory, or `src` gutted, gives an empty sweep and an empty `suspect` list
-        // that looks identical to "nothing is wrong". Over a hundred files exist under src/ today; 50
-        // is a floor well under that, not a pin on the count.
-        assertTrue(sources.size() >= 50,
-            "only " + sources.size() + " files were found under src/ - this ran from the wrong working "
+        // A scan that reads little, or a `src` gutted, gives an empty `suspect` list that looks identical to
+        // "nothing is wrong". The program has some 178,000 lines today; 100,000 is a floor well under that,
+        // not a pin on the count.
+        assertTrue(lines.length >= 100000,
+            "only " + lines.length + " lines of code were found under src/ - this ran from the wrong working "
             + "directory, or the tree has shrunk enough that this scan is not checking much of "
             + "anything");
 
         List<String> suspect = new ArrayList<>();
 
-        for (File file : sources)
+        for (int at = 0; at < lines.length; at++)
         {
-            String[] lines = withoutComments(new String(
-                Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8)).split("\n");
-
-            for (int at = 0; at < lines.length; at++)
+            if (isSuspectLine(lines[at]))
             {
-                if (isSuspectLine(lines[at]))
-                {
-                    suspect.add(file.getName() + ":" + (at + 1) + "  " + lines[at].trim());
-                }
+                suspect.add("line " + (at + 1) + " of the program's code:  " + lines[at].trim());
             }
         }
 
@@ -440,7 +491,7 @@ public class testLocomotiveIdentityPropagates
     }
 
     /**
-     * A positive control for {@link #isSuspectLine(String)} (TST-C15).
+     * A positive control for {@link #isSuspectLine(String)}.
      *
      * The scan above is line-scoped with no floor: a rename of the accessors it looks for, or the
      * pattern going stale in some other way, degenerates it to zero matches over every file in `src` -
@@ -472,7 +523,7 @@ public class testLocomotiveIdentityPropagates
 
     /**
      * One line, judged the way {@code testNoHomeOrPlacementIsComparedWithAName} judges every line in
-     * `src`. Extracted so the same logic can be driven by a known-bad line as a control (TST-C15).
+     * `src`. Extracted so the same logic can be driven by a known-bad line as a control.
      */
     private boolean isSuspectLine(String line)
     {
@@ -518,19 +569,6 @@ public class testLocomotiveIdentityPropagates
         return (comparedWithAName || handedToNames) && !converted;
     }
 
-    private void collect(File from, List<File> into)
-    {
-        File[] children = from.listFiles();
-
-        if (children == null) return;
-
-        for (File child : children)
-        {
-            if (child.isDirectory()) collect(child, into);
-            else if (child.getName().endsWith(".java")) into.add(child);
-        }
-    }
-
     /**
      * Fields declared as a collection OF locomotives, or keyed by one.
      */
@@ -558,90 +596,73 @@ public class testLocomotiveIdentityPropagates
         return out;
     }
 
-    private String bodyOf(String source, String name)
-    {
-        java.util.regex.Matcher m = java.util.regex.Pattern.compile(
-            "^[ \t]*(?:synchronized )?public void " + name + "\\s*\\(", java.util.regex.Pattern.MULTILINE)
-            .matcher(source);
-
-        if (!m.find()) return null;
-
-        int open = source.indexOf('{', m.end());
-
-        int depth = 0;
-
-        for (int i = open; i < source.length(); i++)
-        {
-            char c = source.charAt(i);
-
-            if (c == '{') depth++;
-            else if (c == '}' && --depth == 0) return source.substring(open, i + 1);
-        }
-
-        return null;
-    }
-
-    /**
-     * Copied rather than shared with the other tests that do this: a test helper reaching into another
-     * test class is a dependency between things that are supposed to fail independently.
-     */
     private String withoutComments(String body)
     {
-        StringBuilder out = new StringBuilder();
-
-        boolean inLine = false, inBlock = false;
-
-        for (int i = 0; i < body.length(); i++)
-        {
-            char c = body.charAt(i);
-            char next = i + 1 < body.length() ? body.charAt(i + 1) : ' ';
-
-            if (inLine)
-            {
-                if (c == '\n') { inLine = false; out.append(c); }
-            }
-            else if (inBlock)
-            {
-                if (c == '*' && next == '/') { inBlock = false; i++; }
-            }
-            else if (c == '/' && next == '/') inLine = true;
-            else if (c == '/' && next == '*') inBlock = true;
-            else out.append(c);
-        }
-
-        return out.toString();
+        return SourceOf.withoutComments(body);
     }
-
-    // ------------------------------------------------------------------------------------------
 
     /**
      * Which of the layout's locomotive collections still mention this one, by reflection.
      *
-     * The behavioural half of the guard above: that one asks whether the sweep NAMES every holder, and
+     * The behavioral half of the guard above: that one asks whether the sweep NAMES every holder, and
      * this asks whether anything is actually left in one afterwards.
      */
     private List<String> collectionsHolding(Layout layout, Locomotive loc) throws Exception
     {
         List<String> holding = new ArrayList<>();
 
-        for (Field field : Layout.class.getDeclaredFields())
-        {
-            field.setAccessible(true);
-
-            Object value = field.get(layout);
-
-            if (value instanceof java.util.Map && ((java.util.Map<?, ?>) value).containsKey(loc))
-            {
-                holding.add(field.getName());
-            }
-            else if (value instanceof java.util.Collection
-                && ((java.util.Collection<?>) value).contains(loc))
-            {
-                holding.add(field.getName());
-            }
-        }
+        holdingIn(layout, "", loc, holding, java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<Object, Boolean>()));
 
         return holding;
+    }
+
+    /**
+     * The fields of an object, and of the helper objects of the automation package it owns, that hold a locomotive.
+     *
+     * Reached through the objects `Layout` keeps in its fields as well as its own collections, so a locomotive map moved
+     * into a helper class the layout owns (FR-136) is still found.
+     *
+     * @param owner the object whose fields are read
+     * @param path how it was reached, empty for the layout itself
+     * @param loc the locomotive
+     * @param holding receives `field` or `helper.field` for each collection holding it
+     * @param seen the objects already read
+     */
+    private void holdingIn(Object owner, String path, Locomotive loc, List<String> holding, java.util.Set<Object> seen)
+        throws Exception
+    {
+        if (!seen.add(owner)) return;
+
+        for (Class<?> type = owner.getClass(); type != null && type != Object.class; type = type.getSuperclass())
+        {
+            for (Field field : type.getDeclaredFields())
+            {
+                field.setAccessible(true);
+
+                Object value = field.get(owner);
+
+                if (value == null) continue;
+
+                String name = path + field.getName();
+
+                if (value instanceof java.util.Map && ((java.util.Map<?, ?>) value).containsKey(loc))
+                {
+                    holding.add(name);
+                }
+                else if (value instanceof java.util.Collection
+                    && ((java.util.Collection<?>) value).contains(loc))
+                {
+                    holding.add(name);
+                }
+                else if (!(value instanceof java.util.Map) && !(value instanceof java.util.Collection)
+                    && !(value instanceof Locomotive)
+                    && value.getClass().getName().startsWith("org.traincontrol.automation.")
+                    && !value.getClass().isEnum())
+                {
+                    holdingIn(value, name + ".", loc, holding, seen);
+                }
+            }
+        }
     }
 
     private Locomotive loc(String name) throws Exception
@@ -678,7 +699,7 @@ public class testLocomotiveIdentityPropagates
      *
      * Testing the rule leaves the CALL as the only uncovered part, and in this codebase that is where
      * the defect usually is - renamePage was faultless and had no caller for weeks (MT-135), and
-     * HomeLocomotiveMenu lost four of its five callers with its tests still green (DD-A6). OB-062 is
+     * HomeLocomotiveMenu lost four of its five callers with its tests still green. OB-062 is
      * the same shape again: repairLocomotiveOnDisk can be perfect and change nothing.
      *
      * So this asks the source whether the null-session path actually calls it, rather than returning
@@ -687,26 +708,7 @@ public class testLocomotiveIdentityPropagates
     @Test
     public void testTheWindowRepairsTheSetupOnDiskWithNoSession() throws Exception
     {
-        File source = new File("src/org/traincontrol/gui/TrainControlUI.java");
-
-        assertTrue(source.isFile(),
-            "cannot find " + source.getAbsolutePath() + " - a test that reads the source cannot pass "
-            + "by not finding it");
-
-        String body = withoutComments(new String(
-            Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8));
-
-        int at = body.indexOf("private void repairAutonomyLocomotive");
-
-        assertTrue(at > 0, "repairAutonomyLocomotive is gone - this rule has nothing to watch");
-
-        // to the end of that method: the next member declaration at class level
-        int end = body.indexOf("\n    private ", at + 10);
-        int alt = body.indexOf("\n    public ", at + 10);
-
-        if (alt > 0 && (end < 0 || alt < end)) end = alt;
-
-        String method = end > 0 ? body.substring(at, end) : body.substring(at);
+        String method = withoutComments(SourceOf.declaration("private void repairAutonomyLocomotive("));
 
         assertTrue(method.contains("repairLocomotiveOnDisk"),
             "repairAutonomyLocomotive does not repair the setup on disk when no session is built, so "
@@ -716,8 +718,7 @@ public class testLocomotiveIdentityPropagates
     }
 
     /**
-     * Deleting a locomotive rewrites the station labels and the timetable, as renaming one does
-     * (DAY-C2).
+     * Deleting a locomotive rewrites the station labels and the timetable, as renaming one does.
      *
      * The finding: both rename doors call `updateVisiblePoints()` and `repaintTimetable()`, and the
      * delete door calls neither. It runs `clearCopyTarget`, `repaintLoc`, `repaintMappings`,
@@ -729,7 +730,7 @@ public class testLocomotiveIdentityPropagates
      * not the captions. So deleting a locomotive standing at a station left the caption naming a
      * locomotive the database no longer has, until something unrelated repainted it.
      *
-     * **A source rule rather than a behavioural one, for the same reason the rename rule above is
+     * **A source rule rather than a behavioral one, for the same reason the rename rule above is
      * one**: the caption is drawn by a window, and what can be asserted without one is that the door
      * calls the method that draws it. That is exactly what went wrong - `MT-149`'s fix went to the
      * guard inside `repaintTimetable` and never to the doors that have to call it - so the door
@@ -741,33 +742,21 @@ public class testLocomotiveIdentityPropagates
     @Test
     public void testDeletingALocomotiveRewritesTheStationLabelsToo() throws Exception
     {
-        File source = new File("src/org/traincontrol/gui/TrainControlUI.java");
+        // Asked of the whole program: one delete door, wherever it is.
+        assertEquals(SourceOf.occurrences("this.model.deleteLoc(") + SourceOf.occurrences("getModel().deleteLoc("), 1,
+            "the delete door is not found exactly once - there is more than one now, or none.  This rule reads the"
+            + " block after the first and would report the pair as covered after fixing one of them, which is this"
+            + " codebase's most frequent defect and not one a guard against it should commit");
 
-        assertTrue(source.isFile(), "cannot find " + source.getAbsolutePath());
+        // The block that follows, bounded by the door's own method so the rule cannot read the rest of the file
+        // and pass whatever the code does - which is how the rename rule above was once green over nothing.
+        String door = withoutComments(SourceOf.declaration("    void deleteLoc(String value, MouseEvent evt)"));
 
-        String body = withoutComments(new String(
-            Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8));
+        int at = door.indexOf("this.ui.getModel().deleteLoc(");
 
-        int at = body.indexOf("this.model.deleteLoc(");
+        assertTrue(at >= 0, "the delete door no longer calls the model's deleteLoc( itself");
 
-        assertTrue(at > 0,
-            "the delete door could not be found, so this rule is watching nothing - it looks for "
-            + "`this.model.deleteLoc(` in TrainControlUI");
-
-        assertEquals(body.indexOf("this.model.deleteLoc(", at + 1), -1,
-            "there is more than one delete door now.  This rule reads the block after the first and "
-            + "would report the pair as covered after fixing one of them, which is this codebase's "
-            + "most frequent defect and not one a guard against it should commit");
-
-        // The block that follows, bounded so the rule cannot read the rest of the file and pass
-        // whatever the code does - which is how the rename rule above was once green over nothing.
-        int end = body.indexOf("private void ActiveLocLabelMouseReleased", at);
-
-        assertTrue(end > at && end - at < 4000,
-            "the delete door's refresh block could not be bounded, so this rule would read the rest "
-            + "of the file and pass whatever the code did");
-
-        String block = body.substring(at, end);
+        String block = door.substring(at);
 
         assertTrue(block.contains("updateVisiblePoints"),
             "deleting a locomotive does not rewrite the station labels, so a station it was standing "
@@ -799,13 +788,6 @@ public class testLocomotiveIdentityPropagates
     @Test
     public void testRenamingALocomotiveRewritesTheStationLabels() throws Exception
     {
-        File source = new File("src/org/traincontrol/gui/TrainControlUI.java");
-
-        assertTrue(source.isFile(), "cannot find " + source.getAbsolutePath());
-
-        String body = withoutComments(new String(
-            Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8));
-
         // EVERY renameLoc call site, not the first one.
         //
         // There are two: the edit dialog, and accepting a name the Central Station proposes. They are
@@ -813,21 +795,24 @@ public class testLocomotiveIdentityPropagates
         // and a rule that stops at the first match would have reported the pair as covered after
         // fixing one of them. That is this codebase's most frequent defect, and a guard against it
         // should not be able to commit it.
-        java.util.List<Integer> sites = new ArrayList<>();
+        // Asked of the whole program: two calls of the model's rename, and the doors that make them are named here.
+        int found = SourceOf.occurrences("model.renameLoc(") + SourceOf.occurrences("getModel().renameLoc(");
 
-        for (int at = body.indexOf("renameLoc("); at >= 0; at = body.indexOf("renameLoc(", at + 1))
-        {
-            // the declaration in the model, not a call from the window
-            if (body.lastIndexOf("model.renameLoc(", at + 16) != at - 6
-                && body.lastIndexOf("model.renameLoc(", at + 16) != at - 11) continue;
-
-            sites.add(at);
-        }
-
-        assertEquals(sites.size(), 2,
+        assertEquals(found, 2,
             "expected two renameLoc call sites in the window - the edit dialog and the Central "
-            + "Station proposal. Found " + sites.size() + ", so either a door has been added without "
+            + "Station proposal. Found " + found + ", so either a door has been added without "
             + "this rule being told, or one has gone and the rule is watching less than it says");
+
+        List<String> doors = new ArrayList<>();
+
+        doors.add(withoutComments(SourceOf.declaration("    void changeLocAddress(Locomotive l, MouseEvent evt)")));
+        doors.add(withoutComments(SourceOf.declaration("private void checkForRenameMenuItemActionPerformed(")));
+
+        int counted = 0;
+
+        for (String door : doors) counted += door.split("(?:model|getModel\\(\\))\\.renameLoc\\(", -1).length - 1;
+
+        assertEquals(counted, 2, "the two doors named here no longer hold both of the program's renameLoc calls");
 
         // The refresh block that follows it, bounded by the catch that closes the method.
         //
@@ -842,10 +827,11 @@ public class testLocomotiveIdentityPropagates
 
         List<String> quiet = new ArrayList<>();
 
-        for (int at : sites)
+        for (String body : doors)
         {
-            // The refresh block that follows, bounded by the next call site or by the catch that
-            // closes the method - whichever comes first.
+            int at = Math.max(body.indexOf("model.renameLoc("), body.indexOf("getModel().renameLoc("));
+
+            // The refresh block that follows, bounded by the catch that closes the method.
             //
             // NOT bounded by the next javadoc, which is what the first version of this did:
             // withoutComments has already removed every javadoc, so that search never matched, the
@@ -853,10 +839,6 @@ public class testLocomotiveIdentityPropagates
             // that cannot fail is worse than no guard - it reports the thing it watches as covered.
             // Found by removing the call it protects and watching it stay green.
             int end = body.indexOf("catch (Exception", at);
-
-            int nextSite = sites.indexOf(at) + 1 < sites.size() ? sites.get(sites.indexOf(at) + 1) : -1;
-
-            if (nextSite > at && (end < 0 || nextSite < end)) end = nextSite;
 
             assertTrue(end > at && end - at < 6000,
                 "a refresh block could not be bounded, so this rule would read the rest of the file "
@@ -869,7 +851,7 @@ public class testLocomotiveIdentityPropagates
                 silent.add(body.substring(at, Math.min(at + 160, end)).trim());
             }
 
-            // AND THE TIMETABLE, which names locomotives too (DAY-B1, SVN-B12).
+            // AND THE TIMETABLE, which names locomotives too.
             //
             // MT-149 was that a rename did not reach the timetable on screen, and the fix went to the
             // GUARD inside repaintTimetable - which was keyed on a hash a rename cannot move.  Neither

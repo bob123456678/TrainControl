@@ -3,6 +3,7 @@ package ui;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.StationCaption;
+import support.SourceOf;
 
 /**
  * FR-035, and the arrow that moves to the other side of the label.
@@ -77,14 +78,13 @@ public class testStationLabelDrag
     @Test
     public void testBothCaptionsJoinTheArrowTheSameWay() throws Exception
     {
-        String grid = read("src/org/traincontrol/gui/LayoutGrid.java");
-        String ui = read("src/org/traincontrol/gui/TrainControlUI.java");
-
-        assertTrue(grid.contains("StationCaption.withArrow(cut, arrow)"),
+        assertTrue(SourceOf.occurrences("StationCaption.withArrow(cut, arrow)") >= 1,
             "the single caption joins its arrow with something other than the shared rule, so which "
             + "side the arrow goes on is now decided in two places");
 
-        assertTrue(ui.contains("StationCaption.withArrow("),
+        // A second caller beside the single caption's
+        assertTrue(SourceOf.occurrences("StationCaption.withArrow(")
+                > SourceOf.occurrences("StationCaption.withArrow(cut, arrow)"),
             "the crowded caption - two trains on one platform - joins its arrows its own way, so a "
             + "south-facing train has its arrow in front when it is alone and behind when it is not");
     }
@@ -102,7 +102,7 @@ public class testStationLabelDrag
     @Test
     public void testOnlyEditorCaptionsCanBeDragged() throws Exception
     {
-        String grid = read("src/org/traincontrol/gui/LayoutGrid.java");
+        String grid = SourceOf.allCode();
 
         assertTrue(grid.contains("if (autonomyEditor && captioned != null"),
             "the drag is no longer limited to captions in the autonomy editor - either the running "
@@ -120,13 +120,7 @@ public class testStationLabelDrag
             "the square under the caption is no longer a handle - which is the whole of the second "
             + "half of FR-035, since a pill is too small a target to find");
 
-        int attached = 0;
-
-        for (int at = grid.indexOf("dragCaption("); at >= 0;
-            at = grid.indexOf("dragCaption(", at + 1))
-        {
-            attached++;
-        }
+        int attached = SourceOf.occurrences("dragCaption(");
 
         // The definition, and those two calls.
         assertEquals(attached, 3,
@@ -156,20 +150,14 @@ public class testStationLabelDrag
     @Test
     public void testTheDragMarkAsksTheDropItsOwnQuestion() throws Exception
     {
-        String grid = read("src/org/traincontrol/gui/LayoutGrid.java");
-        String panel = read("src/org/traincontrol/gui/AutonomyEditorPanel.java");
+        String panel = SourceOf.allCode();
 
-        assertTrue(grid.contains("canDropCaption("),
+        // The mark is chosen while the caption is dragged
+        assertTrue(SourceOf.declaration("private static void dragCaption(").contains("canDropCaption("),
             "the square marked under the pointer is chosen by something other than the rule that "
             + "will decide the drop, so a square can be shown as a target and then refuse");
 
-        int asks = 0;
-
-        for (int at = panel.indexOf("refuseCaptionDrop(from, to, onTarget)"); at >= 0;
-            at = panel.indexOf("refuseCaptionDrop(from, to, onTarget)", at + 1))
-        {
-            asks++;
-        }
+        int asks = SourceOf.occurrences("refuseCaptionDrop(from, to, onTarget)");
 
         assertEquals(asks, 2,
             "the refusal rule is consulted " + asks + " times rather than by both canDropCaption and "
@@ -257,7 +245,7 @@ public class testStationLabelDrag
      *
      * MUTATION: moving `hideCaptionGhost` below the early return fails this.
      *
-     * TST-B8: `hideCaptionGhost()` is called TWICE in this method - once inside the wrong-button
+     * `hideCaptionGhost()` is called TWICE in this method - once inside the wrong-button
      * branch, ahead of THAT branch's own `return;`, and once more, unconditionally, ahead of the
      * real "did this actually move anything" question. Anchoring on the first occurrence of each
      * name, as this test used to, finds the wrong-button branch's own pairing every time and can
@@ -268,11 +256,9 @@ public class testStationLabelDrag
     @Test
     public void testThePickedUpLabelIsAlwaysPutDown() throws Exception
     {
-        String grid = read("src/org/traincontrol/gui/LayoutGrid.java");
+        String drag = SourceOf.declaration("private static void dragCaption(");
 
-        String released = bodyOf(grid, "public void mouseReleased(MouseEvent e)");
-
-        assertFalse(released.isEmpty(), "the drag no longer handles the mouse coming up");
+        String released = SourceOf.declarationIn(drag, "public void mouseReleased(MouseEvent e)");
 
         int movedRead = released.indexOf("boolean moved = dragging[0];");
 
@@ -283,7 +269,7 @@ public class testStationLabelDrag
         int leaves = released.indexOf("if (!moved", movedRead);
 
         // Proved present, and past the wrong-button branch's own pairing, before they are
-        // ordered - an absent term made this pass unconditionally before (TST-C7's shape).
+        // ordered - an absent term made this pass unconditionally before.
         assertTrue(down > movedRead, "the floating copy of the label is never removed after a "
             + "real drag ends, so it stays on the window after the drag ends");
 
@@ -312,26 +298,21 @@ public class testStationLabelDrag
     @Test
     public void testOnlyTheLeftButtonPicksALabelUp() throws Exception
     {
-        String grid = read("src/org/traincontrol/gui/LayoutGrid.java");
+        String drag = SourceOf.declaration("private static void dragCaption(");
 
-        String pressed = bodyOf(grid, "public void mousePressed(MouseEvent e)");
-
-        assertFalse(pressed.isEmpty(), "the drag no longer handles the mouse going down");
+        String pressed = SourceOf.declarationIn(drag, "public void mousePressed(MouseEvent e)");
 
         assertTrue(pressed.contains("isLeftMouseButton"),
             "any mouse button now starts a station-label drag, so a right-press that wanders a few "
             + "pixels moves the label and swallows the menu that was being asked for");
 
-        // TST-B8: "dragging[0] = false" occurs TWICE in this method - once in the wrong-button
+        // "dragging[0] = false" occurs TWICE in this method - once in the wrong-button
         // branch this assertion is about, and once more on the ordinary path a few lines later.
         // Searching the whole method body for the substring passes on the second occurrence alone,
         // so deleting the first (the actual fix this test protects) would go unnoticed. Scoped to
         // just the wrong-button branch instead.
-        String wrongButton = bodyOf(pressed,
+        String wrongButton = SourceOf.declarationIn(pressed,
             "if (!javax.swing.SwingUtilities.isLeftMouseButton(e))");
-
-        assertFalse(wrongButton.isEmpty(), "cannot find the wrong-button branch in mousePressed - "
-            + "has it been restructured?");
 
         assertTrue(wrongButton.contains("dragging[0] = false"),
             "a press of the wrong button clears the start point but leaves the drag armed, so the "
@@ -342,9 +323,7 @@ public class testStationLabelDrag
         // The first version of this test asserted a token in mousePressed and never mentioned this
         // method - so a right-release part way through a left-drag still dropped the label, at
         // wherever the pointer had reached, with no drop mark having been shown there.
-        String released = bodyOf(grid, "public void mouseReleased(MouseEvent e)");
-
-        assertFalse(released.isEmpty(), "the drag no longer handles the mouse coming up");
+        String released = SourceOf.declarationIn(drag, "public void mouseReleased(MouseEvent e)");
 
         assertTrue(released.contains("isLeftMouseButton"),
             "the release commits a caption move whatever button was let go, so pressing another "
@@ -372,11 +351,7 @@ public class testStationLabelDrag
     @Test
     public void testTheGridsSpacersAreNotDropTargets() throws Exception
     {
-        String grid = read("src/org/traincontrol/gui/LayoutGrid.java");
-
-        String under = bodyOf(grid, "private static LayoutLabel tileUnder(");
-
-        assertFalse(under.isEmpty(), "cannot find tileUnder - has it been renamed?");
+        String under = SourceOf.declaration("private static LayoutLabel tileUnder(");
 
         assertTrue(under.contains("isSpacer()"),
             "the search for the tile under the pointer no longer skips the grid's spacers, so a "
@@ -385,35 +360,4 @@ public class testStationLabelDrag
             + "draws, where it vanishes");
     }
 
-    /**
-     * A method, from its declaration to its closing brace.
-     */
-    private String bodyOf(String source, String declaration)
-    {
-        int at = source.indexOf(declaration);
-
-        if (at < 0) return "";
-
-        int open = source.indexOf('{', at + declaration.length());
-
-        if (open < 0) return "";
-
-        int depth = 0;
-
-        for (int i = open; i < source.length(); i++)
-        {
-            char c = source.charAt(i);
-
-            if (c == '{') depth++;
-            else if (c == '}' && --depth == 0) return source.substring(at, i + 1);
-        }
-
-        return "";
-    }
-
-    private String read(String path) throws Exception
-    {
-        return new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(path)),
-            java.nio.charset.StandardCharsets.UTF_8);
-    }
 }

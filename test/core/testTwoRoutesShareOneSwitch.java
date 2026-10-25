@@ -16,7 +16,7 @@ import org.traincontrol.automation.Point;
 /**
  * A turnout, and the two routes that share its metal.
  *
- * **The suite has never had one.**  `test/README.md`'s survey of the fixtures (MON-C17 to C21) found
+ * **The suite has never had one.**  `test/README.md`'s survey of the fixtures found
  * that every hand-built fixture is a straight chain of two or three ordinary points: no switch, no
  * curve, no split square.  So the whole of the lock-edge machinery - the rule that two routes over one
  * piece of metal are mutually exclusive, which is what stops a route being cleared under a train
@@ -134,7 +134,7 @@ public class testTwoRoutesShareOneSwitch
     /**
      * And the lock does something: claiming one arm makes the other read as occupied.
      *
-     * The lock LIST is a statement of intent; this is the behaviour it exists for, which is what
+     * The lock LIST is a statement of intent; this is the behavior it exists for, which is what
      * `isPathClear` asks before letting a train onto a switch somebody else's route is standing on.
      * `review-by-running-not-reading`: a fixture that can only be read proves nothing about the machine.
      */

@@ -208,7 +208,7 @@ public final class LocomotiveSelectorItem extends javax.swing.JPanel
         }
         else
         {
-            // NO ACTIVE BUTTON MEANS NOTHING TO NAME (W21-C1).
+            // NO ACTIVE BUTTON MEANS NOTHING TO NAME.
             //
             // `getKeyForCurrentButton()` ends `return -1` when no button is selected, and this
             // formatted that straight into the sentence - so the operator was told to map the

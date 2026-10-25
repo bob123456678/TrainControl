@@ -58,7 +58,7 @@ public class testTheAutoTierScopeMatchesTheRuntime
         // every class over it say something different every week.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = init(null, true, false, false, false);
+        model = support.TestStation.simulated();
 
         String path = "file:///"
             + sandbox.getFolder().getAbsolutePath().replace(File.separatorChar, '/') + "/";
@@ -96,7 +96,7 @@ public class testTheAutoTierScopeMatchesTheRuntime
 
         int stations = 0;
 
-        // PER SQUARE, NOT PER POINT (CONF-B6).
+        // PER SQUARE, NOT PER POINT.
         //
         // The first version of this compared each Point against the diagram's answer about its
         // SQUARE, and those are different questions once a square is split.  A may-reverse station
@@ -123,8 +123,8 @@ public class testTheAutoTierScopeMatchesTheRuntime
 
             // The railway's own rule, quoted rather than paraphrased: `Layout.isSendableDestination` refuses a
             // destination that is reversing or is not an auto destination.
-            // ALL THREE CLAUSES A SQUARE CAN ANSWER, and `isActive` was missing until 2026-09-10
-            // (E8-B1).  This paraphrase is what the guard compares the diagram against, so a clause
+            // ALL THREE CLAUSES A SQUARE CAN ANSWER, and `isActive` was missing until 2026-09-10.
+            // This paraphrase is what the guard compares the diagram against, so a clause
             // absent from BOTH sides is a divergence the guard written to catch it cannot see - and
             // that is exactly what happened: a station switched out of service was reported as one
             // autonomy will choose, and this class was green throughout.

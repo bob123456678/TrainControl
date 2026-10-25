@@ -12,6 +12,7 @@ import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.traincontrol.automation.Edge;
 import org.traincontrol.automation.Layout;
@@ -65,7 +66,7 @@ public class testThePlaceDoorsKeepTheHeading
         // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111).
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = init(null, true, true, false, true);
+        model = support.TestStation.simulatedWithWindowInDebug();
         model.setNetworkCommState(false);
 
         ui = (TrainControlUI) model.getGUI();
@@ -77,7 +78,7 @@ public class testThePlaceDoorsKeepTheHeading
 
         session = ui.getAutonomySession();
 
-        if (session == null) throw new SkipException("no autonomy setup on this railway");
+        if (session == null) throw new AssertionError("no autonomy setup on this railway");
 
         assertNotNull(railway(), "the frozen railway built no autonomy layout");
 
@@ -94,15 +95,7 @@ public class testThePlaceDoorsKeepTheHeading
             if (point.getCurrentLocomotive() != null) railway().moveLocomotive(null, point.getName(), true);
         }
 
-        // THE ACTIVE LOCOMOTIVE, as the window makes one: mapped to the key button in use.
-        ui.mapLocToCurrentButton(HIS_TRAIN);
-
-        for (long end = System.currentTimeMillis() + 10000; (ui.getActiveLoc() == null
-            || !HIS_TRAIN.equals(ui.getActiveLoc().getName())) && System.currentTimeMillis() < end; ) pump();
-
-        assertNotNull(ui.getActiveLoc(), "precondition: " + HIS_TRAIN + " could not be made the active locomotive");
-
-        assertEquals(ui.getActiveLoc().getName(), HIS_TRAIN, "precondition: another train is the active locomotive");
+        hisTrainIsActive();
 
         // EVERY QUESTION A PLACEMENT MAY ASK, answered as the steps answer it: where the tail lies is not said (Cancel).
         TailCrossedPrompt.answerForTests(TailCrossedPrompt.DISMISSED);
@@ -121,6 +114,27 @@ public class testThePlaceDoorsKeepTheHeading
         {
             if (sandbox != null) sandbox.close();
         }
+    }
+
+    /**
+     * The active locomotive, as the window makes one: mapped to the key button in use, and checked before every claim.
+     *
+     * Set, never toggled: `mapLocToCurrentButton` takes a train OFF a button that already holds it, and the run's copy
+     * of the operator's UIState.data may already have this train under the button in use.
+     */
+    @BeforeMethod
+    public static void hisTrainIsActive() throws Exception
+    {
+        pump();
+
+        if (ui.getActiveLoc() == null || !HIS_TRAIN.equals(ui.getActiveLoc().getName())) ui.mapLocToCurrentButton(HIS_TRAIN);
+
+        for (long end = System.currentTimeMillis() + 10000; (ui.getActiveLoc() == null
+            || !HIS_TRAIN.equals(ui.getActiveLoc().getName())) && System.currentTimeMillis() < end; ) pump();
+
+        assertNotNull(ui.getActiveLoc(), "precondition: " + HIS_TRAIN + " could not be made the active locomotive");
+
+        assertEquals(ui.getActiveLoc().getName(), HIS_TRAIN, "precondition: another train is the active locomotive");
     }
 
     /** Nothing left open for the next claim: a claim that fails with a question up leaves it modal on the screen. */
@@ -490,16 +504,16 @@ public class testThePlaceDoorsKeepTheHeading
     }
 
     /**
-     * With the autonomy editor open but minimised, the tail question's list belongs to the main window - where it can be
-     * seen - and not to the minimised editor (RLA-C4).
+     * With the autonomy editor open but minimized, the tail question's list belongs to the main window - where it can be
+     * seen - and not to the minimized editor.
      *
-     * MT-575 hung the list from the editor whenever one was open, and a minimised editor is still open: on Windows a
-     * window owned by a minimised frame is hidden, so the question was a modal nobody could see, holding the application
+     * MT-575 hung the list from the editor whenever one was open, and a minimized editor is still open: on Windows a
+     * window owned by a minimized frame is hidden, so the question was a modal nobody could see, holding the application
      * until the editor was restored.  Asked here for his 75 407 DB, 5 long, on Tunnel from the north, as the main
      * window's own doors ask it.
      *
-     * NO DOOR REACHES THIS TODAY (RLA2-C5): every main-window door that asks the question refuses while an editor is
-     * open, a minimised one included, and the editor's own door cannot be used while it is minimised.  So this pins the
+     * NO DOOR REACHES THIS TODAY: every main-window door that asks the question refuses while an editor is
+     * open, a minimized one included, and the editor's own door cannot be used while it is minimized.  So this pins the
      * owner rule itself, asked as a door would ask it, against the day a door does reach it.
      *
      * MUTATION: hang the list from any editor that is open, and this fails.
@@ -533,7 +547,7 @@ public class testThePlaceDoorsKeepTheHeading
             assertNull(ui.whyLayoutCannotBeEdited(), "precondition: the layout cannot be edited: "
                 + ui.whyLayoutCannotBeEdited());
 
-            // THE EDITOR, as Autonomy > Edit Autonomy opens it - and then minimised.
+            // THE EDITOR, as Autonomy > Edit Autonomy opens it - and then minimized.
             SwingUtilities.invokeLater(() -> ui.openAutonomyEditorOnPage(tunnel.getPage()));
 
             for (long end = System.currentTimeMillis() + 60000; editor == null && System.currentTimeMillis() < end; )
@@ -588,7 +602,7 @@ public class testThePlaceDoorsKeepTheHeading
             {
                 Thread.sleep(50);
 
-                // SHOWING OR NOT: a list hung from the minimised editor is hidden with it.
+                // SHOWING OR NOT: a list hung from the minimized editor is hidden with it.
                 for (java.awt.Window window : java.awt.Window.getWindows())
                 {
                     if (window instanceof javax.swing.JDialog && window.isVisible() && I18n.t("autolayout.ui.askArrivalSideTitle")
@@ -981,7 +995,7 @@ public class testThePlaceDoorsKeepTheHeading
             if (name.equals(session.getStore().getPointName(key))) return key;
         }
 
-        throw new SkipException("this railway has no " + name);
+        throw new AssertionError("this railway has no " + name);
     }
 
     private static String name(TileKey square)

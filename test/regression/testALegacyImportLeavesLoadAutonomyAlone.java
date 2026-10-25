@@ -1,15 +1,13 @@
 package regression;
 
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
+import support.SourceOf;
 
 /**
- * Importing a legacy autonomy.json leaves Startup -> Load Autonomy as the operator set it (Adam, 2026-09-24, TDD-C11).
+ * Importing a legacy autonomy.json leaves Startup -> Load Autonomy as the operator set it (Adam, 2026-09-24).
  *
- * REG2-C3 unticked it after every import, on his ruling *"Set the setting to unchecked when importing a legacy json
+ * The box was unticked after every import, on his ruling *"Set the setting to unchecked when importing a legacy json
  * file, each time"* - made while the box still loaded the old graph at start, which a layout that had only an import
  * did not have.  OB-254 took the old graph out of start-up the same night: the box now resumes the active diagram
  * configuration, and an import makes one, so the untick was what stopped the imported setup being loaded at the next
@@ -34,39 +32,32 @@ public class testALegacyImportLeavesLoadAutonomyAlone
     {
         int doors = 0;
 
-        try (java.util.stream.Stream<java.nio.file.Path> walk = Files.walk(Paths.get("src/org/traincontrol/gui")))
+        // Every file of the program, one after another with their comments blanked: a door that moves to another file
+        // is still found.
+        String code = SourceOf.allCode();
+
+        int at = code.indexOf(".importLegacy(");
+
+        while (at >= 0)
         {
-            for (java.nio.file.Path file : (Iterable<java.nio.file.Path>) walk::iterator)
+            doors++;
+
+            // The rest of the method the call is in: to the next method-level closing brace.
+            int end = code.indexOf("\n    }", at);
+
+            String rest = code.substring(at, end < 0 ? code.length() : end);
+
+            for (String touch : new String[] {"autoLoadOffAfterLegacyImport(", "AUTO_LOAD_AUTONOMY",
+                "AutoLoadAutonomyMenuItem"})
             {
-                if (!file.toString().endsWith(".java")) continue;
-
-                String code = new String(Files.readAllBytes(file), StandardCharsets.UTF_8)
-                    .replaceAll("(?s)/[*].*?[*]/", " ").replaceAll("//[^\\r\\n]*", " ");
-
-                int at = code.indexOf(".importLegacy(");
-
-                while (at >= 0)
-                {
-                    doors++;
-
-                    // The rest of the method the call is in: to the next method-level closing brace.
-                    int end = code.indexOf("\n    }", at);
-
-                    String rest = code.substring(at, end < 0 ? code.length() : end);
-
-                    for (String touch : new String[] {"autoLoadOffAfterLegacyImport(", "AUTO_LOAD_AUTONOMY",
-                        "AutoLoadAutonomyMenuItem"})
-                    {
-                        assertFalse(rest.contains(touch), file.getFileName() + " imports a legacy autonomy.json and then"
-                            + " changes Startup -> Load Autonomy (" + touch + ") - Adam, TDD-C11: \"Drop it now\"");
-                    }
-
-                    at = code.indexOf(".importLegacy(", at + 1);
-                }
+                assertFalse(rest.contains(touch), "an import door (" + rest.split("\n")[0].trim() + ") imports a legacy"
+                    + " autonomy.json and then changes Startup -> Load Autonomy (" + touch + ") - Adam, TDD-C11: \"Drop it now\"");
             }
+
+            at = code.indexOf(".importLegacy(", at + 1);
         }
 
-        assertTrue(doors > 0, "precondition: no import door was found under gui/, so the census checked nothing");
+        assertTrue(doors > 0, "precondition: no import door was found in the program, so the census checked nothing");
     }
 
     /**
@@ -77,10 +68,7 @@ public class testALegacyImportLeavesLoadAutonomyAlone
     @Test
     public void testTheUntickIsGone() throws Exception
     {
-        String window = new String(Files.readAllBytes(Paths.get("src/org/traincontrol/gui/TrainControlUI.java")),
-            StandardCharsets.UTF_8);
-
-        assertFalse(window.contains("void autoLoadOffAfterLegacyImport("), "TrainControlUI still has the method that"
-            + " unticks Load Autonomy after a legacy import (TDD-C11)");
+        assertFalse(SourceOf.allCode().contains("void autoLoadOffAfterLegacyImport("), "the program still has the method"
+            + " that unticks Load Autonomy after a legacy import (TDD-C11)");
     }
 }

@@ -35,7 +35,7 @@ import org.traincontrol.marklin.file.CS2File;
  * **What the narrowing would have done.** I proposed turning only where the next leg leaves by the side
  * the train arrived on. Measured over this railway it names `BottomMainB (westbound, reverse)` - in by
  * E, out by N, four such pairs - a turning copy that has always turned trains and would have stopped.
- * The facings recorded in the setup were written under the old behaviour, so they would have disagreed
+ * The facings recorded in the setup were written under the old behavior, so they would have disagreed
  * with the railway from that moment. The narrowing was reverted unshipped.
  *
  * The fixture that made the case for it called `setReversing(true)` on a square a straight path runs
@@ -60,11 +60,11 @@ public class testTheTurnRuleDoesNotChangeTheRealRailway
         //
         // It read a copy of the LIVE folder until 2026-09-14, when the battery went red with "no reversing copy
         // at all" and no change to the builder: Adam had turned 1 - Main:20,14 from may-turn to must-turn that
-        // afternoon.  A claim about what the builder does to his railway cannot change colour because he edited
+        // afternoon.  A claim about what the builder does to his railway cannot change color because he edited
         // the railway - which is the reason `live-snapshot` exists.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = init(null, true, false, false, false);
+        model = support.TestStation.simulated();
         model.stop();
 
         String path = "file:///"
@@ -90,7 +90,7 @@ public class testTheTurnRuleDoesNotChangeTheRealRailway
     /**
      * A reversing copy can be left by a side other than the one it is entered by - MEASURED BY THE COMPASS: the side
      * a copy is left by is read here as `entrySideOf(leaving, copy)`, which for an edge that STARTS at the copy falls to
-     * `sideTowards`, the neighbour's compass position (OB-268).  So what this shows is that the compass does not say which
+     * `sideTowards`, the neighbor's compass position (OB-268).  So what this shows is that the compass does not say which
      * side a reversing copy is left by, and that is what it blocks: a geometric test for "does the next leg need the
      * turn" would read such a copy as a straight run and stop turning there.  It is not a refutation of section 3's
      * sentence that a turning copy's only outgoing edges leave by the side the train arrived from, which the builder
@@ -156,7 +156,7 @@ public class testTheTurnRuleDoesNotChangeTheRealRailway
         // four such pairs on this railway. A geometric "only turn if the next leg leaves by the side it came in"
         // test therefore stops turning trains at a copy that has always turned them, which is a
         // regression and not a fix - and the facings recorded in the setup were written under the old
-        // behaviour, so they would disagree with the railway from that moment.
+        // behavior, so they would disagree with the railway from that moment.
         assertTrue(wouldChange.size() > 0,
             "every reversing copy on this railway is now left by the side it is entered by. That was"
             + " NOT true on 2026-09-08 - BottomMainB (westbound, reverse) went in by E and out by N -"

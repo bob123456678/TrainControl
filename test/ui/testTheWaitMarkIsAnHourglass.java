@@ -11,6 +11,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.AutonomyEditorPanel;
 import org.traincontrol.gui.LoadingSpinner;
+import support.SourceOf;
 
 /**
  * What the "still drawing" mark actually draws, and where the signal window actually goes.
@@ -58,8 +59,33 @@ public class testTheWaitMarkIsAnHourglass
             org.traincontrol.gui.TrainControlUI.installLookAndFeel();
         }
     }
-    /** Frames in one drain-and-turn cycle - LoadingSpinner draws two of them per loop. */
-    private static final int CYCLE = 62;
+    /** Frames in one drain-and-turn cycle - LoadingSpinner draws two of them per loop: asked of the spinner. */
+    private static final int CYCLE = spinnerConstant("CYCLE_FRAMES");
+
+    /** Milliseconds one frame lasts: asked of the spinner. */
+    private static final int FRAME_MS = spinnerConstant("FRAME_MS");
+
+    /**
+     * One of LoadingSpinner's private constants, read by reflection so a claim follows the spinner's own rule.
+     *
+     * @param name the constant's name
+     * @return its value
+     */
+    private static int spinnerConstant(String name)
+    {
+        try
+        {
+            java.lang.reflect.Field field = LoadingSpinner.class.getDeclaredField(name);
+
+            field.setAccessible(true);
+
+            return field.getInt(null);
+        }
+        catch (ReflectiveOperationException e)
+        {
+            throw new IllegalStateException("LoadingSpinner has no " + name + " to ask", e);
+        }
+    }
 
     /** Big enough that a few pixels of antialiasing either way cannot change a count materially. */
     private static final int SIZE = 240;
@@ -115,7 +141,7 @@ public class testTheWaitMarkIsAnHourglass
                 int g = (rgb >> 8) & 0xFF;
                 int b = rgb & 0xFF;
 
-                // Grey of any darkness, which is all this draws.  The threshold is well clear of the
+                // Gray of any darkness, which is all this draws.  The threshold is well clear of the
                 // antialiased edge between the sand and the white behind it.
                 if (r < 230 && g < 230 && b < 230) count++;
             }
@@ -125,7 +151,7 @@ public class testTheWaitMarkIsAnHourglass
     }
 
     /**
-     * The mark draws something, and it is grey rather than the black the turning arc used.
+     * The mark draws something, and it is gray rather than the black the turning arc used.
      *
      * The weakest assertion here, and it is only worth having because a drawing method that throws or
      * that draws nothing is a real failure mode for a component nobody looks at in a test.
@@ -139,8 +165,8 @@ public class testTheWaitMarkIsAnHourglass
 
         assertTrue(drawn > 500, "the wait mark drew almost nothing: " + drawn + " pixels");
 
-        // Not black.  Adam asked for grey specifically, and the arc this replaced drew in black with
-        // alpha, which composites to grey against white - so a colour check has to look at the
+        // Not black.  Adam asked for gray specifically, and the arc this replaced drew in black with
+        // alpha, which composites to gray against white - so a color check has to look at the
         // DARKEST pixel rather than the average, or the two are indistinguishable.
         int darkest = 255;
 
@@ -159,7 +185,7 @@ public class testTheWaitMarkIsAnHourglass
      * Sand is conserved: what drains out of the top arrives in the bottom.
      *
      * The assertion this class exists for. Every other check here would still pass if the two bulbs
-     * were driven by unrelated formulae - the picture would still be an hourglass, still be grey,
+     * were driven by unrelated formulae - the picture would still be an hourglass, still be gray,
      * still change frame to frame, and the sand would simply appear and vanish as it fell.
      *
      * The band is a twelfth, chosen from measurement rather than taste. Over a real cycle the count
@@ -250,7 +276,7 @@ public class testTheWaitMarkIsAnHourglass
     /**
      * Nothing is drawn outside the component, at any point in the cycle including the turn.
      *
-     * The turn is the frame that can break this: the glass is rotated about the centre, so a shape
+     * The turn is the frame that can break this: the glass is rotated about the center, so a shape
      * sized to fill the space upright sweeps outside it halfway round. Checking a border of pixels
      * says the drawing left itself room to turn in.
      */
@@ -290,7 +316,7 @@ public class testTheWaitMarkIsAnHourglass
      * a WINDOW when the panel is in one; the caller asked `SwingUtilities.getWindowAncestor(owner())`,
      * which walks UP from what it is given, and a top-level frame has no window ancestor. So it got
      * null every time, took its fallback branch - `setLocationRidiculouslyRelativeTo(owner())`, which
-     * centres - and produced the precise behaviour the ticket was raised about, while both tests of
+     * centers - and produced the precise behavior the ticket was raised about, while both tests of
      * the rule stayed green.
      *
      * Driven with real components, because the mistake is only visible in what `getWindowAncestor`
@@ -325,28 +351,10 @@ public class testTheWaitMarkIsAnHourglass
                 "precondition: a panel inside the frame does not report it, so the fixture is wrong");
 
             // And what the panel's own helper must answer for each.
-            String panelSource = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-                "src/org/traincontrol/gui/AutonomyEditorPanel.java")),
-                java.nio.charset.StandardCharsets.UTF_8);
-
             // CODE ONLY. The first version of this read the whole file and matched the sentence in
             // the fix's own javadoc describing the mistake - so the test failed against the corrected
-            // code, on the strength of prose explaining the correction.
-            StringBuilder code = new StringBuilder();
-
-            for (String line : panelSource.split("\n"))
-            {
-                String trimmed = line.trim();
-
-                if (trimmed.startsWith("*") || trimmed.startsWith("//") || trimmed.startsWith("/*"))
-                {
-                    continue;
-                }
-
-                code.append(line).append('\n');
-            }
-
-            panelSource = code.toString();
+            // code, on the strength of prose explaining the correction.  Asked of the whole program's code.
+            String panelSource = SourceOf.allCode();
 
             assertTrue(panelSource.contains("if (anchor instanceof java.awt.Window) return"),
                 "the panel asks getWindowAncestor for something that may already BE the window, so "
@@ -370,7 +378,7 @@ public class testTheWaitMarkIsAnHourglass
      * offset it." The window's own text tells the reader the signals are outlined on the diagram
      * BEHIND it, so centring hides the thing it is pointing at.
      *
-     * MUTATION: making besideOwner return the centred point - the behaviour this replaced - fails
+     * MUTATION: making besideOwner return the centered point - the behavior this replaced - fails
      * this test.
      */
     @Test
@@ -399,7 +407,7 @@ public class testTheWaitMarkIsAnHourglass
      *
      * The clamp has two ends and only one of them is exercised by the ordinary case. Pushed by the
      * "keep it inside" rule alone, a dialog wider than its parent would be moved to a NEGATIVE offset
-     * from the parent's left edge - which on a maximised window is off the side of the display, where
+     * from the parent's left edge - which on a maximized window is off the side of the display, where
      * the buttons cannot be reached.
      */
     @Test
@@ -432,12 +440,12 @@ public class testTheWaitMarkIsAnHourglass
     {
         assertEquals(LoadingSpinner.frameAt(0), 0, "the animation does not start at the beginning");
 
-        assertEquals(LoadingSpinner.frameAt(60), 1,
+        assertEquals(LoadingSpinner.frameAt(FRAME_MS), 1,
             "one frame period does not advance exactly one frame");
 
         // THE CASE THAT MATTERS. Ten frames' worth of time passes while the event thread is busy and
         // the timer manages a single tick; that tick must land on frame 10, not frame 1.
-        assertEquals(LoadingSpinner.frameAt(600), 10,
+        assertEquals(LoadingSpinner.frameAt(10L * FRAME_MS), 10,
             "600ms after the last frame the animation is still one frame along, so a busy event "
             + "thread - which is exactly when this component is shown - freezes the sand");
 
@@ -536,7 +544,7 @@ public class testTheWaitMarkIsAnHourglass
             "the glass is " + drawn + " pixels tall in a 900px panel - it grows with the space it is "
             + "given, so covering a whole track diagram draws an enormous hourglass");
 
-        // And it is still centred in that space, which is the other half of OB-129.
+        // And it is still centered in that space, which is the other half of OB-129.
         int middle = (top + bottom) / 2;
 
         assertTrue(Math.abs(middle - big / 2) <= 4,
@@ -546,16 +554,13 @@ public class testTheWaitMarkIsAnHourglass
     /**
      * The spinner covers the area the diagram will take, which is what puts it in the middle.
      *
-     * It is centred inside its own component already; what was wrong is how much of the page that
+     * It is centered inside its own component already; what was wrong is how much of the page that
      * component covered. Capped at 400 and dropped into a FlowLayout parent, it sat at the top.
      */
     @Test
     public void testTheSpinnerCoversTheDiagramArea() throws Exception
     {
-        String grid = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/LayoutGrid.java")), java.nio.charset.StandardCharsets.UTF_8);
-
-        assertTrue(grid.contains("spinner.setPreferredSize(new Dimension(maxWidth, maxHeight))"),
+        assertTrue(SourceOf.allCode().contains("spinner.setPreferredSize(new Dimension(maxWidth, maxHeight))"),
             "the wait mark is no longer sized to the whole area the diagram will take, so on a page "
             + "bigger than it, the FlowLayout parent leaves it sitting at the top instead of over "
             + "the middle (OB-129)");
@@ -610,7 +615,7 @@ public class testTheWaitMarkIsAnHourglass
 
             javax.swing.SwingUtilities.invokeAndWait(() -> after[0] = mark.currentFrame());
 
-            int moved = Math.floorMod(after[0] - before[0], 124);
+            int moved = Math.floorMod(after[0] - before[0], CYCLE * 2);
 
             // 500ms is a little over eight frames at 60ms. A counter would manage one or two.
             assertTrue(moved >= 5,
@@ -625,13 +630,13 @@ public class testTheWaitMarkIsAnHourglass
     }
 
     /**
-     * The drain is drawn UPRIGHT in every cycle, not only the first (VAL-B4, 2026-08-29).
+     * The drain is drawn UPRIGHT in every cycle, not only the first (2026-08-29).
      *
      * Adam, 2026-08-29: "the hourglass flows backwards after the flip." The fix in the tree today
      * never rotates the drain at all - only the turn does - so a mid-drain frame in the second cycle
      * has to render EXACTLY like the same point in the first, not merely fall in the same direction.
      *
-     * This replaces what was here before this review (VAL-B4): a check that shot frames deep into the
+     * This replaces what was here before this review: a check that shot frames deep into the
      * second cycle and asked whether sand still fell downward. That is not the property that
      * distinguishes a correct drain from a rotated one - a 180-degree rotation flips top and bottom
      * AND reverses the fall, so the two inversions cancel and "sand ends up at the bottom" stays true
@@ -648,7 +653,7 @@ public class testTheWaitMarkIsAnHourglass
     public void testItRunsDownwardsAfterTheFlipToo() throws Exception
     {
         // Mid-drain, past the antialiased edges of "just started" or "just finished" - the same frame
-        // VAL-D4 measured by sand mass to confirm the two cycles agree.
+        // measured by sand mass to confirm the two cycles agree.
         int midDrain = 25;
 
         BufferedImage firstCycle = shoot(midDrain);
@@ -684,7 +689,7 @@ public class testTheWaitMarkIsAnHourglass
      * which under the rotation reads as an EMPTY top - so the glass snapped from full-at-top back to
      * empty-at-top the instant the turn finished, and then ran backwards.
      *
-     * VAL-B4 (2026-08-29): the drain no longer rotates at all, so "putting the rotation back into the
+     * Since 2026-08-29 the drain no longer rotates at all, so "putting the rotation back into the
      * drain" is not a live risk here any more - that mutation is caught by
      * `testItRunsDownwardsAfterTheFlipToo` instead. What this test still guards, on the code as it
      * stands, is the TURN's own arithmetic reaching a full half-turn by its last frame.
@@ -745,8 +750,8 @@ public class testTheWaitMarkIsAnHourglass
     public void testTheStartupNoticeIsNotAWindow() throws Exception
     {
         // NOTHING IN THE CLASS OPENS ANYTHING.
-        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/StartupSplash.java")), java.nio.charset.StandardCharsets.UTF_8);
+        // The class itself is the claim: found by its declaration, comments kept as they always were.
+        String source = SourceOf.fileDeclaring("public final class StartupSplash");
 
         // What a window costs to OPEN, which is the thing that must not come back.  Written as the
         // code that would do it rather than as the type names, because the class javadoc names the

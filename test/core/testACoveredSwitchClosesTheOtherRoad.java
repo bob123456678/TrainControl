@@ -19,7 +19,7 @@ import org.traincontrol.base.Locomotive;
 /**
  * A tail lying across one road of a switch closes the other road, which is a different Edge.
  *
- * **THE ANTI-COLLISION RULE AT A SWITCH, AND IT HAD NO TEST THAT WENT RED WITHOUT IT** (AUT9-B2).
+ * **THE ANTI-COLLISION RULE AT A SWITCH, AND IT HAD NO TEST THAT WENT RED WITHOUT IT**.
  *
  * `Layout.isPathClear` refuses a path over an edge a standing train's tail covers, and then - the part
  * this class is about - over any edge that SHARES METAL with a covered one.  Its own comment records
@@ -38,7 +38,7 @@ import org.traincontrol.base.Locomotive;
  * **WHY IT HAS TO BE THIS FIXTURE.**  The relation is derived by `GraphReducer` from SHARED TILES, so
  * expressing it needs a turnout: two logical routes over one piece of metal.  `single-switch` is the
  * only railway in the library that has one, and it exists for exactly this - `test/README.md` recorded
- * the absence as MON-C17 to C21 before a defect walked through the gap.
+ * the absence before a defect walked through the gap.
  *
  * **THE CONTROLS ARE THE POINT, not politeness.**  A refusal proves nothing on its own: the railway
  * refuses paths for a dozen reasons, and a class that only ever asserts "refused" passes on any of
@@ -187,7 +187,7 @@ public class testACoveredSwitchClosesTheOtherRoad
      * This is the half that makes the refusal below attributable.  If the branch road were itself in
      * the covered set, the direct rule - `coveredTrack.get(e) != null` - would refuse it and the
      * shared-metal branch could be deleted with this class still green, which is exactly the gap
-     * AUT9-B2 reports.
+     * that a review reported.
      *
      * @throws Exception on a failure to build
      */

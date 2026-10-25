@@ -25,7 +25,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * was deleted with the review folder; the thresholds below are what is left of it, which is the half
  * that can fail.
  *
- * Thresholds are roughly ten times the measured cost. A tenfold regression is not a micro-optimisation
+ * Thresholds are roughly ten times the measured cost. A tenfold regression is not a micro-optimization
  * anybody argues about - it is a loop that should not be there - and setting them near the real figure
  * would make this fail on a busy machine and teach everyone to ignore it.
  *
@@ -48,7 +48,7 @@ public class testRenderingCost
 
         if (!folder.isDirectory())
         {
-            throw new SkipException("no sample layout to measure against");
+            throw new AssertionError("no sample layout to measure against");
         }
 
         // BEFORE THE MODEL (OB-111), and this one also stops a MODAL dialog reaching the operator.
@@ -58,7 +58,7 @@ public class testRenderingCost
         // with a window sitting on Adam’s screen. He watched it happen during a battery.
         sandbox = support.LayoutSandbox.open();
 
-        model = init(null, true, false, false, false);
+        model = support.TestStation.simulated();
 
         String path = "file:///" + folder.getAbsolutePath().replace('\\', '/') + "/";
 
@@ -305,7 +305,7 @@ public class testRenderingCost
             + " coldDecodeTotal=" + String.format("%.1f", ms) + "ms"
             + " perDecode=" + String.format("%.2f", decoded == 0 ? 0 : ms / decoded) + "ms");
 
-        // TST-C14: the decode loop swallows every exception, so a getImage that throws for EVERY
+        // The decode loop swallows every exception, so a getImage that throws for EVERY
         // tile leaves decoded at 0 and ms near zero - which used to read as a fast, passing test.
         // That is the "0.00ms looks like good news" failure this class's own header comment says it
         // was rewritten to avoid; the floor below is what closes it for this loop too.
@@ -408,7 +408,7 @@ public class testRenderingCost
 
         if (page == null || squares < 2)
         {
-            throw new org.testng.SkipException(
+            throw new AssertionError(
                 "no page in the sample layout draws one accessory on two squares");
         }
 

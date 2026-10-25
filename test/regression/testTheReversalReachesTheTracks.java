@@ -69,14 +69,14 @@ public class testTheReversalReachesTheTracks
 
         // Debug, because setSimulate refuses outside it and the not-connected branch of `exec` only
         // logs the message when debugging.
-        model = init(null, true, false, false, true);
+        model = support.TestStation.simulatedInDebug();
         model.stop();
 
         model.newMM2Locomotive(DRIVER, ADDRESS);
 
         // A TRAIN THAT CAN REVERSE, which is the one the operator is asked about: a new locomotive is not, and one that
         // cannot is not turned where its destination has a copy it can stand on facing on (MT-368) - which, since the
-        // may-turn destination here has one (RSA50-A1), is the case these claims are about
+        // may-turn destination here has one, is the case these claims are about
         model.getLocByName(DRIVER).setReversible(true);
 
         recorder = new Handler()
@@ -176,7 +176,7 @@ public class testTheReversalReachesTheTracks
         layout.createEdge(tag + "_MIDDLE", tag + "_END");
 
         // A SQUARE TRAINS MAY TURN AT, as the build makes one a train can stand on facing on: its turning copy and a plain
-        // copy beside it, one piece of track on one sensor, the plain one reached from the same approach (RSA50-A1).  A
+        // copy beside it, one piece of track on one sensor, the plain one reached from the same approach.  A
         // lone turning Point is the end of a line, where a train is turned whatever is answered.
         layout.createPoint(tag + "_END_PLAIN", true, c.getName());
         place(layout, tag + "_END_PLAIN", x + 2, 0);

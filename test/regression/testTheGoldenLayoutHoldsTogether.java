@@ -50,10 +50,10 @@ import org.traincontrol.marklin.file.CS2File;
  * because nothing was watching. Something is now - and it runs LAST, after every `@Test` below, rather
  * than as the first of them: a fingerprint taken as the first `@Test` compares against itself before any
  * of its four siblings have run, so a write made by the third or fourth was never in scope. Review
- * caught this as TST-B2.
+ * caught this.
  *
- * Skipped rather than failed when the folder is not there, so this travels with the repository
- * without demanding that everybody have Adam's railway.
+ * Failed, not skipped, when the folder is not there: `cs2_sample_layout` is tracked, so the battery always has it
+ * (FR-136).
  *
  * @author Adam
  */
@@ -72,7 +72,7 @@ public class testTheGoldenLayoutHoldsTogether
     private static Map<String, String> before;
 
     /**
-     * A COPY of the golden layout, which is what everything below actually reads (TCX-B11).
+     * A COPY of the golden layout, which is what everything below actually reads.
      *
      * This class read `cs2_sample_layout` in place - Adam's real railway, the one folder in this
      * repository that is not recoverable - and built a model with no sandbox at all.  The fingerprint
@@ -97,14 +97,14 @@ public class testTheGoldenLayoutHoldsTogether
     {
         if (!GOLDEN.isDirectory())
         {
-            throw new SkipException("no golden layout at " + GOLDEN.getAbsolutePath());
+            throw new AssertionError("no golden layout at " + GOLDEN.getAbsolutePath());
         }
 
         before = fingerprint(GOLDEN);
 
         assertFalse(before.isEmpty(), "the golden layout folder is empty, so nothing below is a check");
 
-        // COPIED FIRST, AND BEFORE THE MODEL (TCX-B11, OB-111).  See the sandbox field.
+        // COPIED FIRST, AND BEFORE THE MODEL (OB-111).  See the sandbox field.
         sandbox = support.LayoutSandbox.open(GOLDEN);
 
         working = sandbox.getFolder();
@@ -112,7 +112,7 @@ public class testTheGoldenLayoutHoldsTogether
         assertFalse(fingerprint(working).isEmpty(),
             "the copy is empty, so every test below would read nothing and pass");
 
-        model = init(null, true, false, false, true);
+        model = support.TestStation.simulatedInDebug();
 
         String path = "file:///" + working.getAbsolutePath().replace('\\', '/') + "/";
 
@@ -145,7 +145,7 @@ public class testTheGoldenLayoutHoldsTogether
      * test classes start the real window, which opens whatever the saved UI state names, and a save on
      * that path rewrote his configuration file on every battery.
      *
-     * **`@AfterClass`, not `@Test` - and that is itself the fix for TST-B2.** This used to be the
+     * **`@AfterClass`, not `@Test` - and that is itself the fix.** This used to be the
      * FIRST `@Test` in the class, comparing `after` against `before` while the four tests below it had
      * not run yet - so a write made by any of THEM, in this same JVM, was never in scope; the class
      * could tell you it had not written to the golden layout before it was done reading it. Declared
@@ -177,7 +177,7 @@ public class testTheGoldenLayoutHoldsTogether
     @AfterClass(alwaysRun = true)
     public void testNothingWroteToTheGoldenLayout() throws Exception
     {
-        // NOTHING TO COMPARE AGAINST IS NOT A FAILURE (TSX-C18).
+        // NOTHING TO COMPARE AGAINST IS NOT A FAILURE.
         //
         // `alwaysRun` arrived on 2026-09-03 so that a teardown holding a sandbox cannot be skipped by
         // a set-up that threw - which is right, and means this now runs after the `SkipException` the
@@ -208,7 +208,7 @@ public class testTheGoldenLayoutHoldsTogether
     }
 
     /**
-     * What the reversal-length guard can actually judge on the real railway (TCX-B3).
+     * What the reversal-length guard can actually judge on the real railway.
      *
      * **"Could happen" against "does happen", asked of the operator's own data** - which is the check
      * this folder asks for whenever a feature is added, and this feature never got it.
@@ -216,7 +216,8 @@ public class testTheGoldenLayoutHoldsTogether
      * `reversalsWithoutLength` is armed by `measuresAnyTrack()`: ONE measured square anywhere turns
      * the notice on for every square trains turn round at. When the finding was written his railway
      * had six measured squares, all six on one test page, against 71 points - so the notice was armed
-     * and had nothing to say about almost every reversal it covered. It measures zero today.
+     * and had nothing to say about almost every reversal it covered.  On his data the arming is consistent
+     * either way, so a made-up store with no measured square is what proves the rule (FR-136 1b).
      *
      * **This measures rather than demands.** How much of his railway he has measured is his business
      * and changes as he works; a floor here would fail on a Tuesday for no defect. What it refuses is
@@ -229,6 +230,28 @@ public class testTheGoldenLayoutHoldsTogether
     @Test
     public void testWhatTheReversalGuardCanJudgeHere()
     {
+        // THE ARMING ANSWER ON A STORE MADE HERE, because the railway's own data cannot show the state this is about:
+        // once any square of it is measured, "armed" is the right answer whatever the question does.  Nothing measured
+        // must not arm the notice, and one measured square must, and taking it off must disarm it.
+        AutonomyCompanionStore fresh = new AutonomyCompanionStore(null);
+
+        TileKey somewhere = new TileKey("ZZ", 1, 1);
+
+        assertFalse(fresh.measuresAnyTrack(),
+            "a store with no length on any square arms the reversal-length notice - a warning that cannot answer (TCX-B3)");
+
+        assertTrue(fresh.tilesWithALength().isEmpty(), "precondition: a new store lists a measured square");
+
+        fresh.setTileLength(somewhere, 3);
+
+        assertTrue(fresh.measuresAnyTrack(), "one measured square does not arm the reversal-length notice");
+
+        assertEquals(fresh.tilesWithALength(), Arrays.asList(somewhere), "the measured square is not listed");
+
+        fresh.setTileLength(somewhere, 0);
+
+        assertFalse(fresh.measuresAnyTrack(), "taking the only length off does not disarm the notice");
+
         int measured = 0;
 
         for (TileKey tile : store.getNamedTiles())
@@ -246,15 +269,17 @@ public class testTheGoldenLayoutHoldsTogether
             assertEquals(measured, 0,
                 "the store says nothing is measured and " + measured + " named squares carry a "
                 + "length, so the arming question and the data disagree");
-
-            return;
         }
 
-        assertTrue(store.measuresAnyTrack(),
+        // THE ARMING ANSWER AGAINST THE DATA, not against itself: the squares that carry a length are listed by
+        // `tilesWithALength`, which reads the lengths and not the arming question.  Armed with none listed is the state
+        // worth checking, and so is a listed length with the notice off.
+        assertEquals(armed, !store.tilesWithALength().isEmpty(),
             "the reversal-length notice is armed by one measured square anywhere and then covers "
             + "every square trains turn round at.  Armed with nothing measured is the state TCX-B3 "
-            + "names: a warning that cannot answer the question it raises.  Measured squares among "
-            + "those named: " + measured);
+            + "names: a warning that cannot answer the question it raises.  The store says "
+            + (armed ? "a square is measured" : "none is") + "; it lists " + store.tilesWithALength().size()
+            + " squares with a length, and " + measured + " of those named carry one");
     }
     /**
      * Every square the setup names is a square the diagram still draws.
@@ -294,7 +319,7 @@ public class testTheGoldenLayoutHoldsTogether
             }
         }
 
-        // A FLOOR, so an empty walk is not a pass (TCX-B12).  See the sibling tests: each collects
+        // A FLOOR, so an empty walk is not a pass.  See the sibling tests: each collects
         // what is wrong and asserts the collection is empty, which an empty loop satisfies perfectly.
         assertFalse(store.getNamedTiles().isEmpty(),
             "the setup names no squares at all, so this walked nothing");
@@ -339,7 +364,7 @@ public class testTheGoldenLayoutHoldsTogether
     /**
      * No two pages claim one id.
      *
-     * Silent everywhere until DR-B4: the index would write a duplicate straight back out, the setup's
+     * Silent everywhere: the index would write a duplicate straight back out, the setup's
      * inversion would let the second page win, and half of one page's settings would resolve to the
      * other. Asked of the real file because that is where a duplicate would have come from.
      */
@@ -359,7 +384,7 @@ public class testTheGoldenLayoutHoldsTogether
                 + page.getKey());
         }
 
-        // A FLOOR, so an empty walk is not a pass (TCX-B12).
+        // A FLOOR, so an empty walk is not a pass.
         //
         // Each of these tests collects what is wrong and asserts the collection is empty.  A loop that
         // iterates NOTHING satisfies that perfectly - and every one of the things they walk comes out of
@@ -434,7 +459,7 @@ public class testTheGoldenLayoutHoldsTogether
             }
         }
 
-        // A FLOOR, so an empty walk is not a pass (TCX-B12).
+        // A FLOOR, so an empty walk is not a pass.
         //
         // Each of these tests collects what is wrong and asserts the collection is empty.  A loop that
         // iterates NOTHING satisfies that perfectly - and every one of the things they walk comes out of
@@ -454,7 +479,7 @@ public class testTheGoldenLayoutHoldsTogether
      * Every page in the layout index is a page that actually loaded.
      *
      * `CS2File` skips a page whose file will not parse or is not there and carries on, which is the
-     * right behaviour and is why FR-018 exists - but it is also how a page can quietly stop being part
+     * right behavior and is why FR-018 exists - but it is also how a page can quietly stop being part
      * of the railway. On a layout that lives in OneDrive this is a real state, so it is worth saying
      * out loud when it happens rather than only when something else goes wrong because of it.
      */
@@ -472,7 +497,7 @@ public class testTheGoldenLayoutHoldsTogether
             if (!loaded.contains(named)) absent.add(named);
         }
 
-        // A FLOOR, so an empty walk is not a pass (TCX-B12).  See the sibling tests: each collects
+        // A FLOOR, so an empty walk is not a pass.  See the sibling tests: each collects
         // what is wrong and asserts the collection is empty, which an empty loop satisfies perfectly.
         assertFalse(pages.isEmpty(), "no page loaded at all, so this walked nothing");
 

@@ -117,8 +117,6 @@ public class testTheGuardWindowIsNotTooWide
         }
     }
 
-    // ---------------------------------------------------------------------------------------------
-
     /** What was read off an open guard window. */
     private static final class Measured
     {

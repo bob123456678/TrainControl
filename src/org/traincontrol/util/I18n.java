@@ -40,7 +40,7 @@ public final class I18n
 
     /**
      * Which form of a counted noun the messages on show take for a number: "One", "Few", or "" for the plural - appended
-     * to a key, as `countWarnings` has `countWarningsOne` and `countWarningsFew` beside it (RSA28-C2).  French takes the
+     * to a key, as `countWarnings` has `countWarningsOne` and `countWarningsFew` beside it.  French takes the
      * singular for 0 as well; Polish a form of its own for 2 to 4, not 12 to 14; the rest the singular for 1 only.
      *
      * @param n the number counted

@@ -168,7 +168,7 @@ public class testAnImportKeepsOnlyThisLayoutsPages
 
     /**
      * A foreign page that happens to carry the same id as one of this layout's pages is left out, and
-     * none of its settings land on the local page (TDR-B4).
+     * none of its settings land on the local page.
      *
      * Page ids are numbered from the same start on every railway, so an export of a five-page layout into
      * a one-page one almost always has an id in common with it.  The page record merges by id and a key
@@ -245,7 +245,7 @@ public class testAnImportKeepsOnlyThisLayoutsPages
 
     /**
      * Their page carrying the id of one of this layout's UNLOADED pages lands on its own name, and the
-     * unloaded page keeps its settings and its protection (TDR-A1).
+     * unloaded page keeps its settings and its protection.
      *
      * The page record merged "theirs wins per id", so their "Main" with id 7 overwrote this layout's record
      * that id 7 is "Away" - a OneDrive page still downloading.  Away's held settings then resolved to Main
@@ -306,7 +306,7 @@ public class testAnImportKeepsOnlyThisLayoutsPages
 
     /**
      * Their copy of a page this layout has but cannot load right now is held for that page, not put on the
-     * loaded page that happens to share their id for it (TDR-A1).
+     * loaded page that happens to share their id for it.
      *
      * @throws IOException from the temporary folders
      */
@@ -353,7 +353,7 @@ public class testAnImportKeepsOnlyThisLayoutsPages
 
     /**
      * A list naming a foreign square loses that member only, and a value that merely looks like a page id
-     * is not a page (TDR-B7).
+     * is not a page.
      *
      * @throws IOException from the temporary folders
      */
@@ -392,7 +392,7 @@ public class testAnImportKeepsOnlyThisLayoutsPages
 
     /**
      * With NO page loaded - every page still downloading - an import still translates by the record this
-     * setup was written with, and a page's settings stay on that page (TDR-C6).
+     * setup was written with, and a page's settings stay on that page.
      *
      * The translation ran only when the store had an index, and a OneDrive start where every page is still
      * a placeholder has none: the exporter's page record was adopted "theirs wins per id" again, the save
@@ -448,7 +448,7 @@ public class testAnImportKeepsOnlyThisLayoutsPages
     }
 
     /**
-     * A field this version does not model is not saved in the exporter's page numbering (TDR-C7).
+     * A field this version does not model is not saved in the exporter's page numbering.
      *
      * @throws IOException from the temporary folders
      */
@@ -484,9 +484,7 @@ public class testAnImportKeepsOnlyThisLayoutsPages
             + " (TDR-C7)");
     }
 
-    // ---------------------------------------------------------------------------------------------
     // Fixtures
-    // ---------------------------------------------------------------------------------------------
 
     /**
      * An export from a railway with two pages, carrying a setting on each.

@@ -238,7 +238,7 @@ public class testCancelRestoresPlacements
     }
 
     /**
-     * A locomotive renamed while the note exists is renamed in the note too (SVN-B9).
+     * A locomotive renamed while the note exists is renamed in the note too.
      *
      * `LayoutEditor.autonomyLocomotiveRenamed` sweeps three holders - the snapshot Cancel restores and
      * both undo stacks - under a comment saying *"Cancel and Ctrl+Z are two ways of saying the same
@@ -336,7 +336,7 @@ public class testCancelRestoresPlacements
     }
 
     /**
-     * A pre-edit note that is not the right shape is refused, not applied (LD-4).
+     * A pre-edit note that is not the right shape is refused, not applied.
      *
      * `restoreSetup` was written for what `snapshotSetup` produces: it clears the store and then reads.
      * That is safe when the object is known to be the right shape, and unsafe the moment the contract
@@ -424,7 +424,7 @@ public class testCancelRestoresPlacements
     }
 
     /**
-     * Deleting the whole setup deletes the note too, or the setup comes back (LD-4).
+     * Deleting the whole setup deletes the note too, or the setup comes back.
      *
      * `deleteEverything` removed every configuration and the setup itself and left the note. Two
      * consequences, and the second is the serious one: the folder is never empty, so the way back out
@@ -467,8 +467,6 @@ public class testCancelRestoresPlacements
         assertFalse(restarted.getStore().isStation(sensor),
             "the deleted station came back after a restart");
     }
-
-    // ------------------------------------------------------------------------------------------
 
     /**
      * A sensor square with everything on it a square can carry: a name, a station, a locomotive.

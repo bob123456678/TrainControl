@@ -17,7 +17,7 @@ import org.traincontrol.util.I18n;
 final class LayoutEditorRightclickMenu extends JPopupMenu
 {        
     /**
-     * The editor this menu belongs to, and every message it shows (RLU2-C6): by the time an item runs the menu has left
+     * The editor this menu belongs to, and every message it shows: by the time an item runs the menu has left
      * its window, so a message parented on the menu belonged to Swing's hidden frame - and under an editor that takes the
      * main window's Always on Top, it opened beneath the editor while holding every window.
      */
@@ -151,7 +151,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             deleteSelected.setEnabled(anyPicked);
             selectionMenu.add(deleteSelected);
 
-            // UXR-C14: there used to be a second item here, "Clear Selection", calling the exact same
+            // There used to be a second item here, "Clear Selection", calling the exact same
             // edit.clearSelection() as "Deselect All" above - same tooltip ("Escape"), same enable
             // rule, separated only by a divider that implied they differed.  One action needs one
             // label; "Deselect All" already sits with the three ways to select, which is where a user
@@ -269,7 +269,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                 });
                 menuItem.setToolTipText("Control+R");
 
-                // UXR-C18: add() belongs inside this block.  menuItem is only reassigned to Rotate
+                // add() belongs inside this block.  menuItem is only reassigned to Rotate
                 // here; for a text tile or a symmetric one (no Rotate) it still names the Copy item
                 // added above, and Container.add() on a component already in this menu silently
                 // removes it from its slot and appends it again instead of duplicating it - a no-op
@@ -446,11 +446,11 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             }
         });
 
-        // UXR-C12: growEdges() itself refuses at MAX_SIZE with layout.ui.errorMaxSizeExceeded, but
+        // growEdges() itself refuses at MAX_SIZE with layout.ui.errorMaxSizeExceeded, but
         // the item stayed enabled and live at the ceiling, printing "(60 x 30)" on a control that was
         // about to refuse.  Mirrors the predicate growEdges() checks, and swaps the tooltip to the
         // reason for the same treatment Decrease already gets below.
-        // AND IT IS THE EDITOR'S OWN PREDICATE NOW (X8-C5), which Shift Down and Shift
+        // AND IT IS THE EDITOR'S OWN PREDICATE NOW, which Shift Down and Shift
         // Right on this same submenu also ask.
         boolean canGrow = edit.roomToGrow(1, 1);
         menuItem.setEnabled(canGrow);
@@ -472,8 +472,8 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             }
         });
 
-        // UXR-C12: this matched shrinkEdges()'s own check already, but was left with no tooltip at
-        // all, so when it greys out it gives no reason - against the pattern used everywhere else in
+        // This matched shrinkEdges()'s own check already, but was left with no tooltip at
+        // all, so when it grays out it gives no reason - against the pattern used everywhere else in
         // this menu (see Delete Page's tooltip split for the same idea).  Reuse the exact sentence
         // shrinkEdges() itself shows when refused.
         boolean canShrink = edit.getMarklinLayout().edgesAreEmpty();
@@ -490,8 +490,8 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
         addShift(diagramSubmenu, "layout.ui.shiftRight", "layout.ui.tooltip.shiftDiagramRight",
             () -> edit.shiftRight(), edit.canShiftRight());
 
-        // Greyed where they would refuse, with the reason - the same treatment Shrink gets above, and
-        // asking the editor's own predicate rather than restating it here (LE-C1).
+        // Grayed where they would refuse, with the reason - the same treatment Shrink gets above, and
+        // asking the editor's own predicate rather than restating it here.
         addShift(diagramSubmenu, "layout.ui.shiftUp", "layout.ui.tooltip.shiftDiagramUp",
             () -> edit.shiftUp(), edit.canShiftUp());
 
@@ -551,7 +551,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             }
         });
 
-        // Disabled, say why - the pattern UXR-C12 records for this menu.  Enabled, the item's own
+        // Disabled, say why - the pattern this menu follows.  Enabled, the item's own
         // tooltip describes what it does.
         item.setEnabled(enabled);
         item.setToolTipText(enabled ? I18n.t(tooltip) : I18n.t("layout.ui.errorShiftAtEdge"));

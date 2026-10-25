@@ -131,7 +131,7 @@ public class MarklinFeedback extends Feedback
             );
         }
 
-        // AND ANYTHING WATCHING FOR ONE, WHICH IS WHAT `parseMessage` DOES (W21-B1).
+        // AND ANYTHING WATCHING FOR ONE, WHICH IS WHAT `parseMessage` DOES.
         //
         // A module changes state two ways and only one of them announced it.  `parseMessage` - a sensor
         // arriving over the wire - calls this; `setState` is every OTHER way, and it did not.  Its

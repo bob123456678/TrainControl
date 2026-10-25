@@ -17,7 +17,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * The end of a run gives back only the track that run still holds - whatever Atomic Routes says by then (GUI-A1).
+ * The end of a run gives back only the track that run still holds - whatever Atomic Routes says by then.
  *
  * With Atomic Routes off, a run gives each edge back as its tail clears it, and another train may take it.  The unlock
  * at the end chose how to give track back by reading the setting AT THE END, so a run that started non-atomic and
@@ -46,7 +46,7 @@ public class testAnUnlockGivesBackOnlyWhatItHolds
         // BEFORE the model: `init` reads the machine-global layout preference (OB-111).
         sandbox = support.LayoutSandbox.open();
 
-        model = init(null, true, false, false, true);
+        model = support.TestStation.simulatedInDebug();
         model.stop();
     }
 
@@ -123,7 +123,7 @@ public class testAnUnlockGivesBackOnlyWhatItHolds
     }
 
     /**
-     * An atomic run gives everything back at its end, though its tail has passed edges on the way (GUI-A1's own fix).
+     * An atomic run gives everything back at its end, though its tail has passed edges on the way.
      *
      * The set of edges a tail has cleared is kept in atomic mode too - routes read it to know which accessories behind a
      * train may move - but nothing in it is released until the end.  The first repair chose how to unlock by whether that
@@ -169,8 +169,6 @@ public class testAnUnlockGivesBackOnlyWhatItHolds
             + " its locks, and the next route over it refused on a claim nobody holds");
         assertEquals(occupancy(second), 0, "an atomic run's unlock kept an edge it held");
     }
-
-    // ---------------------------------------------------------------------------------------------
 
     private static Point point(Layout layout, String name) throws Exception
     {

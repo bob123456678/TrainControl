@@ -8,9 +8,10 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import support.SourceOf;
 
 /**
- * Pressing Escape on the reversal prompt does not turn a train (ACC4-1).
+ * Pressing Escape on the reversal prompt does not turn a train.
  *
  * Adam's ruling was **"a yes/no keep direction, with no meaning change, and yes being default"**, and
  * for half a day the code did the opposite of its own comment.
@@ -107,8 +108,7 @@ public class testDismissingTheReversalPromptKeepsTheDirection
     @Test
     public void testTheDialogAnswerIsReadThroughThisRule() throws Exception
     {
-        String source = new String(Files.readAllBytes(
-            Paths.get("src/org/traincontrol/gui/ManualReversalPrompt.java")), StandardCharsets.UTF_8);
+        String source = SourceOf.declaration("public static boolean ask(Component parent, Locomotive train, Point where)");
 
         assertTrue(source.contains("answer[0] = reverseFor(chose);"),
             "the dialog's answer no longer goes straight through reverseFor. Whatever replaced it is"
@@ -121,7 +121,7 @@ public class testDismissingTheReversalPromptKeepsTheDirection
         assertTrue(dialog > 0 && dialog < assigned,
             "reverseFor is no longer being handed what showOptionDialog returned");
 
-        assertEquals(source.split("answer\\[0\\] =", -1).length - 1, 1,
+        assertEquals(SourceOf.fileDeclaring("public final class ManualReversalPrompt").split("answer\\[0\\] =", -1).length - 1, 1,
             "the answer is written in more than one place, so one of them is not covered by the rule"
             + " above - which is the shape this defect had");
     }

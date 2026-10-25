@@ -73,7 +73,7 @@ public class testTrainMarkIsNotBlank
      *
      * The second one is not academic: `ignored` returns early in paint() before the train mark, which
      * is deliberate - an ignored square is one autonomy takes no notice of, so there is no train of
-     * its to draw. What must not happen is the annotation being called blank, because then the greying
+     * its to draw. What must not happen is the annotation being called blank, because then the graying
      * that says "ignored" would not be drawn either.
      */
     @Test

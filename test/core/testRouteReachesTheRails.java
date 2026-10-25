@@ -53,7 +53,7 @@ public class testRouteReachesTheRails
         // OFF - the loopback lives in the branch exec() takes when it cannot transmit.
         MarklinControlStation.DEBUG_SIMULATE_PACKETS = true;
 
-        model = init(null, true, false, false, true);
+        model = support.TestStation.simulatedInDebug();
 
         model.setNetworkCommState(false);
     }
@@ -162,7 +162,7 @@ public class testRouteReachesTheRails
     }
 
     /**
-     * A per-command delay is honoured rather than dropped.
+     * A per-command delay is honored rather than dropped.
      *
      * Timed rather than inspected, because "the field survived" is what the round-trip tests already
      * cover.  What a user cares about is that the route takes longer to run - which is the whole point

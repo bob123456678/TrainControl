@@ -27,6 +27,7 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.MarklinFeedback;
+import support.SourceOf;
 
 /**
  * Track diagram tile refreshing, across the two threads that drive it.
@@ -40,7 +41,7 @@ import org.traincontrol.marklin.MarklinFeedback;
  *   - LayoutLabel's temporary change-highlight applied its icon from a raw thread, mutating a Swing
  *     component off the EDT - the one place in that class which did not marshal its work
  *
- * Requires a display (showUI = true), like testAutonomyPathValidation.
+ * Requires a display (the station's window), like testAutonomyPathValidation.
  */
 public class testLayoutTiles
 {
@@ -65,12 +66,12 @@ public class testLayoutTiles
     {
         // Before init(), not after: init() reads TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF as soon as
         // showUI constructs the real window, so a sandbox opened afterwards protects nothing.  Without
-        // this, showUI = true below opens and can write to Adam's own railway (OB-111), and can also
+        // this, the window below opens and can write to Adam's own railway (OB-111), and can also
         // raise the modal "create a track diagram?" prompt that no test here will ever click, stalling
         // the whole battery.
         sandbox = support.LayoutSandbox.open();
 
-        model = init(null, true, true, false, true);
+        model = support.TestStation.simulatedWithWindowInDebug();
         model.setNetworkCommState(false);
 
         ui = (TrainControlUI) model.getGUI();
@@ -87,9 +88,7 @@ public class testLayoutTiles
         if (sandbox != null) sandbox.close();
     }
 
-    // ------------------------------------------------------------------------------------------------
     // B9 - MarklinFeedback.updateTiles races with addTile
-    // ------------------------------------------------------------------------------------------------
 
     /**
      * Structural half, deterministic: the tile collection must be thread-safe, because addTile is
@@ -110,7 +109,7 @@ public class testLayoutTiles
     }
 
     /**
-     * Behavioural half: run the real production shapes against each other - repeated updateTiles()
+     * Behavioral half: run the real production shapes against each other - repeated updateTiles()
      * calls, as the CS feedback path does, while tiles are added, as the EDT does when a track diagram
      * window opens or a page is switched.  Neither may fail.
      *
@@ -203,12 +202,9 @@ public class testLayoutTiles
             "concurrent updateTiles()/addTile() must not fail - " + captured.get());
     }
 
-    // ------------------------------------------------------------------------------------------------
-    // UIX-B1 and UIX-B2, the 2026-09-19 review round
-    // ------------------------------------------------------------------------------------------------
 
     /**
-     * The two highlights do not put each other's stale picture back (UIX-B2).
+     * The two highlights do not put each other's stale picture back.
      *
      * A tile has two independent "restore the icon later" timers over it: the accessory highlight in `setImage`,
      * 2.25 seconds when a switch or signal changes from anywhere but a click here, and the flash the route editor's
@@ -266,14 +262,34 @@ public class testLayoutTiles
     }
 
     /**
-     * How long an accessory highlight is held for, as `LayoutLabel` holds it.
+     * How long an accessory highlight is held for, as `LayoutLabel` holds it: asked of its private
+     * `HIGHLIGHT_DURATION` rather than restated, so the bounds below follow a change to the hold.
      *
-     * Named here because the test below turns on the second drive landing inside it (OP2-C6).
+     * Named here because the test below turns on the second drive landing inside it.
      */
-    private static final long HIGHLIGHT_HOLD_MS = 2250;
+    private static final long HIGHLIGHT_HOLD_MS = highlightHold();
 
     /**
-     * A second accessory highlight stops the first, so only one restore ever fires (VC2-C3).
+     * @return LayoutLabel's HIGHLIGHT_DURATION, in milliseconds
+     */
+    private static long highlightHold()
+    {
+        try
+        {
+            java.lang.reflect.Field hold = LayoutLabel.class.getDeclaredField("HIGHLIGHT_DURATION");
+
+            hold.setAccessible(true);
+
+            return hold.getInt(null);
+        }
+        catch (ReflectiveOperationException e)
+        {
+            throw new IllegalStateException("LayoutLabel has no HIGHLIGHT_DURATION to ask", e);
+        }
+    }
+
+    /**
+     * A second accessory highlight stops the first, so only one restore ever fires.
      *
      * A three-way drives twice, 350 ms apart, and each drive highlights the tile.  The first timer used to be left
      * running: it fired 2.25 seconds after ITS start, part-way through the second highlight, and put the plain icon
@@ -293,9 +309,9 @@ public class testLayoutTiles
 
         int before = label.accessoryRestores();
 
-        // THE SECOND DRIVE HAS TO LAND INSIDE THE FIRST HIGHLIGHT (OP2-C6).
+        // THE SECOND DRIVE HAS TO LAND INSIDE THE FIRST HIGHLIGHT.
         //
-        // The hold is 2250 ms.  If getting here takes longer than that - `awaitHighlight` plus two
+        // The hold is HIGHLIGHT_HOLD_MS (2250 ms today).  If getting here takes longer than that - `awaitHighlight` plus two
         // `invokeAndWait` hops, on a machine running the whole battery - the first timer has already
         // fired and been counted, and the assertion below sees two restores with the fix in place.
         // That is a flake, and a flake in a class about timers is the worst kind: it reads as the
@@ -319,8 +335,9 @@ public class testLayoutTiles
                 + " and there is no superseded timer left to ask about");
         }
 
-        // Long enough for BOTH timers to have fired, if both were still armed.
-        Thread.sleep(3200);
+        // Long enough for BOTH timers to have fired, if both were still armed: the first hold, the 350 ms the second
+        // drive came after it, and a margin.
+        Thread.sleep(HIGHLIGHT_HOLD_MS + 950);
 
         SwingUtilities.invokeAndWait(() -> { });
 
@@ -416,7 +433,7 @@ public class testLayoutTiles
     }
 
     /**
-     * Any square whose picture is replaced gives up an outstanding flash, not only a switch or a signal (SVB-B1).
+     * Any square whose picture is replaced gives up an outstanding flash, not only a switch or a signal.
      *
      * The first fix dropped the flash inside the accessory-highlight branch, which two ordinary cases never reach:
      * a switch thrown by clicking its own flashed tile - the click exclusion skips that branch - and a square the
@@ -456,7 +473,7 @@ public class testLayoutTiles
 
         // THE PICTURE IS REPLACED.  `updateImage(false)` returns without doing anything unless the image NAME
         // changed, and a bare feedback component with nothing bound to it always draws the same picture - so
-        // asked that way this proved nothing and the flash simply timed out inside the wait (VB2-B2).
+        // asked that way this proved nothing and the flash simply timed out inside the wait.
         // `updateImage(true)` replaces it, which is what an occupancy change does; a FEEDBACK square takes no
         // accessory-highlight branch at all, so what is tested is the path that branch does not cover.
         SwingUtilities.invokeAndWait(() -> label.updateImage(true));
@@ -464,12 +481,12 @@ public class testLayoutTiles
         assertFalse(label.isAccessoryHighlightOutstanding(),
             "precondition: this square took the accessory-highlight branch, so it is not the path this is for");
 
-        // BOUNDED WELL INSIDE THE FLASH'S OWN HOLD, which is HIGHLIGHT_DURATION - 2250 ms (VB2-B2, corrected by
-        // VC2-C1).  A flash that merely timed out cannot pass this, and the elapsed time is asserted below so that
+        // BOUNDED WELL INSIDE THE FLASH'S OWN HOLD, which is HIGHLIGHT_DURATION - 2250 ms today.
+        // A flash that merely timed out cannot pass this, and the elapsed time is asserted below so that
         // a slow machine says so rather than passing for the wrong reason.
         long waitingFrom = System.currentTimeMillis();
 
-        long armed = waitingFrom + 1200;
+        long armed = waitingFrom + HIGHLIGHT_HOLD_MS / 2;
 
         while (label.isFlashOutstanding() && System.currentTimeMillis() < armed)
         {
@@ -482,15 +499,16 @@ public class testLayoutTiles
             "the flash is still armed after this square was redrawn, so it will put the old picture back - a sensor"
             + " drawn clear under a standing train, or a switch drawn in the position it was thrown out of");
 
-        assertTrue(waited < 2000,
-            "the flash went quiet after " + waited + " ms, which is long enough to be its own 2250 ms hold running"
+        assertTrue(waited < HIGHLIGHT_HOLD_MS - 250,
+            "the flash went quiet after " + waited + " ms, which is long enough to be its own " + HIGHLIGHT_HOLD_MS
+            + " ms hold running"
             + " out rather than the redraw giving it up");
     }
 
     /**
      * Waits for an accessory highlight to go up, which happens a pass or two after `updateImage` is called.
      *
-     * Since SVT-B2 the timer nulls the field when it fires, so this cannot answer yes about a highlight that ended
+     * The timer nulls the field when it fires, so this cannot answer yes about a highlight that ended
      * long ago - which is what made the second half of the flash test vacuous.
      *
      * @param label the label
@@ -529,7 +547,7 @@ public class testLayoutTiles
         awaitHighlight(label);
 
         // The highlight is 2250 ms and its restore is a Swing Timer; waited out, then confirmed gone rather than
-        // assumed gone (SVT-B2).
+        // assumed gone.
         long deadline = System.currentTimeMillis() + 10000;
 
         while (label.isAccessoryHighlightOutstanding() && System.currentTimeMillis() < deadline)
@@ -596,13 +614,13 @@ public class testLayoutTiles
     }
 
     /**
-     * The exit itself asks every open window, and a route editor holding unsaved typing can refuse it (UIX-B1).
+     * The exit itself asks every open window, and a route editor holding unsaved typing can refuse it.
      *
      * `WindowClosed` asked the open layout editor whether it might settle (OB-070) and never asked the route
      * editor, so File > Exit and the main window's X disposed it with the process and took whatever had been typed
      * with them - silently, because that window's own discard question lives on its X and on Escape.
      *
-     * **The decision, not the predicate under it** (SVT-B1).  The handler ends in `System.exit`, so what is asked
+     * **The decision, not the predicate under it**.  The handler ends in `System.exit`, so what is asked
      * here is `everyOpenWindowMaySettle` - everything the exit does before it saves anything - with the discard
      * dialog answered through the route editor's test hook.  Answering No must stop the exit; answering Yes must
      * let it carry on.
@@ -667,10 +685,10 @@ public class testLayoutTiles
     }
 
     /**
-     * The exit brings a minimised route editor back before it asks about its unsaved typing (the popups sweep, on Adam's
-     * MT-703 note): the question is owned by the route editor, and a minimised window hides what it owns - so closing
+     * The exit brings a minimized route editor back before it asks about its unsaved typing (the popups sweep, on Adam's
+     * MT-703 note): the question is owned by the route editor, and a minimized window hides what it owns - so closing
      * TrainControl with the route editor in the taskbar asked where nobody could see it, and the exit waited on it.
-     * `toFront`, which it did call, does not restore a minimised window.
+     * `toFront`, which it did call, does not restore a minimized window.
      *
      * MUTATION: ask without bringing the route editor back, and this fails.
      *
@@ -726,7 +744,7 @@ public class testLayoutTiles
     }
 
     /**
-     * The route editor notices its route being changed or deleted underneath it (GUX-B1).
+     * The route editor notices its route being changed or deleted underneath it.
      *
      * This window is not modal and does not hold the route: Enable/Disable in the route list, a delete, an import or
      * another editor can change it while it is open, and Save is a delete-and-re-add of everything the window holds.
@@ -768,7 +786,7 @@ public class testLayoutTiles
                 "the route was enabled while this editor was open and the editor cannot tell, so its Save switches"
                 + " it off again without saying anything");
 
-            // A RENAME IS NOT A DELETION (OP2-C9).
+            // A RENAME IS NOT A DELETION.
             //
             // This looked the route up by NAME only, so a rename under the window read as "gone" - and the
             // message that followed named the two causes that had not happened, deleted or replaced by an
@@ -787,7 +805,7 @@ public class testLayoutTiles
             assertEquals(editor.nameNowHeldById(), "Moving route renamed",
                 "the editor cannot say what the route is called now, so it has nothing to offer to save onto");
 
-            // AND A SAVE KEEPS THE NAME THE OTHER PARTY GAVE IT (FXV-B2).
+            // AND A SAVE KEEPS THE NAME THE OTHER PARTY GAVE IT.
             //
             // The window does not refresh and `originalName` is final, so the name field still holds the
             // name it opened with - and the first version of this passed that as the NEW name, renaming
@@ -802,14 +820,10 @@ public class testLayoutTiles
 
             // AND THE CALL SITE USES IT, so pinning the rule does not leave the one place that was wrong
             // as the only thing nothing checks.
-            String source = new String(java.nio.file.Files.readAllBytes(
-                java.nio.file.Paths.get("src/org/traincontrol/gui/RouteEditorFrame.java")),
-                java.nio.charset.StandardCharsets.UTF_8);
-
-            assertTrue(source.contains("editRoute(nowCalled, saveAs,"),
+            assertTrue(SourceOf.declaration("private void onSave()").contains("editRoute(nowCalled, saveAs,"),
                 "the renamed-route branch no longer saves under the name nameToSaveAs chose");
 
-            // AND THE OLD NAME COMING BACK ON A DIFFERENT ROUTE IS NOT THIS ROUTE (FNL-C5).
+            // AND THE OLD NAME COMING BACK ON A DIFFERENT ROUTE IS NOT THIS ROUTE.
             //
             // A route renamed away and a second one given its old name leaves something answering to
             // `originalName` that this window never opened - and saving onto it overwrites a stranger.
@@ -838,7 +852,7 @@ public class testLayoutTiles
             model.editRoute("Moving route renamed", name, commands, 0,
                 org.traincontrol.marklin.MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, true, null);
 
-            // A RENAME IS A CHANGE TOO (OP2-B5).  `Route.locomotiveRenamed` rewrites the route's commands and
+            // A RENAME IS A CHANGE TOO.  `Route.locomotiveRenamed` rewrites the route's commands and
             // conditions IN PLACE, so nothing about the route object changes identity - and the signature used
             // to compare the conditions by object, which made a rename invisible and let Save put the dead name
             // back.
@@ -888,9 +902,7 @@ public class testLayoutTiles
         }
     }
 
-    // ------------------------------------------------------------------------------------------------
     // B10 - LayoutLabel mutates Swing state off the EDT
-    // ------------------------------------------------------------------------------------------------
 
     /**
      * Every icon change must happen on the EDT, including the temporary change-highlight.
@@ -998,7 +1010,7 @@ public class testLayoutTiles
             try
             {
                 // Long enough that a second action would have to overlap this one if nothing were
-                // serialising them - a thread per click would fail here
+                // serializing them - a thread per click would fail here
                 Thread.sleep(120);
             }
             catch (InterruptedException ex)

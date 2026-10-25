@@ -1,9 +1,6 @@
 package regression;
 
-import java.io.File;
 import java.lang.reflect.Field;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -13,11 +10,12 @@ import java.util.Set;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomyCompanionStore;
+import support.SourceOf;
 
 /**
  * Every collection the store keeps is in the registry, and the registry is what the sites walk.
  *
- * DD-A1 / OB-025. `AutonomyCompanionStore` keeps eleven collections and repeats the same per-collection
+ * OB-025. `AutonomyCompanionStore` keeps eleven collections and repeats the same per-collection
  * shape at fourteen sites - saving, loading, clearing, renaming a page, moving squares, forgetting
  * squares, snapshotting and restoring a page, reconciling against the diagram, applying to another
  * store. Adding one collection means finding all fourteen.
@@ -29,7 +27,7 @@ import org.traincontrol.automationui.AutonomyCompanionStore;
  * back on - silently, and only on the renamed page."
  *
  * The same shape produced at least four more, all documented in the source: `clear()` missing
- * `stationSignals` while `clearShared()` had it, which threw a cancelled signal on real hardware;
+ * `stationSignals` while `clearShared()` had it, which threw a canceled signal on real hardware;
  * `captions` missing from `KNOWN_SHARED`, which reverted every caption edit on the next save;
  * directions left behind by every move; captions rekeyed on one side only.
  *
@@ -41,7 +39,7 @@ import org.traincontrol.automationui.AutonomyCompanionStore;
  *
  * So what is left to check is different, and smaller:
  *
- *   - Nothing the store holds is unclassified. Unchanged, and still the first line of defence: a
+ *   - Nothing the store holds is unclassified. Unchanged, and still the first line of defense: a
  *     collection nobody classified is how the eleventh one took five commits to finish adding.
  *   - Every kept collection is IN the registry. This is the new single point of failure and it is the
  *     only one that a compiler cannot check - a `Kept` subclass that forgets a method will not build,
@@ -49,9 +47,9 @@ import org.traincontrol.automationui.AutonomyCompanionStore;
  *   - Every site that used to list them walks the registry instead. Guards against a collection being
  *     quietly re-inlined at one site, which would put the divergence back.
  *   - `reconcile` and `applyTo` still name every collection, because those two are still written by
- *     hand on purpose (DD-D9): each asks a question the registry cannot express.
+ *     hand on purpose: each asks a question the registry cannot express.
  *
- * The exemptions below are the other half of the value. DD-A1's complaint about `reconcile` was not
+ * The exemptions below are the other half of the value. The complaint about `reconcile` was not
  * only that two collections were missing, but that "there is no comment claiming this is deliberate,
  * and there is one for every other decision in that method." An exemption here is that comment, in a
  * place that fails if it stops being true.
@@ -60,9 +58,6 @@ import org.traincontrol.automationui.AutonomyCompanionStore;
  */
 public class testStoreCollectionsAreHandledEverywhere
 {
-    private static final File SOURCE =
-        new File("src/org/traincontrol/automationui/AutonomyCompanionStore.java");
-
     /**
      * The collections that are part of the SETUP - the things a square or a page carries.
      */
@@ -100,7 +95,7 @@ public class testStoreCollectionsAreHandledEverywhere
     /**
      * The two bookkeeping sites still written out by hand, and why they are.
      *
-     * DD-D9, carried into OB-025's ticket as a condition on doing it at all: these must stay
+     * Carried into OB-025's ticket as a condition on doing it at all: these must stay
      * hand-written. Each asks a question a registry cannot express. `reconcile` decides what a
      * square's absence from the diagram MEANS, and the answer differs per collection - a caption goes
      * when either the square it is drawn on or the sensor it is about goes, which is a rule of its
@@ -110,7 +105,7 @@ public class testStoreCollectionsAreHandledEverywhere
      * they are still checked the old way: name every collection, or say why not.
      */
     private static final String[] SITES = { "reconcile", "applyTo",
-        // The thirteenth site, and the one the registry does not cover (LD-11).
+        // The thirteenth site, and the one the registry does not cover.
         //
         // heldFields says how each collection's entries are picked out of the file when their page is
         // not loaded, and held back verbatim. It cannot be derived from the registry because it is
@@ -164,7 +159,7 @@ public class testStoreCollectionsAreHandledEverywhere
         EXEMPT.put("reconcile:excludedPages", "reconcile compares SQUARES against the diagram");
 
         // Its twin, and keyed by page for the same reason: it records which PAGES the operator
-        // turned back on after the repeated-sensor rule shut them (TST-B15).
+        // turned back on after the repeated-sensor rule shut them.
         EXEMPT.put("reconcile:keptDespiteRepeats", "reconcile compares SQUARES against the diagram");
 
         // HELD_FIELDS is keyed by the name in the FILE, like everything else that reads or writes one.
@@ -276,10 +271,7 @@ public class testStoreCollectionsAreHandledEverywhere
     @Test
     public void testEveryKeptCollectionIsHandledAtEverySite() throws Exception
     {
-        assertTrue(SOURCE.isFile(),
-            "cannot find " + SOURCE.getAbsolutePath() + " - a test that reads the source cannot pass by not finding it. This returned quietly, so renaming or moving that file would have taken this rule with it and said nothing");
-
-        String source = new String(Files.readAllBytes(SOURCE.toPath()), StandardCharsets.UTF_8);
+        String source = source();
 
         List<String> missing = new ArrayList<>();
 
@@ -313,10 +305,7 @@ public class testStoreCollectionsAreHandledEverywhere
     @Test
     public void testNoExemptionIsStale() throws Exception
     {
-        assertTrue(SOURCE.isFile(),
-            "cannot find " + SOURCE.getAbsolutePath() + " - a test that reads the source cannot pass by not finding it. This returned quietly, so renaming or moving that file would have taken this rule with it and said nothing");
-
-        String source = new String(Files.readAllBytes(SOURCE.toPath()), StandardCharsets.UTF_8);
+        String source = source();
 
         List<String> stale = new ArrayList<>();
 
@@ -337,7 +326,7 @@ public class testStoreCollectionsAreHandledEverywhere
     }
 
     /**
-     * The text of one method, or of one constant's initialiser, by brace matching.
+     * The text of one method, or of one constant's initializer, by brace matching.
      *
      * Crude and adequate: this asks whether a name is mentioned, not what is done with it. Something
      * that reads the file cannot tell a real handling from a mention in a comment - which is a
@@ -347,7 +336,7 @@ public class testStoreCollectionsAreHandledEverywhere
     /**
      * A method body with its comments taken out.
      *
-     * NR-8, from the night review, and it produced its own counter-example. This test asks whether a
+     * It produced its own counter-example. This test asks whether a
      * collection's NAME appears at a site, and its javadoc above argues that "a collection nobody
      * handled is a collection nobody wrote about either" - which stopped being true the moment
      * forgetSquares lost its `tileDirections.remove(key)` line and gained a comment explaining why it
@@ -364,20 +353,15 @@ public class testStoreCollectionsAreHandledEverywhere
     /**
      * The store's source, or a failure that says so.
      *
-     * A test that reads the source cannot pass by not finding it. This used to be three copies of the
-     * same two lines; the assertion inside is the reason they existed and it is kept.
+     * A test that reads the source cannot pass by not finding it: the store is looked for by its declaration,
+     * wherever the file is, and not finding it fails.
      *
-     * @return the file's text
-     * @throws Exception if it cannot be read
+     * @return the text of the file that declares the store
+     * @throws Exception if it cannot be found
      */
     private String source() throws Exception
     {
-        assertTrue(SOURCE.isFile(),
-            "cannot find " + SOURCE.getAbsolutePath() + " - a test that reads the source cannot pass "
-            + "by not finding it. Renaming or moving that file would otherwise have taken this rule "
-            + "with it and said nothing");
-
-        return new String(Files.readAllBytes(SOURCE.toPath()), StandardCharsets.UTF_8);
+        return SourceOf.fileDeclaring("public class AutonomyCompanionStore\n");
     }
 
     private String withoutComments(String body)
@@ -431,7 +415,7 @@ public class testStoreCollectionsAreHandledEverywhere
 
         if (longest != null) return longest;
 
-        // Not a method - a constant, whose "body" is its initialiser up to the semicolon
+        // Not a method - a constant, whose "body" is its initializer up to the semicolon
         java.util.regex.Matcher constant = java.util.regex.Pattern.compile(
             "^[ \t]*(?:private|public|protected)[^\n]*\\b" + name + "\\s*=",
             java.util.regex.Pattern.MULTILINE).matcher(source);

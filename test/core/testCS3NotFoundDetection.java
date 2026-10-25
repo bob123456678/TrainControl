@@ -9,9 +9,9 @@ import org.testng.annotations.Test;
 import org.traincontrol.marklin.file.CS2File;
 
 /**
- * A CS3 that answers "Not Found" in the BODY is recognised as not having it.
+ * A CS3 that answers "Not Found" in the BODY is recognized as not having it.
  *
- * TA-B6, from the test suite audit inside [OB-089]. `isNotFoundError` has two branches and the suite
+ * From the test suite audit inside [OB-089]. `isNotFoundError` has two branches and the suite
  * only ever exercised one: the mock Central Station returns real HTTP 404s, which land in the
  * `FileNotFoundException` catch. The audit demonstrated the gap by replacing the whole method with
  * `return false` and watching everything stay green.
@@ -61,7 +61,7 @@ public class testCS3NotFoundDetection
     }
 
     /**
-     * And the same thing however the station capitalises it.
+     * And the same thing however the station capitalizes it.
      *
      * The comparison is deliberately case-insensitive in the code; that is worth holding, because a
      * firmware that says "not found" would otherwise be read as success.

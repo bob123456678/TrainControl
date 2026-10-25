@@ -165,7 +165,7 @@ public final class SelfUpdate
          *
          * @param pending the update
          * @param exit the application's exit, which takes the update when nothing refuses it
-         * @return true when the exit came back without taking it: it was cancelled
+         * @return true when the exit came back without taking it: it was canceled
          */
         public boolean exitWith(Pending pending, Runnable exit)
         {
@@ -203,7 +203,7 @@ public final class SelfUpdate
     /**
      * Tells an update that is waiting to hear from this version that it has started (FR-125).
      *
-     * Called once the main window is on screen, and on the two ways the user leaves before then - cancelling the IP
+     * Called once the main window is on screen, and on the two ways the user leaves before then - canceling the IP
      * address, giving up the first sync - because a version that asks a question runs.  Not as `main`'s first act any
      * more (FR-125, 2026-10-13): a version that fails in its own start-up after that had "started" and was kept, while the
      * Readme promised an update that cannot start is undone.
@@ -254,6 +254,25 @@ public final class SelfUpdate
     }
 
     /**
+     * TEST HOOK, with no effect unless a test sets it: the jar `runningJar` reports in place of the one the program was
+     * loaded from (FR-136 Phase 6; Adam, 2026-10-19: "OK on download update test hooks").  A test runs from a folder of
+     * classes, where there is no jar, so Download & Update could not be reached from one.  Null, as it always is outside
+     * a test, asks the code source as before.
+     */
+    private static volatile File runningJarForTests;
+
+    /**
+     * For tests: makes `runningJar` report this jar, a throwaway one in the test's own folder, so that Download & Update
+     * is offered and replaces that rather than anything real.  Reset it with null in a finally.
+     *
+     * @param jar the jar to pretend the program runs from, or null for the real answer
+     */
+    public static void runningJarForTests(File jar)
+    {
+        runningJarForTests = jar;
+    }
+
+    /**
      * The jar this class was loaded from, if it is one an update can replace.
      *
      * @param anchor a class of the application, whose code source is the jar
@@ -261,6 +280,10 @@ public final class SelfUpdate
      */
     public static File runningJar(Class<?> anchor)
     {
+        final File pretend = runningJarForTests;
+
+        if (pretend != null) return pretend;
+
         try
         {
             CodeSource source = anchor.getProtectionDomain().getCodeSource();
@@ -478,7 +501,7 @@ public final class SelfUpdate
      * JVM has ended; and waits until the updater says it is running.
      *
      * Called from the exit itself, once everything has been saved and nothing can refuse the exit any more - so a
-     * cancelled exit never leaves an updater waiting.  The lock is held from here until the process ends, and the
+     * canceled exit never leaves an updater waiting.  The lock is held from here until the process ends, and the
      * updater waits until it can take it.
      *
      * **The exit goes on only once the updater has said it is running** (`JarUpdater.RUNNING_NAME`, its first act).
@@ -597,17 +620,7 @@ public final class SelfUpdate
      */
     public static Updater startDetached(List<String> command, File folder) throws IOException
     {
-        File nowhere = new File(File.separatorChar == '\\' ? "NUL" : "/dev/null");
-
-        ProcessBuilder builder = new ProcessBuilder(command)
-            .directory(folder)
-            .redirectErrorStream(true)
-            .redirectOutput(ProcessBuilder.Redirect.appendTo(nowhere))
-            .redirectInput(ProcessBuilder.Redirect.from(nowhere));
-
-        JarUpdater.prepareEnvironment(builder.environment(), null);
-
-        final Process process = builder.start();
+        final Process process = JarUpdater.startDetached(command, folder, null);
 
         return new Updater()
         {

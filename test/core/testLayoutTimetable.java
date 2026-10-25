@@ -45,7 +45,7 @@ public class testLayoutTimetable
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        model = init(null, true, false, false, false);
+        model = support.TestStation.simulated();
         model.stop();
     }
 
@@ -58,7 +58,7 @@ public class testLayoutTimetable
         MarklinLocomotive loc = new MarklinLocomotive(model, 1, MarklinLocomotive.decoderType.MM2,
             "TT Loc " + (++locCounter));
 
-        // WITH A SPEED, which was never what these tests are about (SG-A5).
+        // WITH A SPEED, which was never what these tests are about.
         //
         // A fresh locomotive has none, and the dispatch loop now SKIPS an entry whose locomotive has
         // a speed outside 1 to 100 rather than retrying it - so the two give-up tests below ended
@@ -155,7 +155,7 @@ public class testLayoutTimetable
     }
 
     /**
-     * The timetable can be read while it is written (GST-C3).  `getTimetable` hands out the list itself, the event thread
+     * The timetable can be read while it is written.  `getTimetable` hands out the list itself, the event thread
      * reads it - the timetable window, its menus - and a running train's capture appends to it from that train's own
      * thread.  A reader part-way along the list when an entry is captured sees the list as it stood when it began, and
      * nothing is thrown.
@@ -312,14 +312,51 @@ public class testLayoutTimetable
         layout.invalidate();
 
         assertFalse(layout.isValid());
-        assertFalse(layout.executePath(path(layout), dummyLoc(), 50, null),
-            "an invalidated layout can never execute a path, no matter how often it is retried");
+
+        // WHICH REFUSAL SPOKE (FR-136).  This layout's locomotive stands nowhere, so executePath also refuses at "not
+        // at the start of the path" with the validity check deleted; the log says which of the two it was.
+        java.util.List<String> logged = new java.util.concurrent.CopyOnWriteArrayList<>();
+
+        java.util.logging.Handler tap = new java.util.logging.Handler()
+        {
+            @Override
+            public void publish(java.util.logging.LogRecord record)
+            {
+                if (record != null && record.getMessage() != null) logged.add(record.getMessage());
+            }
+
+            @Override
+            public void flush() { }
+
+            @Override
+            public void close() { }
+        };
+
+        java.util.logging.Logger logger = java.util.logging.Logger.getLogger(MarklinControlStation.class.getName());
+
+        logger.addHandler(tap);
+
+        try
+        {
+            // The log drops a message that repeats the last one, so the last one is made to be something else.
+            model.log("before the refused path");
+
+            assertFalse(layout.executePath(path(layout), dummyLoc(), 50, null),
+                "an invalidated layout can never execute a path, no matter how often it is retried");
+        }
+        finally
+        {
+            logger.removeHandler(tap);
+        }
+
+        assertTrue(logged.contains(org.traincontrol.util.I18n.f("autolayout.errorConfigurationInvalidMustReload")),
+            "the path was refused, but not because the layout is invalid: " + logged);
     }
 
     /**
      * An entry that can never execute ends the run, rather than being retried for ever.
      *
-     * This was a characterisation test pinning the opposite - T3, a known defect - with a note saying
+     * This was a characterization test pinning the opposite - T3, a known defect - with a note saying
      * it must be inverted when the retry loop learned to give up. It has been.
      *
      * The loop is `while (running && !executePath(...))`, and both the attempt cap and the pause that
@@ -505,8 +542,8 @@ public class testLayoutTimetable
     /**
      * The run stops at an entry the railway cannot run, and says why (Adam, 2026-09-30: "stop the timetable run upon
      * encountering an invalid path, and let the user know").  Refused and passed over, a train's later entries started
-     * where it was not, and the run stood for minutes before giving up, saying only that the track never became free
-     * (RSA9-B1).  The entry is left unrun, so the window names it, and nothing after it runs.
+     * where it was not, and the run stood for minutes before giving up, saying only that the track never became free.
+     * The entry is left unrun, so the window names it, and nothing after it runs.
      *
      * MUTATION: pass over an entry the railway cannot run, and this fails.
      *
@@ -586,7 +623,7 @@ public class testLayoutTimetable
 
     /**
      * A route that ends where it starts - a lap - is refused: kept unrunnable when a timetable is read, so the run stops
-     * there and says why, and refused by the run itself whatever door brings it (RSA30-C2).
+     * there and says why, and refused by the run itself whatever door brings it.
      *
      * No door of the application offers one; a timetable read from a file can carry one.  Run, it left the train on no
      * Point - the arrival took it off the station it had just reached - with that station's exit guard green under it,
@@ -751,7 +788,7 @@ public class testLayoutTimetable
     }
 
     /**
-     * Clear Timetable empties the list under the railway's lock, as the remove does (RSA48-C1).
+     * Clear Timetable empties the list under the railway's lock, as the remove does.
      *
      * Capture appends under that lock from locomotive threads, and Clear replaced the list on the event thread without
      * it: run side by side in a stress test, capture's append threw thousands of times a race.

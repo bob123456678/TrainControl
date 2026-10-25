@@ -58,7 +58,7 @@ public class testCommandTableMarks
             assertNotEquals(first, second, "the rows are indistinguishable, so nothing below can tell "
                 + "which one moved");
 
-            // --- the arrows -------------------------------------------------------------------
+            // the arrows
             act(frame, 0, RouteEditorFrame.markMoveDown());
 
             assertEquals(frame.commandRowCountForTest(), 3, "moving a row changed how many there are");
@@ -73,7 +73,7 @@ public class testCommandTableMarks
                 + "arrows must leave a row where they put it, not spring back");
             assertEquals(target(frame, 1), second);
 
-            // --- duplicate --------------------------------------------------------------------
+            // duplicate
             act(frame, 0, RouteEditorFrame.markCopy());
 
             assertEquals(frame.commandRowCountForTest(), 4,
@@ -85,7 +85,7 @@ public class testCommandTableMarks
                 "the copy is not directly under the row it was made from, which is where it belongs - "
                 + "the reason to copy a row is that the next command is nearly the same one");
 
-            // --- delete -----------------------------------------------------------------------
+            // delete
             act(frame, 1, RouteEditorFrame.markDelete());
 
             assertEquals(frame.commandRowCountForTest(), 3,
@@ -136,7 +136,7 @@ public class testCommandTableMarks
             final String alone = I18n.f("route.ui.frameStopStandsAlone", I18n.t("route.kind.STOP"),
                 I18n.t("route.kind.ROUTE"));
 
-            // IN THE EDITOR'S OWN WORDS (RLA5-C6, RLU5-C3): the message names the rows as the editor labels them
+            // IN THE EDITOR'S OWN WORDS: the message names the rows as the editor labels them
             assertTrue(alone.contains(I18n.t("route.kind.STOP")) && alone.contains(I18n.t("route.kind.ROUTE")),
                 "the editor's refusal does not name its rows as the editor labels them: " + alone);
 

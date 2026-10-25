@@ -95,7 +95,7 @@ public class testAutonomyDiagramSampleLayout
 
     private void build() throws Exception
     {
-        model = init(null, true, false, false, false);
+        model = support.TestStation.simulated();
 
         File folder = findLayoutFolder();
 
@@ -253,7 +253,7 @@ public class testAutonomyDiagramSampleLayout
     {
         Set<Integer> out = new LinkedHashSet<>();
 
-        // TST-A2: this used to be the same loop as `derived` in testEverySensorTheLegacyConfigUsesIsDerived
+        // This used to be the same loop as `derived` in testEverySensorTheLegacyConfigUsesIsDerived
         // - reducer.getPoints().values() - which made `missing` unconditionally empty by construction:
         // whatever was not in `derived` could not be in `inScope` either, since both came from the same
         // map. Read straight off the tile graph instead: graph.getFeedbackTiles() is every sensor drawn
@@ -455,7 +455,7 @@ public class testAutonomyDiagramSampleLayout
 
         Map<String, ReducedEdge> byName = builder.edgesByName();
 
-        // TST-B18: without this, AutonomyBuilder.edgesByName() returning an empty map would leave
+        // Without this, AutonomyBuilder.edgesByName() returning an empty map would leave
         // `turns` empty by construction - zero Points examined, not zero offenders - and the caller's
         // assertTrue(turns.isEmpty()) would pass having checked nothing.  testTheDiagramReducesToSomething
         // pins the raw reducer's own points/edges, but not what this builder derives from them.
@@ -579,7 +579,7 @@ public class testAutonomyDiagramSampleLayout
         Map<String, TileKey> tiles = builder.tilesByName();
         Set<String> edgeNames = builder.edgesByName().keySet();
 
-        // TST-B18: same floor as turnsOffered - an empty edgesByName() would leave `offending` empty
+        // Same floor as turnsOffered - an empty edgesByName() would leave `offending` empty
         // because nothing was walked, not because nothing offends.
         assertFalse(edgeNames.isEmpty(),
             "precondition [" + label + "]: edgesByName() built no edges, so nothing was checked");
@@ -803,14 +803,14 @@ public class testAutonomyDiagramSampleLayout
     {
         GraphReducer wideOpen = reduceWithEveryBranchOpen();
 
-        // --- the derived graph: every pair of edges sharing a tile must be locked -----------------
+        // the derived graph: every pair of edges sharing a tile must be locked
         List<String> derivedGaps = new ArrayList<>();
 
         List<ReducedEdge> edges = new ArrayList<>(wideOpen.getEdges());
 
         assertFalse(edges.isEmpty(), "precondition: the wide-open reduction produced no edges");
 
-        // TST-B18 ("the most dangerous defect in the project", per this class's own framing): if
+        // The risk ("the most dangerous defect in the project", per this class's own framing): if
         // ReducedEdge.getPath() ever returns empty, sharesATile is false for every pair below and
         // derivedGaps stays empty because nothing was compared, not because nothing overlaps.  This
         // counts every pair actually found sharing a tile, so the population is checked, not just the
@@ -845,7 +845,7 @@ public class testAutonomyDiagramSampleLayout
             + "certainly has junctions - sharesATile could not have caught an overlap even if one "
             + "existed, which is exactly what an emptied ReducedEdge.getPath() looks like");
 
-        // --- the hand-built graph, judged by the same tiles ---------------------------------------
+        // the hand-built graph, judged by the same tiles
         Map<String, Set<TileKey>> legacyExtent = new LinkedHashMap<>();
         Map<String, JSONObject> legacyEdges = new LinkedHashMap<>();
         int ambiguous = 0;
@@ -981,7 +981,7 @@ public class testAutonomyDiagramSampleLayout
 
                 org.traincontrol.base.LayoutDiagramComponent c = graph.getTiles().get(stepA.getTile());
 
-                // TWO ROADS THAT NEVER MEET ARE NOT SHARED TRACK, whichever square carries them (AUR-B1).
+                // TWO ROADS THAT NEVER MEET ARE NOT SHARED TRACK, whichever square carries them.
                 //
                 // This listed the overpass alone, and a double curve is the same thing drawn flat: `TilePorts`
                 // gives it `route(N, W)` and `route(E, S)`, two curves in opposite corners with no rail
@@ -1176,7 +1176,7 @@ public class testAutonomyDiagramSampleLayout
             assertTrue(names.add(name), "duplicate Point name in generated output: " + name);
         }
 
-        // TST-C8: without this, a build that emitted points but no edges at all - a defect in
+        // Without this, a build that emitted points but no edges at all - a defect in
         // AutonomyBuilder itself, not something testTheDiagramReducesToSomething would catch, since that
         // checks reducer.getEdges() rather than this builder's JSON output - would make the loop below
         // run zero times and pass having checked nothing.
@@ -1223,7 +1223,7 @@ public class testAutonomyDiagramSampleLayout
         write("autonomy-derived.json", closed);
         write("autonomy-derived-open.json", open);
 
-        // TST-C12: the writes above are a dump for a person to read, not a check - so assert the one
+        // The writes above are a dump for a person to read, not a check - so assert the one
         // property the export exists to have. Without this, a mutation making
         // withCoordinatesFromTiles(pageOrder) return (0,0) for every tile (or ignore pageOrder
         // entirely) would still produce two well-formed, non-empty files - the JSON is valid either
@@ -1287,7 +1287,7 @@ public class testAutonomyDiagramSampleLayout
         String a = new AutonomyBuilder(reducer, null).build();
         String b = new AutonomyBuilder(reducer, null).build();
 
-        // TST-C8: without this, two builds that both degenerated to "" (or any other constant string)
+        // Without this, two builds that both degenerated to "" (or any other constant string)
         // would still satisfy assertEquals below - an empty-vs-empty comparison that proves the two
         // calls agree without proving either one built anything.
         // testTheGeneratedConfigurationIsWellFormed pins that A build has points; this pins that the
@@ -1649,7 +1649,7 @@ public class testAutonomyDiagramSampleLayout
         return false;
     }
 
-    // --- the report -------------------------------------------------------------------------------
+    // the report
 
     /**
      * Everything worth reading, printed once.  Categories follow the plan: what is only in the legacy
@@ -1977,7 +1977,7 @@ public class testAutonomyDiagramSampleLayout
     /**
      * A doorway switched off at one end is shut at both.
      *
-     * TD-2, from the three-day history review. OB-041 made the WRITER mutual on 2026-08-23 - switching
+     * OB-041 made the WRITER mutual on 2026-08-23 - switching
      * a paired link off switches its partner off - but the readers went on asking about the near end
      * alone, and there is no migration. So every setup saved before that date holds one-ended disables,
      * and autonomy went on routing through a doorway the operator had excluded, in one direction.
@@ -1994,7 +1994,7 @@ public class testAutonomyDiagramSampleLayout
         assertNotNull(here, "the setup found no link on Main pointing at Bottom");
         assertNotNull(there, "the setup found no link on Bottom pointing at Main");
 
-        // TST-B20: pairPortals/disablePortal mutate the @BeforeClass-built `graph`, shared by every
+        // pairPortals/disablePortal mutate the @BeforeClass-built `graph`, shared by every
         // test in this class - and TileGraph has no public way to undo either, so without this,
         // TestNG's arbitrary method order could run testTheDiagramIsNotRefused or sharesATile
         // against a graph this test has already re-paired and half-disabled.  Both fields are

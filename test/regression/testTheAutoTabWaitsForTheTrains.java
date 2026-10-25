@@ -21,8 +21,8 @@ import static regression.testTheImportDoorReadsAnOldFile.openTheWindow;
 import static regression.testTheImportDoorReadsAnOldFile.putTheFolderBack;
 
 /**
- * The Auto tab waits for the trains at both ends of a run it did not see coming (RSA27-C1, RSA27-C2): a Start that starts
- * nothing gives it back, and a hand send greys it from its click.  The rule itself, and a whole run, are claimed in
+ * The Auto tab waits for the trains at both ends of a run it did not see coming: a Start that starts
+ * nothing gives it back, and a hand send grays it from its click.  The rule itself, and a whole run, are claimed in
  * `regression.testNoSetupEditDuringARun` (`testTheAutoTabIsGreyedWhileAutonomyIsBusy`,
  * `testARunGreysTheAutoTabAndItsStopGivesItBack`), whose helpers these share.
  *
@@ -35,10 +35,10 @@ public class testTheAutoTabWaitsForTheTrains
 {
 
     /**
-     * A Start that starts nothing gives Start and the Auto tab back (RSA27-C1): every train to run was skipped - here each
+     * A Start that starts nothing gives Start and the Auto tab back: every train to run was skipped - here each
      * with no speed, as on a station out of service - and the railway cleared its own flag and only logged it, so Start
-     * stayed greyed and Graceful Stop offered over nothing, and the Auto tab, which counts Graceful Stop offered as a run,
-     * stayed greyed saying to wait for trains that were not moving.
+     * stayed grayed and Graceful Stop offered over nothing, and the Auto tab, which counts Graceful Stop offered as a run,
+     * stayed grayed saying to wait for trains that were not moving.
      *
      * And it says so (Adam, 2026-10-02: "the start says nothing"): the log alone said why.
      *
@@ -66,6 +66,8 @@ public class testTheAutoTabWaitsForTheTrains
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -195,7 +197,7 @@ public class testTheAutoTabWaitsForTheTrains
     }
 
     /**
-     * A hand send greys the Auto tab from its click (RSA27-C2), not once its train sets off: the dispatch sets the route
+     * A hand send grays the Auto tab from its click, not once its train sets off: the dispatch sets the route
      * first - seconds on a long one - and the railway's first refresh came only then, so for those seconds the settings,
      * Execute Timetable and the capture toggle were offered and then refused.  Given back at the train's arrival.
      *
@@ -216,9 +218,13 @@ public class testTheAutoTabWaitsForTheTrains
 
         boolean echoWas = org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS;
 
+        support.FastSimulation unpaced = null;
+
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -234,6 +240,9 @@ public class testTheAutoTabWaitsForTheTrains
             assertTrue(ui[0].getModel().getPowerState(), "precondition: the power is not on");
 
             final org.traincontrol.automation.Layout railway = ui[0].getModel().getAutoLayout();
+
+            // UNPACED: the claim is about the click and the arrival, not the seconds the simulation waits at each sensor
+            unpaced = support.FastSimulation.unpace(railway);
 
             // THE LONGEST PATH ANY TRAIN MAY TAKE, so its route takes a while to set
             final java.lang.reflect.Method mayTake = TrainControlUI.class.getDeclaredMethod("whyThisPathCannotBeTaken",
@@ -332,6 +341,8 @@ public class testTheAutoTabWaitsForTheTrains
         {
             if (ui[0] != null && ui[0].getModel().hasAutoLayout()) ui[0].getModel().getAutoLayout().stopLocomotives();
 
+            if (unpaced != null) unpaced.close();
+
             org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS = echoWas;
 
             putTheFolderBack(folderWas);
@@ -369,6 +380,8 @@ public class testTheAutoTabWaitsForTheTrains
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -426,11 +439,11 @@ public class testTheAutoTabWaitsForTheTrains
     }
 
     /**
-     * An editor stays one editor through its own switches, and is counted open until it closes (RSA28-B1).
+     * An editor stays one editor through its own switches, and is counted open until it closes.
      *
      * Each switch hands over through the main window's own teardown - `autonomyEditorClosed` for the autonomy editor,
      * the refresh's `layoutRefreshCompleteInternal` for the track editor - which gave Edit and Edit Autonomy Paths back,
-     * and the switch's posted arrival greyed them again.  A press in between opened a second editor; close the newer
+     * and the switch's posted arrival grayed them again.  A press in between opened a second editor; close the newer
      * and the gate, which asked only the newest, let Start run trains with the other still open.  Open is asked of the
      * editor windows now, so neither button is offered while one is there.
      *
@@ -455,6 +468,8 @@ public class testTheAutoTabWaitsForTheTrains
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -637,7 +652,7 @@ public class testTheAutoTabWaitsForTheTrains
     }
 
     /**
-     * A Save and Continue at a switch leaves nothing to ask at a close in the switch's gap (RSA28-C1).
+     * A Save and Continue at a switch leaves nothing to ask at a close in the switch's gap.
      *
      * The save kept the undo point the window opened with, so until the switch arrived the window still thought it had
      * unsaved work: a close then asked to *"throw away everything changed since you last saved"* - the opposite of what had
@@ -661,6 +676,8 @@ public class testTheAutoTabWaitsForTheTrains
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -766,11 +783,11 @@ public class testTheAutoTabWaitsForTheTrains
     }
 
     /**
-     * An editor that fails to build leaves no frame behind (RSA29-C1).
+     * An editor that fails to build leaves no frame behind.
      *
      * `initComponents` makes the frame before the rest of the build runs, and a build that threw after it - a page gone
      * in a reload of the pages, the one route found - left the frame there, never shown.  The main window counts every
-     * editor frame of its own (RSA28-B1), so Edit and Edit Autonomy Paths stayed greyed and the gate said "Close the editor
+     * editor frame of its own, so Edit and Edit Autonomy Paths stayed grayed and the gate said "Close the editor
      * first" for the session, with no editor on screen.  The build takes its frame with it now.
      *
      * Driven through the real door with a page the model does not have, chosen in the page list with its listeners off.
@@ -793,6 +810,8 @@ public class testTheAutoTabWaitsForTheTrains
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -864,10 +883,10 @@ public class testTheAutoTabWaitsForTheTrains
     }
 
     /**
-     * An editor whose build raises an Error, rather than an exception, gives Edit back and opens the gate (RSA30-C6).
+     * An editor whose build raises an Error, rather than an exception, gives Edit back and opens the gate.
      *
-     * RSA29-C1's fix disposes the frame and throws on, and `openLayoutEditor`'s catch gives Edit back - but it took only
-     * `Exception`, so an Error went past it: Edit stayed greyed, and every train was refused "Close the editor first" for
+     * The fix disposes the frame and throws on, and `openLayoutEditor`'s catch gives Edit back - but it took only
+     * `Exception`, so an Error went past it: Edit stayed grayed, and every train was refused "Close the editor first" for
      * the session, with no editor anywhere.
      *
      * Driven through the real door with a page the model has, whose first use raises an `AssertionError`, chosen in the
@@ -895,6 +914,8 @@ public class testTheAutoTabWaitsForTheTrains
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -991,11 +1012,11 @@ public class testTheAutoTabWaitsForTheTrains
 
     /**
      * An editor whose posted build - the drawing, after the frame is made - raises an Error gives Edit back and opens the
-     * gate (RSA31-C3).
+     * gate.
      *
-     * RSA30-C6 took Errors in `openLayoutEditor`'s catch, which covers the construction; the drawing runs later, in
+     * `openLayoutEditor`'s catch takes Errors, which covers the construction; the drawing runs later, in
      * `render`'s posted body, whose catch took only `RuntimeException` - so the hidden frame stayed counted, Edit and Edit
-     * Autonomy Paths stayed greyed, and every train was refused "Close the editor first" for the session.
+     * Autonomy Paths stayed grayed, and every train was refused "Close the editor first" for the session.
      *
      * Driven through the real door with a page whose size, asked by the drawing, raises an `AssertionError`.
      *
@@ -1027,6 +1048,8 @@ public class testTheAutoTabWaitsForTheTrains
             TrainControlUI.getPrefs().putBoolean(onTopKey, true);
 
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -1110,7 +1133,7 @@ public class testTheAutoTabWaitsForTheTrains
     }
 
     /**
-     * A page switch that raises an Error gives the window up, as one that throws an exception does (RSA31-C3's sibling).
+     * A page switch that raises an Error gives the window up, as one that throws an exception does.
      *
      * `arriveAt`'s catch took only `RuntimeException`, so an Error left the window half switched - showing one page and
      * wired to another - and counted as an open editor for the session.
@@ -1140,6 +1163,8 @@ public class testTheAutoTabWaitsForTheTrains
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -1239,9 +1264,9 @@ public class testTheAutoTabWaitsForTheTrains
     }
 
     /**
-     * A Save and Continue at the track editor's switch leaves nothing to ask at a close in the switch's gap (RSA29-C2).
+     * A Save and Continue at the track editor's switch leaves nothing to ask at a close in the switch's gap.
      *
-     * RSA28-C1's other half: the track editor asks a close about its undo history, which a save kept until the switch
+     * The other half: the track editor asks a close about its undo history, which a save kept until the switch
      * arrived - so a close then asked *"Are you sure you want to close the editor without saving changes?"* straight after
      * the save.  The save clears it now, as the arrival does.
      *
@@ -1265,6 +1290,8 @@ public class testTheAutoTabWaitsForTheTrains
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -1449,6 +1476,8 @@ public class testTheAutoTabWaitsForTheTrains
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             final org.traincontrol.gui.AutonomyOverlayToggle strip =
@@ -1515,11 +1544,11 @@ public class testTheAutoTabWaitsForTheTrains
     }
 
     /**
-     * The turning mark turns about its own centre (MT-650).
+     * The turning mark turns about its own center (MT-650).
      *
      * Adam, 2026-10-02: *"the spinner isn't perfectly centered around itself- looks a little unsmooth (1-2 px off)."*
-     * Start's mark is Return Home's (FR-077), and it was drawn on whole pixels with Java's default stroke normalisation,
-     * which moves an outline onto the pixel grid differently at each angle - so the ring's centre stepped about as it
+     * Start's mark is Return Home's (FR-077), and it was drawn on whole pixels with Java's default stroke normalization,
+     * which moves an outline onto the pixel grid differently at each angle - so the ring's center stepped about as it
      * turned, the more so on a scaled display.  Every frame, at the sizes the two buttons use and at 100% to 200%
      * scaling: where the ink sits, turned back by the frame's angle, must be the same each time.
      *
@@ -1553,7 +1582,7 @@ public class testTheAutoTabWaitsForTheTrains
 
                 int side = (int) Math.ceil((size + 2) * scale) + 2;
 
-                // The icon's own centre, in the picture's pixels: painted at (1, 1), scaled
+                // The icon's own center, in the picture's pixels: painted at (1, 1), scaled
                 double cx = scale * (1 + size / 2.0), cy = scale * (1 + size / 2.0);
 
                 List<double[]> turnedBack = new ArrayList<>();
@@ -1587,7 +1616,7 @@ public class testTheAutoTabWaitsForTheTrains
 
                     assertTrue(ink > 0, "the turning mark drew nothing at size " + size + ", scale " + scale);
 
-                    // Where the ink sits from the centre, turned back by the frame's angle (counterclockwise, y up)
+                    // Where the ink sits from the center, turned back by the frame's angle (counterclockwise, y up)
                     double vx = sx / ink - cx, vy = -(sy / ink - cy);
 
                     double r = Math.toRadians(angle.getInt(arc));
@@ -1629,7 +1658,7 @@ public class testTheAutoTabWaitsForTheTrains
      *
      * Adam, 2026-10-02: *"The edit autonomy paths button is greyed out, so this test is moot".*  The switch's own work is
      * posted, and arrives after a close that lands in between - at a closed window, which it put back together out of
-     * sight, greying both buttons for the session.  The close wins now: a closed window is not arrived at.
+     * sight, graying both buttons for the session.  The close wins now: a closed window is not arrived at.
      *
      * MUTATION: drop the closed-window return from `LayoutEditor.arriveAt`, and this fails.
      *
@@ -1649,6 +1678,8 @@ public class testTheAutoTabWaitsForTheTrains
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 

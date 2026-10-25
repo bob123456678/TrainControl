@@ -17,7 +17,7 @@ import org.testng.annotations.Test;
  * Nothing is left in the message bundles that no screen asks for.
  *
  * **Eight files, translated, maintained - and 118 of the lines were the text of windows that left the
- * build** (UIX-C4). `GraphViewer`'s menus, `GraphEdgeEdit`'s labels, `GraphLocExclude`'s lists and the
+ * build**. `GraphViewer`'s menus, `GraphEdgeEdit`'s labels, `GraphLocExclude`'s lists and the
  * old route editor's commands were all still there in all eight languages, and the live keys sat among
  * them: somebody reading the bundle to find out what a screen says could not tell which half was the
  * screen. Nothing at runtime cost anything - that is why they survived four releases.
@@ -27,7 +27,7 @@ import org.testng.annotations.Test;
  * code actually builds a key by concatenation.
  *
  * **The first version of this let ANY literal that was a prefix shield a key, and that hid 119 dead
- * keys from it** (OP3-B1). Three literals did the hiding, and two of them are not builders at all:
+ * keys from it**. Three literals did the hiding, and two of them are not builders at all:
  * `"autolayout."` inside an `assertFalse(... .startsWith(...))` in `test/ui/testStagingOutcomeMessages
  * .java` shielded ninety-eight on its own, `"autosetup.ui."` in `testEditorSurfaceRules` nineteen
  * more, and `"route.ui.route"` - which is the live key for the word "Route" - two. So this reported a
@@ -60,15 +60,15 @@ public class testEveryMessageKeyIsAskedFor
      * How many unreferenced keys are allowed to stand, and why.
      *
      * Zero since 2026-09-19, when the 237 the deleted windows left behind came out - 118 of them on
-     * the first pass and the other 119 once OP3-B1 showed that this class could not see them.
+     * the first pass and the other 119 once it turned out that this class could not see them.
      */
     private static final int EXPECTED = 0;
 
     /**
-     * The five places the code builds a message key by concatenation rather than spelling it out.
+     * The places the code builds a message key by concatenation rather than spelling it out.
      *
      * A key beginning with one of these is shielded. Nothing else shields a key: see the class comment
-     * for the 119 that a looser rule hid (OP3-B1). Add to this list when a new builder is written, and
+     * for the 119 that a looser rule hid. Add to this list when a new builder is written, and
      * say in the comment beside the entry where it is.
      */
     private static final String[] BUILDERS =
@@ -84,8 +84,8 @@ public class testEveryMessageKeyIsAskedFor
         "autolayout.ui.pathPreference",
         "autolayout.ui.tooltip.pathPreference",
 
-        // AutonomyEditorPanel.bulkClearWarning -> <key> or <key>AtOnce, for the three bulk clears
-        // (OP2-C2).  The first builder written since this list replaced the loose prefix rule, and the
+        // AutonomyEditorPanel.bulkClearWarning -> <key> or <key>AtOnce, for the three bulk clears.
+        // The first builder written since this list replaced the loose prefix rule, and the
         // list is exactly how it was meant to fail: loudly, naming the two keys, rather than silently.
         "autolayout.ui.confirmClearAll",
         // and for Allow Every Path (FR-108), which warns as they do
@@ -104,12 +104,15 @@ public class testEveryMessageKeyIsAskedFor
         "autosetup.ui.importSharedSquaresFew",
         "autosetup.ui.leftBehindOne",
         "autosetup.ui.leftBehindFew",
+
+        // RouteEditorFrame.settingLabel -> route.ui.setting.<word>, the setting words a route stores (OB-367)
+        "route.ui.setting.",
     };
 
     /**
      * A block comment, or a line comment, with any string literals inside it.
      *
-     * **Commented-out code asks for nothing** (FNL-C2).  Two keys read as live because the only thing
+     * **Commented-out code asks for nothing**.  Two keys read as live because the only thing
      * naming them was a disabled menu inside a `/* We no longer need these *\/` block, and the sweep's
      * own record then said the bundles were clean.  Stripped before the literals are read, so a key
      * kept alive by code nobody compiles is reported like any other dead one.

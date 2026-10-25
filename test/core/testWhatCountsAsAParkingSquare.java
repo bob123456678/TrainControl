@@ -8,7 +8,6 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -76,7 +75,7 @@ public class testWhatCountsAsAParkingSquare
     {
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = init(null, true, false, false, false);
+        model = support.TestStation.simulated();
 
         String path = "file:///"
             + sandbox.getFolder().getAbsolutePath().replace(File.separatorChar, '/') + "/";
@@ -93,7 +92,7 @@ public class testWhatCountsAsAParkingSquare
 
         layout = model.getAutoLayout();
 
-        if (layout == null) throw new SkipException("the snapshot did not build");
+        if (layout == null) throw new AssertionError("the snapshot did not build");
     }
 
     /**
@@ -131,8 +130,8 @@ public class testWhatCountsAsAParkingSquare
      * And the eight with track running past them answer no.
      *
      * This is the half that can be got wrong quietly: counting a square's COPIES rather than the
-     * places they lead to makes a split berth look like a junction, and counting neighbours without
-     * collapsing the copies of one neighbour makes every square look like one.
+     * places they lead to makes a split berth look like a junction, and counting neighbors without
+     * collapsing the copies of one neighbor makes every square look like one.
      */
     @Test
     public void testSomewhereWithAnotherWayOutIsNot()
@@ -253,6 +252,6 @@ public class testWhatCountsAsAParkingSquare
             if (station.equals(session.getStationIndex().nameOf(tile))) return square;
         }
 
-        throw new SkipException("this railway no longer has a station called " + station);
+        throw new AssertionError("this railway no longer has a station called " + station);
     }
 }

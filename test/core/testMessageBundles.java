@@ -16,6 +16,7 @@ import java.util.regex.Pattern;
 import org.traincontrol.util.I18n;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
+import support.SourceOf;
 
 /**
  * Lint for the message bundles.
@@ -375,7 +376,7 @@ public class testMessageBundles
      * condition it cannot edit, and printing "%s" where the condition should be.
      *
      * Nothing in TrainControl calls String.format on a bundle value, so a percent-s in one is always
-     * a mistake, which makes this a rule rather than a judgement.
+     * a mistake, which makes this a rule rather than a judgment.
      */
     @Test
     public void testNoMessageUsesAPrintfPlaceholder() throws Exception
@@ -465,11 +466,11 @@ public class testMessageBundles
      * "Locomotive speed", "Three-way Switch" beside "Stop everything" - and the two sit next to each
      * other in one dropdown, which is where inconsistency is most visible.
      *
-     * **English only, deliberately.** This is a rule about English capitalisation and applying it to
+     * **English only, deliberately.** This is a rule about English capitalization and applying it to
      * the other seven would be wrong rather than merely unnecessary: French, Spanish, Italian, Dutch,
-     * Danish and Polish all use sentence case for interface labels, and German capitalises nouns for
+     * Danish and Polish all use sentence case for interface labels, and German capitalizes nouns for
      * reasons of its own that a rule about every word would trample. The bundles are checked for
-     * matching key sets, ASCII and placeholders elsewhere in this class; how a language capitalises
+     * matching key sets, ASCII and placeholders elsewhere in this class; how a language capitalizes
      * is that language's business.
      *
      * A word here is a run between spaces, and a hyphenated pair counts as two - "Three-Way", not
@@ -831,38 +832,32 @@ public class testMessageBundles
                 + "names the sensor and both pages - " + duplicate);
         }
 
-        // and something has to supply the {1} they now ask for
-        for (String source : new String[] {"src/org/traincontrol/gui/AutonomyViewerPanel.java",
-            "src/org/traincontrol/gui/AutonomyEditorPanel.java"})
-        {
-            File file = new File(source);
+        // and something has to supply the {1} they now ask for: the viewer's findingRows, which both panels' lists use
+        String source = "public class AutonomyViewerPanel extends JPanel";
+        String text = SourceOf.fileDeclaring(source);
 
-            assertTrue(file.isFile(), source + " was not found - run this from the project root");
+        // The FIRST TWO arguments, and no claim about what follows them (OB-171).
+        assertTrue(text.contains("describe(finding.getMessageKey(), subject, finding.getSubject()"),
+            source + " no longer passes the finding's own subject alongside the tile description, "
+            + "so {1} in the length warning has nothing to fill it and renders as the literal "
+            + "text \"{1}\" (OB-153)");
 
-            String text = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
-
-            // The FIRST TWO arguments, and no claim about what follows them (OB-171).
-            //
-            // This asked for the call including its closing bracket, which pinned the argument COUNT
-            // as well as the order - so adding a third, for the message that says how many squares
-            // still need a length, failed a rule that is about {1} being the subject.
-            assertTrue(text.contains("describe(finding.getMessageKey(), subject, finding.getSubject()"),
-                source + " no longer passes the finding's own subject alongside the tile description, "
-                + "so {1} in the length warning has nothing to fill it and renders as the literal "
-                + "text \"{1}\" (OB-153)");
-        }
+        assertTrue(SourceOf.fileDeclaring("public class AutonomyEditorPanel extends JPanel")
+            .contains("AutonomyViewerPanel.findingRows("),
+            "the editor's findings list no longer comes from AutonomyViewerPanel.findingRows, so the check above no "
+            + "longer covers its {1} (OB-153)");
     }
     /**
      * Nothing asks for a key the bundle does not have.
      *
-     * `CMT-C2` counted 229 keys present in all eight bundles that nothing in `src/` asks for.  That is
+     * An audit counted 229 keys present in all eight bundles that nothing in `src/` asks for.  That is
      * noise: it costs a reader time and nothing else.  **The direction that costs an OPERATOR
      * something is the other one**, and it had no test - a key renamed in the bundle and not at its
      * call site puts the raw key on screen, in the one place a person is being told what went wrong.
      *
-     * Literal calls only, which is all a textual rule can see.  Five families are built by
-     * concatenation - a route kind, a side, a facing, and two path preferences, each an enum name
-     * appended to a prefix - and they are listed here rather than skipped quietly, so that a sixth
+     * Literal calls only, which is all a textual rule can see.  Six families are built by
+     * concatenation - a route kind, a setting word, a side, a facing, and two path preferences, each a
+     * name appended to a prefix - and they are listed here rather than skipped quietly, so that a seventh
      * cannot be added without somebody noticing that this test would not see it.
      *
      * MUTATION this catches: renaming any key in `messages.properties` without its call site.
@@ -882,7 +877,7 @@ public class testMessageBundles
         assertTrue(english.size() > 1000, "the bundle did not parse: " + english.size() + " keys");
 
         java.util.List<String> built = Arrays.asList(
-            "route.kind.", "autosetup.ui.side", "autosetup.ui.facing",
+            "route.kind.", "route.ui.setting.", "autosetup.ui.side", "autosetup.ui.facing",
             "autolayout.ui.pathPreference", "autolayout.ui.tooltip.pathPreference");
 
         java.util.regex.Pattern call =
@@ -892,7 +887,7 @@ public class testMessageBundles
 
         List<File> sources = javaSources(new File("src"));
 
-        // A FLOOR, like the two other scans in this file (TSX-B6).
+        // A FLOOR, like the two other scans in this file.
         //
         // `javaSources` answers empty rather than failing when `listFiles()` returns null - run from
         // anywhere but the project root and this scans nothing, which is indistinguishable from
@@ -937,10 +932,10 @@ public class testMessageBundles
      * label should be, which is the other thing its walk looked for.  Every bundle, every key a screen asks for, by any
      * of the four roads - the fourth being a key held in a constant, `static final String X = "..."`, and handed to I18n
      * by name: Routes > Import's own two messages and every setup check's sentence are asked for that way, and the other
-     * three did not see them (RLU-C8).
+     * three did not see them.
      *
      * A key asked for by any other road - a ternary, a switch, a helper, the log - is not seen here; its value is held by
-     * `testEveryKeyHasAValueInEveryLanguage`, which asks every key of the bundle (RLU2-C3, RLU3-C6).
+     * `testEveryKeyHasAValueInEveryLanguage`, which asks every key of the bundle.
      *
      * MUTATION: take a form's key out of any bundle, or give a key one of the four roads sees an empty value in one
      * language, and this fails naming it.
@@ -960,13 +955,13 @@ public class testMessageBundles
         Pattern form = Pattern.compile("<ResourceString bundle=\"org/traincontrol/resources/messages\\.properties\""
             + " key=\"([^\"]+)\"");
 
-        // THE FOURTH: a key held in a constant (RLU-C8).
+        // THE FOURTH: a key held in a constant.
         Pattern constant = Pattern.compile("static\\s+final\\s+String\\s+\\w+\\s*=\\s*\"([^\"]+)\"");
 
         Set<String> inConstants = new TreeSet<>();
 
         List<String> built = Arrays.asList(
-            "route.kind.", "autosetup.ui.side", "autosetup.ui.facing",
+            "route.kind.", "route.ui.setting.", "autosetup.ui.side", "autosetup.ui.facing",
             "autolayout.ui.pathPreference", "autolayout.ui.tooltip.pathPreference");
 
         List<File> sources = javaSources(new File("src"));
@@ -1051,8 +1046,7 @@ public class testMessageBundles
     }
 
     /**
-     * Every key of the English bundle has a value in every language - not only the keys a road above can see asked for
-     * (RLD2-C5, RLU2-C3).
+     * Every key of the English bundle has a value in every language - not only the keys a road above can see asked for.
      *
      * The roads above find a key where it is the first argument of I18n, a generated read, a form entry or a constant;
      * about 340 are asked another way - chosen by a ternary, returned from a switch, handed to a helper, or logged -
@@ -1093,7 +1087,7 @@ public class testMessageBundles
     }
 
     /**
-     * The findings that name the turning setting quote it as its menu item says it (RLV13-C5).  French and Italian quoted
+     * The findings that name the turning setting quote it as its menu item says it.  French and Italian quoted
      * words the menu does not use, and the terminus finding named "may turn round", which no menu item is called.
      *
      * MUTATION: quote the setting in any words but the menu item's, in any language, and this fails.
@@ -1127,7 +1121,7 @@ public class testMessageBundles
     }
 
     /**
-     * The popup for a failed first sync names its two buttons as they are labelled, in every language (OB-338).
+     * The popup for a failed first sync names its two buttons as they are labeled, in every language (OB-338).
      *
      * Its text says "choose Resync ... or Exit", and a translator who renders the sentence's word and the button's
      * differently leaves a reader looking for a button that is not there.  The Exit button is the File menu's item.
@@ -1167,7 +1161,7 @@ public class testMessageBundles
     /**
      * Allow Every Path, with nothing to open, says that track only one way can be driven stays as it is - the sentence its
      * confirmation says it in - rather than that every piece of track already runs both ways, on a railway still showing
-     * a turnout with no address's red arrow (RSA37-C2).
+     * a turnout with no address's red arrow.
      *
      * MUTATION: say again that everything runs both ways, in any language, and this fails.
      *
@@ -1203,7 +1197,7 @@ public class testMessageBundles
     }
 
     /**
-     * The refusals of non-atomic routes do not put their count before a plural noun (RLV13-C4): "1 locomotives have no
+     * The refusals of non-atomic routes do not put their count before a plural noun: "1 locomotives have no
      * train length" in every language, and Polish wrong for 1 to 4.
      *
      * MUTATION: put the count back before the noun in any language, and this fails.
@@ -1248,7 +1242,7 @@ public class testMessageBundles
     }
 
     /**
-     * The lighter touch kept the reasons the reader decides by (RLV13-C6): the half-measured approach's condition, and
+     * The lighter touch kept the reasons the reader decides by: the half-measured approach's condition, and
      * that a save tidies nothing while the page numbering is in doubt.
      *
      * MUTATION: drop either, and this fails.
@@ -1287,7 +1281,7 @@ public class testMessageBundles
 
     /**
      * The question before closing TrainControl with trains running names everything the exit leaves unsaved: where the
-     * trains are, any change to the autonomy settings, and the timetable recorded since the last save (RSA49-C1; Adam,
+     * trains are, any change to the autonomy settings, and the timetable recorded since the last save (Adam,
      * 2026-10-10, asked: *"b, easier to manage edge cases.  document as a future item to revisit"* - keep 2.8.x's exit,
      * which saves nothing while anything runs, and say so).  It named the timetable and not the settings.
      *

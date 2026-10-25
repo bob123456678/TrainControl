@@ -1,38 +1,34 @@
 package regression;
 
-import java.io.File;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
+import support.SourceOf;
 
 /**
  * The track-diagram editor must tell the autonomy setup what it did to the track.
  *
- * Five findings from the 2026-08-30 LayoutEditor review (LE-A1, B1, B2, C1, C2), and they are one
+ * Five findings from the 2026-08-30 LayoutEditor review, and they are one
  * test class because they are one question asked of five gestures: when the diagram changes, does
  * anything carry the setup that was keyed to it?
  *
  * READ FROM THE SOURCE, not by driving the editor. LayoutEditor is a Swing component wired to a live
- * window, and nothing in this suite constructs one - the established shape for its behaviour is the
+ * window, and nothing in this suite constructs one - the established shape for its behavior is the
  * bounded source scan testARunSurvivesADiagramEdit uses, and this follows it. That has a real limit
  * worth stating: these assert that the CALL is in the right place, not that the call does the right
  * thing. What the calls do is covered where it can be exercised - AutonomySession.moveTiles,
- * forgetTiles and forgetCaptionsAt are tested directly in testAutonomyDiagramSession.
+ * forgetTiles and forgetCaptionsAt are tested directly in testAStationsTimetableFollowsItThroughRenamesAndEdits (moveTiles, forgetTiles)
+ * and testACaptionStaysWithItsSquare (forgetCaptionsAt).
  *
  * Each scan is bounded to one method body. An unbounded search would find the term anywhere in a
  * six-thousand-line file and pass while the method it names does nothing - which is the vacuous-scan
- * failure this suite has already been bitten by once (TST-B7). Both terms of every ordering assertion
+ * failure this suite has already been bitten by once. Both terms of every ordering assertion
  * are proved present before they are compared, because an absent term's index is -1, which is less
  * than every real index and would make a reversed call pass in silence.
  */
 public class testTheEditorTellsAutonomy
 {
-    private static final String EDITOR = "src/org/traincontrol/gui/LayoutEditor.java";
-    private static final String MENU = "src/org/traincontrol/gui/LayoutEditorRightclickMenu.java";
-
     /**
-     * A group cut and paste has to carry the setup, the way every other move does (LE-A1).
+     * A group cut and paste has to carry the setup, the way every other move does.
      *
      * deleteSelection told autonomy about captions and nothing else, and pasteSelection only cleared
      * what it built over - so a cut left the station, name, length, facings, barred arrivals,
@@ -46,36 +42,36 @@ public class testTheEditorTellsAutonomy
     @Test
     public void testAGroupCutCarriesItsSetupToWhereItIsPasted() throws Exception
     {
-        String paste = bodyOf(EDITOR, "public boolean pasteSelection(int atX, int atY)");
+        String paste = bodyOf("    boolean pasteSelection(int atX, int atY)");
 
         assertTrue(paste.contains("moveTiles("),
             "pasteSelection no longer calls moveTiles, so a group cut and paste leaves the autonomy "
             + "setup on the squares it emptied and the next reconciling save prunes it (LE-A1)");
 
-        String cut = bodyOf(EDITOR, "public boolean cutSelection()");
+        String cut = bodyOf("    boolean cutSelection()");
 
         // The ASSIGNMENT, not a mention of the name.  This asked only that the identifier appeared,
         // so setting the flag to false here - which is precisely "the paste cannot tell a move from a
         // copy" - left the test green.  A test that cannot fail for the reason it names is worse than
-        // no test, because it reads as protection (LE-C1).
+        // no test, because it reads as protection.
         assertTrue(cut.contains("clipboardWasCut = cut"),
             "cutSelection no longer sets the cut flag FROM the delete's result, so the paste cannot "
             + "tell a move from a copy and will not carry the setup (LE-A1)");
 
-        assertTrue(cut.contains("this.clipboardCutSquares = emptied"),
+        assertTrue(cut.contains("this.editor.clipboardCutSquares = emptied"),
             "cutSelection no longer records WHICH squares it emptied, so a non-rectangular cut moves "
             + "the setup off squares that still hold their track (LE-A5)");
 
-        // The ORDER, which is what LE-A5's fix turns on: the picked squares have to be collected
+        // The ORDER, which is what the fix turns on: the picked squares have to be collected
         // before deleteSelection, because deleting clears the selection.  Collected after, the set is
         // empty, every origin is skipped and the paste carries nothing - and an assertion that only
-        // asked for the assignment could not see it (LE-C8).
-        int collected = cut.indexOf("this.selection.all()");
-        int deleted = cut.indexOf("this.deleteSelection(");
+        // asked for the assignment could not see it.
+        int collected = cut.indexOf("this.editor.selection.all()");
+        int deleted = cut.indexOf("this.editor.deleteSelection(");
 
         // Both proved present before they are compared, which this class's own header promises and
         // this one assertion was not doing: an absent term's index is -1, which is less than every
-        // real one, so a rename would have made it pass whatever the order (LE2-C13).  It went red
+        // real one, so a rename would have made it pass whatever the order.  It went red
         // for exactly that reason when deleteSelection gained an argument.
         assertTrue(collected >= 0, "cutSelection no longer collects the picked squares (LE-A5)");
         assertTrue(deleted >= 0, "cutSelection no longer calls deleteSelection - scan needs updating");
@@ -84,33 +80,33 @@ public class testTheEditorTellsAutonomy
             "cutSelection collects the emptied squares AFTER deleting them, and deleting clears the "
             + "selection - so it collects nothing and the paste carries nothing (LE-A5)");
 
-        // LE2-B7: the cut must NOT let the per-square delete forget the captions, or the paste has
+        // The cut must NOT let the per-square delete forget the captions, or the paste has
         // none left to carry - the four bulk movers pass false for the same reason.
         assertTrue(cut.contains("deleteSelection(false)"),
             "cutSelection lets the delete forget the captions, so a cut and paste carries the station, "
             + "its length and its locomotive but loses the name drawn on the diagram (LE2-B7)");
 
-        // LE-A7: the whole of A1, A4 and A5 was unreachable because cutMoves re-read the field that
+        // The whole of A1, A4 and A5 was unreachable because cutMoves re-read the field that
         // snapshotLayout had just cleared.  Every other assertion here asks whether a call is present;
         // this one asks that the decision is taken from the ARGUMENT, which is the only part of
         // reachability a source scan can actually see.
-        String moves = bodyOf(EDITOR, "> cutMoves(int atX, int atY, boolean wasCut,");
+        String moves = bodyOf("> cutMoves(int atX, int atY, boolean wasCut,");
 
         // Unqualified, because "clipboardWasCut" and "this.clipboardWasCut" are the same read and
-        // Java requires neither spelling - pinning one let the other through (LE2-C12).  The method
+        // Java requires neither spelling - pinning one let the other through.  The method
         // has no legitimate mention of the field: its whole point is that the caller decides.
         assertFalse(moves.contains("clipboardWasCut"),
             "cutMoves reads the cut flag from the field again instead of the argument it was handed. "
             + "The decision belongs to the gesture, and a field re-read is how LE-A7 turned the whole "
             + "group-cut fix into dead code while every one of these tests stayed green");
 
-        // AND IT USES THE ANSWER IT WAS HANDED (RC-A1, RC-A6).
+        // AND IT USES THE ANSWER IT WAS HANDED.
         //
-        // The per-square test replaced LE-A6, which stood the flag down inside snapshotLayout - and
+        // The per-square test replaced standing the flag down inside snapshotLayout - and
         // since every edit snapshots, any edit between the cut and the paste turned the move into a
         // copy and abandoned the setup on the emptied squares.
         //
-        // RC-A6 then moved the question OUT of this method, because asking it here was asking it too
+        // The question was then moved OUT of this method, because asking it here was asking it too
         // late: pasteSelection places its tiles first, so an origin that is also a landing had been
         // refilled by the paste itself.  So what this method must do now is exactly what it must do
         // with the flag - use what the caller worked out, and not go and look again.
@@ -125,7 +121,7 @@ public class testTheEditorTellsAutonomy
             + "is skipped and then forgotten as built over (RC-A6)");
 
         // WHERE THE QUESTION LIVES NOW.  Both halves of it, asked before anything is placed.
-        String vacated = bodyOf(EDITOR, "> emptyCutOrigins()");
+        String vacated = bodyOf("> emptyCutOrigins()");
 
         assertTrue(vacated.contains("getComponent(square.getX(), square.getY()) == null"),
             "emptyCutOrigins no longer checks that the square is still EMPTY, so a cut whose squares "
@@ -139,16 +135,16 @@ public class testTheEditorTellsAutonomy
 
         // A copy must NOT carry it: the original keeps everything, and moving its setup onto the copy
         // would take the station and its placed locomotive away from the squares still holding track.
-        String copy = bodyOf(EDITOR, "public boolean copySelection()");
+        String copy = bodyOf("    boolean copySelection()");
 
         assertTrue(copy.contains("clipboardWasCut = false"),
             "copySelection must clear the cut flag, or pasting a COPY would move the original's setup "
             + "onto the copy and leave the original squares bare (LE-A1)");
 
-        // LE-A3 - undo makes the cut untrue - IS NOT PINNED HERE ANY MORE, and deliberately.
+        // UNDO MAKING THE CUT UNTRUE IS NOT PINNED HERE ANY MORE, and deliberately.
         //
-        // It used to be, as `undo` and `redo` each containing "clipboardWasCut = false".  RC-A1 took
-        // those out: the rule is now the per-square emptiness test above, which undo satisfies by
+        // It used to be, as `undo` and `redo` each containing "clipboardWasCut = false".  They were taken
+        // out: the rule is now the per-square emptiness test above, which undo satisfies by
         // refilling the squares rather than by being told about them.
         //
         // The rule itself is tested by RUNNING it, in
@@ -156,11 +152,11 @@ public class testTheEditorTellsAutonomy
         // which cuts, undoes, pastes and asserts the setup stayed where the track came back - and its
         // sibling asserts an unrelated edit does NOT cost the move.  A scan for a line of text could
         // never have told those two cases apart; a source scan cannot see reachability, which is the
-        // whole lesson of LE-A7.
+        // whole lesson.
     }
 
     /**
-     * Shrinking the page must not leave a station's name outside it (LE-B1).
+     * Shrinking the page must not leave a station's name outside it.
      *
      * edgesAreEmpty asks whether the edge holds TRACK. A caption is placed on a blank square by
      * preference, so the edge could hold a name and still read as empty; trimming left the caption
@@ -170,7 +166,7 @@ public class testTheEditorTellsAutonomy
     @Test
     public void testShrinkingThePageDropsCaptionsOnTheEdgeItRemoves() throws Exception
     {
-        String body = bodyOf(EDITOR, "public void shrinkEdges()");
+        String body = bodyOf("    void shrinkEdges()");
 
         int forgotten = body.indexOf("forgetCaptionsOnTrimmedEdge");
         int trimmed = body.indexOf("trimEdges()");
@@ -187,7 +183,7 @@ public class testTheEditorTellsAutonomy
     }
 
     /**
-     * Clearing a page tells the setup that the page has gone (LE-C2).
+     * Clearing a page tells the setup that the page has gone.
      *
      * Deleting one square says so; emptying the whole page said nothing, so the setup outlived the
      * diagram it described until somebody opened the autonomy editor and pressed Save - and the
@@ -196,7 +192,7 @@ public class testTheEditorTellsAutonomy
     @Test
     public void testClearingThePageTellsTheSetup() throws Exception
     {
-        String body = bodyOf(EDITOR, "public void clear()");
+        String body = SourceOf.declarationIn(SourceOf.fileDeclaring("public class LayoutEditor extends"), "public void clear()");
 
         int forgotten = body.indexOf("forgetWholePage");
         int cleared = body.indexOf("layout.clear()");
@@ -212,7 +208,7 @@ public class testTheEditorTellsAutonomy
     }
 
     /**
-     * Shift down and shift right must not record an undo step for an edit they refuse (LE-B2).
+     * Shift down and shift right must not record an undo step for an edit they refuse.
      *
      * They snapshotted first and checked for a hovered square afterwards, so invoking them with none
      * pushed an undo entry for an edit that never happened - which also clears the redo stack and
@@ -222,11 +218,11 @@ public class testTheEditorTellsAutonomy
     @Test
     public void testTheShiftsCheckBeforeTheyRecordAnUndoStep() throws Exception
     {
-        for (String method : new String[] {"public void shiftDown()", "public void shiftRight()"})
+        for (String method : new String[] {"    void shiftDown()", "    void shiftRight()"})
         {
-            String body = bodyOf(EDITOR, method);
+            String body = bodyOf(method);
 
-            // Any refusal, not one spelling of it: LE-C2 replaced the inline comparison with a named
+            // Any refusal, not one spelling of it: the inline comparison was replaced with a named
             // predicate, and a scan pinned to the old wording would have gone red for a change that
             // improved the thing it was guarding.
             int guarded = body.indexOf(") return;");
@@ -246,26 +242,28 @@ public class testTheEditorTellsAutonomy
     }
 
     /**
-     * The menu offers a shift only where the method would perform one (LE-C1).
+     * The menu offers a shift only where the method would perform one.
      *
      * Shift Up returns in silence on the last row and Shift Left on the last column, and the menu
      * offered them anyway - so right-clicking the bottom row, the natural gesture for taking an empty
      * row away, chose an item that did nothing and said nothing.
      *
-     * Asserted as the MENU ASKING THE EDITOR'S OWN PREDICATE, not merely as the item being greyed by
+     * Asserted as the MENU ASKING THE EDITOR'S OWN PREDICATE, not merely as the item being grayed by
      * some condition. A menu that restates the rule is a menu that can drift from it, and that drift
      * is this finding: two copies of one question, one of which was never updated.
      */
     @Test
     public void testTheMenuAsksTheSamePredicateTheShiftUses() throws Exception
     {
-        String menu = read(MENU);
+        // The diagram submenu is built by the menu's constructor.
+        String menu = bodyOf("public LayoutEditorRightclickMenu(LayoutEditor edit, TrainControlUI ui, LayoutLabel label,"
+            + " LayoutDiagramComponent component)");
 
-        // EACH ITEM AGAINST ITS OWN PREDICATE (LE-C9).
+        // EACH ITEM AGAINST ITS OWN PREDICATE.
         //
         // This asked whether the four strings appeared anywhere in the file, so swapping which
-        // predicate greys which item - Shift Up enabled by canShiftDown - passed, and the menu was
-        // back to offering Shift Up on the bottom row where it refuses in silence. That is LE-C1
+        // predicate grays which item - Shift Up enabled by canShiftDown - passed, and the menu was
+        // back to offering Shift Up on the bottom row where it refuses in silence. That is the old fault
         // restored with the test watching. Bounded to the one addShift call each.
         for (String pair : new String[] {"shiftUp|canShiftUp", "shiftLeft|canShiftLeft",
             "shiftDown|canShiftDown", "shiftRight|canShiftRight"})
@@ -288,64 +286,29 @@ public class testTheEditorTellsAutonomy
         }
 
         // and the parameter has to reach setEnabled, or asking the predicate changes nothing
-        assertTrue(bodyOf(MENU, "private void addShift(").contains("setEnabled(enabled)"),
+        assertTrue(bodyOf("private void addShift(").contains("setEnabled(enabled)"),
             "addShift no longer wires its enabled parameter to setEnabled, so every item is offered "
             + "whatever its predicate says (LE-C1)");
 
         // and the method must ask it too, or the two can still disagree
-        for (String pair : new String[] {"public void shiftUp()|canShiftUp",
-            "public void shiftLeft()|canShiftLeft"})
+        for (String pair : new String[] {"    void shiftUp()|canShiftUp",
+            "    void shiftLeft()|canShiftLeft"})
         {
             String method = pair.split("\\|")[0];
             String predicate = pair.split("\\|")[1];
 
-            assertTrue(bodyOf(EDITOR, method).contains(predicate + "()"),
+            assertTrue(bodyOf(method).contains(predicate + "()"),
                 method + " no longer asks " + predicate + " - the menu and the method would then be "
                 + "two copies of one rule, which is how this finding happened (LE-C1)");
         }
     }
 
     /**
-     * One method's body, braces included, so a scan cannot wander into its neighbours.
+     * One declaration's text, braces included, so a scan cannot wander into its neighbors: found wherever the
+     * program keeps it, and a miss is a failure that names it.
      */
-    private static String bodyOf(String file, String declaration) throws Exception
+    private static String bodyOf(String declaration) throws Exception
     {
-        String source = read(file);
-
-        int at = source.indexOf(declaration);
-
-        assertTrue(at >= 0, declaration + " was not found in " + file
-            + " - it was renamed or removed, and this scan needs updating rather than deleting");
-
-        int open = source.indexOf('{', at + declaration.length());
-
-        assertTrue(open >= 0, "no body found for " + declaration);
-
-        int depth = 0;
-
-        for (int i = open; i < source.length(); i++)
-        {
-            char c = source.charAt(i);
-
-            if (c == '{') depth++;
-            else if (c == '}' && --depth == 0) return source.substring(at, i + 1);
-        }
-
-        fail("the body of " + declaration + " does not close");
-
-        return "";
-    }
-
-    private static String read(String file) throws Exception
-    {
-        File found = new File(file);
-
-        // Run from the project root by the harness; the battery runs from one directory up in some
-        // configurations, so the parent is tried rather than failing on a path.
-        if (!found.isFile()) found = new File("../" + file);
-
-        assertTrue(found.isFile(), file + " was not found from " + new File(".").getAbsolutePath());
-
-        return new String(Files.readAllBytes(found.toPath()), StandardCharsets.UTF_8);
+        return SourceOf.declaration(declaration);
     }
 }

@@ -26,6 +26,7 @@ import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.file.CS2File;
+import support.SourceOf;
 
 /**
  * A train put down on a square is standing where the drive would leave it, not turned round.
@@ -114,7 +115,7 @@ public class testAPasteDoesNotTurnTheTrainRound
     {
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = init(null, true, false, false, false);
+        model = support.TestStation.simulated();
 
         String path = "file:///"
             + sandbox.getFolder().getAbsolutePath().replace(File.separatorChar, '/') + "/";
@@ -172,7 +173,7 @@ public class testAPasteDoesNotTurnTheTrainRound
     @Test
     public void testTheSquareCanGetThisWrong()
     {
-        // AND WHAT THIS FIXTURE CANNOT TELL YOU (PRV-C1, PRV-C9).
+        // AND WHAT THIS FIXTURE CANNOT TELL YOU.
         //
         // The rule is "among the copies at the NEAREST distance, prefer one that is not a turning
         // copy".  A validator showed that deleting the preference leaves every claim in this class
@@ -469,7 +470,7 @@ public class testAPasteDoesNotTurnTheTrainRound
     /**
      * A train that IS on the railway but cannot be driven there keeps the heading it has.
      *
-     * **PRV-C2: deleting that arm passed every claim.**  The no-path claims above use a train that is
+     * **Deleting that arm passed every claim.**  The no-path claims above use a train that is
      * not on the railway at all, so `facingOf` answers null and the code falls straight through to the
      * first departable copy - which means the line implementing Adam's actual ruling, *"Option 1 is
      * fine as long as the direction isnt flipped"*, was never executed by a test.
@@ -529,35 +530,126 @@ public class testAPasteDoesNotTurnTheTrainRound
             if (stranded != null) break;
         }
 
-        // MEASURED, AND THE MEASUREMENT IS THE CLAIM WHERE THERE IS NOTHING ELSE.
-        //
-        // On this railway there is no such train: every placed one can be driven to every split
-        // square that can hold the heading it has.  So the arm is reached only by a train that is not
-        // on the railway at all - which is a real case, a locomotive brought into autonomy for the
-        // first time, and is what `testNoSquareAnswersTwiceDifferently` exercises - but with `already`
-        // always null, the line implementing Adam's ruling is not executed by anything here.
-        //
-        // Said out loud rather than left as a green test that looks like coverage. If the railway
-        // ever strands one, the assertion below starts checking the rule instead of the fact, and
-        // that is the direction this should change in.
-        if (stranded == null)
+        // WHEN THIS RAILWAY STRANDS A PLACED TRAIN, that is the case, and it is asked as it always was.
+        if (stranded != null)
         {
+            assertEquals(session.facingByPath(built, stranded, target), heading,
+                "put down on " + session.getStore().getPointName(target) + " with no way to drive there, "
+                + stranded + " should keep the heading it already has (" + heading + "), which that"
+                + " square can hold. Adam, 2026-09-12: \"Option 1 is fine as long as the direction isnt"
+                + " flipped (which it was before).\" Without that rule the answer is the first departable"
+                + " copy in build order, which is a flip whenever build order disagrees with the train.");
+        }
+        else
+        {
+            // MEASURED: it does not, today.  Every placed train can be driven to every split square that can hold
+            // the heading it has, so the arm is not reached by choosing one.
             assertEquals(reach.size(), 85,
                 "no placed train is stranded from a square that can hold its heading, which is what"
-                + " makes the keep-the-heading arm unreachable here - but the reachable-Point count"
+                + " makes the keep-the-heading arm unreachable by choosing one - but the reachable-Point count"
                 + " has moved, so the railway has changed and this measurement is stale. Re-measure:"
                 + " if some train IS stranded now, this claim starts checking the rule and the note"
                 + " above should go.");
-
-            return;
         }
 
-        assertEquals(session.facingByPath(built, stranded, target), heading,
-            "put down on " + session.getStore().getPointName(target) + " with no way to drive there, "
-            + stranded + " should keep the heading it already has (" + heading + "), which that"
-            + " square can hold. Adam, 2026-09-12: \"Option 1 is fine as long as the direction isnt"
-            + " flipped (which it was before).\" Without that rule the answer is the first departable"
-            + " copy in build order, which is a flip whenever build order disagrees with the train.");
+        // AND THE CASE BUILT FOR IT, so the rule is asked whether or not the railway has one (FR-136).  `walkTo`
+        // finds the train on the layout it is handed, and `facingOf` falls back to the setup when the layout does
+        // not hold it - so a train placed in the setup after `built` was made has a heading and no walk.
+        // The copies a train could depart from, in the order the build made them: the first is what the arm
+        // answers without the rule, so the heading kept has to be one that is not the first.
+        List<Side> departable = new java.util.ArrayList<>();
+
+        for (Map.Entry<String, Side> copy : session.facingsFor(onto).entrySet())
+        {
+            Point point = built.getPoint(copy.getKey());
+
+            if (point == null) continue;
+
+            List<Edge> out = built.getNeighbors(point);
+
+            if (out != null && !out.isEmpty()) departable.add(copy.getValue());
+        }
+
+        Side kept = null;
+
+        for (Side side : departable)
+        {
+            if (side != departable.get(0))
+            {
+                kept = side;
+
+                break;
+            }
+        }
+
+        assertNotNull(kept,
+            ONTO + " has no two copies a train could depart from that face different ways (" + departable
+            + "), so keeping a heading cannot be told from taking the first copy and the claim cannot fail");
+
+        Set<String> standing = new LinkedHashSet<>();
+
+        // EVERY POINT, not the locomotives set to run: a train standing on a Point outside the diagram's squares is
+        // on the railway too, and is walked from.
+        for (Point point : built.getPoints())
+        {
+            if (point.getCurrentLocomotive() != null) standing.add(point.getCurrentLocomotive().getName());
+        }
+
+        String absent = null;
+
+        for (String name : model.getLocList())
+        {
+            if (!standing.contains(name))
+            {
+                absent = name;
+
+                break;
+            }
+        }
+
+        assertNotNull(absent, "every locomotive in the database stands on the built railway, so there is"
+            + " no train the walk cannot start from");
+
+        TileKey placedAt = null;
+
+        for (TileKey square : session.getStore().getNamedTiles())
+        {
+            if (square.equals(onto) || session.getPointProperty(square, "loc") != null) continue;
+
+            if (session.facingsFor(square).containsValue(kept))
+            {
+                placedAt = square;
+
+                break;
+            }
+        }
+
+        assertNotNull(placedAt, "no empty square can hold a train facing " + kept
+            + ", so the setup cannot be given the heading to keep");
+
+        session.placeLocomotive(placedAt, absent);
+        session.setFacing(placedAt, kept);
+
+        try
+        {
+            assertEquals(session.facingOf(absent, built), kept,
+                "control: the setup does not say " + absent + " is facing " + kept + ", so there is no"
+                + " heading to keep");
+
+            org.testng.Assert.assertNull(built.getLocomotiveLocation(model.getLocByName(absent)),
+                "control: " + absent + " stands on the built railway, so it is walked from");
+
+            assertEquals(session.facingByPath(built, absent, onto), kept,
+                "put down on " + ONTO + " with no way to drive there, " + absent + " should keep the heading it"
+                + " already has (" + kept + "), which that square can hold. Adam, 2026-09-12: \"Option 1 is fine as"
+                + " long as the direction isnt flipped (which it was before).\" Without that rule the answer is the"
+                + " first departable copy in build order, which is a flip whenever build order disagrees with the"
+                + " train.");
+        }
+        finally
+        {
+            session.placeLocomotive(placedAt, null);
+        }
     }
 
     /**
@@ -634,12 +726,8 @@ public class testAPasteDoesNotTurnTheTrainRound
             "a square that can hold no heading at all still puts a question, and the dialog has no"
             + " buttons on it");
 
-        // THE PASTE ASKS IT, and asks it before anything moves (SVX-C4's guard, one block on).
-        String source = new String(java.nio.file.Files.readAllBytes(
-            java.nio.file.Paths.get("src/org/traincontrol/gui/TrainControlUI.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
-
-        String flat = source.replaceAll("\\s+", " ");
+        // THE PASTE ASKS IT, and asks it before anything moves.
+        String flat = SourceOf.declaration("private boolean locomotiveGestureOnDiagram(").replaceAll("\\s+", " ");
 
         assertTrue(flat.contains("if (mayTurnHere(aimed) && getAutonomySession() != null)"),
             "the paste no longer asks the facing question at may-reverse squares (Adam, 2026-09-13)");
@@ -649,9 +737,11 @@ public class testAPasteDoesNotTurnTheTrainRound
             + " question one step above it: \"simply don't place the train, leave it on the clipboard"
             + " as if no paste had been done\"");
 
-        // READ BEFORE THE TAIL QUESTION WAITS (TDU-B2), and written from there.
-        assertTrue(flat.contains("final org.traincontrol.automationui.TilePorts.Side facingChosen ="
-            + " facingChosenAtTheLanding;") && flat.contains("session.setFacing(tile, facingChosen != null ? facingChosen"),
+        // READ BEFORE THE TAIL QUESTION WAITS, and written from there.
+        String placement = SourceOf.declaration("private void rememberPlacement(").replaceAll("\\s+", " ");
+
+        assertTrue(placement.contains("final org.traincontrol.automationui.TilePorts.Side facingChosen ="
+            + " facingChosenAtTheLanding;") && placement.contains("session.setFacing(tile, facingChosen != null ? facingChosen"),
             "the operator's answer is no longer what gets written, so the question is asked and then"
             + " overruled by the walk it exists to replace");
     }
@@ -688,8 +778,8 @@ public class testAPasteDoesNotTurnTheTrainRound
     /**
      * A cut train's remembered heading is preferred only while it is off the railway.
      *
-     * **SVX-C4, and what this can and cannot say.**  Nothing under `test/` named `cutFacing` at all,
-     * so neither MT-368's clipboard clause nor SVV-C5's narrowing of it had a claim. The branch itself
+     * **What this can and cannot say.**  Nothing under `test/` named `cutFacing` at all,
+     * so neither MT-368's clipboard clause nor its narrowing had a claim. The branch itself
      * sits in `locomotiveGestureOnDiagram`, a private key handler that needs a shown window, a hovered
      * tile and a loaded clipboard, and the paste it performs can raise a modal facing prompt - the
      * shape of test that hung this suite for twenty minutes on 2026-09-13 and left a preference
@@ -718,23 +808,47 @@ public class testAPasteDoesNotTurnTheTrainRound
             "the landing square offers no headings at all, so the branch's test of it cannot fail"
             + " here and this claim is about nothing");
 
+        // WHAT THE LANDING HAS RAIL FOR, read off the tile itself rather than off the answer being checked
+        // (FR-136): the sides its routes touch.  A train can only point down a side the square has rail on.
+        org.traincontrol.base.LayoutDiagramComponent tile = session.getGraph().getTiles().get(onto);
+
+        assertNotNull(tile, ONTO + " is not a square of the diagram, so there is no rail to ask");
+
+        Set<org.traincontrol.automationui.TilePorts.Side> railOn = new LinkedHashSet<>();
+
+        for (int state = 0; state < org.traincontrol.automationui.TilePorts.getStateCount(tile.getType()); state++)
+        {
+            for (org.traincontrol.automationui.TilePorts.Route road
+                : org.traincontrol.automationui.TilePorts.ports(tile.getType(), tile.getOrientation(), state))
+            {
+                railOn.add(road.getA());
+                railOn.add(road.getB());
+            }
+        }
+
+        assertFalse(railOn.isEmpty(), ONTO + " has no rail on any side, so every heading would be one it cannot hold");
+
+        int cannotHold = 0;
+
         for (org.traincontrol.automationui.TilePorts.Side side
             : org.traincontrol.automationui.TilePorts.Side.values())
         {
-            if (canHold.contains(side)) continue;
+            if (railOn.contains(side)) continue;
 
-            assertFalse(session.facingsFor(onto).containsValue(side),
-                "facingsFor says " + onto + " can hold " + side + " and also that it cannot, which is"
+            cannotHold++;
+
+            assertFalse(canHold.contains(side),
+                "facingsFor says " + onto + " can hold " + side + ", a side it has no rail on, which is"
                 + " the question the clipboard branch asks before forcing a remembered heading on a"
                 + " landing");
         }
 
-        // THE SHAPE, in the file.
-        String source = new String(java.nio.file.Files.readAllBytes(
-            java.nio.file.Paths.get("src/org/traincontrol/gui/TrainControlUI.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
+        assertTrue(cannotHold > 0,
+            ONTO + " has rail on all four sides, so every heading is one it can hold and the question has no"
+            + " answer that could be wrong");
 
-        String flat = source.replaceAll("\\s+", " ");
+        // THE SHAPE, in the file.
+        String flat = SourceOf.declaration("private boolean locomotiveGestureOnDiagram(").replaceAll("\\s+", " ");
 
         assertTrue(flat.contains(
             "boolean stillLifted = this.model == null || this.model.getAutoLayout() == null"

@@ -56,7 +56,7 @@ public class testLockEdgesSurviveTheFile
         // railway (OB-111).
         sandbox = support.LayoutSandbox.open();
 
-        model = init(null, true, false, false, false);
+        model = support.TestStation.simulated();
         model.stop();
 
         model.newMM2Locomotive(LOC, ADDRESS);
@@ -132,7 +132,7 @@ public class testLockEdgesSurviveTheFile
     /**
      * A places list with a hole in it is not read as a shorter places list.
      *
-     * **SVX-C9.**  The entries are read POSITIONALLY - the last one is the square the edge arrives at,
+     * The entries are read POSITIONALLY - the last one is the square the edge arrives at,
      * and where a train stands there its measurement is an allowance rather than track, in both
      * `walkStandingTrains` and `whyABerthCannotHoldIt`.  The loader used to skip an entry with no `at`
      * and carry on, which does not shorten the list so much as renumber it: drop the FINAL entry and
@@ -175,7 +175,7 @@ public class testLockEdgesSurviveTheFile
     /**
      * The square two hops share is charged to the train once, not twice.
      *
-     * **PRW-C3.**  A standing train's body is walked back edge by edge, and the square the walk turns
+     * A standing train's body is walked back edge by edge, and the square the walk turns
      * at belongs to both of them: it is the end of the edge just left and a place on the edge behind
      * it.  Charged twice, the tail stops one square's length short of where it really reaches - and
      * the track under the back end of the train is then claimed by nobody, which is what clears a
@@ -183,7 +183,7 @@ public class testLockEdgesSurviveTheFile
      *
      * **It is the same seam three rounds have now found**, from three directions: the places budget
      * and the hop budget were two arithmetics over one train, agreeing only while every square was
-     * measured (SEV-B3), the standing square was ordinary track (SVX-B1), and no square belonged to
+     * measured, the standing square was ordinary track, and no square belonged to
      * two hops (this). There is one budget now - what the finer walk charges IS what the hop costs -
      * and the edge's own length is kept only for a file that carries no places at all.
      *
@@ -261,7 +261,7 @@ public class testLockEdgesSurviveTheFile
      * A square whose placement the loader dropped hands no tail to whoever reserves it next.
      *
      * **A file outliving the fleet is a case Adam has already ruled on** - *"drop the train and keep
-     * the rest"* (2026-09-16, AMR-C3) - and the drop's own comment promises *"the next save writes the
+     * the rest"* (2026-09-16) - and the drop's own comment promises *"the next save writes the
      * file back without the phantom"*.  That was true of the placement and false of its tail: the side
      * and the road were written onto the square anyway, saved again on every write, and reloaded on
      * every start.
@@ -299,7 +299,7 @@ public class testLockEdgesSurviveTheFile
         // THE RECORD.  The drop's own comment says the next save writes the file back without the
         // phantom; it said nothing about the phantom's tail, which was written on every save for ever.
         //
-        // THE SIDE IS PUT BACK FIRST, which is what makes this a test of the SAVE (OP3-C4).  Asserting
+        // THE SIDE IS PUT BACK FIRST, which is what makes this a test of the SAVE.  Asserting
         // straight after the assertion above proved nothing: the field is null by then, so `toJSON`
         // could not write it whatever `toJSON` does, and reverting the occupant test in `Point.toJSON`
         // left this passing.  Set on the empty square, the gate is the only thing that can keep it out.
@@ -327,7 +327,7 @@ public class testLockEdgesSurviveTheFile
 
         // THE SAME INSTANCE BOTH TIMES, which is what makes this a control: the guard in `assign` is a
         // reference comparison, so a `loc()` that built a new object each call would fail here for a
-        // reason that has nothing to do with the rule (OP3-C4, moved above the call it qualifies by FXV-C15).
+        // reason that has nothing to do with the rule (moved above the call it qualifies).
         assertSame(loc(), loc(), "precondition: loc() no longer returns one instance, so the control that follows"
             + " is not testing the same-occupant case at all");
 
@@ -341,9 +341,7 @@ public class testLockEdgesSurviveTheFile
             "reserving a square for the train already standing on it threw away its real tail");
     }
 
-    // ---------------------------------------------------------------------------------------------
     // Fixtures
-    // ---------------------------------------------------------------------------------------------
 
     /**
      * Two approaches to one throat, each locking the other, as the builder emits a shared tile.

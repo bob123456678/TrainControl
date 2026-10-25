@@ -14,6 +14,7 @@ import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.Point;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
+import support.SourceOf;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
@@ -64,15 +65,15 @@ public class testATrainCoversTheTrackBehindIt
     {
         sandbox = support.LayoutSandbox.open();
 
-        model = init(null, true, false, false, false);
+        model = support.TestStation.simulated();
     }
 
     /**
-     * `wouldAsk` answers exactly when the prompt would ask (VAL9-B4).
+     * `wouldAsk` answers exactly when the prompt would ask.
      *
      * The paste door abandons a placement when the arrival-side question came back null AND the prompt
      * would have asked one. That second half has to be the same condition the prompt itself uses to
-     * decide, or the door is guessing again - which was the defect (IND9-B5): null means "declined",
+     * decide, or the door is guessing again - which was the defect: null means "declined",
      * "no side to choose between", and "could not show the dialog", and only the first is a refusal.
      *
      * **`return mayReverse;` restores the whole defect with every other test green**, which is why this
@@ -297,7 +298,7 @@ public class testATrainCoversTheTrackBehindIt
      * The first version put the standing train beyond a junction and expected its tail to reach the
      * approach.  It does not, and should not: walked backwards the junction has two ways on, the graph
      * cannot say which the tail lies along, and Adam's ruling is to stop there.  So the fixture was
-     * asking for behaviour the spec forbids.
+     * asking for behavior the spec forbids.
      *
      * A -> B -> C -> D, train standing at D reaching back over C -> D and B -> C.  The second train
      * runs A -> B -> C, crossing B -> C, and C is free.
@@ -362,11 +363,7 @@ public class testATrainCoversTheTrackBehindIt
     @Test
     public void testTheArrivalRecordsWhichWayTheTrainCameIn() throws Exception
     {
-        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/automation/Layout.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
-
-        String flat = source.replaceAll("\\s+", " ");
+        String flat = SourceOf.declaration("private boolean executePathInternal(").replaceAll("\\s+", " ");
 
         assertTrue(flat.contains(
             "arrived.setArrivedFrom(entrySideOf(path.get(path.size() - 1), arrived));"),
@@ -375,16 +372,16 @@ public class testATrainCoversTheTrackBehindIt
 
         // AND IT IS THE SAME RULE THE WALK READS BACK (OB-182).
         //
-        // This used to pin `sideTowards` here, which names where the neighbouring POINT lies. A
+        // This used to pin `sideTowards` here, which names where the neighboring POINT lies. A
         // reduced run turns corners, so on a curve that is not the side the track comes in by - and
         // the operator doors were offering the other answer. Correcting the doors alone made the walk
         // match nothing and block no track at all, so the two now share `entrySideOf`.
-        assertTrue(flat.contains("String cameInBy = entrySideOf(candidate, here);"),
+        assertTrue(SourceOf.allCode().replaceAll("\\s+", " ").contains("String cameInBy = owner.entrySideOf(candidate, here);"),
             "the tail walk works out the arrival side its own way again, so it can disagree with what"
             + " the arrival wrote - and on a curve it will, which blocks nothing while looking correct");
 
         int written = flat.indexOf("arrived.setArrivedFrom(");
-        // The turn, which since RLV12-C5 asks whether its railway is still the current one after the pause before it
+        // The turn, which asks whether its railway is still the current one after the pause before it
         int turned = flat.indexOf("if (stillThisRailway) loc.switchDirection()");
 
         assertTrue(turned > written,
@@ -400,7 +397,7 @@ public class testATrainCoversTheTrackBehindIt
     /**
      * And the value itself, on a run the test drives by hand.
      *
-     * The ordering above is source; this is the behaviour.  A train moved from A to B has come in from
+     * The ordering above is source; this is the behavior.  A train moved from A to B has come in from
      * A, and `sideTowards` names that side from the coordinates - so B records the side A lies on.
      *
      * @throws Exception on a failure to build
@@ -572,7 +569,7 @@ public class testATrainCoversTheTrackBehindIt
     }
 
     /**
-     * A tail blocks the rail in BOTH directions, because a tail is not directional (VAL8-A1).
+     * A tail blocks the rail in BOTH directions, because a tail is not directional.
      *
      * The graph encodes facing as one-way edges, so one piece of rail is often two `Edge` objects.
      * A train lying across it fouls it whichever way traffic runs - `behaviour.md` 5c says so - but
@@ -624,12 +621,12 @@ public class testATrainCoversTheTrackBehindIt
 
     /**
      * A tail blocks every copy of the rail it lies on - the rail into a square's turning copy as well as into its plain
-     * copy (AUT-B1).
+     * copy.
      *
      * On a square a train may turn round at, the build emits the rail into it twice: once into the plain copy and once
      * into the turning copy, over exactly the same places.  The tail walk covers the one it walks, and `isPathClear`
      * refused only that Edge and its lock partners - so a train could be sent onto the turning copy of a square another
-     * train's tail lies across, while the diagram showed that square grey, which is what routing refuses (OB-280).
+     * train's tail lies across, while the diagram showed that square gray, which is what routing refuses (OB-280).
      *
      * MUTATION: take the by-place test out of `isPathClear` and this fails.
      *
@@ -703,7 +700,7 @@ public class testATrainCoversTheTrackBehindIt
 
     /**
      * A train turned where it stands and re-stood on the other arrival's copy spends the square it stands on first, as it
-     * does everywhere (AUT-C3, OB-278).
+     * does everywhere (OB-278).
      *
      * After a train turns at a square it may turn round at, the idle drain stands it on the copy facing its new way -
      * which can be the plain copy of the OTHER arrival - and puts back the side it came in by.  No rail arrives at that
@@ -711,7 +708,8 @@ public class testATrainCoversTheTrackBehindIt
      * stands on: the square was neither claimed nor spent, and the tail reached one square further back than the train
      * lies - over a switch, a road refused for nothing.
      *
-     * MUTATION: stop the walk spending the standing square on that rail and this fails.
+     * MUTATION: stop the walk spending the standing square on that rail and this fails (the track behind is claimed);
+     * so does stopping it claiming that square (`places.put(own, loc)`), which the overlay and `anotherTailOn` read.
      *
      * @throws Exception on a failure to build the fixture
      */
@@ -785,6 +783,12 @@ public class testATrainCoversTheTrackBehindIt
 
             claimed = layout.placesCoveredByStandingTrains();
 
+            // AND IT CLAIMS THE SQUARE ITSELF, as the control does: a square left out of the claim is left out of the gray
+            // overlay, and a route onto the other copy of it is not refused by place.
+            assertEquals(claimed.get(square), standing, "a train turned on its square does not claim the square it stands"
+                + " on: the walk took the rail running away from its copy and never put the square into the places (AUT-C3)."
+                + "  Claimed: " + claimed.keySet());
+
             assertFalse(claimed.containsKey("w1" + tag), "a two-unit train turned on a two-unit square claims the track"
                 + " behind it: the walk took the rail running away from its copy, whose places begin after the square it"
                 + " stands on, and that square was never spent (OB-278: the square a train stands on is spent first)."
@@ -798,9 +802,9 @@ public class testATrainCoversTheTrackBehindIt
     }
 
     /**
-     * The tail's first step takes the rail from the neighbour's plain copy, not from its turning twin (AUT3-C3).
+     * The tail's first step takes the rail from the neighbor's plain copy, not from its turning twin.
      *
-     * Rails arriving at a standing copy from a neighbour N come from the copies of N that face it: N's plain copy, and -
+     * Rails arriving at a standing copy from a neighbor N come from the copies of N that face it: N's plain copy, and -
      * where trains may turn at N - its turning copy, which arrived from this side.  Both come in by the same side, and the
      * walk took whichever `getNeighborsAndIncoming` listed first, which sorts by name: a turning copy is named by the
      * opposite heading plus ", reverse", so it came first whenever the plain heading was southbound or westbound.  From a
@@ -895,12 +899,12 @@ public class testATrainCoversTheTrackBehindIt
 
     /**
      * A train with no recorded side, on a square emitted as one Point, spends that square first like every other
-     * (TDY2-C5, OB-278).
+     * (OB-278).
      *
      * With nothing saying which side it came in by, the walk takes the fork rule, which kept the first rail it met to
-     * each neighbour - and the running layout lists the rails LEAVING a Point before those arriving at it.  A leaving
+     * each neighbor - and the running layout lists the rails LEAVING a Point before those arriving at it.  A leaving
      * rail's places begin after the square the train stands on, so the square was neither claimed nor spent and the tail
-     * reached one square further back than the train lies.  The AUT-C3 read that spends the square off an arriving rail
+     * reached one square further back than the train lies.  The read that spends the square off an arriving rail
      * needs the square's block, which the build writes only where a square is split into several Points - so a square
      * emitted once, a dead end's turning copy among them, was left out.
      *
@@ -965,7 +969,7 @@ public class testATrainCoversTheTrackBehindIt
      *
      * The wash is decided when a tile is DRAWN, and tiles are drawn when their own accessory, feedback
      * or route changes - so moving a train, which changes which track its tail lies across and nothing
-     * else, updated the set and repainted nothing. `TrainControlUI.refreshCoveredTrack` now redraws the
+     * else, updated the set and repainted nothing. `CoveredTrackView.workOutCoveredTrack` now redraws the
      * squares whose state changed.
      *
      * **What this test is for.** The redraw itself needs a window; what does not, and what the fix
@@ -1023,7 +1027,7 @@ public class testATrainCoversTheTrackBehindIt
      * mark put on, and one that has stopped being covered needs it taken off.
      *
      * **And BOTH MARKS go through this one comparison** (Adam, 2026-09-09: *"That plus the line, drawn
-     * and refreshed carefully, should do the trick."*).  Since the grey wash came back beside the
+     * and refreshed carefully, should do the trick."*).  Since the gray wash came back beside the
      * orange line, a square changes what it draws when its road changes AND when it starts or stops
      * being blocked - and the two do not move together: starting autonomy changes every blocked square
      * and no covered one.  A second refresh path for the second mark would be a second thing to forget
@@ -1034,13 +1038,18 @@ public class testATrainCoversTheTrackBehindIt
     @Test
     public void testTheRefreshRedrawsWhatChanged() throws Exception
     {
-        String ui = new String(java.nio.file.Files.readAllBytes(
-            java.nio.file.Paths.get("src/org/traincontrol/gui/TrainControlUI.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
-
-        assertTrue(ui.contains("repaintTheWashWhereItChanged(was, coveredTrack, wasBlocked, blockedTrack)"),
+        assertTrue(SourceOf.declaration("    void workOutCoveredTrack()")
+            .contains("repaintTheWashWhereItChanged(was, this.ui.coveredTrack, wasBlocked, this.ui.blockedTrack)"),
             "the covered set is recomputed and nothing is redrawn, so a train that moves leaves the"
             + " track behind where it used to be greyed until an unrelated repaint clears it (OB-180)");
+
+        String ui = SourceOf.declaration("    void repaintTheWashWhereItChanged(");
+
+        // Both marks are compared by one helper, asked once for each.
+        String diff = SourceOf.declaration("java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> squaresWhoseRoadsChanged(");
+
+        assertTrue(ui.contains("changed = squaresWhoseRoadsChanged(before, now)"),
+            "the covered squares are no longer compared road by road, so a train that moves leaves its line behind");
 
         // THE UNION, THEN WHAT DID NOT CHANGE TAKEN BACK OUT (MT-309).
         //
@@ -1050,41 +1059,33 @@ public class testATrainCoversTheTrackBehindIt
         // one road now, so a square can stay covered while what it has to draw changes.  The redraw
         // walks the union of the two sets and drops the squares whose answer is the same, which is
         // the symmetric difference plus exactly that case.
-        assertTrue(ui.contains("changed.addAll(now.keySet())"),
+        assertTrue(diff.contains("changed.addAll(now.keySet())"),
             "the redraw no longer walks both sets, so one of the two directions is not being"
             + " repainted - either the mark is not put on, or it is not taken off");
 
-        assertTrue(ui.contains("if (then == null ? after == null : then.equals(after)) key.remove()"),
+        assertTrue(diff.contains("if (then == null ? after == null : then.equals(after)) key.remove()"),
             "the redraw repaints every square in either set rather than the ones that changed, which"
             + " is the whole-diagram repaint the targeted one exists to avoid (MT-334)");
 
-        // AND THE GREY IS DIFFED IN THE SAME PASS, in both directions (2026-09-09), BY ROAD (OB-208).
+        // AND THE GRAY IS DIFFED IN THE SAME PASS, in both directions (2026-09-09), BY ROAD (OB-208).
         //
         // It was a plain symmetric difference while the wash was over the whole square.  Since OB-208 the
-        // grey is per road, like the line - a double curve on a covered edge fades only the arc the edge
-        // runs over - so a square can stay grey while what it fades changes, and the grey is compared the
+        // gray is per road, like the line - a double curve on a covered edge fades only the arc the edge
+        // runs over - so a square can stay gray while what it fades changes, and the gray is compared the
         // way the line is: the union of both sets, and a square added wherever its roads differ.  Both
         // directions fall out of that one comparison - a square that has stopped being blocked has roads
         // before and none after, one just blocked the other way round - and each is asked for below.
-        assertTrue(ui.contains("greySquares.addAll(greyAfter.keySet())"),
-            "the grey diff no longer walks both sets, so a square that has just become blocked is not"
-            + " redrawn - it goes on being drawn as free track until something unrelated repaints it");
-
-        assertTrue(ui.contains("new java.util.HashSet<>(greyBefore.keySet())"),
+        assertTrue(diff.contains("new java.util.HashSet<>(was.keySet())"),
             "the grey diff no longer starts from the old set, so a square that has stopped being blocked"
             + " is not redrawn - the grey stays on track nothing blocks, on every square once a train moves");
 
-        assertTrue(ui.contains("if (then == null ? after != null : !then.equals(after)) changed.add(at)"),
+        assertTrue(ui.contains("changed.addAll(squaresWhoseRoadsChanged(greyBefore, greyAfter))"),
             "the grey diff does not add a square whose blocked roads changed, in either direction");
 
         assertTrue(ui.contains("label.refreshCoveredMark()"),
             "nothing asks the tiles to re-apply the wash, so the set changed and the screen did not");
 
-        String label = new String(java.nio.file.Files.readAllBytes(
-            java.nio.file.Paths.get("src/org/traincontrol/gui/LayoutLabel.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
-
-        assertTrue(label.contains("public void refreshCoveredMark()"),
+        assertTrue(SourceOf.occurrences("public void refreshCoveredMark()") == 1,
             "the label cannot re-apply its wash without a full rebuild - and a full rebuild through"
             + " updateImage(true) would flash every signal and switch it touched");
     }

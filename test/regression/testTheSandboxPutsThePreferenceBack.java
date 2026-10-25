@@ -15,7 +15,7 @@ import org.traincontrol.gui.TrainControlUI;
 /**
  * The repair that runs after a killed test JVM does what its javadoc says.
  *
- * REG9-B2. On 2026-09-11 two killed JVMs left the machine-global layout preference naming a folder
+ * On 2026-09-11 two killed JVMs left the machine-global layout preference naming a folder
  * under `%TEMP%` - and that is the key the APPLICATION reads, so Adam's own window would have opened a
  * test fixture as though it were his railway. `6fe9ec38` added a marker file, a repair that runs at the
  * next sandbox open, and a shutdown hook. Ninety-seven test classes depend on that machinery, and
@@ -211,5 +211,22 @@ public class testTheSandboxPutsThePreferenceBack
         where.setAccessible(true);
 
         return (File) where.invoke(null);
+    }
+
+    /**
+     * A test run opens its windows not on top: the runners' `support.WindowsNotOnTop` turns the setting off in the run's
+     * own node, under the window's own key, and the windows then read it there.
+     *
+     * MUTATION: build `WindowsNotOnTop.ON_TOP_KEY` from another name, or leave it out of the runners' `-listener`, and
+     * this fails.
+     */
+    @Test
+    public void testATestRunsWindowsAreNotOnTop()
+    {
+        assertEquals(support.WindowsNotOnTop.ON_TOP_KEY, TrainControlUI.ONTOP_SETTING_PREF,
+            "the listener turns off a key the window does not read");
+
+        assertFalse(TrainControlUI.getPrefs().getBoolean(TrainControlUI.ONTOP_SETTING_PREF, true),
+            "this run's windows read Always on Top as on, so they open over whatever Adam is using");
     }
 }

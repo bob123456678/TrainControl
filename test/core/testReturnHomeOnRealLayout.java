@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Random;
 
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -41,8 +40,8 @@ import org.testng.annotations.Test;
  * plan is required to fail, and then the sensor is released and the plan is required to succeed again.
  * Without that second half the test would pass just as happily if planning were broken outright.
  *
- * Skipped, not failed, when the configuration is absent - it is the author's layout, not a fixture that
- * ships with the project.
+ * Failed, not skipped, when `test/autonomy.json` is missing or places no locomotive: it ships with the project, so
+ * the battery always has it, and an empty placement is a defect (FR-136).
  */
 public class testReturnHomeOnRealLayout
 {
@@ -82,9 +81,9 @@ public class testReturnHomeOnRealLayout
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        // The last argument is debug mode, which simulation requires - without it setSimulate throws
+        // Debug mode, which simulation requires - without it setSimulate throws
         // and this suite would have no way to move a train without moving a real one.
-        model = init(null, true, false, false, true);
+        model = support.TestStation.simulatedInDebug();
         model.stop();
 
         File file = new File("test/autonomy.json");
@@ -93,7 +92,7 @@ public class testReturnHomeOnRealLayout
 
         if (!file.exists())
         {
-            throw new SkipException(
+            throw new AssertionError(
                 "No autonomy.json in test/ or the project root - this suite runs the operator's own layout"
             );
         }
@@ -134,7 +133,7 @@ public class testReturnHomeOnRealLayout
         }
         catch (Exception e)
         {
-            throw new SkipException("refusing to run - simulation could not be enabled: " + e.getMessage());
+            throw new AssertionError("refusing to run - simulation could not be enabled: " + e.getMessage());
         }
 
         assertTrue(layout.isSimulate(), "simulation must be on before anything is asked to move");
@@ -143,17 +142,10 @@ public class testReturnHomeOnRealLayout
         layout.setMinDelay(0);
         layout.setMaxDelay(0);
 
-        // Skipped, not failed.
-        //
-        // This suite runs the OPERATOR'S own autonomy.json - a file the repository does not contain and
-        // cannot control - and it already skips when that file is absent or when simulation cannot be
-        // switched on.  A file with no locomotives placed in it is the same kind of thing: nothing here
-        // can drive a train, so there is nothing to test, and saying so as a failure puts a permanent
-        // red mark against a suite that is working exactly as designed.  A red that never goes away is
-        // a red people learn to scroll past.
+        // FAILED, NOT SKIPPED: `test/autonomy.json` places locomotives, so none placed is a parse defect (FR-136).
         if (layout.getLocomotivesToRun().isEmpty())
         {
-            throw new SkipException(
+            throw new AssertionError(
                 "refusing to run - the autonomy configuration places no locomotives");
         }
 
@@ -261,7 +253,7 @@ public class testReturnHomeOnRealLayout
                 + describe(layout));
         }
 
-        // TST-B12: the pre-round block above is skipped when already home, and each round below
+        // The pre-round block above is skipped when already home, and each round below
         // `continue`s past everything when the random stop also happens to land at home - so nothing
         // counted whether a single round ever actually reached planReturnToHome()/executeTimetable().
         // MUTATION this catches: make Layout.planReturnToHome() always return a plan with
@@ -315,7 +307,7 @@ public class testReturnHomeOnRealLayout
                 + ", started from " + arrangement + andTheSeed());
         }
 
-        // The floor TST-B12 asks for: if every round happened to land at home, planReturnToHome() and
+        // The floor: if every round happened to land at home, planReturnToHome() and
         // executeTimetable() were never exercised and this test proved nothing about either of them,
         // however green it reads.  Re-running with a different seed is the escape hatch if this trips.
         assertTrue(meaningfulRounds > 0,
@@ -364,7 +356,7 @@ public class testReturnHomeOnRealLayout
 
         if (displaced == null)
         {
-            throw new SkipException("could not displace any locomotive on this layout, so nothing to block");
+            throw new AssertionError("could not displace any locomotive on this layout, so nothing to block");
         }
 
         assertNotNull(home.getS88(), "precondition: the home station must have a sensor to hold occupied");
@@ -374,7 +366,7 @@ public class testReturnHomeOnRealLayout
             + " back to " + home.getName() + " before anything is blocked");
 
         // Hold the home station's own sensor occupied.  Nothing the planner can move accounts for it, so
-        // it stays blocked for the whole plan - the way an unmodelled obstruction on the track behaves.
+        // it stays blocked for the whole plan - the way an unmodeled obstruction on the track behaves.
         model.setFeedbackState(home.getS88(), true);
 
         try
@@ -402,7 +394,7 @@ public class testReturnHomeOnRealLayout
      * Adam, 2026-09-21, on MT-463: *"Could not run this.  make an automated test for this with
      * appropriate placements."*  The rule is `behaviour.md` section 6 and his ruling of 2026-09-15: a
      * plan may rest a train that cannot reverse on a terminus or reversing point only when its next move
-     * takes it home, *"a train the railway already had standing on one moves as before"*.  RTX-B1 was
+     * takes it home, *"a train the railway already had standing on one moves as before"*.  The defect was
      * that second clause: the code asked the SQUARE whether it turns trains, and a square cannot say who
      * turned the train standing on it, so a train merely FOUND on one could be planned nowhere but its
      * own home - and where that home was occupied, or the train had no home at all, the answer was
@@ -412,7 +404,7 @@ public class testReturnHomeOnRealLayout
      * `core.testHomeStaging.testATrainTheRailwayHadOnATerminusMayStepAsideBeforeGoingHome` and
      * `testATrainWithNoHomeTheRailwayHadOnATerminusCanBeMovedOffIt`, both seen red before the fix.  What
      * they cannot do is what he was trying to do by hand: meet the arrangement on HIS railway, where the
-     * turning squares are real berths with real approaches and real neighbours.
+     * turning squares are real berths with real approaches and real neighbors.
      *
      * **THE PLACEMENTS ARE STAGED, NOT WAITED FOR.**  The first version of this ran autonomy, stopped it
      * and took whatever had come to rest on a turning square away from home - and on his layout, over
@@ -453,7 +445,7 @@ public class testReturnHomeOnRealLayout
 
         if (turning.isEmpty())
         {
-            throw new SkipException("this configuration has no terminus and no reversing point, so the"
+            throw new AssertionError("this configuration has no terminus and no reversing point, so the"
                 + " arrangement MT-463 is about cannot exist on it");
         }
 
@@ -466,7 +458,7 @@ public class testReturnHomeOnRealLayout
             Point home = layout.getHomeStation(l);
             Point was = standingAt(layout, l);
 
-            // A TRAIN WITH NO HOME IS A DIFFERENT CASE, AND STAGING ONE CREATES THE HOME (VD13-T2).
+            // A TRAIN WITH NO HOME IS A DIFFERENT CASE, AND STAGING ONE CREATES THE HOME.
             //
             // `moveLocomotive` calls `claimHome`, which claims an unclaimed square for a locomotive
             // that has none - so putting such a train on a turning square makes that square ITS HOME,
@@ -512,7 +504,7 @@ public class testReturnHomeOnRealLayout
 
                     asked++;
 
-                    // AND THE STAGING DID NOT MOVE IT (VD13-T2).  Only a locomotive with no home is
+                    // AND THE STAGING DID NOT MOVE IT.  Only a locomotive with no home is
                     // re-homed by a hand placement, and those are skipped above - this is the claim
                     // that keeps that true, because it is the thing that would make the assertion
                     // below about a different arrangement than the one it names.
@@ -541,7 +533,7 @@ public class testReturnHomeOnRealLayout
                     // than against this loop's leftovers.  A train the configuration had NOWHERE is taken
                     // off the square instead of being left on it - otherwise the one case with no `was`
                     // leaves a train standing on a turning berth for every iteration after it, which is
-                    // this loop arranging the railway rather than staging one train (VD12-T8).
+                    // this loop arranging the railway rather than staging one train.
                     if (moved && was != null) layout.moveLocomotive(l.getName(), was.getName(), false);
 
                     if (moved && was == null) onto.setLocomotive(null);
@@ -552,7 +544,7 @@ public class testReturnHomeOnRealLayout
         }
 
         // THE FLOOR.  Every train could have been passed over by its own control, or never staged at
-        // all, which would leave this green having asked nothing - the hole TST-B12 found in the round
+        // all, which would leave this green having asked nothing - the hole in the round
         // loop above, and the skip this test was rewritten to stop.
         assertTrue(asked > 0,
             "no train could be staged on a turning square at all, so the rule this is about was never"

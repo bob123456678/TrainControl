@@ -39,7 +39,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * anything in, which is the state it is in almost all the time - and it is B5's remedy in the same
  * branch, on the one path that actually runs.
  *
- * **BEHAVIOURALLY, at the key.**  Every test here dispatches a real `KEY_PRESSED` to the frame and
+ * **BEHAVIORALLY, at the key.**  Every test here dispatches a real `KEY_PRESSED` to the frame and
  * then asks what happened to the window.  Dispatched at the frame rather than posted to the queue,
  * which `testTheWindowTakesTheKeyboard` explains: the queue routes by the OS's idea of the focus
  * owner, and in a test JVM that is usually a terminal.  The frame is the focus owner in this window by
@@ -75,7 +75,7 @@ public class testEscapeClosesTheEditor
 
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = init(null, true, false, false, true);
+        model = support.TestStation.simulatedInDebug();
 
         SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
 
@@ -85,12 +85,12 @@ public class testEscapeClosesTheEditor
 
         if (session == null || session.getStore().getActiveConfiguration() == null)
         {
-            throw new SkipException("no autonomy configuration, so there is no autonomy mode to open");
+            throw new AssertionError("no autonomy configuration, so there is no autonomy mode to open");
         }
 
         page = model.getLayout(PAGE);
 
-        if (page == null) throw new SkipException("no page " + PAGE);
+        if (page == null) throw new AssertionError("no page " + PAGE);
     }
 
     @AfterClass(alwaysRun = true)

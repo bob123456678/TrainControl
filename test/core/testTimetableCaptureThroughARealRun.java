@@ -84,7 +84,7 @@ public class testTimetableCaptureThroughARealRun
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        model = init(null, true, false, false, true);
+        model = support.TestStation.simulatedInDebug();
 
         // Not connected, and simulating packets, so accessory actuations are confirmed and the trains
         // actually move - the same arrangement testAutonomySimulationSanity uses.
@@ -193,7 +193,7 @@ public class testTimetableCaptureThroughARealRun
         // deliberately, because the operator toggling it and then doing something ordinary that
         // rebuilds the layout must not silently switch it back off - so after the test above this
         // fixture arrives with capture ON.  A test that assumed the default here would fail for a
-        // reason that is correct behaviour, and the obvious repair is to weaken it.
+        // reason that is correct behavior, and the obvious repair is to weaken it.
         layout.setTimetableCapture(false);
 
         assertFalse(layout.isTimetableCapture(), "capture did not switch off");

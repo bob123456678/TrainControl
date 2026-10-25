@@ -158,7 +158,7 @@ public class testBusyDialogInteraction
      * The dialog is undecorated and application-modal: it has no close button, and nothing else can
      * dispose it.  A leaked one is a frozen program.
      *
-     * TST-B10: this used to assert only that the `whenDone` callback ran - which BusyDialog.run
+     * This used to assert only that the `whenDone` callback ran - which BusyDialog.run
      * schedules together with the dispose, in the same `finally`, but is not the dispose itself.
      * Stripping the dialog out of `run` entirely, so no window is ever built or shown, would still
      * run `whenDone` and pass. This now captures the actual BusyDialog instance while it is showing
@@ -184,7 +184,7 @@ public class testBusyDialogInteraction
                     // to see and captured null - and the assertion below then reported "no dialog was
                     // showing" about a dialog that was a millisecond away from showing.
                     //
-                    // Bounded, because a dialog appearing is an acknowledgement rather than a railway
+                    // Bounded, because a dialog appearing is an acknowledgment rather than a railway
                     // event, and this file waits on acknowledgements with a deadline. If it never
                     // appears the wait ends and the assertion says exactly that.
                     org.traincontrol.gui.BusyDialog seen = null;
@@ -303,7 +303,7 @@ public class testBusyDialogInteraction
         final int[] result = {-1};
         final AtomicBoolean syncOnEDT = new AtomicBoolean(true);
 
-        // TST-B10: `model` is init()'d from the operator's own, real LocDB (test/README.md) - it is
+        // `model` is init()'d from the operator's own, real LocDB (test/README.md) - it is
         // never empty to begin with, so "the list is not empty" passed whether or not the sync ran.
         // `model` is also shared across every test in this class, and this is not the only one that
         // syncs it against the same fixture - so a straight "is the fixture's name here yet" check
@@ -408,7 +408,7 @@ public class testBusyDialogInteraction
 
         final org.traincontrol.gui.TrainControlUI[] ui = new org.traincontrol.gui.TrainControlUI[1];
 
-        // TST-B10: see testASyncRunsInsideTheDialogAndStillAnswers above for why this is a removed
+        // See testASyncRunsInsideTheDialogAndStillAnswers above for why this is a removed
         // fixture locomotive rather than "the list is not empty" - `model` is shared with that test,
         // so by the time this one runs the fixture's names may already all be present regardless of
         // whether THIS sync does anything at all.

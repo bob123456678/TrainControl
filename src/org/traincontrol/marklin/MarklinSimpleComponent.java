@@ -87,10 +87,10 @@ public class MarklinSimpleComponent implements java.io.Serializable
         this.name = r.getName();
         this.type = Type.ROUTE;
         
-        // A COPY, NOT THE LIVE LIST (MKR-C3, SVB-C3).  This is built by Backup Data on its own thread while
+        // A COPY, NOT THE LIVE LIST.  This is built by Backup Data on its own thread while
         // the event thread may be editing that route - `deleteLoc` takes commands out of it through
-        // `Iterator.remove()` - and the serialiser then walks what it was handed.  The route's own walks take
-        // a copy for the same reason (CS3-B1).
+        // `Iterator.remove()` - and the serializer then walks what it was handed.  The route's own walks take
+        // a copy for the same reason.
         this.route = new java.util.ArrayList<>(r.getRoute());
         this.address = r.getId();
         this.s88 = r.getS88();

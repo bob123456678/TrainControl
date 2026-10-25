@@ -153,7 +153,7 @@ public class testTheWashDoesNotStack
     /**
      * How much lighter the annotation made a black ground, in total across the tile.
      *
-     * The wash is white at partial alpha, so it can only lighten; the arrows are drawn in colour and
+     * The wash is white at partial alpha, so it can only lighten; the arrows are drawn in color and
      * cover a few pixels either way, so this measures the BACKGROUND corners - four pixels the marks
      * never reach - rather than the whole square.
      */

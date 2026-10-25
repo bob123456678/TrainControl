@@ -30,9 +30,9 @@ import org.traincontrol.util.I18n;
  * **Asked only when the answer changes something.**  The side it came in by (`ArrivalSidePrompt`) already picks the
  * first road back; past that the walk follows the only road there is until it reaches a junction.  So the question
  * is put only where the tail lies past a junction with two roads back and the roads put it on different track: it has
- * crossed a sensor on one of them (TLR-B1), or it has passed the switch they part at without reaching a sensor on
+ * crossed a sensor on one of them, or it has passed the switch they part at without reaching a sensor on
  * either (MT-477).  A tail that ends before the rails part covers the same squares whichever road it is on, and is not
- * asked about.  Two copies of one square are one road (TLR-B2).
+ * asked about.  Two copies of one square are one road.
  *
  * **A road the tail lies on short of its sensor is offered too, as the way towards that sensor** (Adam, 2026-09-23,
  * MT-477: *"when set to lenth 3, the tail always follows switch 51 turned, rather than facing straight toward rampdown
@@ -54,7 +54,7 @@ public class TailCrossedPrompt
     {
     }
 
-    /** The question closed without an answer, for `answerForTests` (TLV-A1). */
+    /** The question closed without an answer, for `answerForTests`. */
     public static final String DISMISSED = "(dismissed)";
 
     /** How many sensors back a road is followed at most, so a loop in a hand-written layout cannot run away. */
@@ -174,9 +174,9 @@ public class TailCrossedPrompt
      * @param arrivedFrom the side it came in by, or null
      * @param trainLength its length, or null
      * @param train the train's name, for the question
-     * @param parent what to centre the dialog on
+     * @param parent what to center the dialog on
      * @param shown what to call a point on screen, or null for its own name
-     * @return what the question came to - see `Answer` (TLW-C2)
+     * @return what the question came to - see `Answer`
      */
     public static Answer askAfterPlacement(Layout layout, Point at, String arrivedFrom, Integer trainLength,
         String train, Component parent, Function<String, String> shown)
@@ -185,7 +185,7 @@ public class TailCrossedPrompt
     }
 
     /**
-     * The same, with the list starting on the road the train already has (TLW-C4), so OK does not throw it away.
+     * The same, with the list starting on the road the train already has, so OK does not throw it away.
      *
      * @param recorded the road the train had before the door ran, or null
      * @return what the question came to
@@ -195,7 +195,7 @@ public class TailCrossedPrompt
     {
         if (!wouldAsk(layout, at, arrivedFrom, trainLength)) return Answer.NOT_ASKED;
 
-        // WHETHER AN EDITOR IS OPEN AS IT IS ASKED, for the door to know whether one opened in the wait (RLU-C9)
+        // WHETHER AN EDITOR IS OPEN AS IT IS ASKED, for the door to know whether one opened in the wait
         boolean editorWasOpen = parent instanceof TrainControlUI && ((TrainControlUI) parent).isLayoutEditorOpen();
 
         List<Choice> choices = choicesFor(layout, at, arrivedFrom, trainLength, shown);
@@ -207,9 +207,9 @@ public class TailCrossedPrompt
             ? DiagramPick.of(parent, at, choices, train, shownName(shown, at)) : null;
 
         // IN FRONT OF THE EDITOR WHERE ONE IS SHOWING (MT-575).  A door reached from the autonomy editor hands this the
-        // main window - the Place dialog's parent - and the list hung from it was centred on, and ordered with, the window
+        // main window - the Place dialog's parent - and the list hung from it was centered on, and ordered with, the window
         // the editor covers.  The editor is where the operator is looking, and where the question was asked from.  Not a
-        // minimised one, which hides what it owns (RLA-C4): `openLayoutEditorWindow` answers null for it.
+        // minimized one, which hides what it owns: `openLayoutEditorWindow` answers null for it.
         Component over = parent instanceof TrainControlUI && ((TrainControlUI) parent).openLayoutEditorWindow() != null
             ? ((TrainControlUI) parent).openLayoutEditorWindow() : parent;
 
@@ -232,8 +232,8 @@ public class TailCrossedPrompt
      * likes, with the window live, so a crash in that wait started the next session without the train where it stands.
      * So the door saves first: only where the question will be put (`wouldAsk`), since elsewhere the door's own save
      * follows at once; and not while an editor is open or on its way, since the editor holds a copy of the setup and
-     * its own save or Cancel speaks for it (RLU-C9).  What a door does with a late answer is unchanged: a setup the
-     * window has let go in the wait is not saved again (TDU4-C2).
+     * its own save or Cancel speaks for it.  What a door does with a late answer is unchanged: a setup the
+     * window has let go in the wait is not saved again.
      *
      * @param session the setup the door wrote to
      * @param layout the running railway
@@ -265,12 +265,75 @@ public class TailCrossedPrompt
     }
 
     /**
+     * What every placement door does once the train is down and its facing written: the tail's side into both stores
+     * (the walk that blocks track reads the live Point; the setup is what survives a restart), the save before the
+     * question waits, the question, and its road written only where the placement still stands, else a dropped answer
+     * logged.
+     *
+     * @param point the copy the train was put on, holding it
+     * @param train the train's name
+     * @param roadBefore the road the train had before the door moved it, or null
+     * @param sameSquareAsBefore whether it was put back on the square it stood on
+     * @param sideBefore the side it had there, or null
+     * @param savedEarly given what the save before the question reconciled (null when it did not save), or null
+     * @return whether the setup written to is still the window's, so the door may save it
+     */
+    static boolean recordTheTail(org.traincontrol.automationui.AutonomySession session,
+        org.traincontrol.automationui.TileGraph.TileKey tile, Layout layout, Point point, String tail, String train,
+        List<Edge> roadBefore, boolean sameSquareAsBefore, String sideBefore, TrainControlUI ui,
+        java.util.function.Consumer<org.traincontrol.automationui.AutonomyCompanionStore.Reconciliation> savedEarly)
+    {
+        session.setArrivedFrom(tile, tail);
+
+        point.setArrivedFrom(tail);
+
+        // Read before the question: it waits with the window live, and what stands on this copy may change meanwhile
+        final org.traincontrol.base.Locomotive placed = point.getCurrentLocomotive();
+        final List<Edge> roadAtTheQuestion = point.getArrivedAlong();
+
+        org.traincontrol.automationui.AutonomyCompanionStore.Reconciliation saved =
+            TailCrossedPrompt.saveBeforeAsking(session, layout, point, tail, lengthOf(point), ui);
+
+        if (savedEarly != null) savedEarly.accept(saved);
+
+        Answer answer = askAfterPlacement(layout, point, tail, lengthOf(point), train, ui, session::baseNameOf,
+            roadBefore);
+
+        boolean setupStands = sameSetup(session, ui.getAutonomySession()) && !answer.anEditorOpenedInTheWait();
+
+        final Point landing = whereTheAnswerGoes(runningNow(ui.getModel()), point, placed, tail, roadAtTheQuestion,
+            setupStands);
+
+        // THE ANSWER, OR THE ROAD IT HAD ON THE RAILWAY: no question, or a closed one, keeps the road the train had
+        // where it is still on the same square with the same side.
+        if (landing != null)
+        {
+            List<Edge> road = answer.roadToRecord(roadBefore, sameSquareAsBefore, sideBefore, tail);
+
+            session.setArrivedAlong(tile, Layout.namesOfRoad(road));
+            writeRoad(landing, point, runningNow(ui.getModel()), road);
+        }
+        else if (answer.wasAnswered())
+        {
+            noteADroppedAnswer(ui.getModel(), train, session.baseNameOf(point.getName()), answer);
+        }
+
+        return setupStands;
+    }
+
+    /** The length of the train standing on a copy, or null. */
+    private static Integer lengthOf(Point point)
+    {
+        return point.getCurrentLocomotive() == null ? null : point.getCurrentLocomotive().getTrainLength();
+    }
+
+    /**
      * Puts the question: a list of the sensors, and Not Known.
      *
-     * A closed dialog is no answer and a choice of nothing (TLW-C2).  Unlike the side question it does not refuse the
+     * A closed dialog is no answer and a choice of nothing.  Unlike the side question it does not refuse the
      * placement: the train is already somewhere a side was given for.
      *
-     * @param parent what to centre on
+     * @param parent what to center on
      * @param train the train's name
      * @param station where it stands, as the operator reads it
      * @param choices the sensors
@@ -282,7 +345,7 @@ public class TailCrossedPrompt
     }
 
     /**
-     * Where the list should start: the choice the recorded road describes, or none (TLW-C4).
+     * Where the list should start: the choice the recorded road describes, or none.
      *
      * @param choices the choices
      * @param recorded the road the train has, or null
@@ -333,7 +396,7 @@ public class TailCrossedPrompt
     }
 
     /**
-     * What a placement's question came to (TLV-A1).
+     * What a placement's question came to.
      *
      * Two things a bare road could not say apart: "Not known" is an answer and forgets a road; no question - or one
      * closed without an answer - says nothing, and must leave whatever road the train has.
@@ -360,7 +423,7 @@ public class TailCrossedPrompt
         }
 
         /**
-         * Whether an editor was opened while the question waited on the diagram (RLU-C9).  The editor holds the setup as
+         * Whether an editor was opened while the question waited on the diagram.  The editor holds the setup as
          * it was when it opened, and its Cancel puts that back; so the door writes nothing into the setup then - as every
          * main-window door that writes the setup refuses while an editor is open - and says so.
          *
@@ -384,7 +447,7 @@ public class TailCrossedPrompt
         }
 
         /**
-         * The road a door should record for the train, in both stores (TLV-A1, TLW-A1).
+         * The road a door should record for the train, in both stores.
          *
          * The answer, where there was one.  Otherwise the road the train had ON THE RAILWAY before the door moved it -
          * kept where it is still on the same square with the same side, and dropped where it is not, because a road
@@ -444,7 +507,7 @@ public class TailCrossedPrompt
                 if (choice.getFarthest().getName().equals(answeredByATest)) return new Reply(true, choice);
             }
 
-            // SAID, not taken for a dismissal (TLW-C3): a test answering with a sensor that is not offered is a test
+            // SAID, not taken for a dismissal: a test answering with a sensor that is not offered is a test
             // asking about a different railway from the one it built.
             throw new IllegalStateException("a test answered " + answeredByATest + ", which is not offered: "
                 + java.util.Arrays.asList(labelsOf(choices)));
@@ -531,7 +594,7 @@ public class TailCrossedPrompt
 
     /**
      * Each edge as its two places, the rail read either way round the same, as the walk reads it - by place, so a road a
-     * train drove in one lane still matches the choices worked out from the other lane's copy it was turned onto (TLR-A1).
+     * train drove in one lane still matches the choices worked out from the other lane's copy it was turned onto.
      */
     private static List<String> pairsOf(List<Edge> road)
     {
@@ -592,7 +655,7 @@ public class TailCrossedPrompt
     }
 
     /**
-     * Whether the placement a tail question was asked for still stands when its answer comes back (TDU2-A1).
+     * Whether the placement a tail question was asked for still stands when its answer comes back.
      *
      * Since FR-100 the question waits on the diagram with the window live - Start, the hand doors, another placement,
      * a removal all still work while it waits - and each door writes its answer when the answer comes back.  By then the
@@ -600,7 +663,7 @@ public class TailCrossedPrompt
      * the first train's road (or none) over it, and that train's tail stopped at the switch with another routed into it.
      * So a door writes only while the copy still holds the train it placed, with the side and the road the placement left
      * - and asks it of the running railway's copy, through `whereTheAnswerGoes`, since a rebuild in the wait changes none
-     * of the three on the copy it replaced (TDU3-B1).
+     * of the three on the copy it replaced.
      *
      * @param point the copy the train was put on
      * @param placed the train put there, by reference
@@ -617,17 +680,17 @@ public class TailCrossedPrompt
     }
 
     /**
-     * Where a door writes the road a tail question answered, or null when nowhere (TDU2-A1, TDU3-B1).
+     * Where a door writes the road a tail question answered, or null when nowhere.
      *
      * The copy the train was put on is the one asked about only while it is still the running railway's.  A rebuild in
      * the wait - any setup change from the diagram, a page left out, another configuration loaded - builds new copies
      * and leaves the old one as it was, so asked of the old one the check always passed, and the answer went to a copy
      * nothing reads.  So the copy of that name on the railway running NOW is asked: after a rebuild of the same setup
      * the train is put back on it with its side and the road the running railway had, and the answer belongs there.
-     * And nowhere once the door's setup is not the window's any more (`sameSetup`), a session replaced (TDU4-C2).  Another
+     * And nowhere once the door's setup is not the window's any more (`sameSetup`), a session replaced.  Another
      * configuration loaded in the wait keeps the session, and the answer follows the train onto the copy that holds it as
-     * it was put (Adam, 2026-09-24, TDD5-C1: *"Follow the train."*).  And nowhere while trains run (Adam, 2026-09-28:
-     * *"There should be no setup edit possible during a run"*; RLV12-C3): the question waits with the window live, Start
+     * it was put (Adam, 2026-09-24: *"Follow the train."*).  And nowhere while trains run (Adam, 2026-09-28:
+     * *"There should be no setup edit possible during a run"*): the question waits with the window live, Start
      * or a hand send in the wait is not refused, and every door that asks it takes where to write from here.
      *
      * @param running the railway running now, or null to ask the copy itself
@@ -643,7 +706,7 @@ public class TailCrossedPrompt
     {
         if (!sameSetup || asked == null) return null;
 
-        // RUNNING, OR OWNED BY A STAGING FLOW (RLV13-C3): Return Home plans with nothing yet running, and every other
+        // RUNNING, OR OWNED BY A STAGING FLOW: Return Home plans with nothing yet running, and every other
         // refusal of a setup edit asks whether autonomy is busy, which counts that
         if (running != null && (running.isRunning() || running.isStagingInProgress())) return null;
 
@@ -654,7 +717,7 @@ public class TailCrossedPrompt
 
     /**
      * Writes an answered road to the copy `whereTheAnswerGoes` chose - through the running railway's own edges where a
-     * rebuild made that copy a new one, since the answer's road is the old railway's (TDU3-B1).
+     * rebuild made that copy a new one, since the answer's road is the old railway's.
      *
      * @param landing the copy to write to
      * @param asked the copy the question was asked about
@@ -671,27 +734,27 @@ public class TailCrossedPrompt
 
     /**
      * The railway running now, or null where autonomy has none - asked without making one, which `getAutoLayout` does
-     * when there is none (TDU4-C2).
+     * when there is none.
      *
      * @param model the model
      * @return the running railway, or null
      */
     public static Layout runningNow(org.traincontrol.model.ViewListener model)
     {
-        // Asked once (RLV12-C5)
+        // Asked once
         return model == null ? null : model.getAutoLayoutIfLoaded();
     }
 
     /**
      * Whether the setup a door wrote to before its question is still the window's when the answer comes back: the same
-     * session (TDU3-B1).
+     * session.
      *
-     * **Another configuration loaded in the wait is the same setup here** (Adam, 2026-09-24, TDD5-C1: *"Follow the
+     * **Another configuration loaded in the wait is the same setup here** (Adam, 2026-09-24: *"Follow the
      * train."*).  It keeps the session and rebuilds the railway, and where its copy of the square holds the same train
      * from the same side with the road it had - which `whereTheAnswerGoes` asks - the answer is about the train in front
-     * of the operator, and goes into the configuration loaded now and onto the railway running.  TDU4-C1 had dropped it,
-     * and the tail he had just given was then missing from the railway: the track beyond the switch was free to route
-     * another train over.  A door whose setup is not the window's any more saves nothing (TDU4-C2): the reset that
+     * of the operator, and goes into the configuration loaded now and onto the railway running.  Dropping it
+     * left the tail he had just given missing from the railway: the track beyond the switch was free to route
+     * another train over.  A door whose setup is not the window's any more saves nothing: the reset that
      * replaced it wrote what it held.
      *
      * @param asked the session the door wrote to before the question
@@ -705,8 +768,8 @@ public class TailCrossedPrompt
     }
 
     /**
-     * Says in the log that an answer was not recorded, and why (TDU3-C2): the squares go dark whichever way it went, and
-     * the operator could not tell a dropped answer from one that did not work.  Only for an answer (TDU4-C3) - Not known
+     * Says in the log that an answer was not recorded, and why: the squares go dark whichever way it went, and
+     * the operator could not tell a dropped answer from one that did not work.  Only for an answer - Not known
      * included, which records that nothing is known; a Cancel asked for nothing to be recorded - and naming the square as
      * the diagram does, without a remedy that the train having moved or another train standing there makes impossible.
      *
@@ -720,8 +783,8 @@ public class TailCrossedPrompt
     }
 
     /**
-     * The same, saying why this answer was dropped - an editor opened in the wait (RLU-C9), trains began running in it
-     * (RLV12-C3), or the square changed.
+     * The same, saying why this answer was dropped - an editor opened in the wait, trains began running in it,
+     * or the square changed.
      *
      * @param model where the log goes
      * @param train the train the question was about
@@ -741,7 +804,7 @@ public class TailCrossedPrompt
         }
         else if (now != null && (now.isRunning() || now.isStagingInProgress()))
         {
-            // TRAINS BEGAN RUNNING IN THE WAIT (RLV12-C3), which `whereTheAnswerGoes` drops the answer for
+            // TRAINS BEGAN RUNNING IN THE WAIT, which `whereTheAnswerGoes` drops the answer for
             model.logf("autolayout.ui.logTailAnswerDroppedRunning", train, where);
         }
         else
@@ -770,8 +833,7 @@ public class TailCrossedPrompt
 
     /**
      * The same, knowing which click of a run this is - so the rest of a double-click on the sensor that answered is the
-     * question's too (TDU-B3): that one double-click, and no later one, since the next click puts the guard down
-     * (TDU2-C1).
+     * question's too: that one double-click, and no later one, since the next click puts the guard down.
      *
      * The first click answers and takes the question down; the second arrives with nothing waiting and would reach the
      * sensor's own click, which flips it - announced as a real sensor change, which an armed route acts on.  Asking to
@@ -787,7 +849,7 @@ public class TailCrossedPrompt
 
         if (pick != null) return pick.clicked(label);
 
-        // ONE DOUBLE-CLICK'S WORTH, then put down (TDU2-C1): the next click on anything ends it, so a later double-click
+        // ONE DOUBLE-CLICK'S WORTH, then put down: the next click on anything ends it, so a later double-click
         // on the same sensor flips it and flips it back, as a double-click on a sensor always has.
         LayoutLabel answered = answeredBy;
 
@@ -797,8 +859,8 @@ public class TailCrossedPrompt
     }
 
     /**
-     * The tile whose click last answered a question, for the rest of that one double-click (TDU-B3) - cleared by the next
-     * click on any sensor (TDU2-C1).
+     * The tile whose click last answered a question, for the rest of that one double-click - cleared by the next
+     * click on any sensor.
      */
     private static volatile LayoutLabel answeredBy;
 
@@ -842,7 +904,7 @@ public class TailCrossedPrompt
 
             TrainControlUI ui = (TrainControlUI) parent;
 
-            // NOT WITH AN EDITOR OPEN (TDU-C1).  The autonomy editor's Place door asks from the main window too, and its own
+            // NOT WITH AN EDITOR OPEN.  The autonomy editor's Place door asks from the main window too, and its own
             // squares are lit with the main window's but do not take the click; the small window goes to the top of a
             // main window the editor covers.  The list is asked where the operator is working.
             if (ui.isLayoutEditorOpen()) return null;
@@ -1094,7 +1156,7 @@ public class TailCrossedPrompt
         }
 
         // A JUNCTION IS A QUESTION when it has two roads back and the tail lies on different track depending on which:
-        // it crossed a sensor on one of them (TLR-B1), or it passed the switch they part at (MT-477).  A tail that ends
+        // it crossed a sensor on one of them, or it passed the switch they part at (MT-477).  A tail that ends
         // before the rails part covers the same squares on every road, and nothing is asked.
         if (firstHops.size() > 1 && (crossedHere > 0 || parts)) forks[0]++;
     }
@@ -1123,7 +1185,7 @@ public class TailCrossedPrompt
 
         if (beyond < 0)
         {
-            // SHORT OF THE SENSOR, ON A ROAD THAT IS DIFFERENT TRACK FROM ITS NEIGHBOUR'S (MT-477): offered as the way
+            // SHORT OF THE SENSOR, ON A ROAD THAT IS DIFFERENT TRACK FROM ITS NEIGHBOR'S (MT-477): offered as the way
             // the tail lies, so answering it puts the tail on this rail rather than on whichever the walk meets first.
             // Nothing is walked beyond: the tail ends on this rail.
             if (offerShort && left > 0)
@@ -1155,7 +1217,7 @@ public class TailCrossedPrompt
 
             Point further = candidate.getStart();
 
-            // BY PLACE (TLR-B2): a square a train may turn at is a lane copy and a turning copy, the same metal under
+            // BY PLACE: a square a train may turn at is a lane copy and a turning copy, the same metal under
             // two names, and counted by name it was a second road back.
             if (further == null || walked.contains(placeOf(further))) continue;
 
@@ -1304,12 +1366,12 @@ public class TailCrossedPrompt
         {
             String name = baseName(shown, choice);
 
-            // The next sensor towards the train says which road it is, usually (TLR-C3).
+            // The next sensor towards the train says which road it is, usually.
             choice.label = count.get(name) > 1 && choice.getRoad().size() > 1
                 ? I18n.f("autolayout.ui.tailCrossedVia", name, viaNames(choice, shown, 1)) : name;
         }
 
-        // AND WHERE THAT IS NOT ENOUGH, every sensor on the way (TLV-B3): two roads that part and meet again before the
+        // AND WHERE THAT IS NOT ENOUGH, every sensor on the way: two roads that part and meet again before the
         // next sensor read the same by it.
         Map<String, Integer> again = new LinkedHashMap<>();
 
@@ -1417,16 +1479,7 @@ public class TailCrossedPrompt
     }
 
     /**
-     * @param point a Point
-     * @return whether it is a turning copy, for a test that has to say which of two copies was kept
-     */
-    public static boolean isATurningCopyForTests(Point point)
-    {
-        return isATurningCopy(point);
-    }
-
-    /**
-     * One road's end: the square AND the lane (TLW-B1).
+     * One road's end: the square AND the lane.
      *
      * A square's turning copy runs on the lane of the copy it turns (the builder names it "X (eastbound, reverse)"
      * beside "X (eastbound)"), so the two are one road.  Its copies for the two arrival sides are the square's two

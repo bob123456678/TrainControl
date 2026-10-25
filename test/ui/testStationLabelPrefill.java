@@ -10,6 +10,7 @@ import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.gui.AutonomyEditorPanel;
+import support.SourceOf;
 
 /**
  * FR-034: "Show station label here" opens on the station the square is next to.
@@ -122,9 +123,7 @@ public class testStationLabelPrefill
     @Test
     public void testTheLastClickedStationIsSpentAfterOneUse() throws Exception
     {
-        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/AutonomyEditorPanel.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
+        String source = SourceOf.declaration("    void promptStationLabel(");
 
         int used = source.indexOf("showing = lastStationTouched;");
 
@@ -147,7 +146,7 @@ public class testStationLabelPrefill
      * The caller nearestOf serves is untested: nearestStation, which turns the graph into the list
      * nearestOf chooses from by keeping only the reduced points the user marked as stations.
      *
-     * TST-B19. The two tests above drive nearestOf hard; nothing before this called
+     * The two tests above drive nearestOf hard; nothing before this called
      * nearestStation itself - the class javadoc said doing so needed "the panel, a session and a
      * railway" and settled for reading the source instead (testTheLastClickedStationIsSpentAfterOneUse,
      * above). It does need those three, and this builds the smallest ones that will do: a session

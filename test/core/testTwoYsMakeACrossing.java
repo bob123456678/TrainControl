@@ -200,7 +200,7 @@ public class testTwoYsMakeACrossing
     /**
      * Ys side by side, back to back, or toe to toe with an addressed Y switch, are no crossing.
      *
-     * MUTATION: pair any two Ys that are neighbours, or a permanent Y with a switch, and this fails.
+     * MUTATION: pair any two Ys that are neighbors, or a permanent Y with a switch, and this fails.
      *
      * @throws Exception from the session
      */
@@ -313,7 +313,7 @@ public class testTwoYsMakeACrossing
 
     /**
      * Directions set on the squares of a crossing while they were permanent turnouts are read as a turnout's, the same on
-     * both halves of the track (RSA37-C1): towards the toe, the way the blades ran, restricted nothing, so the track runs
+     * both halves of the track: towards the toe, the way the blades ran, restricted nothing, so the track runs
      * both ways; towards a leg was how a permanent turnout was closed, so the track is closed.  Read in the crossing's
      * terms on the one square that held them, the blades' way ran the track one way, and the closure one way the other.
      * A track set one way through a door is set on both squares already, and stays one way.
@@ -885,13 +885,13 @@ public class testTwoYsMakeACrossing
 
     /**
      * The arm boxes on an untouched permanent turnout tick only its toe, as the branch submenus beside them tick the
-     * one way there is (VD18-C2).
+     * one way there is.
      *
      * Every road of a permanent turnout is directed at its toe, and its default is `BOTH`, which the blades narrow to
-     * that one way - a train may leave by the toe and by no other arm.  The submenus learned to tick what is in force
-     * (VD18-B1); the boxes went on reading the stored `BOTH` and ticked every arm.
+     * that one way - a train may leave by the toe and by no other arm.  The submenus learned to tick what is in force;
+     * the boxes went on reading the stored `BOTH` and ticked every arm.
      *
-     * MUTATION: read the stored direction in `AutonomyEditorPanel.armMask` again, and this fails.
+     * MUTATION: read the stored direction in `TileGraph.armMask`, which the editor's asks, and this fails.
      *
      * @throws Exception from the panel
      */
@@ -937,8 +937,7 @@ public class testTwoYsMakeACrossing
     }
 
     /**
-     * A click on a permanent turnout never leaves a road an answer its blades refuse, and still opens and shuts it
-     * (VD18-C2).
+     * A click on a permanent turnout never leaves a road an answer its blades refuse, and still opens and shuts it.
      *
      * The click steps through combinations of open arms, and on a permanent turnout every combination that opens an arm
      * other than the toe stores `BOTH` or the way toward the fork - answers `TileGraph.directionIsPossible` says the
@@ -1003,7 +1002,7 @@ public class testTwoYsMakeACrossing
             + opened + ", shut: " + shut);
     }
 
-    /** A permanent left on its own, toe south at 5,5, with a sensor off each of its three arms (VD18-C2). */
+    /** A permanent left on its own, toe south at 5,5, with a sensor off each of its three arms. */
     private static LayoutDiagram lonePermanentLeft() throws IOException
     {
         LayoutDiagram page = page();

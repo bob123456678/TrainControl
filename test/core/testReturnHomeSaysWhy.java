@@ -74,7 +74,7 @@ public class testReturnHomeSaysWhy
         // Adam's real railway (OB-111).
         sandbox = support.LayoutSandbox.open();
 
-        model = init(null, true, false, false, false);
+        model = support.TestStation.simulated();
         model.stop();
 
         model.newMM2Locomotive(LOC, 91);
@@ -215,8 +215,7 @@ public class testReturnHomeSaysWhy
     }
 
     /**
-     * A home square emitted as two copies, one of which is not a destination, still says "too short"
-     * (TDR-B3).
+     * A home square emitted as two copies, one of which is not a destination, still says "too short".
      *
      * A platform whose arrival from one side is barred is built as a destination copy and a copy that is
      * not one, in one block.  `Point.validateTrainLength` answers yes for a copy that is not a destination,
@@ -351,7 +350,7 @@ public class testReturnHomeSaysWhy
     }
 
     /**
-     * The reasons name squares, not the direction copies the builder made of them (TDR-C8).
+     * The reasons name squares, not the direction copies the builder made of them.
      *
      * Adam's ruling that the copy machinery is masked from the user covers the log as much as a dialog, and
      * a home is stood on as one of its copies - so "its home X (eastbound, reverse) is switched out of
@@ -385,9 +384,9 @@ public class testReturnHomeSaysWhy
     }
 
     /**
-     * A planned move names the square it goes to, not the builder's copy of it (TDR-C9).
+     * A planned move names the square it goes to, not the builder's copy of it.
      *
-     * The "planned" lines are logged in the same block as the reasons, and TDR-C8 masked the reasons only.
+     * The "planned" lines are logged in the same block as the reasons, and only the reasons are masked.
      */
     @Test
     public void testAPlannedMoveNamesTheSquare()
@@ -419,7 +418,7 @@ public class testReturnHomeSaysWhy
     }
 
     /**
-     * Every reason a plan gives names squares, across every sentence the refusals can reach (TDR-C12).
+     * Every reason a plan gives names squares, across every sentence the refusals can reach.
      *
      * `testTheReasonsNameSquaresNotCopies` reached one sentence, so reverting any of the other sites that
      * name a square left it green.  Each fixture here is named the way the builder names copies, and each
@@ -574,9 +573,7 @@ public class testReturnHomeSaysWhy
             + java.util.Arrays.toString(parts) + ": " + why);
     }
 
-    // ---------------------------------------------------------------------------------------------
     // Fixtures
-    // ---------------------------------------------------------------------------------------------
 
     private static boolean anyMentions(List<String> sentences, String... all)
     {

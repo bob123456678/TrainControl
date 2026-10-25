@@ -333,6 +333,183 @@ public final class LayoutSandbox
         return folder.toFile();
     }
 
+    /**
+     * Turns simulation on in this copy's autonomy configurations, for a test that runs trains (FR-136).
+     *
+     * `simulate` is a setting in the operator's own file, and a snapshot refreshed from his railway carries whatever his
+     * last session left there - on 2026-10-19, off, because he runs the real thing.  A test that needs it says so here, on
+     * its copy; the checked-in fixture is never written.  A file that already has it is left byte for byte.
+     *
+     * @return this sandbox, so the call can sit on the line that opens it
+     * @throws IOException if a configuration cannot be read or written
+     */
+    public LayoutSandbox simulated() throws IOException
+    {
+        for (Path file : configurations())
+        {
+            org.json.JSONObject configuration = readJson(file);
+
+            org.json.JSONObject globals = configuration.optJSONObject("globals");
+
+            if (globals != null && globals.optBoolean("simulate", false)) continue;
+
+            if (globals == null) configuration.put("globals", globals = new org.json.JSONObject());
+
+            globals.put("simulate", true);
+
+            writeJson(file, configuration);
+        }
+
+        return this;
+    }
+
+    /**
+     * Takes every train off this copy's autonomy configurations, every home with them, and empties the timetable
+     * (FR-136).
+     *
+     * Where his trains stand, which are homed where, and the timetable of his last run are working state, not the
+     * railway (`test/layouts/live-snapshot/README.md`, "Not invariants"), so a refresh moves them all.  A test that needs
+     * a train standing calls this and then `standing` for each one it names.
+     *
+     * @return this sandbox
+     * @throws IOException if a configuration cannot be read or written
+     */
+    public LayoutSandbox withNoTrains() throws IOException
+    {
+        for (Path file : configurations())
+        {
+            org.json.JSONObject configuration = readJson(file);
+
+            org.json.JSONObject points = configuration.optJSONObject("points");
+
+            if (points != null)
+            {
+                for (String key : points.keySet())
+                {
+                    org.json.JSONObject point = points.optJSONObject(key);
+
+                    if (point == null) continue;
+
+                    for (String property : new String[] {"loc", "facing", "arrivedFrom", "arrivedAlong", "home",
+                        "homeFacing"})
+                    {
+                        point.remove(property);
+                    }
+                }
+            }
+
+            org.json.JSONObject globals = configuration.optJSONObject("globals");
+
+            if (globals != null && globals.has("timetable")) globals.put("timetable", new org.json.JSONArray());
+
+            writeJson(file, configuration);
+        }
+
+        return this;
+    }
+
+    /**
+     * Stands a named train on a square of this copy's autonomy configurations.
+     *
+     * @param square the square, as the configuration keys it
+     * @param locomotive the train's name, which the database must hold or the load leaves it out (OB-349)
+     * @param facing the way it faces, N, E, S or W
+     * @param arrivedFrom the side it came in from, or null for not known
+     * @return this sandbox
+     * @throws IOException if a configuration cannot be read or written
+     */
+    public LayoutSandbox standing(org.traincontrol.automationui.TileGraph.TileKey square, String locomotive, String facing,
+        String arrivedFrom) throws IOException
+    {
+        for (Path file : configurations())
+        {
+            org.json.JSONObject configuration = readJson(file);
+
+            org.json.JSONObject points = configuration.optJSONObject("points");
+
+            if (points == null) configuration.put("points", points = new org.json.JSONObject());
+
+            org.json.JSONObject point = points.optJSONObject(square.toString());
+
+            if (point == null) points.put(square.toString(), point = new org.json.JSONObject());
+
+            point.put("loc", new org.json.JSONObject().put("name", locomotive));
+            point.put("facing", facing);
+
+            if (arrivedFrom == null) point.remove("arrivedFrom");
+            else point.put("arrivedFrom", arrivedFrom);
+
+            writeJson(file, configuration);
+        }
+
+        return this;
+    }
+
+    /**
+     * Makes this copy's timetable one entry: a train's run over the named points, in order.
+     *
+     * @param locomotive the train's name
+     * @param points the Points the run passes, as the running railway names them, first to last
+     * @return this sandbox
+     * @throws IOException if a configuration cannot be read or written
+     */
+    public LayoutSandbox withATimetableOf(String locomotive, String... points) throws IOException
+    {
+        org.json.JSONArray path = new org.json.JSONArray();
+
+        for (int i = 1; i < points.length; i++)
+        {
+            path.put(new org.json.JSONObject().put("start", points[i - 1]).put("end", points[i]));
+        }
+
+        org.json.JSONObject entry = new org.json.JSONObject().put("executionTime", 0L).put("secondsToNext", 0)
+            .put("loc", locomotive).put("path", path);
+
+        for (Path file : configurations())
+        {
+            org.json.JSONObject configuration = readJson(file);
+
+            org.json.JSONObject globals = configuration.optJSONObject("globals");
+
+            if (globals == null) configuration.put("globals", globals = new org.json.JSONObject());
+
+            globals.put("timetable", new org.json.JSONArray().put(entry));
+
+            writeJson(file, configuration);
+        }
+
+        return this;
+    }
+
+    /**
+     * The autonomy configurations in this copy, one file each; none when it has no setup.
+     */
+    private java.util.List<Path> configurations() throws IOException
+    {
+        java.util.List<Path> out = new java.util.ArrayList<>();
+
+        Path autonomy = folder.resolve("config").resolve("autonomy");
+
+        if (!Files.isDirectory(autonomy)) return out;
+
+        try (java.nio.file.DirectoryStream<Path> files = Files.newDirectoryStream(autonomy, "configuration-*.json"))
+        {
+            for (Path file : files) out.add(file);
+        }
+
+        return out;
+    }
+
+    private static org.json.JSONObject readJson(Path file) throws IOException
+    {
+        return new org.json.JSONObject(new String(Files.readAllBytes(file), java.nio.charset.StandardCharsets.UTF_8));
+    }
+
+    private static void writeJson(Path file, org.json.JSONObject json) throws IOException
+    {
+        Files.write(file, json.toString(2).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    }
+
     private static void copy(final Path from, final Path to) throws IOException
     {
         Files.walkFileTree(from, new SimpleFileVisitor<Path>()

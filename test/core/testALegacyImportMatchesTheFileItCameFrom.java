@@ -81,6 +81,15 @@ public class testALegacyImportMatchesTheFileItCameFrom
     private static final Set<String> NOT_SETTINGS = new LinkedHashSet<>(
         Arrays.asList("points", "edges"));
 
+    /** Why the set-up found no fixture, or null; each claim asks it, so it fails rather than skips. */
+    private static String unbuilt;
+
+    /** Fails the claim when the set-up found no fixture: a skip or an assert in `setUpClass` reads as skipped tests. */
+    private static void assertBuilt()
+    {
+        if (unbuilt != null) throw new AssertionError(unbuilt);
+    }
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {
@@ -91,13 +100,14 @@ public class testALegacyImportMatchesTheFileItCameFrom
 
         if (!file.exists())
         {
-            throw new SkipException("this fixture carries no legacy autonomy.json at " + file);
+            unbuilt = "this fixture carries no legacy autonomy.json at " + file;
+            return;
         }
 
         legacy = new org.json.JSONObject(new String(
             java.nio.file.Files.readAllBytes(file.toPath()), java.nio.charset.StandardCharsets.UTF_8));
 
-        model = MarklinControlStation.init(null, true, false, false, false);
+        model = support.TestStation.simulated();
 
         session = new AutonomySession(sandbox.getFolder());
 
@@ -128,8 +138,9 @@ public class testALegacyImportMatchesTheFileItCameFrom
         // about one railway is neither: nothing landing anywhere.
         if (result.matched + result.skipped == 0)
         {
-            throw new SkipException("the import reached no square on this diagram, so there is nothing"
-                + " here to compare - " + result.unmatched.size() + " points landed nowhere");
+            unbuilt = "the import reached no square on this diagram, so there is nothing"
+                + " here to compare - " + result.unmatched.size() + " points landed nowhere";
+            return;
         }
 
         session.rebuild();
@@ -154,6 +165,8 @@ public class testALegacyImportMatchesTheFileItCameFrom
     @Test
     public void testEverySettingArrivesWithItsOwnValue() throws Exception
     {
+        assertBuilt();
+
         assertNotNull(globals,
             "the file's settings did not arrive at all, so an upgrading user keeps their station names"
             + " and loses every rule about how their railway runs");
@@ -194,6 +207,8 @@ public class testALegacyImportMatchesTheFileItCameFrom
     @Test
     public void testTheThreeThatWouldDoHarmStayBehind() throws Exception
     {
+        assertBuilt();
+
         assertNotNull(globals, "no settings arrived at all");
 
         for (String key : MUST_NOT_TRAVEL)
@@ -222,6 +237,8 @@ public class testALegacyImportMatchesTheFileItCameFrom
     @Test
     public void testAStationsCapacityArrivesAsACapacity() throws Exception
     {
+        assertBuilt();
+
         Map<String, Integer> wanted = new LinkedHashMap<>();
 
         org.json.JSONArray points = legacy.optJSONArray("points");
@@ -239,7 +256,7 @@ public class testALegacyImportMatchesTheFileItCameFrom
 
         if (wanted.isEmpty())
         {
-            throw new SkipException("this legacy file gives no station a maximum train length");
+            throw new AssertionError("this legacy file gives no station a maximum train length");
         }
 
         int checked = 0;
@@ -275,13 +292,15 @@ public class testALegacyImportMatchesTheFileItCameFrom
      * And the square's own track length is untouched, which is the other half of the same confusion.
      *
      * Lengths are what the shortest-track and longest-track routing rules are computed from, so a
-     * capacity written into one is not a harmless mislabelling.
+     * capacity written into one is not a harmless mislabeling.
      *
      * @throws Exception from the store
      */
     @Test
     public void testNoSquareGainedATrackLength() throws Exception
     {
+        assertBuilt();
+
         Map<TileKey, Integer> after = new LinkedHashMap<>();
 
         for (TileKey measured : session.tilesWithALength())

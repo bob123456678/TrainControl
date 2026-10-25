@@ -16,7 +16,7 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 /**
  * A square cannot be given a name that ends the way the builder names one direction of a square.
  *
- * Adam, TDR-C11, 2026-09-14: *"refuse and close, but make sure the words are uncommon."*
+ * Adam, 2026-09-14: *"refuse and close, but make sure the words are uncommon."*
  *
  * **Why it is refused.**  Messages name squares by stripping the builder's heading from a copy's name -
  * "BottomMainB (eastbound, reverse)" is shown as "BottomMainB" - so a square somebody NAMED "Main (eastbound)"
@@ -25,7 +25,7 @@ import org.traincontrol.automationui.TileGraph.TileKey;
  *
  * **Why the words are uncommon.**  Only the builder's form is refused: a lowercase heading in brackets at the
  * very end, after a space - with anything after a comma inside the bracket, of which ", reverse" is the
- * builder's own (FTN-C1).  Each control below is a name a real railway might use and
+ * builder's own.  Each control below is a name a real railway might use and
  * that must still be allowed.
  *
  * @author Adam
@@ -39,7 +39,7 @@ public class testANameCannotEndInAHeading
     public void testTheBuildersFormsAreRefused()
     {
         // "Depot (eastbound, old)" as well: the stripping reads the heading up to the comma and ignores the
-        // rest, so that name reads as "Depot" in every message - refusing it is what keeps the two agreeing (FTN-C1).
+        // rest, so that name reads as "Depot" in every message - refusing it is what keeps the two agreeing.
         for (String name : new String[] {"Main (eastbound)", "Main (westbound)", "Yard (northbound)",
             "Yard (southbound)", "Main (eastbound, reverse)", "  Main (westbound)  ", "Depot (eastbound, old)"})
         {

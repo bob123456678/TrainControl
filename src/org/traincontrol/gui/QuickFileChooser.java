@@ -8,7 +8,9 @@ import java.util.Set;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.swing.Icon;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.filechooser.FileSystemView;
+import org.traincontrol.util.I18n;
 
 /**
  * A file chooser whose Look In list is asked of Windows once, ahead of time, rather than every time (OB-323; Adam,
@@ -65,8 +67,15 @@ public class QuickFileChooser extends javax.swing.JFileChooser
         super(currentDirectoryPath, new Places());
     }
 
+    /** The file types every image chooser offers. */
+    public static FileNameExtensionFilter imageFilter()
+    {
+        return new FileNameExtensionFilter("JPEG, PNG, GIF, BMP " + I18n.t("ui.images"),
+                "jpg", "png", "gif", "jpeg", "jpe", "bmp");
+    }
+
     /**
-     * The folder as the shell's own, and a shortcut's target in place of the shortcut (RSA38-B2, RSA38-C1): what Swing does
+     * The folder as the shell's own, and a shortcut's target in place of the shortcut: what Swing does
      * itself for a chooser on the shell's view, and this one is not on it.  Followed, a shortcut to a folder - in Recent
      * Items, or the user's own - opens the folder, where it threw on the event thread and left the chooser listing the
      * folder before; and the shell's folder is what gives the details view the shell's columns - name, date, type and
@@ -202,8 +211,8 @@ public class QuickFileChooser extends javax.swing.JFileChooser
 
     /**
      * What says the shell's answer may have changed, each read without asking the shell: the drives, and the folders on
-     * each Desktop (RSA39-C1) - most of the list is the Desktop's own folders, and a folder made on it, removed or renamed
-     * was not followed while the drives stayed the same.  Its folders, not when it last changed (RSA40-C3): a file saved
+     * each Desktop - most of the list is the Desktop's own folders, and a folder made on it, removed or renamed
+     * was not followed while the drives stayed the same.  Its folders, not when it last changed: a file saved
      * to the Desktop changes that, and the list holds no files, so the next chooser waited on the shell for nothing.
      *
      * @return the drives, then the names of each Desktop's folders

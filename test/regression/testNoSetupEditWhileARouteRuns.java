@@ -37,7 +37,7 @@ import static regression.testTheImportDoorReadsAnOldFile.putTheFolderBack;
  * No setup edit is made while a route runs with autonomy idle, at any door that refuses one while autonomy is busy (Adam,
  * 2026-09-28: *"There should be no setup edit possible during a run"*; asked whether those doors should also refuse while
  * a route runs: *"yes, refuse"*).  One question, `TrainControlUI.somethingIsRunning` as Return Home's place-at-home item
- * asks it (FR-129), and each door keeps its own way of refusing - greyed, hidden, or said at the click.
+ * asks it (FR-129), and each door keeps its own way of refusing - grayed, hidden, or said at the click.
  *
  * On the live snapshot's window, with a route of one accessory command marked running as `MarklinRoute.execRoute` marks
  * it, so nothing is sent; and each door asked again at rest, where it does not refuse.
@@ -50,6 +50,12 @@ public class testNoSetupEditWhileARouteRuns
 
     /** The sentence a door that named only autonomy now shows while something else runs. */
     private static final String ANY_RUN = "ui.main.tooltip.placeAtHomesWhileRunning";
+
+    /** What a door that edits the setup refuses with, autonomy or a route alike. */
+    private static final String NO_EDITS = "ui.main.errorNoEditsWhileRunning";
+
+    /** What a door that must wait for the run (a load, Unload, Export) refuses with. */
+    private static final String WAIT = "autolayout.ui.errorWaitForActiveLocomotivesToStop";
 
     /**
      * The track diagram's right-click menu leaves out Place, Remove, Edit Locomotive, Is Active, the Facing menu and
@@ -225,7 +231,7 @@ public class testNoSetupEditWhileARouteRuns
             final org.traincontrol.base.Locomotive placing = ui.getModel().getLocByName(active);
             final Point wasAt = railway.getLocomotiveLocation(placing);
             final String setupBefore = session.isAutoDestination(chosen) + " " + setupOf(session, chosen);
-            final String refusal = I18n.t(ANY_RUN);
+            final String refusal = I18n.t(NO_EDITS);
 
             answering.start();
 
@@ -353,7 +359,7 @@ public class testNoSetupEditWhileARouteRuns
     }
 
     /**
-     * Neither editor opens while a route runs - the Edit door says why, and Open Full Editor is greyed with it - and the
+     * Neither editor opens while a route runs - the Edit door says why, and Open Full Editor is grayed with it - and the
      * track editor's Autonomy tab and its Save refuse; at rest the autonomy editor may open and the tab is live.
      *
      * MUTATION: let `whyAutonomyEditorCannotOpen`, `openLayoutEditor`, the editor's mode tab or its Save ask autonomy
@@ -383,7 +389,7 @@ public class testNoSetupEditWhileARouteRuns
             ui = openTheWindow();
 
             final TrainControlUI window = ui;
-            final String refusal = I18n.t(ANY_RUN);
+            final String refusal = I18n.t(NO_EDITS);
             final org.traincontrol.base.LayoutDiagram page = ui.getModel().getLayout("1 - Main");
 
             assertNotNull(page, "precondition: no page 1 - Main");
@@ -401,7 +407,7 @@ public class testNoSetupEditWhileARouteRuns
 
             try
             {
-                assertEquals(ui.whyAutonomyEditorCannotOpen(), ANY_RUN, "the autonomy"
+                assertEquals(ui.whyAutonomyEditorCannotOpen(), NO_EDITS, "the autonomy"
                     + " editor may open while a route runs, and Open Full Editor is live");
 
                 for (final Boolean autonomy : new Boolean[] {Boolean.TRUE, Boolean.FALSE})
@@ -424,7 +430,7 @@ public class testNoSetupEditWhileARouteRuns
 
                 assertFalse(tab.isEnabled(), "the track editor's Autonomy tab is live while a route runs");
 
-                assertTrue(String.valueOf(tab.getToolTipText()).contains(refusal), "the track editor's Autonomy tab,"
+                assertTrue(String.valueOf(tab.getToolTipText()).contains(I18n.t(NO_EDITS)), "the track editor's Autonomy tab,"
                     + " greyed while a route runs, does not say why: " + tab.getToolTipText());
 
                 // ITS SAVE, pressed while a route runs
@@ -473,7 +479,7 @@ public class testNoSetupEditWhileARouteRuns
     }
 
     /**
-     * The Autonomy and Layout menus grey what changes the setup or the diagram while a route runs, saying a route is one
+     * The Autonomy and Layout menus gray what changes the setup or the diagram while a route runs, saying a route is one
      * reason, and give it back at rest.
      *
      * MUTATION: let either menu's guard ask autonomy alone again, and this fails.
@@ -501,7 +507,7 @@ public class testNoSetupEditWhileARouteRuns
 
             ui = openTheWindow();
 
-            String why = I18n.t(ANY_RUN);
+            String why = I18n.t(NO_EDITS);
 
             Map<String, JMenuItem> autonomyAtRest = autonomyMenuItems(ui);
             Map<String, Object[]> layoutAtRest = layoutMenuAsOpened(ui, layoutItems);
@@ -570,11 +576,282 @@ public class testNoSetupEditWhileARouteRuns
     }
 
     /**
+     * A control grayed because a run holds the setup says, as its tooltip, the sentence its own door gives when driven
+     * (Adam: "make tooltips match"): the track editor's Autonomy tab, the timetable's right-click menu, the Layout and
+     * Autonomy menus, and, with autonomy busy, the Auto tab's settings - autonomy busy and a route running alike.
+     *
+     * MUTATION: give any of them another sentence again (`whyTheSetupIsHeld`, or the wait sentence on a setting), and
+     * this fails naming the control.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testAGreyedControlSaysWhatItsDoorSays() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        TrainControlUI ui = null;
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        boolean echoWas = MarklinControlStation.DEBUG_SIMULATE_PACKETS;
+
+        final Answering answering = new Answering();
+
+        final org.traincontrol.gui.LayoutEditor[] editor = new org.traincontrol.gui.LayoutEditor[1];
+
+        final java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
+
+        staging.setAccessible(true);
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
+
+            ui = openTheWindow();
+
+            // THE POWER ON, so Execute Timetable's press reaches its own refusal
+            MarklinControlStation.DEBUG_SIMULATE_PACKETS = true;
+
+            ui.getModel().go();
+
+            long until = System.currentTimeMillis() + 5000;
+
+            while (!ui.getModel().getPowerState() && System.currentTimeMillis() < until) Thread.sleep(50);
+
+            assertTrue(ui.getModel().getPowerState(), "precondition: the power is not on");
+
+            final TrainControlUI window = ui;
+            final org.traincontrol.base.LayoutDiagram page = ui.getModel().getLayout("1 - Main");
+            final Object panel = ui.getAutonomyViewerPanel();
+            final String edits = I18n.t(NO_EDITS);
+
+            assertNotNull(page, "precondition: no page 1 - Main");
+
+            // THE DOORS OF THE AUTONOMY MENU, taken from the menu opened at rest
+            Map<String, JMenuItem> atRest = autonomyMenuItems(ui);
+
+            final JMenuItem tick = ((javax.swing.JMenu) atRest.get(I18n.t("autosetup.ui.btnExcludePage"))).getItem(0);
+            final JMenuItem editPage = ((javax.swing.JMenu) atRest.get(I18n.t("autosetup.ui.menuEditAutonomy"))).getItem(0);
+
+            final java.lang.reflect.Method save = org.traincontrol.gui.LayoutEditor.class
+                .getDeclaredMethod("saveButtonActionPerformed", java.awt.event.ActionEvent.class);
+
+            save.setAccessible(true);
+
+            final Class<?>[] anEvent = {java.awt.event.ActionEvent.class};
+            final Class<?>[] aMouse = {java.awt.event.MouseEvent.class};
+
+            answering.start();
+
+            for (final boolean autonomy : new boolean[] {true, false})
+            {
+                final String state = autonomy ? "autonomy busy" : "a route running";
+
+                if (autonomy)
+                {
+                    staging.set(ui, true);
+
+                    refreshWhatWaits(ui);
+                }
+                else
+                {
+                    aRouteRuns(ui, true);
+                }
+
+                try
+                {
+                    // THE TRACK EDITOR'S AUTONOMY TAB, whose door is the editor's Save
+                    javax.swing.AbstractButton tab = modeTab(ui, page, editor);
+
+                    assertFalse(tab.isEnabled(), "the track editor's Autonomy tab is live with " + state);
+
+                    saysWhatItsDoorSays(answering, "the track editor's Autonomy tab, with " + state, tab.getToolTipText(),
+                        () -> invoke(save, editor[0], (Object) null));
+
+                    closeTheProbe(editor);
+
+                    // THE TIMETABLE'S RIGHT-CLICK MENU, item by item
+                    List<JMenuItem> timetable = timetableMenuItems(ui);
+
+                    List<Runnable> timetableDoors = new ArrayList<>();
+
+                    timetableDoors.add(() -> window.updateTimetableDelay(null));
+                    timetableDoors.add(() -> window.deleteTimetableEntry(null));
+                    timetableDoors.add(window::restartTimetable);
+                    timetableDoors.add(window::clearTimetable);
+
+                    assertEquals(timetable.size(), timetableDoors.size(), "the timetable's menu changed its items");
+
+                    for (int i = 0; i < timetable.size(); i++)
+                    {
+                        assertFalse(timetable.get(i).isEnabled(), timetable.get(i).getText() + " is live with " + state);
+
+                        saysWhatItsDoorSays(answering, "the timetable's " + timetable.get(i).getText() + ", with " + state,
+                            timetable.get(i).getToolTipText(), timetableDoors.get(i));
+                    }
+
+                    // THE LAYOUT MENU
+                    Map<String, Runnable> layoutDoors = new java.util.LinkedHashMap<>();
+
+                    layoutDoors.put("chooseLocalDataFolderMenuItem", () -> callUi(window,
+                        "chooseLocalDataFolderMenuItemActionPerformed", anEvent, (Object) null));
+                    layoutDoors.put("modifyLocalLayoutMenu", () -> callUi(window, "duplicateOrRenameCurrentLayout",
+                        new Class<?>[] {String.class, boolean.class, boolean.class, boolean.class}, "renamed", true, false,
+                        false));
+                    layoutDoors.put("editPageMenu", () -> ((javax.swing.JMenu) fieldOf("editPageMenu", window)).getItem(0)
+                        .doClick());
+                    layoutDoors.put("initializeLocalLayoutMenuItem", () -> callUi(window,
+                        "initializeLocalLayoutMenuItemActionPerformed", anEvent, (Object) null));
+                    layoutDoors.put("switchCSLayoutMenuItem", () -> callUi(window,
+                        "switchCSLayoutMenuItemActionPerformed", anEvent, (Object) null));
+
+                    Map<String, Object[]> layout = layoutMenuAsOpened(ui, layoutDoors.keySet().toArray(new String[0])
+                        );
+
+                    for (Map.Entry<String, Runnable> door : layoutDoors.entrySet())
+                    {
+                        assertFalse((Boolean) layout.get(door.getKey())[0], door.getKey() + " is live with " + state);
+
+                        saysWhatItsDoorSays(answering, "the Layout menu's " + door.getKey() + ", with " + state,
+                            layout.get(door.getKey())[1], door.getValue());
+                    }
+
+                    // Download Central Station Layout has no refusal of its own: it says what the rest of the menu says
+                    assertTrue(String.valueOf(layoutMenuAsOpened(ui, new String[] {"downloadCSLayoutMenuItem"})
+                        .get("downloadCSLayoutMenuItem")[1]).contains(edits), "the Layout menu's Download Central Station"
+                        + " Layout, with " + state + ", does not say what the rest of the menu says");
+
+                    // THE AUTONOMY MENU
+                    Map<String, JMenuItem> autonomyMenu = autonomyMenuItems(ui);
+
+                    Map<String, Runnable> autonomyDoors = new java.util.LinkedHashMap<>();
+
+                    autonomyDoors.put(I18n.t("autosetup.ui.btnManage"), () -> call(panel, "rename"));
+                    autonomyDoors.put(I18n.t("autosetup.ui.btnExcludePage"), tick::doClick);
+                    autonomyDoors.put(I18n.t("autosetup.ui.menuEditAutonomy"), editPage::doClick);
+
+                    for (Map.Entry<String, Runnable> door : autonomyDoors.entrySet())
+                    {
+                        JMenuItem item = autonomyMenu.get(door.getKey());
+
+                        assertFalse(item.isEnabled(), door.getKey() + " is live on the Autonomy menu with " + state);
+
+                        saysWhatItsDoorSays(answering, "the Autonomy menu's " + door.getKey() + ", with " + state,
+                            item.getToolTipText(), door.getValue());
+                    }
+
+                    // THE AUTO TAB'S SETTINGS, grayed only while autonomy is busy: each setting refuses as an edit, and
+                    // Execute Timetable, which sends trains, says to wait
+                    if (autonomy)
+                    {
+                        for (String name : new String[] {"minDelay", "maxDelay", "maxLocInactiveSeconds", "defaultLocSpeed",
+                            "preArrivalSpeedReduction", "maxActiveTrains", "maximumLatency", "atomicRoutes",
+                            "turnOffFunctionsOnArrival", "turnOnFunctionsOnDeparture", "simulate", "toggleSpecifiedRoutes",
+                            "autoRouteList", "algorithmType", "timetableCapture", "executeTimetable"})
+                        {
+                            javax.swing.JComponent control = testNoSetupEditDuringARun.control(window, name);
+
+                            assertFalse(control.isEnabled(), "the Auto tab's " + name + " is live with " + state);
+
+                            Runnable door;
+
+                            if ("algorithmType".equals(name))
+                            {
+                                door = () ->
+                                {
+                                    javax.swing.JComboBox<?> rules = (javax.swing.JComboBox<?>) control;
+
+                                    rules.setSelectedIndex((rules.getSelectedIndex() + 1) % rules.getItemCount());
+                                };
+                            }
+                            else if ("timetableCapture".equals(name) || "executeTimetable".equals(name))
+                            {
+                                door = () -> callUi(window, name + "ActionPerformed", anEvent, (Object) null);
+                            }
+                            else
+                            {
+                                door = () -> callUi(window, name + "MouseReleased", aMouse, (Object) null);
+                            }
+
+                            saysWhatItsDoorSays(answering, "the Auto tab's " + name + ", with " + state,
+                                control.getToolTipText(), door);
+
+                            refreshWhatWaits(window);
+                        }
+                    }
+                }
+                finally
+                {
+                    closeTheProbe(editor);
+
+                    if (autonomy)
+                    {
+                        staging.set(ui, false);
+
+                        refreshWhatWaits(ui);
+                    }
+                    else
+                    {
+                        aRouteRuns(ui, false);
+                    }
+                }
+            }
+        }
+        finally
+        {
+            answering.stop();
+
+            MarklinControlStation.DEBUG_SIMULATE_PACKETS = echoWas;
+
+            if (editor[0] != null)
+            {
+                final org.traincontrol.gui.LayoutEditor closing = editor[0];
+
+                SwingUtilities.invokeAndWait(closing::dispose);
+            }
+
+            closeDown(ui, sandbox, folderWas);
+        }
+    }
+
+    /** The window's `refreshWhatWaitsForTheTrains`, on the event thread. */
+    private static void refreshWhatWaits(final TrainControlUI ui) throws Exception
+    {
+        SwingUtilities.invokeAndWait(() -> callUi(ui, "refreshWhatWaitsForTheTrains", new Class<?>[0]));
+    }
+
+    /** Drives a grayed control's door and asserts its tooltip holds the one sentence the door said. */
+    private static void saysWhatItsDoorSays(Answering answering, String control, Object tooltip, Runnable door)
+        throws Exception
+    {
+        int from = answering.count();
+
+        SwingUtilities.invokeAndWait(door);
+
+        settle();
+
+        List<String> said = answering.since(from);
+
+        assertEquals(said.size(), 1, control + ", driven through its door, did not refuse with one sentence: " + said);
+
+        assertTrue(String.valueOf(tooltip).contains(said.get(0)), control + " is greyed with a tooltip that is not what"
+            + " its door says.  Tooltip: " + tooltip + "  Door: " + said.get(0));
+    }
+
+    /**
      * The configuration doors, Import, Delete Everything, a page ticked out, and the page doors refuse while a route runs,
      * saying why before anything is asked, and none of them changes the setup or the pages; at rest they ask their own
      * questions instead.
      *
-     * MUTATION: let any of them ask autonomy alone again, and this fails naming it.
+     * Each says "Edits are not allowed while autonomy or routes are running." (OB-370).
+     *
+     * MUTATION: let any of them ask autonomy alone again, and this fails naming it; so does
+     * `RunGates.refuseWhileARunHoldsTheSetup` giving a door another sentence.
      *
      * @throws Exception from the window
      */
@@ -600,8 +877,9 @@ public class testNoSetupEditWhileARouteRuns
             final TrainControlUI window = ui;
             final AutonomySession session = ui.getAutonomySession();
             final Object panel = ui.getAutonomyViewerPanel();
-            final String refusal = I18n.t(ANY_RUN);
+            final String refusal = I18n.t(NO_EDITS);
             final String anyRun = I18n.t(ANY_RUN);
+            final String noEdits = I18n.t(NO_EDITS);
 
             // A PAGE'S TICK, from the menu opened at rest
             JMenuItem pages = autonomyMenuItems(ui).get(I18n.t("autosetup.ui.btnExcludePage"));
@@ -626,27 +904,27 @@ public class testNoSetupEditWhileARouteRuns
                 doors.put("Autonomy: " + door, new Object[] {refusal, (Runnable) () -> call(panel, door)});
             }
 
-            doors.put("Autonomy: Import", new Object[] {anyRun, (Runnable) () -> call(panel, "importConfiguration")});
+            doors.put("Autonomy: Import", new Object[] {noEdits, (Runnable) () -> call(panel, "importConfiguration")});
             doors.put("Autonomy: Delete Everything", new Object[] {refusal, (Runnable) () -> invoke(deleteEverything,
                 autonomyMenu, session)});
             doors.put("Autonomy: a page's tick", new Object[] {refusal, (Runnable) tick::doClick});
-            doors.put("Layout: Delete Page", new Object[] {anyRun, (Runnable) () -> callUi(window,
+            doors.put("Layout: Delete Page", new Object[] {noEdits, (Runnable) () -> callUi(window,
                 "deleteLayoutMenuItemActionPerformed", new Class<?>[] {java.awt.event.ActionEvent.class}, (Object) null)});
-            doors.put("Layout: Rename Page", new Object[] {anyRun, (Runnable) () -> callUi(window,
+            doors.put("Layout: Rename Page", new Object[] {noEdits, (Runnable) () -> callUi(window,
                 "duplicateOrRenameCurrentLayout", new Class<?>[] {String.class, boolean.class, boolean.class, boolean.class},
                 "renamed while a route runs", true, false, false)});
-            doors.put("Layout: Duplicate Page", new Object[] {anyRun, (Runnable) () -> callUi(window,
+            doors.put("Layout: Duplicate Page", new Object[] {noEdits, (Runnable) () -> callUi(window,
                 "duplicateOrRenameCurrentLayout", new Class<?>[] {String.class, boolean.class, boolean.class, boolean.class},
                 "copied while a route runs", false, true, false)});
-            doors.put("Layout: Combine Linked Pages", new Object[] {anyRun, (Runnable) () -> callUi(window,
+            doors.put("Layout: Combine Linked Pages", new Object[] {noEdits, (Runnable) () -> callUi(window,
                 "combineLinkedPages", new Class<?>[0])});
-            doors.put("Layout: Switch to the Central Station's Layout", new Object[] {anyRun, (Runnable) () -> callUi(
+            doors.put("Layout: Switch to the Central Station's Layout", new Object[] {noEdits, (Runnable) () -> callUi(
                 window, "switchCSLayoutMenuItemActionPerformed", new Class<?>[] {java.awt.event.ActionEvent.class},
                 (Object) null)});
-            doors.put("Layout: Choose Local Data Folder", new Object[] {anyRun, (Runnable) () -> callUi(window,
+            doors.put("Layout: Choose Local Data Folder", new Object[] {noEdits, (Runnable) () -> callUi(window,
                 "chooseLocalDataFolderMenuItemActionPerformed", new Class<?>[] {java.awt.event.ActionEvent.class},
                 (Object) null)});
-            doors.put("Layout: Initialize Local Layout", new Object[] {anyRun, (Runnable) () -> callUi(window,
+            doors.put("Layout: Initialize Local Layout", new Object[] {noEdits, (Runnable) () -> callUi(window,
                 "initializeLocalLayoutMenuItemActionPerformed", new Class<?>[] {java.awt.event.ActionEvent.class},
                 (Object) null)});
 
@@ -699,7 +977,8 @@ public class testNoSetupEditWhileARouteRuns
 
                 List<String> said = answering.since(from);
 
-                assertFalse(said.contains(refusal) || said.contains(anyRun), name + " refused at rest: " + said);
+                assertFalse(said.contains(refusal) || said.contains(anyRun) || said.contains(noEdits), name + " refused at"
+                    + " rest: " + said);
 
                 assertFalse(said.isEmpty(), "precondition: " + name + " asked nothing at rest");
             }
@@ -747,7 +1026,7 @@ public class testNoSetupEditWhileARouteRuns
             final TrainControlUI window = ui;
             final AutonomySession session = ui.getAutonomySession();
             final org.traincontrol.base.LayoutDiagram page = ui.getModel().getLayout("1 - Main");
-            final String refusal = I18n.t(ANY_RUN);
+            final String refusal = I18n.t(NO_EDITS);
 
             assertNotNull(page, "precondition: no page 1 - Main");
 
@@ -984,7 +1263,7 @@ public class testNoSetupEditWhileARouteRuns
 
         stations.sort(java.util.Comparator.comparing(TileKey::toString));
 
-        if (stations.isEmpty()) throw new SkipException("no station on " + page);
+        if (stations.isEmpty()) throw new AssertionError("no station on " + page);
 
         return stations.get(0);
     }
@@ -1015,7 +1294,7 @@ public class testNoSetupEditWhileARouteRuns
             }
         }
 
-        throw new SkipException("no station label on " + page.getName() + " that may be dragged anywhere");
+        throw new AssertionError("no station label on " + page.getName() + " that may be dragged anywhere");
     }
 
     /**
@@ -1063,14 +1342,133 @@ public class testNoSetupEditWhileARouteRuns
             }
         }
 
-        throw new SkipException("no run of three plain squares on " + page);
+        throw new AssertionError("no run of three plain squares on " + page);
+    }
+
+    /**
+     * Edit doors of five files refuse a run with the one edit sentence, during autonomy and during a route alike, and
+     * Export, which must wait, with the one wait sentence (OB-370): a refusal written again with a sentence of its own
+     * fails here, naming the door.
+     *
+     * MUTATION: give any one of these doors its own sentence back (`whyTheSetupIsHeld` with its old key), and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testDoorsOfDifferentFilesRefuseWithOneSentence() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        TrainControlUI ui = null;
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        final Answering answering = new Answering();
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui = openTheWindow();
+
+            final TrainControlUI window = ui;
+            final AutonomySession session = ui.getAutonomySession();
+            final Object panel = ui.getAutonomyViewerPanel();
+            final Object autonomyMenu = autonomyMenu(ui);
+            final java.lang.reflect.Method deleteEverything = autonomyMenu.getClass()
+                .getDeclaredMethod("deleteEverything", AutonomySession.class);
+
+            deleteEverything.setAccessible(true);
+
+            final javax.swing.JSlider trains = (javax.swing.JSlider) fieldOf("maxActiveTrains", window);
+            final int trainsWas = ui.getModel().getAutoLayout().getMaxActiveTrains();
+
+            Map<String, Runnable> edits = new java.util.LinkedHashMap<>();
+
+            edits.put("AutonomyViewerPanel: Rename", () -> call(panel, "rename"));
+            edits.put("AutonomyViewerPanel: Import", () -> call(panel, "importConfiguration"));
+            edits.put("AutonomyMenu: Delete Everything", () -> invoke(deleteEverything, autonomyMenu, session));
+            edits.put("TimetableTab: Clear Timetable", window::clearTimetable);
+            edits.put("AutonomySettingsTab: Activate Routes", () -> callUi(window, "toggleSpecifiedRoutesMouseReleased",
+                new Class<?>[] {java.awt.event.MouseEvent.class}, (Object) null));
+            edits.put("TrainControlUI: Timetable Capture", () -> callUi(window, "timetableCaptureActionPerformed",
+                new Class<?>[] {java.awt.event.ActionEvent.class}, (Object) null));
+            edits.put("TrainControlUI: the trains-at-once slider", () ->
+            {
+                trains.setValue(trainsWas == trains.getMaximum() ? trainsWas - 1 : trainsWas + 1);
+
+                callUi(window, "maxActiveTrainsMouseReleased", new Class<?>[] {java.awt.event.MouseEvent.class},
+                    (Object) null);
+            });
+
+            // AUTONOMY BUSY without moving a train, as the staging flow is
+            final java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
+
+            staging.setAccessible(true);
+
+            answering.start();
+
+            for (String run : new String[] {"autonomy", "a route"})
+            {
+                if (run.equals("autonomy")) staging.setBoolean(ui, true);
+                else aRouteRuns(ui, true);
+
+                try
+                {
+                    Map<String, List<String>> said = new java.util.LinkedHashMap<>();
+
+                    for (Map.Entry<String, Runnable> door : edits.entrySet())
+                    {
+                        int from = answering.count();
+
+                        SwingUtilities.invokeAndWait(door.getValue());
+
+                        settle();
+
+                        said.put(door.getKey(), answering.since(from));
+                    }
+
+                    for (Map.Entry<String, List<String>> door : said.entrySet())
+                    {
+                        assertEquals(door.getValue(), Collections.singletonList(I18n.t(NO_EDITS)), door.getKey()
+                            + ", an edit, was refused while " + run + " runs with another sentence than the edit doors"
+                            + " of the other files: " + said);
+                    }
+
+                    int from = answering.count();
+
+                    SwingUtilities.invokeAndWait(() -> call(panel, "exportConfiguration"));
+
+                    settle();
+
+                    assertEquals(answering.since(from), Collections.singletonList(I18n.t(WAIT)), "Export, a door that"
+                        + " must wait, did not say so while " + run + " runs");
+                }
+                finally
+                {
+                    if (run.equals("autonomy")) staging.setBoolean(ui, false);
+                    else aRouteRuns(ui, false);
+                }
+            }
+
+            assertEquals(ui.getModel().getAutoLayout().getMaxActiveTrains(), trainsWas, "the trains-at-once slider wrote"
+                + " the setup while a run held it");
+        }
+        finally
+        {
+            answering.stop();
+
+            closeDown(ui, sandbox, folderWas);
+        }
     }
 
     /**
      * The Auto tab's settings, the route activations, the timetable's doors and a train's direction change leave the
-     * setup alone while a route runs with autonomy idle, and say why with the sentence that names a route (C3; Adam,
-     * 2026-09-28: *"There should be no setup edit possible during a run"*; of a route: *"yes, refuse"*).  The timetable's
-     * right-click menu greys its items with that sentence.
+     * setup alone while a route runs with autonomy idle, and say why with the edit sentence (Adam: *"There should be no
+     * setup edit possible during a run"*; of a route: *"yes, refuse"*).  The timetable's right-click menu grays its items
+     * with the sentence that names a route.
      *
      * MUTATION: ask `isAutonomyBusy` alone again in any of them, and this fails naming it.
      *
@@ -1099,6 +1497,7 @@ public class testNoSetupEditWhileARouteRuns
             final AutonomySession session = ui.getAutonomySession();
             final Layout railway = ui.getModel().getAutoLayout();
             final String anyRun = I18n.t(ANY_RUN);
+            final String noEdits = I18n.t(NO_EDITS);
 
             final java.lang.reflect.Field sliderField = TrainControlUI.class.getDeclaredField("maxActiveTrains");
 
@@ -1165,8 +1564,8 @@ public class testNoSetupEditWhileARouteRuns
 
                     List<String> said = answering.since(from);
 
-                    assertEquals(said, Collections.singletonList(anyRun), door.getKey() + " did not refuse, before asking"
-                        + " anything, with the sentence that names a route, while a route runs");
+                    assertEquals(said, Collections.singletonList(noEdits), door.getKey() + " did not refuse, before asking"
+                        + " anything, with the edit sentence, while a route runs");
                 }
 
                 assertEquals(railway.getMaxActiveTrains(), trainsWas, "the trains-at-once slider wrote the setup while a"
@@ -1182,12 +1581,12 @@ public class testNoSetupEditWhileARouteRuns
 
                 assertEquals(railway.isTimetableCapture(), captureWas, "the capture box wrote the setup while a route runs");
 
-                // THE TIMETABLE'S RIGHT-CLICK MENU: every item greyed, with that sentence
+                // THE TIMETABLE'S RIGHT-CLICK MENU: every item grayed, with that sentence
                 for (javax.swing.JMenuItem item : timetableMenuItems(window))
                 {
                     assertFalse(item.isEnabled(), item.getText() + " is live in the timetable's menu while a route runs");
 
-                    assertEquals(item.getToolTipText(), anyRun, item.getText() + " is greyed in the timetable's menu"
+                    assertEquals(item.getToolTipText(), noEdits, item.getText() + " is greyed in the timetable's menu"
                         + " without saying a route is why");
                 }
 
@@ -1271,8 +1670,8 @@ public class testNoSetupEditWhileARouteRuns
      * railway is the same object afterwards, the route is still running, and nothing was exported; at rest each one goes
      * ahead (Adam, 2026-09-28: *"There should be no setup edit possible during a run"*).  A load rebuilds the railway and
      * switches the routes the configuration activates, and Export first folds the running railway into the setup.  While
-     * autonomy itself is busy the loads keep their offer to stop the trains, and Export its own sentence.  Unload, which
-     * also replaces the railway, is refused the same way.
+     * autonomy itself is busy the loads keep their offer to stop the trains, and Export says the wait sentence.  Unload,
+     * which also replaces the railway, is refused the same way.
      *
      * MUTATION: send the enable button, `loadByRequest` or the banner to `load` directly, or have Export ask
      * `isAutonomyBusy` alone, and this fails naming the door.
@@ -1301,7 +1700,7 @@ public class testNoSetupEditWhileARouteRuns
             final TrainControlUI window = ui;
             final MarklinControlStation model = (MarklinControlStation) ui.getModel();
             final org.traincontrol.gui.AutonomyViewerPanel panel = ui.getAutonomyViewerPanel();
-            final String anyRun = I18n.t(ANY_RUN);
+            final String anyRun = I18n.t(WAIT);
             final String active = ui.getAutonomySession().getStore().getActiveConfiguration();
 
             assertNotNull(active, "precondition: the live snapshot has no configuration to load");
@@ -1349,7 +1748,7 @@ public class testNoSetupEditWhileARouteRuns
             }
 
             // WHILE AUTONOMY ITSELF IS BUSY the loads keep their offer to stop the trains (declined here, so nothing is
-            // replaced), and Export keeps its own refusal: only what is not autonomy is refused with the any-run sentence
+            // replaced), and Export refuses with the wait sentence as it does while a route runs
             final java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
 
             staging.setAccessible(true);
@@ -1420,8 +1819,8 @@ public class testNoSetupEditWhileARouteRuns
 
                 settle();
 
-                assertEquals(answering.since(from), Collections.singletonList(I18n.t("autosetup.ui.errorExportWhileRunning")),
-                    "Export did not keep its own refusal while autonomy is busy");
+                assertEquals(answering.since(from), Collections.singletonList(I18n.t(WAIT)),
+                    "Export did not refuse with the wait sentence while autonomy is busy");
             }
             finally
             {
@@ -1552,7 +1951,7 @@ public class testNoSetupEditWhileARouteRuns
 
     /**
      * No run starts while a route runs: Start, Execute Timetable, Return Home's run and a train sent by hand each refuse
-     * through the one gate (`whyNoTrainMayBeSent`), saying a route is running, before anything is greyed or sent - so a turn
+     * through the one gate (`whyNoTrainMayBeSent`), saying a route is running, before anything is grayed or sent - so a turn
      * held for the route (`turnsHeldByARoute`) never meets a run that began under it (Adam, on a turn lost to a run that
      * started before its route ended: *"prevent starting autonomy etc if a route is still running"*).  At rest the gate
      * does not say it.
@@ -1673,6 +2072,12 @@ public class testNoSetupEditWhileARouteRuns
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            // A TIMETABLE WHOSE TRAIN IS AT ITS START (FR-136), so Execute Timetable gets as far as the question: his own
+            // timetable and where his trains stand are working state
+            sandbox.withNoTrains().standing(new TileKey("1 - Main", 13, 9), "EN57-947", "W", "S").withATimetableOf("EN57-947",
+                "BottomInner (northbound)", "1 - Main 12,7", "Tunnel (southbound)", "BottomMainBCPre (eastbound)",
+                "BottomMainB (eastbound)");
+
             ui = openTheWindow();
 
             final TrainControlUI window = ui;
@@ -1789,14 +2194,20 @@ public class testNoSetupEditWhileARouteRuns
 
         List<String> many = new ArrayList<>();
 
-        for (int i = 1; i <= 10; i++) many.add("Route number " + i);
+        // As many routes as the refusal names, and seven more: the program's own count, not a copy of it
+        int named = support.ProgramConstants.integer(TrainControlUI.class, "ROUTES_NAMED");
+
+        for (int i = 1; i <= named + 7; i++) many.add("Route number " + i);
 
         String ten = TrainControlUI.routeRunningRefusal(many);
 
-        assertTrue(ten.contains("Route number 1") && ten.contains("Route number 3"), "the first routes are not named: " + ten);
-        assertFalse(ten.contains("Route number 4"), "more than the first few are named, so the dialog grows with the routes: "
-            + ten);
-        assertTrue(ten.contains(I18n.f("autolayout.ui.routeNamesAndMore", "Route number 1, Route number 2, Route number 3", 7)),
+        List<String> first = new ArrayList<>(many.subList(0, named));
+
+        assertTrue(ten.contains("Route number 1") && ten.contains("Route number " + named),
+            "the first routes are not named: " + ten);
+        assertFalse(ten.contains("Route number " + (named + 1)),
+            "more than the first few are named, so the dialog grows with the routes: " + ten);
+        assertTrue(ten.contains(I18n.f("autolayout.ui.routeNamesAndMore", String.join(", ", first), 7)),
             "the rest are not counted: " + ten);
 
         StringBuilder long200 = new StringBuilder();
@@ -1808,7 +2219,9 @@ public class testNoSetupEditWhileARouteRuns
         assertFalse(longName.contains(long200.toString()), "a long name is shown whole, so it can make the dialog wide");
         assertTrue(longName.length() < 400, "a long name makes a long message: " + longName.length());
 
-        assertTrue(one.contains("width: 420px"), "the sentence is not wrapped at a fixed width: " + one);
+        // The wrap is at the refusal's own width: the program's, named
+        assertTrue(one.contains("width: " + support.ProgramConstants.integer(TrainControlUI.class, "ROUTE_REFUSAL_WIDTH")
+            + "px"), "the sentence is not wrapped at a fixed width: " + one);
 
         assertTrue(TrainControlUI.routeRunningRefusal(Collections.singletonList("A<B")).contains("A&lt;B"),
             "a name with markup in it is not escaped");
@@ -1842,7 +2255,7 @@ public class testNoSetupEditWhileARouteRuns
             if (square != null && session.facingChoices(square).size() == 2) return point;
         }
 
-        throw new SkipException("no train stands on a square with two facings");
+        throw new AssertionError("no train stands on a square with two facings");
     }
 
     /** The items of the timetable's right-click menu, built now. */
@@ -1955,7 +2368,7 @@ public class testNoSetupEditWhileARouteRuns
             }
         }
 
-        throw new SkipException("no train stands on a station of the snapshot");
+        throw new AssertionError("no train stands on a station of the snapshot");
     }
 
     /** Makes a train other than this one the active locomotive, as the window makes one; its name. */

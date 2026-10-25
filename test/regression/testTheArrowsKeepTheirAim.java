@@ -20,7 +20,7 @@ import org.testng.annotations.Test;
  * combining a page changes what every arrow means. `LayoutDiagram.writeIndexAndKeepLinksAimed` re-aims
  * them, and this is what says it works.
  *
- * **Written because the fix shipped with no test and was wrong** (FV3-A2). It resolved the destination
+ * **Written because the fix shipped with no test and was wrong**. It resolved the destination
  * against the list the CALLER handed in, and four of the five gestures hand over a list that is not
  * sorted: a rename puts the new name back in the old slot, an add, a duplicate and a combine append.
  * So the re-aim was a no-op in the two cases it was written from, and nothing in the suite noticed -
@@ -35,7 +35,7 @@ public class testTheArrowsKeepTheirAim
     /**
      * Adding a page whose name sorts into the MIDDLE leaves every arrow on the same page.
      *
-     * The name is the one Combine Linked Pages offers by default - `"<page> and neighbours"` - which
+     * The name is the one Combine Linked Pages offers by default - `"<page> and neighbors"` - which
      * sorts immediately after the page it was made from rather than last. That is what makes the
      * caller's appended list differ from the sorted one.
      *
@@ -50,7 +50,7 @@ public class testTheArrowsKeepTheirAim
         // The caller APPENDS, which is what LayoutPageEdit and combineLinkedPages both do.
         List<String> now = new ArrayList<>(was);
 
-        now.add("1 - Main and neighbours");
+        now.add("1 - Main and neighbors");
 
         Aimed aimed = repoint(was, now, null, 2);
 
@@ -125,9 +125,9 @@ public class testTheArrowsKeepTheirAim
     }
 
     /**
-     * Add Page leaves the page it was invoked from aimed correctly, ON DISK (T10-B1).
+     * Add Page leaves the page it was invoked from aimed correctly, ON DISK.
      *
-     * **The tests above drive the rule; these drive the gesture.** `FV3-A2` fixed the arithmetic of the
+     * **The tests above drive the rule; these drive the gesture.** The first fix repaired the arithmetic of the
      * re-aim and left the sequence alone, and the test it shipped with called
      * `writeIndexAndKeepLinksAimed` directly - so the battery was green while all three of Add, Duplicate
      * and Rename wrote a page file before the arrows were corrected. A rule tested at the rule says
@@ -151,7 +151,7 @@ public class testTheArrowsKeepTheirAim
     }
 
     /**
-     * Duplicate Page writes the COPY with corrected arrows (T10-B2).
+     * Duplicate Page writes the COPY with corrected arrows.
      *
      * The copy is written from the source page as it stands and is not in the model when a later re-aim
      * runs, so nothing ever corrected it - the source and its copy disagreed about where the same arrow
@@ -166,7 +166,7 @@ public class testTheArrowsKeepTheirAim
     }
 
     /**
-     * A renamed page's own arrows are corrected in the file the rename writes (T10-B3).
+     * A renamed page's own arrows are corrected in the file the rename writes.
      *
      * The re-aim deliberately skipped the renamed page, on the stated ground that the rename writes the
      * same object under its new name so the correction travels with it. That is true of the OBJECT and
@@ -289,7 +289,7 @@ public class testTheArrowsKeepTheirAim
      */
     private static void assertArrowOnDiskAfterGesture(String gesture, int expected) throws Exception
     {
-        // OPENED INSIDE THE TRY (TWV-B2).
+        // OPENED INSIDE THE TRY.
         //
         // A sandbox takes the machine-global layout preference - the one the APPLICATION reads - and
         // gives it back in close().  Anything that throws between the open and the try leaves that
@@ -302,13 +302,13 @@ public class testTheArrowsKeepTheirAim
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
             org.traincontrol.marklin.MarklinControlStation model =
-                org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+                support.TestStation.simulated();
 
             model.stop();
 
             String from = "1 - Main";
 
-            String made = "rename".equals(gesture) ? "9 - Main" : "1 - Main and neighbours";
+            String made = "rename".equals(gesture) ? "9 - Main" : "1 - Main and neighbors";
 
             String subject = from;
 
@@ -319,7 +319,7 @@ public class testTheArrowsKeepTheirAim
                 "rename".equals(gesture), !"rename".equals(gesture), "add".equals(gesture), null, model,
                 null);
 
-            // WHICH FILE HOLDS THE ANSWER IS DIFFERENT FOR EACH GESTURE (TWV-B1).
+            // WHICH FILE HOLDS THE ANSWER IS DIFFERENT FOR EACH GESTURE.
             //
             // This asked about `subject` for both Add and Duplicate, and for Duplicate that is the
             // SOURCE - which the old code corrected anyway.  Measured by the validator: the Duplicate

@@ -6,7 +6,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 /**
- * A routing rule chosen before 3.0.0 has to reach the configuration, or wait until it can (RC-A2).
+ * A routing rule chosen before 3.0.0 has to reach the configuration, or wait until it can.
  *
  * Until 3.0.0 the routing rule was a java Preference, read at startup and pushed into a static on
  * Layout.  It is now a per-configuration setting, so an upgrading user's choice has to be carried
@@ -14,7 +14,7 @@ import org.testng.annotations.Test;
  * old key must survive so that it can be carried tomorrow.  Deleting it early means the user's choice
  * is gone and RANDOM takes its place, silently, for ever.
  *
- * LE-B5 got the SUCCESS path right: the key goes only once persistPathPreference answers true.  What
+ * The earlier fix got the SUCCESS path right: the key goes only once persistPathPreference answers true.  What
  * it left was the branch above, which asked whether the migration was needed by looking at the LIVE
  * layout - and the live layout carries what this same method wrote into it in memory on the previous
  * call.  So the first call stored nothing and kept the key, and the second call read its own writing,
@@ -36,7 +36,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
     private static java.util.prefs.Preferences ourPrefs;
 
     /**
-     * Gives this class its own preference node, so nothing it writes can reach the operator (RC-A12).
+     * Gives this class its own preference node, so nothing it writes can reach the operator.
      *
      * These tests have to put a pre-3.0.0 preference somewhere the migration will find it, and the
      * migration reads TrainControlUI's own node.  Writing there and restoring afterwards looks safe and
@@ -91,7 +91,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
     private static final String LEGACY = "AutonomyPathPreference";
 
     /**
-     * A refused routing change puts the dropdown back, without asking twice (RC-B11).
+     * A refused routing change puts the dropdown back, without asking twice.
      *
      * Choosing a rule while trains are running is refused, and the dropdown used to keep showing the
      * rule the user picked - so the one control that reports which rule is in force reported the one
@@ -124,7 +124,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
         {
             sandbox = support.LayoutSandbox.open();
 
-            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, true);
+            model = support.TestStation.simulatedInDebug();
 
             final org.traincontrol.marklin.MarklinControlStation finalModel = model;
 
@@ -284,7 +284,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
             // Before the model, not just before the window (OB-111).
             sandbox = support.LayoutSandbox.open();
 
-            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, true);
+            model = support.TestStation.simulatedInDebug();
 
             final org.traincontrol.marklin.MarklinControlStation finalModel = model;
 
@@ -359,7 +359,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
      *
      * MUTATION THIS CATCHES: AutonomySession.getGlobal returning "" instead of null for an absent key.
      * The guard then fires on the FIRST call, the legacy key is deleted, and nothing is ever stored -
-     * RC-A2’s data loss restored, with both of the other tests still green.
+     * The data loss restored, with both of the other tests still green.
      */
     @Test
     public void testAConfigurationWithNoAnswerIsGivenTheOldOne() throws Exception
@@ -384,7 +384,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
 
             sandbox = support.LayoutSandbox.open();
 
-            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, true);
+            model = support.TestStation.simulatedInDebug();
 
             final org.traincontrol.marklin.MarklinControlStation finalModel = model;
 
@@ -460,11 +460,11 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
     }
 
     /**
-     * A rule already in the loaded layout is not overruled by the pre-upgrade one (RC-A8).
+     * A rule already in the loaded layout is not overruled by the pre-upgrade one.
      *
      * The legacy population: autonomy from autonomy.json, so there is no active configuration and
      * getGlobal can never answer.  Layout.fromJSON DOES read pathPreference, so their rule is in the
-     * running layout - and RC-A2, asking only the store, pushed the pre-upgrade key over it on every
+     * running layout - and a check asking only the store, pushed the pre-upgrade key over it on every
      * settings refresh, for ever.
      */
     @Test
@@ -490,7 +490,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
 
             sandbox = support.LayoutSandbox.open();
 
-            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, true);
+            model = support.TestStation.simulatedInDebug();
 
             final org.traincontrol.marklin.MarklinControlStation finalModel = model;
 
@@ -584,7 +584,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
 
             sandbox = support.LayoutSandbox.open();
 
-            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, true);
+            model = support.TestStation.simulatedInDebug();
 
             final org.traincontrol.marklin.MarklinControlStation finalModel = model;
 
@@ -666,7 +666,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
      *
      * **This claim was inverted on 2026-09-13, and the inversion is the point.**
      *
-     * It was written under RGN-A2, on Adam's *"make a test case for this.  in my testing, it loaded
+     * It was written on Adam's *"make a test case for this.  in my testing, it loaded
      * OK"*, and asserted the opposite: that the tab is reachable, because an upgrading user's autonomy
      * was loaded and live and this tab held the only way to reach it.
      *
@@ -699,7 +699,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
 
         try
         {
-            // Inside the try, so nothing can leave the preference behind (TSX-B8).
+            // Inside the try, so nothing can leave the preference behind.
             sandbox = support.LayoutSandbox.open();
 
             // THE LEGACY STATE, which the fixture is not: it ships a diagram configuration called
@@ -718,7 +718,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
             assertFalse(diagramSetups.exists(),
                 "the sandbox still has a diagram setup folder, so this is not the legacy state");
 
-            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+            model = support.TestStation.simulated();
             model.stop();
 
             javax.swing.SwingUtilities.invokeAndWait(() ->

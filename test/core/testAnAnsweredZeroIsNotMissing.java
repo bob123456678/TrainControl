@@ -38,6 +38,20 @@ public class testAnAnsweredZeroIsNotMissing
 {
     private static final String OUR_TRAIN = "answered zero probe";
 
+    /** Every square of BottomMainA (westbound) -> TunnelLongPark on page 1 - Main, x, y and length, as of 2026-09-23. */
+    private static final int[][] APPROACH = {
+        {19, 12, 0}, {18, 12, 0}, {17, 12, 2}, {16, 12, 0}, {15, 12, 1}, {14, 12, 0}, {13, 12, 0}, {12, 12, 1}, {11, 12, 0},
+        {11, 11, 0}, {10, 11, 0}, {10, 10, 1}, {10, 9, 2},
+    };
+
+    /** Every square of RampDown -> BottomSecondary -> TunnelPre -> Tunnel the same way. */
+    private static final int[][] ROAD = {
+        {21, 7, 0}, {21, 8, 0}, {21, 9, 0}, {21, 10, 0}, {20, 10, 0}, {20, 11, 0}, {19, 11, 1}, {18, 11, 1}, {17, 11, 0},
+        {16, 11, 2}, {15, 11, 0}, {14, 11, 0}, {13, 11, 0}, {12, 11, 0}, {11, 11, 0}, {11, 10, 0}, {11, 9, 0}, {11, 8, 1},
+        {11, 7, 1}, {11, 6, 0}, {11, 5, 0}, {11, 4, 1}, {11, 3, 0}, {10, 3, 1}, {9, 3, 0}, {8, 3, 0}, {7, 3, 0}, {7, 4, 1},
+        {7, 5, 1}, {7, 6, 0}, {7, 7, 0},
+    };
+
     private static support.LayoutSandbox sandbox;
     private static MarklinControlStation model;
     private static AutonomySession session;
@@ -49,7 +63,7 @@ public class testAnAnsweredZeroIsNotMissing
     {
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = MarklinControlStation.init(null, true, false, false, false);
+        model = support.TestStation.simulated();
 
         train = model.newMM2Locomotive(OUR_TRAIN, 2397);
 
@@ -89,6 +103,10 @@ public class testAnAnsweredZeroIsNotMissing
     @Test
     public void testTheRefusalNoLongerCountsAnAnsweredSquare() throws Exception
     {
+        // HIS APPROACH AS IT WAS MEASURED ON 2026-09-23, nothing on it answered (FR-136): he has answered its zeros since,
+        // and a refusal with nothing left unmeasured has no note for this claim to watch go.
+        session.setTileLengths(squares(APPROACH));
+
         String before = whyTheBerthRefuses();
 
         assertNotNull(before, "a four-unit train was accepted at TunnelLongPark, so there is no refusal to read");
@@ -134,7 +152,7 @@ public class testAnAnsweredZeroIsNotMissing
     }
 
     /**
-     * On his railway the build marks exactly the places Mass Assign Lengths would ask a length for (OB-297, ADA-C1).
+     * On his railway the build marks exactly the places Mass Assign Lengths would ask a length for (OB-297).
      *
      * MUTATION: mark nothing, mark every place, or mark from another list, and this fails.
      *
@@ -168,7 +186,7 @@ public class testAnAnsweredZeroIsNotMissing
     }
 
     /**
-     * The refusing figures on his frozen railway are the railway's own refusals (TDA-C10, ADA-C4, ADD2-C8): MT-583's
+     * The refusing figures on his frozen railway are the railway's own refusals: MT-583's
      * five, each asked.
      *
      * - TopMainR1Inter gives 3, and LowerFront 4: on a route in from TopR1ParkShort, and from ParkingTrack12, measuring
@@ -422,6 +440,40 @@ public class testAnAnsweredZeroIsNotMissing
     @Test
     public void testAStretchAnsweredZeroIsMeasuredTrackOfNoLength() throws Exception
     {
+        // THE ROAD AS IT WAS MEASURED ON 2026-09-23, nothing on it answered (FR-136), and put back after: RampDown -4->
+        // BottomSecondary -2-> TunnelPre -4-> Tunnel.  He has re-measured RampDown's leg since.
+        java.util.Map<TileKey, Integer> road = squares(ROAD);
+
+        java.util.Map<TileKey, Integer> roadWas = new java.util.LinkedHashMap<>();
+        java.util.Set<TileKey> roadAnswered = new java.util.LinkedHashSet<>();
+
+        for (TileKey square : road.keySet())
+        {
+            roadWas.put(square, session.getStore().getTileLength(square));
+
+            if (session.getStore().isTileLengthAnswered(square)) roadAnswered.add(square);
+        }
+
+        session.setTileLengths(road);
+
+        try
+        {
+            aStretchAnsweredZero();
+        }
+        finally
+        {
+            for (java.util.Map.Entry<TileKey, Integer> square : roadWas.entrySet())
+            {
+                if (square.getValue() > 0) session.setTileLength(square.getKey(), square.getValue());
+                else if (roadAnswered.contains(square.getKey())) session.answerTileLengthsZero(Arrays.asList(square.getKey()));
+                else session.setTileLength(square.getKey(), 0);
+            }
+        }
+    }
+
+    /** The claim above, on the road it sets. */
+    private void aStretchAnsweredZero() throws Exception
+    {
         Edge hop = layoutNow().getEdge("BottomSecondary", "TunnelPre");
 
         assertNotNull(hop, "precondition: the frozen railway no longer runs BottomSecondary -> TunnelPre");
@@ -567,6 +619,16 @@ public class testAnAnsweredZeroIsNotMissing
 
             train.setTrainLength(length);
         }
+    }
+
+    /** Squares of 1 - Main as x, y and length, keyed for `setTileLengths`. */
+    private static java.util.Map<TileKey, Integer> squares(int[][] measured)
+    {
+        java.util.Map<TileKey, Integer> out = new java.util.LinkedHashMap<>();
+
+        for (int[] square : measured) out.put(new TileKey("1 - Main", square[0], square[1]), square[2]);
+
+        return out;
     }
 
     /** The square a place identifier names - the tile, before any `/route` of an overpass. */

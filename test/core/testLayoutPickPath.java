@@ -45,7 +45,7 @@ public class testLayoutPickPath
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        model = init(null, true, false, false, false);
+        model = support.TestStation.simulated();
         model.stop();
 
         // Destination points require an s88; pickPath never reads it, so one shared feedback will do.
@@ -359,7 +359,7 @@ public class testLayoutPickPath
     }
 
     /**
-     * RV-C2: the yield probe must also refuse a locomotive whose only route out crosses a berth.
+     * The yield probe must also refuse a locomotive whose only route out crosses a berth.
      *
      * The probe was aligned with pickPath so the two could not disagree, and then berths were barred
      * as intermediates in pickPath alone - so they disagreed again, one commit later, in exactly the
@@ -484,7 +484,7 @@ public class testLayoutPickPath
 
         layout.getPoint("START").setLocomotive(loc);
 
-        // THE CONTROL RUNS FIRST (TCX-B13).
+        // THE CONTROL RUNS FIRST.
         //
         // With the middle point an ordinary passing point, FAR has to be reachable through it - so a
         // regression that refused every multi-edge path, or one that broke pickPath outright, cannot

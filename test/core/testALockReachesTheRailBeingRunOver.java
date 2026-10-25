@@ -5,7 +5,6 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -15,6 +14,7 @@ import org.traincontrol.automation.Point;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
+import org.traincontrol.marklin.MarklinLocomotive;
 
 /**
  * A running path blocks the rail it runs over and the same rail the other way - and nothing beyond
@@ -64,6 +64,8 @@ import org.traincontrol.marklin.MarklinControlStation;
  *   The first claim and the list stay green.
  * - drop the `runOver` decrement in `setUnoccupied`, and **the release claim** fails, naming the edge
  *   still reading as run over after three locks and three releases.
+ * - make `TRAIN_LENGTH` 3, and **the floor under Adam's list** fails at 8 of 11, each of the three
+ *   naming its refusal: too long to stop at BottomMainC or TopMainR2.
  *
  * @author Adam
  */
@@ -77,12 +79,15 @@ public class testALockReachesTheRailBeingRunOver
 
     private static Locomotive asking;
 
+    /** The train every path is asked for, in units: the shortest station maximum on this railway is two. */
+    private static final int TRAIN_LENGTH = 2;
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = MarklinControlStation.init(null, true, false, false, false);
+        model = support.TestStation.simulated();
 
         AutonomySession session = new AutonomySession(sandbox.getFolder());
 
@@ -94,11 +99,14 @@ public class testALockReachesTheRailBeingRunOver
 
         layout = model.getAutoLayout();
 
-        if (layout == null) throw new SkipException("the snapshot did not build");
+        if (layout == null) throw new AssertionError("the snapshot did not build");
 
-        if (model.getLocList().isEmpty()) throw new SkipException("this fixture has no locomotives");
+        // ITS OWN TRAIN, two units long, the snapshot's shortest station maximum.  The database's first locomotive
+        // (02 0314-1 DDR, three units) cannot stop at BottomMainC or TopMainR2, so three of his pairs were refused
+        // before any lock was asked about them.
+        asking = new MarklinLocomotive(model, 1, MarklinLocomotive.decoderType.MM2, "OB-269 two-unit train");
 
-        asking = model.getLocByName(model.getLocList().get(0));
+        asking.setTrainLength(TRAIN_LENGTH);
 
         for (Point p : layout.getPoints())
         {
@@ -296,7 +304,7 @@ public class testALockReachesTheRailBeingRunOver
 
         if (forward == null)
         {
-            throw new SkipException("this railway writes no rail in both directions outside the lock"
+            throw new AssertionError("this railway writes no rail in both directions outside the lock"
                 + " relation, so there is nothing for this rule to be about");
         }
 
@@ -420,10 +428,11 @@ public class testALockReachesTheRailBeingRunOver
 
         List<String> wrong = new java.util.ArrayList<>();
         List<String> unresolved = new java.util.ArrayList<>();
+        List<String> allowedPairs = new java.util.ArrayList<>();
 
         for (String[] running : whileRunning)
         {
-            check(running, alsoOk, wrong, unresolved);
+            check(running, alsoOk, wrong, unresolved, allowedPairs);
         }
 
         check(new String[] {"BottomMainA", "TopMainR1"},
@@ -431,13 +440,20 @@ public class testALockReachesTheRailBeingRunOver
                 {"TopMainR2", "BottomSecondary"},
                 {"BottomInner", "BottomMainB"},
                 {"TopMainR2Pre", "TopMainR2"},
-            }, wrong, unresolved);
+            }, wrong, unresolved, allowedPairs);
 
         assertTrue(wrong.isEmpty(),
             "these pairs Adam says may run at once are refused: " + wrong
             + ".  His rule: \"nothing should disturb the ability to go from bottominner to"
             + " bottominnerotherside unless trains are crossing down, or passing through either of"
             + " those stations\"");
+
+        // A FLOOR UNDER THE PAIRS COMPARED (FR-136).  `wrong` is empty for a pair that was never compared, so a search
+        // that found no route for any of them - every pair "unresolved" - left the claim above green over nothing.  All
+        // eleven of his pairs run alongside on this railway, for a train short enough to stop at both ends.
+        assertTrue(allowedPairs.size() >= 11,
+            "only " + allowedPairs.size() + " of the 11 pairs Adam says may run at once were found to, so the locking was"
+            + " asked about fewer of them than it was: " + allowedPairs + ", not compared: " + unresolved);
 
         // NOT an assertion: a name his railway does not carry is a question for him, and failing on
         // it would stop the claim above being about the locking.
@@ -460,10 +476,11 @@ public class testALockReachesTheRailBeingRunOver
      * @param others the journeys that must still be possible
      * @param wrong filled with the ones no combination allows
      * @param unresolved filled with the ones this railway cannot express
+     * @param allowedPairs filled with the ones some combination allows
      * @throws Exception from the search
      */
     private static void check(String[] running, String[][] others, List<String> wrong,
-        List<String> unresolved) throws Exception
+        List<String> unresolved, List<String> allowedPairs) throws Exception
     {
         List<List<Edge>> runs = routesBetween(running[0], running[1]);
 
@@ -490,6 +507,7 @@ public class testALockReachesTheRailBeingRunOver
 
             String firstRefusal = null;
             String anOverlap = null;
+            String refusedOnItsOwn = null;
 
             for (List<Edge> run : runs)
             {
@@ -509,7 +527,15 @@ public class testALockReachesTheRailBeingRunOver
 
                     // Clear on its own account, or a refusal is about something else entirely - an
                     // unmeasured berth, a barred arrival.
-                    if (!layout.isPathClear(other, asking, false)) continue;
+                    if (!layout.isPathClear(other, asking, false))
+                    {
+                        if (refusedOnItsOwn == null)
+                        {
+                            refusedOnItsOwn = Layout.getLastError() + nl() + "      refused:   " + names(other);
+                        }
+
+                        continue;
+                    }
 
                     everTried = true;
 
@@ -544,7 +570,24 @@ public class testALockReachesTheRailBeingRunOver
                 if (allowed) break;
             }
 
-            if (allowed) continue;
+            if (allowed)
+            {
+                allowedPairs.add(pair[0] + " -> " + pair[1] + " while " + running[0] + " -> " + running[1]);
+
+                continue;
+            }
+
+            // NEVER COMPARED: say why.  A combination clear of the run's rail that is refused on an empty railway is
+            // about the train or the station, not the lock, and naming shared rail for it sends the reader to the
+            // wrong question.
+            if (!everTried && refusedOnItsOwn != null)
+            {
+                unresolved.add(pair[0] + " -> " + pair[1] + " while " + running[0] + " -> " + running[1]
+                    + " (never compared: every combination clear of the run's rail is refused on an empty railway,"
+                    + " the first because: " + refusedOnItsOwn + ")");
+
+                continue;
+            }
 
             if (!everTried)
             {

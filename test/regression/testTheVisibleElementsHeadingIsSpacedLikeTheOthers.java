@@ -33,6 +33,9 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * And the column is all there at the window's smallest size (OB-342): the floor's height shows its last control, and a
  * status line that does not ask the window for its sentence's width keeps the column on the screen.
  *
+ * And the autonomy editor's notices float over the bottom of the diagram, three lines at most, with an X to dismiss
+ * them, and a notice never moves the diagram (OB-366).
+ *
  * MUTATION: leave the gap showing when Text Labels is hidden, and the autonomy claim fails.
  *
  * @author Adam
@@ -45,6 +48,9 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
     private static AutonomySession session;
     private static LayoutDiagram page;
 
+    /** The run's own copy of "remember window location" for this folder, put back at the end. */
+    private static String rememberedWas;
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {
@@ -55,7 +61,13 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
 
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("single-switch"));
 
-        model = init(null, true, false, false, true);
+        // THE EDITOR AT ITS OWN SIZE, NOT THE OPERATOR'S: the run copies his settings for this folder, and with "remember window
+        // location" on, the editor opens at his saved bounds, where nothing may lie under the band.  Set, never toggled.
+        rememberedWas = TrainControlUI.getPrefs().get(org.traincontrol.gui.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION, null);
+
+        TrainControlUI.getPrefs().putBoolean(org.traincontrol.gui.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION, false);
+
+        model = support.TestStation.simulatedInDebug();
 
         SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
 
@@ -63,7 +75,7 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
 
         session = ui.getAutonomySession();
 
-        if (session == null) throw new SkipException("the sandbox holds no autonomy setup, so there is no autonomy editor");
+        if (session == null) throw new AssertionError("the sandbox holds no autonomy setup, so there is no autonomy editor");
 
         page = model.getLayout(model.getLayoutList().get(0));
     }
@@ -84,6 +96,9 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
         }
         finally
         {
+            if (rememberedWas == null) TrainControlUI.getPrefs().remove(org.traincontrol.gui.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION);
+            else TrainControlUI.getPrefs().put(org.traincontrol.gui.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION, rememberedWas);
+
             if (sandbox != null) sandbox.close();
         }
     }
@@ -193,6 +208,528 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
     public void testTheTrackEditorShowsEveryControlAtItsSmallestSize() throws Exception
     {
         assertNothingIsCutOffAtTheSmallestSize(false);
+    }
+
+    /**
+     * The notices float over the bottom of the diagram, across its visible width, and the diagram never moves for them:
+     * not with none, nor when one of one, two or six lines arrives, nor when it is dismissed (OB-366; Adam: *"I'd rather
+     * have the band float and have an x to dismiss each time it surfaces, so the user can be in control."*).  The diagram
+     * is its scroll pane's viewport, on screen; the band lies inside it on its bottom edge, and is what a point in the
+     * band finds first, so it is over the track rather than under it.
+     *
+     * MUTATION: mount the notices under the scroll pane again (`foot.add(autonomyBanner, BorderLayout.NORTH)` in
+     * `LayoutEditor.setAutonomyMode`) and this fails.
+     *
+     * @throws Exception from the event thread or reflection
+     */
+    @Test
+    public void testANoticeFloatsOverTheDiagramAndNeverMovesIt() throws Exception
+    {
+        final LayoutEditor editor = autonomyEditor();
+
+        try
+        {
+            final org.traincontrol.gui.AutonomyBanner notices = notices(editor);
+            final javax.swing.JViewport diagram = diagram(editor);
+
+            final java.awt.Rectangle before = onScreen(diagram);
+
+            assertTrue(before.height > 0, "precondition: the diagram is not on screen: " + before);
+
+            assertFalse(showing(notices), "with nothing to say, the notices are still showing");
+
+            for (int count : new int[] {1, 2, 6})
+            {
+                say(editor, notices, lines(count));
+
+                java.awt.Rectangle after = onScreen(diagram);
+
+                assertEquals(after, before, "a notice of " + count + " line(s) moved or resized the diagram, from "
+                    + before + " to " + after + " (OB-366, \"2-line notices shift the track down\")");
+
+                assertTrue(showing(notices), "a notice of " + count + " line(s) is not showing");
+
+                java.awt.Rectangle band = onScreen(notices);
+
+                assertTrue(before.contains(band), "a notice of " + count + " line(s) is not inside the diagram's visible"
+                    + " area: the band is " + band + " and the diagram " + before + " (OB-366, \"have the band float\")");
+
+                assertEquals(band.y + band.height, before.y + before.height, "a notice of " + count + " line(s) does not"
+                    + " sit on the diagram's bottom edge: the band is " + band + " and the diagram " + before);
+
+                assertEquals(band.x, before.x, "the band does not start at the diagram's left edge: " + band + ", "
+                    + before);
+
+                assertEquals(band.width, before.width, "the band is not the diagram's visible width: " + band + ", "
+                    + before);
+
+                assertTrue(foundFirstIn(editor, notices), "a point in the band finds the diagram rather than the"
+                    + " band, so the notice of " + count + " line(s) is under the track rather than over it");
+            }
+
+            dismiss(editor, notices);
+
+            assertFalse(showing(notices), "pressing the X left the notice showing (OB-366, \"an x to dismiss\")");
+
+            assertEquals(onScreen(diagram), before, "dismissing a notice moved or resized the diagram");
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() -> editor.dispose());
+        }
+    }
+
+    /**
+     * A notice longer than three lines scrolls inside a band three lines tall, never sideways, and a shorter one gets a
+     * band its own height (OB-366, *"cap the height at 3 lines with a scrollbar"*).  Lines are measured in the notice
+     * text's own font.
+     *
+     * MUTATION: raise `AutonomyBanner.MOST_LINES` to 6, and this fails.
+     *
+     * @throws Exception from the event thread or reflection
+     */
+    @Test
+    public void testALongNoticeScrollsWithinThreeLines() throws Exception
+    {
+        final LayoutEditor editor = autonomyEditor();
+
+        try
+        {
+            final org.traincontrol.gui.AutonomyBanner notices = notices(editor);
+
+            say(editor, notices, lines(1));
+
+            final int one = onScreen(notices).height;
+
+            say(editor, notices, lines(6));
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                javax.swing.JScrollPane area = scrollerIn(notices);
+
+                assertNotNull(area, "the notices have nothing in them that scrolls");
+
+                java.awt.Component text = area.getViewport().getView();
+
+                int line = text.getFontMetrics(org.traincontrol.gui.AutonomyBanner.MESSAGE_FONT).getHeight();
+
+                java.awt.Insets pad = notices.getInsets();
+
+                assertTrue(area.getViewport().getHeight() <= 3 * line, "a six-line notice is shown "
+                    + area.getViewport().getHeight() + " pixels tall, more than three lines of " + line + " (OB-366)");
+
+                assertTrue(notices.getHeight() <= 3 * line + pad.top + pad.bottom, "the band is " + notices.getHeight()
+                    + " pixels tall for a six-line notice, more than three lines of " + line + " and its padding");
+
+                assertTrue(area.getVerticalScrollBar().isShowing(), "a six-line notice in a band three lines tall has"
+                    + " no scrollbar, so the rest of it cannot be reached (OB-366)");
+
+                assertFalse(area.getHorizontalScrollBar().isShowing(), "the notices scroll sideways; they wrap");
+
+                assertTrue(one < notices.getHeight(), "a one-line notice's band is " + one + " pixels tall and a"
+                    + " six-line one's " + notices.getHeight() + ": the band does not fit what it says");
+            });
+
+            say(editor, notices, lines(3));
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                javax.swing.JScrollPane area = scrollerIn(notices);
+
+                assertFalse(area.getVerticalScrollBar().isShowing(), "a three-line notice does not fit the band: "
+                    + area.getViewport().getHeight() + " pixels for a text "
+                    + area.getViewport().getView().getPreferredSize().height + " tall (OB-366, \"3 lines\")");
+            });
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() -> editor.dispose());
+        }
+    }
+
+    /**
+     * The X at the band's top right, clicked where it is drawn, hides the notice and leaves the diagram as it was: its
+     * place on screen and the part of the railway it shows (OB-366, *"an x to dismiss"*).  And the next notice shows the
+     * band again, even one saying the same thing, as does a timed one: dismissed is until the next notice, *"each time it
+     * surfaces"*.  Tab reaches the X and Enter presses it, but a click never takes the editor's keyboard (OB-200).
+     *
+     * MUTATION: make the X do nothing (an empty action in `AutonomyBanner.floatOver`), or never clear `dismissed` when a
+     * notice arrives (in `AutonomyBanner.hold`), and this fails.
+     *
+     * @throws Exception from the event thread or reflection
+     */
+    @Test
+    public void testTheXHidesTheNoticeUntilTheNextOne() throws Exception
+    {
+        final LayoutEditor editor = autonomyEditor();
+
+        try
+        {
+            final org.traincontrol.gui.AutonomyBanner notices = notices(editor);
+            final javax.swing.JViewport diagram = diagram(editor);
+
+            say(editor, notices, lines(4));
+
+            final java.awt.Rectangle place = onScreen(diagram);
+            final java.awt.Point shown = viewPosition(diagram);
+
+            assertTrue(showing(notices), "precondition: the notice is not showing, so there is nothing to dismiss");
+
+            dismiss(editor, notices);
+
+            assertFalse(showing(notices), "pressing the X left the notice showing (OB-366, \"an x to dismiss\")");
+
+            assertEquals(onScreen(diagram), place, "pressing the X moved or resized the diagram");
+            assertEquals(viewPosition(diagram), shown, "pressing the X scrolled the diagram");
+            assertFalse(clickedASquare(editor), "pressing the X clicked the square under it too");
+
+            say(editor, notices, lines(4));
+
+            assertTrue(showing(notices), "the same notice said again after a dismiss stays hidden, and dismissing is until"
+                + " the next notice (OB-366, \"each time it surfaces\")");
+
+            // AND BY KEYBOARD: Tab reaches the X and Enter presses it, and a click never takes the window's keyboard
+            final String tip = org.traincontrol.util.I18n.t("autosetup.ui.tooltipDismissNotice");
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                AbstractButton x = buttonWithTip(notices, tip);
+
+                assertTrue(x.isFocusable(), "the X cannot be reached with Tab");
+                assertFalse(x.isRequestFocusEnabled(), "a click on the X takes the keyboard from the editor (OB-200)");
+
+                x.dispatchEvent(new java.awt.event.KeyEvent(x, java.awt.event.KeyEvent.KEY_PRESSED,
+                    System.currentTimeMillis(), 0, java.awt.event.KeyEvent.VK_ENTER, '\n'));
+            });
+
+            settle(editor);
+
+            assertFalse(showing(notices), "Enter on the X left the notice showing");
+
+            SwingUtilities.invokeAndWait(() -> notices.show(lines(2)));
+
+            settle(editor);
+
+            assertTrue(showing(notices), "a timed notice after a dismiss stays hidden (OB-366, \"each time it surfaces\")");
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() -> editor.dispose());
+        }
+    }
+
+    /**
+     * A click on the band stays on the band: on its padding, on its text or on its scrollbar, the square under it is not
+     * clicked.  And a click on the diagram away from the band still reaches the square there.
+     *
+     * MUTATION: take the band's own mouse listener out of `AutonomyBanner.floatOver`, and this fails on the padding.
+     *
+     * @throws Exception from the event thread or reflection
+     */
+    @Test
+    public void testAClickOnTheBandNeverReachesTheDiagram() throws Exception
+    {
+        final LayoutEditor editor = autonomyEditor();
+
+        try
+        {
+            final org.traincontrol.gui.AutonomyBanner notices = notices(editor);
+            final javax.swing.JViewport diagram = diagram(editor);
+
+            say(editor, notices, lines(6));
+
+            final java.awt.Rectangle band = new java.awt.Rectangle();
+
+            SwingUtilities.invokeAndWait(() -> band.setBounds(SwingUtilities.convertRectangle(notices.getParent(),
+                notices.getBounds(), diagram)));
+
+            final javax.swing.JScrollPane area = scrollerIn(notices);
+
+            final java.awt.Rectangle bar = new java.awt.Rectangle();
+
+            SwingUtilities.invokeAndWait(() -> bar.setBounds(SwingUtilities.convertRectangle(area,
+                area.getVerticalScrollBar().getBounds(), diagram)));
+
+            java.util.Map<String, java.awt.Point> onTheBand = new java.util.LinkedHashMap<>();
+
+            // Each over a square, so a click that went through would reach one
+            onTheBand.put("its padding", squareUnder(diagram, band, band.y + band.height - 2));
+            onTheBand.put("its text", squareUnder(diagram, band, band.y + band.height / 2));
+            onTheBand.put("its scrollbar", new java.awt.Point(bar.x + bar.width / 2, bar.y + bar.height / 2));
+
+            for (java.util.Map.Entry<String, java.awt.Point> each : onTheBand.entrySet())
+            {
+                assertNotNull(each.getValue(), "precondition: no square lies under the band's " + each.getKey());
+
+                click(editor, diagram, each.getValue());
+
+                assertFalse(clickedASquare(editor), "a click on the band's " + each.getKey() + " at " + each.getValue()
+                    + " clicked the square under the band");
+
+                assertTrue(showing(notices), "precondition: the click on " + each.getKey() + " closed the notice");
+            }
+
+            final java.awt.Point away = blankSquareAbove(diagram, band.y);
+
+            assertNotNull(away, "precondition: the diagram shows no empty square above the band to click");
+
+            click(editor, diagram, away);
+
+            assertTrue(clickedASquare(editor), "a click on the diagram away from the band at " + away + " did not reach"
+                + " the square there");
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() -> editor.dispose());
+        }
+    }
+
+    /** An autonomy editor, on screen and settled. */
+    private static LayoutEditor autonomyEditor() throws Exception
+    {
+        final LayoutEditor[] built = new LayoutEditor[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            built[0] = new LayoutEditor(page, 30, ui, 0);
+            built[0].render();
+            built[0].setAutonomyMode(session);
+        });
+
+        for (int pass = 0; pass < 10; pass++) SwingUtilities.invokeAndWait(() -> { });
+
+        assertTrue(built[0].isShowing(), "precondition: the autonomy editor did not open");
+
+        return built[0];
+    }
+
+    private static org.traincontrol.gui.AutonomyBanner notices(LayoutEditor editor) throws ReflectiveOperationException
+    {
+        return (org.traincontrol.gui.AutonomyBanner) field(editor, "autonomyBanner");
+    }
+
+    /** What the diagram shows on screen: its scroll pane's viewport. */
+    private static javax.swing.JViewport diagram(LayoutEditor editor) throws ReflectiveOperationException
+    {
+        return ((javax.swing.JScrollPane) field(editor, "jScrollPane1")).getViewport();
+    }
+
+    /** Says a notice that stays, and lets the window lay out what it now holds. */
+    private static void say(final LayoutEditor editor, final org.traincontrol.gui.AutonomyBanner notices,
+        final String notice) throws Exception
+    {
+        SwingUtilities.invokeAndWait(() -> notices.showUntilChanged(notice));
+
+        settle(editor);
+    }
+
+    private static void settle(final LayoutEditor editor) throws Exception
+    {
+        for (int pass = 0; pass < 6; pass++) SwingUtilities.invokeAndWait(() -> { });
+
+        SwingUtilities.invokeAndWait(() -> editor.validate());
+
+        for (int pass = 0; pass < 6; pass++) SwingUtilities.invokeAndWait(() -> { });
+    }
+
+    /** Presses the band's X where it is drawn, found by its tooltip, as a pointer would. */
+    private static void dismiss(final LayoutEditor editor, final org.traincontrol.gui.AutonomyBanner notices)
+        throws Exception
+    {
+        final String tip = org.traincontrol.util.I18n.t("autosetup.ui.tooltipDismissNotice");
+
+        final AbstractButton[] x = new AbstractButton[1];
+
+        SwingUtilities.invokeAndWait(() -> x[0] = buttonWithTip(notices, tip));
+
+        assertNotNull(x[0], "the notices have no button with the tooltip \"" + tip + "\" to dismiss them (OB-366, \"an x"
+            + " to dismiss\")");
+
+        assertTrue(x[0].isShowing(), "the notices' X is not showing");
+
+        click(editor, x[0], new java.awt.Point(x[0].getWidth() / 2, x[0].getHeight() / 2));
+    }
+
+    private static AbstractButton buttonWithTip(Container in, String tip)
+    {
+        for (Component child : in.getComponents())
+        {
+            if (child instanceof AbstractButton && tip.equals(((AbstractButton) child).getToolTipText()))
+            {
+                return (AbstractButton) child;
+            }
+
+            if (child instanceof Container)
+            {
+                AbstractButton deeper = buttonWithTip((Container) child, tip);
+
+                if (deeper != null) return deeper;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * A left click at a point of a component, handed to the window at the window's own coordinates, so Swing finds the
+     * component under the pointer as it does for a real one, without moving the real pointer.
+     */
+    private static void click(final LayoutEditor editor, final Component on, final java.awt.Point at) throws Exception
+    {
+        SwingUtilities.invokeAndWait(() ->
+        {
+            java.awt.Point p = SwingUtilities.convertPoint(on, at, editor);
+
+            long now = System.currentTimeMillis();
+
+            editor.dispatchEvent(new java.awt.event.MouseEvent(editor, java.awt.event.MouseEvent.MOUSE_MOVED, now, 0,
+                p.x, p.y, 0, false, java.awt.event.MouseEvent.NOBUTTON));
+            editor.dispatchEvent(new java.awt.event.MouseEvent(editor, java.awt.event.MouseEvent.MOUSE_PRESSED, now,
+                java.awt.event.InputEvent.BUTTON1_DOWN_MASK, p.x, p.y, 1, false, java.awt.event.MouseEvent.BUTTON1));
+            editor.dispatchEvent(new java.awt.event.MouseEvent(editor, java.awt.event.MouseEvent.MOUSE_RELEASED, now, 0,
+                p.x, p.y, 1, false, java.awt.event.MouseEvent.BUTTON1));
+            editor.dispatchEvent(new java.awt.event.MouseEvent(editor, java.awt.event.MouseEvent.MOUSE_CLICKED, now, 0,
+                p.x, p.y, 1, false, java.awt.event.MouseEvent.BUTTON1));
+        });
+
+        settle(editor);
+    }
+
+    /** Whether a square of this editor has been clicked since it opened (the editor's own record of it). */
+    private static boolean clickedASquare(LayoutEditor editor) throws ReflectiveOperationException
+    {
+        return (Boolean) field(editor, "squareClicked");
+    }
+
+    /** The middle of an empty square showing in the diagram wholly above a line, in the viewport's coordinates. */
+    private static java.awt.Point blankSquareAbove(final javax.swing.JViewport diagram, final int line) throws Exception
+    {
+        final java.awt.Point[] out = new java.awt.Point[1];
+
+        SwingUtilities.invokeAndWait(() -> out[0] = blankSquareIn((Container) diagram.getView(), diagram, line));
+
+        return out[0];
+    }
+
+    private static java.awt.Point blankSquareIn(Container in, javax.swing.JViewport diagram, int line)
+    {
+        for (Component child : in.getComponents())
+        {
+            if (child instanceof org.traincontrol.gui.LayoutLabel && child.isShowing()
+                && ((org.traincontrol.gui.LayoutLabel) child).getComponent() == null)
+            {
+                java.awt.Rectangle square = SwingUtilities.convertRectangle(in, child.getBounds(), diagram);
+
+                if (square.y >= 0 && square.x >= 0 && square.x + square.width <= diagram.getWidth()
+                    && square.y + square.height < line)
+                {
+                    return new java.awt.Point(square.x + square.width / 2, square.y + square.height / 2);
+                }
+            }
+            else if (child instanceof Container)
+            {
+                java.awt.Point deeper = blankSquareIn((Container) child, diagram, line);
+
+                if (deeper != null) return deeper;
+            }
+        }
+
+        return null;
+    }
+
+    /** A point on a line across the band, in the viewport's coordinates, with a square of the diagram under it. */
+    private static java.awt.Point squareUnder(final javax.swing.JViewport diagram, final java.awt.Rectangle band,
+        final int y) throws Exception
+    {
+        final java.awt.Point[] out = new java.awt.Point[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            for (int x = band.x + 12; x < band.x + band.width / 2 && out[0] == null; x += 5)
+            {
+                java.awt.Point in = SwingUtilities.convertPoint(diagram, x, y, diagram.getView());
+
+                Component under = SwingUtilities.getDeepestComponentAt(diagram.getView(), in.x, in.y);
+
+                if (under instanceof org.traincontrol.gui.LayoutLabel) out[0] = new java.awt.Point(x, y);
+            }
+        });
+
+        return out[0];
+    }
+
+    /** Whether the middle of the band, asked of the window, finds the band before anything under it. */
+    private static boolean foundFirstIn(final LayoutEditor editor, final Component band) throws Exception
+    {
+        final boolean[] out = new boolean[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            java.awt.Container content = editor.getContentPane();
+
+            java.awt.Point middle = SwingUtilities.convertPoint(band, band.getWidth() / 2, band.getHeight() / 2, content);
+
+            Component hit = SwingUtilities.getDeepestComponentAt(content, middle.x, middle.y);
+
+            out[0] = hit != null && SwingUtilities.isDescendingFrom(hit, band);
+        });
+
+        return out[0];
+    }
+
+    private static boolean showing(final Component component) throws Exception
+    {
+        final boolean[] out = new boolean[1];
+
+        SwingUtilities.invokeAndWait(() -> out[0] = component.isShowing() && component.getHeight() > 0);
+
+        return out[0];
+    }
+
+    private static java.awt.Point viewPosition(final javax.swing.JViewport diagram) throws Exception
+    {
+        final java.awt.Point[] out = new java.awt.Point[1];
+
+        SwingUtilities.invokeAndWait(() -> out[0] = diagram.getViewPosition());
+
+        return out[0];
+    }
+
+    /** A notice of this many short lines. */
+    private static String lines(int count)
+    {
+        StringBuilder out = new StringBuilder("Line 1 of the notice");
+
+        for (int at = 2; at <= count; at++) out.append("<br>Line ").append(at).append(" of the notice");
+
+        return out.toString();
+    }
+
+    private static java.awt.Rectangle onScreen(final Component component) throws Exception
+    {
+        final java.awt.Rectangle[] out = new java.awt.Rectangle[1];
+
+        SwingUtilities.invokeAndWait(() -> out[0] = new java.awt.Rectangle(component.getLocationOnScreen(),
+            component.getSize()));
+
+        return out[0];
+    }
+
+    private static javax.swing.JScrollPane scrollerIn(Container in)
+    {
+        for (Component child : in.getComponents())
+        {
+            if (child instanceof javax.swing.JScrollPane) return (javax.swing.JScrollPane) child;
+
+            if (child instanceof Container)
+            {
+                javax.swing.JScrollPane deeper = scrollerIn((Container) child);
+
+                if (deeper != null) return deeper;
+            }
+        }
+
+        return null;
     }
 
     /** A status sentence longer than any language's: 521 pixels is English and 655 German, and this is over 900 */
@@ -512,7 +1049,7 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
     }
 
     /**
-     * How far below a heading the nearest control in its column begins - a box, a list, a button, or a labelled
+     * How far below a heading the nearest control in its column begins - a box, a list, a button, or a labeled
      * panel's first child - or -1 when there is none.
      */
     private static int gapUnder(Container pane, JLabel heading)

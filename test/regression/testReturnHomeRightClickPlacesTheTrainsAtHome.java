@@ -47,14 +47,14 @@ import static regression.testTheImportDoorReadsAnOldFile.putTheFolderBack;
  *
  * On the live snapshot's window.  The item is Place All Trains at Their Homes, which the editor's Bulk Tools menu offers
  * on the editor's session; here it lands on the live setup and is saved with it, as a placement made from the track
- * diagram is.  One question, `whyTheTrainsCannotBePlacedAtTheirHomes`, greys the item and refuses its press, asked again
+ * diagram is.  One question, `whyTheTrainsCannotBePlacedAtTheirHomes`, grays the item and refuses its press, asked again
  * after the confirmation.
  *
  * @author Adam
  */
 public class testReturnHomeRightClickPlacesTheTrainsAtHome
 {
-    /** A right-click on the button, delivered as the mouse delivers it - to a greyed button too. */
+    /** A right-click on the button, delivered as the mouse delivers it - to a grayed button too. */
     private static void rightClick(final TrainControlUI ui) throws Exception
     {
         final javax.swing.JButton button = returnHomeButton(ui);
@@ -92,16 +92,28 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
         return popup;
     }
 
-    /** Place All Trains at Their Homes, the second item of the popup the last right-click opened. */
+    /** Place All Trains at Their Homes, with the count of homes, in the popup the last right-click opened. */
     private static JMenuItem theItem(TrainControlUI ui) throws Exception
     {
-        return (JMenuItem) theMenu(ui).getComponent(1);
+        return itemSaying(theMenu(ui), I18n.f("autolayout.ui.menuPlaceEveryTrainAtHome",
+            ui.getAutonomySession().homesToPlace().size()));
     }
 
-    /** Run Trains to Their Homes, the first item of the popup the last right-click opened. */
+    /** Run Trains to Their Homes, in the popup the last right-click opened. */
     private static JMenuItem theRunItem(TrainControlUI ui) throws Exception
     {
-        return (JMenuItem) theMenu(ui).getComponent(0);
+        return itemSaying(theMenu(ui), I18n.t("autolayout.ui.menuRunTrainsToTheirHomes"));
+    }
+
+    /** The item of a menu that says this, found by its words rather than its place (FR-136 Phase 6). */
+    private static JMenuItem itemSaying(JPopupMenu menu, final String text)
+    {
+        JMenuItem item = support.Components.find(menu, JMenuItem.class, i -> text.equals(i.getText()));
+
+        assertNotNull(item, "the Return Home menu has no item saying \"" + text + "\": " + support.Components.all(menu,
+            JMenuItem.class, null).stream().map(JMenuItem::getText).collect(java.util.stream.Collectors.toList()));
+
+        return item;
     }
 
     /** A tooltip's words, without the markup that wraps it. */
@@ -121,7 +133,7 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
     }
 
     /**
-     * The menu offers the item with the number of homes, on a button that is enabled and on one that is greyed - Swing
+     * The menu offers the item with the number of homes, on a button that is enabled and on one that is grayed - Swing
      * delivers the mouse to a disabled button, and a right-click that did nothing would not say why.
      *
      * MUTATION: open the menu only when the button is enabled, or leave the count out of the label, and this fails.
@@ -188,7 +200,7 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
     }
 
     /**
-     * The item is greyed, with the reason, while autonomy, Return Home or a route runs, while an editor is open and when no
+     * The item is grayed, with the reason, while autonomy, Return Home or a route runs, while an editor is open and when no
      * train has a home - and a press that arrives after one of them began says why and changes nothing.
      *
      * MUTATION: leave any one of the cases out of `whyTheTrainsCannotBePlacedAtTheirHomes`, or let the press skip the
@@ -399,7 +411,7 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
         }
     }
 
-    /** The window's question and the right-click item both give this reason, and the item is greyed. */
+    /** The window's question and the right-click item both give this reason, and the item is grayed. */
     private static void greyedWith(TrainControlUI ui, String reason, String when) throws Exception
     {
         assertEquals(ui.whyTheTrainsCannotBePlacedAtTheirHomes(), reason, "the question does not give its reason for " + when);
@@ -575,7 +587,7 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
             session.clearEveryPlacement();
             session.placeLocomotive(homes.keySet().iterator().next(), stray);
 
-            // WHILE A RUN IS UNDER WAY: greyed with Return Home's reason
+            // WHILE A RUN IS UNDER WAY: grayed with Return Home's reason
             java.lang.reflect.Field flag = Layout.class.getDeclaredField("running");
 
             flag.setAccessible(true);
@@ -764,7 +776,7 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
      * Return Home does not say "already on its home" over a train that is paused away from its home (OB-355; Adam: "'every
      * locomotive is already at its home' is shown, and return home is greyed out, even if the reason is that locomotives are
      * inactive but not on their stations.").  With every other train home and one homed train paused away, the button is
-     * greyed and says the train is paused and how to set it going - the menu's Run Trains to Their Homes the same;
+     * grayed and says the train is paused and how to set it going - the menu's Run Trains to Their Homes the same;
      * set going, the button is offered; with every train home, it says they are.
      *
      * MUTATION: let the triage count a paused train as home without saying so (answer ALREADY_HOME for it), and the first

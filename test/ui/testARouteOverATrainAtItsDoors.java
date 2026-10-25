@@ -75,7 +75,7 @@ public class testARouteOverATrainAtItsDoors
         // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111).
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = init(null, true, true, false, true);
+        model = support.TestStation.simulatedWithWindowInDebug();
         model.setNetworkCommState(false);
 
         echoWas = MarklinControlStation.DEBUG_SIMULATE_PACKETS;
@@ -356,7 +356,7 @@ public class testARouteOverATrainAtItsDoors
     }
 
     /**
-     * A stop reached through a chain of routes still cuts the power (RLA5-A1, RLU5-A1, RLD5-A1).  A route that fires a
+     * A stop reached through a chain of routes still cuts the power.  A route that fires a
      * split route - one that fires its stop route in the stop's place - reaches the stop two routes down, where a chained
      * route may otherwise go no further.  A route that is only a stop fires nothing further, so it runs at any depth; and
      * the route at the top counts as cutting the power, so it is never asked about either.

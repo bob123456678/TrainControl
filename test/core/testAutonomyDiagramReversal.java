@@ -264,7 +264,7 @@ public class testAutonomyDiagramReversal
     /**
      * An authored terminus flag is not carried onto the copies either.  It described the tile; on a
      * split tile turning round is what the COPY means, and letting it through would make the plain copy
-     * reverse as well - which is the behaviour the split exists to separate.
+     * reverse as well - which is the behavior the split exists to separate.
      */
     @Test
     public void testTheAuthoredFlagDoesNotLeakOntoThePlainCopy() throws IOException
@@ -350,9 +350,9 @@ public class testAutonomyDiagramReversal
      * Marking nothing changes nothing.  The split is opt-in per tile, so a configuration that uses none
      * of this has to come out byte for byte as it did before.
      *
-     * **The pair, not the half** (TCX-B5).  This used to assert only that an empty mark set builds what
+     * **The pair, not the half**.  This used to assert only that an empty mark set builds what
      * an unconfigured builder builds - and `reversible` is already an empty set from its field
-     * initialiser, so the two builders were in provably identical state and the assertion could not
+     * initializer, so the two builders were in provably identical state and the assertion could not
      * fail for the reason it named.  Marking a real tile is what shows the comparison is live: if the
      * builder ignored the set entirely, the first assertion below would fail and the second would go
      * on passing exactly as it did.
@@ -464,7 +464,7 @@ public class testAutonomyDiagramReversal
             "the default belongs in the model, not in every point of every file");
     }
 
-    // --- the track ---------------------------------------------------------------------------------
+    // the track
 
     /**
      * The running line with a siding trailing off behind the junction sensor.
@@ -497,7 +497,7 @@ public class testAutonomyDiagramReversal
         return page;
     }
 
-    // --- helpers -----------------------------------------------------------------------------------
+    // helpers
 
     private JSONObject build(LayoutDiagram page, Set<TileKey> stations, Set<TileKey> reversible,
         JSONObject extras)
@@ -716,7 +716,7 @@ public class testAutonomyDiagramReversal
      * A split copy never takes a name some other square already has.
      *
      * The base names are made unique, and the " (eastbound)" suffixes are added afterwards - so a point
-     * named "Main (eastbound)" by hand and a neighbouring "Main" that splits produced two Points with
+     * named "Main (eastbound)" by hand and a neighboring "Main" that splits produced two Points with
      * one name.  Layout refuses that, and refuses the whole configuration with it, reporting a Point
      * name that appears nowhere on the diagram.
      */

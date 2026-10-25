@@ -159,6 +159,7 @@
         <test-one-class class="testLockEdgesSurviveTheFile"/>
         <test-one-class class="testEveryLanguageFits"/>
         <test-one-class class="testTheStationGoingAwayDoesNotJamSwitching"/>
+        <test-one-class class="testTheTestStationIsSimulated"/>
         <test-one-class class="testARenameReachesTheTimetableOnScreen"/>
         <test-one-class class="testALocomotiveDoesNotEvictItself"/>
         <test-one-class class="testThePlaceholderLocomotive"/>
@@ -238,7 +239,18 @@
         <test-one-class class="testAutonomyDiagramTiles"/>
         <test-one-class class="testAutonomyDiagramReducer"/>
         <test-one-class class="testAutonomyDiagramStore"/>
-        <test-one-class class="testAutonomyDiagramSession"/>
+        <!-- testAutonomyDiagramSession, split by topic (FR-136 Phase 3); the fixtures they share are in
+             test/core/AutonomySessionFixture.java, which carries no test. -->
+        <test-one-class class="testAStationsTimetableFollowsItThroughRenamesAndEdits"/>
+        <test-one-class class="testASetupIsBuiltSavedAndReopenedWhole"/>
+        <test-one-class class="testTheEditorWarnsOfARailwayThatCannotWork"/>
+        <test-one-class class="testTheDiagramDrawsWhatTrainsMayDo"/>
+        <test-one-class class="testATrainIsPlacedOnceAndKeepsItsFacing"/>
+        <test-one-class class="testALegacyImportBringsWhatItCanAndSaysWhatItLeaves"/>
+        <test-one-class class="testACaptionStaysWithItsSquare"/>
+        <test-one-class class="testAStationNamedInTwoPlacesIsOneFinding"/>
+        <test-one-class class="testThePlatformNoticeKnowsWhatATrainIsRefusedAt"/>
+        <test-one-class class="testASignalGuardsItsStationAndTheNoticeNamesIt"/>
         <test-one-class class="testMassAssignLengths"/>
         <test-one-class class="testAutonomyDiagramMonitor"/>
         <test-one-class class="testAutonomyDiagramReversal"/>
@@ -282,6 +294,7 @@
         <test-one-class class="testABerthAndAPlatformJudgeAnOverhangDifferently"/>
         <test-one-class class="testAMayTurnStationIsNotATerminus"/>
         <test-one-class class="testTheArrivalHonoursTheAnswer"/>
+        <test-one-class class="testTheApiExamplesRun"/>
         <test-one-class class="testAPasteDoesNotTurnTheTrainRound"/>
         <test-one-class class="testAStationsSizeIsAnAllowance"/>
         <test-one-class class="testAnAnsweredZeroIsNotMissing"/>
@@ -307,6 +320,8 @@
         <test-one-class class="testBulkToolsHoldsTheWholeLayoutTools"/>
         <test-one-class class="testReturnHomeSaysWhy"/>
         <test-one-class class="testTheEditorNamesItsShortcuts"/>
+        <test-one-class class="testTheTrackEditorByHand"/>
+        <test-one-class class="testADiagramClickAsksFirst"/>
         <test-one-class class="testOnlyAStationHoldsAnotherBack"/>
         <test-one-class class="testReturnHomeShowsItIsWorking"/>
         <test-one-class class="testARefusalNamesTheSquare"/>
@@ -563,6 +578,11 @@
         <test-one-class class="testTheOrangeRunsOverTheSwitchesBehindTheTrain"/>
         <test-one-class class="testATrainWithNoWayOutFacesAlongItsTrack"/>
         <test-one-class class="testTheRouteListShowsWhatRuns"/>
+        <test-one-class class="testWhatTheStationSendsIsHeard"/>
+        <test-one-class class="testTheTimetableAnswersItsMenu"/>
+        <test-one-class class="testARestartKeepsTheRailway"/>
+        <test-one-class class="testReturnHomeSetsTheSwitchesOnTheWayHome"/>
+        <test-one-class class="testOpenLayoutLeavesTheOldTrainsBehind"/>
         <test-one-class class="testTheRouteHighlightAsksWhatATileIs"/>
         <test-one-class class="testTheRouteEditorAsksHowManyFunctionsALocomotiveHas"/>
         <test-one-class class="testNonAtomicRoutesNeedTheirLengths"/>
@@ -575,6 +595,16 @@
         <test-one-class class="testTheUpdateIsWiredEndToEnd"/>
         <test-one-class class="testTheArrowsTellTheWholeStory"/>
         <test-one-class class="testTheSampleLayoutSaysOnlyWhatTrainsCanDo"/>
+        <test-one-class class="testSourceOfFindsADeclarationAnywhere"/>
+        <test-one-class class="testABackupHoldsTheWholeRailway"/>
+        <test-one-class class="testDownloadUpdateFetchesTheNewVersion"/>
+        <test-one-class class="testDownloadAndUpdateFromAJar"/>
+        <test-one-class class="testThePageMenuEditsTheLayoutFolder"/>
+        <test-one-class class="testDrivingFromTheKeyboard"/>
+        <test-one-class class="testMappingPagesAndLocomotiveDoors"/>
+        <test-one-class class="testARunLeavesItsStateBehind"/>
+        <test-one-class class="testTheAutonomyEditorsQuestionsChangeTheSetup"/>
+        <test-one-class class="testStartingAutonomyFromTheWindow"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>

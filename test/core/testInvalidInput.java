@@ -84,7 +84,7 @@ public class testInvalidInput
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        model = init(null, true, false, false, false);
+        model = support.TestStation.simulated();
         model.stop();
 
         model.newMM2Locomotive(LOC_PLACED, LOC_PLACED_ADDRESS);
@@ -97,9 +97,7 @@ public class testInvalidInput
         if (model != null) model.deleteRoute(ROUTE_NAME);
     }
 
-    // ---------------------------------------------------------------------------------------------
     // Helpers
-    // ---------------------------------------------------------------------------------------------
 
     /**
      * Empties one logical accessory address, in memory only - nothing here calls saveState.
@@ -163,9 +161,7 @@ public class testInvalidInput
         assertFalse(layout.isValid(), description + ": was accepted, but should have been rejected");
     }
 
-    // ---------------------------------------------------------------------------------------------
     // The autonomy configuration file
-    // ---------------------------------------------------------------------------------------------
 
     /**
      * Reading a version out of a release name survives the name (C5).
@@ -200,8 +196,8 @@ public class testInvalidInput
             "a release named without a v threw, and the caller catches Exception, so the update check"
             + " went silent for as long as that release was the latest (C5)");
 
-        // AND A NUMBER BEFORE THE "v", which the first fix for this got wrong in the other direction
-        // (IND9-C2). Anchoring on the first digits rather than on the "v" swapped one silent failure
+        // AND A NUMBER BEFORE THE "v", which the first fix for this got wrong in the other direction.
+        // Anchoring on the first digits rather than on the "v" swapped one silent failure
         // for two: "2026" compares NEWER than anything, so the menu offers an update that is not
         // there, and "1" compares older, which hides a release exactly the way the original bug did.
         assertEquals(Util.parseReleaseVersion(release("TrainControl 2026 Edition v3.0.0")), "3.0.0",
@@ -219,7 +215,7 @@ public class testInvalidInput
         assertEquals(Util.parseReleaseVersion(release("v3.0")), "3.0",
             "a two-part version is a version");
 
-        // AND THE TWO THE FIRST TWO ATTEMPTS BOTH MISSED (VAL9-B3). A "v" has to be the tag marker
+        // AND THE TWO THE FIRST TWO ATTEMPTS BOTH MISSED. A "v" has to be the tag marker
         // rather than the last letter of a word, and among several tagged numbers the longest wins -
         // otherwise a version mentioned in passing beats the one being released.
         assertEquals(Util.parseReleaseVersion(
@@ -346,7 +342,7 @@ public class testInvalidInput
      * refused whole.
      *
      * **A locomotive the database does not have is NOT in this list any more.**  This claim used to require that
-     * too, and Adam overruled it on 2026-09-16 (AMR-C3): *"drop the train and keep the rest."*  What a rename or a
+     * too, and Adam overruled it on 2026-09-16: *"drop the train and keep the rest."*  What a rename or a
      * deletion leaves behind is a file that has outlived its fleet, not a broken one, so the placement is dropped
      * with a log line and the configuration loads - asserted below as the opposite of what stood here, and in full
      * by `core.testHomeStaging.testAPlacementForALocomotiveNotInTheDatabaseDropsOnlyThePlacement`.  Changed because
@@ -411,9 +407,7 @@ public class testInvalidInput
                 ""));
     }
 
-    // ---------------------------------------------------------------------------------------------
     // The accessory command box in the graph edge editor
-    // ---------------------------------------------------------------------------------------------
 
     /**
      * What the user types into an edge's command box, one line at a time.  Each of these must produce a
@@ -485,9 +479,7 @@ public class testInvalidInput
         assertNotNull(Edge.validateConfigCommand(ACC_ACCEPTED, " Green ", model));
     }
 
-    // ---------------------------------------------------------------------------------------------
     // Route file import
-    // ---------------------------------------------------------------------------------------------
 
     /**
      * Choosing the wrong file must not cost the user their routes.
@@ -643,7 +635,7 @@ public class testInvalidInput
     }
 
     /**
-     * UC-C1: the update check must survive a release name with a non-numeric version component.
+     * The update check must survive a release name with a non-numeric version component.
      *
      * parseReleaseVersion returns everything after the first "v"; compareVersions then parses every
      * dotted component as an integer.  The current beta is literally named
@@ -671,7 +663,7 @@ public class testInvalidInput
     }
 
     /**
-     * UC-C2: a space after the comma in a feedback line must not silently flip the state.
+     * A space after the comma in a feedback line must not silently flip the state.
      *
      * The feedback branch tests "1".equals(token) untrimmed, so "Feedback 3, 1" - one space - parses
      * as state CLEAR, and a condition waits for the opposite sensor edge.  The locfunc branch trims;
@@ -691,7 +683,7 @@ public class testInvalidInput
     }
 
     /**
-     * UC-C3: a typo'd direction must be an error, not a silent reversal.
+     * A typo'd direction must be an error, not a silent reversal.
      *
      * The locdir branch maps every string that is not exactly "forward" to backward - "forwards",
      * "fwd", any typo - and executes it.  Every other malformed field in this parser produces the
@@ -720,7 +712,7 @@ public class testInvalidInput
     }
 
     /**
-     * UC-C11: Point must fail where the mistake is made, not at save time.
+     * Point must fail where the mistake is made, not at save time.
      *
      * The public constructor accepts any string as an s88, and toJSON later does
      * Integer.valueOf(s88) - so new Point("x", true, "1a") explodes with an unchecked
@@ -741,7 +733,7 @@ public class testInvalidInput
     }
 
     /**
-     * UC-C11, the other trap: setMaxTrainLength(null) passes an inert assert, stores null, and
+     * The other trap: setMaxTrainLength(null) passes an inert assert, stores null, and
      * validateTrainLength later NPEs unboxing it.  Null must mean "no limit", like 0 does.
      */
     @Test

@@ -60,7 +60,7 @@ public class testTheTailCanBeGivenInTheEditor
         }
 
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
-        model = init(null, true, false, false, true);
+        model = support.TestStation.simulatedInDebug();
 
         SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
 
@@ -70,7 +70,7 @@ public class testTheTailCanBeGivenInTheEditor
 
         if (session == null || session.getStore().getActiveConfiguration() == null)
         {
-            throw new SkipException("no autonomy configuration on the snapshot");
+            throw new AssertionError("no autonomy configuration on the snapshot");
         }
 
         if (ui.getActiveDiagramConfiguration() == null)
@@ -248,7 +248,7 @@ public class testTheTailCanBeGivenInTheEditor
 
             assertEquals(session.getArrivedAlong(f.tile), before, "a click on a square the tail cannot have crossed recorded a road");
 
-            // ESCAPE ITSELF (TLR-C2): `putToolsDown` is what the key runs; the right-click path is `cancelPendingGesture`.
+            // ESCAPE ITSELF: `putToolsDown` is what the key runs; the right-click path is `cancelPendingGesture`.
             SwingUtilities.invokeAndWait(() -> f.panel.putToolsDown());
 
             assertNull(f.panel.tailPickFor(), "Escape did not let go of the tail pick");
@@ -356,7 +356,7 @@ public class testTheTailCanBeGivenInTheEditor
     }
 
     /**
-     * A paste that puts no question keeps the road the train has (TLV-A1).
+     * A paste that puts no question keeps the road the train has.
      *
      * The doors wrote "no road" whenever nothing was chosen, and nothing is chosen where nothing is asked - so pasting a
      * train back where it stands, or pressing OK in its locomotive dialog, erased the road autonomy drove it in on, and
@@ -392,7 +392,7 @@ public class testTheTailCanBeGivenInTheEditor
     }
 
     /**
-     * Closing the question without an answer keeps the road the train has (TLV-A1).
+     * Closing the question without an answer keeps the road the train has.
      */
     @Test
     public void testDismissingTheQuestionKeepsTheRoad() throws Exception
@@ -421,7 +421,7 @@ public class testTheTailCanBeGivenInTheEditor
     }
 
     /**
-     * A paste right after a run keeps the road the run left, though the setup has not caught up (TLW-A1).
+     * A paste right after a run keeps the road the run left, though the setup has not caught up.
      *
      * A run writes its arrival on the running railway only; the setup hears of it at the next capture.  The doors
      * decided keep-or-replace by reading the SETUP, which here says nothing about the side or the road - so a paste
@@ -466,13 +466,13 @@ public class testTheTailCanBeGivenInTheEditor
     }
 
     /**
-     * The arrival-side menu is not offered for a square no train is standing on (OP3-C7).
+     * The arrival-side menu is not offered for a square no train is standing on.
      *
      * **The offer and the write disagreed about which store they were reading.**  The item appears when
      * the SETUP says a locomotive is at the square (`session.getLocomotiveNameAt`), and it writes to a
      * Point on the running layout chosen by `pointOnTheLayout` - which prefers an occupied copy but
      * falls back to ANY copy.  So with a train assigned in the setup and not placed on the running
-     * railway, the side went onto an empty Point: nothing reads it there, and since AUR-C1 nothing
+     * railway, the side went onto an empty Point: nothing reads it there, and nothing
      * saves it either, so the two stores quietly stopped agreeing.
      *
      * The rule now matches the method's own javadoc - *"a tail belongs to a train, and a square with
@@ -483,7 +483,7 @@ public class testTheTailCanBeGivenInTheEditor
     @Test
     public void testTheArrivalSideIsNotOfferedForAnEmptySquare() throws Exception
     {
-        // ANY STANDING TRAIN WILL DO (FXV-C14).  This claim is about a square with nobody on it; the
+        // ANY STANDING TRAIN WILL DO.  This claim is about a square with nobody on it; the
         // junction the other claims here need has nothing to do with it, and riding their fixture made this
         // skip - which reads as green - on any snapshot without one.
         Fixture f = Fixture.openOnAnyStandingTrain();
@@ -549,10 +549,10 @@ public class testTheTailCanBeGivenInTheEditor
         }
 
         /**
-         * The same fixture for a claim that needs only a square with a train standing on it (FXV-C14).
+         * The same fixture for a claim that needs only a square with a train standing on it.
          *
          * `open()` searches for a train whose tail can have crossed a sensor past a junction, which is what the
-         * tail-crossing claims are about - and a snapshot without one skips, which reads as green.  The
+         * tail-crossing claims are about - and a snapshot without one fails.  The
          * arrival-side gate has nothing to do with junctions, so it asked for far more than it needed.
          *
          * @return the fixture
@@ -611,7 +611,7 @@ public class testTheTailCanBeGivenInTheEditor
             {
                 session.restoreSetup(asFound);
 
-                throw new SkipException(needsAJunction
+                throw new AssertionError(needsAJunction
                     ? "no standing train on the snapshot, measured at one unit, has a tail of " + LONG
                         + " units that can have crossed a sensor past a junction"
                     : "no train is standing anywhere on the snapshot at all");
@@ -839,7 +839,7 @@ public class testTheTailCanBeGivenInTheEditor
 
         /**
          * Closes the editor before the diagram's paste door, which refuses while an editor is open - a placement made there
-         * would be put back by the editor's Cancel - as the main window counts every editor window of its own (RSA28-B1).
+         * would be put back by the editor's Cancel - as the main window counts every editor window of its own.
          * A person pastes on the diagram with no editor open.  `close` disposes it again, which does nothing.
          *
          * @throws Exception from the event thread

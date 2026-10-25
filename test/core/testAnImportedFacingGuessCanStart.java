@@ -13,29 +13,29 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.Direction;
 import org.traincontrol.automationui.TileGraph.DirectionKey;
+import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts.Side;
 import org.traincontrol.marklin.MarklinControlStation;
 
 /**
  * The facing an import of a 2.8.1 file gives a train is the way the file ran it, and where the file cannot say, a
- * guess trains may arrive in over the finished setup (REG3-C1, TDY3-B1, REG4-A1, REG4-C1).
+ * guess trains may arrive in over the finished setup.
  *
  * A 2.8.1 graph states direction as one-way edges: a train on a point goes only along the edges that start there, so
- * where they all leave the square by one side, that is the way the train drives (REG4-A1).  The import read none of
+ * where they all leave the square by one side, that is the way the train drives.  The import read none of
  * them and guessed, and a guess the wrong way round sends a train along a path locked one way while its decoder drives
  * it the other.
  *
  * The old format cannot say which way a train points, so the import chooses - and it chose the first copy the build
  * emits, barred or not.  Copies are emitted N, E, S, W, so at BottomMainA, with arrivals from the east barred, that is
- * the westbound copy: no station.  Since the build honours a recorded facing even where only such a copy holds it -
+ * the westbound copy: no station.  Since the build honors a recorded facing even where only such a copy holds it -
  * the copy IS the direction, and a train that really faces that way must stand there - the guess put an imported train
  * where autonomy will not start it, under a log line saying "just run them".  A guess is not a fact, and the one guess
  * autonomy can start is a way trains may arrive.
@@ -57,7 +57,7 @@ public class testAnImportedFacingGuessCanStart
     {
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = MarklinControlStation.init(null, true, false, false, false);
+        model = support.TestStation.simulated();
     }
 
     @AfterClass(alwaysRun = true)
@@ -83,7 +83,7 @@ public class testAnImportedFacingGuessCanStart
     {
         File file = new File(new File(sandbox.getFolder(), "config" + File.separator + "autonomy_legacy"), "autonomy.json");
 
-        if (!file.exists()) throw new SkipException("this fixture carries no legacy autonomy.json at " + file);
+        if (!file.exists()) throw new AssertionError("this fixture carries no legacy autonomy.json at " + file);
 
         JSONObject legacy = new JSONObject(new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8));
 
@@ -145,7 +145,7 @@ public class testAnImportedFacingGuessCanStart
 
         assertTrue(placed, "precondition: the legacy file has no BottomMainA point");
 
-        // THE FILE CANNOT SAY: BottomMainA's own edges taken out, so the import has to guess (REG4-A1).
+        // THE FILE CANNOT SAY: BottomMainA's own edges taken out, so the import has to guess.
         withoutTheEdgesOf(legacy, "BottomMainA");
 
         AutonomySession.LegacyImport imported = session.importLegacy(legacy);
@@ -164,8 +164,7 @@ public class testAnImportedFacingGuessCanStart
     }
 
     /**
-     * The guess is made over the setup the import leaves, after it has marked the squares trains turn round at
-     * (REG4-C1).
+     * The guess is made over the setup the import leaves, after it has marked the squares trains turn round at.
      *
      * A legacy terminus or reversing point is written as "must turn round" further down the same point's import, and a
      * square trains must turn at has only turning copies, which face the other way from its plain ones.  Guessed
@@ -220,7 +219,7 @@ public class testAnImportedFacingGuessCanStart
     }
 
     /**
-     * A 2.8.1 file's edges say which way each train it places runs, and the import stands it that way round (REG4-A1).
+     * A 2.8.1 file's edges say which way each train it places runs, and the import stands it that way round.
      *
      * A fresh upgrade: the frozen railway with the diagram's directions and the barred arrivals taken out, which is how a
      * 2.8.1 user meets the diagram - plain track both ways, a switch by default out of its toe only.  TopMainR1's one
@@ -432,7 +431,14 @@ public class testAnImportedFacingGuessCanStart
      * hold the east the file ran its train; and the import names it.  With the old directions carried the fixture no
      * longer reaches that path by itself, so this is the claim that keeps it.
      *
-     * MUTATION: overwrite a direction the operator set, and this fails.
+     * Beside it, a baseline: the same file imported onto a diagram tuned by one direction on a square no old edge
+     * crosses, so none of its roads is the file's.  The log's count of "pieces the file ran one way that this diagram
+     * does not" leaves out the operator's own roads, so the backwards railway's count falls short of the baseline's by
+     * exactly those.  Nothing is written either way - a tuned diagram is left as it is - so this count is the only
+     * place the operator's-own rule shows.
+     *
+     * MUTATION: overwrite a direction the operator set, and this fails; so does dropping the operator's-own `continue`
+     * in `SessionImport.carryTheOldDirections`.
      *
      * @throws Exception from the fixture
      */
@@ -443,6 +449,7 @@ public class testAnImportedFacingGuessCanStart
 
         File first = freshUpgrade();
         File second = freshUpgrade();
+        File third = freshUpgrade();
 
         try
         {
@@ -458,7 +465,9 @@ public class testAnImportedFacingGuessCanStart
             // Every road the file ran one way, the other way round.
             Map<DirectionKey, Direction> theirs = new java.util.LinkedHashMap<>();
 
-            for (Map.Entry<DirectionKey, Direction> each : probe.importLegacy(legacy).directionsCarried.entrySet())
+            Map<DirectionKey, Direction> theFileRan = probe.importLegacy(legacy).directionsCarried;
+
+            for (Map.Entry<DirectionKey, Direction> each : theFileRan.entrySet())
             {
                 if (each.getValue() == Direction.BOTH) continue;
 
@@ -497,11 +506,52 @@ public class testAnImportedFacingGuessCanStart
                 + " say so: " + imported.facingsNotHeld + ".  Its copies: "
                 + session.facingsFor(inter) + ", standing " + session.getFacing(inter) + "; the next named squares by"
                 + " each side: " + nextByEachSide(session, inter));
+
+            // THE BASELINE: a diagram tuned by one direction, on a square the file's roads do not cross.
+            AutonomySession baseline = new AutonomySession(third);
+
+            baseline.open(support.LayoutSandbox.wiredPages(model));
+            baseline.getStore().createConfiguration("Directions carried", null);
+            baseline.getStore().setActiveConfiguration("Directions carried");
+            baseline.rebuild();
+
+            Set<TileKey> crossed = new java.util.LinkedHashSet<>();
+
+            for (DirectionKey each : theFileRan.keySet()) crossed.add(each.square());
+
+            tuning:
+            for (TileKey tile : baseline.getGraph().getTiles().keySet())
+            {
+                if (crossed.contains(tile)) continue;
+
+                for (RouteId id : baseline.getGraph().getRoutes(tile).keySet())
+                {
+                    Direction asDrawn = baseline.getGraph().getDirection(tile, id);
+
+                    baseline.setDirection(tile, id, asDrawn == Direction.TOWARD_A ? Direction.TOWARD_B : Direction.TOWARD_A);
+
+                    if (baseline.getStore().getTileDirection(tile, id) != null) break tuning;
+                }
+            }
+
+            assertTrue(baseline.getStore().hasTileDirections(), "precondition: no square the file does not cross could"
+                + " be tuned, so there is no baseline");
+
+            AutonomySession.LegacyImport onlyTheFile = baseline.importLegacy(legacy);
+
+            assertTrue(imported.directionsNotCarried < onlyTheFile.directionsNotCarried, "the operator's own roads are"
+                + " counted as pieces the file ran one way that this diagram does not: " + imported.directionsNotCarried
+                + " with " + theirs.size() + " of them set by the operator, against " + onlyTheFile.directionsNotCarried
+                + " with none - the log's count is not the gap it says");
+
+            assertEquals(onlyTheFile.directionsNotCarried - imported.directionsNotCarried, theirs.size(), "the count"
+                + " should fall by the operator's roads, no more and no fewer");
         }
         finally
         {
             deleteQuietly(first);
             deleteQuietly(second);
+            deleteQuietly(third);
         }
     }
 
@@ -541,7 +591,7 @@ public class testAnImportedFacingGuessCanStart
     {
         File file = new File(new File(sandbox.getFolder(), "config" + File.separator + "autonomy_legacy"), "autonomy.json");
 
-        if (!file.exists()) throw new SkipException("this fixture carries no legacy autonomy.json at " + file);
+        if (!file.exists()) throw new AssertionError("this fixture carries no legacy autonomy.json at " + file);
 
         return new JSONObject(new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8));
     }

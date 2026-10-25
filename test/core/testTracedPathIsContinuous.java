@@ -32,8 +32,8 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  *
  * So this pins the one thing left that a test can reach: whether the sequence of squares the editor
  * draws through is CONTINUOUS. A line is drawn from the middle of each square to the sides it enters
- * and leaves by, and those sides come from comparing a square with its neighbours in the sequence - so
- * two squares that are not neighbours produce two stubs pointing at nothing, which is exactly what a
+ * and leaves by, and those sides come from comparing a square with its neighbors in the sequence - so
+ * two squares that are not neighbors produce two stubs pointing at nothing, which is exactly what a
  * gap looks like.
  *
  * If this fails it names the two squares and what sits between them, which is the diagnosis.
@@ -50,7 +50,7 @@ public class testTracedPathIsContinuous
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        model = init(null, true, false, false, false);
+        model = support.TestStation.simulated();
 
         File folder = new File("test/test_layout");
 
@@ -71,7 +71,7 @@ public class testTracedPathIsContinuous
     }
 
     /**
-     * Every run of track the reduction knows is a chain of neighbouring squares.
+     * Every run of track the reduction knows is a chain of neighboring squares.
      *
      * Built exactly the way AutonomyEditorPanel.trace builds it - the squares between two sensors, with
      * the sensors themselves put back in between, because the reduction hands over the track and the
@@ -106,7 +106,7 @@ public class testTracedPathIsContinuous
                 if (TileGraph.gridSideTowards(previous, here) != null) continue;
 
                 // A PORTAL IS NOT A GAP.  A link or a tunnel joins two squares that are deliberately
-                // not neighbours - usually on different pages - and a train crossing one continues at
+                // not neighbors - usually on different pages - and a train crossing one continues at
                 // its partner. There is no line to draw between them and none is missing: each page
                 // gets its own end of the run.
                 //
@@ -162,9 +162,9 @@ public class testTracedPathIsContinuous
      * This is the fault, and Adam found it from the picture: "it is just the route tiles with no
      * connecting edge, could it be the greyout?" It was.
      *
-     * A route button carries no track meaning of its own, so the editor greys it - there is nothing on
+     * A route button carries no track meaning of its own, so the editor grays it - there is nothing on
      * it for the user to set, and offering a length or a direction would invite a click that does
-     * nothing. But the greying returned before drawing anything else, and that swallowed the tested
+     * nothing. But the graying returned before drawing anything else, and that swallowed the tested
      * route as well. "Nothing here to configure" had quietly come to mean "nothing here to draw",
      * which are different things: a drawn route is not an invitation to change something, it is an
      * answer to a question that was asked.
@@ -199,7 +199,7 @@ public class testTracedPathIsContinuous
     }
 
     /**
-     * One annotation, greyed or not, carrying the given traces.
+     * One annotation, grayed or not, carrying the given traces.
      */
     private static org.traincontrol.automationui.TileAnnotation annotation(boolean ignored,
         java.util.List<org.traincontrol.automationui.TileAnnotation.Trace> traces)
@@ -209,9 +209,9 @@ public class testTracedPathIsContinuous
     }
 
     /**
-     * Paints one tile and says whether anything strongly coloured landed on it.
+     * Paints one tile and says whether anything strongly colored landed on it.
      *
-     * The greying is white and a mid grey hatch, so anything with real colour in it came from
+     * The graying is white and a mid gray hatch, so anything with real color in it came from
      * something else - which is all this needs to know, and it does not tie the test to the exact
      * shade the route happens to be drawn in today.
      */
@@ -246,7 +246,7 @@ public class testTracedPathIsContinuous
                 int green = (argb >> 8) & 0xFF;
                 int b = argb & 0xFF;
 
-                // Grey is where the three channels agree.  A coloured line is where they do not.
+                // Gray is where the three channels agree.  A colored line is where they do not.
                 if (Math.max(r, Math.max(green, b)) - Math.min(r, Math.min(green, b)) > 60)
                 {
                     return true;

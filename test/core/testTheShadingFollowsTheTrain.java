@@ -37,7 +37,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * A train runs to the next station and back, and the diagram's grey wash follows it (OB-180).
+ * A train runs to the next station and back, and the diagram's gray wash follows it (OB-180).
  *
  * Adam: **"when a train is manually moved to a new station in the track diagram viewer using control+X
  * and V, its former shaded icons are not reset."**
@@ -52,22 +52,28 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * A test that asserts only on `tilesCoveredByStandingTrains` therefore passes identically with the
  * defect present and with it repaired, however faithfully the train runs.  So this one goes all the way
  * to the ICONS: real `LayoutLabel`s, registered in the real `DiagramTileRegistry`, redrawn by the real
- * `TrainControlUI.refreshCoveredTrack`, and asked afterwards which image they are actually showing.
+ * `CoveredTrackView` (reached through `TrainControlUI.refreshCoveredTrack`), and asked afterwards which image they are actually showing.
  *
  * **How far that is, exactly.**  Every tile is PAINTED and looked at: since MT-309 the mark is an
- * orange line drawn along the road the train is on rather than a greyed copy of the icon, so "is this
+ * orange line drawn along the road the train is on rather than a grayed copy of the icon, so "is this
  * tile marked" has no answer in the object and the only honest way to ask is to paint the square.
  * `support.Rendered.showsTheTrainMark` does it, and everything between the train moving and the
  * picture changing - the recompute, the difference, the registry lookup, the event-thread hop, the
- * paint - is production code being run.  Confirmed by mutation on
- * 2026-09-08: with `repaintTheWashWhereItChanged(was, coveredTrack)` deleted from `refreshCoveredTrack`
- * this class stops at the icon assertion in stage 2 - having passed every model-level assertion above
- * it, including the one saying those same squares are no longer covered - which is OB-180 restored and
- * is the gap between the two that no other test in this suite closes.
+ * paint - is production code being run.
+ *
+ * **And the redraw itself is asked about, not only the paint** (FR-136, issue 19).  Painting a label to
+ * look at it is a redraw nobody else asked for, and a tile works its mark out as it is painted - so this
+ * class passed with the window's redraw taken out, until stage 2 learnt to ask what the SCREEN shows: a
+ * tile drawn washed in stage 1 that nothing has asked to repaint since still shows the wash, whatever a
+ * fresh paint of it would say.  `support.RepaintRecorder` writes the repaints down.  Confirmed by
+ * mutation on 2026-10-19: with the `repaintTheWashWhereItChanged(...)` call taken out of
+ * `CoveredTrackView.workOutCoveredTrack` this class stops at stage 2's screen assertion ("never asked to
+ * redraw") - having passed every model-level assertion above it, including the one saying those same
+ * squares are no longer covered - which is OB-180 restored.
  *
  * **The fixture is Adam's own railway, in a sandbox copy (OB-111), and never the folder itself.**  A
  * hand-built `Layout` would have been easier to make deterministic, and it was rejected: the squares
- * that grey are a product of the diagram - `AutonomySession` needs a reducer and a station index to
+ * that gray are a product of the diagram - `AutonomySession` needs a reducer and a station index to
  * turn a runtime `Edge` into the tiles lying along it - and the registry keys labels by page and
  * square.  A synthetic graph has no diagram behind it, so the half of the mechanism this defect lives
  * in would not exist.
@@ -159,7 +165,7 @@ public class testTheShadingFollowsTheTrain
 
         // showUI, because the defect is in the drawing.  debug on, so the simulated Central Station
         // echoes back the accessory commands a path configuration waits for.
-        model = init(null, true, true, false, true);
+        model = support.TestStation.simulatedWithWindowInDebug();
         model.setNetworkCommState(false);
         MarklinControlStation.DEBUG_SIMULATE_PACKETS = true;
 
@@ -245,10 +251,12 @@ public class testTheShadingFollowsTheTrain
      * intact, and is what the second circuit tests: a baseline taken after a real arrival, and the same
      * circuit driven again, with nothing but the running to tell them apart.
      *
-     * MUTATIONS that fail it: deleting `repaintTheWashWhereItChanged(was, coveredTrack)` from
-     * `TrainControlUI.refreshCoveredTrack` fails stage 2's icon assertion while every model-level
-     * assertion here still passes - which is the defect exactly.  Making `repaintTheWashWhereItChanged`
-     * take the intersection rather than the symmetric difference fails stage 2 as well.  Making
+     * MUTATIONS that fail it: deleting the `repaintTheWashWhereItChanged(...)` call from
+     * `CoveredTrackView.workOutCoveredTrack` fails stage 2's screen assertion (the old squares were never
+     * asked to redraw) while every model-level assertion here still passes - which is the defect exactly.  Making
+     * `repaintTheWashWhereItChanged` take the intersection of the COVERED sets rather than their symmetric difference
+     * (`changed.retainAll(now.keySet())`) leaves this green (2026-10-19): a square the train leaves stops being blocked
+     * too, and the blocked half's own difference redraws it.  Making
      * `Layout.edgesCoveredByStandingTrains` keep the departed train's edges fails stage 2's model
      * assertion, and leaving `arrivedFrom` set on the square a train drove away from fails stage 4.
      *
@@ -317,11 +325,25 @@ public class testTheShadingFollowsTheTrain
 
         // ---------------------------------------------------------------- 2. away to the next station
 
-        Point next = runToTheNextStation();
+        // FROM HERE THE TILES ARE ASKED WHAT THE SCREEN SHOWS (issue 19): every one of them was just drawn with the wash, and
+        // a window on screen draws one again only when something asks it to.  `isWashed` paints the label afresh, which
+        // answers right whether or not anything asked - so the repaints asked for are written down from here.
+        Point next;
 
-        assertNotNull(next, "the train never left " + home.getName());
+        Set<TileKey> atNext;
 
-        Set<TileKey> atNext = washAsDrawn();
+        Set<javax.swing.JComponent> redrawn;
+
+        try (support.RepaintRecorder screen = support.RepaintRecorder.install())
+        {
+            next = runToTheNextStation();
+
+            assertNotNull(next, "the train never left " + home.getName());
+
+            atNext = washAsDrawn();
+
+            redrawn = screen.dirtied();
+        }
 
         // THE MODEL: the old squares are no longer covered.
         for (TileKey wasCovered : atHome)
@@ -338,11 +360,14 @@ public class testTheShadingFollowsTheTrain
         // right before the fix as well as after it, and the icons were stale either way, because a
         // tile is only redrawn when its own accessory, feedback or route changes and a train moving
         // changes none of those.
+        //
+        // AS THE SCREEN SHOWS IT (issue 19): a tile nothing asked to repaint still shows the wash it was drawn with in stage 1.
         for (LayoutLabel label : homeLabels)
         {
-            assertFalse(isWashed(label),
+            assertFalse(!redrawn.contains(label) || isWashed(label),
                 "the square " + squareOf(label) + " (covered roads now " + ui.coveredRoutesAt(squareOf(label))
-                + ", home " + home.getName() + ", covered at home " + atHome + ")"
+                + ", home " + home.getName() + ", covered at home " + atHome + ", "
+                + (redrawn.contains(label) ? "redrawn" : "never asked to redraw") + ")"
                 + " behind where " + train.getName() + " used to stand is still drawn greyed"
                 + " after it has run to " + next.getName() + ". The railway knows the track is clear"
                 + " and the diagram is still telling the operator it is blocked - which is OB-180"
@@ -620,7 +645,7 @@ public class testTheShadingFollowsTheTrain
     /**
      * Whether this tile is drawing the mark that says a train is lying across it.
      *
-     * PAINTED AND LOOKED AT since MT-309.  The mark used to be the tile's ICON - a greyed copy of it -
+     * PAINTED AND LOOKED AT since MT-309.  The mark used to be the tile's ICON - a grayed copy of it -
      * so this could be an identity comparison against `lastIcon`.  It is a line drawn over the icon
      * now, which is nowhere in the object, and the only honest question left is what the square looks
      * like.  `support.Rendered.showsTheTrainMark` paints it and looks for the orange.

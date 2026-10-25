@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -18,12 +17,12 @@ import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
 
 /**
- * A tail across a double curve greys the road it lies on, not the whole square (OB-280, MT-475 step 4).
+ * A tail across a double curve grays the road it lies on, not the whole square (OB-280, MT-475 step 4).
  *
- * A double curve carries two separate tracks, and routing refuses only the one a standing train covers - so the grey,
+ * A double curve carries two separate tracks, and routing refuses only the one a standing train covers - so the gray,
  * which is what routing refuses, has to name that road.  Nothing claimed it: `ui.testTheGreyAppearsAtIdleToo` compares
  * squares only, and its fixture never chooses a double curve, so emptying the road set left every claim green and the
- * diagram then greyed the whole square - both tracks - for a tail on one (the round-4 mutation run, G1).  Adam, 2026-09-24:
+ * diagram then grayed the whole square - both tracks - for a tail on one (the round-4 mutation run, G1).  Adam, 2026-09-24:
  * *"Add the double curve coverage test."*
  *
  * On his frozen railway: ParkingTrack7, `2 - Bottom:16,5`, is reached from the west only (its east end is a buffer),
@@ -56,7 +55,7 @@ public class testTheGreyNamesTheRoadOnADoubleCurve
     {
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = MarklinControlStation.init(null, true, false, false, false);
+        model = support.TestStation.simulated();
 
         session = new AutonomySession(sandbox.getFolder());
 
@@ -70,7 +69,7 @@ public class testTheGreyNamesTheRoadOnADoubleCurve
 
         layout = model.getAutoLayout();
 
-        if (layout == null) throw new SkipException("the snapshot did not build");
+        if (layout == null) throw new AssertionError("the snapshot did not build");
 
         for (Point point : layout.getPoints())
         {
@@ -79,7 +78,7 @@ public class testTheGreyNamesTheRoadOnADoubleCurve
 
         List<String> names = model.getLocList();
 
-        if (names.isEmpty()) throw new SkipException("this fixture has no locomotive");
+        if (names.isEmpty()) throw new AssertionError("this fixture has no locomotive");
 
         train = model.getLocByName(names.get(0));
 
@@ -100,7 +99,7 @@ public class testTheGreyNamesTheRoadOnADoubleCurve
     }
 
     /**
-     * Two units in ParkingTrack7 grey the double curve's E-S road and leave its N-W road alone.
+     * Two units in ParkingTrack7 gray the double curve's E-S road and leave its N-W road alone.
      *
      * @throws Exception from the fixture
      */

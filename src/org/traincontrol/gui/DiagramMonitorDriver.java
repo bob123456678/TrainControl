@@ -152,7 +152,7 @@ public class DiagramMonitorDriver
 
         recordedFacingsChanged();
 
-        // WITH WHICH OF THEM ARE PAUSED (FR-126).  Binding follows every rebuild, and the one-argument form takes the grey
+        // WITH WHICH OF THEM ARE PAUSED (FR-126).  Binding follows every rebuild, and the one-argument form takes the gray
         // away: a tool that paused a train on no Point told the monitor, and the rebuild its change asks for then undid it.
         monitor.setTrainsOnNoPoint(session.trainsOnNoPoint(), session.pausedTrainsOnNoPoint());
 
@@ -160,7 +160,7 @@ public class DiagramMonitorDriver
     }
 
     /**
-     * Tells the diagram again which trains the setup records where the railway stands them on no Point (RSA18-C1): a record
+     * Tells the diagram again which trains the setup records where the railway stands them on no Point: a record
      * written after the load - the put-back's - was drawn nowhere.
      *
      * @param session the setup
@@ -343,7 +343,7 @@ public class DiagramMonitorDriver
     // whatever its square was last told to show, so a page switched mid-run catches up tile by tile as it
     // is built.  A whole-layout republish would be the same picture arriving later.
 
-    // --- the loop ---------------------------------------------------------------------------------
+    // the loop
 
     private void tick()
     {
@@ -431,7 +431,7 @@ public class DiagramMonitorDriver
 
     private Layout currentLayout()
     {
-        // ASKED, NOT BUILT (RLV7-C2, CS3-C4).  `getAutoLayout` makes a Layout where there is none, so after Unload the
+        // ASKED, NOT BUILT.  `getAutoLayout` makes a Layout where there is none, so after Unload the
         // monitor's next look built an empty one, and `hasAutoLayout` then answered yes about nothing.  The monitor
         // reads no layout as nothing to show.
         return ui == null || ui.getModel() == null ? null : ui.getModel().getAutoLayoutIfLoaded();

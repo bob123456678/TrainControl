@@ -62,7 +62,7 @@ public class testStuckTrainAdvisory
     {
         // Simulate and debug, as Adam's procedure says - this is the application's simulation, which
         // only stops it talking to a Central Station that is not there
-        model = init(null, true, false, false, true);
+        model = support.TestStation.simulatedInDebug();
 
         model.stop();
 
@@ -248,8 +248,6 @@ public class testStuckTrainAdvisory
 
         waiting.interrupt();
     }
-
-    // ---------------------------------------------------------------------------------------------
 
     /**
      * Three stations in a line, so a train sent from one end crosses two sensors to reach the other.

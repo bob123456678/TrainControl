@@ -65,7 +65,7 @@ public class testTheWordingSaysWhatIsThere
     }
 
     /**
-     * Each language counts in its own forms (RSA28-C2): Polish takes a form of its own for 2 to 4 - not 12 to 14 - and
+     * Each language counts in its own forms: Polish takes a form of its own for 2 to 4 - not 12 to 14 - and
      * French the singular for 0, where the count had one form beside the singular for 1.
      *
      * MUTATION: count every language as English does, and this fails.

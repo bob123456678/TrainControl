@@ -52,7 +52,7 @@ public class testRenameRoundTripThroughTheUIPath
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        model = init(null, true, false, false, false);
+        model = support.TestStation.simulated();
     }
 
     /**
@@ -78,7 +78,7 @@ public class testRenameRoundTripThroughTheUIPath
         // WHAT THE SETUP HOLDS FOR THAT PAGE, before anything happens to it.
         Map<String, String> before = settingsOn(session, page, pages, page);
 
-        // The SQUARE settings, not the whole map (LD-5).
+        // The SQUARE settings, not the whole map.
         //
         // This asked `before.isEmpty()`, which can never be true: `settingsOn` ends with an
         // unconditional `#excluded` entry plus one `#config/<name>` per configuration, and has a
@@ -188,7 +188,7 @@ public class testRenameRoundTripThroughTheUIPath
         assertFalse(names.contains(page), "the old page is still there too.  Got: " + names);
     }
 
-    // --- what the setup holds -------------------------------------------------------------------
+    // what the setup holds
 
     /**
      * The whole gesture, including what the window does AFTER the rename.
@@ -360,7 +360,7 @@ public class testRenameRoundTripThroughTheUIPath
      *
      * Flattened rather than compared collection by collection on purpose. A comparison written by hand
      * covers the collections its author thought of, and the store has eleven - the same counting
-     * problem DD-A1 is about, and the one that let the eleventh collection be forgotten in four
+     * problem, and the one that let the eleventh collection be forgotten in four
      * separate places.
      *
      * The squares come from the PAGE rather than from the store, which is what makes this whole rather
@@ -512,7 +512,7 @@ public class testRenameRoundTripThroughTheUIPath
      * renamed page - a protecting signal, a blocker, the far end of a portal, a caption, and the
      * configuration JSON, which every page's map carries - and after a successful rename those
      * pointers say the new name. That is the rename WORKING. Blanking only each page's own name made
-     * every one of those read as a change, and the test called correct behaviour a bug.
+     * every one of those read as a change, and the test called correct behavior a bug.
      *
      * The subject goes first because the new name contains the old one - "1 - Main Renamed" contains
      * "1 - Main" - so replacing the shorter first would leave "&lt;page&gt; Renamed" behind and the two
@@ -575,7 +575,7 @@ public class testRenameRoundTripThroughTheUIPath
         return best;
     }
 
-    // --- the index ----------------------------------------------------------------------------
+    // the index
 
     /**
      * The id the layout index currently gives a page, or 0.
@@ -614,7 +614,7 @@ public class testRenameRoundTripThroughTheUIPath
         return null;
     }
 
-    // --- fixtures -----------------------------------------------------------------------------
+    // fixtures
 
     private static List<LayoutDiagram> pagesIn(File folder) throws Exception
     {

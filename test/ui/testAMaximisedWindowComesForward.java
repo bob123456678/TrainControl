@@ -9,12 +9,12 @@ import org.traincontrol.gui.PositionAwareJFrame;
 import org.traincontrol.gui.TrainControlUI;
 
 /**
- * A window remembered maximised is maximised once it is on screen, not before (OB-328; Adam, 2026-10-09, on MT-705:
+ * A window remembered maximized is maximized once it is on screen, not before (OB-328; Adam, 2026-10-09, on MT-705:
  * "When a track diagram popup is maximized, it will not appear on top of the window (or any other windows) after the
  * button is clicked ... same for the editor.  Both work when the window is not previously maximized").
  *
  * The diagram's own windows and the editor are built anew at each click and take their remembered place, size and state
- * from the window base they share, `PositionAwareJFrame` - here one of its own, given a remembered maximised state.
+ * from the window base they share, `PositionAwareJFrame` - here one of its own, given a remembered maximized state.
  */
 public class testAMaximisedWindowComesForward
 {
@@ -31,10 +31,10 @@ public class testAMaximisedWindowComesForward
     private static final String INDEX = "OB-328";
 
     /**
-     * Remembered maximised, the window is not maximised before it is shown - which Windows answered by putting it up
-     * behind every other window - and is maximised once it is on screen.
+     * Remembered maximized, the window is not maximized before it is shown - which Windows answered by putting it up
+     * behind every other window - and is maximized once it is on screen.
      *
-     * MUTATION: maximise it as its remembered state is read, before it is shown, and this fails.
+     * MUTATION: maximize it as its remembered state is read, before it is shown, and this fails.
      *
      * @throws Exception from the event thread
      */

@@ -29,14 +29,14 @@ public class testRouteCapture
 {
     // High addresses, the convention testAccessory follows.
     //
-    // This claimed 71, 72 and 73 against a control station initialised from the operator's REAL
+    // This claimed 71, 72 and 73 against a control station initialized from the operator's REAL
     // accessory database - three addresses a layout is quite likely to be using.  Creating an
     // accessory at an address that already has one is not a test failure, it is a test quietly
     // altering somebody's railway.
     private static MarklinControlStation model;
 
     /**
-     * THE OPERATOR'S RAILWAY IS NOT THIS TEST'S TO OPEN (OB-111, TST-B3).
+     * THE OPERATOR'S RAILWAY IS NOT THIS TEST'S TO OPEN (OB-111).
      *
      * init() reads the layout preference and loads whatever it names, which on his machine is his
      * live layout.  This class never had a sandbox before now.
@@ -48,7 +48,7 @@ public class testRouteCapture
     {
         sandbox = support.LayoutSandbox.open();
 
-        model = init(null, true, false, false, true);
+        model = support.TestStation.simulatedInDebug();
         model.stop();
     }
 

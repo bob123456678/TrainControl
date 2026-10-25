@@ -4,6 +4,7 @@ import java.io.File;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.TrainControlUI;
+import support.SourceOf;
 
 /**
  * FR-032: a crop remembers the picture it was cut from, so it can be cropped again.
@@ -41,7 +42,7 @@ public class testLocIconCrop
 
         try
         {
-            // INSIDE the try, because everything below it throws (TSX-B8).
+            // INSIDE the try, because everything below it throws.
             //
             // The window constructor, the temporary folder, the writes - and the
             // SkipException below, which is not a failure at all but an ordinary
@@ -129,15 +130,11 @@ public class testLocIconCrop
                 //
                 // Read rather than run: these are private, on a frame, driven by a modal dialog. What this
                 // catches is the wiring being dropped, which is what a reader can break here.
-                String wiring = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-                    "src/org/traincontrol/gui/TrainControlUI.java")),
-                    java.nio.charset.StandardCharsets.UTF_8);
-
-                assertTrue(bodyOf(wiring, "private String cropLocIcon(").contains("rememberCropSource("),
+                assertTrue(SourceOf.declaration("private String cropLocIcon(").contains("rememberCropSource("),
                     "a crop is saved without noting where it came from, so re-cropping it can never pan "
                     + "back out to anything the crop discarded");
 
-                String recrop = bodyOf(wiring, "public void recropLocIcon(");
+                String recrop = SourceOf.declarationIn(SourceOf.fileDeclaring("final class LocIconActions"), "void recropLocIcon(");
 
                 assertTrue(recrop.contains("cropSourceOf("),
                     "re-crop no longer looks for the original picture, so it always crops the crop");
@@ -185,35 +182,6 @@ public class testLocIconCrop
     }
 
     /**
-     * A method's text, from its declaration to the next member.
-     *
-     * Bounded by the next member rather than by a closing brace: looking for a line separator plus a
-     * brace assumes the file's line endings, and this one is written with LF while
-     * System.lineSeparator() is CRLF here.
-     *
-     * @param source the whole file
-     * @param declaration enough of the signature to find it
-     * @return the text of that method
-     */
-    private String bodyOf(String source, String declaration)
-    {
-        int at = source.indexOf(declaration);
-
-        assertTrue(at > 0, declaration + " is not in TrainControlUI - this test looks for nothing");
-
-        int next = source.length();
-
-        for (String start : new String[] {"    private ", "    public ", "    static "})
-        {
-            int found = source.indexOf(start, at + 10);
-
-            if (found > 0 && found < next) next = found;
-        }
-
-        return source.substring(at, next);
-    }
-
-    /**
      * Writes a small file, since none of these are ever decoded as pictures.
      */
     private void write(File where, String what) throws Exception
@@ -236,9 +204,8 @@ public class testLocIconCrop
     @Test
     public void testAnUnreadablePictureIsRefusedWithoutCropping() throws Exception
     {
-        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/TrainControlUI.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
+        String source = SourceOf.declarationIn(SourceOf.fileDeclaring("final class LocIconActions"),
+            "void setLocIcon(Locomotive l, MouseEvent evt)");
 
         int asks = source.indexOf("pictureCanBeRead(f, source)");
         int ticked = source.indexOf("if (crop.isSelected())");
@@ -259,7 +226,7 @@ public class testLocIconCrop
             + "had is deleted, which is the whole defect one checkbox away from where it was fixed");
 
         // And the note that recorded the bug is not left standing over the fixed code.
-        assertFalse(source.contains("clear icon setting if load failed"),
+        assertFalse(SourceOf.all().contains("clear icon setting if load failed"),
             "the note describing this bug is still in setLocIcon - either it was never closed, or it "
             + "has been quoted back into a comment where the next reader will take it for an open one");
     }
@@ -286,7 +253,7 @@ public class testLocIconCrop
 
         try
         {
-            // INSIDE the try, because everything below it throws (TSX-B8).
+            // INSIDE the try, because everything below it throws.
             //
             // The window constructor, the temporary folder, the writes - and the
             // SkipException below, which is not a failure at all but an ordinary
@@ -356,7 +323,7 @@ public class testLocIconCrop
                         + view[i] + " and read as " + read[i]);
                 }
 
-                // AND WITH THE CROP'S WIDTH IN THE PHOTOGRAPH, the sixth number (OB-257, RSA48-C2): written, read back,
+                // AND WITH THE CROP'S WIDTH IN THE PHOTOGRAPH, the sixth number (OB-257): written, read back,
                 // and in the array the crop dialog opens on and writes into
                 double[] six = { 250.5, 200.25, 0.4, 2.5, 0.7, 812.5 };
 
@@ -374,7 +341,8 @@ public class testLocIconCrop
                     assertEquals(readSix[i], six[i], 1e-9, "the six-number view came back changed at position " + i);
                 }
 
-                java.lang.reflect.Method toOpenOn = TrainControlUI.class.getDeclaredMethod("viewToOpenOn", double[].class);
+                java.lang.reflect.Method toOpenOn = Class.forName("org.traincontrol.gui.LocIconActions")
+                    .getDeclaredMethod("viewToOpenOn", double[].class);
 
                 toOpenOn.setAccessible(true);
 
@@ -561,27 +529,26 @@ public class testLocIconCrop
     @Test
     public void testTheViewOnlyTravelsWithItsOwnPicture() throws Exception
     {
-        String wiring = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/TrainControlUI.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
+        String recrop = SourceOf.declarationIn(SourceOf.fileDeclaring("final class LocIconActions"), "void recropLocIcon(");
 
-        assertTrue(wiring.contains("fromOriginal ? cropViewOf(l.getLocalImageURL()) : null)"),
+        assertTrue(recrop.contains("fromOriginal ? cropViewOf(l.getLocalImageURL()) : null)"),
             "re-crop no longer asks for the stored view, or asks for it whatever it is cropping - "
             + "either the editor opens on the default again, or it opens the crop at coordinates "
             + "measured on the photograph behind it");
 
-        assertTrue(wiring.contains("rememberCropSource(fresh, remembered)"),
+        assertTrue(recrop.contains("rememberCropSource(fresh, remembered)"),
             "the fallback branch now stores a view against the note it rewrites - that note names "
             + "the photograph, and the view was measured over the crop, so the next re-crop of the "
             + "original would open somewhere arbitrary");
 
-        assertTrue(wiring.contains("rememberCropSource(target, chosen, view)"),
+        assertTrue(SourceOf.declaration("private String cropLocIcon(")
+            .contains("rememberCropSource(target, chosen, view)"),
             "the crop no longer records the view it was taken at, so nothing is ever stored and "
             + "re-editing always opens on the default");
     }
 
     /**
-     * Pressing OK at full zoom-out does not allocate an image squared in the source (IPR-B4).
+     * Pressing OK at full zoom-out does not allocate an image squared in the source.
      *
      * `contentOf` built the whole overhanging rectangle at source resolution and then threw it away:
      * the output is 296 x 114. At `zoomFraction = 0` - the left end of the slider, and what
@@ -609,12 +576,12 @@ public class testLocIconCrop
         java.awt.image.BufferedImage source =
             new java.awt.image.BufferedImage(8000, 6000, java.awt.image.BufferedImage.TYPE_INT_RGB);
 
-        // PAINTED, so the composition can be asserted and not only its size (VD9-C5).
+        // PAINTED, so the composition can be asserted and not only its size.
         //
         // A blank source lets every assertion below pass against a bound that puts the photograph in
         // the wrong place - swapping the scale and the offset, which is the one mistake the code’s
         // own comment names, produces an image of identical dimensions.  Two blocks of different
-        // colours make "where did it land" answerable.
+        // colors make "where did it land" answerable.
         java.awt.Graphics2D paint = source.createGraphics();
 
         try
@@ -664,7 +631,7 @@ public class testLocIconCrop
             + "inside the OK listener on the EDT - and what the user sees is OK doing nothing "
             + "(IPR-B4)");
 
-        // AND THE SHAPE IS KEPT, because the caller fits the cut into the icon and centres it: a
+        // AND THE SHAPE IS KEPT, because the caller fits the cut into the icon and centers it: a
         // bound that squashed the rectangle would put the photograph in the frame stretched.
         double wanted = (double) region.width / region.height;
         double got = (double) cut.getWidth() / cut.getHeight();
@@ -678,13 +645,13 @@ public class testLocIconCrop
 
         // Both of these are structural: every return path of getCroppedImage is CONSTRUCTED at the
         // icon size, so no value of `cut` can make them fail.  Kept as a shape check and not counted
-        // as evidence (VD9-C5).
+        // as evidence.
         assertEquals(icon.getWidth(), OUT_WIDTH, "the icon is the wrong width");
         assertEquals(icon.getHeight(), OUT_HEIGHT, "the icon is the wrong height");
 
         // AND THE PICTURE LANDED WHERE IT SHOULD, which is the assertion that can actually fail.
         //
-        // The frame is centred on the source, so the middle of the cut is the middle of the
+        // The frame is centered on the source, so the middle of the cut is the middle of the
         // photograph - red above, blue below.  A bound that scaled without moving the offset with it,
         // or that translated before it scaled, puts the join somewhere else entirely while leaving
         // every size assertion above green.
@@ -725,10 +692,10 @@ public class testLocIconCrop
 
         try
         {
-            // OPENED INSIDE THE TRY (TSX-B8, OB-111)
+            // OPENED INSIDE THE TRY (OB-111)
             sandbox = support.LayoutSandbox.open();
 
-            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+            model = support.TestStation.simulated();
 
             ui = windowOver(model);
 
@@ -825,10 +792,10 @@ public class testLocIconCrop
 
         try
         {
-            // OPENED INSIDE THE TRY (TSX-B8, OB-111)
+            // OPENED INSIDE THE TRY (OB-111)
             sandbox = support.LayoutSandbox.open();
 
-            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+            model = support.TestStation.simulated();
 
             ui = windowOver(model);
 
@@ -927,6 +894,130 @@ public class testLocIconCrop
             closeTheWindow(ui);
 
             if (model != null) model.stop();
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
+     * A picture that cannot be read, picked with the wrench, is refused by name and leaves the locomotive's icon as it
+     * was: in the locomotive, and in the locomotive database once saved (FR-022).  Crop is unticked, the case the
+     * guard once missed.
+     *
+     * MUTATION: take `pictureCanBeRead` out of `setLocIcon`, and this fails.
+     *
+     * @throws Exception from the event thread or the save
+     */
+    @Test
+    public void testAnUnreadablePictureLeavesTheIconAsItWas() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new org.testng.SkipException("the window needs a display");
+
+        // The locomotive database is saved, so only into a data folder of the run's own
+        if (System.getProperty(org.traincontrol.util.Util.DATA_DIR_PROPERTY, "").trim().isEmpty())
+        {
+            throw new org.testng.SkipException("this saves the locomotive database, and this run has no data folder of"
+                + " its own (one.sh and battery.sh give it one)");
+        }
+
+        support.LayoutSandbox sandbox = null;
+        org.traincontrol.marklin.MarklinControlStation model = null;
+        TrainControlUI ui = null;
+
+        java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
+
+        boolean cropWas = prefs.getBoolean(TrainControlUI.CROP_LOC_ICON_PREF, false);
+
+        org.traincontrol.base.Locomotive loc = null;
+        String iconWas = null;
+
+        File folder = java.nio.file.Files.createTempDirectory("p6icon").toFile();
+
+        File good = new File(folder, "p6-good.png");
+        File unreadable = new File(folder, "p6-unreadable-" + System.nanoTime() + ".png");
+
+        try
+        {
+            // OPENED INSIDE THE TRY (OB-111)
+            sandbox = support.LayoutSandbox.open();
+
+            model = support.TestStation.simulated();
+
+            ui = windowOver(model);
+
+            javax.imageio.ImageIO.write(new java.awt.image.BufferedImage(8, 8, java.awt.image.BufferedImage.TYPE_INT_RGB),
+                "png", good);
+
+            write(unreadable, "a png in name only");
+
+            assertFalse(model.getLocomotives().isEmpty(), "precondition: the locomotive database is empty");
+
+            loc = model.getLocomotives().get(0);
+            iconWas = loc.getLocalImageURL();
+
+            final String goodUrl = good.toPath().toUri().toString();
+
+            loc.setLocalImageURL(goodUrl);
+
+            java.lang.reflect.Field active = TrainControlUI.class.getDeclaredField("activeLoc");
+
+            active.setAccessible(true);
+            active.set(ui, loc);
+
+            // CROP UNTICKED, as the chooser opens
+            prefs.putBoolean(TrainControlUI.CROP_LOC_ICON_PREF, false);
+
+            final javax.swing.JLabel wrench = field(ui, "iconWrench", javax.swing.JLabel.class);
+
+            java.util.List<String> said;
+
+            try (support.Answering answering = support.Answering.start(message -> null).choosing(unreadable))
+            {
+                javax.swing.SwingUtilities.invokeAndWait(() -> wrench.dispatchEvent(new java.awt.event.MouseEvent(wrench,
+                    java.awt.event.MouseEvent.MOUSE_RELEASED, System.currentTimeMillis(),
+                    java.awt.event.InputEvent.BUTTON1_MASK, 5, 5, 1, false, java.awt.event.MouseEvent.BUTTON1)));
+
+                assertTrue(answering.awaitAsked(1, 10000), "an unreadable picture was taken without a word");
+
+                said = answering.asked();
+            }
+
+            assertEquals(said.get(0), org.traincontrol.util.I18n.f("loc.ui.errorPictureCouldNotBeRead",
+                unreadable.getName()), "the refusal does not name the picture");
+
+            settle();
+
+            assertEquals(loc.getLocalImageURL(), goodUrl, "an unreadable picture replaced the locomotive's icon");
+
+            model.saveState(false);
+
+            String saved = new String(java.nio.file.Files.readAllBytes(new File(org.traincontrol.util.Util.dataPath(
+                org.traincontrol.marklin.MarklinControlStation.DATA_FILE_NAME)).toPath()),
+                java.nio.charset.StandardCharsets.ISO_8859_1);
+
+            assertTrue(saved.contains(good.getName()), "precondition: the saved database does not hold the icon at all");
+
+            assertFalse(saved.contains(unreadable.getName()), "the saved locomotive database names the unreadable"
+                + " picture");
+        }
+        finally
+        {
+            prefs.putBoolean(TrainControlUI.CROP_LOC_ICON_PREF, cropWas);
+
+            if (loc != null)
+            {
+                loc.setLocalImageURL(iconWas);
+
+                if (model != null) model.saveState(false);
+            }
+
+            closeTheWindow(ui);
+
+            if (model != null) model.stop();
+
+            good.delete();
+            unreadable.delete();
+            folder.delete();
 
             if (sandbox != null) sandbox.close();
         }
@@ -1057,7 +1148,7 @@ public class testLocIconCrop
     @Test
     public void testTheWrenchHasAJawAtEachEnd() throws Exception
     {
-        java.lang.reflect.Constructor<?> made = Class.forName("org.traincontrol.gui.TrainControlUI$WrenchMark")
+        java.lang.reflect.Constructor<?> made = Class.forName("org.traincontrol.gui.LocIconActions$WrenchMark")
             .getDeclaredConstructor();
 
         made.setAccessible(true);
@@ -1123,10 +1214,10 @@ public class testLocIconCrop
 
         try
         {
-            // OPENED INSIDE THE TRY (TSX-B8, OB-111)
+            // OPENED INSIDE THE TRY (OB-111)
             sandbox = support.LayoutSandbox.open();
 
-            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+            model = support.TestStation.simulated();
 
             ui = windowOver(model);
 
@@ -1201,10 +1292,10 @@ public class testLocIconCrop
 
         try
         {
-            // OPENED INSIDE THE TRY (TSX-B8, OB-111)
+            // OPENED INSIDE THE TRY (OB-111)
             sandbox = support.LayoutSandbox.open();
 
-            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+            model = support.TestStation.simulated();
 
             ui = windowOver(model);
 
@@ -1308,6 +1399,126 @@ public class testLocIconCrop
     }
 
     /**
+     * The icon chooser the wrench opens has a Clear Icon button that clears the locomotive's icon as Clear Local Locomotive
+     * Icon does and closes the chooser, and it is disabled over a locomotive with no icon (FR-142).
+     *
+     * Adam: "In the locomotive icon file chooser, we should have a button to also clear the current icon, so it's accessible
+     * via the wrench."
+     *
+     * MUTATION: wire the button to nothing (or to `cancelSelection` alone), or leave it enabled over a locomotive with no
+     * icon, and this fails.
+     *
+     * @throws Exception from the event thread or reflection
+     */
+    @Test
+    public void testTheIconChooserCanClearTheIcon() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new org.testng.SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+        org.traincontrol.marklin.MarklinControlStation model = null;
+        TrainControlUI ui = null;
+        File ours = null;
+
+        try
+        {
+            // OPENED INSIDE THE TRY (OB-111)
+            sandbox = support.LayoutSandbox.open();
+
+            model = support.TestStation.simulated();
+
+            ui = windowOver(model);
+
+            settle();
+
+            final javax.swing.JLabel wrench = field(ui, "iconWrench", javax.swing.JLabel.class);
+
+            java.lang.reflect.Field active = TrainControlUI.class.getDeclaredField("activeLoc");
+
+            active.setAccessible(true);
+
+            // A name of its own in the icon folder, which is the real one (see the first claim of this class)
+            ours = org.traincontrol.util.Util.getLocIconFile("fr142_test_" + java.util.UUID.randomUUID() + ".png");
+
+            if (ours == null) throw new org.testng.SkipException("the icon folder could not be created here");
+
+            write(ours, "not really a png");
+
+            final String label = org.traincontrol.util.I18n.t("loc.ui.menuClearLocalLocomotiveIcon");
+
+            // A LOCOMOTIVE WITH AN ICON OF THIS COMPUTER'S: the button is there, enabled, and clears it
+            final org.traincontrol.marklin.MarklinLocomotive iconed = new org.traincontrol.marklin.MarklinLocomotive(model,
+                85, org.traincontrol.marklin.MarklinLocomotive.decoderType.MM2, "FR-142 with an icon");
+
+            iconed.setLocalImageURL(ours.toPath().toUri().toString());
+
+            active.set(ui, iconed);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> wrench.dispatchEvent(new java.awt.event.MouseEvent(wrench,
+                java.awt.event.MouseEvent.MOUSE_RELEASED, System.currentTimeMillis(), java.awt.event.InputEvent.BUTTON1_MASK,
+                5, 5, 1, false, java.awt.event.MouseEvent.BUTTON1)));
+
+            javax.swing.JFileChooser chooser = awaitAChooser(10000);
+
+            assertNotNull(chooser, "the wrench opened no icon chooser");
+
+            javax.swing.AbstractButton clear = support.Components.withText(chooser, label);
+
+            assertNotNull(clear, "the icon chooser has no button labelled \"" + label + "\" (FR-142)");
+
+            assertTrue(clear.isEnabled(), "the Clear Icon button is disabled over a locomotive that has an icon");
+
+            javax.swing.SwingUtilities.invokeAndWait(clear::doClick);
+
+            long giveUp = System.currentTimeMillis() + 10000;
+
+            while ((iconed.getLocalImageURL() != null || ours.exists()) && System.currentTimeMillis() < giveUp)
+            {
+                Thread.sleep(50);
+            }
+
+            assertNull(iconed.getLocalImageURL(), "the Clear Icon button did not clear the locomotive's icon (FR-142)");
+
+            assertFalse(ours.exists(), "the icon file the locomotive had was left behind, as clearing the icon does not"
+                + " (FR-142)");
+
+            assertNull(awaitAChooser(500), "the chooser was still open after Clear Icon");
+
+            // A LOCOMOTIVE WITH NO ICON: nothing to clear, so the button is disabled
+            final org.traincontrol.marklin.MarklinLocomotive bare = new org.traincontrol.marklin.MarklinLocomotive(model,
+                86, org.traincontrol.marklin.MarklinLocomotive.decoderType.MM2, "FR-142 without an icon");
+
+            active.set(ui, bare);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> wrench.dispatchEvent(new java.awt.event.MouseEvent(wrench,
+                java.awt.event.MouseEvent.MOUSE_RELEASED, System.currentTimeMillis(), java.awt.event.InputEvent.BUTTON1_MASK,
+                5, 5, 1, false, java.awt.event.MouseEvent.BUTTON1)));
+
+            chooser = awaitAChooser(10000);
+
+            assertNotNull(chooser, "the wrench opened no icon chooser over the locomotive with no icon");
+
+            clear = support.Components.withText(chooser, label);
+
+            assertNotNull(clear, "the icon chooser has no Clear Icon button over a locomotive with no icon");
+
+            assertFalse(clear.isEnabled(), "the Clear Icon button is enabled over a locomotive with no icon to clear");
+
+            javax.swing.SwingUtilities.invokeAndWait(chooser::cancelSelection);
+        }
+        finally
+        {
+            if (ours != null) ours.delete();
+
+            closeTheWindow(ui);
+
+            if (model != null) model.stop();
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
      * The revert's arrowhead is a solid head, not two thin barbs (Adam, 2026-09-29: *"make the arrow at the end of the
      * circle more prominent, right now it doesn't really look like an arrow"*): the middle of the head is ink.
      *
@@ -1318,7 +1529,7 @@ public class testLocIconCrop
     @Test
     public void testTheRevertHasASolidArrowhead() throws Exception
     {
-        Class<?> mark = Class.forName("org.traincontrol.gui.TrainControlUI$RevertMark");
+        Class<?> mark = Class.forName("org.traincontrol.gui.LocIconActions$RevertMark");
 
         java.lang.reflect.Constructor<?> made = mark.getDeclaredConstructor();
 

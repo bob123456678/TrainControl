@@ -303,7 +303,7 @@ public class testPageIdsAreDurable
     /**
      * A retired id stays retired for longer than one write.
      *
-     * IAR-A1, found by an independent review. The closing comment on
+     * The closing comment on
      * `testAPageReusingARetiredIdInheritsNothing` says a reused id is "the case the index cannot
      * prevent". The index can prevent it, and until now it did so for exactly one write.
      *
@@ -376,7 +376,7 @@ public class testPageIdsAreDurable
     /**
      * Every held field is declared, and a save with a page absent loses none of them.
      *
-     * DR-A1. The held-entries mechanism (OB-067) carried the store's twelve shared collections' field
+     * The held-entries mechanism (OB-067) carried the store's twelve shared collections' field
      * names in three hand-written lists - four shape-classified arrays in `withoutAbsentPages` and a
      * merge array inside `sharedFields` - and no test governed any of them. A reviewer removed one
      * string, `"blockedPoints"` from the merge array, and nothing else: all three ratchets stayed
@@ -386,7 +386,7 @@ public class testPageIdsAreDurable
      * The lists are one map now, so they cannot disagree by count. This is the other half, and it is
      * the half with teeth: the map also encodes each field's SHAPE - whether its values name squares -
      * and a field held with the wrong shape cannot be caught by any amount of name-matching. Only
-     * behaviour catches it.
+     * behavior catches it.
      *
      * The property is the one OB-067 was closed on, stated per field: put something on a page, take
      * that page's file away, load and save, and it is all still in the file.
@@ -400,7 +400,7 @@ public class testPageIdsAreDurable
      *   assertion. That is the half no name-matching can check, and it only fails because the fixture
      *   puts a caption on a LOADED page pointing at a station on the absent one. With every square on
      *   the absent page the key-side check decides everything, the shape is never exercised, and all
-     *   four square-valued fields could be downgraded with this test still green (SV-C1).
+     *   four square-valued fields could be downgraded with this test still green.
      * - A field removed from `HELD_FIELDS` altogether fails it too, on the same assertion.
      *
      * The version of this comment written a few hours earlier said the third of those did NOT fail,
@@ -422,12 +422,12 @@ public class testPageIdsAreDurable
         TileKey ghostFar = new TileKey("Ghost", 5, 5);
         TileKey ghostCaption = new TileKey("Ghost", 6, 6);
 
-        // A square on the LIVE page whose VALUE points at the absent one (SV-C1).
+        // A square on the LIVE page whose VALUE points at the absent one.
         //
         // Without this every square in the fixture sat on the absent page, so the key-side check alone
         // decided every entry and the SHAPE half of HELD_FIELDS was never exercised - downgrading all
         // four square-valued fields to PLAIN left this test green, while its own javadoc claimed only
-        // behaviour could catch that. A caption on a loaded page pointing at a station on an absent
+        // behavior could catch that. A caption on a loaded page pointing at a station on an absent
         // one is the ordinary way that happens, and it is the entry a wrong shape lets through.
         TileKey liveCaption = new TileKey("Alpha", 7, 7);
 
@@ -466,7 +466,7 @@ public class testPageIdsAreDurable
         reopened.setPageIds(idsAsNameToId());
         reopened.load();
 
-        // The entries really ARE held, which nothing here asserted before (SV-C1). A test that only
+        // The entries really ARE held, which nothing here asserted before. A test that only
         // checks the file still has them passes just as well when they were never taken out - and
         // "taken out" is the whole mechanism.
         assertNull(reopened.getPointName(ghost),
@@ -561,13 +561,13 @@ public class testPageIdsAreDurable
     /**
      * An index written in the platform's encoding is read, not refused.
      *
-     * SV-B1. `writeLayoutIndex` used a `FileWriter` until 2026-07-27, so it wrote this file in
+     * `writeLayoutIndex` used a `FileWriter` until 2026-07-27, so it wrote this file in
      * whatever encoding the machine defaulted to. Reading it strictly as UTF-8 throws
      * `MalformedInputException` on any byte that is not valid UTF-8 - and a page called
      * "Bahnhof S\u00fcd" written by an older TrainControl on a Windows box is exactly that.
      *
      * That was survivable while an unreadable index simply meant "no index": the pages were renumbered
-     * and the file rewritten as UTF-8, which healed it. DR-B4 added a refusal to renumber on a failed
+     * and the file rewritten as UTF-8, which healed it. A refusal to renumber on a failed
      * read - right for a locked file, and catastrophic here, because it made the condition permanent.
      * The index could never be written again, and the message said to try again in a moment.
      *
@@ -611,7 +611,7 @@ public class testPageIdsAreDurable
         assertEquals(ids.size(), 2, "both pages should have come back.  Got: " + ids);
 
         // The ACCENTED page by name, which is the whole point and which this test did not ask for
-        // until TA-A1 (2026-08-24) demonstrated the hole: a decoder that mangles the name still
+        // until the hole was demonstrated (2026-08-24): a decoder that mangles the name still
         // returns two entries with Alpha at 1, so a lenient decode that renumbers every page and
         // reattaches every setting passed this test 11 of 11.
         //
@@ -636,16 +636,16 @@ public class testPageIdsAreDurable
 
         assertNotNull(after.get("Zulu"), "the new page was not added.  Got: " + after);
 
-        // AND THE ACCENTED PAGE KEEPS ITS ID ACROSS THE WRITE, which is the half `TA-A1` found
+        // AND THE ACCENTED PAGE KEEPS ITS ID ACROSS THE WRITE, which is the half the guard was
         // missing and the half that costs the operator something.
         //
         // The read is asserted twenty lines up.  A write is where the loss actually happens: if the
         // name comes back mangled, `writeLayoutIndex`'s lookup of the existing entry misses it, the
         // page is issued a FRESH id, and every stored setting keyed to the old one reattaches to
-        // whatever now holds that number.  That is SV-B1 - the loss this class documents at length -
+        // whatever now holds that number.  That is the loss this class documents at length,
         // and it was reproducible with this guard green.
         //
-        // WHAT IS AND IS NOT PROVEN HERE, because claiming more would be the shape TA-A1 reported.
+        // WHAT IS AND IS NOT PROVEN HERE, because claiming more would repeat the guard's blind spot.
         //
         // The finding's mutation - swapping the ISO-8859-1 fallback for a UTF-8 decode - now turns
         // this class RED, which it did not when the finding was written.  But the assertion that
@@ -678,7 +678,7 @@ public class testPageIdsAreDurable
      * **Why the existing rename tests did not catch it.** There are several, and they are thorough
      * about what a rename must carry. Not one of them renamed a page to a string that is also a live
      * id, because no fixture anywhere had a page named like a number - so the collision that makes
-     * this fail could not arise. That is the same shape as TA-A1 and CR-C3: the fixture decided the
+     * this fail could not arise. That is a fixture trap: the fixture decided the
      * answer before the assertions did.
      *
      * So this checks every collection rather than the one that broke, and it checks the OTHER page as
@@ -875,8 +875,6 @@ public class testPageIdsAreDurable
             "another page's placement was dropped too");
     }
 
-    // ---------------------------------------------------------------------------------------------
-
     /**
      * The index can say which pages a write would drop, and does not count the ones somebody meant.
      *
@@ -923,7 +921,7 @@ public class testPageIdsAreDurable
      * Adam gets a new page with a new number and a blank setup, and nothing anywhere says why.
      *
      * The second half matters as much: a page NOT named is retired exactly as before, because that is
-     * the behaviour protecting against MT-135, and a fix for one of these that quietly disabled the
+     * the behavior protecting against MT-135, and a fix for one of these that quietly disabled the
      * other would be a worse bug than the one being fixed.
      *
      * MUTATION: dropping the keepAbsent loop from writeLayoutIndex fails the first assertion; making
@@ -1110,7 +1108,7 @@ public class testPageIdsAreDurable
     }
 
     /**
-     * Two pages cannot come out of one write holding the same id (DR-B4).
+     * Two pages cannot come out of one write holding the same id.
      *
      * Nothing in the chain ever compared them. `writeLayoutIndex` wrote a duplicate straight back out;
      * `setPageIds` inverts name-to-id into id-to-name, so the second page silently wins the number and
@@ -1168,7 +1166,7 @@ public class testPageIdsAreDurable
      * What that costs is not a lost setting but a store that stops working. `pagesNotLoaded` walks
      * that record, so a page the operator deliberately deleted is named for ever as one that failed to
      * load; `AutonomySession.pagesSafeToJudge` is therefore false for the rest of the layout's life;
-     * and a session that cannot judge never reconciles anything again. Since DR-B10 it also raises a
+     * and a session that cannot judge never reconciles anything again. It also raises a
      * warning dialog on every editor save, naming the page that was deleted on purpose.
      *
      * FR-018 cannot clear it either - it offers the "it was deleted" answer for pages the INDEX still
@@ -1231,7 +1229,7 @@ public class testPageIdsAreDurable
      * page NAMED "5" gone deleted every held entry belonging to the page with ID 5.
      *
      * The names half could never match anything legitimate anyway: `pageIsHere` answers true for any
-     * bare unrecognised name, so a name-keyed entry is never held in the first place. It could only
+     * bare unrecognized name, so a name-keyed entry is never held in the first place. It could only
      * ever produce this false positive.
      *
      * MUTATION: putting the page names back into `parts` fails this test.
@@ -1370,7 +1368,7 @@ public class testPageIdsAreDurable
         int alphaId = issued.get("Alpha");
         int charlieId = issued.get("Charlie");
 
-        // --- 1. rename a page to something that sorts to the FRONT -------------------------------
+        // 1. rename a page to something that sorts to the FRONT
         Map<String, String> renamed = new LinkedHashMap<>();
         renamed.put("Bravo", "Aardvark");
 
@@ -1381,12 +1379,12 @@ public class testPageIdsAreDurable
 
         assertUntouched(afterRename, onAlpha, onCharlie, alphaId, charlieId, "after renaming Bravo");
 
-        // --- 2. add a page -----------------------------------------------------------------------
+        // 2. add a page
         write("Aardvark", "Alpha", "Charlie", "Delta");
 
         assertUntouched(reload(), onAlpha, onCharlie, alphaId, charlieId, "after adding Delta");
 
-        // --- 3. delete the page that was renamed --------------------------------------------------
+        // 3. delete the page that was renamed
         AutonomyCompanionStore before = reload();
 
         before.deletePage("Aardvark");
@@ -1396,7 +1394,7 @@ public class testPageIdsAreDurable
 
         assertUntouched(reload(), onAlpha, onCharlie, alphaId, charlieId, "after deleting Aardvark");
 
-        // --- 4. and add another, which may take the retired id -------------------------------------
+        // 4. and add another, which may take the retired id
         write("Alpha", "Charlie", "Delta", "Echo");
 
         assertUntouched(reload(), onAlpha, onCharlie, alphaId, charlieId, "after adding Echo");

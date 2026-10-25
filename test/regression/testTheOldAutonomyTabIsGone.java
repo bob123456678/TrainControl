@@ -2,7 +2,6 @@ package regression;
 
 import java.io.File;
 import java.lang.reflect.Field;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -25,6 +24,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import org.traincontrol.util.Util;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.SourceOf;
 
 /**
  * Autonomy needs a layout stored on this computer: the old JSON tab and its file are gone (OB-254), and a Central
@@ -35,7 +35,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * downloaded.  It was a second autonomy system with a file of its own, autonomy.json beside the application, read on
  * every start and written on every exit.  Adam, 2026-09-24: *"Remove it, require a local copy for autonomy."*
  *
- * Then, the same day, of that layout's Autonomy menu - greyed whole there since OB-202, which left the download offer
+ * Then, the same day, of that layout's Autonomy menu - grayed whole there since OB-202, which left the download offer
  * (OB-093) and Documentation where nobody could press them: *"Yes, open the autonomy menu with everything but those 2
  * greyed."*
  *
@@ -44,7 +44,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * simulation - with no station to read pages from it makes the demo layout and switches to that - so it is started on
  * a sandbox and put back into that state.
  *
- * MUTATION: put the tab back for a layout with no local copy, or write autonomy.json on exit again, or grey the menu
+ * MUTATION: put the tab back for a layout with no local copy, or write autonomy.json on exit again, or gray the menu
  * there again, or leave it unbuilt for a layout with no session, and the matching claim fails.
  *
  * @author Adam
@@ -78,7 +78,7 @@ public class testTheOldAutonomyTabIsGone
         // BEFORE init, which opens whatever the layout preference names (OB-111).
         sandbox = support.LayoutSandbox.open();
 
-        model = init(null, true, false, false, true);
+        model = support.TestStation.simulatedInDebug();
 
         SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
 
@@ -272,7 +272,7 @@ public class testTheOldAutonomyTabIsGone
      * Adam, 2026-09-29, on MT-548: *"works, but what is the cs3 has no layout?  give the user the choice to either
      * download or create a new one, which redirects to the corresponding option under layouts."*  The offer was the
      * download alone, and where there was nothing to download the menu said only that autonomy needs a layout.  Both are
-     * offered now, under the Layouts menu's own names, each greyed exactly when its Layouts item would do nothing.
+     * offered now, under the Layouts menu's own names, each grayed exactly when its Layouts item would do nothing.
      *
      * MUTATION: offer the download alone again, or send Create New Layout anywhere but the Layouts menu's own, and this
      * fails.
@@ -328,7 +328,7 @@ public class testTheOldAutonomyTabIsGone
         assertNotNull(download, "the offer has no Download Central Station Layout Files");
         assertNotNull(create, "the offer has no Create New Layout");
 
-        // NOTHING TO DOWNLOAD in a simulation: greyed, saying why
+        // NOTHING TO DOWNLOAD in a simulation: grayed, saying why
         assertFalse(ui.hasPagesToDownload() && ui.isCentralStationConnected(), "precondition: this simulation has a"
             + " Central Station layout to download, so the claim below is about the other case");
 
@@ -432,10 +432,21 @@ public class testTheOldAutonomyTabIsGone
         // AND A FOLDER CHOSEN SINCE IS THE ONE REMEMBERED.  Every door that names a layout folder - Open Layout, Create
         // New Layout, the download, the demo layout - writes it through the one method that remembers it, so that
         // method is asked here and the doors are counted.
-        String code = new String(Files.readAllBytes(Paths.get("src/org/traincontrol/gui/TrainControlUI.java")),
-            StandardCharsets.UTF_8);
+        //
+        // Counted however the write reaches the preferences - `prefs.put`, `getPrefs().put`, the key qualified by its
+        // class - so a door moved out of the window is still seen (FR-136).  Less the control station's fallback to
+        // the Central Station's layout when a folder cannot be read, which names no folder.
+        java.util.regex.Pattern write =
+            java.util.regex.Pattern.compile("\\.put\\(\\s*(?:\\w+\\.)*LAYOUT_OVERRIDE_PATH_PREF\\b");
 
-        assertEquals(code.split("prefs\\.put\\(LAYOUT_OVERRIDE_PATH_PREF", -1).length - 1, 1, "a door writes the layout"
+        int writers = 0;
+
+        for (java.util.regex.Matcher each = write.matcher(SourceOf.allCode()); each.find(); ) writers++;
+
+        for (java.util.regex.Matcher each = write.matcher(SourceOf.withoutComments(
+            SourceOf.declaration("private void syncLayoutsFromConfiguredSource()"))); each.find(); ) writers--;
+
+        assertEquals(writers, 1, "a door writes the layout"
             + " folder without going through `layoutFolderIs`, so the folder it names is not remembered (OB-308)");
 
         final java.lang.reflect.Method folderIs = TrainControlUI.class.getDeclaredMethod("layoutFolderIs", String.class);
@@ -594,8 +605,8 @@ public class testTheOldAutonomyTabIsGone
     @Test
     public void testNothingLoadsTheOldGraphAtStart() throws Exception
     {
-        String code = new String(Files.readAllBytes(Paths.get("src/org/traincontrol/gui/TrainControlUI.java")),
-            StandardCharsets.UTF_8).replaceAll("(?s)/[*].*?[*]/", " ").replaceAll("//[^\\r\\n]*", " ");
+        // Asked of the whole program's code: neither is anywhere.
+        String code = SourceOf.allCode();
 
         assertFalse(code.contains("resumesFromJsonAtStart"), "the start-up still has a way to load the old JSON graph"
             + " (resumesFromJsonAtStart)");

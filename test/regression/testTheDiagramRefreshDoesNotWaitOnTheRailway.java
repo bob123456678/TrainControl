@@ -36,7 +36,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * - **The railway took the WINDOW's monitor while holding its OWN.**  `configureAndLockPath` is
  *   `synchronized (this)` on the `Layout` and commands an accessory per edge inside that block, and
  *   `MarklinAccessory.setSwitched` called `TrainControlUI.repaintSwitch`, which was `synchronized` on
- *   the window.  Not any more (RSA67-C1): it only posts to the event thread, so a driving thread never
+ *   the window.  Not any more: it only posts to the event thread, so a driving thread never
  *   waits for the window - `testADrivingThreadNeverWaitsForTheWindowsMonitor` is the claim.
  *
  * - **The window must NEVER take the RAILWAY's monitor while holding its own**, nor on the event
@@ -112,7 +112,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
         // opened BEFORE `init`, which reads the layout preference (OB-111).
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = init(null, true, true, false, true);
+        model = support.TestStation.simulatedWithWindowInDebug();
         model.setNetworkCommState(false);
 
         ui = (TrainControlUI) model.getGUI();
@@ -124,7 +124,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
 
         session = ui.getAutonomySession();
 
-        if (session == null) throw new SkipException("no autonomy setup on this railway");
+        if (session == null) throw new AssertionError("no autonomy setup on this railway");
 
         model.parseAuto(session.buildConfiguration());
 
@@ -216,7 +216,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     /**
      * The other leg is gone: a driving thread commands an accessory - holding the railway's monitor, that
      * accessory's signal lock and, inside the command, the accessory's own monitor - without waiting for
-     * the window's monitor, which another thread holds (RSA67-C1).
+     * the window's monitor, which another thread holds.
      *
      * The window can hold its own monitor and reach a protection refresh (`updateVisiblePoints` ->
      * `reconcileFacingWhenIdle` -> a train re-stood), which waits for that signal's lock; so a command that
@@ -283,7 +283,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     }
 
     /**
-     * An accessory a path on the snapshot commands, found without creating one (RSA67-C1).
+     * An accessory a path on the snapshot commands, found without creating one.
      *
      * @return the accessory
      */
@@ -299,7 +299,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
             }
         }
 
-        throw new SkipException("no path on this railway commands an accessory");
+        throw new AssertionError("no path on this railway commands an accessory");
     }
 
     /**
@@ -349,7 +349,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
 
         // AND THE ANSWER ACTUALLY LANDS.  Without this the test above is satisfied by a
         // `refreshReturnHomeButton` that does nothing at all - "did not block" is true of a method
-        // with an empty body, and the button greying itself correctly is the whole point of it.
+        // with an empty body, and the button graying itself correctly is the whole point of it.
         java.lang.reflect.Method waiting =
             TrainControlUI.class.getDeclaredMethod("awaitReturnHomeTriage", long.class);
 
@@ -379,9 +379,9 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     /**
      * The third door: the diagram's right-click menu asks the same question while it is being built.
      *
-     * `HomeLocomotiveMenu.addReturnHomeItem` greys the "Return Locomotives Home" item and says why,
+     * `HomeLocomotiveMenu.addReturnHomeItem` grays the "Return Locomotives Home" item and says why,
      * reading the button `refreshReturnHomeButton` keeps (OB-192), and handed the setup's sentence by the
-     * menu (ADU-C3).  A popup menu is built on the event thread by definition, so this is the same wait
+     * menu.  A popup menu is built on the event thread by definition, so this is the same wait
      * with a mouse button behind it rather than an arrival.
      */
     @Test
@@ -393,7 +393,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
             {
                 Class<?> menu = Class.forName("org.traincontrol.gui.HomeLocomotiveMenu");
 
-                // The sentence as the menu hands it where Start is offered: none (ADU2-C1).
+                // The sentence as the menu hands it where Start is offered: none.
                 java.lang.reflect.Method door = menu.getDeclaredMethod("addReturnHomeItem",
                     javax.swing.JComponent.class, TrainControlUI.class, String.class);
 
@@ -411,7 +411,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     /**
      * The fourth door: the caption rule asks the railway whether autonomy can choose each station.
      *
-     * D3-B1.  `captionIsActive` reached `Layout.isChoosableByAutonomy` - `synchronized` on the
+     * `captionIsActive` reached `Layout.isChoosableByAutonomy` - `synchronized` on the
      * `Layout` - once per captioned square, and it is asked from three places that all run on the
      * event thread: the grid build inside `repaintLayout`'s `invokeLater`, the overlay toggle, and
      * `refreshCaptionVisibility`.  So switching diagram pages during a run froze the window for the
@@ -477,7 +477,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     /**
      * The fifth door: the diagram's right-click menu is built on the event thread.
      *
-     * D3-A1.  The menu's constructor asked `Layout.getPossiblePaths` - `synchronized`, and itself a
+     * The menu's constructor asked `Layout.getPossiblePaths` - `synchronized`, and itself a
      * search of the whole graph - and then `isOfferableToOperator` and `isChoosableByAutonomy` once per
      * candidate path, all inside `showFor`'s `invokeLater`.  Right-clicking an idle train while another
      * one was mid-dispatch parked the event thread on the railway's monitor for the length of that
@@ -545,7 +545,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     /**
      * The sixth door: the autonomy editor's "why is this train not moving" tool.
      *
-     * D3-C1, and the last `ON THE EVENT THREAD` allowance in
+     * The last `ON THE EVENT THREAD` allowance in
      * `testNothingOnTheEventThreadTakesTheRailwaysMonitor`.  `AutonomyEditorPanel.applyWhy` asked
      * `Layout.explainDestinations` - `synchronized`, and a walk of the whole graph once per candidate -
      * straight from the click that started it, and then ran `GraphReducer.findPath` once more for
@@ -1316,7 +1316,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
             }
             finally
             {
-                // Cancelled but never waited for: the point of the timeout is that the event thread may
+                // Canceled but never waited for: the point of the timeout is that the event thread may
                 // still be stuck, and the runnable it is stuck in cannot be interrupted out of a
                 // monitor.  It unwinds by itself when the helper gives the monitor back.
                 refreshed.cancel(true);

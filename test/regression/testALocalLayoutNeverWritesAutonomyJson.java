@@ -1,12 +1,10 @@
 package regression;
 
 import java.io.File;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
 import org.testng.SkipException;
@@ -23,7 +21,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  *
  * autonomy.json is the old graph's file, beside the application rather than in the layout folder.  The save on exit
  * wrote it back whenever no diagram configuration was loaded - which on a local layout is any session started with
- * Load Autonomy unticked, as every legacy import now leaves it (REG2-C3).  Adam, 2026-09-24: *"We should only write to
+ * Load Autonomy unticked, as every legacy import now leaves it.  Adam, 2026-09-24: *"We should only write to
  * the new save format in the layout folder, IMO."*  The same day the old window was removed from every layout, and
  * no layout writes the file (testTheOldAutonomyTabIsGone asks it of a Central Station one).
  *
@@ -63,7 +61,7 @@ public class testALocalLayoutNeverWritesAutonomyJson
 
         TrainControlUI.getPrefs().putBoolean(TrainControlUI.AUTO_LOAD_AUTONOMY, false);
 
-        model = init(null, true, false, false, true);
+        model = support.TestStation.simulatedInDebug();
 
         SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
 
@@ -118,22 +116,6 @@ public class testALocalLayoutNeverWritesAutonomyJson
 
         assertNull(ui.getActiveDiagramConfiguration(), "precondition: a configuration was loaded at start, so this is"
             + " not the session OB-254 is about");
-
-        // What the old window held on every start, where it still exists: autonomy.json, read in whether used or not.
-        try
-        {
-            Field field = TrainControlUI.class.getDeclaredField("autonomyJSON");
-
-            field.setAccessible(true);
-
-            final JTextArea text = (JTextArea) field.get(ui);
-
-            SwingUtilities.invokeAndWait(() -> text.setText("{\"points\": [], \"edges\": []}"));
-        }
-        catch (NoSuchFieldException gone)
-        {
-            // Deleted with the tab (OB-254): nothing is left to write.
-        }
 
         File folder = new File(Util.dataPath(Util.BACKUP_FOLDER));
 

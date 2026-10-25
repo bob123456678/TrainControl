@@ -60,7 +60,7 @@ public class testLayoutBfs
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        model = init(null, true, false, false, false);
+        model = support.TestStation.simulated();
         model.stop();
 
         MarklinFeedback feedback = model.newFeedback(47000, null);
@@ -174,7 +174,7 @@ public class testLayoutBfs
      * Two routes converge on a shared midpoint M before continuing to T.  Excluding the first route
      * found must yield the other one.  With visited marked on ENQUEUE, M would be claimed by whichever
      * route reached it first and the second would never be queued, so this returns null instead - which
-     * is why that optimisation must not be applied here.
+     * is why that optimization must not be applied here.
      *
      * Repeated deliberately.  getNeighbors shuffles, so a single attempt would catch mark-on-enqueue
      * only about half the time - measured at 247 of 500 runs - because the shuffle sometimes hands the
@@ -336,7 +336,6 @@ public class testLayoutBfs
         assertEquals(render(path), "A>B>A");
     }
 
-    // ------------------------------------------------------------------------------------------
     // Property-based tests over randomly generated graphs.
     //
     // The hand-written cases above are only as good as the topologies I thought to write, and I chose
@@ -346,7 +345,6 @@ public class testLayoutBfs
     //
     // Seeds are a fixed sequence rather than a fresh Random, so a failure is reproducible and names the
     // seed that produced it.
-    // ------------------------------------------------------------------------------------------
 
     private static final int RANDOM_SEEDS = 150;
 

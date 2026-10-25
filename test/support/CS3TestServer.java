@@ -13,7 +13,7 @@ public class CS3TestServer
 {
     private HttpServer server;
     /**
-     * Zero until the first start, then whatever the machine gave us (TSX-C17).
+     * Zero until the first start, then whatever the machine gave us.
      *
      * This was 8080 - a constant, with no setter, no argument and no property, handed straight to the
      * socket - which is the single most contended port on a developer machine. The suite has already
@@ -154,7 +154,7 @@ public class CS3TestServer
      * The port this is listening on, which is only meaningful after {@link #startServer(int)}.
      *
      * It used to read a constant back, which made it an accessor that implied the number was
-     * answerable when it was not (TSX-C17).
+     * answerable when it was not.
      *
      * @return the port, or 0 before the first start
      */

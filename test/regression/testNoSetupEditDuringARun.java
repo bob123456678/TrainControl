@@ -53,7 +53,7 @@ public class testNoSetupEditDuringARun
      * exclusion is the setup's shared half, not the configuration being imported, so it is not the import's to undo.
      *
      * "4 - Combined" repeats "1 - Main"'s sensors, and the frozen railway has it out; it is put back in here as a page
-     * nobody has decided about - neither out nor turned back on (TST-B15) - which is the state the import acts on.  The
+     * nobody has decided about - neither out nor turned back on - which is the state the import acts on.  The
      * file is his own with a timetable that is not a list, broken as `testAFileItCannotReadLeavesTheSetupAsItWas` breaks
      * it.  Here rather than beside that claim, because the import door's class holds as many windows as its heap does.
      *
@@ -90,6 +90,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -164,7 +166,7 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * No train is sent from the Auto tab while the editor is open (RLV12-B1).  Start, Execute Timetable, Return Home and
+     * No train is sent from the Auto tab while the editor is open.  Start, Execute Timetable, Return Home and
      * the diagram's menu refuse while an editor holds the diagram, and the rule that no setup edit is made during a run
      * rests on it, since the editor cannot be opened while trains run.  The Auto tab's double-click never asked: an editor
      * opened at rest stayed open for the run it sent, and a square clicked in it wrote the setup and left an edit waiting
@@ -191,6 +193,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -332,8 +336,8 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * The diagram's own Edit Locomotive item, opened at rest, refuses and says so when clicked after a run began
-     * (RLV12-C3).  No factory builds it, so round 13's refusal missed it: the dialog opened, and OK wrote the placement,
+     * The diagram's own Edit Locomotive item, opened at rest, refuses and says so when clicked after a run began.
+     * No factory builds it, so round 13's refusal missed it: the dialog opened, and OK wrote the placement,
      * the facing and the tail into the setup and saved it while trains ran.
      *
      * MUTATION: let the item open its dialog while trains run, and this fails.
@@ -356,6 +360,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -429,7 +435,7 @@ public class testNoSetupEditDuringARun
                 + dispatched[0] + " was under way, wrote " + standing + "'s facing into the setup - no setup edit is made"
                 + " during a run (RLV12-C3): " + after);
 
-            assertTrue(asked.contains(I18n.t("autolayout.errorCannotEditWhileRunning")), "the diagram's Edit Locomotive,"
+            assertTrue(asked.contains(I18n.t("ui.main.errorNoEditsWhileRunning")), "the diagram's Edit Locomotive,"
                 + " clicked during a run, did not say why it did nothing: " + asked);
         }
         finally
@@ -452,7 +458,7 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * A tail question answered once trains run writes nothing, and the log says why (RLV12-C3).  The question waits on
+     * A tail question answered once trains run writes nothing, and the log says why.  The question waits on
      * the diagram with the window live - for up to half an hour - and Start or a hand send in the wait is not refused; its
      * answer then wrote the road into the setup and onto the running railway.  Every door that asks it takes where to
      * write from `whereTheAnswerGoes`, so that is where the answer is dropped.
@@ -477,6 +483,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -537,8 +545,8 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * Following a direction change leaves a train under way on its path (RLV12-C4).  `moveOntoFacingCopy` stands a train
-     * on another copy of its square, which sweeps it off every other point - the whole of a locked path.  RLV11-C3's rule
+     * Following a direction change leaves a train under way on its path.  `moveOntoFacingCopy` stands a train
+     * on another copy of its square, which sweeps it off every other point - the whole of a locked path.  An earlier rule
      * kept one caller from reaching a train under way; the direction follow's `flipFacing` still did, and stood it on a
      * square in the middle of its path.  The rule is in the primitive now.
      *
@@ -562,6 +570,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -602,7 +612,7 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * A direction change followed after a run began writes nothing (RLV12-C4).  The Central Station's thread decides at
+     * A direction change followed after a run began writes nothing.  The Central Station's thread decides at
      * rest and posts the work to the event thread, which ran it later without asking again - so a hand send queued ahead
      * of it was under way when it landed, and the setup was written during the run.  The posted work asks again.
      *
@@ -626,6 +636,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -746,7 +758,7 @@ public class testNoSetupEditDuringARun
 
     /**
      * Every kind of setup item on the diagram refuses once trains run - a plain item, a check box, a choice of one and a
-     * direction (RLV12-C7).  The refusal went into four factories, and the claim for it clicked a check box: the other
+     * direction.  The refusal went into four factories, and the claim for it clicked a check box: the other
      * three could lose theirs with nothing going red.
      *
      * MUTATION: take the refusal out of any one factory, and this fails.
@@ -778,6 +790,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -874,7 +888,7 @@ public class testNoSetupEditDuringARun
                     + " wrote the setup when clicked while " + dispatched[0] + " was under way - no setup edit is made during"
                     + " a run (RLV12-C7): " + said);
 
-                assertTrue(said.contains(I18n.t("autolayout.errorCannotEditWhileRunning")), click[0] + " of the setup"
+                assertTrue(said.contains(I18n.t("ui.main.errorNoEditsWhileRunning")), click[0] + " of the setup"
                     + " menu, clicked during a run, did not say why it did nothing: " + said);
 
                 assertFalse((Boolean) declined.get(ui[0]), click[0] + " of the setup menu, clicked during a run, left an"
@@ -946,7 +960,7 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * A turn owed to a train still locking its path from where it turned is not written (RLV12-C7).  RLV11-C3's rule asks
+     * A turn owed to a train still locking its path from where it turned is not written.  The rule asks
      * `isAlreadyUnderway`, which counts a train that has claimed its path and not yet set off; the claim for it waited
      * until the train was running, so a rule that asked only whether it was running passed it.
      *
@@ -972,6 +986,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -1093,7 +1109,7 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * No train is sent from the diagram's destinations while the editor is open (RLV12-B1; Adam, 2026-09-29: *"can all
+     * No train is sent from the diagram's destinations while the editor is open (Adam, 2026-09-29: *"can all
      * the checks go through a single door?"*).  The diagram's menu is built only with no editor open, and its destination
      * items asked nothing about one when clicked - so a menu opened before the editor and clicked after it sent the train
      * under it, as the Auto tab's list did.  Both hand doors send through one door now, and it asks.
@@ -1119,6 +1135,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -1256,7 +1274,7 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * A send queued ahead of the editor's build is not sent (RLV13-C2).  The editor is asked for on the event thread and
+     * A send queued ahead of the editor's build is not sent.  The editor is asked for on the event thread and
      * built in a task posted after it, and the one gate asked only whether the editor's window existed - so a send that
      * ran between the two passed it, and the editor opened over the run it started.  The event thread is held here, as a
      * slow refresh holds it, with an Auto tab double-click and the editor's request queued behind it.
@@ -1287,6 +1305,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -1369,7 +1389,7 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * The one gate counts an editor on its way as open (RLV13-C2).  Edit Layout sets `editorOnItsWay` before it posts the
+     * The one gate counts an editor on its way as open.  Edit Layout sets `editorOnItsWay` before it posts the
      * editor's build, and until that build has run the gate must refuse every door in the editor's own words.  The
      * build's second look at the railway does not make this redundant: a hand send hands its train to a thread and
      * returns, so the railway can still read idle when the build asks.
@@ -1396,6 +1416,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui = openTheWindow();
 
@@ -1440,7 +1462,7 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * Start's worker looks again, at its event-thread moment, for an editor that has come since the press (RLV13-C2).  An
+     * Start's worker looks again, at its event-thread moment, for an editor that has come since the press.  An
      * armed route makes the worker ask the operator before it comes back, and the editor asked for just after Start is
      * built while that question waits - the railway still reads idle, so the build's own second look lets it open.  When
      * the worker comes back the editor is open, and only the worker's look stops the trains starting under it.
@@ -1468,6 +1490,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -1557,7 +1581,7 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * Start pressed ahead of the editor's request does not run under the editor (RLV13-C2).  Start's click asks the gate
+     * Start pressed ahead of the editor's request does not run under the editor.  Start's click asks the gate
      * and starts its worker, and the worker comes back to the event thread for the atomic-routes gate before it starts
      * the trains - behind an editor asked for in between, whose request found nothing running yet.  So the worker asks
      * again there.
@@ -1588,6 +1612,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -1660,8 +1686,8 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * An editor asked for at rest is not built over a run that began before its build ran, and the Edit button comes back
-     * (RLV13-C2).  The request asked whether trains run and posted the build, which asked nothing.  Return Home's
+     * An editor asked for at rest is not built over a run that began before its build ran, and the Edit button comes back.
+     * The request asked whether trains run and posted the build, which asked nothing.  Return Home's
      * planning stands in for the run here: it is what makes the window busy with nothing yet moving.
      *
      * MUTATION: let the posted build open the editor without asking again, and this fails.
@@ -1689,6 +1715,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -1730,7 +1758,7 @@ public class testNoSetupEditDuringARun
             assertFalse(ui[0].isLayoutEditorOpen(), "an editor asked for at rest was built over a run that began before"
                 + " its build ran (RLV13-C2)");
 
-            assertTrue(asked.contains(I18n.t("autolayout.errorCannotEditWhileRunning")), "the editor's build, refused"
+            assertTrue(asked.contains(I18n.t("ui.main.errorNoEditsWhileRunning")), "the editor's build, refused"
                 + " once a run had begun, did not say why: " + asked);
 
             java.lang.reflect.Field button = TrainControlUI.class.getDeclaredField("editLayoutButton");
@@ -1767,7 +1795,7 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * The diagram's Edit Locomotive refuses at OK once a run has begun while its dialog was open (RLV13-C9).  The run is
+     * The diagram's Edit Locomotive refuses at OK once a run has begun while its dialog was open.  The run is
      * begun from the answering thread, which is how one starts while the dialog holds the window: the scripting door,
      * `requestStartAutonomy`, is on no window.
      *
@@ -1795,6 +1823,8 @@ public class testNoSetupEditDuringARun
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             final AutonomySession session = ui[0].getAutonomySession();
@@ -1817,7 +1847,7 @@ public class testNoSetupEditDuringARun
             final TileKey square = session.getStationIndex().squareOf(at.getName());
             final String standing = at.getCurrentLocomotive().getName();
 
-            // AT REST BEFORE THE MENU IS BUILT (RSA22-C3): it greys what it offers by the window's state as it is built,
+            // AT REST BEFORE THE MENU IS BUILT: it grays what it offers by the window's state as it is built,
             // and a red with nothing asked said only that the click met no dialog
             java.lang.reflect.Method busy = TrainControlUI.class.getDeclaredMethod("isAutonomyBusy");
 
@@ -1915,7 +1945,7 @@ public class testNoSetupEditDuringARun
             answering.setDaemon(true);
             answering.start();
 
-            // WHAT THE CLICK MEETS (RSA22-C3)
+            // WHAT THE CLICK MEETS
             assertTrue(edit.isEnabled(), "precondition: the diagram's Edit Locomotive is greyed: " + edit.getToolTipText());
 
             SwingUtilities.invokeAndWait(() -> edit.doClick());
@@ -1930,7 +1960,7 @@ public class testNoSetupEditDuringARun
             assertFalse(after.has(AutonomyBuilder.FACING), "the diagram's Edit Locomotive, answered OK after a run began"
                 + " while its dialog was open, wrote " + standing + "'s facing into the setup (RLV13-C9): " + after);
 
-            assertTrue(asked.contains(I18n.t("autolayout.errorCannotEditWhileRunning")), "the diagram's Edit Locomotive,"
+            assertTrue(asked.contains(I18n.t("ui.main.errorNoEditsWhileRunning")), "the diagram's Edit Locomotive,"
                 + " answered OK once a run had begun, did not say why it did nothing: " + asked);
         }
         finally
@@ -2071,7 +2101,7 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * A train's length is not changed while trains run (RSA-A1; Adam, MT-141: *"Never allow any modifications to a
+     * A train's length is not changed while trains run (Adam, MT-141: *"Never allow any modifications to a
      * running layout.  This includes locomotive database"*).  The locomotive's Autonomy train length item wrote the
      * length straight onto the running train, 0 included, and a non-atomic run hands the track behind a train back by that
      * number.  Refused at the click, and again at OK for a dialog that was open when a run began; at rest it writes.
@@ -2103,6 +2133,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui = openTheWindow();
 
@@ -2175,7 +2207,7 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * The Auto tab sends no train while Return Home owns the railway (RSA-C2).  It asked only whether autonomy's own flag
+     * The Auto tab sends no train while Return Home owns the railway.  It asked only whether autonomy's own flag
      * was up, and that is down while Return Home plans - so a train sent by hand then was dispatched under the planner,
      * and the press of Return Home was spent on positions the railway no longer had.  A second hand send while another
      * runs stays allowed from the Auto tab (Adam, 2026-08-31, OB-164: *"The user can rely on full autonomy or the panels
@@ -2202,6 +2234,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -2279,7 +2313,7 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * The Auto tab offers no paths while Return Home owns the railway (RSA2-C3).  Round 16 made the double-click send
+     * The Auto tab offers no paths while Return Home owns the railway.  Round 16 made the double-click send
      * nothing then, and it said nothing - under a list that still read "Double-click a path to execute".  The list is
      * hidden while a staging flow owns the railway, as it is while autonomy runs, so the offer and the refusal agree.
      *
@@ -2303,6 +2337,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -2381,7 +2417,7 @@ public class testNoSetupEditDuringARun
 
     /**
      * Closing TrainControl while trains run warns, lets the operator keep it open, and changes nothing about the trains
-     * (Adam, 2026-09-29, RSA-C7: *"If autonomy, display a warning popup to the user allowing them to keep the app open,
+     * (Adam, 2026-09-29: *"If autonomy, display a warning popup to the user allowing them to keep the app open,
      * or to proceed to close.  For simplicity, don't change train state here."*).  The close pressed Graceful Stop before
      * it asked, so keeping the window open still ended the run, and its question spoke of saving rather than of the
      * trains left moving.
@@ -2433,6 +2469,8 @@ public class testNoSetupEditDuringARun
             });
 
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -2555,7 +2593,7 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * A page ticked out and back in from the Autonomy menu keeps its timetable entries (RSA8-B1): the tick checks the
+     * A page ticked out and back in from the Autonomy menu keeps its timetable entries: the tick checks the
      * findings before its reload, that check's build put the entries set aside back into the stored timetable, and the
      * reload's fold of the railway built without the page wrote over them.  Driven through the menu: opened as a click
      * opens it, and the page's item in "Pages with Autonomy Enabled" clicked.
@@ -2578,6 +2616,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -2839,8 +2879,8 @@ public class testNoSetupEditDuringARun
      * settings, warn first (Adam, 2026-09-30: "adding a warning popup when you start autonomy when the app is in simulate,
      * and simulate isn't checked") - the trains are sent and wait for sensors no simulation reports, so they start and
      * never move.  Declined, nothing starts.  Asked of every door that sends trains, by the one gate - Return Home and a
-     * hand send too (RSA10-C1) - once the gate's own refusals have passed: a press the gate refuses, the power off, is
-     * refused and not asked (RSA11-C2).
+     * hand send too - once the gate's own refusals have passed: a press the gate refuses, the power off, is
+     * refused and not asked.
      *
      * MUTATION: start without asking, and this fails.  So does asking before the gate's refusals, or not at a hand send.
      *
@@ -2862,6 +2902,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -2940,7 +2982,7 @@ public class testNoSetupEditDuringARun
                         + " declined");
                 }
 
-                // A HAND SEND, through the one door both hand doors go through (RSA11-C2)
+                // A HAND SEND, through the one door both hand doors go through
                 final org.traincontrol.automation.Layout railway = ui[0].getModel().getAutoLayout();
 
                 Object[] found = null;
@@ -2987,7 +3029,7 @@ public class testNoSetupEditDuringARun
                 assertTrue(said.contains(warning), "a hand send in a simulation with Simulate not ticked was not asked"
                     + " about (RSA11-C2): " + said);
 
-                // A PRESS THE GATE REFUSES - the power off - is refused, and not asked about first (RSA11-C2)
+                // A PRESS THE GATE REFUSES - the power off - is refused, and not asked about first
                 ui[0].getModel().stop();
 
                 until = System.currentTimeMillis() + 5000;
@@ -3079,6 +3121,8 @@ public class testNoSetupEditDuringARun
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             assertTrue(ui[0].getModel().isSimulation() && ui[0].getModel().isDebug(), "precondition: the window is not a"
@@ -3153,8 +3197,8 @@ public class testNoSetupEditDuringARun
      * Start Timetable stops at an entry the railway cannot run, and the window says which and why (Adam, 2026-09-30:
      * "stop the timetable run upon encountering an invalid path, and let the user know").  Refused and passed over, the
      * train's later entries started where it was not, and the run stood for minutes before it gave up saying only that
-     * the track never became free (RSA9-B1).  And so after a Graceful Stop pressed earlier in the session, whose flag kept
-     * the dialog from being shown (RSA10-B1).
+     * the track never became free.  And so after a Graceful Stop pressed earlier in the session, whose flag kept
+     * the dialog from being shown.
      *
      * MUTATION: say the run stopped without its reason, and this fails.
      *
@@ -3178,6 +3222,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -3259,7 +3305,7 @@ public class testNoSetupEditDuringARun
 
             assertTrue(ui[0].getModel().getPowerState(), "precondition: the power is not on");
 
-            // A GRACEFUL STOP PRESSED EARLIER IN THE SESSION (RSA10-B1)
+            // A GRACEFUL STOP PRESSED EARLIER IN THE SESSION
             java.lang.reflect.Field graceful = TrainControlUI.class.getDeclaredField("gracefulStopRequested");
 
             graceful.setAccessible(true);
@@ -3362,6 +3408,8 @@ public class testNoSetupEditDuringARun
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             // DURING A RUN
@@ -3379,7 +3427,7 @@ public class testNoSetupEditDuringARun
 
             assertTrue(choosers.isEmpty(), "Export opened its file chooser while autonomy ran (MT-601)");
 
-            assertTrue(asked.contains(I18n.t("autosetup.ui.errorExportWhileRunning")), "Export did not say it waits for"
+            assertTrue(asked.contains(I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop")), "Export did not say it waits for"
                 + " autonomy to stop: " + asked);
         }
         finally
@@ -3403,7 +3451,7 @@ public class testNoSetupEditDuringARun
 
     /**
      * Closes every question and every file chooser until `going` is lowered: a question's words into `asked`, a
-     * chooser cancelled and its title into `choosers`.
+     * chooser canceled and its title into `choosers`.
      */
     static void closingEveryQuestion(final List<String> asked, final List<String> choosers,
         final java.util.concurrent.atomic.AtomicBoolean going)
@@ -3455,8 +3503,8 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * New Configuration, Rename and Add Configuration wait for autonomy to stop, as Import, Export and Delete do
-     * (RSA10-A1): each wrote the setup during a run - New made its copy of where the trains stood before the run the
+     * New Configuration, Rename and Add Configuration wait for autonomy to stop, as Import, Export and Delete do:
+     * each wrote the setup during a run - New made its copy of where the trains stood before the run the
      * configuration the next start resumes.  Refused before anything is asked.
      *
      * MUTATION: let New Configuration ask its name while autonomy runs, and this fails.
@@ -3484,6 +3532,8 @@ public class testNoSetupEditDuringARun
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             final AutonomySession session = ui[0].getAutonomySession();
@@ -3499,7 +3549,7 @@ public class testNoSetupEditDuringARun
 
             answeringWith(asked, going, "RSA10 copy");
 
-            String refusal = I18n.t("autolayout.errorCannotEditWhileRunning");
+            String refusal = I18n.t("ui.main.errorNoEditsWhileRunning");
 
             String prompt = I18n.t("autosetup.ui.promptConfigurationName");
 
@@ -3556,9 +3606,9 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * The Autonomy menu greys what changes the setup while autonomy runs, saying why on one line, and gives it back at rest
+     * The Autonomy menu grays what changes the setup while autonomy runs, saying why on one line, and gives it back at rest
      * (Adam, MT-613 and MT-626: "why not grey out the whole menu while running?"): each door refused on its own, after
-     * the click.  Autonomy Settings and Documentation stay live - they change nothing; Export Raw Graph as JSON is greyed
+     * the click.  Autonomy Settings and Documentation stay live - they change nothing; Export Raw Graph as JSON is grayed
      * with the rest (Adam, MT-633).
      *
      * MUTATION: leave the menu live while autonomy runs, or the debug export, and this fails.
@@ -3583,6 +3633,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -3615,7 +3667,7 @@ public class testNoSetupEditDuringARun
                 assertFalse(item.getValue().isEnabled(), item.getKey() + " is live in the Autonomy menu while autonomy"
                     + " runs (MT-613, MT-626)");
 
-                String why = I18n.t("autosetup.ui.tooltipNotWhileRunning");
+                String why = I18n.t("ui.main.errorNoEditsWhileRunning");
 
                 String tip = String.valueOf(item.getValue().getToolTipText());
 
@@ -3651,11 +3703,11 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * The Layout menu greys what changes the diagram or the folder while autonomy runs, saying why, and gives each back as
+     * The Layout menu grays what changes the diagram or the folder while autonomy runs, saying why, and gives each back as
      * it was at rest (Adam, 2026-10-01: "Grey layout: grey the relevant options, but we need to keep open CS3 web app
      * available").  Opening the folder, the pop-outs, the picture and the CS3 web app are left as they were.
      *
-     * MUTATION: leave the menu live while autonomy runs, and this fails; so does a greyed item left grey at rest.
+     * MUTATION: leave the menu live while autonomy runs, and this fails; so does a grayed item left gray at rest.
      *
      * @throws Exception from the window
      */
@@ -3683,9 +3735,11 @@ public class testNoSetupEditDuringARun
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
-            String why = I18n.t("autosetup.ui.tooltipNotWhileRunning");
+            String why = I18n.t("ui.main.errorNoEditsWhileRunning");
 
             // AT REST, as the operator finds it
             java.util.Map<String, Object[]> rest = layoutMenuAsOpened(ui[0], greyed, kept);
@@ -3800,7 +3854,7 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * Export after a run writes where the run left the trains and the settings as they now are (RSA11-B1): it wrote the
+     * Export after a run writes where the run left the trains and the settings as they now are: it wrote the
      * configuration as its file last had it - each train where it stood before the run, the pace as at the load - and an
      * export after a run is the only kind there is since Export waits for autonomy to stop.  It folds the running railway
      * in first, as New Configuration does.
@@ -3829,6 +3883,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -3920,8 +3976,8 @@ public class testNoSetupEditDuringARun
 
     /**
      * Start Timetable pressed while autonomy's trains are still finishing after a Graceful Stop is refused, and the stop
-     * being carried out is not forgotten (RSA11-C1): the press lowered the flag before its busy refusal, so the strip's
-     * greyed Graceful Stop went for the rest of the coast-down.  It is lowered once that refusal has passed, as Return
+     * being carried out is not forgotten: the press lowered the flag before its busy refusal, so the strip's
+     * grayed Graceful Stop went for the rest of the coast-down.  It is lowered once that refusal has passed, as Return
      * Home lowers its own.
      *
      * MUTATION: lower it at the press, and this fails.
@@ -3950,6 +4006,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -4032,7 +4090,7 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * The Auto tab refuses a setting while autonomy is busy, not only while a train runs (RSA12-C1): its handlers asked
+     * The Auto tab refuses a setting while autonomy is busy, not only while a train runs: its handlers asked
      * the railway whether it ran, so during Return Home's planning - autonomy busy, nothing moving yet - a setting was
      * written under the plan, from the Autonomy Settings item the menu leaves live.
      *
@@ -4060,6 +4118,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -4107,7 +4167,7 @@ public class testNoSetupEditDuringARun
             assertEquals(railway.getMaxActiveTrains(), was, "a setting was written while autonomy was busy, nothing"
                 + " moving (RSA12-C1); said: " + asked);
 
-            assertTrue(asked.contains(I18n.t("autolayout.ui.errorUnableToChangeSettingsWhileTrainsRunning")), "the refusal"
+            assertTrue(asked.contains(I18n.t("ui.main.errorNoEditsWhileRunning")), "the refusal"
                 + " was not said: " + asked);
         }
         finally
@@ -4130,11 +4190,12 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * Layouts > Create New Layout is refused while autonomy runs, before its folder window opens (RSA13-B2), as every
+     * Layouts > Create New Layout is refused while autonomy runs, before its folder window opens, as every
      * other Layout menu door that changes the diagram is (MT-141): a folder chosen switched the layout, synced with the
      * Central Station and reset the autonomy session under the moving trains, taking Graceful Stop off the window.
      *
-     * MUTATION: open the folder window whatever runs, and this fails.
+     * MUTATION: open the folder window whatever runs, and this fails; so does `RunGates.refuseWhileARunHoldsTheSetup` giving a layout
+     * door the locomotive sentence again (OB-370).
      *
      * @throws Exception from the window
      */
@@ -4156,6 +4217,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -4200,8 +4263,11 @@ public class testNoSetupEditDuringARun
             assertTrue(choosers.isEmpty(), "Create New Layout opened its folder window while autonomy ran (RSA13-B2): "
                 + choosers + "; said: " + asked);
 
-            assertTrue(asked.contains(I18n.t("autolayout.ui.errorCannotEditLocomotivesWhileRunning")), "Create New Layout"
-                + " did not say it waits for autonomy to stop: " + asked);
+            assertTrue(asked.contains(I18n.t("ui.main.errorNoEditsWhileRunning")), "Create New Layout"
+                + " did not say that edits wait for autonomy to stop: " + asked);
+
+            assertFalse(asked.contains(I18n.t("autolayout.ui.errorCannotEditLocomotivesWhileRunning")), "Create New"
+                + " Layout named locomotives, which it does not edit (OB-370): " + asked);
         }
         finally
         {
@@ -4244,6 +4310,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -4307,6 +4375,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -4407,7 +4477,7 @@ public class testNoSetupEditDuringARun
 
     /**
      * New Configuration after a run copies where the trains are, and leaves the configuration running the one the next
-     * start resumes (RSA10-A1): it copied the file's record - each train where it stood before the run - and made the
+     * start resumes: it copied the file's record - each train where it stood before the run - and made the
      * copy the configuration to resume, while the exit's fold went into the one running.  The next start then placed a
      * train on a square it had left.
      *
@@ -4431,6 +4501,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -4575,7 +4647,7 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * Start Autonomy forgets a Graceful Stop pressed in an earlier run (RSA10-B1): the flag was cleared only by Return
+     * Start Autonomy forgets a Graceful Stop pressed in an earlier run: the flag was cleared only by Return
      * Home's press, so a later run read as one whose stop was still being carried out.
      *
      * MUTATION: keep the earlier stop's flag at Start Autonomy's press, and this fails.
@@ -4598,6 +4670,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -4662,7 +4736,7 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * No train is sent while the diagram reloads after a page door (RSA23-B1): Duplicate Current Page, Add Blank Page and
+     * No train is sent while the diagram reloads after a page door: Duplicate Current Page, Add Blank Page and
      * Combine Linked Pages hand the reset over to a worker, and a press of Start in between ran the railway built before
      * the door - the reset at the end then forgot it mid-run, and where the run left the trains was never written.  The
      * one gate refuses from the door's change until the reset has run, and opens again after.
@@ -4691,6 +4765,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -4909,7 +4985,7 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * No train is sent between the track editor's Save or Cancel and the reset its refresh ends in (RSA24-C1): the refresh
+     * No train is sent between the track editor's Save or Cancel and the reset its refresh ends in: the refresh
      * was counted only by the hand-over the editor posted as it closed, so an event queued while its handler ran - a train
      * sent from the diagram, Return Home - found neither an editor nor a refresh, and ran on the railway the reset then
      * forgot.
@@ -4937,6 +5013,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -5040,8 +5118,8 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * No train is sent between the autonomy editor's Save or Cancel and the hand-over that follows its window closing
-     * (RSA25-C1): it was posted after the window went and counted nowhere, so an event queued while the editor's own
+     * No train is sent between the autonomy editor's Save or Cancel and the hand-over that follows its window closing:
+     * it was posted after the window went and counted nowhere, so an event queued while the editor's own
      * handler ran found neither an editor nor a refresh - and after Cancel's "exit without saving" a train sent there ran
      * on the discarded setup, which the next fold then wrote back.
      *
@@ -5068,6 +5146,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -5164,18 +5244,18 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * The Auto tab's settings, Execute Timetable and the capture toggle are greyed while autonomy is busy, each saying why,
+     * The Auto tab's settings, Execute Timetable and the capture toggle are grayed while autonomy is busy, each saying why,
      * and given back with their own tooltips once it is not (Adam, 2026-10-02: "Implement the two grey usability fixes").
      * Each handler refused while busy - a slider moved and a dialog snapped it back - but offered first.  A click on a
-     * greyed setting says nothing: its handler listens for the mouse, which a greyed control still hears.  Graceful Stop
-     * offered counts as busy, as Start leaves it before its run is counted; and what Execute Timetable's own press greyed
+     * grayed setting says nothing: its handler listens for the mouse, which a grayed control still hears.  Graceful Stop
+     * offered counts as busy, as Start leaves it before its run is counted; and what Execute Timetable's own press grayed
      * is not given back by the refresh.
      *
-     * Activate Routes is greyed the same way, and a control its owner greyed while busy says why too (RSA27-C3).
+     * Activate Routes is grayed the same way, and a control its owner grayed while busy says why too.
      *
-     * MUTATION: grey nothing, leave the tooltips, put the refusal up on a greyed click or leave a slider where it was let
-     * go, ask the railway alone, give back what another owner greyed, grey Activate Routes with no reason, or leave an
-     * owner's grey saying nothing, and this fails.
+     * MUTATION: gray nothing, leave the tooltips, put the refusal up on a grayed click or leave a slider where it was let
+     * go, ask the railway alone, give back what another owner grayed, gray Activate Routes with no reason, or leave an
+     * owner's gray saying nothing, and this fails.
      *
      * @throws Exception from the window
      */
@@ -5200,13 +5280,16 @@ public class testNoSetupEditDuringARun
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             final org.traincontrol.automation.Layout railway = ui[0].getModel().getAutoLayout();
 
             assertFalse(railway.isRunning(), "precondition: the railway runs");
 
-            final String why = I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop");
+            final String wait = I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop");
+            final String edits = I18n.t("ui.main.errorNoEditsWhileRunning");
 
             final java.util.Map<String, String> atRest = new java.util.LinkedHashMap<>();
 
@@ -5230,14 +5313,15 @@ public class testNoSetupEditDuringARun
 
                 assertFalse(c.isEnabled(), name + " is offered while autonomy is busy");
 
-                assertEquals(c.getToolTipText(), why, name + " does not say why it is greyed");
+                assertEquals(c.getToolTipText(), "executeTimetable".equals(name) ? wait : edits,
+                    name + " does not say what its door says");
             }
 
             // AND START TURNS (OB-309)
             assertTrue(ui[0].isShowingSomethingRuns(), "Start does not show that something runs while autonomy is busy"
                 + " (OB-309)");
 
-            // THE ROUTING RULE'S TOOLTIP, set again while greyed, as a load sets it: still says why
+            // THE ROUTING RULE'S TOOLTIP, set again while grayed, as a load sets it: still says why
             final java.lang.reflect.Method rule = TrainControlUI.class.getDeclaredMethod("refreshRoutingLogicTooltip");
 
             rule.setAccessible(true);
@@ -5254,10 +5338,10 @@ public class testNoSetupEditDuringARun
                 }
             });
 
-            assertEquals(control(ui[0], "algorithmType").getToolTipText(), why, "the routing rule's tooltip, set again"
+            assertEquals(control(ui[0], "algorithmType").getToolTipText(), edits, "the routing rule's tooltip, set again"
                 + " while it is greyed, stopped saying why");
 
-            // A CLICK ON A GREYED SETTING, through its own listeners: nothing said, nothing written
+            // A CLICK ON A GRAYED SETTING, through its own listeners: nothing said, nothing written
             final List<String> asked = Collections.synchronizedList(new ArrayList<String>());
 
             closingEveryQuestion(asked, new ArrayList<String>(), going);
@@ -5268,7 +5352,7 @@ public class testNoSetupEditDuringARun
 
             assertEquals(trains.getValue(), was, "precondition: the slider does not show the railway's setting");
 
-            // MOVED AS THE GREY CAME DOWN, as a drag under way leaves it, and let go
+            // MOVED AS THE GRAY CAME DOWN, as a drag under way leaves it, and let go
             SwingUtilities.invokeAndWait(() ->
             {
                 trains.setValue(was == trains.getMaximum() ? was - 1 : was + 1);
@@ -5326,7 +5410,7 @@ public class testNoSetupEditDuringARun
             assertTrue(control(ui[0], "minDelay").isEnabled(), "precondition: the settings are not given back once Graceful"
                 + " Stop is not offered");
 
-            // WHAT EXECUTE TIMETABLE'S OWN PRESS GREYED, before its run is counted: not given back
+            // WHAT EXECUTE TIMETABLE'S OWN PRESS GRAYED, before its run is counted: not given back
             final javax.swing.JComponent timetable = control(ui[0], "executeTimetable");
 
             SwingUtilities.invokeAndWait(() -> timetable.setEnabled(false));
@@ -5336,13 +5420,13 @@ public class testNoSetupEditDuringARun
             assertFalse(timetable.isEnabled(), "the refresh offered Execute Timetable again between its press and its run"
                 + " being counted");
 
-            // AND GREYED BY ITS OWNER WHILE AUTONOMY IS BUSY - its own run, Return Home's press: it says why (RSA27-C3), and
+            // AND GRAYED BY ITS OWNER WHILE AUTONOMY IS BUSY - its own run, Return Home's press: it says why, and
             // at rest gets its own tooltip back and stays its owner's to give back
             staging.set(ui[0], true);
 
             refreshWhatWaits(ui[0]);
 
-            assertEquals(timetable.getToolTipText(), why, "Execute Timetable, greyed by its owner while autonomy is busy, does"
+            assertEquals(timetable.getToolTipText(), wait, "Execute Timetable, greyed by its owner while autonomy is busy, does"
                 + " not say why (RSA27-C3)");
 
             staging.set(ui[0], false);
@@ -5376,11 +5460,11 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * A run started with Start Autonomy greys what waits for the trains, and its Graceful Stop gives it back once the
+     * A run started with Start Autonomy grays what waits for the trains, and its Graceful Stop gives it back once the
      * trains have stopped (Adam, 2026-10-02: "Implement the two grey usability fixes") - the refreshes at each end of a
      * real run, not only the rule.
      *
-     * MUTATION: grey nothing, and this fails.
+     * MUTATION: gray nothing, and this fails.
      *
      * @throws Exception from the window
      */
@@ -5401,6 +5485,8 @@ public class testNoSetupEditDuringARun
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             // THE POWER ON, which the gate asks
@@ -5414,7 +5500,8 @@ public class testNoSetupEditDuringARun
 
             assertTrue(ui[0].getModel().getPowerState(), "precondition: the power is not on");
 
-            final String why = I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop");
+            final String wait = I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop");
+            final String edits = I18n.t("ui.main.errorNoEditsWhileRunning");
 
             final java.util.Map<String, String> atRest = new java.util.LinkedHashMap<>();
 
@@ -5454,7 +5541,8 @@ public class testNoSetupEditDuringARun
 
                 assertFalse(c.isEnabled(), name + " is offered while autonomy runs");
 
-                assertEquals(c.getToolTipText(), why, name + " does not say why it is greyed while autonomy runs");
+                assertEquals(c.getToolTipText(), "executeTimetable".equals(name) ? wait : edits,
+                    name + " does not say what its door says while autonomy runs");
             }
 
             assertTrue(ui[0].isShowingSomethingRuns(), "Start does not show that autonomy runs (OB-309)");

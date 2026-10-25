@@ -2,8 +2,6 @@ package regression;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -17,6 +15,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 import org.testng.annotations.Test;
+import support.SourceOf;
 
 /**
  * Two windows, and no Control key doing two things in either of them.
@@ -54,14 +53,35 @@ import org.testng.annotations.Test;
 public class testNoTwoShortcutsShareAKey
 {
     /**
-     * The layout and autonomy editor, where FR-066's Control+E lives.
+     * The layout and autonomy editor, where FR-066's Control+E lives: named by its window class, the key of the
+     * allowances below.  Its shortcuts are read from its own key handlers, found by declaration wherever they are kept.
      */
-    private static final String EDITOR = "src/org/traincontrol/gui/LayoutEditor.java";
+    private static final String EDITOR = "LayoutEditor.java";
 
     /**
-     * The main window.
+     * The main window, named the same way.
      */
-    private static final String MAIN = "src/org/traincontrol/gui/TrainControlUI.java";
+    private static final String MAIN = "TrainControlUI.java";
+
+    /**
+     * Each window's key handlers, so "the editor" means the editor's handlers and not every file that happens to spell
+     * a shortcut the editor's way (FR-136): a Control+S added to another window must not stand in for the editor's.
+     *
+     * `formKeyPressed` is a name more than one window gives its handler, so the editor's is asked of its class.
+     */
+    private static final Map<String, String[][]> HANDLERS = new LinkedHashMap<>();
+
+    static
+    {
+        HANDLERS.put(EDITOR, new String[][] {
+            {"public class LayoutEditor extends PositionAwareJFrame",
+                "private void formKeyPressed(java.awt.event.KeyEvent evt)"},
+            {null, "public void receiveKeyEvent(KeyEvent e, LayoutLabel label)"}});
+
+        HANDLERS.put(MAIN, new String[][] {
+            {null, "private void LocControlPanelKeyPressed("},
+            {null, "private boolean locomotiveGestureOnDiagram("}});
+    }
 
     /**
      * `evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_X`, and the same with `e.`.
@@ -116,13 +136,11 @@ public class testNoTwoShortcutsShareAKey
      *
      * **Measured by running the regexes**, which is how the first version of this got them wrong: it
      * said 10 and 15 from a reading, and floors of 8 and 12 would have let half the editor's handlers
-     * go invisible before anything reddened.  The scan finds **17 in the editor and 16 in the main
-     * window** - 17 because the `e.` alternative added afterwards also matches
-     * `LayoutEditor.receiveKeyEvent`, and a first re-measurement said 16 because it was taken before
-     * that.  Three below the real count, so that removing a shortcut is ordinary and losing a spelling
-     * is not.
+     * go invisible before anything reddened.  The scan of each window's own key handlers finds **20 in
+     * the editor and 16 in the main window** (2026-10-19).  A little below the real count, so that
+     * removing a shortcut is ordinary and losing a spelling is not.
      */
-    private static final int EDITOR_FLOOR = 14;
+    private static final int EDITOR_FLOOR = 17;
 
     private static final int MAIN_FLOOR = 14;
 
@@ -250,48 +268,33 @@ public class testNoTwoShortcutsShareAKey
     @Test
     public void testTheFallThroughStillFiltersControl() throws IOException
     {
-        String source = sourceOf(MAIN);
-
-        assertTrue(source.contains("!controlPressed && this.buttonMapping.containsKey(keyCode)"),
+        assertTrue(SourceOf.allCode().contains("!controlPressed && this.buttonMapping.containsKey(keyCode)"),
             "the main window's last arm no longer filters Control, so Control plus every letter no"
             + " named shortcut catches selects a locomotive button again - and the free-key list this"
             + " class prints is wrong about all of them. That is OB-197 coming back");
     }
 
     /**
-     * One source file, read whole.
+     * Every Control key bound in one window's key handlers, handler by handler.
      *
-     * @param path the file
-     * @return its text
-     * @throws IOException when it cannot be read
-     */
-    private String sourceOf(String path) throws IOException
-    {
-        File file = new File(path);
-
-        assertTrue(file.isFile(), path + " is not there, so this test is reading nothing. Tests run"
-            + " from the project root");
-
-        return new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
-    }
-
-    /**
-     * Every Control key bound in one file, in the order they appear.
-     *
-     * @param path the source file
-     * @param how the spelling that file uses
+     * @param window the window, EDITOR or MAIN
+     * @param how the spelling that window uses
      * @return the key names, with repeats
      * @throws IOException when the source cannot be read
      */
-    private List<String> keysIn(String path, Pattern how) throws IOException
+    private List<String> keysIn(String window, Pattern how) throws IOException
     {
-        String source = sourceOf(path);
-
         List<String> out = new ArrayList<>();
 
-        Matcher found = how.matcher(source);
+        for (String[] handler : HANDLERS.get(window))
+        {
+            String text = handler[0] == null ? SourceOf.declaration(handler[1])
+                : SourceOf.declarationIn(SourceOf.declaration(handler[0]), handler[1]);
 
-        while (found.find()) out.add(found.group(1));
+            Matcher found = how.matcher(SourceOf.withoutComments(text));
+
+            while (found.find()) out.add(found.group(1));
+        }
 
         return out;
     }
@@ -349,23 +352,23 @@ public class testNoTwoShortcutsShareAKey
     /**
      * The keys that appear more than once.
      *
-     * @param path the source file
-     * @param how the spelling that file uses
+     * @param window the window, EDITOR or MAIN
+     * @param how the spelling that window uses
      * @return the duplicated key names, sorted
      * @throws IOException when the source cannot be read
      */
-    private Set<String> duplicatesIn(String path, Pattern how) throws IOException
+    private Set<String> duplicatesIn(String window, Pattern how) throws IOException
     {
         Map<String, Integer> counted = new LinkedHashMap<>();
 
-        for (String key : keysIn(path, how))
+        for (String key : keysIn(window, how))
         {
             counted.put(key, counted.containsKey(key) ? counted.get(key) + 1 : 1);
         }
 
         Set<String> twice = new TreeSet<>();
 
-        String file = new File(path).getName();
+        String file = window;
 
         for (Map.Entry<String, Integer> entry : counted.entrySet())
         {

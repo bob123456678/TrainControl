@@ -64,7 +64,7 @@ public class testTheSampleLayoutSaysOnlyWhatTrainsCanDo
         {
             sandbox = support.LayoutSandbox.open(unpackTheSample());
 
-            model = MarklinControlStation.init(null, true, false, false, false);
+            model = support.TestStation.simulated();
 
             session = new AutonomySession(sandbox.getFolder());
 
@@ -250,7 +250,7 @@ public class testTheSampleLayoutSaysOnlyWhatTrainsCanDo
      * The run east of MainLine is stored one way on all its squares, 10,3 included, and opening the sample has nothing to
      * bring into line (OB-361; Adam, on OB-321: *"Any disagreement should be corrected so that the viewer displays the
      * source of truth"*).  The sample shipped with 10,3 both ways until Adam's update of 2026-10-18; the correction itself
-     * is claimed in `testAutonomyDiagramSession.testARunThatSaysTwoThingsIsBroughToWhatATrainFinds`.
+     * is claimed in `testTheDiagramDrawsWhatTrainsMayDo.testARunThatSaysTwoThingsIsBroughtToWhatATrainFinds`.
      *
      * MUTATION: ship the sample with 10,3 both ways again, or have the opening bring a consistent run into line, and this
      * fails.
@@ -480,7 +480,7 @@ public class testTheSampleLayoutSaysOnlyWhatTrainsCanDo
     /**
      * Every sensor on the sample has an address of its own, and the setup check says nothing about a shared one (FR-139).
      * Station A and PostDeparture shared address 1 until Adam's update of 2026-10-18; the warning itself is claimed in
-     * `testAutonomyDiagramSession.testASensorAddressOnTwoSquaresIsSaidOnce`.
+     * `testTheEditorWarnsOfARailwayThatCannotWork.testASensorAddressOnTwoSquaresIsSaidOnce`.
      *
      * MUTATION: ship the sample with two sensors on one address again, and this fails.
      *

@@ -22,13 +22,13 @@ import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * After a run, the Facing menu is about the train the railway has on the square, and turns that one (TDY4-C5).
+ * After a run, the Facing menu is about the train the railway has on the square, and turns that one.
  *
  * After a run the setup still names each square's pre-run occupant (behaviour.md 6a), and nothing captures before the
  * diagram's right-click.  The menu took its train from the setup: with P placed on a square in the setup and T standing
  * there on the railway, it was titled "P is facing", ticked T's facing, and a click wrote P's record and moved P - found
  * on no copy of the square, so nothing moved.  T was not turned and the operator's correction was dropped without a
- * word.  With nothing placed there in the setup there was no menu at all.  TDY3-A2's shape one door along: `flipFacing`
+ * word.  With nothing placed there in the setup there was no menu at all.  The same shape one door along: `flipFacing`
  * was keyed on the railway's train by `4be3798a`, and this menu was not.
  *
  * Asked through the real door, as `testTheTailCanBeGivenInTheEditor` asks it: `AutonomyEditorPanel.buildFacingMenu`,
@@ -55,7 +55,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
         }
 
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
-        model = init(null, true, false, false, true);
+        model = support.TestStation.simulatedInDebug();
 
         SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
 
@@ -65,7 +65,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
 
         if (session == null || session.getStore().getActiveConfiguration() == null)
         {
-            throw new SkipException("no autonomy configuration on the snapshot");
+            throw new AssertionError("no autonomy configuration on the snapshot");
         }
 
         if (ui.getActiveDiagramConfiguration() == null)
@@ -146,7 +146,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
                 break;
             }
 
-            if (square == null) throw new SkipException("no placed train on the snapshot stands where two facings can be"
+            if (square == null) throw new AssertionError("no placed train on the snapshot stands where two facings can be"
                 + " chosen");
 
             // AND A TRAIN ON NO SQUARE, of the railway or the setup.
@@ -164,7 +164,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
                 break;
             }
 
-            if (onTheRailway == null) throw new SkipException("every locomotive is placed somewhere");
+            if (onTheRailway == null) throw new AssertionError("every locomotive is placed somewhere");
 
             // AFTER A RUN: the railway has T where the setup still has P.
             Side recordedWas = session.getFacing(square);
@@ -247,7 +247,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
     }
 
     /**
-     * A train standing on a square no track leads out of gets the Facing menu greyed, with the reason in its tooltip,
+     * A train standing on a square no track leads out of gets the Facing menu grayed, with the reason in its tooltip,
      * rather than no menu (OB-347, Adam 2026-10-13: *"the locomotive is facing menu gets hidden when there is no way
      * out.  rather than hiding it, grey it out."*).
      *
@@ -260,8 +260,6 @@ public class testTheFacingMenuIsAboutTheTrainThere
     {
         final org.json.JSONObject asFound = session.snapshotSetup();
         final LayoutEditor[] editor = new LayoutEditor[1];
-        String moved = null;
-        Layout running = null;
 
         try
         {
@@ -269,45 +267,49 @@ public class testTheFacingMenuIsAboutTheTrainThere
 
             settle();
 
-            running = model.getAutoLayout();
+            Layout running = model.getAutoLayout();
 
-            // A SQUARE OF THE RAILWAY WITH NO FACING TO CHOOSE, and a copy of it to stand a train on
+            // A SQUARE WITH NO FACING TO CHOOSE, MADE HERE.  Every square the snapshot builds has a copy facing some way,
+            // so none of them is one - the claim used to skip for want of it.  A square of a page the build has no copy
+            // of is: a free locomotive placed on it in the setup is the train the menu names when the railway has none
+            // there, and nothing leads out of a square the railway does not have.
             TileKey square = null;
-            Point copy = null;
-            String standing = null;
 
-            for (Point point : running.getPoints())
+            for (TileKey tile : session.getGraph().getTiles().keySet())
             {
-                TileKey at = session.getStationIndex().squareOf(point);
+                if (model.getLayout(tile.getPage()) == null || !session.facingChoices(tile).isEmpty()) continue;
 
-                if (at == null || model.getLayout(at.getPage()) == null) continue;
+                if (!session.getStationIndex().pointNamesAt(tile).isEmpty()) continue;
 
-                if (!session.facingChoices(at).isEmpty()) continue;
+                square = tile;
 
-                square = at;
-                copy = point;
-                standing = point.getCurrentLocomotive() == null ? null : point.getCurrentLocomotive().getName();
-
-                if (standing != null) break;
+                if (session.getStore().isStation(tile)) break;
             }
 
-            if (square == null) throw new SkipException("no square of the snapshot has no way out");
+            assertNotNull(square, "precondition: every square of the snapshot has a facing to choose, so there is no"
+                + " square to stand a train on that nothing leads out of");
 
-            for (String name : standing != null ? java.util.Collections.<String>emptyList() : model.getLocList())
+            // A LOCOMOTIVE PLACED NOWHERE, of the railway or the setup
+            String setupText = session.snapshotSetup().toString();
+            String named = null;
+
+            for (String name : model.getLocList())
             {
                 if (running.getLocomotiveLocation(model.getLocByName(name)) != null) continue;
 
-                if (running.moveLocomotive(name, copy.getName(), false))
-                {
-                    moved = name;
+                if (setupText.contains(org.json.JSONObject.quote(name))) continue;
 
-                    break;
-                }
+                named = name;
+
+                break;
             }
 
-            if (moved == null && standing == null) throw new SkipException("no train could be stood on " + copy.getName());
+            assertNotNull(named, "precondition: every locomotive is placed somewhere");
 
-            final String named = standing != null ? standing : moved;
+            session.placeLocomotive(square, named);
+
+            assertEquals(session.getLocomotiveNameAt(square), named, "precondition: " + named + " was not placed on "
+                + square);
 
             final LayoutDiagram page = model.getLayout(square.getPage());
 
@@ -345,9 +347,6 @@ public class testTheFacingMenuIsAboutTheTrainThere
 
                 SwingUtilities.invokeAndWait(() -> closing.dispose());
             }
-
-            if (moved != null && running != null) running.moveLocomotive(null, running.getLocomotiveLocation(
-                model.getLocByName(moved)).getName(), false);
 
             session.restoreSetup(asFound);
 
@@ -428,7 +427,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
             }
         }
 
-        if (turning == null) throw new SkipException("the snapshot has no free may-turn square with an approach to both copies");
+        if (turning == null) throw new AssertionError("the snapshot has no free may-turn square with an approach to both copies");
 
         // A TRAIN STANDING NOWHERE
         String train = null;
@@ -560,7 +559,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
     }
 
     /**
-     * While its route is set, before it sets off, a train's label already faces the way it will stand (RSA30-C3).
+     * While its route is set, before it sets off, a train's label already faces the way it will stand.
      *
      * OB-314's answer was kept beside the journey, which is written only at the hand-over, after the route's switches are
      * set - and the claim reserves the turning copy long before.  So for the length of the route setting the label read
@@ -629,7 +628,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
             }
         }
 
-        if (turning == null) throw new SkipException("the snapshot has no free may-turn square with an approach to both copies");
+        if (turning == null) throw new AssertionError("the snapshot has no free may-turn square with an approach to both copies");
 
         String train = null;
 
@@ -747,6 +746,191 @@ public class testTheFacingMenuIsAboutTheTrainThere
         assertEquals(shown[0], facings.get(plain.getName()), "while its route to " + square + " was set, with KEEP DIRECTION,"
             + " the label read " + shown[0] + " - the turning copy's facing - where the train will stand facing "
             + facings.get(plain.getName()) + " (RSA30-C3)");
+    }
+
+    /**
+     * A train flipped on its way to a square it may turn at, without turning, is turned from the way it will stand there
+     * (OB-372), as its label reads it (OB-314): the path ends on the TURNING copy, which faces the other way, so a flip
+     * taken from that copy wrote the facing the train would have had anyway.
+     *
+     * `flipFacing` asked directly: its one caller, `followTheTurn`, declines while a train holds a path.  The approach is
+     * a square with no second facing, so the flip cannot act there instead.
+     *
+     * MUTATION: let `flipFacing` read the facing of the copy the path ends on again, and this fails.
+     *
+     * @throws Exception from the window or the run
+     */
+    @Test
+    public void testAFlipOnItsWayTurnsTheWayItWillStand() throws Exception
+    {
+        final org.traincontrol.automation.Layout running = model.getAutoLayout();
+
+        assertNotNull(running, "precondition: no running railway");
+
+        // A MAY-TURN SQUARE with two facings to flip between, reached from a square with one
+        org.traincontrol.automation.Point turning = null, plain = null, approach = null;
+
+        TileKey square = null;
+
+        for (TileKey tile : session.getReducer().getPoints().keySet())
+        {
+            if (turning != null) break;
+
+            java.util.Map<String, Side> facings = session.getStationIndex().facingsAt(tile);
+
+            if (session.facingChoices(tile).size() != 2) continue;
+
+            for (String t : session.getStationIndex().pointNamesAt(tile))
+            {
+                Point tp = running.getPoint(t);
+
+                if (tp == null || !(tp.isTerminus() || tp.isReversing()) || tp.getCurrentLocomotive() != null) continue;
+
+                for (String p : session.getStationIndex().pointNamesAt(tile))
+                {
+                    Point pp = running.getPoint(p);
+
+                    if (pp == null || pp == tp || pp.isTerminus() || pp.isReversing() || pp.getCurrentLocomotive() != null)
+                    {
+                        continue;
+                    }
+
+                    if (facings.get(t) == null || facings.get(p) == null || facings.get(t) == facings.get(p)) continue;
+
+                    for (Point a : running.getPoints())
+                    {
+                        if (a.getCurrentLocomotive() != null || a.isSamePlaceAs(tp) || !a.isDestination()) continue;
+
+                        if (running.getEdge(a.getName(), t) == null || running.getEdge(a.getName(), p) == null) continue;
+
+                        TileKey from = session.getStationIndex().squareOf(a.getName());
+
+                        if (from == null || session.facingChoices(from).size() == 2) continue;
+
+                        turning = tp;
+                        plain = pp;
+                        approach = a;
+                        square = tile;
+                        break;
+                    }
+
+                    if (turning != null) break;
+                }
+
+                if (turning != null) break;
+            }
+        }
+
+        if (turning == null)
+        {
+            throw new AssertionError("the snapshot has no free two-facing may-turn square with an approach to both copies"
+                + " from a square with one facing");
+        }
+
+        String train = null;
+
+        for (String name : model.getLocList())
+        {
+            if (running.getLocomotiveLocation(model.getLocByName(name)) == null) train = name;
+        }
+
+        assertNotNull(train, "precondition: every locomotive is placed somewhere");
+
+        final String trainName = train;
+
+        final Locomotive loc = model.getLocByName(train);
+
+        final org.json.JSONObject asFound = session.snapshotSetup();
+
+        final boolean simulating = running.isSimulate();
+
+        running.setSimulate(true);
+
+        model.setFeedbackState(approach.getS88(), true);
+        model.setFeedbackState(turning.getS88(), false);
+        model.setFeedbackState(plain.getS88(), false);
+
+        assertTrue(running.moveLocomotive(train, approach.getName(), false), "precondition: could not stand " + train
+            + " on " + approach.getName());
+
+        final java.util.List<org.traincontrol.automation.Edge> path = new java.util.ArrayList<>();
+
+        path.add(running.getEdge(approach.getName(), turning.getName()));
+
+        final Point askedAbout = turning;
+
+        Layout.ReversalPolicy keepDirection = new Layout.ReversalPolicy()
+        {
+            @Override
+            public boolean shouldReverse(Locomotive t, Point at)
+            {
+                return false;
+            }
+
+            @Override
+            public boolean asksAbout(Point at)
+            {
+                return at == askedAbout;
+            }
+        };
+
+        Thread run = new Thread(() -> running.executePath(path, loc, 20, null, keepDirection));
+
+        run.setDaemon(true);
+
+        final TileKey[] flipped = new TileKey[1];
+
+        Side written = null;
+
+        try
+        {
+            run.start();
+
+            long until = System.currentTimeMillis() + 15000;
+
+            while (!(running.isRunning() && loc.getSpeed() > 0) && run.isAlive() && System.currentTimeMillis() < until)
+            {
+                Thread.sleep(5);
+            }
+
+            assertTrue(loc.getSpeed() > 0 && running.getActiveLocomotives().containsKey(loc), "precondition: "
+                + train + " is not on its way from " + approach.getName() + " to " + turning.getName());
+
+            SwingUtilities.invokeAndWait(() -> flipped[0] = session.flipFacing(trainName, running));
+
+            written = session.getFacing(square);
+        }
+        finally
+        {
+            model.setFeedbackState(turning.getS88(), true);
+            model.setFeedbackState(approach.getS88(), false);
+
+            long until = System.currentTimeMillis() + 30000;
+
+            while (run.isAlive() && System.currentTimeMillis() < until) Thread.sleep(100);
+
+            running.moveLocomotive(null, turning.getName(), false);
+            running.moveLocomotive(null, plain.getName(), false);
+            running.moveLocomotive(null, approach.getName(), false);
+
+            model.setFeedbackState(turning.getS88(), false);
+
+            running.setSimulate(simulating);
+
+            session.restoreSetup(asFound);
+
+            SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
+
+            settle();
+        }
+
+        assertEquals(flipped[0], square, "precondition: the flip did not act on " + square);
+
+        java.util.Map<String, Side> facings = session.getStationIndex().facingsAt(square);
+
+        assertEquals(written, facings.get(turning.getName()), "flipped on its way to " + square + " with KEEP DIRECTION, "
+            + train + " was recorded facing " + written + " - the way it will stand there anyway, on the plain copy facing "
+            + facings.get(plain.getName()) + " (OB-372)");
     }
 
     /** A dispatch waiting at its hand-over: its claim taken, and blocked entering the hand-over's monitor. */

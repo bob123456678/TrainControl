@@ -8,7 +8,7 @@ import org.traincontrol.gui.TrainControlUI;
  * answer (OB-192).
  *
  * `TrainControlUI.refreshCoveredTrack` is private, because nothing outside that window has any business
- * recomputing the set, and every test of the orange line or the grey wash calls it by reflection to get
+ * recomputing the set, and every test of the orange line or the gray wash calls it by reflection to get
  * at the recompute the window itself makes on every refresh of a running layout.
  *
  * **Since OB-192 asking and reading are two moments.**  That refresh used to be done on the calling

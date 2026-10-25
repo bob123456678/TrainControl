@@ -12,7 +12,6 @@ import java.util.logging.Logger;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -21,11 +20,11 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 
 /**
- * Loading a configuration does not call a station a non-station (GUI4-C5).
+ * Loading a configuration does not call a station a non-station.
  *
  * Since `8370abb1` a train can stand on a copy of a station square that trains may not arrive at - reversed on the
  * throttle at BottomMainA, arrivals from the east barred - and the build records it there.  The loader then logged
- * *"placed on a non-station and will not be run automatically"* for it on every load: the noun GUI3-C1 took out of the
+ * *"placed on a non-station and will not be run automatically"* for it on every load: the noun taken out of the
  * other two sentences, because the square IS a station and Why not Moving? says what is wrong.  It could not tell the
  * two apart, because it wrote the warning while reading the points, before the square's other copies were read.
  *
@@ -53,7 +52,7 @@ public class testTheLoaderDoesNotCallAStationANonStation
         // BEFORE the model: `init` reads the machine-global layout preference (OB-111).
         sandbox = support.LayoutSandbox.open();
 
-        model = MarklinControlStation.init(null, true, false, false, false);
+        model = support.TestStation.simulated();
 
         tap = new Handler()
         {
@@ -97,7 +96,7 @@ public class testTheLoaderDoesNotCallAStationANonStation
     {
         List<String> names = model.getLocList();
 
-        if (names.size() < 2) throw new SkipException("this fixture needs two locomotives");
+        if (names.size() < 2) throw new AssertionError("this fixture needs two locomotives");
 
         String onTheBarredCopy = names.get(0);
         String onThePlainCopy = names.get(1);

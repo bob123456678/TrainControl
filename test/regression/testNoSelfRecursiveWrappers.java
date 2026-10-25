@@ -79,6 +79,729 @@ public class testNoSelfRecursiveWrappers
             + "looks for has probably changed");
     }
 
+    private static final String WINDOW = "src/org/traincontrol/gui/TrainControlUI.java";
+
+    private static final String SESSION = "src/org/traincontrol/automationui/AutonomySession.java";
+
+    private static final String EDITOR = "src/org/traincontrol/gui/LayoutEditor.java";
+
+    private static final String AUTONOMY_EDITOR = "src/org/traincontrol/gui/AutonomyEditorPanel.java";
+
+    /**
+     * The collaborators (FR-136), one row each: the field of the owner that holds it, the file it is declared in, its
+     * class name - for the static delegators, which reach it as `Class.method(` rather than through the field - the
+     * owner's file and class name, and the prefix the collaborator calls its owner by (`ui.`, `owner.`, `editor.`).
+     */
+    private static final String[][] COLLABORATORS = {
+        { "backupAction", "src/org/traincontrol/gui/BackupAction.java", "BackupAction", WINDOW, "TrainControlUI", "ui." },
+        { "updateFlow", "src/org/traincontrol/gui/UpdateFlow.java", "UpdateFlow", WINDOW, "TrainControlUI", "ui." },
+        { "locIconActions", "src/org/traincontrol/gui/LocIconActions.java", "LocIconActions", WINDOW, "TrainControlUI",
+            "ui." },
+        { "layoutFileActions", "src/org/traincontrol/gui/LayoutFileActions.java", "LayoutFileActions", WINDOW,
+            "TrainControlUI", "ui." },
+        { "routeListPanel", "src/org/traincontrol/gui/RouteListPanel.java", "RouteListPanel", WINDOW, "TrainControlUI",
+            "ui." },
+        { "sessionImport", "src/org/traincontrol/automationui/SessionImport.java", "SessionImport", SESSION,
+            "AutonomySession", "owner." },
+        { "sessionRuns", "src/org/traincontrol/automationui/SessionRuns.java", "SessionRuns", SESSION,
+            "AutonomySession", "owner." },
+        { "selectionOps", "src/org/traincontrol/gui/LayoutEditorSelection.java", "LayoutEditorSelection", EDITOR,
+            "LayoutEditor", "editor." },
+        { "reshapeOps", "src/org/traincontrol/gui/LayoutEditorReshape.java", "LayoutEditorReshape", EDITOR,
+            "LayoutEditor", "editor." },
+        { "undoOps", "src/org/traincontrol/gui/LayoutEditorUndo.java", "LayoutEditorUndo", EDITOR,
+            "LayoutEditor", "editor." },
+        { "autonomySettingsTab", "src/org/traincontrol/gui/AutonomySettingsTab.java", "AutonomySettingsTab", WINDOW,
+            "TrainControlUI", "ui." },
+        { "locomotiveActions", "src/org/traincontrol/gui/LocomotiveActions.java", "LocomotiveActions", WINDOW,
+            "TrainControlUI", "ui." },
+        { "timetableTab", "src/org/traincontrol/gui/TimetableTab.java", "TimetableTab", WINDOW,
+            "TrainControlUI", "ui." },
+        { "coveredTrackView", "src/org/traincontrol/gui/CoveredTrackView.java", "CoveredTrackView", WINDOW,
+            "TrainControlUI", "ui." },
+        { "captionVisibility", "src/org/traincontrol/gui/CaptionVisibility.java", "CaptionVisibility", WINDOW,
+            "TrainControlUI", "ui." },
+        { "tileMenus", "src/org/traincontrol/gui/EditorTileMenus.java", "EditorTileMenus", AUTONOMY_EDITOR,
+            "AutonomyEditorPanel", "editor." },
+        { "prompts", "src/org/traincontrol/gui/EditorPrompts.java", "EditorPrompts", AUTONOMY_EDITOR,
+            "AutonomyEditorPanel", "editor." },
+        { "signalPairing", "src/org/traincontrol/gui/EditorSignals.java", "EditorSignals", AUTONOMY_EDITOR,
+            "AutonomyEditorPanel", "editor." },
+        { "massAssignment", "src/org/traincontrol/gui/EditorMassAssign.java", "EditorMassAssign", AUTONOMY_EDITOR,
+            "AutonomyEditorPanel", "editor." },
+        { "whyAnswers", "src/org/traincontrol/gui/EditorWhy.java", "EditorWhy", AUTONOMY_EDITOR,
+            "AutonomyEditorPanel", "editor." },
+        { "RunGates", "src/org/traincontrol/gui/RunGates.java", "RunGates", WINDOW, "TrainControlUI", "ui." },
+        { "returnHomeController", "src/org/traincontrol/gui/ReturnHomeController.java", "ReturnHomeController", WINDOW,
+            "TrainControlUI", "ui." },
+        { "runningLayoutSync", "src/org/traincontrol/gui/RunningLayoutSync.java", "RunningLayoutSync", WINDOW,
+            "TrainControlUI", "ui." },
+    };
+
+    /**
+     * A delegator and the collaborator it hands to do not call each other for ever (FR-136).
+     *
+     * The extractions leave a one-line delegator on the window, the session, the track editor and the autonomy editor
+     * wherever something outside a moved cluster calls it, and the moved code calls back into its owner through `ui`,
+     * `owner` or `editor`.
+     * The same mechanical edit
+     * that made `syncWithCS2` call itself can make a delegator call its own name instead of the collaborator's, or make
+     * the moved body call the owner's delegator that leads straight back to it.  Either is a StackOverflowError the
+     * compiler accepts.
+     *
+     * Methods are told apart by name AND number of arguments: the editor's `deleteSelection()` hands to the collaborator's,
+     * which calls `editor.deleteSelection(true)`, a different method by design.
+     *
+     * The static delegators (`askAboutTheUpdate`, `whenNoModalDialog`, `routeNamedIn`, `detectImportFormat`) hand over as
+     * `Class.method(` and the collaborator calls the owner's statics as `TrainControlUI.method(`, so both spellings are
+     * read as well.
+     *
+     * The self-call half reads every method of the owner that shares a name with a method of the collaborator, not only
+     * those whose body still names the collaborator: a delegator rewritten to call itself names it nowhere.
+     *
+     * MUTATION: in BackupAction, make `writeTheBackup` call `this.ui.backupData()`, and this fails; so does making
+     * UpdateFlow's static `whenNoModalDialog` call `TrainControlUI.whenNoModalDialog(`, or SessionRuns' `runs()` return
+     * `owner.runs()`, or LayoutEditorUndo's `undo()` call `editor.undo()`.  And so does making TrainControlUI's `combineLinkedPages` delegator call `this.combineLinkedPages()`
+     * (or a bare `combineLinkedPages()`) instead of `layoutFileActions.combineLinkedPages()`.  And so does making
+     * EditorTileMenus' `buildFacingMenu` begin `if (target == null) return editor.buildFacingMenu(target);`, or
+     * AutonomyEditorPanel's `buildFacingMenu` return `buildFacingMenu(target)`.
+     */
+    @Test
+    public void testADelegatorAndItsCollaboratorDoNotCallEachOtherForEver() throws Exception
+    {
+        for (String[] each : COLLABORATORS)
+        {
+            assertTrue(new File(each[3]).isFile(), "cannot find " + new File(each[3]).getAbsolutePath());
+
+            List<String> window = Files.readAllLines(new File(each[3]).toPath(), StandardCharsets.UTF_8);
+
+            File source = new File(each[1]);
+
+            assertTrue(source.isFile(), "cannot find " + source.getAbsolutePath());
+
+            List<String> helper = Files.readAllLines(source.toPath(), StandardCharsets.UTF_8);
+
+            // What each side calls on the other: the owner through `<field>.` (or `Class.` for a static), the
+            // collaborator through its back-prefix (or `OwnerClass.` for a static).
+            java.util.Map<String, java.util.Set<String>> windowCalls = merged(
+                callsThrough(window, each[0] + "."), callsThrough(window, each[2] + "."));
+            java.util.Map<String, java.util.Set<String>> helperCalls = merged(
+                callsThrough(helper, each[5]), callsThrough(helper, each[4] + "."));
+
+            int checked = 0;
+
+            for (java.util.Map.Entry<String, java.util.Set<String>> delegator : windowCalls.entrySet())
+            {
+                for (String handedTo : delegator.getValue())
+                {
+                    checked++;
+
+                    java.util.Set<String> back = helperCalls.get(handedTo);
+
+                    assertFalse(back != null && back.contains(delegator.getKey()),
+                        each[4] + "." + delegator.getKey() + " hands to " + each[2] + "." + handedTo
+                        + ", which calls back into " + each[4] + "." + delegator.getKey() + " - a loop the compiler accepts");
+                }
+            }
+
+            assertTrue(checked > 0, each[4] + " hands nothing to " + each[0] + ", so this checks nothing");
+
+            // And a delegator that calls its own name, bare or through `this.`, beside the collaborator's.  Every method of
+            // the owner named like one of the collaborator's is read, since a delegator rewritten that way names the
+            // collaborator nowhere; the arity test in `callsItself` leaves another overload alone.
+            java.util.Set<String> collaboratorNames = new java.util.HashSet<>();
+
+            for (String line : helper)
+            {
+                String declared = methodDeclaredAt(line);
+
+                if (declared != null) collaboratorNames.add(declared);
+            }
+
+            int delegators = 0;
+
+            for (int i = 0; i < window.size(); i++)
+            {
+                String name = methodDeclaredAt(window.get(i));
+
+                if (name == null || !collaboratorNames.contains(name)) continue;
+
+                delegators++;
+
+                int arity = arityOfTheDeclarationAt(window, i);
+
+                for (String line : bodyOf(window, i))
+                {
+                    assertFalse(callsItself(line, name, arity), each[4] + "." + name + " calls itself instead of "
+                        + each[0] + "." + name + ".  Line: " + line.trim());
+                }
+            }
+
+            assertTrue(delegators > 0, "no method of " + each[4] + " is named like one of " + each[2] + "'s, so this"
+                + " checks nothing");
+        }
+    }
+
+    /**
+     * How many parameters the method declared at a line takes, reading on while the parameters run onto the next lines.
+     */
+    private static int arityOfTheDeclarationAt(List<String> lines, int at)
+    {
+        String declaration = lines.get(at).trim();
+
+        for (int k = at + 1; declaration.lastIndexOf(')') < declaration.indexOf('(') && k < lines.size(); k++)
+        {
+            declaration += " " + lines.get(k).trim();
+        }
+
+        return argumentCount(declaration.substring(declaration.indexOf('(') + 1, declaration.lastIndexOf(')')));
+    }
+
+    /**
+     * Two maps of method name to the names it calls, as one.
+     */
+    private static java.util.Map<String, java.util.Set<String>> merged(java.util.Map<String, java.util.Set<String>> first,
+        java.util.Map<String, java.util.Set<String>> second)
+    {
+        java.util.Map<String, java.util.Set<String>> both = new java.util.HashMap<>(first);
+
+        second.forEach((name, called) -> both.computeIfAbsent(name, k -> new java.util.HashSet<>()).addAll(called));
+
+        return both;
+    }
+
+    /**
+     * For each method declared at the class's top level, the methods it calls through a prefix - each as `name/arguments`
+     * (the declared one too), so that one overload handing to another is not read as a loop.
+     */
+    private static java.util.Map<String, java.util.Set<String>> callsThrough(List<String> lines, String prefix)
+    {
+        java.util.Map<String, java.util.Set<String>> calls = new java.util.HashMap<>();
+
+        java.util.regex.Pattern call = java.util.regex.Pattern.compile(
+            "(?<!\\w)" + java.util.regex.Pattern.quote(prefix) + "(\\w+)\\s*\\(");
+
+        for (int i = 0; i < lines.size(); i++)
+        {
+            String name = methodDeclaredAt(lines.get(i));
+
+            if (name == null) continue;
+
+            String declared = name + "/" + arityOfTheDeclarationAt(lines, i);
+
+            for (String line : bodyOf(lines, i))
+            {
+                String code = withoutComments(line);
+
+                java.util.regex.Matcher m = call.matcher(code);
+
+                while (m.find())
+                {
+                    calls.computeIfAbsent(declared, k -> new java.util.HashSet<>())
+                        .add(m.group(1) + "/" + argumentCount(argumentsFrom(code, m.end())));
+                }
+            }
+        }
+
+        return calls;
+    }
+
+    /**
+     * The text of a call's arguments: from just after its opening bracket to the bracket that closes it, or to the end of
+     * the line when the call runs on.
+     */
+    private static String argumentsFrom(String code, int from)
+    {
+        int depth = 1;
+
+        for (int at = from; at < code.length(); at++)
+        {
+            char c = code.charAt(at);
+
+            if (c == '(') depth++;
+            else if (c == ')' && --depth == 0) return code.substring(from, at);
+        }
+
+        return code.substring(from);
+    }
+
+    /**
+     * The name of the method a line declares at a class's top level (four spaces in), or null.
+     */
+    private static String methodDeclaredAt(String line)
+    {
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile(
+            "^    (?:(?:public|private|protected|static|final|synchronized)\\s+)*[\\w<>\\[\\],.?]+(?:<[^=]*>)?\\s+(\\w+)\\s*\\([^=;]*$")
+            .matcher(line);
+
+        if (!m.find()) return null;
+
+        String name = m.group(1);
+
+        return "new".equals(name) || "return".equals(name) ? null : name;
+    }
+
+    /**
+     * The session's one-line delegators call their collaborator, never themselves (FR-136).
+     *
+     * `AutonomySession` keeps each public method whose body moved to a package-private collaborator, as a one-line
+     * call to it; a mechanical rewrite that drops the collaborator's name leaves a method calling itself.
+     *
+     * MUTATION: make any of them call its own name instead of the collaborator's, and this fails.
+     *
+     * @throws Exception if the source cannot be read
+     */
+    @Test
+    public void testASessionDelegatorDoesNotCallItself() throws Exception
+    {
+        List<String> lines = java.util.Arrays.asList(
+            support.SourceOf.declaration("public class AutonomySession\n").split("\n"));
+
+        String[] collaborators = {"sessionImport.", "SessionImport.", "sessionRuns."};
+
+        int checked = 0;
+
+        for (int i = 0; i < lines.size(); i++)
+        {
+            String declaration = lines.get(i).trim();
+
+            if (!declaration.startsWith("public ") || !declaration.contains("(")) continue;
+
+            String name = nameOf(declaration);
+
+            if (name == null) continue;
+
+            // A signature wrapped over several lines, whole
+            for (int next = i + 1; declaration.lastIndexOf(')') < declaration.indexOf('(') && next < lines.size(); next++)
+            {
+                declaration += " " + lines.get(next).trim();
+            }
+
+            // A ONE-STATEMENT BODY, the delegator's shape, whether it still calls the collaborator or has been
+            // rewritten to call itself
+            List<String> statements = new ArrayList<>();
+
+            for (String line : bodyOf(lines, i))
+            {
+                String code = withoutComments(line).replace("{", "").replace("}", "").trim();
+
+                if (!code.isEmpty()) statements.add(code);
+            }
+
+            if (statements.size() != 1) continue;
+
+            String statement = statements.get(0);
+
+            int arity = argumentCount(declaration.substring(declaration.indexOf('(') + 1, declaration.lastIndexOf(')')));
+
+            assertFalse(callsItself(statement, name, arity),
+                name + " calls itself instead of its collaborator - an infinite recursion the compiler accepts."
+                + "  Line: " + statement);
+
+            for (String collaborator : collaborators)
+            {
+                if (statement.contains(collaborator + name + "(")) checked++;
+            }
+        }
+
+        assertTrue(checked >= 8, "only " + checked + " of the session's delegators were found, so this checked almost"
+            + " nothing - the shape it looks for has probably changed");
+    }
+
+    /**
+     * The railway's helpers (FR-136): the field of Layout that holds each, the file it is declared in, and its class
+     * name - for the static delegators, which reach it as `Class.method(`.
+     */
+    private static final String[][] LAYOUT_HELPERS = {
+        { "layoutExplanations", "src/org/traincontrol/automation/LayoutExplanations.java", "LayoutExplanations" },
+        { "standingTrains", "src/org/traincontrol/automation/StandingTrains.java", "StandingTrains" },
+        // All static, so no field: the railway hands to it as `TrainFit.`
+        { "TrainFit", "src/org/traincontrol/automation/TrainFit.java", "TrainFit" },
+    };
+
+    /**
+     * The railway's delegators and the helpers they hand to do not call each other for ever (FR-136).
+     *
+     * Layout keeps every public and `synchronized` method, and each private one that something outside a moved cluster
+     * calls, as a one-line call to a package-private helper; the helper calls back into the railway through `owner.`,
+     * or `Layout.` for a static.  Both loops are read: a delegator calling its own name instead of the helper's, and a
+     * helper's method calling back into the delegator that leads to it.  Either is a StackOverflowError the compiler
+     * accepts.
+     *
+     * The helpers' own hand-offs are read too: a helper keeps overloads that hand to one another by the bare name
+     * (`explainCannotStart` 2 to 1, `walkStandingTrains` 2 to 3, `walkOneTail` 6 to 7), and one rewritten to call its own
+     * arity goes through neither the railway nor the owner, so nothing above would see it.
+     *
+     * MUTATION: make LayoutExplanations.explainCannotStart(Locomotive) end `return owner.explainCannotStart(loc);`, or
+     * make Layout.whyNoRouteFitsTo call `whyNoRouteFitsTo(loc, start, end)`, and this fails; so does making
+     * LayoutExplanations' `explainCannotStart(loc, byHand)` hand to `explainCannotStart(loc, false)`, or StandingTrains'
+     * six-argument `walkOneTail` call `walkOneTail(` with six arguments.
+     *
+     * @throws Exception if the source cannot be read
+     */
+    @Test
+    public void testARailwayDelegatorAndItsHelperDoNotCallEachOtherForEver() throws Exception
+    {
+        List<String> railway = Files.readAllLines(
+            new File("src/org/traincontrol/automation/Layout.java").toPath(), StandardCharsets.UTF_8);
+
+        for (String[] each : LAYOUT_HELPERS)
+        {
+            File source = new File(each[1]);
+
+            assertTrue(source.isFile(), "cannot find " + source.getAbsolutePath());
+
+            List<String> helper = Files.readAllLines(source.toPath(), StandardCharsets.UTF_8);
+
+            // What each side calls on the other: the railway through its field (or `Class.` for a static), the helper
+            // through `owner.` (or `Layout.` for a static)
+            java.util.Map<String, java.util.Set<String>> railwayCalls = merged(
+                callsThrough(railway, each[0] + "."), callsThrough(railway, each[2] + "."));
+            java.util.Map<String, java.util.Set<String>> helperCalls = merged(
+                callsThrough(helper, "owner."), callsThrough(helper, "Layout."));
+
+            int checked = 0;
+
+            for (java.util.Map.Entry<String, java.util.Set<String>> delegator : railwayCalls.entrySet())
+            {
+                for (String handedTo : delegator.getValue())
+                {
+                    checked++;
+
+                    java.util.Set<String> back = helperCalls.get(handedTo);
+
+                    assertFalse(back != null && back.contains(delegator.getKey()),
+                        "Layout." + delegator.getKey() + " hands to " + each[2] + "." + handedTo
+                        + ", which calls back into Layout." + delegator.getKey() + " - a loop the compiler accepts");
+                }
+            }
+
+            assertTrue(checked > 0, "Layout hands nothing to " + each[0] + ", so this checks nothing");
+
+            // And a delegator that calls its own name, bare or through `this.`, instead of the helper's.  Every method of
+            // Layout named like one of the helper's is read, since a delegator rewritten that way names the helper nowhere.
+            java.util.Set<String> helperNames = new java.util.HashSet<>();
+
+            for (String line : helper)
+            {
+                String name = methodDeclaredAt(line);
+
+                if (name != null) helperNames.add(name);
+            }
+
+            int delegators = 0;
+
+            for (int i = 0; i < railway.size(); i++)
+            {
+                String name = methodDeclaredAt(railway.get(i));
+
+                if (name == null || !helperNames.contains(name)) continue;
+
+                delegators++;
+
+                String declaration = railway.get(i).trim();
+
+                // A declaration whose parameters run onto the next lines
+                for (int k = i + 1; declaration.lastIndexOf(')') < declaration.indexOf('(') && k < railway.size(); k++)
+                {
+                    declaration += " " + railway.get(k).trim();
+                }
+
+                int arity = argumentCount(declaration.substring(declaration.indexOf('(') + 1,
+                    declaration.lastIndexOf(')')));
+
+                for (String line : bodyOf(railway, i))
+                {
+                    assertFalse(callsItself(line, name, arity),
+                        "Layout." + name + " calls itself instead of " + each[0] + "." + name + ".  Line: " + line.trim());
+                }
+            }
+
+            assertTrue(delegators > 0, "no method of Layout is named like one of " + each[2] + "'s, so this checks nothing");
+
+            // AND THE HELPER'S OWN HAND-OFFS, bare, at their own arity.  Another arity is another overload (the idiom), the
+            // same arity is the helper calling itself.
+            int handOffs = 0;
+
+            for (int i = 0; i < helper.size(); i++)
+            {
+                String name = methodDeclaredAt(helper.get(i));
+
+                if (name == null) continue;
+
+                handOffs++;
+
+                int arity = arityOfTheDeclarationAt(helper, i);
+
+                for (String line : bodyOf(helper, i))
+                {
+                    assertFalse(callsItself(line, name, arity),
+                        each[2] + "." + name + " calls itself.  Line: " + line.trim());
+                }
+            }
+
+            assertTrue(handOffs > 0, each[2] + " declares no methods, so this checks nothing");
+        }
+    }
+
+    /**
+     * Only the railway assigns its `edges` and `points` (FR-136).
+     *
+     * They are package-private so that `StandingTrains` can read them, which leaves them open to every class of the
+     * `automation` package.  Layout writes them under its monitor and builds the adjacency beside them (`createPoint`,
+     * `createEdge`), so a write from another class would skip both.  So no other file of the package assigns either
+     * through another object or calls a mutator on it, and Layout declares both `final`.
+     *
+     * MUTATION: have any other class of the package call `layout.points.put(`, `owner.edges.remove(` or assign
+     * `layout.points = `, and this fails; so does dropping `final` from either declaration in Layout.
+     *
+     * @throws Exception if the source cannot be read
+     */
+    @Test
+    public void testOnlyTheRailwayAssignsItsEdgesAndPoints() throws Exception
+    {
+        java.util.regex.Pattern write = java.util.regex.Pattern.compile("\\.\\s*(edges|points)\\s*(?:=(?!=)"
+            + "|\\.\\s*(?:put|putAll|putIfAbsent|remove|clear|compute|computeIfAbsent|computeIfPresent|merge|replace"
+            + "|replaceAll)\\s*\\("
+            + "|\\.\\s*(?:keySet|values|entrySet)\\s*\\(\\s*\\)\\s*\\.\\s*(?:remove|removeAll|removeIf|retainAll|clear)\\s*\\()");
+        java.util.regex.Pattern read = java.util.regex.Pattern.compile("\\.\\s*(?:edges|points)\\b");
+
+        List<File> files = new ArrayList<>();
+
+        try (java.util.stream.Stream<java.nio.file.Path> walked = Files.walk(
+            new File("src/org/traincontrol/automation").toPath()))
+        {
+            walked.filter(path -> path.toString().endsWith(".java")).forEach(path -> files.add(path.toFile()));
+        }
+
+        int readers = 0;
+
+        for (File file : files)
+        {
+            if (file.getName().equals("Layout.java")) continue;
+
+            String code = support.SourceOf.withoutComments(
+                new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8));
+
+            java.util.regex.Matcher found = write.matcher(code);
+
+            if (found.find())
+            {
+                fail(file.getName() + " writes the railway's " + found.group(1) + " through another object, near: "
+                    + code.substring(Math.max(0, found.start() - 60), Math.min(code.length(), found.end() + 30))
+                        .replace('\n', ' '));
+            }
+
+            if (read.matcher(code).find()) readers++;
+        }
+
+        assertTrue(readers > 0, "nothing outside Layout reads its edges or points any more, so this checked nothing");
+
+        assertEquals(support.SourceOf.occurrences("final Map<String, Edge> edges;"), 1,
+            "Layout no longer declares `edges` final");
+        assertEquals(support.SourceOf.occurrences("final Map<String, Point> points;"), 1,
+            "Layout no longer declares `points` final");
+    }
+
+    /**
+     * A method of the autonomy editor panel named like one of its helpers' is one call to it (FR-136).
+     *
+     * AutonomyEditorPanel keeps each method that something outside a moved cluster calls as a one-line call to a
+     * package-private helper, so a claim that reads the helper's body is reading what the panel runs.  A second statement
+     * in such a method, or a different call, is code the claims that read the helper do not see.
+     *
+     * Only the panel's rows of COLLABORATORS are read.  The window, the session and the track editor keep methods named
+     * like their collaborators' that are not single calls on purpose (a delegator that guards first, a method that
+     * hands to two collaborators, an overload that does its own work), so the rule is the panel's own.
+     *
+     * MUTATION: add a statement of its own before the call in any of the panel's delegators, or make one call another
+     * helper, and this fails.
+     *
+     * @throws Exception if the source cannot be read
+     */
+    @Test
+    public void testAnEditorPanelDelegatorIsOneCallToItsHelper() throws Exception
+    {
+        int rows = 0;
+
+        for (String[] each : COLLABORATORS)
+        {
+            if (!AUTONOMY_EDITOR.equals(each[3])) continue;
+
+            rows++;
+
+            List<String> panel = Files.readAllLines(new File(each[3]).toPath(), StandardCharsets.UTF_8);
+
+            java.util.Set<String> helperNames = new java.util.HashSet<>();
+
+            for (String line : Files.readAllLines(new File(each[1]).toPath(), StandardCharsets.UTF_8))
+            {
+                String name = methodDeclaredAt(line);
+
+                if (name != null) helperNames.add(name);
+            }
+
+            int delegators = 0;
+
+            for (int i = 0; i < panel.size(); i++)
+            {
+                String name = methodDeclaredAt(panel.get(i));
+
+                if (name == null || !helperNames.contains(name)) continue;
+
+                delegators++;
+
+                List<String> statements = new ArrayList<>();
+
+                for (String line : bodyOf(panel, i))
+                {
+                    String code = withoutComments(line).replace("{", "").replace("}", "").trim();
+
+                    if (!code.isEmpty()) statements.add(code);
+                }
+
+                assertTrue(statements.size() == 1 && (statements.get(0).contains(each[0] + "." + name + "(")
+                        || statements.get(0).contains(each[2] + "." + name + "(")),
+                    each[4] + "." + name + " is named like " + each[2] + "'s method but is not one call to it, so the"
+                    + " panel runs code the claims that read " + each[2] + " do not see: " + statements);
+            }
+
+            assertTrue(delegators > 0, "no method of " + each[4] + " is named like one of " + each[2] + "'s, so this"
+                + " checks nothing");
+        }
+
+        assertEquals(rows, 5, "the panel is expected to hand to five helpers");
+    }
+
+    /**
+     * The autonomy editor panel and its five helpers (FR-136): the only classes that may reach `session`, `promptName(` or
+     * `applyLength(` through a panel.
+     */
+    private static final String[] EDITOR_FILES = {
+        "AutonomyEditorPanel", "EditorTileMenus", "EditorPrompts", "EditorSignals", "EditorMassAssign", "EditorWhy" };
+
+    /**
+     * What a file reaches into an AutonomyEditorPanel for: each `session`, `promptName(` or `applyLength(` taken from an
+     * expression of that type.
+     *
+     * The expressions are the names the file declares with the type (`AutonomyEditorPanel autonomyPanel;`, a parameter, a
+     * local), a call of `getAutonomyPanel()` or `liveSetupPanel()`, and a cast to the type.  `promptNameFor(` and
+     * `applyLengthAnswer(` are other names and do not match.
+     *
+     * @param code a file's text without comments
+     * @return one entry per hit, "member: the text around it"
+     */
+    private static List<String> reachesIntoThePanel(String code)
+    {
+        StringBuilder expressions = new StringBuilder(
+            "getAutonomyPanel\\s*\\(\\s*\\)|liveSetupPanel\\s*\\(\\s*\\)|\\(\\s*AutonomyEditorPanel\\s*\\)\\s*\\w+\\s*\\)");
+
+        for (String name : panelNames(code)) expressions.append("|(?<!\\w)").append(java.util.regex.Pattern.quote(name));
+
+        java.util.regex.Matcher found = java.util.regex.Pattern.compile(
+            "(?:" + expressions + ")\\s*\\.\\s*(session\\b|promptName\\s*\\(|applyLength\\s*\\()").matcher(code);
+
+        List<String> hits = new ArrayList<>();
+
+        while (found.find())
+        {
+            hits.add(found.group(1).replaceAll("\\W", "") + ": " + code.substring(Math.max(0, found.start() - 30),
+                Math.min(code.length(), found.end() + 30)).replaceAll("\\s+", " "));
+        }
+
+        return hits;
+    }
+
+    /**
+     * The names a file declares with the type AutonomyEditorPanel: a field, a parameter or a local.
+     */
+    private static java.util.Set<String> panelNames(String code)
+    {
+        java.util.Set<String> names = new java.util.LinkedHashSet<>();
+
+        java.util.regex.Matcher declared = java.util.regex.Pattern.compile(
+            "\\bAutonomyEditorPanel\\s+(\\w+)\\s*[;=,)]").matcher(code);
+
+        while (declared.find()) names.add(declared.group(1));
+
+        return names;
+    }
+
+    /**
+     * Nothing outside the autonomy editor and its helpers reaches the panel's `promptName`, `applyLength` or `session`
+     * (FR-136).
+     *
+     * They are package-private so that `EditorTileMenus`, `EditorPrompts`, `EditorSignals`, `EditorMassAssign` and
+     * `EditorWhy` can reach them.  That leaves them open to the rest of `org.traincontrol.gui`, and each of the three has a
+     * door that decides something first: `promptNameFor` and `promptLengthFor` decide who may ask (`heldByARun`,
+     * `cancelPendingGesture`, `canBeNamed`, `offersALength`), and a write to the setup goes through the panel so that
+     * `setupChanged()` follows.  A caller that went round them would skip that.
+     *
+     * The control is the helpers themselves: the same reading must find `editor.session`, `editor.promptName(` and
+     * `editor.applyLength(` in them, and `autonomyPanel` as a declared name in LayoutEditor, or it is reading nothing.
+     *
+     * MUTATION: in LayoutEditor, add `autonomyPanel.session.getStore();` or `autonomyPanel.promptName(over);` and this
+     * fails.
+     *
+     * @throws Exception if the source cannot be read
+     */
+    @Test
+    public void testOnlyTheEditorsHelpersReachIntoThePanel() throws Exception
+    {
+        java.util.Set<String> inside = new java.util.HashSet<>(java.util.Arrays.asList(EDITOR_FILES));
+
+        java.util.Set<String> seen = new java.util.HashSet<>();
+
+        for (String name : EDITOR_FILES)
+        {
+            if ("AutonomyEditorPanel".equals(name)) continue;
+
+            File helper = new File("src/org/traincontrol/gui/" + name + ".java");
+
+            assertTrue(helper.isFile(), "cannot find " + helper.getAbsolutePath());
+
+            String code = support.SourceOf.withoutComments(new String(Files.readAllBytes(helper.toPath()),
+                StandardCharsets.UTF_8));
+
+            assertTrue(panelNames(code).contains("editor"), name + " no longer declares its AutonomyEditorPanel as `editor`");
+
+            for (String hit : reachesIntoThePanel(code)) seen.add(hit.substring(0, hit.indexOf(':')));
+        }
+
+        assertEquals(seen, new java.util.HashSet<>(java.util.Arrays.asList("session", "promptName", "applyLength")),
+            "the helpers are expected to reach all three through `editor`, which is what shows the pattern matches");
+
+        List<File> files = new ArrayList<>();
+
+        try (java.util.stream.Stream<java.nio.file.Path> walked = Files.walk(new File("src/org/traincontrol/gui").toPath()))
+        {
+            walked.filter(path -> path.toString().endsWith(".java")).forEach(path -> files.add(path.toFile()));
+        }
+
+        int outside = 0;
+        boolean layoutEditorKnown = false;
+
+        for (File file : files)
+        {
+            if (inside.contains(file.getName().replace(".java", ""))) continue;
+
+            String code = support.SourceOf.withoutComments(new String(Files.readAllBytes(file.toPath()),
+                StandardCharsets.UTF_8));
+
+            outside++;
+
+            if (file.getName().equals("LayoutEditor.java")) layoutEditorKnown = panelNames(code).contains("autonomyPanel");
+
+            List<String> hits = reachesIntoThePanel(code);
+
+            assertTrue(hits.isEmpty(), file.getName() + " reaches into AutonomyEditorPanel past its doors "
+                + "(`promptNameFor`, `promptLengthFor`, and writes through the panel): " + hits);
+        }
+
+        assertTrue(outside > 20, "only " + outside + " files outside the editor were read, so this checked almost nothing");
+        assertTrue(layoutEditorKnown, "LayoutEditor no longer declares `autonomyPanel`, so the names read are not the ones used");
+    }
+
     /**
      * Whether a line calls the wrapper's own name from inside its own body - qualified or not.
      *
@@ -107,8 +830,11 @@ public class testNoSelfRecursiveWrappers
         // name alone reported that as an infinite recursion in working code, which is worse than the
         // gap the bare-name check closed: saveState is the only overloaded method in this file\u2019s
         // scope, so this would have been red for ever and somebody would have deleted it.
+        //
+        // A `this.` in front is the same call, and gets the same arity test: `this.name(a)` for a one-argument `name`
+        // is the loop, and `this.name(a, b)` is another overload.
         java.util.regex.Matcher call = java.util.regex.Pattern.compile(
-            "(^|[^.\\w])" + java.util.regex.Pattern.quote(name) + "\\s*\\(([^)]*)\\)")
+            "(^|[^.\\w]|\\bthis\\.)" + java.util.regex.Pattern.quote(name) + "\\s*\\(([^)]*)\\)")
             .matcher(code);
 
         while (call.find())
@@ -165,7 +891,7 @@ public class testNoSelfRecursiveWrappers
      * The signature itself is never included, even when its opening brace shares its line (K&R style,
      * against the Allman style this file mostly uses) - only what follows that brace is. Otherwise
      * `public void syncWithCS2() {` would be handed to `callsItself` as a line "calling" syncWithCS2,
-     * since the bare-name check added for TST-B6 cannot otherwise tell a declaration's own name from a
+     * since the bare-name check cannot otherwise tell a declaration's own name from a
      * call to it - both are just the name followed by `(`, preceded by a space.
      */
     private static List<String> bodyOf(List<String> lines, int declaredAt)

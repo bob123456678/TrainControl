@@ -1,11 +1,9 @@
 package regression;
 
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.AutonomyEditorPanel;
+import support.SourceOf;
 
 /**
  * OB-188: the two shortcut buttons in the set-home dialog touch each other.
@@ -102,10 +100,7 @@ public class testTheHomeShortcutsDoNotTouch
     @Test
     public void testThePickerBuildsItsShortcutStripFromThatRow() throws Exception
     {
-        String source = new String(Files.readAllBytes(
-            Paths.get("src/org/traincontrol/gui/AutonomyEditorPanel.java")), StandardCharsets.UTF_8);
-
-        assertTrue(source.contains("JPanel row = shortcutRow();"),
+        assertTrue(SourceOf.allCode().contains("JPanel row = shortcutRow();"),
             "pickLocomotive no longer builds its shortcut strip with shortcutRow, so the spacing "
             + "measured above belongs to a panel the dialog does not use (OB-188)");
     }

@@ -217,7 +217,7 @@ public class testConditionOutline
     }
 
     /**
-     * The control: a word SHALLOWER than both its neighbours is how two groups are joined, and is not flagged.
+     * The control: a word SHALLOWER than both its neighbors is how two groups are joined, and is not flagged.
      */
     @Test
     public void testAWordJoiningTwoGroupsIsNotFlagged()
@@ -435,7 +435,7 @@ public class testConditionOutline
     }
 
     /**
-     * Moving a condition past its neighbour leaves the joining word where it was.
+     * Moving a condition past its neighbor leaves the joining word where it was.
      *
      * Adam's: three lines reading "A and B", with B moved up, came back as "A B" - the AND gone and
      * the route now firing on a condition nobody changed.  Moving the LINE put B beside the word
@@ -483,6 +483,53 @@ public class testConditionOutline
 
         assertEquals(describe(ConditionOutline.toExpression(moved)), "and(2,(or(1,3)))",
             "the shape is untouched; only which condition sits where in it changed");
+    }
+
+    /**
+     * FR-144: a condition whose neighbor at its own level is a group moves past the whole group.  "(1 or 2 or 3)
+     * and 4" with 4 moved up is "4 and (1 or 2 or 3)", every line at its level, and moving it down undoes that.
+     *
+     * MUTATION: drop the group branch of `moved`, and 4 trades places with 3 inside the group.
+     */
+    @Test
+    public void testAConditionMovesPastAWholeGroup()
+    {
+        List<ConditionOutline.Row> rows = outline(
+            condition(1, 1),
+            joining(1, ConditionOutline.Joiner.OR),
+            condition(1, 2),
+            joining(1, ConditionOutline.Joiner.OR),
+            condition(1, 3),
+            joining(0, ConditionOutline.Joiner.AND),
+            condition(0, 4));
+
+        List<ConditionOutline.Row> expected = outline(
+            condition(0, 4),
+            joining(0, ConditionOutline.Joiner.AND),
+            condition(1, 1),
+            joining(1, ConditionOutline.Joiner.OR),
+            condition(1, 2),
+            joining(1, ConditionOutline.Joiner.OR),
+            condition(1, 3));
+
+        assertEquals(ConditionOutline.landing(rows, 6, -1), 0, "4 lands on the first line");
+
+        List<ConditionOutline.Row> moved = ConditionOutline.moved(rows, 6, -1);
+
+        assertEquals(describe(ConditionOutline.toExpression(moved)),
+            describe(ConditionOutline.toExpression(expected)), "4 is now in front of the whole group");
+
+        for (int line = 0; line < expected.size(); line++)
+        {
+            assertEquals(moved.get(line).getDepth(), expected.get(line).getDepth(), "the level of line " + line);
+        }
+
+        assertTrue(ConditionOutline.problems(moved).isEmpty(), "nothing is flagged after the move");
+
+        assertEquals(ConditionOutline.landing(moved, 0, 1), 6, "and moving it down lands on the last line");
+
+        assertEquals(describe(ConditionOutline.toExpression(ConditionOutline.moved(moved, 0, 1))),
+            describe(ConditionOutline.toExpression(rows)), "moving it back down undoes the move");
     }
 
     /**
@@ -556,7 +603,7 @@ public class testConditionOutline
     }
 
     /**
-     * A bracket anywhere but at the start survives being shown as an outline (IPR-B2).
+     * A bracket anywhere but at the start survives being shown as an outline.
      *
      * `3 or ((1 or 2) and 4)`. Every level of it is written at the right depth - 0 for the OR, 1 for
      * the AND, 2 for the bracketed OR inside it - but the depth-1 rows come out **after** the depth-2
@@ -580,7 +627,7 @@ public class testConditionOutline
      * are the same number wherever the run begins exactly one level deeper, which is why this needed a
      * shape whose depths step by two.
      *
-     * **That shape does not need a bracket** (`VD9-C2`). `Or(And(Or(1,2), 4), 3)` has no `NodeGroup`
+     * **That shape does not need a bracket**. `Or(And(Or(1,2), 4), 3)` has no `NodeGroup`
      * anywhere and comes back as `or(or(or(1,2),4),3)` under the old reader - the same lost AND. The
      * family is a cross-operator child that is itself the left child of a cross-operator parent: two
      * alternations in a row down the left spine, each bumped by `writeChild`, both written before the
@@ -608,7 +655,7 @@ public class testConditionOutline
     }
 
     /**
-     * The same defect with no bracket anywhere in the tree (`IPR-B2`, widened by `VD9-C2`).
+     * The same defect with no bracket anywhere in the tree.
      *
      * `(1 or 2) and 4, or 3` - as a tree, `Or(And(Or(1,2), 4), 3)`. No `NodeGroup`, and it fails the
      * same way: `or(or(or(1,2),4),3)` under the old reader, with the AND gone.
@@ -745,7 +792,7 @@ public class testConditionOutline
      * Every condition in the operator's own routes survives the outline, parsed as 3.0.0 parses it.
      *
      * **Adam's question, 2026-09-03:** *"are you comparing if the old routes from my 2.8.1 files match
-     * those parsed in 3.0.0?"* The screens behind `IPR-B2` were not. They walked the structure of
+     * those parsed in 3.0.0?"* The earlier screens were not. They walked the structure of
      * `routes.json`, and that structure is **not** what the editor is handed:
      * `NodeExpression.fromJSON` runs `normalize`, which inserts a `NodeGroup` around any cross-operator
      * left child. A file with no brackets in it can therefore produce a bracketed tree, and a screen of
@@ -772,7 +819,7 @@ public class testConditionOutline
 
         if (!file.isFile())
         {
-            throw new org.testng.SkipException("no frozen copy of the operator's routes at " + file);
+            throw new AssertionError("no frozen copy of the operator's routes at " + file);
         }
 
         String text = new String(java.nio.file.Files.readAllBytes(file.toPath()),
@@ -819,7 +866,7 @@ public class testConditionOutline
             + "sentence (IPR-B2)");
     }
     /**
-     * Two bracketed groups at one indent are not a disagreement (IPR-B3).
+     * Two bracketed groups at one indent are not a disagreement.
      *
      * `A and (B or C) and (D and E)` is an outline somebody can build with ordinary gestures - indent
      * B, set OR, add C, outdent the joiner, indent D, add E - and it is one `toExpression` reads
@@ -858,7 +905,7 @@ public class testConditionOutline
             + "which is exactly how `read` consumes them, and the editor refused to save an outline "
             + "it reads perfectly (IPR-B3)");
 
-        // AND THE RULE IT STILL ENFORCES, which is what stops this being a licence to disagree.
+        // AND THE RULE IT STILL ENFORCES, which is what stops this being a license to disagree.
         java.util.List<ConditionOutline.Row> mixed = new java.util.ArrayList<>();
 
         mixed.add(condition(0, 1));

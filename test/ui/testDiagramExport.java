@@ -61,7 +61,7 @@ public class testDiagramExport
         // window looked at the copy. The comment that used to stand here named only the window.
         sandbox = support.LayoutSandbox.open();
 
-        model = MarklinControlStation.init(null, true, false, false, true);
+        model = support.TestStation.simulatedInDebug();
 
         model.stop();
 
@@ -124,7 +124,7 @@ public class testDiagramExport
     /**
      * A size beyond the maximum is brought back to the documented ceiling, not to some other size.
      *
-     * TST-C9: comparing render(100000) against a second render(MAX_TILE_SIZE) call proves only that
+     * Comparing render(100000) against a second render(MAX_TILE_SIZE) call proves only that
      * the two inputs are clamped to the SAME size, not that the size is the ceiling the constant
      * names - a clamp mistakenly written as MAX_TILE_SIZE / 4 would move both calls together and this
      * test would still pass. So the expected width is derived independently instead: from a render at
@@ -136,7 +136,7 @@ public class testDiagramExport
         // THREE RENDERS, no arithmetic, no tolerance.
         //
         // Comparing an absurd size against MAX alone proves nothing - both go through the clamp, so a
-        // clamp written as MAX / 4 moves them together and the test still passes. That is TST-C9.
+        // clamp written as MAX / 4 moves them together and the test still passes.
         //
         // Deriving the expected width instead - render small, scale by the ratio - does not hold
         // either: a diagram is tiles PLUS what the drawing adds that does not scale with them, so
@@ -207,7 +207,7 @@ public class testDiagramExport
     }
 
     /**
-     * How many distinct colours the picture holds, up to the point where the answer stops mattering.
+     * How many distinct colors the picture holds, up to the point where the answer stops mattering.
      */
     private static int colourCount(BufferedImage image)
     {
@@ -234,7 +234,7 @@ public class testDiagramExport
      * draw the same thing - a shortcut that quietly exported a different page would be worse than the
      * question it removes.
      *
-     * TST-B9: the original body rendered `page` against itself twice - byte-identical arguments, so
+     * The original body rendered `page` against itself twice - byte-identical arguments, so
      * all it measured was that `DiagramExport.render` is deterministic. The active-page path
      * (`TrainControlUI.java:8044`, `active.addActionListener(event ->
      * exportDiagram(activeLayoutPage()))`) never ran.
@@ -289,11 +289,11 @@ public class testDiagramExport
                 "activeLayoutPage() reported " + reportedActive + " while the selector was showing "
                 + onScreen + " - the shortcut would export the wrong page");
 
-            // ONE OBJECT, COMPARED WITH ITSELF FROM HERE ON (TSX-C4).
+            // ONE OBJECT, COMPARED WITH ITSELF FROM HERE ON.
             //
             // The assertion above has just established that `reportedActive` equals `onScreen`, so
             // these two lookups return the same page and everything below is a determinism check on
-            // `render` - which is what `TST-B9` said this whole test was before it was rebuilt.  The
+            // `render` - which is what this whole test was before it was rebuilt.  The
             // check that carries the claim is the equality above; this is kept because a rendering that
             // is NOT deterministic would make every picture comparison in this class meaningless, and
             // that is worth one assertion somewhere.
@@ -392,9 +392,9 @@ public class testDiagramExport
 
         assertNotNull(page, "no page to draw");
 
-        // WHETHER IT WAS STORED, not what the accessor answers (TSX-B3).
+        // WHETHER IT WAS STORED, not what the accessor answers.
         //
-        // Writing the accessor's default back materialises a preference on a machine that never set
+        // Writing the accessor's default back materializes a preference on a machine that never set
         // one, so the operator ends up with a setting he did not choose and a later change of default
         // cannot reach him.  The rule is stated at `testDiagramLooksRight`, in the sweep that produced
         // it - this was one of the three sites that sweep missed.
@@ -503,7 +503,7 @@ public class testDiagramExport
     /**
      * Building a grid over a panel retires the grid that was there.
      *
-     * DD-B3. Four places in the application build a `LayoutGrid` over an existing panel, and three of
+     * Four places in the application build a `LayoutGrid` over an existing panel, and three of
      * them called `discard()` on the outgoing one first. A grid that is not discarded keeps two timers
      * armed, and those timers go on firing into a panel that now belongs to somebody else - the grace
      * timer drops a spinner into the middle of the page the NEW grid has just drawn, and because the
@@ -557,7 +557,7 @@ public class testDiagramExport
      * parent. So while the value was the grid itself, every entry kept its own key alive and none was
      * ever collected: one page retained per editor, popup or export, for the life of the session.
      *
-     * Found in review (NR-3) rather than by anybody noticing, which is how a leak of this size behaves -
+     * Found in review rather than by anybody noticing, which is how a leak of this size behaves -
      * it costs nothing anyone can see until the day it does.
      *
      * The collection itself is asked for rather than assumed: a bounded loop, because a garbage

@@ -22,6 +22,7 @@ import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.file.CS2File;
+import support.SourceOf;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
@@ -48,7 +49,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  *
  * **The defect this covers.**  `TrainControlUI.rememberPlacement` wrote the locomotive and not the
  * facing, so a pasted train had no recorded direction; `AutonomyBuilder.placementCopy` then fell
- * through to COPY 0 when nothing matched (since GUI2-B1, to the first copy trains may arrive at) -
+ * through to COPY 0 when nothing matched (to the first copy trains may arrive at) -
  * whichever the builder emitted first.  The next
  * `captureFromLayout` wrote that copy's side back as though it had been chosen.  A probe on the real
  * layout caught every step of it: a facing of `S` carried into a square whose only built copy was
@@ -90,7 +91,7 @@ public class testAPastedTrainKeepsItsDirection
         // every class over it say something different every week.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = init(null, true, false, false, false);
+        model = support.TestStation.simulated();
 
         // THE MODEL'S OWN PAGES, not a second parse of the same files.
         //
@@ -120,7 +121,7 @@ public class testAPastedTrainKeepsItsDirection
     /**
      * The heading survives the paste, at every station the rule can be asked about.
      *
-     * SPEC-A1: the version of this test that shipped this morning could not fail.  Its `putDown`
+     * The version of this test that shipped this morning could not fail.  Its `putDown`
      * helper re-implemented the door rather than calling it, and then handed in the same `Side` it
      * went on to assert - so it agreed with itself whatever the program did.  The file's own javadoc
      * said as much and it still read as covering the defect.  `assert-the-variable-not-the-control`,
@@ -219,7 +220,7 @@ public class testAPastedTrainKeepsItsDirection
             else
             {
                 // Several copies and none of them can hold it. Nothing here knows which the operator
-                // meant, so the value is cleared rather than invented - SPEC-A1.
+                // meant, so the value is cleared rather than invented.
                 assertNull(afterwards,
                     station.getName() + " invented a heading for a train none of its copies can hold: "
                     + held);
@@ -234,7 +235,7 @@ public class testAPastedTrainKeepsItsDirection
     /**
      * And an unholdable heading is cleared rather than replaced with an arbitrary one.
      *
-     * This is SPEC-A1 itself: the shipped version recorded the copy the running layout had landed on,
+     * This is the original defect itself: the shipped version recorded the copy the running layout had landed on,
      * and `StationIndex.speakerAt` says that on an empty square "any copy will do".  Recording copy 0
      * presents a direction nobody chose as one somebody did - and it survives a reload, which is why
      * Adam saw the dropdown disagree with the train.
@@ -282,9 +283,7 @@ public class testAPastedTrainKeepsItsDirection
     @Test
     public void testTheDoorWalksToTheLandingBeforeItMovesTheTrain() throws Exception
     {
-        String door = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/TrainControlUI.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
+        String door = SourceOf.declaration("private boolean locomotiveGestureOnDiagram(");
 
         int walk = door.indexOf("facingAtTheLanding = getAutonomySession() == null");
 
@@ -308,7 +307,7 @@ public class testAPastedTrainKeepsItsDirection
             + " sets off from the wrong place - or from nowhere at all");
     }
     /**
-     * WHAT A COMPULSORY-TURN STATION ACTUALLY BUILDS TO (MON-C14): a station autonomy may choose exactly when it is not
+     * WHAT A COMPULSORY-TURN STATION ACTUALLY BUILDS TO: a station autonomy may choose exactly when it is not
      * marked parking.
      *
      * A review read `AutonomyBuilder:994` - `json.put(stops ? "terminus" : "reversing", true)` - and observed that the
@@ -365,7 +364,7 @@ public class testAPastedTrainKeepsItsDirection
                         + (built.isAutoDestination() ? "may" : "may not") + " choose it");
                 }
 
-                // AND THE EDITOR, which colours the leg magenta and writes the Auto tier notice from its own set.
+                // AND THE EDITOR, which colors the leg magenta and writes the Auto tier notice from its own set.
                 if (built.isActive() && editorSays.contains(square) == built.isAutoDestination())
                 {
                     wrong.add(name + ": the editor's manual-only set " + (editorSays.contains(square) ? "holds" : "leaves"
@@ -623,11 +622,140 @@ public class testAPastedTrainKeepsItsDirection
     @Test
     public void testTheLandingDirectionComesFromWalkingThere() throws Exception
     {
+        // THE WALK, ASKED OF THE RAILWAY (FR-136).  A train is put down on one square after another and walked, by
+        // this test's own breadth-first search, to every square that splits; the heading the paste records has to
+        // be the facing of the nearest copy the drive could end on.  Neither the heading the train had nor the first
+        // copy in build order is that answer everywhere, and both floors below say so.
+        List<TileKey> startsAt = new java.util.ArrayList<>();
+        List<String> startCopies = new java.util.ArrayList<>();
+        List<Side> startFacings = new java.util.ArrayList<>();
+
+        for (Point candidate : stations())
+        {
+            TileKey key = session.getStationIndex().squareOf(candidate.getName());
+
+            if (key == null || candidate.isTerminus() || startsAt.contains(key)) continue;
+
+            Side facing = session.facingsFor(key).get(candidate.getName());
+
+            if (facing == null) continue;
+
+            startsAt.add(key);
+            startCopies.add(candidate.getName());
+            startFacings.add(facing);
+
+            if (startsAt.size() == 6) break;
+        }
+
+        assertFalse(startsAt.isEmpty(), "no station can have a train put down on it, so nothing is walked from");
+
+        List<TileKey> splits = new java.util.ArrayList<>();
+
+        for (TileKey named : session.getStore().getNamedTiles())
+        {
+            if (session.facingsFor(named).size() > 1) splits.add(named);
+        }
+
+        assertTrue(splits.size() > 1,
+            "fewer than two squares on this railway split into copies, so there is nothing for a walk to choose between");
+
+        int checked = 0;
+        int notTheFirstCopy = 0;
+        int notTheCarriedHeading = 0;
+
+        for (int i = 0; i < startsAt.size(); i++)
+        {
+            putDown(startsAt.get(i), startCopies.get(i), startFacings.get(i));
+
+            try
+            {
+                model.parseAuto(session.buildConfiguration());
+
+                org.traincontrol.automation.Layout walked = model.getAutoLayout();
+
+                Point at = occupiedCopyOf(startsAt.get(i));
+
+                assertNotNull(at, "the train is on no copy of " + startsAt.get(i) + " after the build, so there is no"
+                    + " place to walk from");
+
+                Map<String, Integer> away = distancesFrom(walked, at);
+
+                Side carried = session.facingOf(train, walked);
+
+                assertEquals(carried, startFacings.get(i), "control: the railway does not have the train pointing the way"
+                    + " it was put down");
+
+                for (TileKey target : splits)
+                {
+                    if (target.equals(startsAt.get(i))) continue;
+
+                    Map<String, Side> copies = session.facingsFor(target);
+
+                    Side expected = nearestStandingFacing(walked, away, copies);
+
+                    // Nothing there can be driven to: the other arm of the rule, which has claims of its own.
+                    if (expected == null) continue;
+
+                    assertEquals(session.facingByPath(walked, train, target), expected,
+                        "put down on " + target + " after standing on " + startCopies.get(i) + " facing "
+                        + startFacings.get(i) + ", the train should face the way the nearest copy it could drive to does ("
+                        + expected + "). Copies: " + copies);
+
+                    checked++;
+
+                    if (expected != copies.values().iterator().next()) notTheFirstCopy++;
+
+                    if (expected != carried) notTheCarriedHeading++;
+                }
+            }
+            finally
+            {
+                lift(startsAt.get(i));
+            }
+        }
+
+        assertTrue(checked > 0, "no square was walked to, so this asserted nothing");
+
+        assertTrue(notTheFirstCopy > 0,
+            "every walk ended on the first copy of its square, so taking the first copy cannot be told from walking ("
+            + checked + " walks)");
+
+        assertTrue(notTheCarriedHeading > 0,
+            "every walk ended facing the way the train already pointed, so carrying the heading over cannot be told"
+            + " from walking (" + checked + " walks)");
+
+        // The ends of it that need no walk, asked of a train that is not on the railway at all.
+        model.parseAuto(session.buildConfiguration());
+
         org.traincontrol.automation.Layout built = model.getAutoLayout();
 
         assertNotNull(built, "the configuration did not build");
 
-        // A square with two copies to choose between, which this layout does not otherwise have.
+        assertNull(session.facingByPath(built, "no such locomotive anywhere", null),
+            "a null square must produce no direction at all");
+
+        int oneCopy = 0;
+
+        for (Point any : stations())
+        {
+            TileKey key = session.getStationIndex().squareOf(any.getName());
+
+            if (key == null || session.facingsFor(key).size() != 1) continue;
+
+            // ONE COPY IS ONE ANSWER, walk or no walk - and at a terminus that answer is the
+            // reversal.  A train that is not on the railway at all cannot be walked from, so this
+            // also covers the "no path" arm reaching its fallback.
+            assertEquals(session.facingByPath(built, "no such locomotive anywhere", key),
+                session.facingsFor(key).values().iterator().next(),
+                any.getName() + " has one copy, so there is one direction a train can be put down"
+                + " facing - whatever the walk did or did not find");
+
+            oneCopy++;
+        }
+
+        assertTrue(oneCopy > 0, "no square on this railway has one copy, so the single answer was not asked for");
+
+        // A square with two copies to choose between, made by marking one may-reverse.
         Point station = null;
 
         for (Point candidate : stations())
@@ -648,39 +776,100 @@ public class testAPastedTrainKeepsItsDirection
             session.setPointProperty(key, "canReverse", null);
         }
 
-        // The sample railway cannot be made to split, which the measurement above records.  Said
-        // rather than skipped, and the rule is still exercised by the two cases below it.
-        if (station == null)
+        if (station != null)
         {
-            assertNull(session.facingByPath(built, "no such locomotive anywhere", null),
-                "a null square must produce no direction at all");
+            TileKey square = session.getStationIndex().squareOf(station.getName());
 
-            for (Point any : stations())
+            model.parseAuto(session.buildConfiguration());
+
+            assertTrue(session.facingsFor(square).size() > 1,
+                "the split did not survive the rebuild, so there is nothing to choose between");
+
+            session.setPointProperty(square, "canReverse", null);
+        }
+    }
+
+    /**
+     * How far every Point is from where the train stands, in edges, by this test's own search.
+     *
+     * Breadth-first, so the distances are the true shortest ones whatever order `getNeighbors` shuffles the edges
+     * into.  A turning copy is reached but not driven through, as the rule it checks has it.
+     *
+     * @param walked the built railway
+     * @param start where the train stands
+     * @return the distance to each reachable Point, by name
+     */
+    private static Map<String, Integer> distancesFrom(Layout walked, Point start)
+    {
+        Map<String, Integer> out = new java.util.LinkedHashMap<>();
+        java.util.Deque<Point> queue = new java.util.ArrayDeque<>();
+
+        out.put(start.getName(), 0);
+        queue.add(start);
+
+        while (!queue.isEmpty())
+        {
+            Point here = queue.poll();
+
+            List<org.traincontrol.automation.Edge> leaving = walked.getNeighbors(here);
+
+            if (leaving == null) continue;
+
+            for (org.traincontrol.automation.Edge edge : leaving)
             {
-                TileKey key = session.getStationIndex().squareOf(any.getName());
+                Point next = edge.getEnd();
 
-                if (key == null || session.facingsFor(key).isEmpty()) continue;
+                if (next == null || out.containsKey(next.getName())) continue;
 
-                // ONE COPY IS ONE ANSWER, walk or no walk - and at a terminus that answer is the
-                // reversal.  A train that is not on the railway at all cannot be walked from, so this
-                // also covers the "no path" arm reaching its fallback.
-                assertEquals(session.facingByPath(built, "no such locomotive anywhere", key),
-                    session.facingsFor(key).values().iterator().next(),
-                    any.getName() + " has one copy, so there is one direction a train can be put down"
-                    + " facing - whatever the walk did or did not find");
+                out.put(next.getName(), out.get(here.getName()) + 1);
+
+                if (next.isTerminus() || next.isReversing()) continue;
+
+                queue.add(next);
             }
-
-            return;
         }
 
-        TileKey square = session.getStationIndex().squareOf(station.getName());
+        return out;
+    }
 
-        model.parseAuto(session.buildConfiguration());
+    /**
+     * The facing of the nearest copy a train could be standing on after driving there: a plain copy before a turning
+     * one at the same distance, and the first in build order among equals.
+     *
+     * @param walked the built railway
+     * @param away the distances from the train
+     * @param copies the target's copies, by name, in build order
+     * @return that side, or null when no copy can be driven to
+     */
+    private static Side nearestStandingFacing(Layout walked, Map<String, Integer> away, Map<String, Side> copies)
+    {
+        int nearest = Integer.MAX_VALUE;
 
-        assertTrue(session.facingsFor(square).size() > 1,
-            "the split did not survive the rebuild, so there is nothing to choose between");
+        for (String name : copies.keySet())
+        {
+            Integer at = away.get(name);
 
-        session.setPointProperty(square, "canReverse", null);
+            if (at != null && at < nearest) nearest = at;
+        }
+
+        if (nearest == Integer.MAX_VALUE) return null;
+
+        Side turning = null;
+
+        for (Map.Entry<String, Side> copy : copies.entrySet())
+        {
+            Integer at = away.get(copy.getKey());
+
+            if (at == null || at != nearest) continue;
+
+            Point point = walked.getPoint(copy.getKey());
+
+            if (point != null && !point.isTerminus() && !point.isReversing()) return copy.getValue();
+
+            if (turning == null) turning = copy.getValue();
+        }
+
+        return turning;
     }
 
     /**
@@ -738,10 +927,10 @@ public class testAPastedTrainKeepsItsDirection
      *
      * Both defects live in exactly that gap, and they are its two halves:
      *
-     * - **REG8-A1, the value never arrives.** `parseAuto` applied the side while creating the points
+     * - **The value never arrives.** `parseAuto` applied the side while creating the points
      *   and placed the trains afterwards, and placing a train clears the side. Written, then wiped, on
      *   every build. The setup was right the whole time, so every existing assertion passed.
-     * - **IND9-A1, a value arrives that nobody set.** Emptying a square cleared the placement and the
+     * - **A value arrives that nobody set.** Emptying a square cleared the placement and the
      *   facing and left the side behind, so the next train inherited the last one’s tail. Again
      *   invisible: the setup faithfully reported the stale value it had been left.
      *
@@ -832,7 +1021,7 @@ public class testAPastedTrainKeepsItsDirection
             + " behind it is blocked on the strength of where a different train came in (IND9-A1)");
     }
     /**
-     * The arrival side survives the BUILD, not just the file (REG8-A1).
+     * The arrival side survives the BUILD, not just the file.
      *
      * `parseAuto` applies `arrivedFrom` while it is creating the points and places the locomotives in a
      * later pass. `Point.setLocomotive` drops the arrival side whenever the occupant changes - right on
@@ -841,7 +1030,7 @@ public class testAPastedTrainKeepsItsDirection
      * then wiped, on every build and every reload.
      *
      * **The tail blocking was therefore off after every restart**, for exactly the squares the arrival
-     * -side question exists for: the operator answers it, watches the track grey, restarts, and the
+     * -side question exists for: the operator answers it, watches the track gray, restarts, and the
      * protection is gone with nothing to say so.
      *
      * Two rules that were each correct collided, and the existing survival test could not see it
@@ -858,7 +1047,7 @@ public class testAPastedTrainKeepsItsDirection
         // The first station the real layout offers, rather than a named one: this class runs against
         // Adam’s own railway and a hard-coded name would be a guess.
         // SEARCHED, not the first one.  This class runs against Adam’s own railway, and not every
-        // station has a compass-resolvable neighbour - `sideTowards` answers null for a point without
+        // station has a compass-resolvable neighbor - `sideTowards` answers null for a point without
         // coordinates and for a zero delta - so the first station may offer no side at all, and a test
         // that recorded nothing would pass whatever the build did.
         String pointName = null;

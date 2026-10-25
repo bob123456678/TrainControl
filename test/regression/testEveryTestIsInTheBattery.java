@@ -16,13 +16,13 @@ import org.testng.annotations.Test;
  * wildcard that could do it. The list is therefore kept by hand, and a hand-kept list of everything is
  * a list that falls behind.
  *
- * It has fallen behind twice. DD-A2 found **thirty-five** classes missing, among them the matrix test
+ * It has fallen behind twice. A review found **thirty-five** classes missing, among them the matrix test
  * written specifically to catch this project's commonest bug class. That was closed on 2026-08-22 by
  * adding them - and by 2026-08-22 evening six more were missing, one of them added in the very commit
  * that closed it, and one of them the guard for the four defects around the editor switch. A green
  * `ant test` was reporting on a suite that did not include the tests written that day.
  *
- * So the fix for DD-A2 was not adding thirty-four lines. It is this: the list is still kept by hand,
+ * So the fix was not adding thirty-four lines. It is this: the list is still kept by hand,
  * but forgetting it now fails.
  *
  * **`testAutoDetect` is the one deliberate omission.** It probes the network for a real Central Station
@@ -51,13 +51,13 @@ public class testEveryTestIsInTheBattery
         assertTrue(build.exists(), "cannot find " + build.getAbsolutePath()
             + " - this test reads the build file, so it has to run from the project root");
 
-        // WITHOUT its comments (TA-B1).
+        // WITHOUT its comments.
         //
         // The check below is a substring search for a `test-one-class` line, and a line inside
         // `<!-- -->` is still a substring - so commenting a class out satisfied this guard while
         // `ant test` stopped running it. That is not a hypothetical edit. It is what somebody does to
         // skip a slow class while debugging, and forgetting to put it back is exactly how thirty-five
-        // classes came to be silently out of the battery (DD-A2), which is the state this test exists
+        // classes came to be silently out of the battery, which is the state this test exists
         // to stop returning to. Demonstrated by mutation: commented out, 3 of 3 green; deleted
         // outright, correctly red.
         String xml = withoutXmlComments(
@@ -185,8 +185,12 @@ public class testEveryTestIsInTheBattery
         // javadoc quotes the wrong form to explain it. This file quotes it too, in the search below.
         // Both were flagged by the first version of this guard, which is the ordinary way a source
         // rule catches itself: the comment above it predicted exactly that and it happened anyway.
+        //
+        // `testTimetableOnDerivedGraph` spells the call with `java.util.LinkedList`, which the search now sees, and wires
+        // the pages by hand straight after (`wireAccessories(pages)`, with the reason written beside it).
         java.util.List<String> excused = java.util.Arrays.asList(
-            "testParseCS2Layout.java", "LayoutSandbox.java", "testEveryTestIsInTheBattery.java");
+            "testParseCS2Layout.java", "LayoutSandbox.java", "testEveryTestIsInTheBattery.java",
+            "testTimetableOnDerivedGraph.java");
 
         java.util.List<String> unwired = new java.util.ArrayList<String>();
 
@@ -209,8 +213,7 @@ public class testEveryTestIsInTheBattery
 
                 // The call, not the words: LayoutSandbox.wired contains this text itself, inside the
                 // helper that does the wiring, and naming it here would report the cure as the disease.
-                if (source.contains(".parseLayout(new LinkedList<MarklinAccessory>())")
-                    || source.contains(".parseLayout(new LinkedList<>())"))
+                if (parsesWithoutAccessories(source))
                 {
                     unwired.add(folder.getName() + "/" + file.getName());
                 }
@@ -220,8 +223,55 @@ public class testEveryTestIsInTheBattery
         assertTrue(unwired.isEmpty(),
             "these tests parse a layout and never wire its tiles to their accessories, so they run against a railway with almost no edges in it and pass by asserting about null. Use support.LayoutSandbox.wired(model, parser): " + unwired);
     }
+    /** A parse handed an empty list of accessories, spelled any way a test spells it: plain or qualified, any type argument. */
+    private static final java.util.regex.Pattern UNWIRED_PARSE = java.util.regex.Pattern.compile(
+        "\\.parseLayout\\(\\s*new\\s+(?:java\\.util\\.)?LinkedList\\s*<[^>()]*>\\s*\\(\\s*\\)\\s*\\)");
+
     /**
-     * Every test-SHAPED method carries an annotation, not just the class (TST-C2).
+     * Whether a source file parses a layout with an empty accessory list.
+     *
+     * @param source the text of a test file
+     * @return true when it contains such a call
+     */
+    private static boolean parsesWithoutAccessories(String source)
+    {
+        return UNWIRED_PARSE.matcher(source).find();
+    }
+
+    /**
+     * The search for an unwired parse sees the spellings tests use, and not a wired one.
+     *
+     * The guard above looked for two exact spellings, so `new java.util.LinkedList<MarklinAccessory>()` - already in the
+     * tree - went by it, and an unwired parse spelled that way would have passed.  This drives the same search over
+     * made-up lines, so it cannot go quiet unnoticed.
+     *
+     * MUTATION: put an unwired parse spelled `new java.util.LinkedList<MarklinAccessory>()` in a test outside the excused
+     * list and `testNoTestParsesALayoutWithoutWiringIt` fails; narrow `UNWIRED_PARSE` to the plain spelling and this does.
+     */
+    @Test
+    public void testTheUnwiredParseSearchSeesEverySpelling()
+    {
+        assertTrue(parsesWithoutAccessories("pages = parser.parseLayout(new LinkedList<MarklinAccessory>());"),
+            "the plain spelling is no longer found");
+
+        assertTrue(parsesWithoutAccessories("pages = parser.parseLayout(new LinkedList<>());"),
+            "the diamond spelling is no longer found");
+
+        assertTrue(parsesWithoutAccessories("pages = parser.parseLayout(new java.util.LinkedList<MarklinAccessory>());"),
+            "the qualified spelling is no longer found - the one the guard used to miss");
+
+        assertTrue(parsesWithoutAccessories("pages = parser.parseLayout(\n    new java.util.LinkedList<org.traincontrol.marklin.MarklinAccessory>()\n);"),
+            "a parse split over lines, with a qualified argument type, is no longer found");
+
+        assertFalse(parsesWithoutAccessories("pages = parser.parseLayout(accessories);"),
+            "a parse handed a real accessory list is flagged as unwired");
+
+        assertFalse(parsesWithoutAccessories("pages = support.LayoutSandbox.wired(model, parser);"),
+            "the wiring helper is flagged as an unwired parse");
+    }
+
+    /**
+     * Every test-SHAPED method carries an annotation, not just the class.
      *
      * The check above answers "is this FILE in the battery", by whether `@Test` appears in it
      * anywhere - which is also true of a file where one method quietly lost its `@Test` and four
@@ -287,7 +337,7 @@ public class testEveryTestIsInTheBattery
 
                         if (line.startsWith("@"))
                         {
-                            // A TESTNG ONE, NOT ANY ONE (TSX-C19).
+                            // A TESTNG ONE, NOT ANY ONE.
                             //
                             // The javadoc above argues for being permissive about WHICH TestNG
                             // annotation - a lifecycle hook named like a test is fine - and this

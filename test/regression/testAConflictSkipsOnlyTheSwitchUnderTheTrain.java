@@ -62,7 +62,7 @@ public class testAConflictSkipsOnlyTheSwitchUnderTheTrain
     /**
      * How long the power is given to come back on after a `go()`.
      *
-     * An acknowledgement rather than a railway event, so it is bounded - `waitForPowerState` says why
+     * An acknowledgment rather than a railway event, so it is bounded - `waitForPowerState` says why
      * at length.  Generous, because what this waits out is a busy machine.
      */
     private static final long POWER_PATIENCE_MS = 15000;
@@ -89,7 +89,7 @@ public class testAConflictSkipsOnlyTheSwitchUnderTheTrain
     {
         sandbox = support.LayoutSandbox.open();
 
-        model = init(null, true, false, false, true);
+        model = support.TestStation.simulatedInDebug();
 
         // So that a command comes back as an echo and the model's own power state follows it.
         //
@@ -145,7 +145,7 @@ public class testAConflictSkipsOnlyTheSwitchUnderTheTrain
      * The control: the switch that IS under the train is still refused.
      *
      * Without this the test above passes on a route that sets everything, which is the original
-     * AU-A2 defect back again and the one thing that must not happen.
+     * defect back again and the one thing that must not happen.
      *
      * @throws Exception on a failure to build the fixture
      */
@@ -257,7 +257,7 @@ public class testAConflictSkipsOnlyTheSwitchUnderTheTrain
         // and `init(simulate)` turns the power on, so no earlier class can be reaching this one.
         //
         // `waitForPowerState` is the railway's own wait for precisely this: it waits on the monitor
-        // `setPowerState` notifies, inside it, and it is BOUNDED because an acknowledgement of a
+        // `setPowerState` notifies, inside it, and it is BOUNDED because an acknowledgment of a
         // command TrainControl itself just sent either comes back in milliseconds or is not coming.
         assertTrue(model.waitForPowerState(true, POWER_PATIENCE_MS),
             "precondition: the power has to be ON, or the route's stop has nothing to turn off");

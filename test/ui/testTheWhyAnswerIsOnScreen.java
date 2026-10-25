@@ -30,8 +30,8 @@ import org.traincontrol.gui.AutonomyBanner;
  * available rather than letting it overflow", and that is not what `GridBagLayout` does.  It imposes
  * the cell's height on a child only when the fill is `BOTH` or `VERTICAL`; with `HORIZONTAL` the child
  * keeps its PREFERRED height, and `CENTER` then places it at `(cellHeight - preferredHeight) / 2` -
- * negative for any message taller than the strip.  The strip is capped at `MAXIMUM_HEIGHT`, so every
- * answer longer than the cap is taller than it.
+ * negative for any message taller than the strip.  The strip is capped at three lines (`MOST_LINES`, OB-366), so
+ * every answer longer than the cap is taller than it.
  *
  * So the scroll pane is laid out taller than the strip and hung above it, and the strip shows a slice
  * out of its middle.  Its viewport is then never smaller than its own contents, so it never gets a
@@ -39,10 +39,10 @@ import org.traincontrol.gui.AutonomyBanner;
  * back at the top, have nothing to scroll and do nothing.  Where the slice lands depends on how much
  * taller the pane is than the strip.
  *
- * **MEASURED IN THE MOUNTING THE EDITOR USES**, not in a bare panel: `LayoutEditor` puts this banner
- * in a `JScrollPane`'s column header, and `ScrollPaneLayout` sizes a column header to the viewport's
- * width and the header's own preferred height.  That height is the number this defect turns on, so a
- * test that set it itself would be choosing the answer.
+ * **MEASURED IN THE MOUNTING THE EDITOR USES**, not in a bare panel: `LayoutEditor` floats this banner over the
+ * bottom of the diagram's viewport (`AutonomyBanner.floatOver`), which gives it the viewport's width and its own
+ * preferred height.  That height is the number this defect turns on, so a test that set it itself would be choosing
+ * the answer.
  *
  * **AND ASSERTED IN INK.**  The geometry says WHY; the pixels are what Adam is looking at.  A change
  * that put the scroll pane back inside the strip and still drew nothing would pass a geometry
@@ -121,7 +121,7 @@ public class testTheWhyAnswerIsOnScreen
         assertTrue(where[3] > where[2],
             "this answer wants " + where[3] + "px and the strip has " + where[2] + "px to give it, so it"
             + " is NOT the overflowing case OB-191 is about and nothing below tests anything.  The strip"
-            + " caps itself at MAXIMUM_HEIGHT; make the answer longer, or find out why the cap is not"
+            + " caps itself at MOST_LINES; make the answer longer, or find out why the cap is not"
             + " being reached");
 
         assertEquals(where[1], where[2],
@@ -169,7 +169,7 @@ public class testTheWhyAnswerIsOnScreen
     }
 
     /**
-     * A one-line notice is still centred in the strip, and still readable.
+     * A one-line notice is still centered in the strip, and still readable.
      *
      * THE CONTROL, and it is a control in both directions.  Without it, giving the scroll pane the
      * whole band would pass the two above and bring OB-151 straight back - the short notice resting on
@@ -216,9 +216,8 @@ public class testTheWhyAnswerIsOnScreen
     /**
      * A banner in the mounting `LayoutEditor` gives it, saying something, laid out.
      *
-     * `setColumnHeaderView` rather than a panel of our own: `ScrollPaneLayout` sizes a column header to
-     * the viewport's width and the header's own `getPreferredSize().height`, and that height - capped
-     * at `MAXIMUM_HEIGHT` - is the number this defect turns on.
+     * Floated over a scroll pane by `floatOver`, as the editor does (OB-366): the layout gives it the viewport's width
+     * and its own `getPreferredSize().height`, and that height is the number this defect turns on.
      *
      * LAID OUT EMPTY FIRST, then given the message, then laid out again.  That is the order the editor
      * meets: the banner has been on screen since the window opened, so the message arrives at a strip
@@ -236,9 +235,10 @@ public class testTheWhyAnswerIsOnScreen
         {
             AutonomyBanner banner = new AutonomyBanner();
 
-            javax.swing.JScrollPane around = new javax.swing.JScrollPane(new javax.swing.JPanel());
+            javax.swing.JPanel around = new javax.swing.JPanel(new java.awt.BorderLayout());
 
-            around.setColumnHeaderView(banner);
+            around.add(banner.floatOver(new javax.swing.JScrollPane(new javax.swing.JPanel())),
+                java.awt.BorderLayout.CENTER);
 
             javax.swing.JFrame frame = new javax.swing.JFrame();
 
@@ -368,7 +368,7 @@ public class testTheWhyAnswerIsOnScreen
     /**
      * How much ink there is.
      *
-     * The strip is a light grey band and the message is dark blue; anything much darker than the band
+     * The strip is a light gray band and the message is dark blue; anything much darker than the band
      * is a letter.  Counted rather than sampled, because where the text is is exactly what is in doubt.
      *
      * @param image the strip

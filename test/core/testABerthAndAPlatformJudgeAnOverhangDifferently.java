@@ -8,7 +8,6 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -83,12 +82,21 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
     private static Edge toThePlatform;
     private static Edge toTheBerth;
 
+    /** Why the set-up found no fixture for these claims, or null; asked by each claim, so it fails rather than skips. */
+    private static String unbuilt;
+
+    /** Fails the claim when the set-up found no fixture: a skip or an assert in `setUpClass` reads as skipped tests. */
+    private static void assertBuilt()
+    {
+        if (unbuilt != null) throw new AssertionError(unbuilt);
+    }
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = MarklinControlStation.init(null, true, false, false, false);
+        model = support.TestStation.simulated();
 
         session = new AutonomySession(sandbox.getFolder());
 
@@ -108,7 +116,11 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
 
         layout = model.getAutoLayout();
 
-        if (layout == null) throw new SkipException("the snapshot did not build");
+        if (layout == null)
+        {
+            unbuilt = "the snapshot did not build";
+            return;
+        }
 
         // NAMED, not searched for.  Several runs reach TunnelLongPark and BottomMainA, and only one of
         // each is the piece of railway this class is about - picking "the longest" once got an
@@ -116,9 +128,15 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
         toThePlatform = approachFrom("TunnelPre", "Tunnel (southbound)");
         toTheBerth = approachFrom("BottomMainA (westbound)", "TunnelLongPark");
 
+        if (unbuilt != null) return;
+
         List<String> names = model.getLocList();
 
-        if (names.isEmpty()) throw new SkipException("this fixture has no locomotives");
+        if (names.isEmpty())
+        {
+            unbuilt = "this fixture has no locomotives";
+            return;
+        }
 
         train = model.getLocByName(names.get(0));
 
@@ -151,6 +169,8 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
     @Test
     public void testTheFixtureIsTheShapeTheRuleIsAbout() throws Exception
     {
+        assertBuilt();
+
         assertTrue(toThePlatform.getEnd().isDestination() && toThePlatform.getEnd().isAutoDestination(),
             toThePlatform.getEnd().getName() + " is not a station autonomy may choose, so the"
             + " relaxation this class is about does not apply to it");
@@ -213,6 +233,8 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
     @Test
     public void testAPlatformTakesATrainAsLongAsItsWholeApproach() throws Exception
     {
+        assertBuilt();
+
         train.setTrainLength(toThePlatform.getLength());
 
         assertNull(Layout.whyTooLongForThisRoute(justTheApproach(toThePlatform), train),
@@ -235,6 +257,8 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
     @Test
     public void testAPlatformStillRefusesATrainLongerThanItsApproach() throws Exception
     {
+        assertBuilt();
+
         train.setTrainLength(toThePlatform.getLength() + 1);
 
         assertNotNull(Layout.whyTooLongForThisRoute(justTheApproach(toThePlatform), train),
@@ -251,6 +275,8 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
     @Test
     public void testAParkingBerthStillRefusesAnOverhang() throws Exception
     {
+        assertBuilt();
+
         train.setTrainLength(toTheBerth.getRoomAtTheEnd() + 1);
 
         assertNotNull(Layout.whyTooLongForThisRoute(justTheApproach(toTheBerth), train),
@@ -269,6 +295,8 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
     @Test
     public void testAParkingBerthStillTakesATrainThatFits() throws Exception
     {
+        assertBuilt();
+
         train.setTrainLength(toTheBerth.getRoomAtTheEnd());
 
         assertNull(Layout.whyTooLongForThisRoute(justTheApproach(toTheBerth), train),
@@ -291,6 +319,8 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
     @Test
     public void testTheBerthRuleNamesTheRoadItWouldFoul() throws Exception
     {
+        assertBuilt();
+
         int room = toTheBerth.getRoomAtTheEnd();
 
         train.setTrainLength(room + 1);
@@ -313,7 +343,7 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
     /**
      * A berth whose approach nobody has measured refuses nothing.
      *
-     * **The rule has to be able to say "I do not know"** (PRW-B1).  The claim walk spends the train's
+     * **The rule has to be able to say "I do not know"**.  The claim walk spends the train's
      * length backwards over the approach's places and stops when it runs out; where every place
      * measures zero it never runs out, so it claims the WHOLE approach and refuses the berth against
      * any road sharing any part of it.  That refusal is invented: nothing has been measured, so
@@ -337,17 +367,16 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
      * @throws Exception from the railway
      */
     /**
-     * One measured square behind an unmeasured piece closes the berth, and the refusal now says why
-     * (RTX-C2, AUR-C2).
+     * One measured square behind an unmeasured piece closes the berth, and the refusal now says why.
      *
-     * **This is the ordinary intermediate state of Mass Assign Lengths.**  MAL-B1's ruling gives every switch
+     * **This is the ordinary intermediate state of Mass Assign Lengths.**  The ruling gives every switch
      * on a page one length in a step of its own, and MT-455 tells the operator to reach that prompt by
      * skipping a piece - so switches measured with pieces still at zero is not an odd state, it is the state
      * the tool leaves between sittings.  A berth behind such a piece then has an approach where `anyMeasured`
      * is true on the switch alone: the walk claims every place, spends nothing on the unmeasured ones, and
      * refuses the berth to a one-unit train as readily as to a nine-unit one.
      *
-     * Ruled behaviour on both sides and the refusing direction, so this pins it rather than changing it -
+     * Ruled behavior on both sides and the refusing direction, so this pins it rather than changing it -
      * Adam, on the half-measured case: *"we want clear warnings to the user if so, then it's fine."*  What
      * was missing is that the refusal named a road and a train length and never the unmeasured piece, so the
      * operator had nothing pointing at what to measure.
@@ -357,9 +386,20 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
     @Test
     public void testAMeasuredSquareBehindAnUnmeasuredPieceSaysWhyItRefuses() throws Exception
     {
+        assertBuilt();
+
         Edge approach = toTheBerth;
 
         List<Integer> was = new ArrayList<>(approach.getPlaceLengths());
+
+        // AND NOTHING ON IT ANSWERED 0 (FR-136): an answered square is not counted as missing, and which of his he has
+        // answered is his working state.  This claim is about squares nobody has measured.
+        List<String> answered = new ArrayList<>();
+
+        for (String id : approach.getPlaceIds())
+        {
+            if (approach.isPlaceAnswered(id)) answered.add(id);
+        }
 
         assertTrue(was.size() >= 3,
             "precondition: this approach has fewer than three places, so there is no room for a measured"
@@ -367,6 +407,8 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
 
         try
         {
+            approach.setAnsweredPlaces(null);
+
             // ONE SQUARE MEASURED, the rest at zero - switches measured, pieces skipped.
             List<Integer> spans = new ArrayList<>();
 
@@ -408,6 +450,7 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
         finally
         {
             approach.setPlaces(approach.getPlaceIds(), was);
+            approach.setAnsweredPlaces(answered);
             train.setTrainLength(0);
         }
     }
@@ -415,6 +458,8 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
     @Test
     public void testAnUnmeasuredApproachRefusesNothing() throws Exception
     {
+        assertBuilt();
+
         Edge approach = toTheBerth;
 
         List<Integer> spans = approach.getPlaceLengths();
@@ -448,11 +493,11 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
 
             // AND ONE MEASUREMENT IS ENOUGH TO JUDGE AGAIN, which is the other half of the ruling.
             //
-            // NOT THE LAST PLACE (SVV-B2).  The last place is the BERTH ITSELF, and since Adam's
+            // NOT THE LAST PLACE.  The last place is the BERTH ITSELF, and since Adam's
             // allowance ruling the walk does not spend it - so measuring that one left the walk with
             // nothing to spend, claiming the whole approach, and this claim passed because of the
             // over-claim rather than because of the arithmetic it names.  It would have gone red
-            // against the repair for SVV-B1, which is a guard arguing for the defect it guards.
+            // against the repair, which is a guard arguing for the defect it guards.
             //
             // The place BEFORE it is track the train really does lie back over, which is what "one
             // measurement is something to reason from" means.
@@ -472,9 +517,9 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
                 + " when ALL of it is zero (Adam, MT-364); one measurement is something to reason"
                 + " from, and declining to judge here would be the over-correction");
 
-            // AND THE BERTH'S OWN MEASUREMENT IS NOT ONE OF THEM (SVV-B1, and SVX-C5 for keeping it).
+            // AND THE BERTH'S OWN MEASUREMENT IS NOT ONE OF THEM.
             //
-            // The arrangement above cannot tell SVV-B1's repair from what it replaced: with `size-2`
+            // The arrangement above cannot tell the repair from what it replaced: with `size-2`
             // measured, "has anything been measured?" is true under both the old bound and the new
             // one.  This is the arrangement that moves - the LAST place measured and nothing else -
             // and it is the one Adam's manual produces first, because it tells him to measure the
@@ -515,16 +560,15 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
     }
 
     /**
-     * The one approach this class's figures are about, by name.
+     * The one approach this class's figures are about, by name; one the railway does not run is what `unbuilt` says.
      */
     private static Edge approachFrom(String from, String to)
     {
         Edge found = layout.getEdge(from, to);
 
-        if (found == null)
+        if (found == null && unbuilt == null)
         {
-            throw new SkipException("the snapshot no longer runs " + from + " -> " + to
-                + ", so it is about a railway that has moved");
+            unbuilt = "the snapshot no longer runs " + from + " -> " + to + ", so it is about a railway that has moved";
         }
 
         return found;

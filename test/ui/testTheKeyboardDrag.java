@@ -23,8 +23,8 @@ import org.testng.annotations.Test;
  *
  * There were none. `setCopyTarget`, `doPaste`, `getSwapTarget` and `clearCopyTarget` between them carry
  * copy, cut, move and swap across fifty pages, and not one line of it was covered - which is how a
- * reviewer came to read a deliberate feature as a defect in the first place. A behaviour nothing
- * asserts is a behaviour the next reader has to guess at.
+ * reviewer came to read a deliberate feature as a defect in the first place. A behavior nothing
+ * asserts is a behavior the next reader has to guess at.
  *
  * The four gestures are asserted through the public surface, on a real window. What they do to the
  * MAPPING is the thing that matters: the paint follows it, and a wrong mapping is a locomotive that
@@ -65,7 +65,7 @@ public class testTheKeyboardDrag
         // class was reading Adam's real railway before any test method got the chance to redirect it.
         classSandbox = support.LayoutSandbox.open();
 
-        model = init(null, true, false, false, false);
+        model = support.TestStation.simulated();
         model.stop();
     }
 
@@ -324,7 +324,7 @@ public class testTheKeyboardDrag
         f.setAccessible(true);
         f.set(built[0], model);
 
-        // WHATEVER WAS ON THE CLIPBOARD, so the battery can be run without losing it (IND9-C4).
+        // WHATEVER WAS ON THE CLIPBOARD, so the battery can be run without losing it.
         //
         // setCopyTarget writes the locomotive name to the system clipboard - deliberately, per Adam -
         // so exercising the gesture necessarily overwrites it. Saved here and put back by

@@ -25,8 +25,8 @@ import org.testng.annotations.Test;
  * cannot be regenerated - a file written by today's build only proves that this build's writer and
  * this build's reader agree with each other.
  *
- * For a long time each was asserted to load NON-EMPTY and nothing more (TA-B3 of the 2026-08-24 test
- * suite audit).  That is the wrong shape of assertion for a migration test: what a migration does when
+ * For a long time each was asserted to load NON-EMPTY and nothing more.
+ * That is the wrong shape of assertion for a migration test: what a migration does when
  * it goes wrong is not to fail, it is to quietly bring back less than was there.  The audit's receipt:
  * a `restoreState` truncated to `subList(0, 1)` - one component out of two and a half thousand, every
  * locomotive, route, switch and sensor gone - passed all seven tests.
@@ -389,7 +389,7 @@ public class testLoadData
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        model = init(null, true, false, false, true);
+        model = support.TestStation.simulatedInDebug();
     }
 
     @AfterClass(alwaysRun = true)

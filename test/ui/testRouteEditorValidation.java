@@ -9,6 +9,7 @@ import org.traincontrol.base.Accessory;
 import org.traincontrol.base.CommandRow;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.base.ThreeWaySwitch;
+import support.SourceOf;
 
 /**
  * A row that looks right and means nothing.
@@ -41,7 +42,7 @@ public class testRouteEditorValidation
      * check without the save would have turned a refusal into an exception. One reader now.
      *
      * **What is NOT asserted, and why.** The field is digits-only, so letters cannot be typed into it
-     * and `enteredS88`'s -1 branch is unreachable from the UI. It is kept as a defence rather than
+     * and `enteredS88`'s -1 branch is unreachable from the UI. It is kept as a defense rather than
      * removed - the field could gain another door - but a test for it would be a check that cannot
      * fail, so this says so instead of pretending.
      *
@@ -60,9 +61,17 @@ public class testRouteEditorValidation
         final java.util.List<String> blank = new java.util.ArrayList<>();
         final java.util.List<String> automatic = new java.util.ArrayList<>();
         final java.util.List<String> rubbish = new java.util.ArrayList<>();
+        final java.util.List<String> zero = new java.util.ArrayList<>();
+        final java.util.List<String> letters = new java.util.ArrayList<>();
+
+        // THE FIELD IS DIGITS-ONLY and drops anything else typed into it, spaces and letters among it, so the editor would
+        // be handed an empty field in their place.  The filter is taken off so that what is set is what the editor reads.
+        final javax.swing.JTextField s88 = (javax.swing.JTextField) privateField(editor, "s88Field");
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
         {
+            ((javax.swing.text.AbstractDocument) s88.getDocument()).setDocumentFilter(null);
+
             editor.setAutoFireForTest(false);
             editor.setS88TextForTest("");
 
@@ -76,26 +85,50 @@ public class testRouteEditorValidation
 
             // A SPACE, not letters.  The field is digits-only (`digitsOnlyField`), so "east" cannot
             // be typed into it at all - asserting that it is refused would be testing a state the UI
-            // cannot reach, which is a check that can never fail.  A field holding only whitespace is
-            // reachable and must read as none, like an empty one.
+            // cannot reach, which is a check that can never fail.  A field holding only whitespace
+            // must read as none, like an empty one.
             editor.setAutoFireForTest(false);
             editor.setS88TextForTest("   ");
 
             rubbish.addAll(editor.problemsForTest());
+
+            // WHAT AN EXPLICIT 0 IS REFUSED FOR, which is all a blank field is (Adam: "just treat this as 0")
+            editor.setS88TextForTest("0");
+
+            zero.addAll(editor.problemsForTest());
+
+            // AND A SENSOR THE EDITOR CANNOT READ, so the refusal looked for below is seen to be there when it is earned
+            editor.setS88TextForTest("east");
+
+            letters.addAll(editor.problemsForTest());
         });
 
-        assertFalse(named(blank, "S88"),
+        final String notANumber = I18n.t("route.ui.frameS88NotANumber");
+
+        assertTrue(letters.contains(notANumber),
+            "precondition: a sensor field the editor cannot read is not refused with " + notANumber
+            + ", so the claims below look for a message that is never said.  Problems: " + letters);
+
+        assertFalse(blank.contains(notANumber),
             "a manual route with the sensor field left blank was refused as not-a-number.  Blank is "
             + "the answer a manual route gives - the field only means anything with auto-fire on "
             + "(OB-178).  Problems: " + blank);
+
+        assertEquals(blank, zero,
+            "a manual route with the sensor field left blank is refused for something a sensor of 0 is not.  "
+            + "Blank is treated as 0 (OB-178).  Blank: " + blank + "; 0: " + zero);
 
         assertTrue(automatic.size() > blank.size(),
             "auto-fire with no sensor was accepted.  That route can never fire itself, and saved it "
             + "sits in the list marked automatic doing nothing: " + automatic);
 
-        assertFalse(named(rubbish, "S88"),
+        assertFalse(rubbish.contains(notANumber),
             "a sensor field holding only spaces was refused as not-a-number.  It is trimmed and it "
             + "is empty, which is the same answer a cleared field gives: " + rubbish);
+
+        assertEquals(rubbish, blank,
+            "a sensor field holding only spaces is refused for something a cleared field is not: " + rubbish
+            + " against " + blank);
         }
         finally
         {
@@ -103,22 +136,6 @@ public class testRouteEditorValidation
         }
     }
 
-    /**
-     * Whether any problem mentions a thing.
-     *
-     * @param problems what the editor refused
-     * @param what a word from the message
-     * @return true when one of them mentions it
-     */
-    private static boolean named(java.util.List<String> problems, String what)
-    {
-        for (String problem : problems)
-        {
-            if (problem != null && problem.toLowerCase().contains(what.toLowerCase())) return true;
-        }
-
-        return false;
-    }
     /**
      * Changing the kind does not leave the old target behind.
      *
@@ -152,23 +169,23 @@ public class testRouteEditorValidation
     }
 
     /**
-     * The route editor asks about a LOGICAL address (S14-C1, REG9-C2).
+     * The route editor asks about a LOGICAL address.
      *
      * It checked the number the operator types - counting from one - against `MAX_MM2_ADDRESS`, which
      * is RAW and counts from zero. Exactly one address per protocol was refused here and accepted by
      * the diagram editor, which converts before it asks. The fix shipped with no test:
      * `grep -rn "isValidLogicalAddress" test/` found nothing, and putting the defect back verbatim left
-     * this class, `testRouteEditorRoundTripCases` and `core.testAccessory` all green (REG9-C2).
+     * this class, `testRouteEditorRoundTripCases` and `core.testAccessory` all green.
      *
-     * **Why this is a shape check and not a behavioural one, which is worth knowing about this whole
+     * **Why this is a shape check and not a behavioral one, which is worth knowing about this whole
      * class.** Its editors are built as `new RouteEditorFrame(null, null)` - no parent window, so no
      * model - and `problemsWith` returns at `if (parent == null || parent.getModel() == null)` before
      * it reaches any per-row rule. So NO row-level complaint is reachable from this fixture: not the
-     * address, not "no such locomotive", not "no such route". The behavioural version of this test was
+     * address, not "no such locomotive", not "no such route". The behavioral version of this test was
      * written first and passed on an editor that never looked at the address at all; a control that
      * asked whether address 99999 is complained about is what caught it. Measured, 2026-09-11.
      *
-     * The rule itself is asserted behaviourally, at both ends of both protocols, by
+     * The rule itself is asserted behaviorally, at both ends of both protocols, by
      * `core.testAccessory.testTheTopLogicalAddressOfEachProtocolIsValid`. What is left for here is that
      * this door asks that rule rather than the raw one - which is the half that was wrong, and the
      * half a shape check can see.
@@ -180,17 +197,7 @@ public class testRouteEditorValidation
     @Test
     public void testTheAddressCheckAsksTheLogicalRule() throws Exception
     {
-        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/RouteEditorFrame.java")), java.nio.charset.StandardCharsets.UTF_8);
-
-        int at = source.indexOf("private void addressProblem(");
-
-        assertTrue(at > 0, "addressProblem has been renamed or removed - this check now guards nothing "
-            + "and needs rewriting rather than deleting");
-
-        int end = source.indexOf("\n    private ", at + 20);
-
-        String body = end < 0 ? source.substring(at) : source.substring(at, end);
+        String body = SourceOf.declaration("private void addressProblem(");
 
         assertTrue(body.contains("Accessory.isValidLogicalAddress("),
             "the route editor no longer asks the logical-address rule. Accessory's maxima are RAW and "
@@ -268,7 +275,7 @@ public class testRouteEditorValidation
     }
 
     /**
-     * The two messages that refuse a name say what is refused: a comma, and only a comma (GSB-C1).  Brackets have been
+     * The two messages that refuse a name say what is refused: a comma, and only a comma.  Brackets have been
      * allowed since Adam's ruling of 2026-09-04 (*"bracketed loc names should just be allowed"*) and `isNameUsable`
      * refuses only the comma, but both messages went on saying a name "cannot contain a comma or a bracket" - telling an
      * operator renaming "SBB 460 (2)" a rule the program does not have.  Read from the English bundle.
@@ -369,6 +376,15 @@ public class testRouteEditorValidation
         }
     }
 
+    private static Object privateField(Object owner, String name) throws Exception
+    {
+        java.lang.reflect.Field field = owner.getClass().getDeclaredField(name);
+
+        field.setAccessible(true);
+
+        return field.get(owner);
+    }
+
     private static org.traincontrol.gui.RouteEditorFrame open() throws Exception
     {
         final org.traincontrol.gui.RouteEditorFrame[] frame =
@@ -393,7 +409,7 @@ public class testRouteEditorValidation
         }
     }
     /**
-     * Deleting an unrelated condition does not turn a leading "or" into "and" (FR3-B1).
+     * Deleting an unrelated condition does not turn a leading "or" into "and".
      *
      * **A silent change to when a route fires**, in the route editor that is a headline 3.0.0 feature,
      * over a path no test covered.
@@ -456,7 +472,7 @@ public class testRouteEditorValidation
     }
 
     /**
-     * Deleting the FIRST condition of a group takes the group's own word, not the outer one (VD13-B4).
+     * Deleting the FIRST condition of a group takes the group's own word, not the outer one.
      *
      * **Found by a validation of the fix beside this one.**  `removeAt` was given a depth comparison
      * for a deleted WORD on 2026-09-21 and its other half - a deleted CONDITION - kept preferring
@@ -498,7 +514,7 @@ public class testRouteEditorValidation
             javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(outline));
 
             // THE EXACT SHAPE, because `startsWith("Or(")` is satisfied by a FLAT outline and the whole
-            // claim below is about depth (VD14-T1).
+            // claim below is about depth.
             assertEquals(reads(frame), "Or(x,Group(And(x,x)))",
                 "the fixture is not an OR in front of a bracketed group, so nothing below is about one: "
                 + reads(frame));
@@ -506,7 +522,7 @@ public class testRouteEditorValidation
             // THE FIRST CONDITION OF THE GROUP, which is row 2.
             javax.swing.SwingUtilities.invokeAndWait(() -> frame.deleteConditionForTest(2));
 
-            // AND THE EXACT SHAPE AFTER IT, for the same reason (VD14-T1).  `assertFalse(startsWith
+            // AND THE EXACT SHAPE AFTER IT, for the same reason.  `assertFalse(startsWith
             // ("And("))` ruled out ONE wrong answer: it passed just as happily for an outline swept down
             // to a single condition - one keystroke silently deleting two - or emptied altogether.
             assertEquals(reads(frame), "Or(x,Group(x))",
@@ -827,10 +843,10 @@ public class testRouteEditorValidation
     }
 
     /**
-     * "Reads as" says the joining words in bold and the settings in the colour of what they do (2026-09-14).
+     * "Reads as" says the joining words in bold and the settings in the color of what they do (2026-09-14).
      *
      * Adam: *"In the 'reads as', can we also bold the operators, make on/straight/green green and off/turn/red
-     * red?"*  Coloured by the WORD, because the same true/false means "on" for a sensor and "turn" for a switch.
+     * red?"*  Colored by the WORD, because the same true/false means "on" for a sensor and "turn" for a switch.
      */
     @Test
     public void testReadsAsBoldsTheWordsAndColoursTheSettings() throws Exception
@@ -1037,6 +1053,130 @@ public class testRouteEditorValidation
             tooltip = label.getToolTipText();
             text = label.getText();
         }
+    }
+
+    /**
+     * FR-144: "1 or 2 or 3 and 4" typed flat becomes "(1 or 2 or 3) and 4" by selecting the first three conditions and
+     * pressing indent once; 4 then moves up past the whole group to "4 and (1 or 2 or 3)" and back, every line keeping
+     * its level; and outdenting the selection undoes the indent.
+     *
+     * MUTATION: drop `ConditionTable.changeSelection`'s override, and the press collapses the selection to one line,
+     * so only sensor 1 moves in.
+     * MUTATION: drop the group branch of `ConditionOutline.moved`, and 4 trades places with 3 inside the group.
+     */
+    @Test
+    public void testSeveralConditionsIndentAtOnceAndOneMovesPastTheGroup() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+                frame.setConditionRowsForTest(flat(1, "OR", 2, "OR", 3, "AND", 4)));
+
+            assertFalse(org.traincontrol.base.ConditionOutline.problems(frame.conditionRowsForTest()).isEmpty(),
+                "precondition: 'or' and 'and' side by side at one level should be flagged");
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.indentConditionsForTest(0, 4, 1));
+
+            assertEquals(levels(frame), " 1:1 1OR 1:2 1OR 1:3 0AND 0:4",
+                "the three selected conditions and the words between them go one level in, the 'and' stays");
+
+            assertTrue(org.traincontrol.base.ConditionOutline.problems(frame.conditionRowsForTest()).isEmpty(),
+                "(1 or 2 or 3) and 4 is flagged: " + levels(frame));
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.moveConditionForTest(6, -1));
+
+            assertEquals(levels(frame), " 0:4 0AND 1:1 1OR 1:2 1OR 1:3",
+                "4 moved up past the whole group, with the 'and' between them and every level kept");
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.moveConditionForTest(0, 1));
+
+            assertEquals(levels(frame), " 1:1 1OR 1:2 1OR 1:3 0AND 0:4", "and moved back down past it");
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.indentConditionsForTest(0, 4, -1));
+
+            assertEquals(levels(frame), " 0:1 0OR 0:2 0OR 0:3 0AND 0:4", "outdenting the selection undoes it");
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
+    /**
+     * OB-367: a setting is shown in the user's language, in the cell and in "Reads as", and stored as the word the
+     * route file holds.
+     *
+     * MUTATION: in `greyWhatCannotBeEdited`, drop the `settingLabel` line, and the cells read "off" and "turn".
+     */
+    @Test
+    public void testTheSettingsAreShownInTheUsersLanguage() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final java.util.Locale was = org.traincontrol.util.I18n.getLocale();
+
+        try
+        {
+            final String[] cells = new String[3];
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                org.traincontrol.util.I18n.setLocale(java.util.Locale.GERMAN);
+
+                if (frame.commandRowCountForTest() == 0) frame.addCommandRowForTest();
+
+                frame.setCommandKindForTest(0, CommandRow.Kind.ACCESSORY);
+                frame.setCommandTargetForTest(0, "12");
+                frame.setCommandSettingForTest(0, "turn");
+                frame.setAutoFireForTest(true);
+
+                java.util.List<org.traincontrol.base.ConditionOutline.Row> rows = new java.util.ArrayList<>();
+
+                rows.add(org.traincontrol.base.ConditionOutline.Row.condition(0,
+                    org.traincontrol.base.RouteCommand.RouteCommandFeedback(5, false)));
+                rows.add(org.traincontrol.base.ConditionOutline.Row.joining(0,
+                    org.traincontrol.base.ConditionOutline.Joiner.OR));
+                rows.add(org.traincontrol.base.ConditionOutline.Row.condition(0,
+                    org.traincontrol.base.RouteCommand.RouteCommandFeedback(6, true)));
+
+                frame.setConditionRowsForTest(rows);
+
+                cells[0] = frame.conditionCellForTest(0, 6).getText();
+                cells[1] = ((javax.swing.JLabel) frame.commandCellForTest(0, 6)).getText();
+                cells[2] = frame.readsAsForTest();
+            });
+
+            assertEquals(cells[0], "aus", "the condition's setting cell in German");
+            assertEquals(cells[1], "abzweigend", "the command's setting cell in German");
+            assertTrue(cells[2].contains(">aus<") && cells[2].contains(">ein<"), "Reads as, in German: " + cells[2]);
+            assertEquals(shown(frame, 0), "FEEDBACK 5 off", "stored as before");
+            assertEquals(frame.commandRowForTest(0).getSetting(), "turn", "stored as before");
+        }
+        finally
+        {
+            org.traincontrol.util.I18n.setLocale(was);
+
+            close(frame);
+        }
+    }
+
+    /** Each line as depth and sensor, or depth and word: " 1:1 1OR 0:4". */
+    private static String levels(org.traincontrol.gui.RouteEditorFrame frame)
+    {
+        StringBuilder out = new StringBuilder();
+
+        for (org.traincontrol.base.ConditionOutline.Row row : frame.conditionRowsForTest())
+        {
+            out.append(" ").append(row.getDepth()).append(row.isJoiner() ? String.valueOf(row.getJoiner())
+                : ":" + CommandRow.of(row.getCommand()).getTarget());
+        }
+
+        return out.toString();
     }
 
     /** A condition line's address and setting as stored, read the way the table reads them. */

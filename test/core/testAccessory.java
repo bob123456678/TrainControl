@@ -15,6 +15,7 @@ import org.traincontrol.base.Accessory;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.udp.CS2Message;
+import support.SourceOf;
 
 /**
  * Use testng 6.14.3
@@ -28,7 +29,7 @@ public class testAccessory
     }
 
     /**
-     * An edge releases its accessories before it throws any (TCX-B4).
+     * An edge releases its accessories before it throws any.
      *
      * **A three-way turnout is two drives on consecutive addresses.** Commanding the diverging one
      * before the other has been released puts the ironwork into a combination that routes nowhere -
@@ -67,7 +68,7 @@ public class testAccessory
     }
 
     /**
-     * And `configureEdge` actually uses it (TCX-B4).
+     * And `configureEdge` actually uses it.
      *
      * The test above pins the rule. Naming a rule moves the defect to the call site, which is this
      * repository's recurring shape and cost it two defects in one method earlier this year - so the
@@ -76,9 +77,7 @@ public class testAccessory
     @Test
     public void testTheEdgeConfigurationUsesThatOrdering() throws Exception
     {
-        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/automation/Layout.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
+        String source = SourceOf.declaration("private boolean configureEdge(");
 
         assertTrue(source.replaceAll("\\s+", " ").contains(
             "return releasesBeforeThrows(aThrows, bThrows, a, b);"),
@@ -260,7 +259,7 @@ public class testAccessory
 
     /**
      * And at a genuinely unused address the accessory is created, as the requested type, with no
-     * spurious extra accessory left behind at a neighbouring address.
+     * spurious extra accessory left behind at a neighboring address.
      */
     @Test
     public void testSignalIsCreatedAtAnUnusedAddress() throws Exception
@@ -446,7 +445,7 @@ public class testAccessory
      *
      * **What this test can and cannot show.** The executor captures that exception in its `Future`,
      * which nobody reads, so the failure is invisible from outside and the pre-fix code would NOT have
-     * failed the middle assertion here. What it does pin is the surrounding behaviour: the echo reaches
+     * failed the middle assertion here. What it does pin is the surrounding behavior: the echo reaches
      * a live accessory, an echo for a deleted one does not throw *synchronously* on the caller's thread,
      * and the pipeline keeps working afterwards. The synchronous part matters - if this handling is ever
      * made synchronous, that exception lands on the CAN reader thread, which is exactly how A8 killed
@@ -539,7 +538,7 @@ public class testAccessory
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        testAccessory.model = init(null, true, false, false, false);
+        testAccessory.model = support.TestStation.simulated();
         model.stop();
     }
 
@@ -591,7 +590,7 @@ public class testAccessory
         }
     }
     /**
-     * The top address of each protocol is one the protocol has (S14-C1, REG9-C2).
+     * The top address of each protocol is one the protocol has.
      *
      * `MAX_MM2_ADDRESS` and `MAX_DCC_ADDRESS` are RAW - they count from zero, and the constant says so
      * - while the number an operator types counts from one. Two callers disagreed about that: the

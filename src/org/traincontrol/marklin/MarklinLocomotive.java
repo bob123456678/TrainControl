@@ -60,14 +60,14 @@ public class MarklinLocomotive extends Locomotive
     
     // Locomotives linked to this locomotive that will operate as a multi-unit
     // Key - the other locomotive, Value - the speed adjustment (negative will force the opposite direction of this locomotive)
-    // REPLACED, NEVER EDITED, AND READ WITHOUT A LOCK BY DESIGN (S14-B4).
+    // REPLACED, NEVER EDITED, AND READ WITHOUT A LOCK BY DESIGN.
     //
     // The save path is the reader that decides the shape of this field: MarklinSimpleComponent reads
     // getLinkedLocomotives() with no lock, and restoreState rebuilds every consist from exactly what it
     // wrote - so a save that sees this map empty writes a locomotive with NO members into locdb.data,
     // and the consist is gone after the next start with the file as the only record.  The rebuild runs
     // off the event thread inside syncWithCS2; the save runs from the window-closing path and from
-    // Backup Data's own thread, and nothing serialises them.
+    // Backup Data's own thread, and nothing serializes them.
     //
     // It was a live LinkedHashMap cleared and refilled in place, so every reader shared one instance and
     // there was a window in which it was empty.  Locking the readers was the other candidate and was
@@ -806,7 +806,7 @@ public class MarklinLocomotive extends Locomotive
     @Override
     synchronized public Locomotive setSpeed(int speed)
     {
-        // CLAMPED BEFORE ANYTHING IS SENT (S14-B2, NSV-C4).
+        // CLAMPED BEFORE ANYTHING IS SENT.
         //
         // _setSpeed is wrapped in `if (speed >= 0 && speed <= 100)` with no else, so an out-of-range
         // value is DISCARDED: getSpeed() still reports whatever it was, and the head then re-transmits
@@ -840,7 +840,7 @@ public class MarklinLocomotive extends Locomotive
             // rather than clamping it, and the member then transmits its previous speed - so past the
             // threshold (67 for a 1.5x member) the member silently froze while the head kept
             // accelerating, and the two engines of one consist pulled against each other.
-            // TWO-SIDED (NSV-C4).  A negative argument scaled by a multiplier stays negative, and
+            // TWO-SIDED.  A negative argument scaled by a multiplier stays negative, and
             // _setSpeed ignores it for the same reason it ignores 150 - so the member re-transmitted
             // its old speed at this end of the range too.
             roundedSpeed = Math.max(0, Math.min(roundedSpeed, 100));
@@ -953,7 +953,7 @@ public class MarklinLocomotive extends Locomotive
         // *"Make the allowed function be the highest possible for the consist - so two MM2 locs mean
         // F0-4 do something.  one mm2 loc and one dcc/mfx mean all functions are unlocked."*
         //
-        // S14-B1 had this refuse anything the HEAD could not do, which fixed the real defect - the state
+        // An earlier version had this refuse anything the HEAD could not do, which fixed the real defect - the state
         // going nowhere - and answered the wrong question with it: the point of a consist is that a
         // member can do things the head cannot, and an MM2 head with an MFX member is a configuration
         // the program allows on purpose.
@@ -1092,7 +1092,7 @@ public class MarklinLocomotive extends Locomotive
      * points to.
      *
      * That produced six separate defects across three reviews, each fixed where it happened to surface
-     * - a consist that stopped recognising a member, a station exclusion that silently stopped applying,
+     * - a consist that stopped recognizing a member, a station exclusion that silently stopped applying,
      * a deleted locomotive still being exported.  Eight collections key on this object, and each repair
      * was a call some future author had to know to make.  Identity ends that: the hash is fixed for the
      * object's lifetime, so no mutation can move it.
@@ -1149,7 +1149,7 @@ public class MarklinLocomotive extends Locomotive
     }
     
     /**
-     * Every locomotive this one commands when it is driven - itself excluded (X8-A2).
+     * Every locomotive this one commands when it is driven - itself excluded.
      *
      * **Two ways of being a consist, one question.**  A locomotive may command others because somebody
      * linked them in TrainControl (`linkedLocomotives`) or because the Central Station holds it as a
@@ -1175,7 +1175,7 @@ public class MarklinLocomotive extends Locomotive
     }
 
     /**
-     * NOT SYMMETRIC, AND BOTH DIRECTIONS HAVE TO BE ASKED (X8V-C8).
+     * NOT SYMMETRIC, AND BOTH DIRECTIONS HAVE TO BE ASKED.
      *
      * `a.isSimultaneousMultiUnitCompatible(b)` and `b.isSimultaneousMultiUnitCompatible(a)` can
      * disagree, because the question is asked from the left-hand locomotive's point of view: it walks
@@ -1185,7 +1185,7 @@ public class MarklinLocomotive extends Locomotive
      *
      * `Layout.clearMultiUnitConflictsWith` is the only production caller - reached from placing, loading, every edit
      * door's sweep and the Central Station sync's - and it asks both ways.  A second caller
-     * that asked once would let the pair through half the time, which is the shape `X8-A2` was: a
+     * that asked once would let the pair through half the time, which is the shape of the old fault: a
      * missing branch in one of the two loops made both directions answer the same wrong thing, and the
      * both-ways call could not compensate because neither direction knew.
      *
@@ -1206,7 +1206,7 @@ public class MarklinLocomotive extends Locomotive
             return false;
         }
         
-        // ONE QUESTION, ASKED OF BOTH SIDES (X8-A2).
+        // ONE QUESTION, ASKED OF BOTH SIDES.
         //
         // "Which locomotives does this one command?" had two spellings here - a decoder-type branch in
         // the first loop and the raw `getLinkedLocomotives()` in the second - and the second loop is
@@ -1265,7 +1265,7 @@ public class MarklinLocomotive extends Locomotive
      * Stages a list and applies it in one call, so no second thread can be staging at the same time.
      *
      * **`preSetLinkedLocomotives` writes an INSTANCE FIELD and `setLinkedLocomotives` reads it, with
-     * nothing serialising the pair** (NSV-B2).  Two threads rebuild consists: `syncWithCS2`, which the
+     * nothing serializing the pair**.  Two threads rebuild consists: `syncWithCS2`, which the
      * window runs off the event thread, and the multi-unit dialog, on the event thread.  One thread's
      * staged list could be overwritten before its own apply read it, and the consist was then rebuilt
      * from the other thread's list - silently, because both calls succeed.
@@ -1303,7 +1303,7 @@ public class MarklinLocomotive extends Locomotive
     {              
         // Staged in a local map and swapped in one step, rather than clearing the live map and
         // refilling it in place.  setSpeed and setDirection iterate linkedLocomotives under this
-        // locomotive's monitor; rebuilding it unsynchronised let a fan-out land mid-rebuild and either
+        // locomotive's monitor; rebuilding it unsynchronized let a fan-out land mid-rebuild and either
         // throw ConcurrentModificationException or command the head alone.  That was tolerable while
         // only the multi-unit dialog rebuilt consists - a deliberate action on a consist the user is
         // editing - but a Central Station sync now rebuilds them too, automatically, and a consist can
@@ -1351,7 +1351,7 @@ public class MarklinLocomotive extends Locomotive
         // above was already most of the way towards; what it still did was clear() then putAll() on the
         // instance every reader holds.
         //
-        // UNDER THE MONITOR, WHICH IS NOT ABOUT THE READERS (FV3-B2).  They read a volatile reference
+        // UNDER THE MONITOR, WHICH IS NOT ABOUT THE READERS.  They read a volatile reference
         // and take no lock, which is the whole point of the design.  This excludes the other WRITER:
         // `unlinkLocomotive` is a read-copy-write on the same field and is synchronized, so without
         // this a rebuild overlapping an unlink would silently discard one of them - and the one that
@@ -1432,7 +1432,7 @@ public class MarklinLocomotive extends Locomotive
      *
      * The base walks `getNumF()`, which is the head's own count - so on a consist whose members have
      * more functions than the head, it could switch one on and not off again.  That asymmetry is the
-     * defect S14-B1 was filed for, and it survives the change of rule: whatever range `setF` accepts,
+     * defect to guard against, and it survives the change of rule: whatever range `setF` accepts,
      * this has to clear.
      *
      * @return this

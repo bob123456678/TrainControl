@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -42,12 +41,12 @@ import org.traincontrol.marklin.MarklinLocomotive;
  * `AutonomySession.drawTheTrainsThatCoverNoEdge` did, and the first claim fails at 9,7 and 7,8.
  *
  * And at Tunnel, where a rail autonomy does not drive - against a one-way arrow - runs through the other leg of the switch
- * at 11,3 behind the platform (V348-C3): a train placed there by hand may have come along it, so which leg is not known.
+ * at 11,3 behind the platform: a train placed there by hand may have come along it, so which leg is not known.
  *
  * MUTATION: ask only the rails the railway drives, the ones that run over every place the train claims, and the third
  * claim fails at 11,3.
  *
- * And nothing past such a switch (V348B-C1; Adam, 2026-10-14: "stop at unknown.  but if it's not thrown and the train
+ * And nothing past such a switch (Adam, 2026-10-14: "stop at unknown.  but if it's not thrown and the train
  * must pass through the thrown arm, then do draw it"): beyond it the tail may lie on either road.
  *
  * MUTATION: draw every claimed square the rails agree on, wherever it lies, and the third and fourth claims fail.
@@ -80,7 +79,7 @@ public class testTheOrangeRunsOverTheSwitchesBehindTheTrain
     {
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = MarklinControlStation.init(null, true, false, false, false);
+        model = support.TestStation.simulated();
 
         train = model.newMM2Locomotive(OUR_TRAIN, 2397);
 
@@ -94,7 +93,7 @@ public class testTheOrangeRunsOverTheSwitchesBehindTheTrain
 
         layout = model.getAutoLayout();
 
-        if (layout == null) throw new SkipException("the snapshot did not build");
+        if (layout == null) throw new AssertionError("the snapshot did not build");
 
         // Nothing of his standing about, so everything drawn is this class's train.
         for (Point point : layout.getPoints())
@@ -104,7 +103,7 @@ public class testTheOrangeRunsOverTheSwitchesBehindTheTrain
 
         List<String> copies = session.getStationIndex().pointNamesAt(PLATFORM);
 
-        if (copies.size() != 1) throw new SkipException("TunnelLeftPark is not one Point on this snapshot: " + copies);
+        if (copies.size() != 1) throw new AssertionError("TunnelLeftPark is not one Point on this snapshot: " + copies);
 
         platform = layout.getPoint(copies.get(0));
 
@@ -161,7 +160,7 @@ public class testTheOrangeRunsOverTheSwitchesBehindTheTrain
 
         Map<TileKey, Set<RouteId>> orange = session.routesCoveredByStandingTrains(layout);
 
-        // ASKED OF THE TRACK, not of the rails (V348-C4): the leg of 9,7 between its west and south sides, which 8,7's
+        // ASKED OF THE TRACK, not of the rails: the leg of 9,7 between its west and south sides, which 8,7's
         // curve leads into, and the leg of 7,8 between its east and south sides, which 8,8 leads into
         assertEquals(roads.get(THREE_WAY), legBetween(THREE_WAY, Side.W, Side.S), "precondition: the rails into"
             + " TunnelLeftPark do not run over 9,7's leg from 8,7");
@@ -215,7 +214,7 @@ public class testTheOrangeRunsOverTheSwitchesBehindTheTrain
 
     /**
      * Where a rail autonomy does not drive runs through a switch behind the platform on the other leg, the switch is drawn
-     * along no road: the train may have come along it (V348-C3).
+     * along no road: the train may have come along it.
      */
     @Test
     public void testASwitchAnUndrivenRailCrossesIsDrawnAlongNoRoad()
@@ -230,7 +229,7 @@ public class testTheOrangeRunsOverTheSwitchesBehindTheTrain
             if (copy.getValue() == Side.S) southbound = layout.getPoint(copy.getKey());
         }
 
-        if (southbound == null) throw new SkipException("Tunnel has no southbound copy on this snapshot");
+        if (southbound == null) throw new AssertionError("Tunnel has no southbound copy on this snapshot");
 
         int length = train.getTrainLength();
 
@@ -309,7 +308,7 @@ public class testTheOrangeRunsOverTheSwitchesBehindTheTrain
     }
 
     /**
-     * Nowhere on the railway is a tail drawn farther back than a square it lies on whose road is not known (V348B-C1).
+     * Nowhere on the railway is a tail drawn farther back than a square it lies on whose road is not known.
      *
      * Every Point of the snapshot, in by every side a rail reaches it by, at three lengths, with no road: past a square the
      * orange lists with no road - the switch where the rails into the platform part - nothing is drawn along one.  How far

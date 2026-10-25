@@ -94,7 +94,7 @@ public class AutoJSONExport extends javax.swing.JPanel
 
     private void jsonSaveAsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jsonSaveAsActionPerformed
 
-        // THE CHOOSER IS ON THE EVENT THREAD (VB-B1).
+        // THE CHOOSER IS ON THE EVENT THREAD.
         //
         // The whole handler ran inside `new Thread(...)` and opened a modal JFileChooser there, with
         // the error dialog and the button re-enable on the same thread. This is the shape OB-137 was

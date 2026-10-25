@@ -9,8 +9,11 @@ import java.util.List;
 import java.util.function.BooleanSupplier;
 import javax.swing.JTable;
 import javax.swing.SwingUtilities;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
@@ -21,7 +24,6 @@ import org.traincontrol.base.RouteCommand;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinRoute;
-import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
  * The route list turns a mark beside every route that is running (FR-137).
@@ -32,11 +34,16 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * route tile, an s88 trigger, another route - and off when the route really ends.
  *
  * **How it is seen.**  The renderer is asked for a cell, sized and painted to a picture, and the strip left of the play
- * button is searched for the mark's grey; the route is a real one, run by `MarklinRoute.execRoute` with a delay between
+ * button is searched for the mark's gray; the route is a real one, run by `MarklinRoute.execRoute` with a delay between
  * its commands so that it runs long enough to look at.
  *
  * MUTATION: take the `routeStarted` notice out of `MarklinRoute.execRoute`, or the paint out of the renderer, and the
  * claims fail.
+ *
+ * And the list's other doors and the route editor's own, driven as the operator drives them (FR-136 Phase 6): Change
+ * Route ID, Delete Route, Enable and Disable Auto Execution with the station's sensor then firing the route or not, and
+ * the editor's Save over a route renamed, deleted or changed elsewhere, and its Cancel over typed work.  Each of those
+ * claims names the line it rests on.
  *
  * @author Adam
  */
@@ -62,7 +69,7 @@ public class testTheRouteListShowsWhatRuns
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
         // The window is the model's own, so the notices a route sends reach it as they do in the application
-        model = init(null, true, true, false, true);
+        model = support.TestStation.simulatedWithWindowInDebug();
 
         ui = (TrainControlUI) model.getGUI();
 
@@ -182,8 +189,6 @@ public class testTheRouteListShowsWhatRuns
             "the routes ended and a mark is still there");
     }
 
-    // ---------------------------------------------------------------------------------------------
-
     /**
      * With the power off, a click on a route's row - not its play button - opens the route's editor and asks nothing
      * (FR-140).  Adam: "when the power is off, clicking on routes in the route tab should open the editor rather than ask
@@ -290,6 +295,1341 @@ public class testTheRouteListShowsWhatRuns
                 }
             });
         }
+    }
+
+    // THE ROUTE LIST AS THE USER DRIVES IT (FR-136 Phase 6): real clicks on the table, its right-click menu, Find Route
+    // and Bulk Enable, each answered through the real dialogs.  What each asserts is what came of it: the accessories
+    // switched and their commands on the wire, a route made, the tab and the cell shown.
+
+    /**
+     * A click on a route's play button runs it at once, with no question: its accessories switch and their commands
+     * go to the railway (FR-043, MT-217).  Adam: "if play button is hit, route executes without confirming".
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testThePlayButtonRunsTheRouteWithoutAsking() throws Exception
+    {
+        final String route = aQuickRoute(PREFIX + "play", 246, 247);
+
+        support.WireRecorder wire = support.WireRecorder.open();
+
+        try (support.Answering answering = support.Answering.start(message -> support.Answering.pressAt(1)))
+        {
+            int mark = wire.mark();
+
+            clickTheRoute(route, true, java.awt.event.MouseEvent.MOUSE_CLICKED, false);
+
+            assertTrue(waitFor(() -> switched(246) && switched(247), 10000), "the play button did not switch the"
+                + " route's accessories");
+
+            assertTrue(waitFor(() -> accessoryCommandsSince(wire, mark) >= 2, 5000), "the route's accessories switched"
+                + " and no command for them reached the railway: " + wire.since(mark));
+
+            assertEquals(answering.asked(), new ArrayList<String>(), "the play button asked before running the route"
+                + " (MT-217: it runs without confirming)");
+        }
+        finally
+        {
+            wire.close();
+
+            theRouteIsOver(route);
+        }
+    }
+
+    /**
+     * A click elsewhere on a route's row asks first, naming the route and its id; Yes runs it (FR-043).
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testARowClickAsksAndYesRunsTheRoute() throws Exception
+    {
+        final String route = aQuickRoute(PREFIX + "row yes", 246, 247);
+
+        support.WireRecorder wire = support.WireRecorder.open();
+
+        try (support.Answering answering = support.Answering.start(
+            message -> support.Answering.press(org.traincontrol.util.I18n.t("ui.yes"))))
+        {
+            int mark = wire.mark();
+
+            clickTheRoute(route, false, java.awt.event.MouseEvent.MOUSE_CLICKED, false);
+
+            assertTrue(answering.awaitAsked(1, 10000), "a click on the route's row asked nothing");
+
+            assertEquals(answering.asked().get(0), org.traincontrol.util.I18n.f("route.ui.confirmExecuteRouteWithId",
+                route, model.getRouteId(route)), "the question does not name the route and its id");
+
+            assertTrue(waitFor(() -> switched(246) && switched(247), 10000), "Yes did not switch the route's accessories");
+
+            assertTrue(waitFor(() -> accessoryCommandsSince(wire, mark) >= 2, 5000), "Yes switched the accessories and"
+                + " no command for them reached the railway: " + wire.since(mark));
+        }
+        finally
+        {
+            wire.close();
+
+            theRouteIsOver(route);
+        }
+    }
+
+    /**
+     * The same question answered No runs nothing: no accessory switches and nothing goes to the railway.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testARowClickAnsweredNoSendsNothing() throws Exception
+    {
+        final String route = aQuickRoute(PREFIX + "row no", 246, 247);
+
+        support.WireRecorder wire = support.WireRecorder.open();
+
+        try (support.Answering answering = support.Answering.start(
+            message -> support.Answering.press(org.traincontrol.util.I18n.t("ui.no"))))
+        {
+            int mark = wire.mark();
+
+            clickTheRoute(route, false, java.awt.event.MouseEvent.MOUSE_CLICKED, false);
+
+            assertTrue(answering.awaitAsked(1, 10000), "a click on the route's row asked nothing");
+
+            settle();
+
+            assertFalse(model.getRoute(route).isExecuting(), "No ran the route");
+
+            assertFalse(switched(246) || switched(247), "No switched the route's accessories");
+
+            assertEquals(accessoryCommandsSince(wire, mark), 0, "No sent the route's commands: " + wire.since(mark));
+        }
+        finally
+        {
+            wire.close();
+        }
+    }
+
+    /**
+     * The right-click menu's Execute runs the route, as the play button does.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testRightClickExecuteRunsTheRoute() throws Exception
+    {
+        final String route = aQuickRoute(PREFIX + "menu run", 246, 247);
+
+        support.WireRecorder wire = support.WireRecorder.open();
+
+        try
+        {
+            int mark = wire.mark();
+
+            javax.swing.JPopupMenu menu = rightClickTheRoute(route);
+
+            final javax.swing.AbstractButton execute = support.Components.withText(menu,
+                org.traincontrol.util.I18n.f("route.ui.menuExecuteRoute", route + " ("
+                    + org.traincontrol.util.I18n.t("route.ui.id") + ": " + model.getRouteId(route) + ")"));
+
+            assertNotNull(execute, "the route's right-click menu has no Execute naming the route and its id");
+
+            SwingUtilities.invokeLater(execute::doClick);
+
+            assertTrue(waitFor(() -> switched(246) && switched(247), 10000), "Execute did not switch the route's"
+                + " accessories");
+
+            assertTrue(waitFor(() -> accessoryCommandsSince(wire, mark) >= 2, 5000), "Execute switched the accessories"
+                + " and no command for them reached the railway: " + wire.since(mark));
+        }
+        finally
+        {
+            wire.close();
+
+            theRouteIsOver(route);
+
+            closeAnyMenu();
+        }
+    }
+
+    /**
+     * The right-click menu's Duplicate Route makes a copy beside the route: a new name, an id of its own, the same
+     * commands, and a cell of its own in the list.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testDuplicateRouteMakesACopyWithItsOwnId() throws Exception
+    {
+        final String route = aQuickRoute(PREFIX + "original", 246, 247);
+
+        final String copy = route + " (" + org.traincontrol.util.I18n.t("route.ui.copy") + " 1)";
+
+        assertNull(model.getRoute(copy), "precondition: the copy is there before the duplicate");
+
+        try
+        {
+            javax.swing.JPopupMenu menu = rightClickTheRoute(route);
+
+            final javax.swing.AbstractButton duplicate = support.Components.withText(menu,
+                org.traincontrol.util.I18n.t("route.ui.menuDuplicateRoute"));
+
+            assertNotNull(duplicate, "the route's right-click menu has no Duplicate Route");
+
+            SwingUtilities.invokeLater(duplicate::doClick);
+
+            assertTrue(waitFor(() -> model.getRoute(copy) != null, 30000), "Duplicate Route made no route called "
+                + copy + ": " + model.getRouteList());
+
+            assertNotEquals(model.getRouteId(copy), model.getRouteId(route), "the copy has the original's id");
+
+            assertEquals(model.getRoute(copy).toCSV(), model.getRoute(route).toCSV(), "the copy's commands are not the"
+                + " original's");
+
+            assertTrue(waitFor(() -> cellOf(copy) != null, 30000), "the copy is not in the route list");
+
+            // ITS SYNC OVER BEFORE THE NEXT CLAIM: the sync re-reads the pages and deletes every sensor on none of them,
+            // so one left running deleted Enable Auto Execution's sensor while it was held made, and the route never ran
+            assertTrue(waitFor(() -> !duplicating(), 60000), "Duplicate Route's worker was still going a minute on");
+        }
+        finally
+        {
+            closeAnyMenu();
+
+            if (model.getRoute(copy) != null) model.deleteRoute(copy);
+        }
+    }
+
+    /** Whether Duplicate Route's worker, which syncs with the station after the copy is made, is still going. */
+    private static boolean duplicating()
+    {
+        for (StackTraceElement[] frames : Thread.getAllStackTraces().values())
+        {
+            for (StackTraceElement frame : frames)
+            {
+                if (frame.getMethodName().startsWith("lambda$duplicateRoute$")) return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Find Route, given part of a route's name that only it has, brings the route list forward and highlights that
+     * route's cell (FR-044, MT-218).  Adam: "system jumps to the route page and highlights the matched cell".
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testFindRouteShowsTheRoute() throws Exception
+    {
+        final String route = aQuickRoute(PREFIX + "findable zebra", 246);
+        final String other = aQuickRoute(PREFIX + "plain", 247);
+
+        // Another tab in front, as when the user is driving
+        final JTable table = routeTable();
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            javax.swing.JTabbedPane tabs = (javax.swing.JTabbedPane) SwingUtilities.getAncestorOfClass(
+                javax.swing.JTabbedPane.class, table);
+
+            tabs.setSelectedIndex(0);
+        });
+
+        assertFalse(table.isShowing(), "precondition: the route list is in front already");
+
+        final javax.swing.AbstractButton find = support.Components.withText(ui,
+            org.traincontrol.util.I18n.t("route.ui.menuFindRoute"));
+
+        assertNotNull(find, "the window has no Find Route");
+
+        try (support.Answering answering = support.Answering.start(message -> support.Answering.type("ZEBRA")))
+        {
+            SwingUtilities.invokeLater(find::doClick);
+
+            assertTrue(answering.awaitAsked(1, 10000), "Find Route asked nothing");
+
+            assertEquals(answering.asked().get(0), org.traincontrol.util.I18n.t("route.ui.promptFindRoute"), "asked: "
+                + answering.asked());
+
+            assertTrue(waitFor(table::isShowing, 5000), "Find Route did not bring the route list forward");
+
+            settle();
+        }
+
+        assertTrue(waitFor(() -> !backgroundOf(route).equals(backgroundOf(other)), 5000), "Find Route did not highlight"
+            + " the route it found");
+
+        // Until the next click in the table, which clears it
+        clickTheRoute(other, false, java.awt.event.MouseEvent.MOUSE_PRESSED, false);
+    }
+
+    /**
+     * Find Route, given a name no route has, says so, naming what was typed.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testFindRouteSaysWhenNoRouteHasTheName() throws Exception
+    {
+        final String missing = PREFIX + "no such route " + System.nanoTime();
+
+        final javax.swing.AbstractButton find = support.Components.withText(ui,
+            org.traincontrol.util.I18n.t("route.ui.menuFindRoute"));
+
+        try (support.Answering answering = support.Answering.start(message ->
+            message.equals(org.traincontrol.util.I18n.t("route.ui.promptFindRoute"))
+                ? support.Answering.type(missing) : support.Answering.press(org.traincontrol.util.I18n.t("ui.ok"))))
+        {
+            SwingUtilities.invokeLater(find::doClick);
+
+            assertTrue(answering.awaitAsked(2, 10000), "Find Route said nothing about a route that is not there: "
+                + answering.asked());
+
+            assertEquals(answering.asked().get(1), org.traincontrol.util.I18n.f("route.ui.errorNoSuchRoute", missing), "asked: "
+                + answering.asked());
+        }
+    }
+
+    /**
+     * Bulk Enable, given part of a name, arms exactly the routes with a sensor whose names contain it.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testBulkEnableArmsOnlyTheMatchingRoutes() throws Exception
+    {
+        final String match = PREFIX + "bulk kiwi";
+        final String unmatched = PREFIX + "bulk other";
+
+        for (String name : new String[] {match, unmatched})
+        {
+            List<RouteCommand> commands = new ArrayList<>();
+
+            commands.add(RouteCommand.RouteCommandAccessory(248, Accessory.accessoryDecoderType.MM2, true));
+
+            if (model.getRoute(name) != null) model.deleteRoute(name);
+
+            assertTrue(model.newRoute(name, commands, 77, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null),
+                "precondition: the route " + name + " was not made");
+        }
+
+        refresh();
+
+        assertFalse(model.getRoute(match).isEnabled() || model.getRoute(unmatched).isEnabled(),
+            "precondition: a route is armed before Bulk Enable");
+
+        final javax.swing.AbstractButton bulk = support.Components.withText(ui,
+            org.traincontrol.util.I18n.t("ui.main.bulkEnable"));
+
+        assertNotNull(bulk, "the route list has no Bulk Enable");
+
+        try (support.Answering answering = support.Answering.start(message -> support.Answering.type("kiwi")))
+        {
+            SwingUtilities.invokeLater(bulk::doClick);
+
+            assertTrue(answering.awaitAsked(1, 10000), "Bulk Enable asked for nothing");
+
+            assertEquals(answering.asked().get(0), org.traincontrol.util.I18n.f(
+                "route.ui.promptEnterSearchStringWithS88State", org.traincontrol.util.I18n.t("ui.stateEnabled")));
+
+            assertTrue(waitFor(() -> armed(match, true), 30000), "Bulk Enable did not arm the route"
+                + " whose name matches");
+
+            settle();
+
+            assertTrue(waitFor(() -> model.getRoute(unmatched) != null, 10000), "the unmatched route is gone");
+
+            assertFalse(model.getRoute(unmatched).isEnabled(), "Bulk Enable armed a route whose name does not match");
+        }
+    }
+
+    /**
+     * Find Route, given part of a name several routes have, asks which, and shows the one picked (MT-218).  Adam:
+     * "let's support partial matching if there is no exact match as entered."
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testFindRouteAsksWhichWhenSeveralMatch() throws Exception
+    {
+        final String first = aQuickRoute(PREFIX + "twin mango one", 246);
+        final String second = aQuickRoute(PREFIX + "twin mango two", 247);
+
+        final JTable table = routeTable();
+
+        final javax.swing.AbstractButton find = support.Components.withText(ui,
+            org.traincontrol.util.I18n.t("route.ui.menuFindRoute"));
+
+        List<String> asked;
+
+        try (support.Answering answering = support.Answering.start(message ->
+            message.equals(org.traincontrol.util.I18n.t("route.ui.promptFindRoute"))
+                ? support.Answering.type("mango") : support.Answering.type(second)))
+        {
+            SwingUtilities.invokeLater(find::doClick);
+
+            assertTrue(answering.awaitAsked(2, 10000), "Find Route did not ask which of two matching routes: "
+                + answering.asked());
+
+            assertEquals(answering.asked().get(1), org.traincontrol.util.I18n.t("route.ui.promptWhichRoute"), "asked: "
+                + answering.asked());
+
+            assertTrue(waitFor(table::isShowing, 5000), "Find Route did not bring the route list forward");
+
+            asked = answering.asked();
+        }
+
+        assertTrue(waitFor(() -> !backgroundOf(second).equals(backgroundOf(first)), 5000), "Find Route did not highlight"
+            + " the route picked; asked " + asked);
+
+        clickTheRoute(first, false, java.awt.event.MouseEvent.MOUSE_PRESSED, false);
+    }
+
+    /**
+     * Bulk Disable, given part of a name, disarms exactly the armed routes whose names contain it.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testBulkDisableDisarmsOnlyTheMatchingRoutes() throws Exception
+    {
+        final String match = PREFIX + "armed lime";
+        final String unmatched = PREFIX + "armed other";
+
+        for (String name : new String[] {match, unmatched})
+        {
+            List<RouteCommand> commands = new ArrayList<>();
+
+            commands.add(RouteCommand.RouteCommandAccessory(248, Accessory.accessoryDecoderType.MM2, true));
+
+            if (model.getRoute(name) != null) model.deleteRoute(name);
+
+            assertTrue(model.newRoute(name, commands, 78, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, true, null),
+                "precondition: the route " + name + " was not made");
+        }
+
+        refresh();
+
+        assertTrue(model.getRoute(match).isEnabled() && model.getRoute(unmatched).isEnabled(),
+            "precondition: a route is not armed before Bulk Disable");
+
+        final javax.swing.AbstractButton bulk = support.Components.withText(ui,
+            org.traincontrol.util.I18n.t("ui.main.bulkDisable"));
+
+        assertNotNull(bulk, "the route list has no Bulk Disable");
+
+        try (support.Answering answering = support.Answering.start(message -> support.Answering.type("lime")))
+        {
+            SwingUtilities.invokeLater(bulk::doClick);
+
+            assertTrue(answering.awaitAsked(1, 10000), "Bulk Disable asked for nothing");
+
+            assertEquals(answering.asked().get(0), org.traincontrol.util.I18n.f(
+                "route.ui.promptEnterSearchStringWithS88State", org.traincontrol.util.I18n.t("ui.stateDisabled")));
+
+            assertTrue(waitFor(() -> armed(match, false), 30000), "Bulk Disable did not disarm the route"
+                + " whose name matches");
+
+            settle();
+
+            assertTrue(waitFor(() -> model.getRoute(unmatched) != null, 10000), "the unmatched route is gone");
+
+            assertTrue(model.getRoute(unmatched).isEnabled(), "Bulk Disable disarmed a route whose name does not match");
+        }
+    }
+
+    /**
+     * The right-click menu's Edit Route opens the route's editor, titled with its name and id; a second Edit while it
+     * is open says only one route can be edited at a time, and opens no second editor.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testEditRouteOpensOneEditorAtATime() throws Exception
+    {
+        final String route = aQuickRoute(PREFIX + "edit me", 246);
+
+        final String title = org.traincontrol.util.I18n.f("route.ui.dialogEditRouteWithId", route,
+            model.getRouteId(route));
+
+        try
+        {
+            javax.swing.JPopupMenu menu = rightClickTheRoute(route);
+
+            final javax.swing.AbstractButton edit = support.Components.withText(menu,
+                org.traincontrol.util.I18n.t("route.ui.menuEditRoute"));
+
+            assertNotNull(edit, "the route's right-click menu has no Edit Route");
+
+            SwingUtilities.invokeLater(edit::doClick);
+
+            assertTrue(waitFor(() -> routeEditorsTitled(title) == 1, 10000), "Edit Route opened no editor titled \""
+                + title + "\"");
+
+            closeAnyMenu();
+
+            try (support.Answering answering = support.Answering.start(message -> null))
+            {
+                final javax.swing.AbstractButton again = support.Components.withText(rightClickTheRoute(route),
+                    org.traincontrol.util.I18n.t("route.ui.menuEditRoute"));
+
+                SwingUtilities.invokeLater(again::doClick);
+
+                assertTrue(answering.awaitAsked(1, 10000), "a second Edit Route said nothing");
+
+                assertEquals(answering.asked().get(0),
+                    org.traincontrol.util.I18n.t("route.ui.errorOnlyOneRouteEditorAllowed"));
+
+                settle();
+            }
+
+            assertEquals(routeEditorsTitled(title), 1, "a second Edit Route opened a second editor");
+        }
+        finally
+        {
+            closeAnyMenu();
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                for (java.awt.Window window : java.awt.Window.getWindows())
+                {
+                    if ("RouteEditorFrame".equals(window.getClass().getSimpleName())) window.dispose();
+                }
+            });
+        }
+    }
+
+    /**
+     * The right-click menu's Change Route ID, answered with an id no route has, gives the route that id.
+     *
+     * MUTATION: in `TrainControlUI.changeRouteId`, `if (newId != currentRoute.getId())` to `if (false)`.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testChangeRouteIdGivesTheRouteTheTypedId() throws Exception
+    {
+        final String route = aQuickRoute(PREFIX + "renumbered", 246);
+
+        final int free = aFreeRouteId();
+
+        try (support.Answering answering = support.Answering.start(
+            message -> support.Answering.type(Integer.toString(free))))
+        {
+            final javax.swing.AbstractButton change = support.Components.withText(rightClickTheRoute(route),
+                org.traincontrol.util.I18n.t("route.ui.menuChangeRouteId"));
+
+            assertNotNull(change, "the route's right-click menu has no Change Route ID");
+
+            SwingUtilities.invokeLater(change::doClick);
+
+            assertTrue(answering.awaitAsked(1, 10000), "Change Route ID asked nothing");
+
+            assertEquals(answering.asked().get(0), org.traincontrol.util.I18n.t("route.ui.promptEnterNewRouteId"));
+
+            assertTrue(waitFor(() -> model.getRouteId(route) == free, 10000), "the route's id is "
+                + model.getRouteId(route) + " after " + free + " was typed");
+
+            settle();
+
+            assertEquals(answering.asked().size(), 1, "Change Route ID to a free id said more: " + answering.asked());
+        }
+        finally
+        {
+            closeAnyMenu();
+        }
+    }
+
+    /**
+     * Change Route ID, answered with the id another route has, says so and leaves the route its own id.
+     *
+     * MUTATION: in `TrainControlUI.changeRouteId`, `if (!this.model.changeRouteId(routeName, newId))` to
+     * `if (!this.model.changeRouteId(routeName, newId) && false)`.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testChangeRouteIdToATakenIdSaysSoAndKeepsTheId() throws Exception
+    {
+        final String route = aQuickRoute(PREFIX + "keeps its id", 246);
+        final String other = aQuickRoute(PREFIX + "holds the id", 247);
+
+        final int was = model.getRouteId(route);
+        final int taken = model.getRouteId(other);
+
+        try (support.Answering answering = support.Answering.start(
+            message -> support.Answering.type(Integer.toString(taken))))
+        {
+            final javax.swing.AbstractButton change = support.Components.withText(rightClickTheRoute(route),
+                org.traincontrol.util.I18n.t("route.ui.menuChangeRouteId"));
+
+            assertNotNull(change, "the route's right-click menu has no Change Route ID");
+
+            SwingUtilities.invokeLater(change::doClick);
+
+            assertTrue(answering.awaitAsked(2, 10000), "Change Route ID to a taken id did not say so: "
+                + answering.asked());
+
+            assertEquals(answering.asked().get(1), org.traincontrol.util.I18n.t("route.ui.errorDuplicateRouteId"));
+        }
+        finally
+        {
+            closeAnyMenu();
+        }
+
+        assertEquals(model.getRouteId(route), was, "the route lost its id to a refused change");
+        assertEquals(model.getRouteId(other), taken, "the other route lost its id");
+    }
+
+    /**
+     * Delete Route, answered Yes, removes the route and the commands of other routes that ran it, after a question
+     * that says how many routes run it.
+     *
+     * MUTATION: in `TrainControlUI.deleteRoute`, `this.model.deleteRouteAndItsCalls(route.getName())` to
+     * `this.model.deleteRoute(route.getName())`.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testDeleteRouteAnsweredYesRemovesItAndTheCommandsThatRunIt() throws Exception
+    {
+        final String route = aQuickRoute(PREFIX + "deleted", 246);
+        final String caller = aCallingRoute(PREFIX + "runs the deleted", route);
+
+        try (support.Answering answering = support.Answering.start(
+            message -> support.Answering.press(org.traincontrol.util.I18n.t("ui.yes"))))
+        {
+            final javax.swing.AbstractButton delete = support.Components.withText(rightClickTheRoute(route),
+                org.traincontrol.util.I18n.t("route.ui.menuDeleteRoute"));
+
+            assertNotNull(delete, "the route's right-click menu has no Delete Route");
+
+            SwingUtilities.invokeLater(delete::doClick);
+
+            assertTrue(answering.awaitAsked(1, 10000), "Delete Route asked nothing");
+
+            assertEquals(answering.asked().get(0), org.traincontrol.util.I18n.f("route.ui.confirmDeleteRouteWithCallers",
+                route, 1), "the question does not say that one route runs it");
+
+            assertTrue(waitFor(() -> model.getRoute(route) == null, 10000), "Delete Route answered Yes left the route");
+
+            assertTrue(waitFor(() -> cellOf(route) == null, 10000), "the deleted route is still in the list");
+        }
+        finally
+        {
+            closeAnyMenu();
+        }
+
+        assertNotNull(model.getRoute(caller), "the route that ran it was deleted too");
+
+        for (RouteCommand command : model.getRoute(caller).getRoute())
+        {
+            assertFalse(command.isRoute() && route.equals(command.getName()), "the route that ran the deleted route"
+                + " still runs it: " + model.getRoute(caller).toCSV());
+        }
+    }
+
+    /**
+     * Delete Route, answered No, removes nothing.
+     *
+     * MUTATION: in `TrainControlUI.deleteRoute`, `if (dialogResult == JOptionPane.YES_OPTION)` to `if (true)`.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testDeleteRouteAnsweredNoKeepsIt() throws Exception
+    {
+        final String route = aQuickRoute(PREFIX + "not deleted", 246);
+        final String caller = aCallingRoute(PREFIX + "runs the kept", route);
+
+        try (support.Answering answering = support.Answering.start(
+            message -> support.Answering.press(org.traincontrol.util.I18n.t("ui.no"))))
+        {
+            final javax.swing.AbstractButton delete = support.Components.withText(rightClickTheRoute(route),
+                org.traincontrol.util.I18n.t("route.ui.menuDeleteRoute"));
+
+            assertNotNull(delete, "the route's right-click menu has no Delete Route");
+
+            SwingUtilities.invokeLater(delete::doClick);
+
+            assertTrue(answering.awaitAsked(1, 10000), "Delete Route asked nothing");
+
+            settle();
+        }
+        finally
+        {
+            closeAnyMenu();
+        }
+
+        assertNotNull(model.getRoute(route), "Delete Route answered No removed the route");
+
+        assertEquals(model.routesCalling(route), java.util.Arrays.asList(caller), "Delete Route answered No took the"
+            + " route out of the route that runs it");
+    }
+
+    /**
+     * Enable Auto Execution from the right-click menu arms the route, and the station reporting its sensor clear then
+     * made then fires it: its accessories switch.
+     *
+     * MUTATION: in `TrainControlUI.enableOrDisableRoute`, `writeRouteEnabledState(r, enable);` to
+     * `writeRouteEnabledState(r, false);`.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testEnableAutoExecutionLetsTheSensorFireTheRoute() throws Exception
+    {
+        final int sensor = 4790;
+
+        final String route = aSensorRoute(PREFIX + "armed by hand", sensor, false, 248);
+
+        try
+        {
+            final javax.swing.AbstractButton enable = support.Components.withText(rightClickTheRoute(route),
+                org.traincontrol.util.I18n.t("route.ui.menuEnableAutoExecution"));
+
+            assertNotNull(enable, "the right-click menu of a route with a sensor has no Enable Auto Execution");
+
+            SwingUtilities.invokeLater(enable::doClick);
+
+            assertTrue(waitFor(() -> model.getRoute(route) != null && model.getRoute(route).isEnabled(), 10000),
+                "Enable Auto Execution did not arm the route");
+
+            // Its monitor on the sensor before the station reports it, or the report comes too soon to be heard
+            assertTrue(waitFor(() -> support.RouteMonitor.watching(model.getRoute(route)), 10000),
+                "Enable Auto Execution armed the route and nothing is watching its sensor");
+
+            pulse(sensor);
+
+            assertTrue(waitFor(() -> switched(248), 10000), "the station reported the armed route's sensor clear then"
+                + " made, and the route did not run");
+        }
+        finally
+        {
+            closeAnyMenu();
+
+            disarm(route);
+        }
+    }
+
+    /**
+     * Disable Auto Execution from the right-click menu disarms the route: the station reporting its sensor clear then
+     * made runs nothing.
+     *
+     * MUTATION: in `TrainControlUI.enableOrDisableRoute`, `writeRouteEnabledState(r, enable);` to
+     * `writeRouteEnabledState(r, true);`.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testDisableAutoExecutionStopsTheSensorFiringTheRoute() throws Exception
+    {
+        final int sensor = 4791;
+
+        final String route = aSensorRoute(PREFIX + "disarmed by hand", sensor, true, 249);
+
+        try
+        {
+            assertTrue(waitFor(() -> support.RouteMonitor.watching(model.getRoute(route)), 10000),
+                "precondition: the armed route is not watching its sensor");
+
+            final javax.swing.AbstractButton disable = support.Components.withText(rightClickTheRoute(route),
+                org.traincontrol.util.I18n.t("route.ui.menuDisableAutoExecution"));
+
+            assertNotNull(disable, "the right-click menu of an armed route has no Disable Auto Execution");
+
+            SwingUtilities.invokeLater(disable::doClick);
+
+            assertTrue(waitFor(() -> model.getRoute(route) != null && !model.getRoute(route).isEnabled(), 10000),
+                "Disable Auto Execution did not disarm the route");
+
+            pulse(sensor);
+
+            assertFalse(waitFor(() -> switched(249), org.traincontrol.base.Locomotive.FEEDBACK_DURATION_THRESHOLD * 5L),
+                "the station reported the disarmed route's sensor clear then made, and the route ran");
+        }
+        finally
+        {
+            closeAnyMenu();
+
+            disarm(route);
+        }
+    }
+
+    /** An id no route has, among the ids this program hands out itself. */
+    private static int aFreeRouteId()
+    {
+        int highest = 1000;
+
+        for (String name : model.getRouteList()) highest = Math.max(highest, model.getRouteId(name));
+
+        return highest + 1;
+    }
+
+    /** A route whose only command runs another route. */
+    private static String aCallingRoute(String name, String called) throws Exception
+    {
+        if (model.getRoute(name) != null) model.deleteRoute(name);
+
+        List<RouteCommand> list = new ArrayList<>();
+
+        list.add(RouteCommand.RouteCommandRoute(called));
+
+        assertTrue(model.newRoute(name, list, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null),
+            "precondition: the route " + name + " was not made");
+
+        assertEquals(model.routesCalling(called), java.util.Arrays.asList(name), "precondition: the route does not run "
+            + called);
+
+        refresh();
+
+        return name;
+    }
+
+    /**
+     * A route switching one accessory on, triggered by a sensor the station has reported clear, armed or not.
+     */
+    private static String aSensorRoute(String name, int sensor, boolean armed, int address) throws Exception
+    {
+        model.receiveMessage(support.Packets.s88(sensor, false));
+
+        assertTrue(waitFor(() -> model.isFeedbackSet(Integer.toString(sensor))
+            && !model.getFeedbackState(Integer.toString(sensor)), 5000), "precondition: the sensor is not known, or not"
+            + " clear");
+
+        if (model.getRoute(name) != null) model.deleteRoute(name);
+
+        model.setAccessoryState(address, Accessory.accessoryDecoderType.MM2, false);
+
+        List<RouteCommand> list = new ArrayList<>();
+
+        list.add(RouteCommand.RouteCommandAccessory(address, Accessory.accessoryDecoderType.MM2, true));
+
+        assertTrue(model.newRoute(name, list, sensor, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, armed, null),
+            "precondition: the route " + name + " was not made");
+
+        assertEquals(model.getRoute(name).isEnabled(), armed, "precondition: the route is not as armed as asked");
+
+        assertFalse(switched(address), "precondition: the accessory is switched before the route runs");
+
+        refresh();
+
+        return name;
+    }
+
+    /** The station reports the sensor clear, then made, each held long enough to count. */
+    private static void pulse(int sensor) throws InterruptedException
+    {
+        for (boolean made : new boolean[] {false, true})
+        {
+            Thread.sleep(org.traincontrol.base.Locomotive.FEEDBACK_DURATION_THRESHOLD * 2L);
+
+            model.receiveMessage(support.Packets.s88(sensor, made));
+        }
+    }
+
+    /** Leaves no route watching a sensor for the rest of the class. */
+    private static void disarm(String route)
+    {
+        org.traincontrol.base.Route r = model.getRoute(route);
+
+        if (r != null) model.deleteRoute(route);
+    }
+
+    /**
+     * A route renamed elsewhere while its editor is open: Save asks, naming both names, and Yes saves onto the route
+     * under its new name, keeping its id.
+     *
+     * MUTATION: in `RouteEditorFrame.nameToSaveAs`, `return typed != null && typed.equals(originalName) ? nowCalled : typed;`
+     * to `return typed;`.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testSavingARouteRenamedElsewhereAsksAndYesKeepsItsNewName() throws Exception
+    {
+        final String route = aQuickRoute(PREFIX + "editor renamed", 246);
+        final String renamed = PREFIX + "editor renamed elsewhere";
+        final int id = model.getRouteId(route);
+
+        try
+        {
+            java.awt.Window editor = openTheEditor(route);
+
+            renameElsewhere(route, renamed);
+
+            try (support.Answering answering = support.Answering.start(
+                message -> support.Answering.press(org.traincontrol.util.I18n.t("ui.yes"))))
+            {
+                support.Components.press(support.Components.withText(editor, org.traincontrol.util.I18n.t("route.ui.frameSave")));
+
+                assertTrue(answering.awaitAsked(1, 10000), "Save asked nothing about the rename");
+
+                assertEquals(answering.asked().get(0), org.traincontrol.util.I18n.f("route.ui.confirmRouteRenamed", route,
+                    renamed));
+
+                assertTrue(waitFor(() -> !editor.isShowing(), 10000), "Save answered Yes left the editor open");
+            }
+
+            assertNotNull(model.getRoute(renamed), "the save took the route's new name away: " + model.getRouteList());
+            assertNull(model.getRoute(route), "the save renamed the route back to what it was called when the editor"
+                + " opened");
+            assertEquals(model.getRouteId(renamed), id, "the save gave the route another id");
+        }
+        finally
+        {
+            closeTheEditors();
+
+            if (model.getRoute(renamed) != null) model.deleteRoute(renamed);
+        }
+    }
+
+    /**
+     * The same question answered No saves nothing, and leaves the editor open.
+     *
+     * MUTATION: in `RouteEditorFrame.onSave`, after the `route.ui.confirmRouteRenamed` question, the `return;` under
+     * `!= 0)` taken out.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testSavingARouteRenamedElsewhereAnsweredNoSavesNothing() throws Exception
+    {
+        final String route = aQuickRoute(PREFIX + "editor kept", 246);
+        final String renamed = PREFIX + "editor kept elsewhere";
+
+        try
+        {
+            java.awt.Window editor = openTheEditor(route);
+
+            renameElsewhere(route, renamed);
+
+            final String before = model.getRoute(renamed).toCSV();
+
+            try (support.Answering answering = support.Answering.start(
+                message -> support.Answering.press(org.traincontrol.util.I18n.t("ui.no"))))
+            {
+                support.Components.press(support.Components.withText(editor, org.traincontrol.util.I18n.t("route.ui.frameSave")));
+
+                assertTrue(answering.awaitAsked(1, 10000), "Save asked nothing about the rename");
+
+                settle();
+            }
+
+            assertTrue(editor.isShowing(), "Save answered No closed the editor");
+
+            assertNull(model.getRoute(route), "Save answered No renamed the route back");
+            assertEquals(model.getRoute(renamed).toCSV(), before, "Save answered No changed the route");
+        }
+        finally
+        {
+            closeTheEditors();
+
+            if (model.getRoute(renamed) != null) model.deleteRoute(renamed);
+        }
+    }
+
+    /**
+     * A route deleted elsewhere while its editor is open: Save asks whether to save it as a new route, and Yes does.
+     *
+     * MUTATION: in `RouteEditorFrame.onSave`, the `newRoute` call under `"gone".equals(moved)` to `false`.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testSavingARouteDeletedElsewhereAsksAndYesAddsItBack() throws Exception
+    {
+        final String route = aQuickRoute(PREFIX + "editor gone", 246);
+        final String commands = model.getRoute(route).toCSV();
+
+        try
+        {
+            java.awt.Window editor = openTheEditor(route);
+
+            model.deleteRoute(route);
+
+            try (support.Answering answering = support.Answering.start(
+                message -> support.Answering.press(org.traincontrol.util.I18n.t("ui.yes"))))
+            {
+                support.Components.press(support.Components.withText(editor, org.traincontrol.util.I18n.t("route.ui.frameSave")));
+
+                assertTrue(answering.awaitAsked(1, 10000), "Save asked nothing about the deleted route");
+
+                assertEquals(answering.asked().get(0), org.traincontrol.util.I18n.f("route.ui.confirmRouteGoneSaveAsNew",
+                    route));
+
+                assertTrue(waitFor(() -> model.getRoute(route) != null, 10000), "Save answered Yes did not add the route"
+                    + " back");
+            }
+
+            assertEquals(model.getRoute(route).toCSV(), commands, "the route added back is not what the editor showed");
+        }
+        finally
+        {
+            closeTheEditors();
+        }
+    }
+
+    /**
+     * A route changed elsewhere while its editor is open: Save asks, and No keeps the other change and the editor.
+     *
+     * MUTATION: in `RouteEditorFrame.onSave`, `"changed".equals(moved) && JOptionPane.showOptionDialog(` to
+     * `false && JOptionPane.showOptionDialog(`.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testSavingARouteChangedElsewhereAnsweredNoKeepsTheOtherChange() throws Exception
+    {
+        final String route = aQuickRoute(PREFIX + "editor changed", 246);
+
+        try
+        {
+            java.awt.Window editor = openTheEditor(route);
+
+            // Changed elsewhere: another accessory added to it
+            List<RouteCommand> other = new ArrayList<>(model.getRoute(route).getRoute());
+
+            other.add(RouteCommand.RouteCommandAccessory(247, Accessory.accessoryDecoderType.MM2, true));
+
+            assertTrue(model.editRoute(route, route, other, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null),
+                "precondition: the route could not be changed elsewhere");
+
+            final String theirs = model.getRoute(route).toCSV();
+
+            try (support.Answering answering = support.Answering.start(
+                message -> support.Answering.press(org.traincontrol.util.I18n.t("ui.no"))))
+            {
+                support.Components.press(support.Components.withText(editor, org.traincontrol.util.I18n.t("route.ui.frameSave")));
+
+                assertTrue(answering.awaitAsked(1, 10000), "Save asked nothing about the change made elsewhere");
+
+                assertEquals(answering.asked().get(0), org.traincontrol.util.I18n.f(
+                    "route.ui.confirmRouteChangedUnderneath", route));
+
+                settle();
+            }
+
+            assertEquals(model.getRoute(route).toCSV(), theirs, "Save answered No wrote over the change made elsewhere");
+
+            assertTrue(editor.isShowing(), "Save answered No closed the editor");
+        }
+        finally
+        {
+            closeTheEditors();
+        }
+    }
+
+    /**
+     * Cancel over a change typed into the editor asks first, and No keeps the editor and what was typed.
+     *
+     * MUTATION: in `RouteEditorFrame.closeIfThrowingNothingAway`, `if (answer == 0) dispose();` to `dispose();`.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testCancelOverATypedChangeAnsweredNoKeepsTheEditor() throws Exception
+    {
+        final String route = aQuickRoute(PREFIX + "editor cancel", 246);
+
+        try
+        {
+            java.awt.Window editor = openTheEditor(route);
+
+            final javax.swing.JTextField name = support.Components.find(editor, javax.swing.JTextField.class,
+                field -> route.equals(field.getText()));
+
+            assertNotNull(name, "the editor shows no field holding the route's name");
+
+            support.Components.onTheEventThread(() ->
+            {
+                name.setText(route + " typed");
+
+                return null;
+            });
+
+            try (support.Answering answering = support.Answering.start(
+                message -> support.Answering.press(org.traincontrol.util.I18n.t("ui.no"))))
+            {
+                support.Components.press(support.Components.withText(editor,
+                    org.traincontrol.util.I18n.t("route.ui.frameCancel")));
+
+                assertTrue(answering.awaitAsked(1, 10000), "Cancel over a typed change asked nothing");
+
+                assertEquals(answering.asked().get(0), org.traincontrol.util.I18n.t("route.ui.confirmDiscardChanges"));
+
+                settle();
+            }
+
+            assertTrue(editor.isShowing(), "Cancel answered No closed the editor");
+
+            assertEquals(support.Components.onTheEventThread(name::getText), route + " typed", "Cancel answered No"
+                + " threw away what was typed");
+
+            assertNotNull(model.getRoute(route), "Cancel saved the typed name");
+        }
+        finally
+        {
+            closeTheEditors();
+        }
+    }
+
+    /** Opens the route's editor from its right-click menu, and gives back its window. */
+    private static java.awt.Window openTheEditor(String route) throws Exception
+    {
+        final String title = org.traincontrol.util.I18n.f("route.ui.dialogEditRouteWithId", route,
+            model.getRouteId(route));
+
+        final javax.swing.AbstractButton edit = support.Components.withText(rightClickTheRoute(route),
+            org.traincontrol.util.I18n.t("route.ui.menuEditRoute"));
+
+        assertNotNull(edit, "the route's right-click menu has no Edit Route");
+
+        SwingUtilities.invokeLater(edit::doClick);
+
+        assertTrue(waitFor(() -> routeEditorsTitled(title) == 1, 10000), "Edit Route opened no editor titled \""
+            + title + "\"");
+
+        closeAnyMenu();
+
+        for (java.awt.Window window : java.awt.Window.getWindows())
+        {
+            if ("RouteEditorFrame".equals(window.getClass().getSimpleName()) && window.isShowing()
+                && title.equals(((java.awt.Frame) window).getTitle())) return window;
+        }
+
+        throw new AssertionError("the editor titled \"" + title + "\" is gone");
+    }
+
+    /** Renames a route behind the editor's back, keeping everything else, as another window would. */
+    private static void renameElsewhere(String route, String renamed)
+    {
+        MarklinRoute r = model.getRoute(route);
+
+        if (model.getRoute(renamed) != null) model.deleteRoute(renamed);
+
+        assertTrue(model.editRoute(route, renamed, r.getRoute(), r.getS88(), r.getTriggerType(), r.isEnabled(),
+            r.getConditions()), "precondition: the route could not be renamed elsewhere");
+    }
+
+    private static void closeTheEditors() throws Exception
+    {
+        closeAnyMenu();
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            for (java.awt.Window window : java.awt.Window.getWindows())
+            {
+                if ("RouteEditorFrame".equals(window.getClass().getSimpleName())) window.dispose();
+            }
+        });
+    }
+
+    /** How many route editors are showing under this title. */
+    private static int routeEditorsTitled(String title)
+    {
+        int found = 0;
+
+        for (java.awt.Window window : java.awt.Window.getWindows())
+        {
+            if ("RouteEditorFrame".equals(window.getClass().getSimpleName()) && window.isShowing()
+                && title.equals(((java.awt.Frame) window).getTitle())) found++;
+        }
+
+        return found;
+    }
+
+    /** The route list's table: the one holding routes. */
+    private static JTable routeTable()
+    {
+        JTable table = support.Components.find(ui, JTable.class, t ->
+        {
+            for (int row = 0; row < t.getRowCount(); row++)
+            {
+                for (int column = 0; column < t.getColumnCount(); column++)
+                {
+                    if (t.getValueAt(row, column) instanceof org.traincontrol.base.Route) return true;
+                }
+            }
+
+            return false;
+        });
+
+        assertNotNull(table, "the window has no table of routes");
+
+        return table;
+    }
+
+    /** A route's cell in the list, or null. */
+    private static Rectangle cellOf(final String route)
+    {
+        return support.Components.onTheEventThread(() ->
+        {
+            JTable table = routeTable();
+
+            for (int row = 0; row < table.getRowCount(); row++)
+            {
+                for (int column = 0; column < table.getColumnCount(); column++)
+                {
+                    Object value = table.getValueAt(row, column);
+
+                    if (value instanceof org.traincontrol.base.Route
+                        && route.equals(((org.traincontrol.base.Route) value).getName()))
+                    {
+                        return table.getCellRect(row, column, true);
+                    }
+                }
+            }
+
+            return null;
+        });
+    }
+
+    /**
+     * Brings the route list forward and sends a mouse event to a route's cell: on its play button, or on its name.
+     * Posted, so that a question the click asks cannot hold this thread.
+     */
+    private static void clickTheRoute(String route, boolean onThePlayButton, final int kind, boolean popup)
+        throws Exception
+    {
+        final JTable table = routeTable();
+
+        support.Components.select(table);
+
+        settle();
+
+        Rectangle cell = cellOf(route);
+
+        assertNotNull(cell, "precondition: the route " + route + " is not in the route list");
+
+        final java.awt.Point at = onThePlayButton
+            ? new java.awt.Point((int) TrainControlUI.routePlayButtonBox(cell).getCenterX(), (int) cell.getCenterY())
+            : new java.awt.Point(cell.x + 6, (int) cell.getCenterY());
+
+        final int button = popup ? java.awt.event.MouseEvent.BUTTON3 : java.awt.event.MouseEvent.BUTTON1;
+        final int mask = popup ? java.awt.event.InputEvent.BUTTON3_DOWN_MASK : java.awt.event.InputEvent.BUTTON1_DOWN_MASK;
+        final int modifiers = kind == java.awt.event.MouseEvent.MOUSE_CLICKED ? 0 : mask;
+
+        SwingUtilities.invokeLater(() -> table.dispatchEvent(new java.awt.event.MouseEvent(table, kind,
+            System.currentTimeMillis(), modifiers, at.x, at.y, 1, popup, button)));
+    }
+
+    /** Right-clicks a route's cell and gives back the menu that opened. */
+    private static javax.swing.JPopupMenu rightClickTheRoute(String route) throws Exception
+    {
+        clickTheRoute(route, false, java.awt.event.MouseEvent.MOUSE_PRESSED, true);
+
+        assertTrue(waitFor(() -> support.Components.popupShowing() != null, 5000), "a right-click on the route opened"
+            + " no menu");
+
+        return support.Components.popupShowing();
+    }
+
+    private static void closeAnyMenu()
+    {
+        support.Components.onTheEventThread(() ->
+        {
+            javax.swing.MenuSelectionManager.defaultManager().clearSelectedPath();
+
+            return null;
+        });
+    }
+
+    /** The background the list paints a route's cell with. */
+    private static Color backgroundOf(final String route)
+    {
+        return support.Components.onTheEventThread(() ->
+        {
+            JTable table = routeTable();
+
+            for (int row = 0; row < table.getRowCount(); row++)
+            {
+                for (int column = 0; column < table.getColumnCount(); column++)
+                {
+                    Object value = table.getValueAt(row, column);
+
+                    if (value instanceof org.traincontrol.base.Route
+                        && route.equals(((org.traincontrol.base.Route) value).getName()))
+                    {
+                        return table.getCellRenderer(row, column).getTableCellRendererComponent(table, value, false,
+                            false, row, column).getBackground();
+                    }
+                }
+            }
+
+            throw new AssertionError("the route " + route + " is not in the route list");
+        });
+    }
+
+    /**
+     * A route switching these MM2 accessories on, at once, with each accessory switched off first so the route has
+     * something to change; and the power on, so that a row click asks rather than opening the editor.
+     *
+     * One of this application's own, unlocked and with a local id, so Delete Route and the route editor's Save start no
+     * sync with the station (they sync only for a route the station carried, or a new one whose id it could have
+     * issued) - checked 2026-10-19 by logging every sync over this class: only Duplicate Route's ran (FR-136, issue 22).
+     * A claim moved onto a station's route would leave that sync running into the next claim, pruning its sensors, and
+     * has to wait it out as Duplicate Route's does.
+     */
+    private static String aQuickRoute(String name, int... addresses) throws Exception
+    {
+        List<RouteCommand> list = new ArrayList<>();
+
+        for (int address : addresses)
+        {
+            list.add(RouteCommand.RouteCommandAccessory(address, Accessory.accessoryDecoderType.MM2, true));
+
+            model.setAccessoryState(address, Accessory.accessoryDecoderType.MM2, false);
+        }
+
+        if (model.getRoute(name) != null) model.deleteRoute(name);
+
+        assertTrue(model.newRoute(name, list, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null),
+            "precondition: the route " + name + " was not made");
+
+        if (!model.getPowerState()) model.go();
+
+        assertTrue(waitFor(() -> model.getPowerState(), 5000), "precondition: the power is off");
+
+        for (int address : addresses)
+        {
+            assertFalse(switched(address), "precondition: accessory " + address + " is switched before the route runs");
+        }
+
+        refresh();
+
+        return name;
+    }
+
+    /** Waits until the route has ended and its mark has stopped, so the next claim starts with nothing running. */
+    private static void theRouteIsOver(String route)
+    {
+        assertTrue(waitFor(() -> !model.getRoute(route).isExecuting() && !isTurning(), 10000), "the route "
+            + route + " never ended");
+    }
+
+    private static boolean switched(int address)
+    {
+        return model.getAccessoryState(address, Accessory.accessoryDecoderType.MM2);
+    }
+
+    /** How many accessory commands the railway was sent since a mark. */
+    private static int accessoryCommandsSince(support.WireRecorder wire, int mark)
+    {
+        int seen = 0;
+
+        for (String line : wire.since(mark))
+        {
+            if (line.contains("Type: Accessory")) seen++;
+        }
+
+        return seen;
+    }
+
+    private static void settle() throws Exception
+    {
+        support.Components.settle();
     }
 
     /** Whether a route editor window is showing. */
@@ -420,7 +1760,7 @@ public class testTheRouteListShowsWhatRuns
     }
 
     /**
-     * Whether the strip of cell just left of the play button holds the mark's grey - which a short name never reaches.
+     * Whether the strip of cell just left of the play button holds the mark's gray - which a short name never reaches.
      */
     private static boolean markOf(String route)
     {
@@ -456,6 +1796,17 @@ public class testTheRouteListShowsWhatRuns
         }
 
         return false;
+    }
+
+    /**
+     * Whether the route exists and is armed as asked.  Bulk Enable and Bulk Disable delete a route and add it back, so for
+     * a moment it is not there at all: that moment answers false rather than throwing.
+     */
+    private static boolean armed(String name, boolean enabled)
+    {
+        org.traincontrol.marklin.MarklinRoute route = model.getRoute(name);
+
+        return route != null && route.isEnabled() == enabled;
     }
 
     private static boolean waitFor(BooleanSupplier condition, long millis)

@@ -21,7 +21,7 @@ import org.testng.annotations.Test;
  *
  * An ORPHAN FIXTURE is a checked-in railway nothing runs against.  `test/` already has seven ad-hoc
  * layout folders at its root, named for who made them rather than for what shape they are, and
- * `test/README.md`'s own survey (MON-C20) found that four of them are the same five pages counted four
+ * `test/README.md`'s own survey found that four of them are the same five pages counted four
  * times.  Nobody set out to do that; each was added for one test and outlived it.  A fixture that no
  * test opens is a file that gets maintained, moved, renamed and argued about for nothing.
  *

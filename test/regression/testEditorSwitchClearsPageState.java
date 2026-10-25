@@ -8,6 +8,7 @@ import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.gui.LayoutEditor;
+import support.SourceOf;
 
 /**
  * What must NOT survive the editor switching page, now that the window does.
@@ -88,7 +89,7 @@ public class testEditorSwitchClearsPageState
         String source = arriveAtSource();
 
         // Through takeTheUndoPoint, which takes BOTH halves - the in-memory snapshot Cancel restores
-        // and the on-disk note a restart restores (LD-1).
+        // and the on-disk note a restart restores.
         //
         // This used to look for the assignment itself.  The two halves were separate statements and
         // drifted immediately: the disk half was taken in the constructor only, so a switch moved
@@ -133,7 +134,7 @@ public class testEditorSwitchClearsPageState
     @Test
     public void testTheSwitchDoesNotCloseTheWindow() throws Exception
     {
-        String source = methodSource("leaveFor");
+        String source = methodSource("private void leaveFor(");
 
         assertFalse(source.contains("dispose()"),
             "leaveFor disposes the window, so switching still closes and reopens it - which is the "
@@ -154,7 +155,7 @@ public class testEditorSwitchClearsPageState
     @Test
     public void testLeavingAutonomyModeRebuildsThePalette() throws Exception
     {
-        String source = methodSource("setAutonomyMode");
+        String source = methodSource("public void setAutonomyMode(");
 
         assertTrue(source.contains("buildPalette()"),
             "setAutonomyMode does not rebuild the palette, so switching back to the track editor "
@@ -170,7 +171,7 @@ public class testEditorSwitchClearsPageState
      * arriveAt so it would land behind the repaint the teardown queues, wrote a comment saying so, and
      * wrote a test here pinning the two invokeLater calls.
      *
-     * GC-A1 pointed out that this cannot work: repaintLayout submits to a single-thread
+     * This cannot work: repaintLayout submits to a single-thread
      * ExecutorService and only calls invokeLater from inside THAT, so its EDT task is not queued when
      * ours is. An extra invokeLater cannot order against a task that does not exist yet. The test
      * passed, the comment read well, and neither was true.
@@ -182,10 +183,7 @@ public class testEditorSwitchClearsPageState
     @Test
     public void testTheViewerLayoutIsNotDecidedByTheSharedFlag() throws Exception
     {
-        String source = new String(java.nio.file.Files.readAllBytes(
-            new java.io.File("src/org/traincontrol/gui/LayoutGrid.java").toPath()), "UTF-8");
-
-        assertTrue(source.contains("layout.getEdit() && master instanceof LayoutEditor"),
+        assertTrue(SourceOf.allCode().contains("layout.getEdit() && master instanceof LayoutEditor"),
             "LayoutGrid lays the grid out on layout.getEdit() alone again. The main window shares that "
             + "diagram with the editor, so the viewer will be re-laid the editor's way by any repaint "
             + "while an editor is open - which is OB-016, and no amount of invokeLater fixes it.");
@@ -199,7 +197,7 @@ public class testEditorSwitchClearsPageState
      * a stack with the findings list under it. Each of those is a GroupLayout.replace or a container
      * swap, and each has to be undone.
      *
-     * They were found one at a time - the palette as OB-017, the findings list as GC-A2 - and the
+     * They were found one at a time - the palette as OB-017, the findings list - and the
      * pattern is the point: this list is what makes the fourth one fail here rather than on the
      * railway. Every field the mount block assigns must be cleared in the teardown, or coming BACK
      * skips the mount (the field is still set) and the previous session's controls stay on screen
@@ -212,7 +210,7 @@ public class testEditorSwitchClearsPageState
     @Test
     public void testLeavingAutonomyModeUndoesEverythingItMounted() throws Exception
     {
-        String source = methodSource("setAutonomyMode");
+        String source = methodSource("public void setAutonomyMode(");
 
         String teardown = source.substring(source.indexOf("if (session == null)"));
 
@@ -237,7 +235,7 @@ public class testEditorSwitchClearsPageState
     @Test
     public void testTheMountedFieldsAreTheOnesListed() throws Exception
     {
-        String source = methodSource("setAutonomyMode");
+        String source = methodSource("public void setAutonomyMode(");
 
         java.util.regex.Matcher m = java.util.regex.Pattern
             .compile("(autonomy[A-Za-z]+) = (?!null)").matcher(source);
@@ -256,94 +254,20 @@ public class testEditorSwitchClearsPageState
             + "MUST_BE_UNMOUNTED and make sure the teardown clears it.");
     }
 
-    // ------------------------------------------------------------------------------------------
-
     private String arriveAtSource() throws Exception
     {
-        return methodSource("arriveAt");
+        return methodSource("private void arriveAt(");
     }
 
     /**
-     * One method's body, out of the source file.
+     * One method's body, out of the program's source, with its comments taken out.
      *
-     * Braces are counted rather than matched to the next "private", because a method containing a
-     * lambda or an anonymous class - and these do - has plenty of both inside it.
+     * A test that reads source has to read the CODE: a comment explaining that the switch "used to dispose()" contains
+     * the word it was looking for.
      */
-    private String methodSource(String name) throws Exception
+    private String methodSource(String signature) throws Exception
     {
-        java.io.File file = new java.io.File(
-            "src/org/traincontrol/gui/LayoutEditor.java");
-
-        assertTrue(file.exists(), "cannot find " + file.getAbsolutePath()
-            + " - this test reads the source, so it has to run from the project root");
-
-        String all = new String(java.nio.file.Files.readAllBytes(file.toPath()), "UTF-8");
-
-        // THE DECLARATION, not the first mention (TSX-C3).
-        //
-        // `indexOf(" name(")` takes the first occurrence anywhere in the file, and for `arriveAt` that
-        // is a call site inside a lambda two hundred lines above the declaration.  The brace walk then
-        // started from the enclosing method's `{` and came back with the right body only because there
-        // is no `{` between the two - an accident, and one a single edit in between would take away
-        // without a word.
-        //
-        // A declaration is a name at the start of a line, after its modifiers and return type.
-        java.util.regex.Matcher declared = java.util.regex.Pattern.compile(
-            "(?m)^[ \\t]*(?:public |private |protected |static |final |synchronized )*[\\w<>\\[\\],. ]+\\s"
-            + java.util.regex.Pattern.quote(name) + "\\s*\\(").matcher(all);
-
-        assertTrue(declared.find(), "no method DECLARED as " + name + " - a call site is not a body");
-
-        int at = declared.start();
-
-        int open = all.indexOf('{', at);
-
-        int depth = 0;
-
-        for (int i = open; i < all.length(); i++)
-        {
-            if (all.charAt(i) == '{') depth++;
-            else if (all.charAt(i) == '}' && --depth == 0) return withoutComments(all.substring(open, i));
-        }
-
-        fail("could not find the end of " + name);
-
-        return "";
-    }
-
-    /**
-     * The same body with its comments taken out.
-     *
-     * Added after this test failed on its own first run, for the right reason and the wrong cause: the
-     * comment explaining that the switch "used to dispose()" contains the word it was looking for. A
-     * test that reads source has to read the CODE, and a codebase whose comments say what the code no
-     * longer does is exactly the codebase where that distinction matters.
-     */
-    private String withoutComments(String body)
-    {
-        StringBuilder out = new StringBuilder();
-
-        boolean inLine = false, inBlock = false;
-
-        for (int i = 0; i < body.length(); i++)
-        {
-            char c = body.charAt(i);
-            char next = i + 1 < body.length() ? body.charAt(i + 1) : ' ';
-
-            if (inLine)
-            {
-                if (c == '\n') { inLine = false; out.append(c); }
-            }
-            else if (inBlock)
-            {
-                if (c == '*' && next == '/') { inBlock = false; i++; }
-            }
-            else if (c == '/' && next == '/') inLine = true;
-            else if (c == '/' && next == '*') inBlock = true;
-            else out.append(c);
-        }
-
-        return out.toString();
+        return SourceOf.withoutComments(SourceOf.body(signature));
     }
 
     /**

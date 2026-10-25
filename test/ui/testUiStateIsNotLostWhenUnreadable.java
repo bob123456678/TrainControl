@@ -33,9 +33,30 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  */
 public class testUiStateIsNotLostWhenUnreadable
 {
-    private static final String DATA = "UIState.data";
+    /**
+     * The file this class backs up, overwrites and restores, asked of the application rather than restated: a
+     * rename in the program must move this test along with it, not leave it shuffling some other file.  Resolved
+     * when the class loads, so a member that has gone fails the class before a single file is touched.
+     */
+    private static final String DATA = dataFileName();
 
-    private static final String BACKUPS = "tc_backup";
+    private static final String BACKUPS = Util.BACKUP_FOLDER;
+
+    private static String dataFileName()
+    {
+        try
+        {
+            java.lang.reflect.Field name = TrainControlUI.class.getDeclaredField("DATA_FILE_NAME");
+
+            name.setAccessible(true);
+
+            return (String) name.get(null);
+        }
+        catch (ReflectiveOperationException e)
+        {
+            throw new ExceptionInInitializerError(e);
+        }
+    }
 
     /**
      * What the operator's file held, read before this class does anything at all.
@@ -120,12 +141,12 @@ public class testUiStateIsNotLostWhenUnreadable
             Files.write(onDisk.toPath(), original);
         }
 
-        // A file that exists and cannot possibly be read as a serialised state
+        // A file that exists and cannot possibly be read as a serialized state
         weWroteIt = true;
 
         Files.write(live.toPath(), "this is not a serialised anything".getBytes(StandardCharsets.UTF_8));
 
-        MarklinControlStation model = init(null, true, false, false, true);
+        MarklinControlStation model = support.TestStation.simulatedInDebug();
 
         model.stop();
 
@@ -134,7 +155,7 @@ public class testUiStateIsNotLostWhenUnreadable
         // BEFORE the window is built: it reads the layout preference in its constructor (OB-111).
         // Opened here rather than in a @BeforeClass because this is the only place that builds one,
         // and the finally below is already where this method puts things back.
-        // INSIDE THE TRY, so the close cannot be skipped (TSX-B1).
+        // INSIDE THE TRY, so the close cannot be skipped.
         //
         // This stood one line above `new TrainControlUI()` - the statement it exists to protect - and
         // outside the `try` whose `finally` closes it.  A throw from the constructor left the
@@ -161,13 +182,13 @@ public class testUiStateIsNotLostWhenUnreadable
 
             for (String name : after)
             {
-                if (name.startsWith("unreadable") && name.endsWith(DATA)) copied = name;
+                if (name.startsWith(Util.UNREADABLE_BACKUP_PREFIX) && name.endsWith(DATA)) copied = name;
             }
 
             assertNotNull(copied,
                 "the unreadable state file was written over without being kept.  A backup folder that "
                 + "gained " + after + " is not a backup of it, and there is no undo: "
-                + "tc_backup should hold an unreadable<timestamp>UIState.data");
+                + BACKUPS + " should hold an " + Util.UNREADABLE_BACKUP_PREFIX + "<timestamp>" + DATA);
 
             File copy = new File(Util.dataPath(BACKUPS), copied);
 
@@ -223,7 +244,7 @@ public class testUiStateIsNotLostWhenUnreadable
         // into place.  Harmless where it lies - the next write overwrites it - but it is litter in the
         // project root, and litter beside a data file is the sort of thing somebody later has to work
         // out the meaning of.
-        File staging = new File(Util.dataPath(DATA + ".part"));
+        File staging = new File(Util.dataPath(DATA + Util.PARTIAL_DOWNLOAD_SUFFIX));
 
         if (staging.exists()) staging.delete();
 
@@ -238,7 +259,7 @@ public class testUiStateIsNotLostWhenUnreadable
 
         for (String name : found)
         {
-            if (!name.startsWith("unreadable") || !name.endsWith(DATA)) continue;
+            if (!name.startsWith(Util.UNREADABLE_BACKUP_PREFIX) || !name.endsWith(DATA)) continue;
 
             File candidate = new File(backups, name);
 

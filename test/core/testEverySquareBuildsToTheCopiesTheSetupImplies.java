@@ -126,7 +126,7 @@ public class testEverySquareBuildsToTheCopiesTheSetupImplies
         // stopped, which is what a pin needs.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = init(null, true, false, false, false);
+        model = support.TestStation.simulated();
 
         String path = "file:///"
             + sandbox.getFolder().getAbsolutePath().replace(File.separatorChar, '/') + "/";
@@ -351,11 +351,17 @@ public class testEverySquareBuildsToTheCopiesTheSetupImplies
             if (copies >= 4) fourCopies.add(point.getName());
         }
 
+        // WHAT A REFRESH OF THE SNAPSHOT CHANGES (FR-136): every figure, so taking one is a change of numbers.
+        String refresh = "  If live-snapshot was refreshed on purpose, re-read the evaluation (git show"
+            + " 0a5dab2a:docs/reference/two-copies-evaluation.md) and set in this class SQUARES = "
+            + session.getReducer().getPoints().size() + ", STATIONS = " + stations + ", SPLIT_SQUARES = " + split
+            + ", SPLIT_STATIONS = " + splitStations + " and FOUR_COPY_SQUARES = " + fourCopies;
+
         assertEquals(session.getReducer().getPoints().size(), SQUARES,
             "this railway no longer has " + SQUARES + " squares on it, so every count below has moved"
-            + " for a reason that is nothing to do with the split.  Re-measure them together");
+            + " for a reason that is nothing to do with the split.  Re-measure them together." + refresh);
 
-        assertEquals(stations, STATIONS, "the number of stations has changed");
+        assertEquals(stations, STATIONS, "the number of stations has changed." + refresh);
 
         assertEquals(split, SPLIT_SQUARES,
             split + " of " + SQUARES + " squares now build to more than one Point, and " + SPLIT_SQUARES
@@ -365,19 +371,19 @@ public class testEverySquareBuildsToTheCopiesTheSetupImplies
             + " railway today\" - so re-read it before updating this line.  If the count went UP the"
             + " complexity is being paid on the railway rather than in the source, which is the day"
             + " that document names for re-costing the change; if it went DOWN, squares have been"
-            + " merged and their facing has gone with them");
+            + " merged and their facing has gone with them." + refresh);
 
         assertEquals(splitStations, SPLIT_STATIONS,
             splitStations + " of the " + stations + " stations build to more than one Point, against "
             + SPLIT_STATIONS + " when this was measured.  A station is where the copies cost the most:"
             + " every door that offers a destination, every home, and every length rule has to pick"
-            + " one");
+            + " one." + refresh);
 
         assertEquals(fourCopies, new TreeSet<>(java.util.Arrays.asList(FOUR_COPY_SQUARES)),
             "the squares emitted as four Points are now " + fourCopies + " rather than "
             + java.util.Arrays.asList(FOUR_COPY_SQUARES) + ".  These are the fully split ones - two"
             + " arrival sides and a turn at each - and they are the squares behaviour.md section 5b's"
-            + " room census talks about by their copy names");
+            + " room census talks about by their copy names." + refresh);
     }
 
     /**

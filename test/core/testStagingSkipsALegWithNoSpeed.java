@@ -3,7 +3,6 @@ package core;
 import java.util.ArrayList;
 import java.util.List;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -15,9 +14,9 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.MarklinLocomotive;
 
 /**
- * A locomotive with no speed loses its own leg, not everybody else's (SG-A5).
+ * A locomotive with no speed loses its own leg, not everybody else's.
  *
- * `runLocomotives` learned this in the release-candidate round (RC-B5): a locomotive whose preferred
+ * `runLocomotives` learned this in the release-candidate round: a locomotive whose preferred
  * speed is outside 1 to 100 is SKIPPED, with a line in the log, and every other locomotive still
  * starts. The timetable's dispatch loop one method over never learned it.
  *
@@ -63,7 +62,7 @@ public class testStagingSkipsALegWithNoSpeed
         sandbox = support.LayoutSandbox.open();
 
         // Debug mode last, because simulation requires it
-        model = init(null, true, false, false, true);
+        model = support.TestStation.simulatedInDebug();
         model.stop();
 
         model.newMM2Locomotive(LOC_STUCK, STUCK_ADDRESS);
@@ -87,7 +86,7 @@ public class testStagingSkipsALegWithNoSpeed
     /**
      * The second entry runs even though the first cannot.
      *
-     * ON A DEADLINE, and for the reason RC-B10 gives: this drives a real dispatch loop, and a
+     * ON A DEADLINE: this drives a real dispatch loop, and a
      * regression here is a hang rather than a failure. A minute is far more than a simulated
      * two-station run needs, and the TestNG timeout behind it is the backstop for a thread that
      * cannot be joined at all.
@@ -106,7 +105,7 @@ public class testStagingSkipsALegWithNoSpeed
         }
         catch (Exception e)
         {
-            throw new SkipException("simulation could not be enabled: " + e.getMessage());
+            throw new AssertionError("simulation could not be enabled: " + e.getMessage());
         }
 
         assertTrue(layout.isSimulate(), "simulation must be on before anything is asked to move");
@@ -132,7 +131,7 @@ public class testStagingSkipsALegWithNoSpeed
         loc(LOC_MOVING).setPreferredSpeed(35);
         loc(LOC_STUCK).setPreferredSpeed(0);
 
-        // NOT A PRECONDITION ON THE TWO LINES ABOVE (TSX-C13, the rule stated at testHomeStaging).
+        // NOT A PRECONDITION ON THE TWO LINES ABOVE (the rule stated at testHomeStaging).
         //
         // Reading a speed back after setting it proves that a setter sets.  What this test needs to be
         // true is that the two ENTRIES are different trains on different paths - if the fixture built
@@ -184,9 +183,7 @@ public class testStagingSkipsALegWithNoSpeed
             + "dialog for a run that went on to the end without one leg");
     }
 
-    // ---------------------------------------------------------------------------------------------
     // Fixtures
-    // ---------------------------------------------------------------------------------------------
 
     /**
      * Four stations in a ring, every edge in both directions, so the graph never refuses anything.

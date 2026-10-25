@@ -2,7 +2,9 @@ package ui;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 import org.testng.SkipException;
@@ -38,18 +40,25 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * would have passed with the defect in place. `support.Rendered` keeps one grid and paints it again, so
  * what is compared is what an operator looking at an open window would have seen.
  *
+ * **But painting the whole grid again is not what an open window does** (FR-136, issue 19).  A snapshot paints every
+ * tile, and a tile works out its mark as it is painted, so the AFTER snapshot came out right with nothing asking for a
+ * redraw at all - this claim stayed green with the redraw taken out.  A window redraws only where it is asked to, so the
+ * AFTER state is also taken that way: the COVERED picture, with only the areas production asked to repaint painted again
+ * (`support.RepaintRecorder`), and every square the train marked must be back to the BARE picture there.
+ *
  * **The round trip is Adam's** (2026-09-08): put the train somewhere, take it away again, and the
  * picture must come back to what it was. Three snapshots of one grid:
  *
  * | | |
  * |---|---|
  * | BARE | nothing standing anywhere |
- * | COVERED | the train placed, and a square its tail lies across carries the orange mark (MT-309; it was "is darker than it was" while the mark was a grey wash) |
+ * | COVERED | the train placed, and a square its tail lies across carries the orange mark (MT-309; it was "is darker than it was" while the mark was a gray wash) |
  * | AFTER | the train moved away, and that square is EXACTLY the bare image again |
  *
  * MUTATION: removing the `repaintTheWashWhereItChanged` call from
- * `TrainControlUI.refreshCoveredTrack` leaves the AFTER image dark - the train has gone and the track
- * behind where it stood is still greyed - which is the defect, seen.
+ * `CoveredTrackView.workOutCoveredTrack` leaves the AFTER picture as the screen shows it orange - the train
+ * has gone and the track it lay across still carries its mark, because nothing asked for those tiles to
+ * be redrawn - which is the defect, seen.
  *
  * @author Adam
  */
@@ -89,7 +98,7 @@ public class testTheShadingIsRedrawnWhenATrainMoves
         // what it names before anything reads it.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = init(null, true, false, false, true);
+        model = support.TestStation.simulatedInDebug();
 
         session = new AutonomySession(sandbox.getFolder());
 
@@ -172,6 +181,8 @@ public class testTheShadingIsRedrawnWhenATrainMoves
 
         support.Rendered view = support.Rendered.open(page, ui);
 
+        support.RepaintRecorder screen = support.RepaintRecorder.install();
+
         try
         {
             // 1. BARE - nothing standing anywhere.
@@ -188,7 +199,22 @@ public class testTheShadingIsRedrawnWhenATrainMoves
                 "the search found a covered square on " + page.getName() + " a moment ago and cannot"
                 + " now, so this is not stable enough to assert on");
 
+            // EVERY SQUARE THE TRAIN MARKS ON THIS PAGE, for the screen's half below: the first one found may be the square
+            // the train stands on, which the station's own caption and icon redraw for reasons of their own.
+            support.CoveredMarks.settle(ui);
+
+            Set<TileKey> markedHere = new LinkedHashSet<>();
+
+            for (TileKey square : session.tilesCoveredByStandingTrains(built))
+            {
+                if (page.getName().equals(square.getPage())) markedHere.add(square);
+            }
+
             BufferedImage withTrain = view.snapshot();
+
+            // AND FROM HERE THE SCREEN IS REDRAWN ONLY WHERE IT IS ASKED TO BE (issue 19): the picture just taken is what an
+            // open window shows, and `screen` writes down every repaint asked for after it.
+            screen.clear();
 
             BufferedImage bareTile = support.Rendered.tile(bare, covered.getX(), covered.getY());
             BufferedImage darkTile = support.Rendered.tile(withTrain, covered.getX(), covered.getY());
@@ -203,7 +229,7 @@ public class testTheShadingIsRedrawnWhenATrainMoves
             // ORANGE, NOT DARKER (MT-309).
             //
             // This asked whether the square had got darker, which was the right question while the
-            // mark was a grey wash over the whole tile.  Adam has replaced that with a line along the
+            // mark was a gray wash over the whole tile.  Adam has replaced that with a line along the
             // road the train is on - "instead of shading the entire tiles, we need to draw a line
             // (let's say in orange)" - and a line over a few pixels of a mostly white square does not
             // move its mean brightness by a whole point.  What it does is put orange on it.
@@ -218,6 +244,29 @@ public class testTheShadingIsRedrawnWhenATrainMoves
             clearEveryTrain(built);
 
             ui.updateVisiblePoints();
+
+            support.CoveredMarks.settle(ui);
+
+            view.settle();
+
+            // WHAT THE OPERATOR SEES (issue 19): the picture taken with the train there, redrawn only where the window
+            // asked for a redraw.  Before the full repaint below, which paints every tile and so answers right whatever
+            // was asked.
+            BufferedImage onScreen = screen.redrawWhereAsked(withTrain, view.host());
+
+            support.Rendered.save(onScreen, new File(OUT, "on-screen.png"));
+
+            for (TileKey square : markedHere)
+            {
+                BufferedImage bareOne = support.Rendered.tile(bare, square.getX(), square.getY());
+                BufferedImage shownOne = support.Rendered.tile(onScreen, square.getX(), square.getY());
+
+                assertTrue(support.Rendered.same(bareOne, shownOne),
+                    "the train has gone and the square at " + square + ", which it marked, is still drawn as it was"
+                    + " with the train there (" + (support.Rendered.hasTheTrainMark(shownOne) ? "orange" : "not orange")
+                    + ") on a window that redraws what it is asked to: nothing asked for that tile to be redrawn"
+                    + " (OB-180). Marked squares " + markedHere + "; images in " + OUT);
+            }
 
             BufferedImage after = view.snapshot();
 
@@ -234,6 +283,8 @@ public class testTheShadingIsRedrawnWhenATrainMoves
         }
         finally
         {
+            screen.close();
+
             train.setTrainLength(wasLength == null ? 0 : wasLength);
 
             clearEveryTrain(built);

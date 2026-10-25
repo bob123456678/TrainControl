@@ -62,7 +62,7 @@ public class DiagramTileRegistry
         // without bound and every publish walked an ever-longer list of components attached to nothing.
         //
         // Judged by isDisplayable rather than by visibility: a label whose grid has been replaced has
-        // been removed from a realised window and has no peer, which is exactly what "nobody can see
+        // been removed from a realized window and has no peer, which is exactly what "nobody can see
         // this any more" means.  Only the labels already here are judged, never the one arriving - which
         // may legitimately not be attached yet.
         //

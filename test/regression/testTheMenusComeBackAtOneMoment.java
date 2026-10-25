@@ -4,19 +4,19 @@ import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 
 /**
- * OB-187: the menus stopped being grey in stages as the connect finished.
+ * OB-187: the menus stopped being gray in stages as the connect finished.
  *
  * Adam, in MT-264: *"Looks good, but when the loading finishes, the menu options ungrey at different
  * times."*
  *
- * The mechanism is that the bar is greyed BEFORE it is finished being built.  `showConnecting` walks
+ * The mechanism is that the bar is grayed BEFORE it is finished being built.  `showConnecting` walks
  * the menu bar and disables every menu on it, and `connectingFinished` gives back exactly those - one
  * list, one moment.  The autonomy menu is not on the bar when that walk happens: it is created and
  * added by `mountAutonomyControls`, from `setViewListener`, which runs during the connect the notice
- * is describing.  It arrived enabled, into a bar where everything else was grey, and so came back at
+ * is describing.  It arrived enabled, into a bar where everything else was gray, and so came back at
  * its own moment several seconds before the rest.
  *
- * This drives the real start-up order - grey the bar, hand the window its model - rather than calling
+ * This drives the real start-up order - gray the bar, hand the window its model - rather than calling
  * the mounting method directly, because "arrives after the walk" is the whole defect and only the
  * order can show it.
  *
@@ -28,7 +28,7 @@ import org.testng.annotations.Test;
 public class testTheMenusComeBackAtOneMoment
 {
     /**
-     * A menu added while the notice is up is grey with the rest, and comes back with the rest.
+     * A menu added while the notice is up is gray with the rest, and comes back with the rest.
      */
     @Test
     public void testAMenuMountedDuringTheConnectWaitsForTheOthers() throws Exception
@@ -48,7 +48,7 @@ public class testTheMenusComeBackAtOneMoment
             // otherwise open Adam's real railway.
             sandbox = support.LayoutSandbox.open();
 
-            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+            model = support.TestStation.simulated();
 
             model.stop();
 
@@ -74,7 +74,7 @@ public class testTheMenusComeBackAtOneMoment
             // a count going up. OB-202 changed that on purpose: a placeholder holds the slot from the
             // first frame, because the heading growing in front of the operator part-way through
             // start-up was its own defect, and `mountAutonomyMenu` REPLACES it. The premise this test
-            // rests on is unchanged - something arrives in that slot after the bar has been greyed -
+            // rests on is unchanged - something arrives in that slot after the bar has been grayed -
             // so it is now read as identity rather than as a count.
             int slot = -1;
 
@@ -123,7 +123,7 @@ public class testTheMenusComeBackAtOneMoment
                 + " about anything - OB-187 is about a menu that arrives after the bar has been"
                 + " greyed, and OB-202 turned that arrival from an append into a replacement");
 
-            // THE CONTROL.  A menu that ought to be off anyway would be grey here for a reason that
+            // THE CONTROL.  A menu that ought to be off anyway would be gray here for a reason that
             // has nothing to do with the notice, and the assertion below would pass for a build with
             // no fix in it at all.
             assertTrue(ui.isLayoutLoaded() && ui.canUseAutonomy(),
@@ -215,7 +215,7 @@ public class testTheMenusComeBackAtOneMoment
             // BEFORE the model (OB-111).
             sandbox = support.LayoutSandbox.open();
 
-            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+            model = support.TestStation.simulated();
 
             model.stop();
 
@@ -409,7 +409,7 @@ public class testTheMenusComeBackAtOneMoment
             // BEFORE the model (OB-111)
             sandbox = support.LayoutSandbox.open();
 
-            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+            model = support.TestStation.simulated();
 
             model.stop();
 

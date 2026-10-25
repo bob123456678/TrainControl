@@ -60,7 +60,7 @@ public class testTheKeyMapReachesTheWholeWindow
 
         sandbox = support.LayoutSandbox.open();
 
-        model = MarklinControlStation.init(null, true, false, false, false);
+        model = support.TestStation.simulated();
 
         final MarklinControlStation loaded = model;
 
@@ -176,7 +176,7 @@ public class testTheKeyMapReachesTheWholeWindow
      *
      * The map is attached to the tabbed pane as a listener AND reachable through the post-processor,
      * so a key pressed there passes it twice. It is the same `KeyEvent` object both times, which is
-     * how the second visit is recognised and dropped.
+     * how the second visit is recognized and dropped.
      *
      * **A key that COUNTS, not a letter.** The first version pressed a letter and asserted the button
      * it names is active - and selecting the same locomotive twice lands in the same place, so it
@@ -375,7 +375,7 @@ public class testTheKeyMapReachesTheWholeWindow
 
         settle();
 
-        // A DESKTOP THAT WILL NOT GIVE THE WINDOW THE KEYBOARD CANNOT SHOW THIS (VC2-C6).  Asserted, this
+        // A DESKTOP THAT WILL NOT GIVE THE WINDOW THE KEYBOARD CANNOT SHOW THIS.  Asserted, this
         // failed at random on a loaded battery machine and said nothing about the key map; skipped, the
         // class says it could not be asked.
         if (ui.getMostRecentFocusOwner() != on)
@@ -387,7 +387,7 @@ public class testTheKeyMapReachesTheWholeWindow
     }
 
     /**
-     * The floor: at least one of this class's claims was actually asked (OP2-C8, corrected by FXV-B3).
+     * The floor: at least one of this class's claims was actually asked.
      *
      * **A class where every claim skips reports green while asking nothing**, which is the SOP's "green
      * is not no failures" in its quietest form: each skip message is honest about its own case, and the

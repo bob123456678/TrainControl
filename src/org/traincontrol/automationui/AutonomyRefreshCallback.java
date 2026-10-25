@@ -28,7 +28,7 @@ import org.traincontrol.base.Locomotive;
  * Here, it is a thing with a name that can be tested. `testTimetableCapturesThroughARealRun` attaches
  * exactly this and runs real autonomy over it, and `testTheWindowAttachesItsRefreshCallback` fails the
  * build if TrainControlUI stops calling it - which is the only kind of test that would have caught the
- * deletion, because deleting a caller breaks nothing that any behavioural test can see.
+ * deletion, because deleting a caller breaks nothing that any behavioral test can see.
  */
 public final class AutonomyRefreshCallback
 {
@@ -53,7 +53,7 @@ public final class AutonomyRefreshCallback
      *
      * **The work is posted, never done here.** A layout fires these from the thread that is driving the
      * trains, inside `synchronized (this.activeLocomotives)` - so anything that blocks in a callback
-     * holds up the railway, and anything that takes a UI lock invites the deadlock DR-B7 produced: the
+     * holds up the railway, and anything that takes a UI lock invites a deadlock: the
      * event thread holding the window's monitor and waiting on the layout's while a layout thread does
      * the reverse. Posting means the firing thread returns immediately and takes no second lock.
      *

@@ -3,6 +3,7 @@ package regression;
 import java.io.File;
 import java.util.prefs.Preferences;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 import org.testng.SkipException;
 import org.testng.annotations.Test;
@@ -23,7 +24,7 @@ import org.traincontrol.util.Util;
  * what it always used, and this says so as a skip rather than passing.
  *
  * MUTATION: have `Util.preferencesFor` ignore its property and the first claim fails; `Util.dataPath` ignore its
- * property and the second does.
+ * property and the second does; drop `-listener support.NoUpdateCheck` from the runner and the third does.
  *
  * @author Adam
  */
@@ -82,6 +83,21 @@ public class testARunKeepsItsOwnState
 
         assertEquals(backups.getCanonicalFile(), new File(folder).getCanonicalFile(), "a backup would be written"
             + " under " + backups + " rather than under the run's own folder");
+    }
+
+    /**
+     * The window never asks GitHub for the latest release in a run (FR-136): the run's node starts as a copy of Adam's,
+     * where Check for Updates is on, and `support.NoUpdateCheck`, the runners' TestNG listener, turns it off there
+     * before any test.
+     */
+    @Test
+    public void testTheRunNeverChecksForUpdates()
+    {
+        runnerOnly(Util.PREFERENCES_PROPERTY);
+
+        assertFalse(TrainControlUI.getPrefs().getBoolean(TrainControlUI.CHECK_FOR_UPDATES, true), "Check for Updates is"
+            + " on in this run's preference node, so every window the run opens asks api.github.com for the latest"
+            + " release");
     }
 
     private static String runnerOnly(String property)

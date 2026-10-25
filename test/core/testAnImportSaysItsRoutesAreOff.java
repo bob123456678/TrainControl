@@ -23,7 +23,7 @@ import org.traincontrol.util.Util;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * An import of routes says that they arrive with their automatic firing off, and how to turn it on (REG-B3).
+ * An import of routes says that they arrive with their automatic firing off, and how to turn it on.
  *
  * Every route read from a file is disarmed, whatever the file says - Adam, 2026-09-10: *"they should not be armed.
  * The user can choose to do this when they are ready."*  That rule is pinned in `testRoutes`.  What was missing was
@@ -58,7 +58,7 @@ public class testAnImportSaysItsRoutesAreOff
         // BEFORE the model: `init` reads the machine-global layout preference (OB-111).
         sandbox = support.LayoutSandbox.open();
 
-        model = init(null, true, false, false, true);
+        model = support.TestStation.simulatedInDebug();
 
         tap = new Handler()
         {
@@ -132,7 +132,7 @@ public class testAnImportSaysItsRoutesAreOff
             + " was saved armed - and said nothing about it: a train runs through the sensor that used to set a road"
             + " or cut the power before anybody knows (REG-B3).  Logged: " + logged);
 
-        // AND NOTHING WAS ARMED ON THE WAY IN (REG2-C6).  A route built from a file that says "auto" started its
+        // AND NOTHING WAS ARMED ON THE WAY IN.  A route built from a file that says "auto" started its
         // sensor monitor, which logs that the route is running, and was disarmed on the next line - so the log said
         // a route was running just before saying every route had arrived off.
         assertFalse(logged.contains(I18n.f("route.running", "REG-B3 probe 0")), "the route saved armed logged that"
@@ -141,8 +141,7 @@ public class testAnImportSaysItsRoutesAreOff
     }
 
     /**
-     * Asked, the import turns automatic firing back on for the routes the file saved with it on - and only those
-     * (REG2-C7).
+     * Asked, the import turns automatic firing back on for the routes the file saved with it on - and only those.
      *
      * Adam, 2026-09-24: *"save the state in the file on export, and ask the user on import.  if they want them armed,
      * arm them.  otherwise, don't."*  The export has always written each route's `auto`; the import threw it away, so a
@@ -266,8 +265,8 @@ public class testAnImportSaysItsRoutesAreOff
     }
 
     /**
-     * The refusal of a file naming a route twice says what repeats: the name, the number, or a route with no name
-     * (RSA56-C2).  It named the second route's name and its number together, though only one of them repeated, so the
+     * The refusal of a file naming a route twice says what repeats: the name, the number, or a route with no name.
+     * It named the second route's name and its number together, though only one of them repeated, so the
      * operator looking for the repeat was sent first to a name or a number that appears once.
      *
      * MUTATION: name both again, and this fails.

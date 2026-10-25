@@ -20,14 +20,14 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * A destination turn nobody has managed to write down yet survives a setup rebuild.
  *
- * **D3-C5, and it is the `new-field-needs-the-copy-constructor` shape.**  `Layout.reversedOnArrival`
+ * **It is the `new-field-needs-the-copy-constructor` shape.**  `Layout.reversedOnArrival`
  * holds the reversals the railway performed at a destination and has not yet drained into the setup.
  * It lives on the `Layout` object, and `rebuildRunningLayoutFromSetup` replaces that object wholesale.
  * Placements were taught to survive that (OB-183), and `arrivedFrom` was added to the carry with them
  * - `reversedOnArrival` was not, so every pending turn died on any setup gesture at all: a home set
  * from the diagram's right-click menu, a direction, a caption.
  *
- * **Why that matters is the RETRY, not the happy path.**  RGD-C7 went to some trouble to make a turn
+ * **Why that matters is the RETRY, not the happy path.**  Some trouble went into making a turn
  * that could not be written survive - *"NOT WRITTEN, SO NOT FORGOTTEN"* - because a turn destroyed
  * mid-drain never self-heals: there is nothing left to try again with.  A rebuild between the turn and
  * a successful write destroyed exactly those retries, and the next dispatch is then offered paths for
@@ -36,7 +36,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * for a configuration RELOAD between the turn and the write - that swaps this object entirely and the
  * pending records go with it.  That one needs the record to outlive the layout."*
  *
- * **THE REBUILD IS RUN, NOT MODELLED.**  Its siblings assert about `putTheTrainsBack` over a
+ * **THE REBUILD IS RUN, NOT MODELED.**  Its siblings assert about `putTheTrainsBack` over a
  * hand-built `Layout`, and one of them reproduces the rebuild by calling `parseAuto` directly.  Both
  * are right about the rule and neither can see this defect, because the defect is that the CALL SITE
  * does not carry something - `extracted-rule-moves-the-bug-to-the-call`.  So this opens a real window
@@ -48,7 +48,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * rebuild really happened; without it this class would go green the day the guard changed.
  *
  * MUTATION: take the `takeThePendingTurns()` / `putThePendingTurnsBack(...)` pair out of
- * `TrainControlUI.rebuildRunningLayoutFromSetup` and this fails, with the record gone.
+ * `RunningLayoutSync.rebuildRunningLayoutFromSetup` and this fails, with the record gone.
  *
  * @author Adam
  */
@@ -63,8 +63,8 @@ public class testAPendingTurnSurvivesTheRebuild
      * A record the drain can never write, which is the state this defect is about.
      *
      * `AutonomySession.faceTheWayItCameIn` answers null for a Point that is not there, so this is put
-     * back at every idle refresh and never consumed - which is precisely the retry RGD-C7 preserved
-     * the map for, and precisely what a rebuild used to destroy.  A record that COULD be written would
+     * back at every idle refresh and never consumed - which is precisely the retry
+     * the map is kept for, and precisely what a rebuild used to destroy.  A record that COULD be written would
      * make the test a race between the rebuild and the next refresh.
      */
     private static final String PENDING_LOC = "D3C5 nobody";
@@ -84,7 +84,7 @@ public class testAPendingTurnSurvivesTheRebuild
         // opened BEFORE `init`, which reads the layout preference (OB-111).
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = init(null, true, true, false, true);
+        model = support.TestStation.simulatedWithWindowInDebug();
         model.setNetworkCommState(false);
 
         ui = (TrainControlUI) model.getGUI();
@@ -552,7 +552,7 @@ public class testAPendingTurnSurvivesTheRebuild
 
     /**
      * A setup edit that keeps the track diagram on screen forgets the other pages the page cache keeps, as the rebuild it
-     * skips did (RSA38-B1): a page drawn before the edit came back from the page list as it was drawn - a page put back
+     * skips did: a page drawn before the edit came back from the page list as it was drawn - a page put back
      * into autonomy with none of its captions, a station added with none, a renamed one with its old name.
      *
      * MUTATION: keep the other cached pages through an edit that keeps the diagram, and this fails.
@@ -576,7 +576,7 @@ public class testAPendingTurnSurvivesTheRebuild
             if (!pages.getItemAt(i).equals(first)) other = pages.getItemAt(i);
         }
 
-        if (other == null) throw new SkipException("the frozen railway has one page, so no other page can be cached");
+        if (other == null) throw new AssertionError("the frozen railway has one page, so no other page can be cached");
 
         final Object second = other;
 
@@ -620,7 +620,7 @@ public class testAPendingTurnSurvivesTheRebuild
                         + " cache, which comes back as it was drawn before the edit (RSA38-B1): " + after.keySet());
                 }
 
-                // AND THE PAGE SHOWN KEEPS ITS CAPTIONS: forgotten with the rest, no update would reach them (RSA39-C2)
+                // AND THE PAGE SHOWN KEEPS ITS CAPTIONS: forgotten with the rest, no update would reach them
                 assertEquals(captionsOf(before), captionsBefore, "an edit that kept the diagram on screen let go of its"
                     + " captions, which nothing then writes (RSA39-C2)");
             });
@@ -634,7 +634,7 @@ public class testAPendingTurnSurvivesTheRebuild
     }
 
     /**
-     * A grid the window has replaced is let go (RSA38-C3): the map that found a panel's grid held every grid the window
+     * A grid the window has replaced is let go: the map that found a panel's grid held every grid the window
      * ever built - each grid holds its panel - about half a megabyte for every rebuild of 1 - Main.
      *
      * MUTATION: keep the window's grids in a map again, and this fails.
@@ -691,7 +691,9 @@ public class testAPendingTurnSurvivesTheRebuild
         assertNotSame(org.traincontrol.gui.LayoutGrid.of(shownDiagram()), old.get(), "precondition: the rename did not"
             + " replace the grid");
 
-        for (int i = 0; i < 10 && old.get() != null; i++)
+        // Up to 10 s: under a laned battery's load one second was not always enough for the collector (battery 114).
+        // A grid that is still held never clears, so the wait cannot pass a leak.
+        for (int i = 0; i < 100 && old.get() != null; i++)
         {
             System.gc();
 
@@ -734,7 +736,7 @@ public class testAPendingTurnSurvivesTheRebuild
         for (int i = 0; i < pages.getItemCount(); i++) if (!pages.getItemAt(i).equals(page)) otherPage = pages.getItemAt(i);
         for (int i = 0; i < sizes.getItemCount(); i++) if (!sizes.getItemAt(i).equals(size)) otherSize = sizes.getItemAt(i);
 
-        if (otherPage == null || otherSize == null) throw new SkipException("the window has one page or one size");
+        if (otherPage == null || otherSize == null) throw new AssertionError("the window has one page or one size");
 
         final Object away = otherPage;
         final Object bigger = otherSize;
@@ -775,7 +777,7 @@ public class testAPendingTurnSurvivesTheRebuild
     }
 
     /**
-     * A setup edit the build refuses still tells the track diagram, as the Autonomy menu's door does (RSA39-C3): through
+     * A setup edit the build refuses still tells the track diagram, as the Autonomy menu's door does: through
      * the editor's door the railway was left as it was and nothing else followed, so a page left out came back from the
      * page list with the captions it had before.
      *
@@ -800,7 +802,7 @@ public class testAPendingTurnSurvivesTheRebuild
             if (String.valueOf(pages.getItemAt(i)).startsWith("2 - ")) out = pages.getItemAt(i);
         }
 
-        if (out == null || out.equals(page)) throw new SkipException("the frozen railway has no page 2 to leave out");
+        if (out == null || out.equals(page)) throw new AssertionError("the frozen railway has no page 2 to leave out");
 
         final Object leftOut = out;
 
@@ -822,6 +824,12 @@ public class testAPendingTurnSurvivesTheRebuild
 
             session.setPageExcluded(String.valueOf(leftOut), true);
 
+            // THE BUILD REFUSES, and for the page left out: a link pointing at it is the blocking problem the load door
+            // refuses on.  Without this a page left out that stops nothing takes the unchanged-railway branch below just
+            // the same, and the claim passes having met no refusal
+            assertTrue(refusedForALinkToAPageLeftOut(), "precondition: leaving page " + leftOut + " out does not leave the"
+                + " setup unable to build, so there is no refused build for this claim to be about (RSA39-C3)");
+
             javax.swing.SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup(true,
                 new java.util.LinkedHashSet<String>()));
 
@@ -829,7 +837,7 @@ public class testAPendingTurnSurvivesTheRebuild
 
             if (model.getAutoLayout() != railway)
             {
-                throw new SkipException("leaving " + leftOut + " out did not stop the build here, so the door the build"
+                throw new AssertionError("leaving " + leftOut + " out did not stop the build here, so the door the build"
                     + " refuses is not reached");
             }
 
@@ -855,8 +863,8 @@ public class testAPendingTurnSurvivesTheRebuild
     }
 
     /**
-     * A build keeps both of its captions of a station captioned on two squares - a long platform labelled at both ends -
-     * and a later build's caption still takes an earlier build's place (RSA40-C1).  The station map keeps captions by
+     * A build keeps both of its captions of a station captioned on two squares - a long platform labeled at both ends -
+     * and a later build's caption still takes an earlier build's place.  The station map keeps captions by
      * station, and registering one let go of every other of the same window not on screen, its own build's included: the
      * first of the two was never written, and its page was never served from the page cache again.
      *
@@ -1044,7 +1052,7 @@ public class testAPendingTurnSurvivesTheRebuild
             }
         }
 
-        if (found == null) throw new SkipException("no station on page " + shownPage + " drawn exactly once");
+        if (found == null) throw new AssertionError("no station on page " + shownPage + " drawn exactly once");
 
         final org.traincontrol.automationui.TileGraph.TileKey station = found;
         final org.traincontrol.automationui.TileGraph.TileKey square = drawnAt;
@@ -1084,11 +1092,11 @@ public class testAPendingTurnSurvivesTheRebuild
      * A pop-up the operator has sized and placed keeps its size and place when a caption on its page changes, and the
      * bounds remembered for it are not overwritten (OB-341).
      *
-     * RSA68-C8 made a caption change redraw the pop-ups it affects, and the redraw packed the window to its natural size and
+     * A caption change redraws the pop-ups it affects, and the redraw once packed the window to its natural size and
      * saved that over the operator's - on every caption gesture in the autonomy editor on that page.  A caption-only redraw
      * leaves the window's size and place alone and saves nothing; an explicit page change still sizes the window as it did.
      *
-     * Modelled on the validator's probe: the Medium pop-up opened, made 160 pixels narrower and 120 shorter and moved, one
+     * Modeled on the validator's probe: the Medium pop-up opened, made 160 pixels narrower and 120 shorter and moved, one
      * caption of its page taken off as the editor takes it off, and the window told.  Remember Window Location is switched
      * on, put back after, and the bounds kept for this window are read from the preferences.
      *
@@ -1127,7 +1135,7 @@ public class testAPendingTurnSurvivesTheRebuild
             }
         }
 
-        if (found == null) throw new SkipException("no station on page " + shownPage + " drawn exactly once");
+        if (found == null) throw new AssertionError("no station on page " + shownPage + " drawn exactly once");
 
         final org.traincontrol.automationui.TileGraph.TileKey station = found;
         final org.traincontrol.automationui.TileGraph.TileKey square = drawnAt;
@@ -1306,6 +1314,25 @@ public class testAPendingTurnSurvivesTheRebuild
     }
 
     /**
+     * Whether the setup's graph blocks the build because a link points at a page left out of autonomy.
+     *
+     * @return true when the blocking problem the load door refuses on is that one
+     */
+    private static boolean refusedForALinkToAPageLeftOut()
+    {
+        for (org.traincontrol.automationui.TileGraph.Problem problem : session.getGraph().getProblems())
+        {
+            if (problem.isBlocking()
+                && org.traincontrol.automationui.TileGraph.ERROR_PORTAL_EXCLUDED.equals(problem.getMessageKey()))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * A station on the page shown that the window draws a caption for.
      *
      * @return its square
@@ -1329,11 +1356,11 @@ public class testAPendingTurnSurvivesTheRebuild
             }
         }
 
-        throw new SkipException("no captioned station on page " + shownPage);
+        throw new AssertionError("no captioned station on page " + shownPage);
     }
 
     /**
-     * A station renamed while the setup cannot build keeps the train standing at it on its caption (RSA40-C2; Adam,
+     * A station renamed while the setup cannot build keeps the train standing at it on its caption (Adam,
      * 2026-10-05: *"Yes, do it."*): the railway, left as it was, still carries the names it was built with, and the
      * caption, asked by the new name, found no Point there and went blank until the setup built.
      *
@@ -1358,7 +1385,7 @@ public class testAPendingTurnSurvivesTheRebuild
             if (String.valueOf(pages.getItemAt(i)).startsWith("2 - ")) out = pages.getItemAt(i);
         }
 
-        if (out == null || String.valueOf(out).equals(shownPage)) throw new SkipException("no page 2 to leave out");
+        if (out == null || String.valueOf(out).equals(shownPage)) throw new AssertionError("no page 2 to leave out");
 
         // A STATION ON THE PAGE SHOWN WITH A TRAIN STANDING AT IT
         org.traincontrol.automationui.TileGraph.TileKey station = null;
@@ -1378,7 +1405,7 @@ public class testAPendingTurnSurvivesTheRebuild
             }
         }
 
-        if (station == null) throw new SkipException("no train stands at a captioned station on page " + shownPage);
+        if (station == null) throw new AssertionError("no train stands at a captioned station on page " + shownPage);
 
         final org.traincontrol.automationui.TileGraph.TileKey at = station;
 
@@ -1407,12 +1434,16 @@ public class testAPendingTurnSurvivesTheRebuild
             session.setPageExcluded(String.valueOf(out), true);
             session.setPointName(at, name + " C2");
 
+            // THE BUILD REFUSES, as in testARefusedRebuildStillTellsTheDiagram
+            assertTrue(refusedForALinkToAPageLeftOut(), "precondition: leaving page " + out + " out does not leave the"
+                + " setup unable to build, so there is no refused build for this claim to be about (RSA40-C2)");
+
             javax.swing.SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup(true,
                 new java.util.LinkedHashSet<String>()));
 
             settle();
 
-            if (model.getAutoLayout() != railway) throw new SkipException("leaving " + out + " out did not stop the build");
+            if (model.getAutoLayout() != railway) throw new AssertionError("leaving " + out + " out did not stop the build");
 
             captionsSettled();
 
@@ -1616,7 +1647,7 @@ public class testAPendingTurnSurvivesTheRebuild
     }
 
     /**
-     * A turn the railway owes at a station renamed since is carried to the station's new name (RSA5-C2): the turns owed
+     * A turn the railway owes at a station renamed since is carried to the station's new name: the turns owed
      * are carried across a rebuild by the name of the Point the train turned at, and after a rename no Point had it -
      * the turn was never written and never forgotten, and the train stayed on the copy facing the way it came in.
      *
@@ -1724,7 +1755,7 @@ public class testAPendingTurnSurvivesTheRebuild
     }
 
     /**
-     * The session sees the running railway from the moment the window makes it (RSA6-A1): the direction refusal asks
+     * The session sees the running railway from the moment the window makes it: the direction refusal asks
      * where the railway's trains stand, and the session was told only when a station's Facing menu was built or the
      * setup editor entered autonomy - so after start-up, or any reset, a direction set from a plain track square's menu
      * was judged against the setup alone, which is where the run began.

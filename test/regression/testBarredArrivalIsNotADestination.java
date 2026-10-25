@@ -123,8 +123,6 @@ public class testBarredArrivalIsNotADestination
             + "that set it");
     }
 
-    // ------------------------------------------------------------------------------------------
-
     /**
      * A platform in the middle of a run, so trains can reach it from either end.
      */
@@ -168,7 +166,7 @@ public class testBarredArrivalIsNotADestination
     /**
      * A barred copy still carries the protecting signal, because it is still the same platform.
      *
-     * UR-6, from the uninformed review. The builder emits the pairing under
+     * The builder emits the pairing under
      * `protecting != null && !protecting.isEmpty() && stops`, two lines below a comment that says the
      * opposite: "The signals thrown to red while this platform is claimed. On every copy, because the
      * copies are one platform."
@@ -250,7 +248,7 @@ public class testBarredArrivalIsNotADestination
     /**
      * One locomotive, one home - enforced where the home is SET, not only where it is loaded.
      *
-     * TD-8, from the three-day history review. The running layout has enforced this since July:
+     * The running layout has enforced this since July:
      * `setHomeLocomotive` clears the same locomotive's home from every other Point as it assigns one.
      * The setup-side editor, which arrived in August, ends at `setPointProperty(tile, "home", picked)`
      * and nothing sweeps - so two squares could be given the same home from the menu, silently.
@@ -321,14 +319,14 @@ public class testBarredArrivalIsNotADestination
     }
 
     /**
-     * Clearing every home at once clears them all, and asks the station index once (DY3-C5, R28-C1).
+     * Clearing every home at once clears them all, and asks the station index once.
      *
      * The editor cleared them by calling the single-square setter in a loop, and every one of those
      * re-derives the station index - a full builder construction, on the event thread.  The feature
      * exists because clearing sixty-two homes by right-click is too many gestures; doing it cost
      * sixty-two rebuilds instead.
      *
-     * **What this pins is the behaviour, not the count**, because the rebuild is not observable from
+     * **What this pins is the behavior, not the count**, because the rebuild is not observable from
      * outside: every home goes, the count comes back, and the index is still right afterwards - which
      * is the thing a bulk path is most likely to get wrong by skipping the re-derive altogether.
      *
@@ -380,14 +378,14 @@ public class testBarredArrivalIsNotADestination
     }
 
     /**
-     * Every placement goes at once, and the station index is asked once (REL-C4).
+     * Every placement goes at once, and the station index is asked once.
      *
      * The twin of `testEveryHomeGoesAtOnce`, and it had the same cost for a worse reason: clearing one
      * placement writes TWO properties - the placement and the facing that described the train standing
      * there - so the editor's loop cost two full builder constructions per square, for the gesture that
      * exists precisely because doing it one at a time is too many.
      *
-     * What is pinned is the behaviour, because the rebuild is not observable from outside: every
+     * What is pinned is the behavior, because the rebuild is not observable from outside: every
      * placement goes, the count comes back, the FACING goes with it, and the session still works
      * afterwards - which is what a bulk path that skipped the re-derive would get wrong.
      *

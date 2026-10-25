@@ -184,12 +184,12 @@ public final class StationIndex
 
     /**
      * Whether a name ends the way the builder names one direction of a square, and so cannot be told from
-     * one in anything that reads it back (TDR-C11).
+     * one in anything that reads it back.
      *
      * The builder's form: a lowercase `(northbound)`, `(southbound)`, `(eastbound)` or `(westbound)` at the very
      * end - and, inside the bracket, a comma and ANYTHING after it, of which `, reverse` is the builder's own.
      * "Depot (eastbound, old)" is refused too: `withoutArrivalSuffix` reads the heading up to the comma, so that
-     * name reads as "Depot" in every message just the same (FTN-C1).  Loosen this and the two stop agreeing.  That is
+     * name reads as "Depot" in every message just the same.  Loosen this and the two stop agreeing.  That is
      * the only form `withoutArrivalSuffix` - and `Layout.placeNameOf`, which mirrors it - strips, so it is the
      * only form that makes two squares read alike.  Adam, 2026-09-14: *"refuse and close, but make sure the
      * words are uncommon."*  So "Eastbound Platform", "Main Line (Northbound)" and "Yard (old)" are all names
@@ -227,31 +227,13 @@ public final class StationIndex
     {
         if (name == null) return "";
 
-        if (!name.endsWith(")")) return name;
-
-        int open = name.lastIndexOf(" (");
-
-        if (open <= 0) return name;
-
-        String inside = name.substring(open + 2, name.length() - 1);
-
-        // "northbound", or "northbound, reverse" - see AutonomyBuilder.nodeName
-        int comma = inside.indexOf(',');
-
-        String heading = comma < 0 ? inside : inside.substring(0, comma);
-
-        for (String known : new String[]{"northbound", "southbound", "eastbound", "westbound"})
-        {
-            if (known.equals(heading)) return name.substring(0, open);
-        }
-
-        return name;
+        return org.traincontrol.automation.Layout.withoutArrivalSuffix(name);
     }
 
     /**
      * What a Point is called, as a place rather than as a copy.
      *
-     * **`describe`'s twin, and now its implementation** (W21-C3). These were two answers to one
+     * **`describe`'s twin, and now its implementation**. These were two answers to one
      * question: `describe` falls back to `withoutArrivalSuffix` when the index has never heard of a
      * Point - a configuration built by a different run of the builder, a setup reloaded, a layout
      * edited underneath a running graph - and this one fell back to the internal name. So the same
@@ -374,8 +356,8 @@ public final class StationIndex
             if (point != null) out.add(point);
         }
 
-        // OR BY THE SQUARE EACH POINT WAS BUILT FOR, where the railway knows none of the setup's names for it (RSA40-C2;
-        // Adam, 2026-10-05: *"Yes, do it."*).  A station renamed while the setup cannot build leaves the railway as it
+        // OR BY THE SQUARE EACH POINT WAS BUILT FOR, where the railway knows none of the setup's names for it (Adam,
+        // 2026-10-05: *"Yes, do it."*).  A station renamed while the setup cannot build leaves the railway as it
         // was, with the names it was built with: asked by the new name it had no Point there, and the caption of the
         // train standing at it went blank until the setup built.  Names first, so a page renamed - its squares new, its
         // names the same - is still found by them.
@@ -497,7 +479,7 @@ public final class StationIndex
     /**
      * Drops the paths that do not actually take a train anywhere.
      *
-     * Two ways that happens, and both are artefacts of one square being several Points.  A path that
+     * Two ways that happens, and both are artifacts of one square being several Points.  A path that
      * ends on a copy of the square it started from is a train being offered a journey to where it is
      * already standing.  And a station reachable facing either way is offered once per copy, which
      * since the copies stopped being named apart on screen reads as the same destination listed twice.

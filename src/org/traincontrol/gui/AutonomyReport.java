@@ -10,7 +10,7 @@ import org.traincontrol.util.I18n;
 /**
  * Shows what a save of the autonomy setup did, or says why it declined to do anything.
  *
- * **One display, for six doors (DR-B10).** `AutonomySession.save` returns a {@code Reconciliation}
+ * **One display, for six doors.** `AutonomySession.save` returns a {@code Reconciliation}
  * describing what it pruned, and five of the six places that call it threw the answer away - the
  * autonomy menu, the viewer panel, the diagram's right-click menu, and two places in the main window.
  * Only the editor showed it. The `Reconciliation` class's own javadoc states the principle that was
@@ -30,7 +30,7 @@ public class AutonomyReport
     /**
      * The sets of missing pages already warned about in this session (MT-380).
      *
-     * Keyed by the sorted page names, so the same refusal is recognised however the report lists them,
+     * Keyed by the sorted page names, so the same refusal is recognized however the report lists them,
      * and a DIFFERENT set - another page gone, or one back - is a new thing to say.
      */
     private static final java.util.Set<String> ALREADY_SAID =
@@ -112,7 +112,7 @@ public class AutonomyReport
     /**
      * What the dialog would say about a reconciliation, or an empty string for nothing worth saying.
      *
-     * **Separated from the dialog so it can be tested** (IPR-A2).  `isClean()` counts three lists and
+     * **Separated from the dialog so it can be tested**.  `isClean()` counts three lists and
      * this used to build its text from two, so a save whose only casualty was track lengths and
      * directions produced an empty text and showed nothing at all: the operator lost numbers they had
      * typed and the application said not a word.  Nothing could have caught that, because the words
@@ -157,7 +157,7 @@ public class AutonomyReport
             }
         }
 
-        // AND THE THIRD LIST, which nothing showed (IPR-A2).
+        // AND THE THIRD LIST, which nothing showed.
         //
         // `isClean()` counts three: the names forgotten, the names kept because something still refers
         // to them, and the LENGTHS AND DIRECTIONS dropped because their tile is gone.  The dialog was

@@ -26,7 +26,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * MT-309, first half - a train is shown as a line along the track, not as a grey wash over the tile.
+ * MT-309, first half - a train is shown as a line along the track, not as a gray wash over the tile.
  *
  * Adam, 2026-09-08: *"instead of shading the entire tiles, we need to draw a line (let's say in
  * orange) to show that the train is there.  graying makes it look confusing on double curve tiles."*
@@ -43,9 +43,9 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * uncovered; a line changes the pixels it runs over and no others. So the same tile is painted twice,
  * once with the train and once without, and the two pictures are compared.
  *
- * The orange is recognised by hue rather than by a constant, deliberately: the assertion is "somebody
+ * The orange is recognized by hue rather than by a constant, deliberately: the assertion is "somebody
  * looking at this square sees orange on it", and a test reading production's own constant would pass
- * for any colour that constant was changed to, including grey.
+ * for any color that constant was changed to, including gray.
  *
  * MUTATION: put `ImageUtil.addCoveredOverlay` back and `testTheMarkIsALineAndNotAWash` fails with
  * every pixel of the tile changed. Draw nothing at all and `testACoveredSquareIsMarkedInOrange`
@@ -80,8 +80,17 @@ public class testTheTrainIsShownAsALine
     /** The tile with the train standing there, drawn in the other style a preference may choose: coaches. */
     private static BufferedImage asCoaches;
 
-    /** And in the other colour a preference may choose: the soft orange, solid. */
+    /** And in the other color a preference may choose: the soft orange, solid. */
     private static BufferedImage asSoftOrange;
+
+    /** Why the set-up found no fixture, or null; each claim asks it, so it fails rather than skips. */
+    private static String unbuilt;
+
+    /** Fails the claim when the set-up found no fixture: a skip or an assert in `setUpClass` reads as skipped tests. */
+    private static void assertBuilt()
+    {
+        if (unbuilt != null) throw new AssertionError(unbuilt);
+    }
 
     @BeforeClass
     public static void setUpClass() throws Exception
@@ -104,7 +113,7 @@ public class testTheTrainIsShownAsALine
         // what it names before anything reads it.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = init(null, true, true, false, true);
+        model = support.TestStation.simulatedWithWindowInDebug();
         model.setNetworkCommState(false);
 
         ui = (TrainControlUI) model.getGUI();
@@ -116,7 +125,11 @@ public class testTheTrainIsShownAsALine
 
         session = ui.getAutonomySession();
 
-        if (session == null) throw new SkipException("no autonomy setup on this railway");
+        if (session == null)
+        {
+            unbuilt = "no autonomy setup on this railway";
+            return;
+        }
 
         SwingUtilities.invokeAndWait(() -> measureEveryTileAs(1));
 
@@ -126,13 +139,21 @@ public class testTheTrainIsShownAsALine
 
         oneTrainThatCoversSomething();
 
-        if (train == null) throw new SkipException("no standing train covers any track here");
+        if (train == null)
+        {
+            unbuilt = "no standing train covers any track here";
+            return;
+        }
 
         refreshCoveredTrack();
 
         covered = firstCoveredSquareWithATile();
 
-        if (covered == null) throw new SkipException("no covered square has a tile to draw");
+        if (covered == null)
+        {
+            unbuilt = "no covered square has a tile to draw";
+            return;
+        }
 
         tile = drawnTileFor(covered);
 
@@ -201,6 +222,8 @@ public class testTheTrainIsShownAsALine
     @Test
     public void testACoveredSquareIsMarkedInOrange()
     {
+        assertBuilt();
+
         assertEquals(orangePixels(without), 0,
             "the square is drawn with orange on it while nothing is standing anywhere, so the "
             + "assertion below cannot tell the mark from the tile art");
@@ -213,10 +236,10 @@ public class testTheTrainIsShownAsALine
     /**
      * And the TRAIN mark is a LINE - it covers a small part of the square, not the whole of it.
      *
-     * **MEASURED IN ORANGE, and it used to be measured in changed pixels** (W7B-B1, 2026-09-09).
+     * **MEASURED IN ORANGE, and it used to be measured in changed pixels** (2026-09-09).
      *
      * The square this class chooses is a covered one, and a covered square that is an intermediate
-     * tile of a covered edge is also a BLOCKED one - so it now carries the grey wash as well as the
+     * tile of a covered edge is also a BLOCKED one - so it now carries the gray wash as well as the
      * line. The wash was fenced on a running railway and this class runs at idle, so counting every
      * pixel that differs from the bare square used to count the line alone. It counts both now: 900 of
      * 900, and the class reported that the train was being drawn as a wash. It is not; there are two
@@ -235,6 +258,8 @@ public class testTheTrainIsShownAsALine
     @Test(dependsOnMethods = "testACoveredSquareIsMarkedInOrange")
     public void testTheMarkIsALineAndNotAWash()
     {
+        assertBuilt();
+
         int changed = differingPixels(withTheTrain, without);
 
         int all = TILE * TILE;
@@ -259,6 +284,8 @@ public class testTheTrainIsShownAsALine
     @Test(dependsOnMethods = "testTheMarkIsALineAndNotAWash")
     public void testTheLineFollowsTheTrack()
     {
+        assertBuilt();
+
         int on = 0;
         int off = 0;
 
@@ -280,7 +307,7 @@ public class testTheTrainIsShownAsALine
     // ---------------------------------------------------------------- looking at the picture
 
     /**
-     * Whether this colour is the orange a person would call orange.
+     * Whether this color is the orange a person would call orange.
      *
      * By hue rather than against production's own constant: the claim is about what somebody looking
      * at the diagram sees, and a test reading the constant would agree with any value it was changed
@@ -328,7 +355,7 @@ public class testTheTrainIsShownAsALine
      * Whether the UNMARKED picture has tile art within a couple of pixels of here.
      *
      * The same question testDiagramLooksRight asks of the run line, and for the same reason: the mark
-     * is a stroke centred on the rail, so its edges sit a little either side of the art.
+     * is a stroke centered on the rail, so its edges sit a little either side of the art.
      */
     private static boolean nearArt(BufferedImage bare, int atX, int atY)
     {
@@ -549,6 +576,8 @@ public class testTheTrainIsShownAsALine
     @Test(dependsOnMethods = "testTheLineFollowsTheTrack")
     public void testTheTailShowsOverARunLine() throws Exception
     {
+        assertBuilt();
+
         // THE TRAIN BACK, lying across the square
         train.setTrainLength(4);
 
@@ -611,7 +640,7 @@ public class testTheTrainIsShownAsALine
     /**
      * A running train's line is the orange of a standing train's (Adam, 2026-10-11: "Can we brighten the color of the
      * orange train tail while running so that it more closely matches the normal stopped color?  Remember it is seen
-     * against the dark gray track color with chevrons"): the see-through orange laid over its own dark grey run line came
+     * against the dark gray track color with chevrons"): the see-through orange laid over its own dark gray run line came
      * out a brown, rgb(178,94,38), where over the track it is rgb(209,125,69).
      *
      * The covered square painted standing, and then running with the run's reached line along the road the tail lies on:
@@ -624,6 +653,8 @@ public class testTheTrainIsShownAsALine
     @Test(dependsOnMethods = "testTheLineFollowsTheTrack")
     public void testARunningTrainIsTheOrangeOfAStandingOne() throws Exception
     {
+        assertBuilt();
+
         train.setTrainLength(4);
 
         refreshCoveredTrack();
@@ -681,7 +712,7 @@ public class testTheTrainIsShownAsALine
     }
 
     /**
-     * A standing train's own square is one orange (RSA66-C5).  The line is drawn again over a run line; the overlay of a
+     * A standing train's own square is one orange.  The line is drawn again over a run line; the overlay of a
      * standing train's own square - the diagram's mark for the train - has none, and drawn there the second line lay over
      * the first: rgb(239,134,65) beside rgb(209,125,69) on the train's other squares.  The same on the part of a run's
      * first or last square its run line does not reach.
@@ -693,6 +724,8 @@ public class testTheTrainIsShownAsALine
     @Test(dependsOnMethods = "testTheLineFollowsTheTrack")
     public void testAStandingTrainsOwnSquareIsOneOrange() throws Exception
     {
+        assertBuilt();
+
         train.setTrainLength(4);
 
         refreshCoveredTrack();
@@ -758,7 +791,7 @@ public class testTheTrainIsShownAsALine
     /**
      * The pixels of a train's line laid twice: against the same square painted with its line laid once, pixel by pixel,
      * orange in both and redder by 15 or more - and not paled toward white as a chevron under the line is.  Compared
-     * pixel by pixel because the line laid once is not one colour: a sensor's light contact shows through it lighter.
+     * pixel by pixel because the line laid once is not one color: a sensor's light contact shows through it lighter.
      */
     private static int laidTwice(BufferedImage shot, BufferedImage once)
     {
@@ -794,6 +827,8 @@ public class testTheTrainIsShownAsALine
     @Test(dependsOnMethods = "testACoveredSquareIsMarkedInOrange")
     public void testTheTrainIsDrawnAsWholeCoaches()
     {
+        assertBuilt();
+
         int atTheEdge = orangeAtTheEdge(asCoaches);
 
         assertEquals(atTheEdge, 0, atTheEdge + " orange pixels lie on the edge of " + covered + " - the train is drawn"
@@ -810,23 +845,27 @@ public class testTheTrainIsShownAsALine
     @Test(dependsOnMethods = "testACoveredSquareIsMarkedInOrange")
     public void testTheTrainIsDrawnAsALineByDefault()
     {
+        assertBuilt();
+
         assertTrue(orangeAtTheEdge(withTheTrain) > 0, "the train on " + covered + " stops short of the square's edge -"
             + " it is drawn as coaches, where Adam chose the line: \"revert back to the original occupied line shape\"");
     }
 
     /**
-     * The train's line is see-through: the track it lies on shows through it (Adam, 2026-10-09, from the tail colour
+     * The train's line is see-through: the track it lies on shows through it (Adam, 2026-10-09, from the tail color
      * options: "can we change to the see through tail line").
      *
-     * Read off the picture, as the commonest orange pixel - the line's own colour where it crosses what is under it,
+     * Read off the picture, as the commonest orange pixel - the line's own color where it crosses what is under it,
      * its anti-aliased edges being the minority - rather than off the constant.  A solid line's commonest pixel is the
-     * solid colour, as bright as 245 or 255; a see-through one is darkened by the black and grey track under it.
+     * solid color, as bright as 245 or 255; a see-through one is darkened by the black and gray track under it.
      *
      * MUTATION: draw it solid, or make the soft orange the default, and this fails.
      */
     @Test(dependsOnMethods = "testACoveredSquareIsMarkedInOrange")
     public void testTheTrainIsSeeThrough()
     {
+        assertBuilt();
+
         int commonest = commonestOrange(withTheTrain);
 
         int brightest = Math.max((commonest >> 16) & 0xFF, Math.max((commonest >> 8) & 0xFF, commonest & 0xFF));
@@ -836,14 +875,16 @@ public class testTheTrainIsShownAsALine
     }
 
     /**
-     * The soft orange, rgb(245,140,60), solid, is still the other colour a preference may choose (Adam, 2026-10-09:
+     * The soft orange, rgb(245,140,60), solid, is still the other color a preference may choose (Adam, 2026-10-09:
      * "make it easy to switch to that one too").
      *
-     * MUTATION: let the switch choose nothing, or the soft orange be another colour, and this fails.
+     * MUTATION: let the switch choose nothing, or the soft orange be another color, and this fails.
      */
     @Test(dependsOnMethods = "testACoveredSquareIsMarkedInOrange")
     public void testTheSoftOrangeIsStillAChoice()
     {
+        assertBuilt();
+
         int commonest = commonestOrange(asSoftOrange);
 
         int r = (commonest >> 16) & 0xFF, g = (commonest >> 8) & 0xFF, b = commonest & 0xFF;
@@ -918,6 +959,8 @@ public class testTheTrainIsShownAsALine
     @Test(dependsOnMethods = "testACoveredSquareIsMarkedInOrange")
     public void testTheTrainEndsRounded() throws Exception
     {
+        assertBuilt();
+
         try
         {
             train.setTrainLength(4);
@@ -991,6 +1034,8 @@ public class testTheTrainIsShownAsALine
     @Test(dependsOnMethods = "testACoveredSquareIsMarkedInOrange")
     public void testTheTrainsEndsCanBeSquareAgain() throws Exception
     {
+        assertBuilt();
+
         assertEquals(org.traincontrol.gui.LayoutLabel.tailEnds(), org.traincontrol.gui.LayoutLabel.TailEnds.ROUNDED,
             "a train's line does not end rounded by default");
 
@@ -1072,6 +1117,8 @@ public class testTheTrainIsShownAsALine
     @Test(dependsOnMethods = "testACoveredSquareIsMarkedInOrange")
     public void testTheSquareBesideAChangedLineIsRedrawn() throws Exception
     {
+        assertBuilt();
+
         try
         {
             java.util.Map<TileKey, Set<org.traincontrol.automationui.TileGraph.RouteId>> atThree = coveredAt(3);

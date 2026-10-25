@@ -113,29 +113,29 @@ public interface View
      *
      * Only asked when a person started the route - the routes tab or the diagram's route tile. The
      * s88 trigger door has nobody to ask, so it sets none of its accessories and runs the rest
-     * (RGN-B2, VD9-C18 - this said "stops on its own", and the route does not stop).
+     * (the route does not stop on its own).
      *
      * Adam, 2026-08-25, choosing between three ways of handling the case: "ask me, at the two human
      * doors". The alternative he turned down was letting the route finish and merely logging it,
      * which is the one that can move a switch under a train.
      *
-     * **THIS BLOCKS THE ROUTE, not merely its accessories (SVN-B15).**  It is called on the route's
+     * **THIS BLOCKS THE ROUTE, not merely its accessories.**  It is called on the route's
      * own thread, and everything after the conflicting accessory - locomotive speeds, functions off,
      * chained routes - waits for the answer.  The javadoc used to say the answer was about "the rest
      * of its accessories", which understated it by the width of a route.
      *
-     * That IS the right behaviour, and it is worth saying why rather than leaving it to be read as an
+     * That IS the right behavior, and it is worth saying why rather than leaving it to be read as an
      * oversight: the answer decides whether this route's ironwork gets set, and running its speeds
      * while its turnouts are not set is worse than making the operator answer first.
      *
      * **A route carrying an emergency stop never gets here.**  `MarklinRoute` tests
      * `hasEmergencyStop()` before asking, on Adam's ruling of 2026-09-01 - "emergency stop should
-     * never conflict or prompt" (`FX2-2`, `SVN-A4`) - so the one command that must not wait on a
+     * never conflict or prompt" - so the one command that must not wait on a
      * person does not.
      *
      * That was briefly untrue: `MT-247` took the clause out of the midway condition on 2026-09-06 and
      * left the identical one standing in the pre-route screen, so a stop-carrying route was waved past
-     * the screen and asked here instead (`DIR-A3`).  Both doors carve it out again.
+     * the screen and asked here instead.  Both doors carve it out again.
      *
      * @param r the route part way through executing
      * @param accessory the accessory autonomy has taken since the route started

@@ -93,7 +93,7 @@ public class testTheRoomRuleCensusOnTheRealLayout
      * `isPathClear` of every route both searches could yield: none of the 494 was drivable, and 153 pairs the old search
      * never found became drivable.  A fact about the search this census walks, not a railway that came apart.
      */
-    // 1301 SINCE AMR-B1 (2026-09-15, Adam: *"We need to refuse both.  A copy makes a cycle"*): the 53 pairs whose only
+    // 1301 SINCE 2026-09-15 (Adam: *"We need to refuse both.  A copy makes a cycle"*): the 53 pairs whose only
     // routes doubled back through another copy of the square the journey starts or ends at are no longer walked.  Every
     // one of them was a lap through the train's own platform, which is what he ruled out; measured separately on the
     // same railway, 14 station pairs lose their last route and all 14 are from `BottomMainPost`.
@@ -184,7 +184,7 @@ public class testTheRoomRuleCensusOnTheRealLayout
         // classes that were reading his live one.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = init(null, true, false, false, false);
+        model = support.TestStation.simulated();
 
         // THE CENSUS'S OWN TRAINS, before anything is measured.
         //
@@ -299,6 +299,12 @@ public class testTheRoomRuleCensusOnTheRealLayout
         System.out.println("  journeys newly refused  : " + census.newlyRefused);
         System.out.println("  arriving at             : " + census.berths);
 
+        // WHAT A REFRESH OF THE SNAPSHOT CHANGES (FR-136): the figures, all of them, in one sentence a failure ends with.
+        String refresh = "  If live-snapshot was refreshed on purpose, set in this class ORDERED_PAIRS = "
+            + census.orderedPairs + ", PAIRS_WITH_A_PATH = " + census.pairsWithAPath + ", NEWLY_REFUSED = "
+            + census.newlyRefused + " and BERTHS = " + new TreeSet<>(census.berths.keySet())
+            + ", and NEWLY_REFUSED in docs/reference/behaviour.md section 5c";
+
         assertEquals(census.lengths, java.util.Arrays.asList(LENGTHS),
             "the census ran over " + census.lengths + " rather than " + java.util.Arrays.asList(LENGTHS)
             + ".  These are this class's OWN trains now, not a reading of Adam's database, so this is"
@@ -307,19 +313,19 @@ public class testTheRoomRuleCensusOnTheRealLayout
 
         assertEquals(census.orderedPairs, ORDERED_PAIRS,
             "this railway now has " + census.orderedPairs + " ordered station pairs on it rather than "
-            + ORDERED_PAIRS + ", so every number below is over a different population");
+            + ORDERED_PAIRS + ", so every number below is over a different population." + refresh);
 
         assertEquals(census.pairsWithAPath, PAIRS_WITH_A_PATH,
             census.pairsWithAPath + " of those pairs can be routed, against " + PAIRS_WITH_A_PATH
             + " when this was measured.  A large drop is a railway that has come apart rather than a"
-            + " rule that has changed");
+            + " rule that has changed." + refresh);
 
         assertEquals(census.newlyRefused, NEWLY_REFUSED,
             census.newlyRefused + " journeys are newly refused by the widened room rule, against "
             + NEWLY_REFUSED + " when behaviour.md section 5c was written.  That section states this"
             + " number and reasons from it - that the widening refuses the journeys Adam asked to have"
             + " refused, at the squares he was looking at, and not a wider set - so update it there"
-            + " and here together, or the document is describing a railway that no longer exists");
+            + " and here together, or the document is describing a railway that no longer exists." + refresh);
 
         assertEquals(new TreeSet<>(census.berths.keySet()),
             new TreeSet<>(java.util.Arrays.asList(BERTHS)),
@@ -327,7 +333,7 @@ public class testTheRoomRuleCensusOnTheRealLayout
             + java.util.Arrays.asList(BERTHS) + ".  This is the load-bearing half of section 5c: every"
             + " refusal the widening adds lands on one of the four berths Adam named himself, each"
             + " with ONE measured unit of room behind it.  A fifth berth appearing means the rule has"
-            + " started refusing somewhere he was not looking at");
+            + " started refusing somewhere he was not looking at." + refresh);
 
         for (Map.Entry<String, Integer> berth : census.berths.entrySet())
         {
@@ -358,7 +364,7 @@ public class testTheRoomRuleCensusOnTheRealLayout
      *
      * **A BAND, BECAUSE THE EXACT COUNT IS NOT REPRODUCIBLE.**  Six runs on Adam's live railway gave
      * 2116, 2146, 1648, 1617, 1625 and 1645 - the first two asking one route per pair, the rest asking
-     * every route the search will yield - and the snapshot answers in the same neighbourhood, 1640 to
+     * every route the search will yield - and the snapshot answers in the same neighborhood, 1640 to
      * 1660.  `bfs(from, to, exclude)` returns SOME route avoiding the ones already found rather
      * than the next in a defined order, and which one depends on an adjacency keyed by objects whose
      * hash is their identity.  So the count moves by about two per cent between JVMs, and a pin to one
@@ -368,7 +374,7 @@ public class testTheRoomRuleCensusOnTheRealLayout
      * doubling its reach, or being quietly taken out, moves the number by hundreds.  The exact figure
      * is printed on every run.
      */
-    // 0 UNTIL OB-229, THEN ABOUT 60, AND 0 AGAIN SINCE AMR-B1 (2026-09-15) - and the two zeroes mean opposite things.
+    // 0 UNTIL OB-229, THEN ABOUT 60, AND 0 AGAIN SINCE 2026-09-15 - and the two zeroes mean opposite things.
     //
     // A journey counts here when its berth has room and every route to it is refused BEFORE the berth, which since
     // MT-333 means at a square the train turns at.  The first zero was hiding the ruling: the census walked routes
@@ -380,7 +386,7 @@ public class testTheRoomRuleCensusOnTheRealLayout
     // through the train's own platform - and Adam ruled those out on the same day: *"We need to refuse both.  A copy
     // makes a cycle."*  They are not walked now, so the pass-through rule has nothing left to refuse here.
     //
-    // WHAT STILL CATCHES THE RULING BEING TAKEN OUT, now that the floor cannot - and it is NOT this class (AMW-C2).
+    // WHAT STILL CATCHES THE RULING BEING TAKEN OUT, now that the floor cannot - and it is NOT this class.
     // `refusedAtATurn` was nominated here and cannot do it: it is counted by this class's own replica of the rule, as
     // two other comments in this file say outright ("taking `comesToRest` out of production leaves this number exactly
     // where it is"), so removing the production rule leaves every number here where it is.  What holds it is
@@ -420,7 +426,7 @@ public class testTheRoomRuleCensusOnTheRealLayout
      */
     // 155 SINCE OB-229 (2026-09-15): the routes this census walks no longer include the ones through a terminus, which
     // were most of the long routes past a reversing point - and every one of them refused by the route check anyway.
-    // AND 15 SINCE AMR-B1 (2026-09-15), which is the same story one step further on.  A route refused at a square the
+    // AND 15 SINCE 2026-09-15, which is the same story one step further on.  A route refused at a square the
     // train turns at is a LONG route - it goes somewhere, turns, and comes back - and on this railway most of what was
     // left after OB-229 were laps through another copy of the journey's own start or end.  Adam ruled those out
     // ("a copy makes a cycle"), so they are no longer walked and what remains is the handful of genuine turn-backs.
@@ -451,7 +457,7 @@ public class testTheRoomRuleCensusOnTheRealLayout
     private static final int REFUSED_AT_THE_BERTH = 850;
 
     /**
-     * The squares that refuse on the way: NONE since AMR-B1 (2026-09-15), so the list is empty and any square at all
+     * The squares that refuse on the way: NONE since 2026-09-15, so the list is empty and any square at all
      * appearing here is the rule refusing somewhere Adam was not looking.  It held one entry for the few hours between
      * OB-229 and his copy ruling - `BottomMainB (westbound, reverse)`, a turn copy of one of the four berths below -
      * and every journey that square refused was over a route that doubled back through another copy of its own start or
@@ -708,7 +714,7 @@ public class testTheRoomRuleCensusOnTheRealLayout
             + " 22,7, measuring BottomMainPost - and every square it costs on his railway is one he"
             + " has measured at a unit or three");
 
-        // THE LIST AND THE COUNT SAY THE SAME THING, WHICHEVER WAY ROUND THEY ARE (PTR-C2, corrected by AMW-C2).
+        // THE LIST AND THE COUNT SAY THE SAME THING, WHICHEVER WAY ROUND THEY ARE.
         //
         // `ON_THE_WAY.length == 0 || !squares.isEmpty()` was vacuous the moment the list emptied, which it did within
         // hours: an empty list and a zero count are the expected state, so nothing failed either way.  What can still

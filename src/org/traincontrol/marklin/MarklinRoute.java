@@ -4,11 +4,9 @@ import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.Route;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.gui.LayoutLabel;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -17,6 +15,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.NodeExpression;
+import org.traincontrol.util.Util;
 
 /**
  * Simple route representation
@@ -40,7 +39,7 @@ public class MarklinRoute extends Route
     
     // Extra delay between route commands
     // FLOOR UNDER ANY DELAY A COMMAND CARRIES, and public so the editor can raise a
-    // smaller number to it as it is typed (X8-C2) - below this a delay was accepted,
+    // smaller number to it as it is typed - below this a delay was accepted,
     // stored, exported, redisplayed and then discarded, so the cell and the railway
     // disagreed with nothing to say so.
     public static final int DEFAULT_SLEEP_MS = 150;
@@ -55,7 +54,7 @@ public class MarklinRoute extends Route
     // states - and command capture records what the diagram sent, carrying no delay of its own.
     // Without it a pair fires DEFAULT_SLEEP_MS apart, inside the margin the diagram path was tuned to.
     //
-    // Has to exceed DEFAULT_SLEEP_MS to have any effect: execRoute honours a command's own delay
+    // Has to exceed DEFAULT_SLEEP_MS to have any effect: execRoute honors a command's own delay
     // only when it is the larger of the two.  It does, with room to spare - but lowering
     // THREEWAY_DELAY_MS far enough would make this silently inert rather than merely shorter.
     public static final int THREEWAY_ROUTE_DELAY_MS =
@@ -86,7 +85,7 @@ public class MarklinRoute extends Route
      */
     public MarklinRoute(MarklinControlStation network, String name, int id)
     { 
-        // TRIMMED HERE, where every door meets (CS3-C1).  `newRoute(MarklinRoute)` indexes under the trimmed name
+        // TRIMMED HERE, where every door meets.  `newRoute(MarklinRoute)` indexes under the trimmed name
         // while `deleteRoute` deletes by the route's own - so a Central Station route whose name carries a leading or
         // trailing space could be neither deleted nor re-read, and `changeRouteId` put it into the database twice.
         // The two file parsers are the only doors that do not trim before they build; this is one place instead.
@@ -119,7 +118,7 @@ public class MarklinRoute extends Route
     public MarklinRoute(MarklinControlStation network, String name, int id, List<RouteCommand> route, int s88, s88Triggers triggerType, boolean enabled,
             NodeExpression conditions)
     { 
-        // Trimmed, as the constructor above says (CS3-C1).
+        // Trimmed, as the constructor above says.
         super(name == null ? null : name.trim(), route);
         
         this.id = id;
@@ -237,7 +236,7 @@ public class MarklinRoute extends Route
                 }
             });
 
-            // A DAEMON, AND NAMED (S14-C2).
+            // A DAEMON, AND NAMED.
             //
             // It parks on an untimed wait in the feedback handler and `disable()` only clears a flag it
             // will not look at until the sensor next fires - so it never returns on its own, and a
@@ -307,7 +306,7 @@ public class MarklinRoute extends Route
      */
     @Override
     /**
-     * EVERY WALK OF THIS COMMAND LIST OFF THE EVENT THREAD TAKES A COPY FIRST (CS3-B1, narrowed by SVB-C3).
+     * EVERY WALK OF THIS COMMAND LIST OFF THE EVENT THREAD TAKES A COPY FIRST.
      *
      * This said *"every walk"*, and several do not: `toJSON`, `toCSV`, `otherRouteRenamed`, `namesLocomotives`
      * and `commandsDrive` walk the live list.  Every one of them is an event-thread caller, which is the same
@@ -352,7 +351,7 @@ public class MarklinRoute extends Route
      * Not passed down to chained routes: a route this one triggers is asked about on its own terms,
      * because the operator agreed to THIS route's conflict and was never shown the other's.
      *
-     * **WHAT ONE "OK" ACTUALLY COVERS** (SVN-C16).  This paragraph used to describe the answer as
+     * **WHAT ONE "OK" ACTUALLY COVERS**.  This paragraph used to describe the answer as
      * covering "this route's conflict", singular; the override is a flag on the whole run, so every
      * accessory this route sets is set unchecked - including one locked by a DIFFERENT dispatch five
      * seconds later, which the operator was never shown.
@@ -428,7 +427,7 @@ public class MarklinRoute extends Route
      * route that should set something and then cut the power fires that one in its stop's place - which is what a route
      * that mixed them is split into.  It cuts the power all the same, so it is never asked either: asked about a switch,
      * Cancel would have called off a power cut the question never mentioned.  As far down a chain as firing it reaches
-     * (`cutsThePowerAt`, RLA5-A1): a route that fires a split route reaches its stop two routes down.
+     * (`cutsThePowerAt`): a route that fires a split route reaches its stop two routes down.
      *
      * @return true when this route, or a route it fires, stops the railway
      */
@@ -442,9 +441,9 @@ public class MarklinRoute extends Route
      *
      * The limits are `execRoute`'s own, so the answer is what firing it does: every door starts a route at 1, a chained
      * route runs one lower, a route below 0 is refused - and a route that is only a stop runs at any level, since it fires
-     * nothing further (RLA5-A1).
+     * nothing further.
      *
-     * THE PATH, NOT EVERY ROUTE EVER ASKED (RLV6-C2).  A route reached by two paths is asked again by the second, at
+     * THE PATH, NOT EVERY ROUTE EVER ASKED.  A route reached by two paths is asked again by the second, at
      * that path's own depth: met first too deep to fire its stop, it may fire it from a shorter way in.
      *
      * @param limit the recursion limit this route would run at
@@ -545,7 +544,7 @@ public class MarklinRoute extends Route
      *
      * Asked of `getActiveAccs`, which is the same set the diagram's tile click asks and whose own
      * javadoc says it exists "to WARN before throwing an accessory on an active route". Route
-     * execution never asked it (AU-A2).
+     * execution never asked it.
      *
      * Silent when autonomy is not running, which is when routes are most of what this application is
      * for - nothing about ordinary route use changes.
@@ -571,7 +570,7 @@ public class MarklinRoute extends Route
      * The guard used to be evaluated once before the loop, and `execRoute` sleeps
      * `SLEEP_INTERVAL` plus the command's own delay between every pair of commands. So a dispatch
      * that locked a path while the route was part way through was invisible to it, and the route
-     * went on to throw a turnout the path had just configured and validated - which is AU-A2 itself,
+     * went on to throw a turnout the path had just configured and validated - the race itself,
      * surviving in a window seconds wide, through all three doors including the s88 trigger with
      * nobody present.
      *
@@ -586,7 +585,7 @@ public class MarklinRoute extends Route
     {
         if (rc == null || !rc.isAccessory()) return null;
 
-        // ASKED ONCE, NOT BUILT (RLV11-C5): a route runs on its own thread, and Unload can clear the railway between
+        // ASKED ONCE, NOT BUILT: a route runs on its own thread, and Unload can clear the railway between
         // asking whether there is one and asking for it
         final org.traincontrol.automation.Layout railway = this.network.getAutoLayoutIfLoaded();
 
@@ -613,7 +612,7 @@ public class MarklinRoute extends Route
         //
         // WHERE THAT RULE LIVES: `Layout.protectsAnOccupiedSquare`, since `87b6c10a`, which is what the
         // note at the call site below says.  It used to be computed here, immediately under this
-        // paragraph, and "this one covers the platforms..." pointed at that computation (CD3-C1).
+        // paragraph, and "this one covers the platforms..." pointed at that computation.
         // Kept because it is the reason the rule exists, which the two doors that ask it do not repeat.
 
         // By address AND protocol, which is how the route names it and how the station resolves it -
@@ -641,12 +640,12 @@ public class MarklinRoute extends Route
         // review, which reproduced it with no path locked anywhere.
         //
         // `getSetting()` is true for RED and TURN, false for GREEN and STRAIGHT (Accessory.java).
-        // ASKED OF THE LAYOUT (SVN-B16).  It used to be worked out here, and the diagram's own
+        // ASKED OF THE LAYOUT.  It used to be worked out here, and the diagram's own
         // accessory tile - which asks the locked-path half two lines above - never got this half at
         // all: a route setting a platform's signal green was refused while clicking the same signal
         // green by hand was not.  One rule now, in the one place both can reach.
         //
-        // A GREEN THE TRAIN'S OWN PATH HOLDS IS NO CHANGE (RSA66-C1): the exit guard of the platform a path leaves and the
+        // A GREEN THE TRAIN'S OWN PATH HOLDS IS NO CHANGE: the exit guard of the platform a path leaves and the
         // home signal of the one it is bound for are held accessories too, and Adam's rule reaches them (2026-10-11: "make
         // sure the code allows switching to the correct (same) setting that autonomy is using") - AND ONLY WHILE IT SHOWS
         // GREEN (the fix-validation fanout's C1-B): one signal may guard two platforms, and protection may have set it red
@@ -655,7 +654,7 @@ public class MarklinRoute extends Route
 
         if (!rc.getSetting() && railway.protectsAnOccupiedSquare(accessory) && !heldGreenAndShowing)
         {
-            // STANDING, OR ONLY RESERVED (GSR-C2).  A locked path reserves every point along it for its train, its
+            // STANDING, OR ONLY RESERVED.  A locked path reserves every point along it for its train, its
             // destination included, so a platform holds this signal red before any train is at it - and "a train is
             // standing" sent the operator looking for one.  The refusal is the same either way; only what it says differs.
             return new String[] {accessory.getName(), railway.protectsAStandingTrain(accessory)
@@ -724,7 +723,7 @@ public class MarklinRoute extends Route
      */
     private void execRoute(boolean auto, int recursionLimit, boolean overrideConflicts)
     {
-        // A ROUTE THAT IS ONLY A STOP RUNS AT ANY DEPTH (RLA5-A1, RLU5-A1, RLD5-A1).  It fires nothing further, so the limit
+        // A ROUTE THAT IS ONLY A STOP RUNS AT ANY DEPTH.  It fires nothing further, so the limit
         // that keeps a chain from running away has nothing to hold back - and a split route's stop sits one route below
         // the route that fires it, so a chain that fires a split route reaches its stop past the limit.
         if (recursionLimit < 0 && !this.isOnlyStops())
@@ -757,7 +756,7 @@ public class MarklinRoute extends Route
                 // route silently returned false for the rest of the session.
                 try
                 {
-                    // Not onto track a train is running over (AU-A2).
+                    // Not onto track a train is running over.
                     //
                     // Route execution and autonomy path locking each worked exactly as designed and
                     // neither consulted the other. `configureAndLockPath` reserves every accessory on
@@ -851,7 +850,7 @@ public class MarklinRoute extends Route
                                 // command's own delay between every pair of commands.  So a dispatch
                                 // that locked a path while the route was part way through was
                                 // invisible to a check made once before the loop, and the route went
-                                // on to throw a turnout the path had just configured - AU-A2 itself,
+                                // on to throw a turnout the path had just configured - the race itself,
                                 // surviving in a window seconds wide, through the s88 door with
                                 // nobody present.
                                 //
@@ -882,8 +881,7 @@ public class MarklinRoute extends Route
                                     // back seconds later, while the power is still on and the operator
                                     // is watching a train they wanted stopped.  Same rule, both ends:
                                     // a route that cuts the power skips the accessory and carries on.
-                                    // AND IT PARKS THE REST OF THE ROUTE WHILE IT STANDS
-                                    // (SVN-B15).
+                                    // AND IT PARKS THE REST OF THE ROUTE WHILE IT STANDS.
                                     //
                                     // This is called on the route's own thread, so the speeds, the
                                     // functions and any chained route after this command wait for the
@@ -896,7 +894,7 @@ public class MarklinRoute extends Route
                                     //
                                     // The one command that must never wait on a person does not reach
                                     // here: `hasEmergencyStop()` is the whole route's stop, tested
-                                    // before the question, on Adam's ruling (`FX2-2`, `SVN-A4`).
+                                    // before the question, on Adam's ruling.
                                     // ADAM'S RULING, 2026-09-06 (MT-247):
                                     //
                                     // **"1. cancel should cancel everything.  OK should fire
@@ -930,7 +928,7 @@ public class MarklinRoute extends Route
                                     // wants.  A person who cancels a route that would have cut the
                                     // power has the Stop button in front of them.
                                     // AND A ROUTE THAT CUTS THE POWER IS NEVER ASKED, at this door as
-                                    // well as the one before the route starts (DIR-A3).
+                                    // well as the one before the route starts.
                                     //
                                     // MT-247 took `!this.hasEmergencyStop()` out of this condition and
                                     // left the identical clause standing in
@@ -961,7 +959,7 @@ public class MarklinRoute extends Route
                                     }
                                     else if (response == ConflictResponse.CANCEL_ROUTE)
                                     {
-                                        // CANCELLED WHOLE.  The log line first, so the record of why
+                                        // CANCELED WHOLE.  The log line first, so the record of why
                                         // exists before the route stops being anything.
                                         this.network.logf(now[1], this.getName(), now[0]);
 
@@ -985,7 +983,7 @@ public class MarklinRoute extends Route
                                         // switches on track nothing was standing on.
                                         //
                                         // **AND EVERYTHING ELSE IN THE ROUTE STILL RUNS** - speeds,
-                                        // functions, chained routes (RGN-B2).  The two messages above
+                                        // functions, chained routes.  The two messages above
                                         // used to disagree about that, one saying "nothing further in
                                         // the route was switched either" and the other "the rest of
                                         // the route ran"; both now say what actually happens, which is
@@ -993,7 +991,7 @@ public class MarklinRoute extends Route
                                         //
                                         // Whether an s88-fired route SHOULD go on driving trains over
                                         // ironwork it did not set is Adam's question, not this
-                                        // comment's - put to him as part of RGN-B2.  What is not in
+                                        // comment's - put to him.  What is not in
                                         // doubt is that he has to be able to tell which of the two
                                         // happened, and until today he could not.
                                         continue;
@@ -1007,7 +1005,7 @@ public class MarklinRoute extends Route
                             }
                             else if (rc.isStop())
                             {                        
-                                // SENT WHATEVER THE POWER FLAG SAYS (RSA-C4; behaviour.md 7a: an
+                                // SENT WHATEVER THE POWER FLAG SAYS (behaviour.md 7a: an
                                 // emergency stop is obeyed whatever else is true).  The flag is only
                                 // the last GO or STOP echo heard, so one lost GO skipped the stop of a
                                 // route that fired with nobody present.  It decides the notice and the
@@ -1048,7 +1046,7 @@ public class MarklinRoute extends Route
                             }
                             else if (rc.isAutonomyLightsOn())
                             {
-                                // Asked once, not built (RLV11-C5)
+                                // Asked once, not built
                                 final org.traincontrol.automation.Layout railway = this.network.getAutoLayoutIfLoaded();
 
                                 if (railway != null)
@@ -1162,7 +1160,7 @@ public class MarklinRoute extends Route
                                             //
                                             // View.java says this in as many words: "The s88 trigger
                                             // door has nobody to ask, so it sets none of its
-                                            // accessories and runs the rest." (VD9-C18)
+                                            // accessories and runs the rest."
                                             r.execRoute(auto, recursionLimit - 1, false);
                                         }
                                         else
@@ -1186,7 +1184,7 @@ public class MarklinRoute extends Route
 
                             try
                             {
-                                // ONE EXPRESSION, NOT TWO BRANCHES (X8-C2).
+                                // ONE EXPRESSION, NOT TWO BRANCHES.
                                 //
                                 // The two branches did the same arithmetic on different numbers, and
                                 // the difference between them was invisible from the editor: a delay
@@ -1236,7 +1234,7 @@ public class MarklinRoute extends Route
             }
             else
             {
-                // STARTED AGAIN WHILE IT RUNS (GSR-C4) - a sensor that triggers the route firing again before it has
+                // STARTED AGAIN WHILE IT RUNS - a sensor that triggers the route firing again before it has
                 // finished.  Dropped, as it always was, and now said: the window's own doors say so, and this door - the
                 // one a sensor uses - said nothing.
                 this.network.logf("route.ui.infoAlreadyRunning", this.getName());
@@ -1418,11 +1416,7 @@ public class MarklinRoute extends Route
     
     public JSONObject toJSON() throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException, Exception
     {		
-        JSONObject jsonObj = new JSONObject();
-        Field map = jsonObj.getClass().getDeclaredField("map");
-        map.setAccessible(true);
-        map.set(jsonObj, new LinkedHashMap<>());
-        map.setAccessible(false);
+        JSONObject jsonObj = Util.orderedJSON();
         
         jsonObj.put("name", this.getName());
         jsonObj.put("id", this.getId());

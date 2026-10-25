@@ -14,7 +14,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * X8-B1: Cut or Copy while the pointer is not over a square must not arm a paste with nothing in it.
+ * Cut or Copy while the pointer is not over a square must not arm a paste with nothing in it.
  *
  * **What went wrong.** The Control+V branch null-checks the hovered label; Control+X and Control+C did
  * not. `getLastHoveredLabel()` is null whenever the pointer is over the palette - the hover
@@ -61,7 +61,7 @@ public class testCutWithNothingHovered
 
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = init(null, true, false, false, true);
+        model = support.TestStation.simulatedInDebug();
 
         SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
 
@@ -69,7 +69,7 @@ public class testCutWithNothingHovered
 
         page = model.getLayout(PAGE);
 
-        if (page == null) throw new SkipException("no page " + PAGE);
+        if (page == null) throw new AssertionError("no page " + PAGE);
 
         final LayoutEditor[] built = new LayoutEditor[1];
 
@@ -196,7 +196,7 @@ public class testCutWithNothingHovered
 
                 int[] blank = blankSquare(grid);
 
-                if (blank == null) throw new SkipException("the fixture page has no blank square");
+                if (blank == null) throw new AssertionError("the fixture page has no blank square");
 
                 editor.initCopy(grid.getValueAt(blank[0], blank[1]), null, true);
 
@@ -254,7 +254,7 @@ public class testCutWithNothingHovered
             }
         }
 
-        throw new SkipException("the fixture page holds no components at all");
+        throw new AssertionError("the fixture page holds no components at all");
     }
 
     /**
@@ -270,6 +270,6 @@ public class testCutWithNothingHovered
             }
         }
 
-        throw new SkipException("the fixture page holds no components at all");
+        throw new AssertionError("the fixture page holds no components at all");
     }
 }

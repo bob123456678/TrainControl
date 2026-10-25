@@ -34,7 +34,7 @@ import javax.swing.border.Border;
  * That is the second version of this class and the reason is Adam's: *"the axis numbers drift and are
  * out of alignment.  The first few are centered, but the rest aren't.  That's why it looks off by
  * one."*  The first version multiplied the tile size by the column index, which is right only while
- * every cell is exactly a tile wide - and with the grey grid switched on each square wears a line
+ * every cell is exactly a tile wide - and with the gray grid switched on each square wears a line
  * border that reserves room, so the real pitch is a pixel or two more. The error is cumulative: the
  * first few numbers sit over their squares and the twentieth is a whole square out.
  *
@@ -59,6 +59,12 @@ public class AxisRuler implements Border
 
     /** So the numbers do not crowd the first square. */
     private static final int PAD = 2;
+
+    /** The numbers' size in points: smaller than the diagram's own text. */
+    private static final float FONT_SIZE = 10f;
+
+    /** And the grid's gray they are drawn in. */
+    private static final Color INK = Color.GRAY;
 
     private final int offsetX;
 
@@ -173,7 +179,7 @@ public class AxisRuler implements Border
      * A ruler over cells that really are exactly one tile apart.
      *
      * For tests, and for any caller that knows its grid has no borders on it. The real diagram does
-     * not use this: whether a square is a tile wide depends on whether the grey grid is switched on,
+     * not use this: whether a square is a tile wide depends on whether the gray grid is switched on,
      * which is a setting, which is exactly the assumption that put the numbers out of alignment.
      *
      * @param size the width and height of one square, in pixels
@@ -208,17 +214,17 @@ public class AxisRuler implements Border
         Color was = g.getColor();
         Font wasFont = g.getFont();
 
-        // Smaller than the diagram's own text and in the grid's grey, because this is scenery for
+        // Smaller than the diagram's own text and in the grid's gray, because this is scenery for
         // reading coordinates off rather than part of the railway.
-        g.setFont(wasFont.deriveFont(Font.PLAIN, 10f));
-        g.setColor(Color.GRAY);
+        g.setFont(wasFont.deriveFont(Font.PLAIN, FONT_SIZE));
+        g.setColor(INK);
 
         FontMetrics metrics = g.getFontMetrics();
 
         // ACROSS THE TOP.
         //
-        // Centred over the square as it actually is, and skipped when the number is wider than that
-        // square - a number that overhangs its neighbour points at the wrong square, which is worse
+        // Centered over the square as it actually is, and skipped when the number is wider than that
+        // square - a number that overhangs its neighbor points at the wrong square, which is worse
         // than a gap.
         for (int column = 0; column < columns; column++)
         {

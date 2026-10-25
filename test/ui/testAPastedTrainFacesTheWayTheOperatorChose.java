@@ -21,6 +21,7 @@ import org.traincontrol.gui.ArrivalSidePrompt;
 import org.traincontrol.gui.FacingPrompt;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
+import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
@@ -66,7 +67,7 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
         // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111).
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = init(null, true, true, false, true);
+        model = support.TestStation.simulatedWithWindowInDebug();
         model.setNetworkCommState(false);
 
         ui = (TrainControlUI) model.getGUI();
@@ -78,7 +79,7 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
 
         session = ui.getAutonomySession();
 
-        if (session == null) throw new SkipException("no autonomy setup on this railway");
+        if (session == null) throw new AssertionError("no autonomy setup on this railway");
 
         model.parseAuto(session.buildConfiguration());
 
@@ -91,20 +92,15 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
             if (SQUARE_NAME.equals(session.getStore().getPointName(key))) square = key;
         }
 
-        if (square == null) throw new SkipException("this railway has no " + SQUARE_NAME);
+        if (square == null) throw new AssertionError("this railway has no " + SQUARE_NAME);
 
-        if (!session.mayTurnTiles().contains(square))
-        {
-            throw new SkipException(SQUARE_NAME + " is not a may-reverse square on this railway, so no"
-                + " facing question is put there");
-        }
+        assertTrue(session.mayTurnTiles().contains(square), SQUARE_NAME + " is not a may-reverse square on this railway,"
+            + " so no facing question is put there");
 
         Map<String, Side> copies = session.facingsFor(square);
 
-        if (!copies.containsValue(Side.E) || !copies.containsValue(Side.W))
-        {
-            throw new SkipException(SQUARE_NAME + " does not hold both east and west here: " + copies);
-        }
+        assertTrue(copies.containsValue(Side.E) && copies.containsValue(Side.W), SQUARE_NAME
+            + " does not hold both east and west here: " + copies);
 
         train = model.getLocByName("75 407 DB");
 
@@ -113,7 +109,7 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
             train = model.getLocByName(model.getLocList().get(0));
         }
 
-        if (train == null) throw new SkipException("this railway has no locomotives");
+        if (train == null) throw new AssertionError("this railway has no locomotives");
     }
 
     @AfterClass(alwaysRun = true)
@@ -160,7 +156,141 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
     }
 
     /**
-     * Both questions name the square the way the diagram does, not by the copy the paste happened to pick (GUI-C7).
+     * A train pasted onto a square that is no station says it can only be placed at a station, and asks nothing first
+     * (OB-365): the facing and tail questions were put about a square the placement then refused.
+     *
+     * Real dialogs, answered by {@link support.Answering}, which keeps what each one said: the only thing asked is the
+     * notice.  The train stays on the clipboard for the next square, and no square holds it.  The square is the
+     * may-reverse one the other claims use, made a plain square for the length of the claim.
+     *
+     * MUTATION: take the station check out of the paste door in TrainControlUI and the questions are asked again, so
+     * this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testPastingOnASquareThatIsNoStationSaysSoAndAsksNothing() throws Exception
+    {
+        // The may-reverse square demoted: it keeps its turning copies and is no station, which is the square that
+        // used to be asked both questions and then refused.
+        session.setStation(square, false);
+
+        try
+        {
+            rebuild();
+
+            assertTrue(session.mayTurnTiles().contains(square), "precondition: " + SQUARE_NAME + " is no longer a"
+                + " may-reverse square once it is no station, so no question is put there");
+
+            Point speaker = session.getStationIndex().speakerAt(layout, square);
+
+            assertNotNull(speaker, "precondition: " + SQUARE_NAME + " has no Point once it is no station");
+
+            assertTrue(ArrivalSidePrompt.wouldAsk(layout, speaker, true, session.unbarredArrivalSides(square))
+                || FacingPrompt.wouldAsk(session.facingsFor(square).values()), "precondition: no question is put at "
+                + SQUARE_NAME + " once it is no station, so this claim would assert nothing");
+
+            clearTheSquareAndTheTrain();
+
+            FacingPrompt.answerForTests(null);
+            ArrivalSidePrompt.answerForTests(null);
+
+            List<String> asked;
+            Object handled;
+
+            try (support.Answering answering = support.Answering.start(message -> null))
+            {
+                handled = pasteOnto(square);
+
+                pump();
+
+                asked = answering.asked();
+            }
+
+            assertEquals(handled, Boolean.TRUE, "the paste door did not take Control+V over " + SQUARE_NAME + ": "
+                + handled);
+
+            assertEquals(asked, java.util.Collections.singletonList(I18n.t("autolayout.ui.errorTrainOnlyAtStation")),
+                "pasting a train onto " + SQUARE_NAME + ", which is no station, should show the one notice and ask"
+                + " nothing (OB-365), but the dialogs shown were: " + asked);
+
+            for (Point point : layout.getPoints())
+            {
+                assertTrue(point.getCurrentLocomotive() != train, "the train was put on " + point.getName()
+                    + ", though " + SQUARE_NAME + " is no station");
+            }
+
+            Field cut = TrainControlUI.class.getDeclaredField("cutLocomotive");
+            cut.setAccessible(true);
+
+            assertSame(cut.get(ui), train, "the refused paste took the train off the clipboard");
+        }
+        finally
+        {
+            session.setStation(square, true);
+
+            rebuild();
+        }
+    }
+
+    /**
+     * Builds the railway again from the setup, as the other claims here found it.
+     *
+     * @throws Exception from the event thread
+     */
+    private static void rebuild() throws Exception
+    {
+        model.parseAuto(session.buildConfiguration());
+
+        layout = model.getAutoLayout();
+
+        pump();
+    }
+
+    /**
+     * Presses Control+V over a square with the test train on the clipboard and no remembered heading.
+     *
+     * @param target the square
+     * @return what the paste door answered
+     * @throws Exception from the window
+     */
+    private static Object pasteOnto(TileKey target) throws Exception
+    {
+        final Field cut = TrainControlUI.class.getDeclaredField("cutLocomotive");
+        cut.setAccessible(true);
+
+        final Field cutFacing = TrainControlUI.class.getDeclaredField("cutFacing");
+        cutFacing.setAccessible(true);
+
+        final Method gesture = TrainControlUI.class.getDeclaredMethod(
+            "locomotiveGestureOnDiagram", int.class, boolean.class);
+
+        gesture.setAccessible(true);
+
+        final Object[] handled = new Object[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                cut.set(ui, train);
+                cutFacing.set(ui, null);
+
+                ui.setHoveredDiagramTile(target.getPage(), target.getX(), target.getY());
+
+                handled[0] = gesture.invoke(ui, KeyEvent.VK_V, true);
+            }
+            catch (Exception refused)
+            {
+                handled[0] = refused;
+            }
+        });
+
+        return handled[0];
+    }
+
+    /**
+     * Both questions name the square the way the diagram does, not by the copy the paste happened to pick.
      *
      * A split square's Points are named with a heading - "BottomMainB (eastbound)" - and both questions asked here
      * are ABOUT direction, so the name put an answer in the question, and an arbitrary one: the Point is picked before

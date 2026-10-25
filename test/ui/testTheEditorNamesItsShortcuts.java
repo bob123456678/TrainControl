@@ -61,7 +61,7 @@ public class testTheEditorNamesItsShortcuts
 
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = init(null, true, false, false, true);
+        model = support.TestStation.simulatedInDebug();
 
         SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
 
@@ -71,12 +71,12 @@ public class testTheEditorNamesItsShortcuts
 
         if (session == null || session.getStore().getActiveConfiguration() == null)
         {
-            throw new SkipException("no autonomy configuration, so there is no editor menu to open");
+            throw new AssertionError("no autonomy configuration, so there is no editor menu to open");
         }
 
         page = model.getLayout(PAGE);
 
-        if (page == null) throw new SkipException("no page " + PAGE);
+        if (page == null) throw new AssertionError("no page " + PAGE);
 
         final LayoutEditor[] built = new LayoutEditor[1];
 
@@ -171,7 +171,9 @@ public class testTheEditorNamesItsShortcuts
 
             if (takesAClick) asked.add(c);
 
-            if (takesAClick && c.isFocusable())
+            // A control that never asks for the keyboard on a click (the notices' X, which Tab reaches) keeps the window's
+            if (takesAClick && c.isFocusable()
+                && !(c instanceof javax.swing.JComponent && !((javax.swing.JComponent) c).isRequestFocusEnabled()))
             {
                 out.add(c.getClass().getSimpleName() + (c instanceof javax.swing.AbstractButton
                     ? " '" + ((javax.swing.AbstractButton) c).getText() + "'" : ""));
@@ -201,7 +203,7 @@ public class testTheEditorNamesItsShortcuts
             if (!PAGE.equals(name) && session.getGraph() != null && session.getGraph().getPages().contains(name)) to = name;
         }
 
-        if (to == null) throw new SkipException("the frozen railway has no second page in autonomy");
+        if (to == null) throw new AssertionError("the frozen railway has no second page in autonomy");
 
         final String toPage = to;
 
@@ -639,7 +641,7 @@ public class testTheEditorNamesItsShortcuts
                 && on.getCursor().getType() != java.awt.Cursor.CROSSHAIR_CURSOR, "the pointer is still a crosshair after"
                 + " picking stopped");
 
-            // AND OUTLIVES A REDRAW OF THE DIAGRAM (RSA30-C5): an edit, Undo, the grid's key and a switch of mode each
+            // AND OUTLIVES A REDRAW OF THE DIAGRAM: an edit, Undo, the grid's key and a switch of mode each
             // build a new diagram panel, and picking goes on through them - so the new panel shows it too
             SwingUtilities.invokeAndWait(() -> track[0].setSelectMode(true));
 
@@ -674,7 +676,7 @@ public class testTheEditorNamesItsShortcuts
             assertTrue(redrawn.getContainer().getCursor().getType() != java.awt.Cursor.CROSSHAIR_CURSOR, "the pointer is"
                 + " still a crosshair after picking stopped, on a redrawn diagram");
 
-            // BUT NOT IN AUTONOMY SETUP, where no drag picks (RSA31-C4): picking carried there shows the arrow, and the
+            // BUT NOT IN AUTONOMY SETUP, where no drag picks: picking carried there shows the arrow, and the
             // crosshair again on the way back, where it is still on
             SwingUtilities.invokeAndWait(() -> track[0].setSelectMode(true));
 
@@ -719,7 +721,7 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * Escape that drops a tile picked up to move takes its red outline with it (RSA32-C1).
+     * Escape that drops a tile picked up to move takes its red outline with it.
      *
      * The red outline is the track editor's "this tile is picked up".  Escape let go of the tile but put back only the
      * palette's borders, so the outline - and the pointer's blue one - stayed on the diagram until the pointer entered
@@ -828,7 +830,7 @@ public class testTheEditorNamesItsShortcuts
                     + " of it, a square still wears the picked-up tile's red outline (RSA32-C1)");
             }
 
-            // BUT THE SQUARE UNDER THE POINTER KEEPS ITS BLUE ONE (RSA33-C1): it says which square the pointer is over
+            // BUT THE SQUARE UNDER THE POINTER KEEPS ITS BLUE ONE: it says which square the pointer is over
             assertTrue(wearsTheHover(track[0], hovered), "after Escape, the square the pointer is still over lost its hover"
                 + " outline - it shows nothing until the pointer enters another square (RSA33-C1)");
         }
@@ -839,7 +841,7 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * A square the pointer is over shows its hover outline while squares are picked (RSA33-C1).
+     * A square the pointer is over shows its hover outline while squares are picked.
      *
      * Every hover over a selection redrew the picked squares and the grip, and that redraw put every square back first -
      * the one under the pointer included - so while anything was picked no square ever showed the pointer was over it.
@@ -916,7 +918,7 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * Escape pressed while a box is being drawn drops the box too (RSA33-C2).
+     * Escape pressed while a box is being drawn drops the box too.
      *
      * Escape is how a half-made gesture is dropped (behaviour.md 6a, FR-065), and the track editor's list left out the box
      * being drawn: with picking on, the release then picked the box with picking off; with nothing else held, Escape closed
@@ -1021,7 +1023,7 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * The hover outline is not drawn back on a square the pointer has left (RSA34-C1).
+     * The hover outline is not drawn back on a square the pointer has left.
      *
      * Round 53 drew it back on the keys' square, which is never forgotten - so once the pointer had left the diagram for
      * its margin, the next redraw of the selection put the blue back on the last square entered.  It goes back now only on
@@ -1107,7 +1109,7 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * Escape between a box's press and its release stops the click that follows too (RSA34-C2).
+     * Escape between a box's press and its release stops the click that follows too.
      *
      * A press that never left its square ends in a click, and Escape dropped the box but not the click: with Shift the
      * square was picked; with Control+M's picking the tile was picked up to move.
@@ -1184,7 +1186,7 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * A box being drawn keeps its outline when the pointer enters a square (RSA34-C4).
+     * A box being drawn keeps its outline when the pointer enters a square.
      *
      * The hover's pass put every square back and redrew the selection only when squares were picked, so the box being
      * drawn - nothing picked yet - lost its outline on each square entered, until the next drag event.
@@ -1237,7 +1239,7 @@ public class testTheEditorNamesItsShortcuts
 
             picked.setAccessible(true);
 
-            String outlined = "hl:" + ((java.awt.Color) picked.get(null)).getRGB() + ":";
+            String outlined = highlightKey(((java.awt.Color) picked.get(null)).getRGB());
 
             for (int x = 1; x <= 5; x++)
             {
@@ -1370,7 +1372,7 @@ public class testTheEditorNamesItsShortcuts
 
         for (String name : model.getLayoutList()) if (other == null && !PAGE.equals(name)) other = name;
 
-        if (other == null) throw new SkipException("the snapshot has one page only");
+        if (other == null) throw new AssertionError("the snapshot has one page only");
 
         final String to = other;
 
@@ -1540,7 +1542,7 @@ public class testTheEditorNamesItsShortcuts
             if (branching == null && PAGE.equals(tile.getPage()) && session.getRoutes(tile).size() > 1) branching = tile;
         }
 
-        if (branching == null) throw new SkipException("no square with more than one route on " + PAGE);
+        if (branching == null) throw new AssertionError("no square with more than one route on " + PAGE);
 
         final TileKey square = branching;
 
@@ -1571,7 +1573,7 @@ public class testTheEditorNamesItsShortcuts
 
     /**
      * The square under the pointer keeps its hover outline through Escape though it wore another outline, and a square the
-     * pointer left for the palette does not get it back (RSA35-C1).
+     * pointer left for the palette does not get it back.
      *
      * Round 54 drew the blue back on the square that last WORE it - and a square under the pointer can be wearing another
      * outline (a tile picked up, picked, the grip), so it got none; while the square the pointer left for the palette,
@@ -1599,7 +1601,7 @@ public class testTheEditorNamesItsShortcuts
         {
             settleTheEditor();
 
-            final String blue = "hl:" + java.awt.Color.BLUE.getRGB() + ":";
+            final String blue = highlightKey(editorColour("COMPONENT_BORDER_HOVERED_COLOR").getRGB());
 
             // A TILE PICKED UP UNDER THE POINTER, then Escape
             final org.traincontrol.gui.LayoutLabel tile = aTrackSquare(track[0]);
@@ -1656,8 +1658,7 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * A box Escape dropped after its drag left the square it started on leaves that square's next click alone
-     * (RSA35-C2).
+     * A box Escape dropped after its drag left the square it started on leaves that square's next click alone.
      *
      * A press whose drag leaves its square ends in no click, so the click round 54 set aside to ignore waited for whatever
      * click came to that square next - a middle click that turns the tile, a right-click's menu.  It is forgotten at a
@@ -1920,10 +1921,10 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * Control+K keeps the picked squares, the selection's grip and the pointer's blue outline (RSA44-C2).
+     * Control+K keeps the picked squares, the selection's grip and the pointer's blue outline.
      *
      * The grid's own redraw - Control+K and the Grid box, through `setShowGrid` - took every outline off until the pointer
-     * entered another square, the sibling of the undo's redraw RSA43-C4 fixed.  Turned off and on again, so the setting
+     * entered another square, the sibling of the undo's redraw.  Turned off and on again, so the setting
      * ends as it began.
      *
      * MUTATION: end `setShowGrid` without drawing the outlines back, and this fails.
@@ -2192,7 +2193,7 @@ public class testTheEditorNamesItsShortcuts
     /**
      * The pointer gone off the squares from what covers one - an accessory's address label, or a menu that closed over the
      * tools column - takes its blue outline with it too; so does a square entered and left in one go, and a square left for
-     * the grid's padding (RSA46-C1, -C2; Adam, 2026-10-06: *"Do fix C1 and C2"*).
+     * the grid's padding (Adam, 2026-10-06: *"Do fix C1, C2"*).
      *
      * An address label passed a square its entry but not its exit; a menu takes the square's exit while the pointer is
      * still over the square, and nothing asked again when it closed.  The Grid box then drew the blue back on a square
@@ -2335,7 +2336,7 @@ public class testTheEditorNamesItsShortcuts
             theGridBoxTwice(track[0], "after the pointer came out from under a menu (RSA46-C1)");
 
             // ONTO A SQUARE AND STRAIGHT OFF THE SQUARES, IN ONE GO, nothing picked: the pass that takes the outline off
-            // lands after the one the hover queued (RSA46-C2)
+            // lands after the one the hover queued
             final org.traincontrol.gui.LayoutLabel quick = squareNextTo(gridOf(track[0]).getContainer(), menued);
 
             SwingUtilities.invokeAndWait(() ->
@@ -2354,7 +2355,7 @@ public class testTheEditorNamesItsShortcuts
             assertFalse(anyWearsTheHover(track[0]), "a square entered and then left for off the squares in one go kept its"
                 + " outline: the pass that takes it off ran before the hover's (RSA46-C2)");
 
-            // ONTO THE GRID'S PADDING, beside the last column: no square (RSA46-C2)
+            // ONTO THE GRID'S PADDING, beside the last column: no square
             javax.swing.JPanel now = gridOf(track[0]).getContainer();
 
             org.traincontrol.gui.LayoutLabel spacer = null, beside = null;
@@ -2409,7 +2410,7 @@ public class testTheEditorNamesItsShortcuts
      * The pointer is found off the squares however it gets there, and only from this window: out from under the
      * right-click menu once it closes, back into the window over a part nothing listens on, or past the edge of the view
      * from a square cut by it - and not by an arrival in a dialog over the square.  The watch is on the toolkit while the
-     * window is, and gone with it (RSA47-C1 to -C3).
+     * window is, and gone with it.
      *
      * A menu takes the square's exit where the pointer still is, and while it was open the watch left the outline alone;
      * nothing asked again when it closed.  The window's own entry, which AWT hands on only where nothing listens, was
@@ -2484,7 +2485,7 @@ public class testTheEditorNamesItsShortcuts
 
             assertTrue(wearsTheHover(track[0], p), "precondition: a menu over the square took its outline off");
 
-            // WHERE THE POINTER IS, said through the editor's own reader rather than read off the screen (RSA48-C3): the
+            // WHERE THE POINTER IS, said through the editor's own reader rather than read off the screen: the
             // real pointer is wherever it was left, and this window is off the screen
             final java.lang.reflect.Field pointerOver = LayoutEditor.class.getDeclaredField("pointerOver");
 
@@ -2497,7 +2498,7 @@ public class testTheEditorNamesItsShortcuts
             final java.awt.Point overP = SwingUtilities.convertPoint(p, p.getWidth() / 2, p.getHeight() / 2,
                 panelOfSquares);
 
-            // (RSA48-C3) CLOSED WITH THE POINTER OVER THE SQUARE: the outline stays
+            // CLOSED WITH THE POINTER OVER THE SQUARE: the outline stays
             pointerOver.set(track[0], (java.util.function.Function<javax.swing.JPanel, java.awt.Point>) on -> overP);
 
             closeTheMenu(menu[0]);
@@ -2727,7 +2728,7 @@ public class testTheEditorNamesItsShortcuts
 
     /**
      * The click's tooltip line is for the visit: a page switch keeps it gone, so do the editor's own reopenings, and the
-     * next opening through the main window says it again (RSA44-C1, -C4).
+     * next opening through the main window says it again.
      *
      * Adam, on MT-697: *"Stop showing it after the user has clicked any square"*, and then *"have that tooltip tracking
      * state reset after the editor is closed"*.  A finding or a notice on another page, and a link's other end, change page
@@ -2738,7 +2739,7 @@ public class testTheEditorNamesItsShortcuts
      * The class's own editor is put away for this, so the main window opens its own, and built again after.
      *
      * Each of the three doors is gone through twice: from a window a square was clicked in, where the line stays gone, and
-     * from one nothing was clicked in, where it is still said (RSA45-C2).
+     * from one nothing was clicked in, where it is still said.
      *
      * MUTATION: let a page switch, or any of the editor's three own reopenings, forget the click or hand on one nobody
      * made; or keep it in the main window past the editor's closing - and this fails.
@@ -2755,7 +2756,7 @@ public class testTheEditorNamesItsShortcuts
         SwingUtilities.invokeAndWait(() -> first.dispose());
 
         // THE MAIN WINDOW AS AFTER EVERY EDITOR HAS CLOSED: other claims of this class build editors of their own and put
-        // them away with a bare dispose, which does not give Edit back - and a door asked while Edit is grey answers with a
+        // them away with a bare dispose, which does not give Edit back - and a door asked while Edit is gray answers with a
         // dialog that waits on the screen
         SwingUtilities.invokeAndWait(() -> ui.setEditLayoutEnabled(true));
 
@@ -2826,8 +2827,8 @@ public class testTheEditorNamesItsShortcuts
                 + " the visit is the same (MT-699 step 3)");
 
             // THE EDITOR'S OWN REOPENINGS - a finding on another page, a guard notice on another page, a link's other end:
-            // each closes the window and has another opened, and the user closed nothing - the same visit (RSA44-C1), by
-            // every door (RSA45-C2)
+            // each closes the window and has another opened, and the user closed nothing - the same visit, by
+            // every door
             String[][] clicked = {{"finding", PAGE}, {"notice", OTHER_PAGE}, {"link", PAGE}};
 
             LayoutEditor from = a;
@@ -2848,7 +2849,7 @@ public class testTheEditorNamesItsShortcuts
                 from = to;
             }
 
-            // CLOSED BY THE USER - the X - and opened again through the same main window: said again (RSA44-C4)
+            // CLOSED BY THE USER - the X - and opened again through the same main window: said again
             closeAsTheUserDoes(from);
 
             assertFalse(from.isDisplayable(), "precondition: the X did not close the editor");
@@ -2864,7 +2865,7 @@ public class testTheEditorNamesItsShortcuts
             assertTrue(says(c, fresh, says), "an editor opened after the user closed the one a square was clicked in does"
                 + " not say what a click does - Adam: \"have that tooltip tracking state reset after the editor is closed\"");
 
-            // AND NO DOOR HANDS ON A CLICK NOBODY MADE (RSA45-C2): from a window nothing was clicked in, each door's window
+            // AND NO DOOR HANDS ON A CLICK NOBODY MADE: from a window nothing was clicked in, each door's window
             // still says what a click does
             String[][] unclicked = {{"finding", OTHER_PAGE}, {"notice", PAGE}, {"link", OTHER_PAGE}};
 
@@ -2938,6 +2939,13 @@ public class testTheEditorNamesItsShortcuts
         final String was = TrainControlUI.getPrefs().get(key, null);
         final boolean onTopWas = ui.isAlwaysOnTop();
 
+        final java.lang.reflect.Field itemField = TrainControlUI.class.getDeclaredField("windowAlwaysOnTopMenuItem");
+
+        itemField.setAccessible(true);
+
+        final javax.swing.JCheckBoxMenuItem item = (javax.swing.JCheckBoxMenuItem) itemField.get(ui);
+        final boolean tickedWas = item.isSelected();
+
         final LayoutEditor first = editor;
 
         SwingUtilities.invokeAndWait(() -> first.dispose());
@@ -2947,8 +2955,11 @@ public class testTheEditorNamesItsShortcuts
 
         try
         {
-            // THE OPERATOR WANTS IT ON TOP
-            TrainControlUI.getPrefs().putBoolean(key, true);
+            // THE OPERATOR WANTS IT ON TOP, said as he says it: the Window menu's tick, which the closing paths read back into
+            // the setting.  Set, never toggled: the run's copy of his settings for this folder may have it either way.
+            SwingUtilities.invokeAndWait(() -> { if (!item.isSelected()) item.doClick(); });
+
+            assertTrue(TrainControlUI.getPrefs().getBoolean(key, false), "precondition: ticking the menu item did not set the setting");
 
             SwingUtilities.invokeAndWait(() -> ui.setAlwaysOnTop(true));
 
@@ -2987,9 +2998,13 @@ public class testTheEditorNamesItsShortcuts
             // CLOSED BY THE USER: the setting back
             closeAsTheUserDoes(a);
 
-            settleTheEditor();
-
-            assertTrue(ui.isAlwaysOnTop(), "after the editor closed, the main window is not put back on top as the"
+            // WAITED FOR, NOT SLEPT FOR (2026-10-19).  The restore is posted work: `dispose` asks the main window to apply the setting
+            // from `editorWindowClosed`, and the Window menu's handler applies it again from the posted `autonomyEditorClosed`.  A fixed
+            // settle is a guess about when a loaded event thread gets to it, and this claim failed once in a laned battery (it passed 29
+            // of 29 alone).  The condition that ends the wait is the thing being claimed, on the event thread that owns the flag, with a
+            // deadline long enough that only a restore that never comes fails it.  The two claims above are the opposite kind - the
+            // flag must STAY down - and cannot be waited for; they read it after the settle, as before.
+            assertTrue(alwaysOnTopWithin(true, 30000), "after the editor closed, the main window is not put back on top as the"
                 + " operator's setting asks");
         }
         finally
@@ -3002,6 +3017,8 @@ public class testTheEditorNamesItsShortcuts
             }
 
             settleTheEditor();
+
+            SwingUtilities.invokeAndWait(() -> item.setSelected(tickedWas));
 
             if (was == null) TrainControlUI.getPrefs().remove(key);
             else TrainControlUI.getPrefs().put(key, was);
@@ -3093,7 +3110,7 @@ public class testTheEditorNamesItsShortcuts
      */
     private static LayoutEditor openedBy(Runnable opening, LayoutEditor not) throws Exception
     {
-        // NOT WITH EDIT GREY: the main window answers that with a dialog that waits on the screen
+        // NOT WITH EDIT GRAY: the main window answers that with a dialog that waits on the screen
         java.lang.reflect.Field button = TrainControlUI.class.getDeclaredField("editLayoutButton");
 
         button.setAccessible(true);
@@ -3253,10 +3270,10 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * An undo's redraw keeps the selection's grip and the pointer's blue outline (RSA43-C4).
+     * An undo's redraw keeps the selection's grip and the pointer's blue outline.
      *
      * The redraw a Control+Z asks for ended with a pass that took every outline down and put back only the picked squares'
-     * yellow: the grip that moves the group and the square under the pointer went grey until the pointer next moved,
+     * yellow: the grip that moves the group and the square under the pointer went gray until the pointer next moved,
      * though both still acted - after five rounds (52 to 56) of making exactly these outlines right through every gesture,
      * and Control+Z is pressed with the mouse still.
      *
@@ -3397,7 +3414,7 @@ public class testTheEditorNamesItsShortcuts
 
     /**
      * A box Escape dropped and released on its own square after the pointer moved with the button down leaves that square's
-     * next click alone (RSA36-C1).
+     * next click alone.
      *
      * AWT makes no click of a press and release with any movement between - out and back, or a pixel within the square -
      * so the click set aside to ignore waited for that square's next click, of any button: a right-click's menu, a middle
@@ -3519,8 +3536,7 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * Only the release's own left click is ignored: any other click that comes first acts, and takes the record with it
-     * (RSA36-C1).
+     * Only the release's own left click is ignored: any other click that comes first acts, and takes the record with it.
      *
      * A press and release on one square with the pointer held still make a left click, and that is the click set aside.
      * A click that is not it - another button - is not that click, so it acts, and the record goes: the left click after
@@ -3634,7 +3650,7 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * A palette piece held across a page switch leaves the palette's red outline behind with it (RSA35-C3).
+     * A palette piece held across a page switch leaves the palette's red outline behind with it.
      *
      * The switch drops the tool, and the palette went on showing the piece armed - the editor's sign for what the next
      * click does - so the next click on track picked that track up instead of placing anything.
@@ -3650,7 +3666,7 @@ public class testTheEditorNamesItsShortcuts
 
         for (String name : model.getLayoutList()) if (other == null && !PAGE.equals(name)) other = name;
 
-        if (other == null) throw new SkipException("the snapshot has one page only");
+        if (other == null) throw new AssertionError("the snapshot has one page only");
 
         final String to = other;
 
@@ -3666,7 +3682,7 @@ public class testTheEditorNamesItsShortcuts
         {
             settleTheEditor();
 
-            final String red = "hl:" + java.awt.Color.RED.getRGB() + ":";
+            final String red = highlightKey(editorColour("NEW_COMPONENT_BORDER_ACTIVE_COLOR").getRGB());
 
             final org.traincontrol.gui.LayoutLabel piece = aPalettePiece(track[0]);
 
@@ -3738,7 +3754,7 @@ public class testTheEditorNamesItsShortcuts
 
         // OUT FROM UNDER THE REAL POINTER (round 80).  The editor windows these claims open are shown on the screen, and a
         // pointer resting where one appears tells the window the pointer has arrived over it - over a part nothing listens
-        // on, that is the pointer off the squares (RSA47-C1), and it took a simulated hover's outline off part way through
+        // on, that is the pointer off the squares, and it took a simulated hover's outline off part way through
         // a claim.  Off the screen, no real pointer reaches them.
         SwingUtilities.invokeAndWait(() ->
         {
@@ -3751,6 +3767,32 @@ public class testTheEditorNamesItsShortcuts
         Thread.sleep(500);
 
         for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+    }
+
+    /**
+     * Whether the main window's always-on-top flag reaches the value asked for within a deadline, asked on the event thread.
+     *
+     * Polled rather than slept for: the flag is set by posted work, and how long that work waits depends on how busy the machine is.
+     *
+     * @param wanted the value the flag should have
+     * @param millis the longest to wait for it
+     * @return whether the flag had the value when last read
+     * @throws Exception from the event thread
+     */
+    private static boolean alwaysOnTopWithin(boolean wanted, long millis) throws Exception
+    {
+        final boolean[] now = new boolean[1];
+
+        long until = System.currentTimeMillis() + millis;
+
+        while (true)
+        {
+            SwingUtilities.invokeAndWait(() -> now[0] = ui.isAlwaysOnTop());
+
+            if (now[0] == wanted || System.currentTimeMillis() >= until) return now[0] == wanted;
+
+            Thread.sleep(50);
+        }
     }
 
     /** Closes a right-click menu as Swing tells the editor it has closed, and lets what that posts run. */
@@ -3770,7 +3812,19 @@ public class testTheEditorNamesItsShortcuts
         for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
     }
 
-    /** Whether a square wears the hover outline (blue), read from the editor's own record of what each square wears. */
+    /** The color the track editor draws one of its borders in, asked of the editor's own constant. */
+    private static java.awt.Color editorColour(String constant)
+    {
+        return support.ProgramConstants.colour(LayoutEditor.class, constant);
+    }
+
+    /** How the editor's record of a square's border begins when the border is a highlight of this color. */
+    private static String highlightKey(int rgb)
+    {
+        return support.ProgramConstants.get(LayoutEditor.class, "HIGHLIGHT_KEY_PREFIX") + Integer.toString(rgb) + ":";
+    }
+
+    /** Whether a square wears the hover outline (`COMPONENT_BORDER_HOVERED_COLOR`), read from the editor's own record of what each square wears. */
     private static boolean wearsTheHover(LayoutEditor editor, javax.swing.JLabel square) throws ReflectiveOperationException
     {
         java.lang.reflect.Field stateField = LayoutEditor.class.getDeclaredField("borderState");
@@ -3779,16 +3833,16 @@ public class testTheEditorNamesItsShortcuts
 
         Object key = ((java.util.Map<?, ?>) stateField.get(editor)).get(square);
 
-        return key != null && key.toString().startsWith("hl:" + java.awt.Color.BLUE.getRGB() + ":");
+        return key != null && key.toString().startsWith(highlightKey(editorColour("COMPONENT_BORDER_HOVERED_COLOR").getRGB()));
     }
 
-    /** Whether a square wears the track editor's picked-up outline (`COMPONENT_BORDER_COPIED_COLOR`, red). */
+    /** Whether a square wears the track editor's picked-up outline (`COMPONENT_BORDER_COPIED_COLOR`). */
     private static boolean wearsTheOutline(javax.swing.JLabel square)
     {
         javax.swing.border.Border border = square.getBorder();
 
         return border instanceof javax.swing.border.LineBorder
-            && java.awt.Color.RED.equals(((javax.swing.border.LineBorder) border).getLineColor());
+            && editorColour("COMPONENT_BORDER_COPIED_COLOR").equals(((javax.swing.border.LineBorder) border).getLineColor());
     }
 
     /**
@@ -3892,8 +3946,6 @@ public class testTheEditorNamesItsShortcuts
             "the Track Lengths toggle does not say Control+G: " + tip[0]);
     }
 
-    // ---------------------------------------------------------------------------------------------
-
     private static TileKey aStationOnThePage()
     {
         for (TileKey tile : session.getStore().getNamedTiles())
@@ -3905,7 +3957,7 @@ public class testTheEditorNamesItsShortcuts
             }
         }
 
-        throw new SkipException("no station on " + PAGE);
+        throw new AssertionError("no station on " + PAGE);
     }
 
     private static void collect(javax.swing.MenuElement[] elements, List<javax.swing.JMenuItem> into)
@@ -3929,11 +3981,11 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * The exit brings a minimised track editor back before it asks about its unsaved work (the popups sweep, on Adam's
-     * MT-703 note): the question is owned by the editor, and a minimised window hides what it owns - so closing
+     * The exit brings a minimized track editor back before it asks about its unsaved work (the popups sweep, on Adam's
+     * MT-703 note): the question is owned by the editor, and a minimized window hides what it owns - so closing
      * TrainControl with the editor in the taskbar asked Save, Discard or Cancel where nobody could see it, and the exit
      * waited on it.  The editor has a turned square unsaved, so the exit does ask, and the editor is read while the
-     * question shows (RSA53-C2: an editor with nothing unsaved asked nothing, and the claim saw only that the exit
+     * question shows (an editor with nothing unsaved asked nothing, and the claim saw only that the exit
      * restored it).
      *
      * MUTATION: ask without bringing the editor back, and this fails.

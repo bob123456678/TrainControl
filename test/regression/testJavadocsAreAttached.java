@@ -11,13 +11,13 @@ import org.testng.annotations.Test;
 /**
  * A javadoc block immediately followed by another javadoc block documents nothing.
  *
- * TD-14, from the three-day history review. In Java only the LAST doc comment before a declaration
+ * In Java only the LAST doc comment before a declaration
  * attaches, so when an insertion lands between a javadoc and the thing it was written for, the older
  * one silently becomes prose in the middle of a file - and the member it described is left with no
  * documentation at all.
  *
  * Nothing warns about it, and it has happened repeatedly here. The three the review names are the ones
- * that matter, all three reattached (the first two on 2026-09-23, DCN-C12, which found the header saying so
+ * that matter, all three reattached (the first two on 2026-09-23, when the header said so
  * before it was true): `Layout`'s `locomotiveInBlock` parameters sat above `refreshProtectingSignal`, which
  * commands real signals; `AutonomyCompanionStore`'s "a tile that moves leaves its setup behind"
  * rationale sat above `forgetTiles`, leaving `moveTiles` undocumented; and `Util`'s entire explanation
@@ -43,24 +43,42 @@ public class testJavadocsAreAttached
      * What was there when this test was written. Lower it whenever some are fixed; never raise it.
      */
     // 95 -> 94 on 2026-08-30: removing the double-curve check took its javadoc with it (MT-223).
-    // 96 -> 95 on 2026-08-30: LE-C7 re-attached TileSelection.bounds()'s javadoc, which had been
+    // 96 -> 95 on 2026-08-30: re-attached TileSelection.bounds()'s javadoc, which had been
     // orphaned above handle().  Lowered so the improvement cannot be given back - which is what makes
     // this a ratchet rather than a ceiling, and why its per-file list had to lose that entry too.
-    // 92 -> 91 on 2026-09-19: SVB-C4 found three javadocs orphaned by insertions in this round and one of
+    // 92 -> 91 on 2026-09-19: three javadocs were found orphaned by insertions in this round and one of
     // them, TrainControlUI's caption block, was reattached to the method it was written for rather than just
     // moved out of the way.  Lowered so the repair cannot be given back.
-    // 91 -> 90 on 2026-09-19: GUX-C6, the fourth javadoc orphaned in RouteEditorFrame, reattached to
+    // 91 -> 90 on 2026-09-19: the fourth javadoc orphaned in RouteEditorFrame, reattached to
     // conditionCount, which is the method it was written for.
-    // 90 -> 88 on 2026-09-23: DCN-C12, the two this header names - Layout.locomotiveInBlock and
+    // 90 -> 88 on 2026-09-23: the two this header names - Layout.locomotiveInBlock and
     // AutonomyCompanionStore.moveTiles - reattached to the members they were written for.
-    // 88 -> 87 on 2026-09-24: TDY4-C1, AutonomyBuilder's placementCopy javadoc - left above homeCopy's when that
+    // 88 -> 87 on 2026-09-24: AutonomyBuilder's placementCopy javadoc - left above homeCopy's when that
     // was inserted - moved onto placementCopy.
-    // 87 -> 86 on 2026-09-25: RLU-C6, AutonomyViewerPanel's stray "Debug builds only" javadoc - left stacked on
-    // activateTheConfigurationNamed's when that method was inserted - deleted (RLU2-C1, RLU3-C6).
-    private static final int ALLOWED = 86;
+    // 87 -> 86 on 2026-09-25: AutonomyViewerPanel's stray "Debug builds only" javadoc - left stacked on
+    // activateTheConfigurationNamed's when that method was inserted - deleted.
+    // 86 -> 68 on 2026-10-19: FR-136 Phase 2, AutonomyEditorPanel's 18 stacked javadocs - the first of each pair
+    // describing a member that had its own - deleted or moved onto the member they were written for, in the comment trim.
+    // 68 -> 66 on 2026-10-19: FR-136 Phase 2, the comment trim of Layout.java.  Its two stacked javadocs - clearLocomotiveExcept's
+    // (left above isSendableDestination) and fireCallback's (left above announceRunFinished) - moved onto the members they describe.
+    // 66 -> 57 on 2026-10-19: FR-136 Phase 2, the comment trim of AutonomySession.java.  Its nine stacked javadocs moved onto the
+    // members they describe (importLegacy, barredArrivals, reversibleTiles, pointNamesFor, pointNameForTile, signalsThatAreGone,
+    // isTurnAround, mandatoryTurnTiles, setPointProperty).
+    // 57 -> 46 on 2026-10-19: FR-136 Phase 2, the comment trim of TrainControlUI.java.  Eleven stacked or stale javadocs merged into
+    // the member they described or deleted (getAutonomySession, updateStationLabels and setAutoTabEnabled re-attached).
+    // 46 -> 45 on 2026-10-19: FR-136 Phase 3 review, the stacked "Duplicates or renames" javadoc left above combineLinkedPages moved onto
+    // LayoutFileActions.duplicateOrRenameCurrentLayout, the member it describes.
+    // 45 -> 35 on 2026-10-19: FR-136 Phase 2, the comment trim of the next six files.  Ten stacked or stale javadocs in
+    // AutonomyCompanionStore, TileAnnotation, RouteEditorFrame and MarklinControlStation merged into the member they describe
+    // or deleted, which takes those four files out of the list below.
+    // 35 -> 33 on 2026-10-19: FR-136, the comment trim of TileGraph and LayoutGrid; each had two javadocs stacked on one
+    // declaration (PORTAL_ROUTE, LIVE), now one, which takes both files out of the list below.
+    // 33 -> 26 on 2026-10-20: FR-136, the comment pass on GraphReducer and AutonomyBuilder put their seven stacked
+    // javadocs onto the members they describe, which takes both files out of the list below.
+    private static final int ALLOWED = 16;
 
     /**
-     * WHICH files carry the orphans, not just how many (VAL-C8).
+     * WHICH files carry the orphans, not just how many.
      *
      * A bare total can absorb a repair and a new orphan landing in a different file in the same round:
      * fix one, break another, and 96 stays 96 while this stays green. Pinning the per-file breakdown
@@ -68,21 +86,7 @@ public class testJavadocsAreAttached
      */
     private static final String[] ORPHANS_BY_FILE = {
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
-            + "automation" + File.separator + "Layout.java (2)",
-        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
-            + "automationui" + File.separator + "AutonomyBuilder.java (5)",
-        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "automationui" + File.separator + "AutonomyChecks.java (2)",
-        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
-            + "automationui" + File.separator + "AutonomyCompanionStore.java (3)",
-        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
-            + "automationui" + File.separator + "AutonomySession.java (9)",
-        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
-            + "automationui" + File.separator + "GraphReducer.java (2)",
-        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
-            + "automationui" + File.separator + "TileAnnotation.java (3)",
-        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
-            + "automationui" + File.separator + "TileGraph.java (1)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "base" + File.separator + "CommandRow.java (1)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
@@ -90,25 +94,15 @@ public class testJavadocsAreAttached
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "gui" + File.separator + "AutoLocomotiveStatus.java (2)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
-            + "gui" + File.separator + "AutonomyEditorPanel.java (18)",
-        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "gui" + File.separator + "AutonomyViewerPanel.java (2)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "gui" + File.separator + "DiagramTileRegistry.java (1)",
-        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
-            + "gui" + File.separator + "LayoutEditor.java (3)",
-        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
-            + "gui" + File.separator + "LayoutGrid.java (1)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "gui" + File.separator + "LayoutLabel.java (1)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "gui" + File.separator + "LayoutRightclickAutonomyMenu.java (2)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
-            + "gui" + File.separator + "RouteEditorFrame.java (3)",
-        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
-            + "gui" + File.separator + "TrainControlUI.java (23)",
-        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
-            + "marklin" + File.separator + "MarklinControlStation.java (1)",
+            + "gui" + File.separator + "TrainControlUI.java (4)",
     };
 
     @Test
@@ -148,7 +142,7 @@ public class testJavadocsAreAttached
             found + " orphaned javadocs remain, fewer than the " + ALLOWED + " recorded. Lower "
             + "ALLOWED to " + found + " so the improvement is kept.");
 
-        // The total alone can absorb a repair and a new orphan in the same round (VAL-C8): fix one
+        // The total alone can absorb a repair and a new orphan in the same round: fix one
         // file, break a different one, and 96 stays 96. Pin WHICH files carry them too, so a swap
         // fails and names both.
         List<String> sortedWorst = new ArrayList<>(worst);

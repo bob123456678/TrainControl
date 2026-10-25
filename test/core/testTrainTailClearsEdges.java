@@ -15,6 +15,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import support.SourceOf;
 
 /**
  * When an edge behind a train may be handed back, at several train lengths.
@@ -36,7 +37,7 @@ import java.util.List;
  * consults per command to refuse a route that would set an accessory on an active path. With
  * atomicRoutes on - Adam's configuration - the lock is held for the whole run by design, so being
  * reported clear is the ONLY thing that drops an edge's protection. An early clear lets a route throw
- * a TURNOUT on track the train is still standing on, which is AU-A2 by another door (WK-B1).
+ * a TURNOUT on track the train is still standing on.
  *
  * So there is one rule, and "cannot be known" means "assume the train is still there". The single
  * escape that is not a guess about this train is a path with no measured lengths anywhere, where
@@ -71,7 +72,7 @@ public class testTrainTailClearsEdges
         // had it in that order on 2026-08-28 and had been opening his layout on every battery.
         sandbox = support.LayoutSandbox.open();
 
-        model = init(null, true, false, false, true);
+        model = support.TestStation.simulatedInDebug();
         model.stop();
     }
 
@@ -139,7 +140,7 @@ public class testTrainTailClearsEdges
     }
 
     /**
-     * Unmeasured track HOLDS, and that is the point (WK-B1).
+     * Unmeasured track HOLDS, and that is the point.
      *
      * The commit before this one released here, on the reasoning that nothing better could be known
      * over an unmeasured stretch. Nothing better can be known - which is exactly why the answer has to
@@ -168,7 +169,7 @@ public class testTrainTailClearsEdges
                 + "railway, and every run on it");
         }
 
-        // VAL-A1: THE UNMEASURED FIRST EDGE, which is what the running total got wrong.
+        // THE UNMEASURED FIRST EDGE, which is what the running total got wrong.
         //
         // The escape used to read "how much has the head covered so far", which is zero at the start
         // of every run - so on edges [0, 100, 100] with a 250 train, edge 0 was handed back on the
@@ -198,16 +199,14 @@ public class testTrainTailClearsEdges
     @Test
     public void testTheClearingLoopAsksTheRule() throws Exception
     {
-        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/automation/Layout.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
+        String source = SourceOf.declaration("private boolean executePathInternal(");
 
         assertTrue(source.contains("tailHasProvablyPassed(pathIsUnmeasured, waiting[1],"),
             "the clearing loop no longer asks tailHasProvablyPassed with the path total and the "
             + "distance behind - so the rule is tested here and something else decides what actually "
             + "happens on the railway");
 
-        // THE WHOLE CALL, not the argument on its own (TCX-A3, 2026-09-01).
+        // THE WHOLE CALL, not the argument on its own (2026-09-01).
         //
         // This asked whether `loc.getTrainLength()` appears anywhere in Layout.java at all.  It did,
         // here, and on 2026-09-01 it started appearing somewhere else as well: the reversal-room rule
@@ -218,7 +217,7 @@ public class testTrainTailClearsEdges
         // A whole-file `contains` is only a test while the string is unique to the thing it is about,
         // and nothing warns when it stops being.  Anchored on the call now, the way the assertion above
         // it already was.
-        // WHITESPACE-INSENSITIVE, because the file's line endings are git's to choose (TSX-C9).
+        // WHITESPACE-INSENSITIVE, because the file's line endings are git's to choose.
         //
         // This pinned a literal newline and the wrapped line's thirty-two spaces.  The repository is
         // checked out with `core.autocrlf=true` and nothing under `src/` is pinned in `.gitattributes`,
@@ -227,7 +226,7 @@ public class testTrainTailClearsEdges
         // this morning.  Re-wrapping the call in the editor would do it too.
         String call = source.replaceAll("\\s+", " ");
 
-        // THE LENGTH AS THE JOURNEY WAS DISPATCHED (RSA-A1): read once, so a length written while the train runs
+        // THE LENGTH AS THE JOURNEY WAS DISPATCHED: read once, so a length written while the train runs
         // cannot shorten what it holds - and read from the locomotive, which is the half this asks.
         assertTrue(call.contains("tailHasProvablyPassed(pathIsUnmeasured, waiting[1], lengthAtDispatch)")
             && call.contains("final Integer lengthAtDispatch = loc.getTrainLength();"),
@@ -237,7 +236,7 @@ public class testTrainTailClearsEdges
     }
 
     /**
-     * ONE rule decides both, because both are safety-relevant (WK-B1).
+     * ONE rule decides both, because both are safety-relevant.
      *
      * Reporting an edge clear is what stops `heldReason` refusing a route that would set an accessory
      * on it; unlocking hands the rails to another train. A second, looser rule for the first of those
@@ -248,9 +247,7 @@ public class testTrainTailClearsEdges
     @Test
     public void testTheClearAndTheUnlockAskTheSameQuestion() throws Exception
     {
-        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/automation/Layout.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
+        String source = SourceOf.declaration("private boolean executePathInternal(");
 
         int clears = source.indexOf("if (cleared != null) cleared.add(path.get(waiting[0]));");
         // setUnoccupied, not setLockedEdgeUnoccupied (OB-164).
@@ -272,15 +269,9 @@ public class testTrainTailClearsEdges
         // COUNTED, not positioned.
         //
         // The line above pins where one statement sits. A mutation that ADDS a second write to
-        // clearedEdges in front of the gate - which is exactly the shape WK-B1 describes - leaves that
+        // clearedEdges in front of the gate - which is exactly the shape to guard against - leaves that
         // statement where it was and passes. Exactly one edge is ever added to that set.
-        int adds = 0;
-
-        for (int at = source.indexOf(".add(path.get(waiting[0]))"); at >= 0;
-            at = source.indexOf(".add(path.get(waiting[0]))", at + 1))
-        {
-            adds++;
-        }
+        int adds = SourceOf.occurrences(".add(path.get(waiting[0]))");
 
         assertEquals(adds, 1,
             "expected exactly one place where an edge is reported clear, and found " + adds
@@ -288,25 +279,19 @@ public class testTrainTailClearsEdges
             + "whole of WK-B1");
 
         // Exactly one gate, not two. Two is how the looser rule got back in last time.
-        int gates = 0;
-
-        for (int at = source.indexOf("tailHasProvablyPassed("); at >= 0;
-            at = source.indexOf("tailHasProvablyPassed(", at + 1))
-        {
-            gates++;
-        }
+        int gates = SourceOf.occurrences("tailHasProvablyPassed(");
 
         assertEquals(gates, 2,
             "expected the rule's definition and exactly one call, and found " + gates
             + " - a second predicate deciding one half of this is what WK-B1 was about");
 
-        assertFalse(source.contains("tailMayStillBeOn"),
+        assertFalse(SourceOf.allCode().contains("tailMayStillBeOn"),
             "the looser companion rule is back. It may not decide whether an edge is reported clear: "
             + "with atomicRoutes on that is the only thing protecting the turnouts under a train");
     }
 
     /**
-     * TST-A3: the gate is proved present, positioned and unique above - by source alone - but nothing
+     * The gate is proved present, positioned and unique above - by source alone - but nothing
      * until this test RUNS the clearing loop and watches what it actually does to a locked edge.
      *
      * A mutation that keeps `if (!tailHasProvablyPassed(...))` exactly as written and empties its body
@@ -379,12 +364,12 @@ public class testTrainTailClearsEdges
     }
 
     /**
-     * An edge a non-atomic run gave back on the way is not given back again when the run ends (GUI2-C2).
+     * An edge a non-atomic run gave back on the way is not given back again when the run ends.
      *
      * `unlockPath` skips the edges a run recorded in `releasedEarly` as its tail cleared them, and gives back the rest.
      * Every other claim on that rule seeds the record by reflection, so deleting the one line that writes it left the
      * suite green - and the unlock then released each early-given-back edge a second time, taking away the claim of
-     * whichever train had locked it since (GUI-A1).  This runs a real path, non-atomic and unmeasured so each edge is
+     * whichever train had locked it since.  This runs a real path, non-atomic and unmeasured so each edge is
      * given back as soon as it is passed, and has another train claim the first edge at the route's end, just before
      * the unlock: the unlock must leave that claim alone.
      *
@@ -464,7 +449,7 @@ public class testTrainTailClearsEdges
     }
 
     /**
-     * An edge is handed back at the sensor where the train's tail has passed it, not one sensor later (GS-B3; Adam,
+     * An edge is handed back at the sensor where the train's tail has passed it, not one sensor later (Adam,
      * 2026-10-10, asked: into 3.0.0).
      *
      * When the sensor at the end of edge i answers, the head has entered that sensor's square, so edge i-1 is behind it by
@@ -518,7 +503,7 @@ public class testTrainTailClearsEdges
     }
 
     /**
-     * But a sensor's own square is not counted behind the head until the next sensor answers (GS-B3): a sensor answers
+     * But a sensor's own square is not counted behind the head until the next sensor answers: a sensor answers
      * when the head ENTERS its square, so when C's answers all that is known to be behind the head is B-C up to C's square.
      * A release must never be early - the fix was put to Adam as releasing track "earlier, never unsafe", and he chose
      * it (2026-10-10).
@@ -563,7 +548,7 @@ public class testTrainTailClearsEdges
     }
 
     /**
-     * And never before the tail has passed it (GS-B3): not while any of the train still lies on the edge, and not on the
+     * And never before the tail has passed it: not while any of the train still lies on the edge, and not on the
      * strength of a Point no sensor saw the head reach.
      *
      * A-B-C-D, ten units an edge.  An eleven-unit train at C still has a unit on A-B, and A-B is held to the end.  With no
@@ -657,7 +642,7 @@ public class testTrainTailClearsEdges
     }
 
     /**
-     * The same, with or without a sensor at C (GS-B3).  Without one the run passes C without waiting, as it passes every
+     * The same, with or without a sensor at C.  Without one the run passes C without waiting, as it passes every
      * Point with no sensor - which a hand-written configuration may have - so nothing says where the head is between B
      * and D.
      *
@@ -673,7 +658,7 @@ public class testTrainTailClearsEdges
 
     /**
      * The same, with C's own square recorded on B-C as the builder records an edge's places - the steps, then the square
-     * arrived at (GS-B3).
+     * arrived at.
      *
      * @param squareAtC the length of C's square, the last place of B-C; 0 for no places, as a hand-written edge has
      * @return whether the first edge's accessory was still held, once per leg
@@ -747,7 +732,7 @@ public class testTrainTailClearsEdges
     }
 
     /**
-     * A train's length changed while it runs does not shorten what the run holds (RSA-A1).  With Atomic Routes off, a run
+     * A train's length changed while it runs does not shorten what the run holds.  With Atomic Routes off, a run
      * hands the track behind a train back once the head is the train's length past it, and the locomotive's menu could
      * set that length to 0 ("not set") mid-run: from the next sensor every edge the head had finished was given back with
      * the train still lying on it, and a road across its switch read clear for another train.  The run reads the length
@@ -771,7 +756,7 @@ public class testTrainTailClearsEdges
 
     /**
      * Atomic Routes is read by every running train at every sensor and written by the atomic-routes gate on the event
-     * thread while trains run, so it is volatile, as the other flags a driving thread reads are (RSA-C5).
+     * thread while trains run, so it is volatile, as the other flags a driving thread reads are.
      *
      * MUTATION: take `volatile` off `Layout.atomicRoutes`, and this fails.
      *
@@ -786,8 +771,8 @@ public class testTrainTailClearsEdges
     }
 
     /**
-     * The rest of the state a driving thread reads while the event thread or the network writes it is volatile too
-     * (GST-C1): whether the layout is valid, a locomotive's speed, direction, length and reversibility, and a sensor's
+     * The rest of the state a driving thread reads while the event thread or the network writes it is volatile too:
+     * whether the layout is valid, a locomotive's speed, direction, length and reversibility, and a sensor's
      * state.  Without it a thread may go on reading what it cached - a train driving on a layout declared invalid, a
      * length changed on the event thread unseen by the train it describes.
      *
@@ -812,7 +797,7 @@ public class testTrainTailClearsEdges
     }
 
     /**
-     * The two doors that add to the graph take the layout's monitor, as the doors that take from it do (GST-C5):
+     * The two doors that add to the graph take the layout's monitor, as the doors that take from it do:
      * `createPoint` and `createEdge` beside `deletePoint`, `deleteEdge`, `renamePoint` and `copyEdge`.  Today they are
      * called while a layout is being built, before anything else holds it; the monitor is what keeps that true of a
      * caller added later.
@@ -949,9 +934,9 @@ public class testTrainTailClearsEdges
     }
 
     /**
-     * A sensor two Points in a row share is no proof the head has reached the second (RSA61-A1).  Its wait for the second
-     * Point begins with the sensor already reading occupied for the first, and returns at once - so since GS-B3 credited
-     * the head at the second sensor's square, the track behind was handed back with the whole train still on it: unlocked
+     * A sensor two Points in a row share is no proof the head has reached the second.  Its wait for the second
+     * Point begins with the sensor already reading occupied for the first, and returns at once - so crediting
+     * the head at the second sensor's square handed the track behind back with the whole train still on it: unlocked
      * on a non-atomic railway, its switch unprotected on an atomic one.  The reducer calls a shared sensor legitimate (a
      * station and its approach guards).  A 5-unit train on A-B-C-D, ten units an edge, C's square the last 3 of B-C, a
      * road over A-B's switch: with the head only entering B's square, A-B is held and the road refused - and with B and C

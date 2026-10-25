@@ -35,7 +35,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * same sentence the confirmation shows, from the same builder, which is the arrangement OB-194 put
  * there precisely so the two cannot drift. If the tooltip says it, the dialog says it.
  *
- * **And the guard is asserted as well as the greying.** The item disables itself when nothing is
+ * **And the guard is asserted as well as the graying.** The item disables itself when nothing is
  * measured, and `clearAllTileLengths` refuses again when it is pressed - `guard-and-affordance-same-
  * question`, and what OB-057 and OB-090 were both instances of. Only the first is reachable from here;
  * the second is asserted through the session door it calls.
@@ -69,7 +69,7 @@ public class testClearAllTrackLengths
 
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = init(null, true, false, false, true);
+        model = support.TestStation.simulatedInDebug();
 
         SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
 
@@ -79,12 +79,12 @@ public class testClearAllTrackLengths
 
         if (session == null || session.getStore().getActiveConfiguration() == null)
         {
-            throw new SkipException("no autonomy configuration, so there is no bulk tool to open");
+            throw new AssertionError("no autonomy configuration, so there is no bulk tool to open");
         }
 
         final LayoutDiagram page = model.getLayout(PAGE);
 
-        if (page == null) throw new SkipException("no page " + PAGE);
+        if (page == null) throw new AssertionError("no page " + PAGE);
 
         final LayoutEditor[] built = new LayoutEditor[1];
 
@@ -168,7 +168,7 @@ public class testClearAllTrackLengths
     }
 
     /**
-     * With nothing measured, the item is greyed and says why.
+     * With nothing measured, the item is grayed and says why.
      *
      * @throws Exception from the event thread
      */

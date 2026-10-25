@@ -56,7 +56,7 @@ public class testALocomotiveDoesNotEvictItself
         // railway (OB-111).
         sandbox = support.LayoutSandbox.open();
 
-        model = init(null, true, false, false, false);
+        model = support.TestStation.simulated();
         model.stop();
 
         model.newMM2Locomotive(NAME, ADDRESS);
@@ -135,8 +135,7 @@ public class testALocomotiveDoesNotEvictItself
     }
 
     /**
-     * Renaming a MEMBER of a multi-unit whose head stands on a station leaves the multi-unit on its station (BPV-A1, found
-     * by the validator of the 2.8.2 backports, 2026-09-25).
+     * Renaming a MEMBER of a multi-unit whose head stands on a station leaves the multi-unit on its station.
      *
      * The self-skip above covers a train renamed where it stands.  A member is not where it stands - its head is - and the
      * sweep the window runs after a rename asks the head whether it is compatible with the renamed member.  A head is
@@ -209,7 +208,7 @@ public class testALocomotiveDoesNotEvictItself
      * A saved layout in which a multi-unit's head and one of its members both stand is loaded with only one of them
      * standing: the member is part of the head's train, and one train cannot stand in two places.
      *
-     * The loader's half of BPV-A1's fix.  The edit doors now sweep only for a train that stands on the graph; the loader
+     * The loader's half of that fix.  The edit doors now sweep only for a train that stands on the graph; the loader
      * asks the sweep before each train is put down, so it must keep asking regardless - or both would load standing.
      *
      * MUTATION: have the loader ask the edit doors' sweep, which skips a train not yet down, and this fails.
@@ -273,8 +272,8 @@ public class testALocomotiveDoesNotEvictItself
      * that other train off the graph - as putting the multi-unit down again would.
      *
      * The member stands nowhere, but it is driven: every command to its head reaches its decoder, and now the other
-     * train's too.  BPV-A1's fix swept only for an edited train standing on the graph, so this edit took nothing off,
-     * and autonomy would run the other train as a train of its own while the multi-unit's commands moved it (RLA-B1).
+     * train's too.  The first fix swept only for an edited train standing on the graph, so this edit took nothing off,
+     * and autonomy would run the other train as a train of its own while the multi-unit's commands moved it.
      *
      * MUTATION: sweep only for the edited train where it stands, and this fails.
      *
@@ -338,7 +337,7 @@ public class testALocomotiveDoesNotEvictItself
 
     /**
      * The same for a Central Station multi-unit: a member given, in Change Name or Address, the address of another train
-     * that stands takes that train off the graph (RLA-B1, RLD2-C6).
+     * that stands takes that train off the graph.
      *
      * A Central Station multi-unit commands its members through the Central Station's own list, not TrainControl's
      * links, so the sweep finds it as a head by that list.  The claim beside this one links in TrainControl and cannot see

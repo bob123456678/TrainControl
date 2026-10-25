@@ -14,7 +14,6 @@ import javax.swing.Icon;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -120,7 +119,7 @@ public class testTheWashIsNoLongerThanTheTrain
 
         // showUI, because the subject is what is drawn.  debug on, so the simulated Central Station
         // echoes the accessory commands a path configuration waits for.
-        model = init(null, true, true, false, true);
+        model = support.TestStation.simulatedWithWindowInDebug();
         model.setNetworkCommState(false);
         simulatingWas = MarklinControlStation.DEBUG_SIMULATE_PACKETS;
 
@@ -158,7 +157,7 @@ public class testTheWashIsNoLongerThanTheTrain
         // The length was whatever Adam's database says, and the room rule is asked wherever a train
         // comes to rest - its destination and any square it turns at (behaviour.md 5a) - so a long train
         // on a railway this tightly measured is refused everywhere, the one real run below never starts,
-        // and every claim after it skips.  A class that skips everything reads as a green one.
+        // and every claim after it fails.
         //
         // This is the class's to set: each claim sets its own length, and `tearDownClass` puts the
         // real one back.
@@ -196,7 +195,7 @@ public class testTheWashIsNoLongerThanTheTrain
     {
         try
         {
-            // THE GLOBAL FIRST (VD13-T5).  It was restored third, after two statements that can throw -
+            // THE GLOBAL FIRST.  It was restored third, after two statements that can throw -
             // and a throw there leaves mock packets echoing for every later class in the JVM, which is
             // the leak this restore exists to prevent.
             MarklinControlStation.DEBUG_SIMULATE_PACKETS = simulatingWas;
@@ -379,7 +378,7 @@ public class testTheWashIsNoLongerThanTheTrain
     }
 
     /**
-     * A PATH LOCKED AHEAD OF THE TRAIN DOES NOT MOVE THE WASH (VD12-B1).
+     * A PATH LOCKED AHEAD OF THE TRAIN DOES NOT MOVE THE WASH.
      *
      * **The half of MT-438 that the guard's fix did not reach.**  `Layout.walkStandingTrains` now walks
      * one tail per train, anchored at the last milestone of a run.  This picture is computed separately,
@@ -401,7 +400,7 @@ public class testTheWashIsNoLongerThanTheTrain
      * **THE ARRANGEMENT IS SOUGHT, NOT HOPED FOR.**  Whether the old anchor picked a wrong Point
      * depended on `HashMap` order, so this tries candidate destinations until the anchor actually moves
      * off the square the train stands on, and only then makes its claim; if no path can move it, it says
-     * so and skips rather than passing on a fixture that cannot show it.  A LOCK rather than a run,
+     * so and fails rather than passing on a fixture that cannot show it.  A LOCK rather than a run,
      * because a lock reserves the whole road and returns with the train still standing - the state under
      * test, and deterministic.
      *
@@ -494,7 +493,7 @@ public class testTheWashIsNoLongerThanTheTrain
 
         if (locked == null)
         {
-            throw new SkipException("no path from " + standing.getName() + " reserves a Point that comes"
+            throw new AssertionError("no path from " + standing.getName() + " reserves a Point that comes"
                 + " before it in the graph's own iteration order, so the anchor this is about cannot be"
                 + " made to move on this railway - the claim would pass without asking anything");
         }
@@ -503,8 +502,7 @@ public class testTheWashIsNoLongerThanTheTrain
 
         try
         {
-            // MEASURED, NOT DERIVED, AND INSIDE THE BLOCK THAT PUTS THE RAILWAY BACK (VD13-T8,
-            // VD14-T2, VD14-T3).
+            // MEASURED, NOT DERIVED, AND INSIDE THE BLOCK THAT PUTS THE RAILWAY BACK.
             //
             // The loop above predicts which path moves the old anchor by comparing positions in the
             // graph's own point order, and that prediction is sound only while `getPoints()` and
@@ -517,7 +515,7 @@ public class testTheWashIsNoLongerThanTheTrain
             //
             // And inside the `try`, because the first draft of this line sat above it: a throw there
             // left the path locked and the train's record swept, for every claim after it.
-            // NULL-SAFE, BECAUSE EVERYTHING BELOW IS READ WHEN SOMETHING HAS GONE WRONG (VD15-T7).
+            // NULL-SAFE, BECAUSE EVERYTHING BELOW IS READ WHEN SOMETHING HAS GONE WRONG.
             // The anchor is exactly what a defect here makes null, and a NullPointerException thrown
             // while building the sentence would replace the diagnosis with a stack trace.
             Point held = layout.getLocomotiveLocation(train);
@@ -565,7 +563,7 @@ public class testTheWashIsNoLongerThanTheTrain
             // path's arrival, and `setLocomotive` clears the arrival side on a change of occupant, so
             // both halves have to be written back in this order.
             //
-            // NOTHING IS ASSERTED IN HERE (VD13-T3).  An assertion in a `finally` replaces the body's
+            // NOTHING IS ASSERTED IN HERE.  An assertion in a `finally` replaces the body's
             // own failure with its own, so a real defect arrives as "this claim left no wash" instead
             // of the diagnosis.  What the restore achieved is recorded and judged after the block.
             boolean back = layout.moveLocomotive(train.getName(), standing.getName(), false);
@@ -849,7 +847,7 @@ public class testTheWashIsNoLongerThanTheTrain
     /**
      * Whether this tile is drawing the mark that says a train is lying across it.
      *
-     * PAINTED AND LOOKED AT since MT-309.  The mark used to be the tile's ICON - a greyed copy of it -
+     * PAINTED AND LOOKED AT since MT-309.  The mark used to be the tile's ICON - a grayed copy of it -
      * so this could be an identity comparison against `lastIcon`.  It is a line drawn over the icon
      * now, which is nowhere in the object, and the only honest question left is what the square looks
      * like.  `support.Rendered.showsTheTrainMark` paints it and looks for the orange.

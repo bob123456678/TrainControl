@@ -1,9 +1,6 @@
 package regression;
 
 import java.lang.reflect.Field;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JMenu;
@@ -20,6 +17,7 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.SourceOf;
 
 /**
  * The Autonomy menu has a Documentation item, opening the guide the old tab's link opened (Adam, 2026-09-24).
@@ -28,7 +26,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * on the Load Autonomy Configuration tab, which goes (OB-254); the guide it opened, `TrainControlUI.README_URL`, is
  * about the autonomy the menu drives.
  *
- * MUTATION: leave the item out, or point it elsewhere, and the first claim fails; let the editor guard grey it with
+ * MUTATION: leave the item out, or point it elsewhere, and the first claim fails; let the editor guard gray it with
  * the rest, and the second does.
  *
  * @author Adam
@@ -50,7 +48,7 @@ public class testTheAutonomyMenuLinksItsDocumentation
         // BEFORE init, which opens whatever the layout preference names (OB-111).
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("single-switch"));
 
-        model = init(null, true, false, false, true);
+        model = support.TestStation.simulatedInDebug();
 
         SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
 
@@ -96,8 +94,7 @@ public class testTheAutonomyMenuLinksItsDocumentation
         assertTrue(documentation.isEnabled(), "the Autonomy menu's Documentation item is greyed");
 
         // THE SAME PLACE THE OLD TAB'S LINK OPENED - asked of the source, since pressing it opens a browser.
-        String code = new String(Files.readAllBytes(Paths.get("src/org/traincontrol/gui/AutonomyMenu.java")),
-            StandardCharsets.UTF_8);
+        String code = SourceOf.allCode();
 
         assertTrue(code.contains("Util.openUrl(TrainControlUI.README_URL)"), "the Documentation item does not open"
             + " TrainControlUI.README_URL, the guide the old tab's link opened");
@@ -109,9 +106,9 @@ public class testTheAutonomyMenuLinksItsDocumentation
     }
 
     /**
-     * With an editor open, everything else on the menu is greyed and Documentation is not.
+     * With an editor open, everything else on the menu is grayed and Documentation is not.
      *
-     * The rest is greyed because each of those items saves the setup or rebuilds the window under an editor that has
+     * The rest is grayed because each of those items saves the setup or rebuilds the window under an editor that has
      * not saved (MT-111).  Reading the guide does neither.
      *
      * @throws Exception from the event thread or reflection

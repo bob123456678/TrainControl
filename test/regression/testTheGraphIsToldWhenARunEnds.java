@@ -15,11 +15,12 @@ import org.traincontrol.automationui.AutonomyRefreshCallback;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.SourceOf;
 
 /**
  * When a run ends, whoever draws the railway is told - from every door, not from two of the four.
  *
- * W7-A2, and the sibling `OB-189` missed. A destination reversal is recorded by toggling the
+ * The sibling `OB-189` missed it. A destination reversal is recorded by toggling the
  * locomotive's name into `Layout.reversedOnArrival`, and the window writes it to the setup in
  * `TrainControlUI.reconcileFacingWhenIdle` - which refuses while anything is moving and is reached
  * only from `updateVisiblePoints()`. So a turn a run made is PENDING until a refresh happens with the
@@ -75,7 +76,7 @@ public class testTheGraphIsToldWhenARunEnds
         // dispatch could never reach its destination without it.  The flag adds logging and nothing
         // else; `testAutonomySimulationSanity`, which is the other class that drives a path to its
         // arrival, is built the same way.
-        model = init(null, true, false, false, true);
+        model = support.TestStation.simulatedInDebug();
 
         // And the network is explicitly down, which is the other half of that condition.
         model.setNetworkCommState(false);
@@ -169,7 +170,7 @@ public class testTheGraphIsToldWhenARunEnds
         // inside it asks whenever the queue gets round to it - which on a fixture that announces
         // hundreds of times in four seconds is often after the run has ended.  The test then reported
         // a property nothing in the program has: the announcements were all made mid-run and merely
-        // ARRIVED late.  That is exactly W7-A2's "self-heals on the next unrelated refresh", which is
+        // ARRIVED late.  That is exactly the "self-heals on the next unrelated refresh", which is
         // what makes the defect intermittent, and a test that accepts it cannot see the defect.
         //
         // A raw callback under its own name - `Layout` keys them, so this coexists with the window's
@@ -254,11 +255,11 @@ public class testTheGraphIsToldWhenARunEnds
      *
      * This is the door OB-189 was reported at, and the one `759aabda` left standing on an argument.
      * That commit deleted the explicit `updateVisiblePoints()` call from both hand-driven doors -
-     * `AutoLocomotiveStatus` and `LayoutRightclickAutonomyMenu` - in favour of `announceRunFinished()`
+     * `AutoLocomotiveStatus` and `LayoutRightclickAutonomyMenu` - in favor of `announceRunFinished()`
      * plus the window's single refresh callback, on the reasoning that *"a hand dispatch's
      * announceRunFinished() already fires with the thread count at zero and nothing running, so the
      * two pasted copies are deleted rather than joined by a third"*. That sentence was true. Nothing
-     * asserted it: the only behavioural test drove the TIMETABLE door, and the hand-driven door was
+     * asserted it: the only behavioral test drove the TIMETABLE door, and the hand-driven door was
      * covered by a source grep and the paragraph above.
      *
      * It is not a small assumption. `isRunning()` is three things ORed together - `running`, a
@@ -402,7 +403,7 @@ public class testTheGraphIsToldWhenARunEnds
      * `updateVisiblePoints()` - the only route to `reconcileFacingWhenIdle`. `attachAutonomyRefresh`
      * is the single registration the window makes on every layout it builds, so putting the call there
      * covers the timetable, Return Home and both hand-driven doors at once, rather than adding a
-     * fourth copy of the same line at a fourth caller (W7-C2: the per-caller shape is what left the
+     * fourth copy of the same line at a fourth caller (the per-caller shape is what left the
      * timetable out).
      *
      * The comments are stripped before the check, because the paragraph explaining why the call is
@@ -416,62 +417,12 @@ public class testTheGraphIsToldWhenARunEnds
     @Test
     public void testTheWindowsOneRefreshTellsTheGraph() throws Exception
     {
-        String ui = codeOnly(new String(java.nio.file.Files.readAllBytes(
-            java.nio.file.Paths.get("src/org/traincontrol/gui/TrainControlUI.java")),
-            java.nio.charset.StandardCharsets.UTF_8));
-
-        String attach = bodyOf(ui, "void attachAutonomyRefresh(Layout layout)");
-
-        assertNotEquals(attach, "",
-            "attachAutonomyRefresh is not declared that way any more, so this checked nothing");
+        String attach = SourceOf.withoutComments(SourceOf.declaration("void attachAutonomyRefresh(Layout layout)"));
 
         assertTrue(attach.contains("updateVisiblePoints()"),
             "the window's one refresh callback does not tell the graph.  updateVisiblePoints() is the"
             + " only route to reconcileFacingWhenIdle, which is the only thing that writes a reversal"
             + " a run made into the setup - so a timetable or Return Home run ends with the diagram"
             + " still drawing every turned train the way it set off (W7-A2)");
-    }
-
-    /** The declaration's body, brace-matched. */
-    private static String bodyOf(String source, String declaration)
-    {
-        // Mixed line endings in this file are not part of the rule being checked
-        source = source.replace("\r\n", "\n");
-        declaration = declaration.replace("\r\n", "\n");
-
-        int at = source.indexOf(declaration);
-
-        if (at < 0) return "";
-
-        int open = source.indexOf('{', at + declaration.length());
-
-        if (open < 0) return "";
-
-        int depth = 0;
-
-        for (int i = open; i < source.length(); i++)
-        {
-            char c = source.charAt(i);
-
-            if (c == '{') depth++;
-            else if (c == '}' && --depth == 0) return source.substring(at, i + 1);
-        }
-
-        return "";
-    }
-
-    /** The source with its line comments removed, so a comment cannot satisfy an assertion. */
-    private static String codeOnly(String source)
-    {
-        StringBuilder out = new StringBuilder();
-
-        for (String line : source.split("\n", -1))
-        {
-            int slashes = line.indexOf("//");
-
-            out.append(slashes >= 0 ? line.substring(0, slashes) : line).append("\n");
-        }
-
-        return out.toString();
     }
 }

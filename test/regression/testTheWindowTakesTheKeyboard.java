@@ -2,6 +2,7 @@ package regression;
 
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
+import support.SourceOf;
 
 /**
  * A keystroke right after start-up lands on the keyboard and changes the active key (OB-168, OB-170).
@@ -82,7 +83,7 @@ public class testTheWindowTakesTheKeyboard
         {
             up.sandbox = support.LayoutSandbox.open();
 
-            up.model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+            up.model = support.TestStation.simulated();
 
             final org.traincontrol.marklin.MarklinControlStation model = up.model;
             final org.traincontrol.gui.TrainControlUI[] made = new org.traincontrol.gui.TrainControlUI[1];
@@ -132,7 +133,7 @@ public class testTheWindowTakesTheKeyboard
         }
         catch (Exception | Error failed)
         {
-            // WHATEVER FAILED, THE PREFERENCE GOES BACK (TSX-B8).
+            // WHATEVER FAILED, THE PREFERENCE GOES BACK.
             //
             // Every caller wraps the RETURNED holder in a try/finally, and the holder is
             // what does not exist when this throws.  `init` binds a UDP port and a window
@@ -448,7 +449,7 @@ public class testTheWindowTakesTheKeyboard
 
             settle();
 
-            // SKIPPED RATHER THAN FAILED when this desktop will not move the keyboard (VC2-C6): the claim
+            // SKIPPED RATHER THAN FAILED when this desktop will not move the keyboard: the claim
             // below is about the window, and a focus that never moved says nothing about it either way.
             if (up.ui.getMostRecentFocusOwner() != elsewhere)
             {
@@ -558,7 +559,7 @@ public class testTheWindowTakesTheKeyboard
 
         Started up = start();
 
-        // WHETHER IT WAS STORED (TSX-B3) - the note at `testDiagramExport` says why.
+        // WHETHER IT WAS STORED - the note at `testDiagramExport` says why.
         boolean onTopStored = org.traincontrol.gui.TrainControlUI.getPrefs()
             .get(org.traincontrol.gui.TrainControlUI.ONTOP_SETTING_PREF, null) != null;
 
@@ -636,16 +637,16 @@ public class testTheWindowTakesTheKeyboard
     }
 
     /**
-     * And an iconified window is un-iconified, without un-maximising a maximised one.
+     * And an iconified window is un-iconified, without un-maximizing a maximized one.
      *
      * A window in the iconified state cannot be activated at all, so the raise would be a no-op on the
-     * one occasion somebody most needs it - the application already running, minimised, and asked for
-     * again.  The maximised bits live in the same field, which is why the ICONIFIED bit is cleared
+     * one occasion somebody most needs it - the application already running, minimized, and asked for
+     * again.  The maximized bits live in the same field, which is why the ICONIFIED bit is cleared
      * rather than the state replaced.
      *
-     * MUTATION this catches: removing the un-iconify entirely.  The maximise half would catch
+     * MUTATION this catches: removing the un-iconify entirely.  The maximize half would catch
      * `setExtendedState(java.awt.Frame.NORMAL)`, and on THIS window it cannot run at all - the frame
-     * is built `setResizable(false)` and refuses the maximised bits - so it is guarded by what the
+     * is built `setResizable(false)` and refuses the maximized bits - so it is guarded by what the
      * fixture actually managed to arrange rather than left to pass on a state nobody set.
      */
     @Test(timeOut = 300000)
@@ -672,7 +673,7 @@ public class testTheWindowTakesTheKeyboard
             // WHAT THE FIXTURE ACTUALLY GOT, before anything is asserted about what changed it.
             //
             // This window is built `setResizable(false)`, and a non-resizable frame refuses the
-            // maximised bits - so the second assertion below is about a state this fixture may not be
+            // maximized bits - so the second assertion below is about a state this fixture may not be
             // able to reach.  Read here rather than assumed, and the assertion is made conditional on
             // it: an assertion whose precondition silently failed is worse than no assertion, because
             // it reads as coverage.
@@ -810,7 +811,7 @@ public class testTheWindowTakesTheKeyboard
     /**
      * `display()` does not take the topmost flag off after showing the window (OB-170, seventh pass).
      *
-     * **The one invariant here that no behavioural test can hold.**  `setViewListener` makes the frame
+     * **The one invariant here that no behavioral test can hold.**  `setViewListener` makes the frame
      * topmost before it is shown, and says why - *"start with true to ensure keyboard events register
      * properly"*.  That is not a preference, it is the mechanism: a topmost window is the one case
      * Windows lets a process raise itself without already owning the foreground.  `display()` used to
@@ -824,7 +825,7 @@ public class testTheWindowTakesTheKeyboard
      *
      * **Measured: putting the restore back passes all five tests in this class.**  Whether Windows
      * grants the foreground is not something this process can read back, so there is nothing for a
-     * behavioural test to assert.  The invariant is pinned where it lives instead - the same device
+     * behavioral test to assert.  The invariant is pinned where it lives instead - the same device
      * `testTheWindowAttachesItsRefreshCallback` uses, and for the same reason.
      *
      * The restore has not gone away: `takeTheKeyboard`'s raise holds the flag for four hundred
@@ -833,27 +834,15 @@ public class testTheWindowTakesTheKeyboard
     @Test
     public void testDisplayDoesNotUndoTheTopmostTrickItDependsOn() throws Exception
     {
-        java.io.File source = new java.io.File("src/org/traincontrol/gui/TrainControlUI.java");
+        // The method, comments blanked: the paragraph above explains at length why the restore must not be in
+        // `display()`, and a search of the raw text would find `setAlwaysOnTop` in that explanation.
+        String display = SourceOf.withoutComments(SourceOf.declaration("public void display()"));
 
-        assertTrue(source.exists(), "cannot find " + source.getAbsolutePath()
-            + " - this test reads the window's source, so it has to run from the project root");
+        int shows = display.indexOf("setVisible(true);");
 
-        String body = withoutComments(new String(java.nio.file.Files.readAllBytes(source.toPath()),
-            java.nio.charset.StandardCharsets.UTF_8));
+        assertTrue(shows > 0, "display() no longer shows the window");
 
-        int opens = body.indexOf("public void display()");
-
-        assertTrue(opens > 0, "display() has been renamed or removed");
-
-        int shows = body.indexOf("setVisible(true);", opens);
-
-        assertTrue(shows > opens, "display() no longer shows the window");
-
-        int closes = body.indexOf("\n    }", shows);
-
-        assertTrue(closes > shows, "cannot find the end of display()");
-
-        String afterTheShow = body.substring(shows, closes);
+        String afterTheShow = display.substring(shows);
 
         assertFalse(afterTheShow.contains("setAlwaysOnTop"),
             "display() takes the always-on-top flag off after showing the window.  That flag is how "
@@ -865,40 +854,7 @@ public class testTheWindowTakesTheKeyboard
     }
 
     /**
-     * Java source with its comments removed, so a check reads the code and not the prose about it.
-     *
-     * The paragraph above this test explains at length why the restore must not be in `display()`, and
-     * a search of the raw text would find `setAlwaysOnTop` in that explanation.
-     */
-    private static String withoutComments(String source)
-    {
-        StringBuilder out = new StringBuilder();
-
-        boolean inLine = false, inBlock = false;
-
-        for (int i = 0; i < source.length(); i++)
-        {
-            char c = source.charAt(i);
-            char next = i + 1 < source.length() ? source.charAt(i + 1) : ' ';
-
-            if (inLine)
-            {
-                if (c == '\n') { inLine = false; out.append(c); }
-            }
-            else if (inBlock)
-            {
-                if (c == '*' && next == '/') { inBlock = false; i++; }
-            }
-            else if (c == '/' && next == '/') inLine = true;
-            else if (c == '/' && next == '*') inBlock = true;
-            else out.append(c);
-        }
-
-        return out.toString();
-    }
-
-    /**
-     * The menu bar is greyed out for as long as the connecting notice is up.
+     * The menu bar is grayed out for as long as the connecting notice is up.
      *
      * Adam: **"just gray out the menu bar before it loads, too."**  The notice is drawn on the window
      * itself now rather than in a splash of its own (OB-170), and the menu bar is part of the window
@@ -932,7 +888,7 @@ public class testTheWindowTakesTheKeyboard
 
         try
         {
-            // Inside the try, so nothing can leave the preference behind (TSX-B8).
+            // Inside the try, so nothing can leave the preference behind.
             sandbox = support.LayoutSandbox.open();
 
             javax.swing.SwingUtilities.invokeAndWait(() -> made[0] = new org.traincontrol.gui.TrainControlUI());
@@ -959,7 +915,7 @@ public class testTheWindowTakesTheKeyboard
 
             assertFalse(wereOn.isEmpty(), "every menu was already off, so greying them proves nothing");
 
-            // GREYED.
+            // GRAYED.
             call(ui, "greyTheMenus");
 
             for (int i = 0; i < bar.getMenuCount(); i++)
@@ -1024,7 +980,7 @@ public class testTheWindowTakesTheKeyboard
     }
 
     /**
-     * The floor: at least one of this class's claims was actually asked (OP2-C8, corrected by FXV-B3).
+     * The floor: at least one of this class's claims was actually asked.
      *
      * **A class where every claim skips reports green while asking nothing**, which is the SOP's "green
      * is not no failures" in its quietest form: each skip message is honest about its own case, and the

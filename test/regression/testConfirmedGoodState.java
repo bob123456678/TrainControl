@@ -8,7 +8,6 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomySession;
@@ -81,7 +80,7 @@ public class testConfirmedGoodState
     {
         capturing = Boolean.getBoolean("baseline.capture");
 
-        model = init(null, true, false, false, false);
+        model = support.TestStation.simulated();
     }
 
     /**
@@ -96,8 +95,8 @@ public class testConfirmedGoodState
         AutonomySession session = openBaseline();
 
         // An ASSERTION, not a skip.  A reduction that collapses to nothing is the loudest regression a
-        // baseline exists to catch, and as a skip it was the one failure this test could not report
-        // (TD-4 in the history review). Reaching here at all means a baseline was found, so there is
+        // baseline exists to catch, and as a skip it was the one failure this test could not report.
+        // Reaching here at all means a baseline was found, so there is
         // something to reduce.
         assertNotNull(session.getReducer(),
             "the blessed baseline reduced to NOTHING - no graph at all came out of a layout that was "
@@ -126,7 +125,7 @@ public class testConfirmedGoodState
      * And the configuration it builds is byte for byte what was blessed.
      *
      * This is the file autonomy actually runs from, so a change here is a change to the railway's
-     * behaviour whatever the diagram looks like.
+     * behavior whatever the diagram looks like.
      */
     @Test
     public void testTheBuiltConfigurationIsWhatWasBlessed() throws Exception
@@ -164,7 +163,7 @@ public class testConfirmedGoodState
 
         if (!from.isDirectory())
         {
-            throw new SkipException(capturing
+            throw new AssertionError(capturing
                 ? "no test/test_layout to capture from"
                 : "no blessed baseline yet - capture one with -Dbaseline.capture=true once the "
                 + "railway is in a state you have confirmed is right");
@@ -248,7 +247,7 @@ public class testConfirmedGoodState
     {
         if (!file.isFile())
         {
-            throw new SkipException("no blessed " + file.getName() + " yet - capture one with "
+            throw new AssertionError("no blessed " + file.getName() + " yet - capture one with "
                 + "-Dbaseline.capture=true once the railway is in a state you have confirmed");
         }
 
@@ -262,7 +261,7 @@ public class testConfirmedGoodState
         // baseline: it is the boy who cried wolf, in the one test whose whole value is that it speaks
         // only when something really moved.
         //
-        // Same answer as `FBR-C8`/`RA-A1` gave for `testEditorSurfaceRules`, and for the same reason -
+        // Same answer as for `testEditorSurfaceRules`, and for the same reason -
         // a source read that behaves differently depending on how git wrote the file is not a guard.
         // `test/baseline/**` is pinned to LF in `.gitattributes` as well; both, because either alone
         // leaves a way for this to come back.

@@ -44,7 +44,7 @@ import org.traincontrol.base.LayoutDiagramComponent.componentType;
  * train has arrived and its path has been released.
  *
  * This tests the BUILD, which is where the whole feature lives. The refusal itself is the existing lock
- * behaviour, covered by the path tests that have always covered it.
+ * behavior, covered by the path tests that have always covered it.
  *
  * @author Adam
  */
@@ -237,7 +237,7 @@ public class testStationBlockedByAnotherPoint
      *
      * *"do allow restrictions on non-stations, and let's not clear them when the type changes (essentially reverting
      * the behavior).  I am not sure why that clearing went in - a simple info notice on restrictions (in the list for any
-     * type of station or non station) would be better."*  AMS-B2 took the restriction away on the reasoning that nothing
+     * type of station or non station) would be better."*  The restriction was taken away on the reasoning that nothing
      * could take it off a square that is not a station.  The item is under Advanced Parameters on every sensor square,
      * and every restriction is now listed as a notice; so it stays, and so do the lock edges the build makes of it - a
      * route into the square still waits on the watched one.
@@ -333,8 +333,7 @@ public class testStationBlockedByAnotherPoint
     }
 
     /**
-     * A restriction watching a square that is not on the graph is left out of the build, not written as null
-     * (AMG-B1).
+     * A restriction watching a square that is not on the graph is left out of the build, not written as null.
      *
      * The lock-edge half walks emitted edges, so a watched square off the graph is simply not found - the build's own
      * comment says the restriction "quietly stops applying rather than taking the station out of service".  The
@@ -376,8 +375,6 @@ public class testStationBlockedByAnotherPoint
             }
         }
     }
-
-    // ------------------------------------------------------------------------------------------
 
     private void open() throws IOException
     {
@@ -518,7 +515,7 @@ public class testStationBlockedByAnotherPoint
      * holds the points themselves now, so a name that resolves to nothing never becomes a restriction
      * at all - it is reported once, where the file is read, and then does not exist.
      *
-     * The behaviour a user sees is the same, and that is deliberate: refusing the path, or the
+     * The behavior a user sees is the same, and that is deliberate: refusing the path, or the
      * configuration, would take a station out of service because the point it was paired with was
      * renamed. What changed is that the restriction is no longer carried around in a state where it
      * cannot mean anything.
@@ -600,8 +597,6 @@ public class testStationBlockedByAnotherPoint
             + "is free, so this makes it a station nothing can ever be sent to");
     }
 
-    // ------------------------------------------------------------------------------------------
-
     /**
      * The train leaving the watched point may still be sent to the station that point holds back.
      *
@@ -661,7 +656,7 @@ public class testStationBlockedByAnotherPoint
     /**
      * The exemption asks the BLOCK, not the square.
      *
-     * The yard is reachable from two sides, modelled as two Points sharing one s88 - and a train
+     * The yard is reachable from two sides, modeled as two Points sharing one s88 - and a train
      * standing on the twin is standing on the same piece of track. getBlockLocomotive is what makes
      * that true, and it is the subtle half of the rule: testACopyOfTheWatchedSquareCountsAsOccupied
      * pins it for the train being held back, and this pins it for the train being let out.
@@ -726,7 +721,7 @@ public class testStationBlockedByAnotherPoint
     /**
      * The reason names the watched square, rather than saying the station is busy.
      *
-     * DR-B3. FR-017 built a window to tell the operator why a locomotive has nowhere to go, and this
+     * FR-017 built a window to tell the operator why a locomotive has nowhere to go, and this
      * reason could never appear in it.
      *
      * `firstClearOrWhyNot` reads the reason out of `Layout.lastError`, which is static and written by
@@ -781,7 +776,7 @@ public class testStationBlockedByAnotherPoint
      * A run from A to B, with a yard that B is held back by.
      *
      * The yard is two Points sharing a block, which is how a square reachable from two sides is
-     * modelled - so the block half of the rule has something to be asked about.
+     * modeled - so the block half of the rule has something to be asked about.
      *
      * runLocomotives sets the auto-running flag and starts nothing here: it iterates the run list, and
      * this layout has none.
@@ -931,7 +926,7 @@ public class testStationBlockedByAnotherPoint
     @org.testng.annotations.BeforeClass
     public static void setUpModel() throws Exception
     {
-        model = MarklinControlStation.init(null, true, false, false, true);
+        model = support.TestStation.simulatedInDebug();
 
         for (int address : new int[]{47441, 47442, 47443, 47444})
         {
@@ -1013,7 +1008,7 @@ public class testStationBlockedByAnotherPoint
     }
 
     /**
-     * The dialog that sets Unavailable While Occupied says what the rule now shuts (ADU2-C6): routes to the square and
+     * The dialog that sets Unavailable While Occupied says what the rule now shuts: routes to the square and
      * through it, for every door that sends a train - not "Autonomy will not send a train to" it.  Since OB-295 a train
      * standing on a watched square closes routes through a square trains only pass, and a hand send is refused by the
      * same rule.

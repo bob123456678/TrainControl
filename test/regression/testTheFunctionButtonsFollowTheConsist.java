@@ -25,7 +25,7 @@ import org.traincontrol.marklin.MarklinLocomotive;
  * MM2 head with an MFX member drives f6 through the member, and `core.testMultiUnitMembership
  * .testAConsistCanDriveEveryFunctionItsMembersHave` covers it.  The window went on lighting buttons from
  * `getNumF()`, the HEAD's own count, so that function worked from a keyboard shortcut, a route or
- * autonomy and was greyed on screen - and the F20-F31 tab was removed outright.  The guard and the
+ * autonomy and was grayed on screen - and the F20-F31 tab was removed outright.  The guard and the
  * affordance asking different questions is `OB-057`/`OB-090` arriving in a third place.
  *
  * **Driven through `repaintLoc`**, which is what the window calls when the active locomotive changes,
@@ -64,7 +64,7 @@ public class testTheFunctionButtonsFollowTheConsist
 
         sandbox = support.LayoutSandbox.open();
 
-        model = MarklinControlStation.init(null, true, false, false, false);
+        model = support.TestStation.simulated();
 
         javax.swing.SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
 
@@ -166,8 +166,7 @@ public class testTheFunctionButtonsFollowTheConsist
      * @return a description, ready to append
      */
     /**
-     * The last locomotive asked for is the one the window draws, however quickly the two requests came
-     * (TDR-B5, FTN-B1).
+     * The last locomotive asked for is the one the window draws, however quickly the two requests came.
      *
      * The guard this pins against returned without doing anything while an earlier render was unfinished, so a
      * request made in that window was dropped and the window went on showing the first locomotive's function
@@ -177,7 +176,7 @@ public class testTheFunctionButtonsFollowTheConsist
      * locomotive that is not the one shown - so when that painting runs it leaves the panel alone - and the
      * mixed consist is asked for while the render is certainly in flight.  Nothing but the deferred re-run in
      * `renderFinished` then draws the mixed consist.  The first version of this held the renderer after posting,
-     * by which time the painting could already have cleared the flag, and the deferral went untested (FTN-B1).
+     * by which time the painting could already have cleared the flag, and the deferral went untested.
      *
      * MUTATION, run: delete the `renderActiveLoc(force, locs)` at the end of `renderFinished` and this goes red.
      *
@@ -250,12 +249,12 @@ public class testTheFunctionButtonsFollowTheConsist
     }
 
     /**
-     * A locomotive's direction echo does not build the autonomy session on the thread it arrives on (FTN-B2).
+     * A locomotive's direction echo does not build the autonomy session on the thread it arrives on.
      *
      * `followDirectionChanges` runs inside the window's monitor, from `repaintLoc`, on whatever thread the
      * Central Station's message came in on - and it asked `getAutonomySession()`, the lazy builder that parses
      * every page and can rewrite files.  The rule written for exactly this, at `repaintTimetable`, is to read
-     * the field.  Since TDR-B5 the event thread takes that monitor at the end of every locomotive render, so a
+     * the field.  The event thread takes that monitor at the end of every locomotive render, so a
      * session built there held the whole window up for the length of a parse.
      *
      * @throws Exception from the window or reflection
@@ -276,7 +275,7 @@ public class testTheFunctionButtonsFollowTheConsist
             // The railway graph exists, so the guard gets as far as asking about the session.
             model.getAutoLayout();
 
-            if (!model.hasAutoLayout()) throw new org.testng.SkipException("no autonomy layout to follow directions on");
+            if (!model.hasAutoLayout()) throw new AssertionError("no autonomy layout to follow directions on");
 
             // A session the getter can give here - the window built one when it was set up - so the claim below is
             // not about a fixture that has none to build.  The window keeps it; it is put back at the end.
@@ -296,7 +295,7 @@ public class testTheFunctionButtonsFollowTheConsist
                 }
             });
 
-            if (built[0] == null) throw new org.testng.SkipException("this sandbox builds no autonomy session at all");
+            if (built[0] == null) throw new AssertionError("this sandbox builds no autonomy session at all");
 
             // The session gone and the railway graph still there - the moment between a reset and the event
             // thread's rebuild, which is when a message used to build one itself.
@@ -430,7 +429,7 @@ public class testTheFunctionButtonsFollowTheConsist
         // `repaintLoc` returns without doing anything while an earlier render is still running, and the
         // render itself goes to a worker and back through `invokeLater`.  So a `show` straight after
         // another `show` - which is what `testTheWidenedButtonsCarryNoText` does after the all-MM2 claim
-        // - could have its repaint dropped, and the buttons read were the previous consist's: f6 greyed
+        // - could have its repaint dropped, and the buttons read were the previous consist's: f6 grayed
         // for a consist that can drive it.  One pump of the event thread was never a wait for either.
         waitForTheRender();
 
@@ -469,7 +468,7 @@ public class testTheFunctionButtonsFollowTheConsist
             Thread.sleep(20);
         }
 
-        // SAID HERE, not as a greyed f6 three lines later that would blame the rule for a stuck render.
+        // SAID HERE, not as a grayed f6 three lines later that would blame the rule for a stuck render.
         throw new AssertionError("the window's render did not finish within ten seconds, so the buttons"
             + " below would be read from whatever it last drew");
     }
@@ -496,7 +495,7 @@ public class testTheFunctionButtonsFollowTheConsist
 
         JToggleButton button = buttons.get(fNumber);
 
-        if (button == null) throw new SkipException("this window has no button for f" + fNumber);
+        if (button == null) throw new AssertionError("this window has no button for f" + fNumber);
 
         return button;
     }

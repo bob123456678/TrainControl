@@ -12,8 +12,6 @@ import javax.swing.JFileChooser;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
-import javax.swing.filechooser.FileFilter;
-import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.plaf.basic.BasicComboPopup;
 import org.traincontrol.util.I18n;
 
@@ -22,39 +20,13 @@ import org.traincontrol.util.I18n;
  */
 public class LocomotiveFunctionAssign extends javax.swing.JPanel
 {
-    /**
-     * The file a stored image URL names, or null when it does not name one.
-     *
-     * A locomotive's local image is stored as a URL string, so `new File(...)` on it is wrong.
-     *
-     * @param url the stored value
-     * @return the file, or null for anything that is not a readable file: URL
-     */
-    private static File fileOf(String url)
-    {
-        if (url == null) return null;
-
-        try
-        {
-            java.net.URI uri = new java.net.URI(url);
-
-            if (!"file".equalsIgnoreCase(uri.getScheme())) return null;
-
-            return new File(uri);
-        }
-        catch (java.net.URISyntaxException | IllegalArgumentException notAFileUrl)
-        {
-            return null;
-        }
-    }
-
 
     Locomotive loc;
     TrainControlUI parent;
     String customIconPath;
     
     /**
-     * What Copy Customizations overwrote, or null if it was never pressed (GUX-C3, MT-466).
+     * What Copy Customizations overwrote, or null if it was never pressed (MT-466).
      *
      * One value rather than the three fields this was: the types, the triggers and the custom flag
      * were remembered and put back one by one, and the custom ICONS - the other half of what the
@@ -117,7 +89,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
             new javax.swing.DefaultComboBoxModel(iconModel.toArray(new Object[0])) 
         );
                 
-        // THE TRIGGER-TYPE COMBO IS LOCALISED BEFORE ANYTHING IS SELECTED IN IT (W21-C8).
+        // THE TRIGGER-TYPE COMBO IS LOCALIZED BEFORE ANYTHING IS SELECTED IN IT.
         //
         // These four lines stood at the END of the constructor, after `fNoItemStateChanged` and
         // `setSelectedIndex` had already chosen the current function's trigger type.
@@ -131,7 +103,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
         //
         // It did not reach the operator, because a deferred `fNoItemStateChanged(null)` queued in the
         // constructor re-derived the type afterwards - a corrupted state with an accidental repair
-        // standing over it. Moving the localisation above the selection removes the corruption instead
+        // standing over it. Moving the localization above the selection removes the corruption instead
         // of relying on the repair.
         javax.swing.DefaultComboBoxModel<String> defaultModel =
             (javax.swing.DefaultComboBoxModel<String>) functionTriggerType.getModel();
@@ -244,7 +216,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
                 new javax.swing.DefaultComboBoxModel(iconModel.toArray(new Object[0])) 
             );
             
-            // Highlight the right one and grey out if needed
+            // Highlight the right one and gray out if needed
             fIconlabel.setText(fIconlabel.getText().replace(" " + I18n.t("loc.ui.loadingMessage"), ""));
             fNoItemStateChanged(null);
             displayCustomizationButtons();
@@ -284,7 +256,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
     /**
      * Remembers what a Copy Customizations press is about to overwrite, the first time it is pressed.
      *
-     * **This door does not wait for OK, and the dialog's Cancel branch says everything does** (GUX-C3).
+     * **This door does not wait for OK, and the dialog's Cancel branch says everything does**.
      * The copy writes the other locomotive's function types, triggers and custom flag straight onto
      * this one so the panel can show them at once, which is the same reason the two autonomy slots
      * write straight through - and those are restored on Cancel.  These were not, so Cancel kept the
@@ -522,7 +494,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
 
     private void resetButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resetButtonActionPerformed
 
-        // ON THE EVENT THREAD (VB-B1), and the thread now holds the only slow thing here.
+        // ON THE EVENT THREAD, and the thread now holds the only slow thing here.
         //
         // The thread existed to hold a modal confirm - everything the answer led to was already being
         // marshalled straight back with invokeLater, which is the tell: the background thread was
@@ -538,7 +510,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
             JOptionPane.PLAIN_MESSAGE,
             null,
             TrainControlUI.YES_NO_OPTS,
-            // NOT [0] (VB-B2): Yes here throws away every custom function and icon on this
+            // NOT [0]: Yes here throws away every custom function and icon on this
             // locomotive, so it is not the answer a reflexive Enter should give.
             TrainControlUI.YES_NO_OPTS[1]
         );
@@ -637,7 +609,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
     }
 
     /**
-     * Greys Apply while there is nothing to apply (FR-098).  External applies - `doApply`, the standalone window's OK -
+     * Grays Apply while there is nothing to apply (FR-098).  External applies - `doApply`, the standalone window's OK -
      * are not affected: they call the handler, not the button.
      */
     private void refreshApply()
@@ -652,7 +624,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
 
     private void useCustomFunctionIconActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_useCustomFunctionIconActionPerformed
 
-        // NO THREAD AT ALL (VB-B1).
+        // NO THREAD AT ALL.
         //
         // A modal JFileChooser opened on a raw thread, and so did every setEnabled, the icon preview
         // and the repaint that followed it. Nothing in this handler is slow: it reads a preference,
@@ -669,7 +641,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
             // opened where the current icon lives - a silent no-op since the day it was written.
             // The identical mistake was fixed in TrainControlUI's locomotive-icon chooser; this is
             // its twin, one class over.
-            File currentIcon = fileOf(this.loc.getLocalFunctionImageURL(this.fNo.getSelectedIndex()));
+            File currentIcon = TrainControlUI.fileOf(this.loc.getLocalFunctionImageURL(this.fNo.getSelectedIndex()));
 
             if (currentIcon != null && currentIcon.exists())
             {
@@ -685,8 +657,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
         );
 
         fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
-        FileFilter filter = new FileNameExtensionFilter("JPEG, PNG, GIF, BMP " + I18n.t("ui.images"), "jpg", "png", "gif", "jpeg", "jpe", "bmp");
-        fc.setFileFilter(filter);
+        fc.setFileFilter(QuickFileChooser.imageFilter());
 
         fc.setAcceptAllFileFilterUsed(false);
 
@@ -725,7 +696,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
         
         if (copyFrom != null)
         {
-            // WHAT THE COPY IS ABOUT TO OVERWRITE, so that Cancel can put it back (GUX-C3), icons
+            // WHAT THE COPY IS ABOUT TO OVERWRITE, so that Cancel can put it back, icons
             // included since MT-466.
             rememberBeforeACopy();
 

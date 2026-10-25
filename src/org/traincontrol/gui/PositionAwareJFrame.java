@@ -27,12 +27,12 @@ public class PositionAwareJFrame extends JFrame
     // the running program gets `FlatRootPaneUI`, FlatLaf's own title bar and the menu bar drawn inside it:
     // 166x77 against 166x49 for the identical window, measured 2026-09-11.
     //
-    // Class initialisation always finishes before the first instance is created, so this is early enough.
+    // Class initialization always finishes before the first instance is created, so this is early enough.
     //
-    // It is early enough for a SUBCLASS too - initialising one initialises this class first - which is
+    // It is early enough for a SUBCLASS too - initializing one initializes this class first - which is
     // how `TrainControlUI` and `LayoutEditor` are covered by this block and have none of their own.
     //
-    // Headless-guarded because a static initialiser that throws leaves the class unusable for the rest of
+    // Headless-guarded because a static initializer that throws leaves the class unusable for the rest of
     // the process, which is a worse failure than a window in the wrong font.
     static
     {
@@ -56,7 +56,7 @@ public class PositionAwareJFrame extends JFrame
     private boolean loaded = false;
 
     /**
-     * A remembered state that maximises the window, held until the window is on screen (OB-328), or -1 for none.
+     * A remembered state that maximizes the window, held until the window is on screen (OB-328), or -1 for none.
      */
     private int maximisedOnceShown = -1;
     
@@ -178,12 +178,12 @@ public class PositionAwareJFrame extends JFrame
                         int state = prefs.getInt(windowName + "_state", this.getExtendedState());
                         this.setSize(width, height);
 
-                        // MAXIMISED ONCE IT IS ON SCREEN, NOT BEFORE (OB-328; Adam, 2026-10-09: "When a track diagram
+                        // MAXIMIZED ONCE IT IS ON SCREEN, NOT BEFORE (OB-328; Adam, 2026-10-09: "When a track diagram
                         // popup is maximized, it will not appear on top of the window (or any other windows) after the
                         // button is clicked ... same for the editor.  Both work when the window is not previously
                         // maximized").  The diagram's windows and the editor are built anew at each click, and one
-                        // maximised before it was first shown came up behind every other window; shown at its remembered
-                        // size first, it comes up in front, and is maximised there (`setVisible`).
+                        // maximized before it was first shown came up behind every other window; shown at its remembered
+                        // size first, it comes up in front, and is maximized there (`setVisible`).
                         if ((state & java.awt.Frame.MAXIMIZED_BOTH) != 0 && !isShowing())
                         {
                             this.maximisedOnceShown = state;
@@ -207,7 +207,7 @@ public class PositionAwareJFrame extends JFrame
     }
     
     /**
-     * Shows or hides the window - and, shown, maximises it where it was remembered maximised, and brings it forward
+     * Shows or hides the window - and, shown, maximizes it where it was remembered maximized, and brings it forward
      * (OB-328): see `loadWindowBounds`.
      *
      * @param visible whether to show it

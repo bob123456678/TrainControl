@@ -7,6 +7,7 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
+import support.SourceOf;
 
 /**
  * In autonomy mode the editor knows which square the pointer is over, and the naming shortcut asks it.
@@ -83,7 +84,7 @@ public class testTheAutonomyEditorKnowsWhichSquare
         {
             open.sandbox = support.LayoutSandbox.open();
 
-            open.model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, true);
+            open.model = support.TestStation.simulatedInDebug();
 
             final org.traincontrol.marklin.MarklinControlStation model = open.model;
             final org.traincontrol.gui.TrainControlUI[] made = new org.traincontrol.gui.TrainControlUI[1];
@@ -163,7 +164,7 @@ public class testTheAutonomyEditorKnowsWhichSquare
         }
         catch (Exception | Error failed)
         {
-            // WHATEVER FAILED, THE PREFERENCE GOES BACK (TSX-B8).
+            // WHATEVER FAILED, THE PREFERENCE GOES BACK.
             //
             // Every caller wraps the RETURNED holder in a try/finally, and the holder is
             // what does not exist when this throws.  `init` binds a UDP port and a window
@@ -174,40 +175,6 @@ public class testTheAutonomyEditorKnowsWhichSquare
 
             throw failed;
         }
-    }
-
-    /**
-     * Java source with its comments removed - `//` and block alike, in the order the compiler reads
-     * them.
-     *
-     * @param source the file's text
-     * @return the same text with every comment gone
-     */
-    private static String withoutComments(String source)
-    {
-        StringBuilder out = new StringBuilder();
-
-        boolean inLine = false, inBlock = false;
-
-        for (int i = 0; i < source.length(); i++)
-        {
-            char c = source.charAt(i);
-            char next = i + 1 < source.length() ? source.charAt(i + 1) : ' ';
-
-            if (inLine)
-            {
-                if (c == '\n') { inLine = false; out.append(c); }
-            }
-            else if (inBlock)
-            {
-                if (c == '*' && next == '/') { inBlock = false; i++; }
-            }
-            else if (c == '/' && next == '/') inLine = true;
-            else if (c == '/' && next == '*') inBlock = true;
-            else out.append(c);
-        }
-
-        return out.toString();
     }
 
     /** A private field of the editor, by name. */
@@ -320,7 +287,7 @@ public class testTheAutonomyEditorKnowsWhichSquare
      *
      * Read out of the source, and the reason is the same one `testTheWindowAttachesItsRefreshCallback`
      * gives for its own reading: the value is right and the CALLER asked the wrong question, which is
-     * a thing a behavioural test cannot see when it can only reach the caller through a modal dialog.
+     * a thing a behavioral test cannot see when it can only reach the caller through a modal dialog.
      * `promptName` opens one, so driving Control+S here would hang the battery rather than test it.
      *
      * MUTATION this catches: put `getLastHoveredLabel()` back in the Control+S branch. The test above
@@ -329,19 +296,16 @@ public class testTheAutonomyEditorKnowsWhichSquare
     @Test
     public void testTheNamingShortcutAsksTheSquareAutonomyModeTracks() throws Exception
     {
-        java.io.File source = new java.io.File("src/org/traincontrol/gui/LayoutEditor.java");
-
-        assertTrue(source.exists(), "cannot find " + source.getAbsolutePath()
-            + " - this test reads the editor's source, so it has to run from the project root");
-
         // WITHOUT ITS COMMENTS, and this is not a precaution.
         //
         // The branch's own comment names both the field and the method it asks, which are sentences
         // about the fix and were read as the defect - the first run of this test failed against
         // correct code because of it.  `testTheWindowAttachesItsRefreshCallback` strips comments for
         // the same reason and says so at more length.
-        String body = withoutComments(new String(java.nio.file.Files.readAllBytes(source.toPath()),
-            java.nio.charset.StandardCharsets.UTF_8));
+        // formKeyPressed is every window's key handler, so it is cut out of the editor's own file.
+        String body = SourceOf.withoutComments(SourceOf.declarationIn(
+            SourceOf.fileDeclaring("public class LayoutEditor extends"),
+            "private void formKeyPressed(java.awt.event.KeyEvent evt)"));
 
         int at = body.indexOf("evt.getKeyCode() == KeyEvent.VK_S");
 
@@ -361,7 +325,7 @@ public class testTheAutonomyEditorKnowsWhichSquare
         // Control+E - three readers of a field nothing ever cleared, so a page change left all three
         // naming a square on the page before.  There is one question now, and it forgets a label that
         // is not on the grid it is asked about.  `regression.testTheHoveredSquareIsForgotten` is what
-        // asserts the behaviour; this stays a source check because what it is about is which door the
+        // asserts the behavior; this stays a source check because what it is about is which door the
         // KEY goes through.
         assertTrue(branch.contains("hoveredSquare()"),
             "the Control+S branch does not ask the square autonomy mode tracks.  What it does ask:\n"

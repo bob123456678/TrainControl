@@ -9,7 +9,6 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -63,7 +62,7 @@ public class testAStationsSizeIsAnAllowance
      *
      * The park above does not: the run into it ends at BottomMainA, where three roads meet, and the fork rule stops the
      * tail there however long the train is.  TopMainR1's approach runs back through TopMainR1Pre to exactly one
-     * neighbour.  He has measured the three squares behind it at 1 each and left the station and TopMainR1Pre at
+     * neighbor.  He has measured the three squares behind it at 1 each and left the station and TopMainR1Pre at
      * nothing, so those two are measured here.
      */
     private static final TileKey TWO_HOPS = new TileKey("1 - Main", 5, 4);
@@ -96,7 +95,7 @@ public class testAStationsSizeIsAnAllowance
     {
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = MarklinControlStation.init(null, true, false, false, false);
+        model = support.TestStation.simulated();
 
         standing = model.newMM2Locomotive(OUR_TRAIN, 2393);
 
@@ -120,7 +119,7 @@ public class testAStationsSizeIsAnAllowance
 
         layout = model.getAutoLayout();
 
-        if (layout == null) throw new SkipException("the snapshot did not build");
+        if (layout == null) throw new AssertionError("the snapshot did not build");
 
         // Nothing of his standing about, so every claim is about this class's train alone.
         for (Point point : layout.getPoints())
@@ -358,7 +357,7 @@ public class testAStationsSizeIsAnAllowance
     }
 
     /**
-     * The tail reaches past the first edge behind it when the train is longer than that edge (SVV-C3).
+     * The tail reaches past the first edge behind it when the train is longer than that edge.
      *
      * **Two budgets walk a standing train's body**: the PLACES budget, which claims square by square, and the HOP
      * budget, which decides whether to walk back another edge.  If the hop budget over-spends, the walk stops early,
@@ -405,7 +404,7 @@ public class testAStationsSizeIsAnAllowance
     }
 
     /**
-     * The square the train stands on is claimed wherever it stands, not only at some stations (SVZ-B1).
+     * The square the train stands on is claimed wherever it stands, not only at some stations.
      *
      * A piece of rail is two `Edge` objects, one per direction, and both can report the same way in at the square they
      * meet.  `getNeighborsAndIncoming` sorts the outgoing ones first, and an edge's places are the path plus the square
@@ -445,7 +444,7 @@ public class testAStationsSizeIsAnAllowance
     /**
      * A berth measured on an approach measured nowhere else takes a train that fits on it, and blocks nothing behind.
      *
-     * SVX-B1's arrangement - the one `Automation.md` produces first, because it tells him to measure the station.
+     * The arrangement - the one `Automation.md` produces first, because it tells him to measure the station.
      * Until OB-278 the berth's own measurement was not spent, so the approach counted as unmeasured and the walk
      * claimed nothing at all, not even the square the train is on.
      *

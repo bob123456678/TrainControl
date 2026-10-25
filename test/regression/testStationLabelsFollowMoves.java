@@ -34,7 +34,7 @@ import org.traincontrol.base.LayoutDiagramComponent.componentType;
  * safety.
  *
  * So these tests are a matrix rather than a case: the same platform, the same label, moved to every
- * square around it.  A rule that holds for seven of the eight neighbours and fails on the eighth is
+ * square around it.  A rule that holds for seven of the eight neighbors and fails on the eighth is
  * exactly what was shipped, and only a matrix says so.
  *
  * The other half of the matrix is the opposite direction - a label that really is stale must still be
@@ -45,12 +45,10 @@ public class testStationLabelsFollowMoves
 {
     private static final String PAGE = "main";
 
-    // ---------------------------------------------------------------------------------------------
     // The matrix: a platform and its label, and every square the platform might be nudged to
-    // ---------------------------------------------------------------------------------------------
 
     /**
-     * The label survives a move to any of the eight neighbouring squares, including its own.
+     * The label survives a move to any of the eight neighboring squares, including its own.
      */
     @Test
     public void testTheLabelSurvivesAMoveToEveryNeighbouringSquare()
@@ -123,9 +121,7 @@ public class testStationLabelsFollowMoves
         assertEquals(store.getPointName(at(4, 5)), "Platform3", "and the name itself did not travel");
     }
 
-    // ---------------------------------------------------------------------------------------------
     // The other direction: a label that IS stale still goes
-    // ---------------------------------------------------------------------------------------------
 
     /**
      * A label naming a square that was genuinely built over is dropped.
@@ -139,7 +135,7 @@ public class testStationLabelsFollowMoves
     {
         AutonomyCompanionStore store = named(at(4, 4), at(4, 5), "Platform3");
 
-        // Something else moves on top of the platform, from a square nobody has labelled
+        // Something else moves on top of the platform, from a square nobody has labeled
         store.moveTiles(one(at(9, 9), at(4, 4)));
 
         assertNull(store.getCaptionTarget(at(4, 5)),
@@ -167,9 +163,7 @@ public class testStationLabelsFollowMoves
             "and the platform itself, which nothing touched, has lost its name");
     }
 
-    // ---------------------------------------------------------------------------------------------
     // Group moves and bulk edits: the same rule, arrived at from the other paths
-    // ---------------------------------------------------------------------------------------------
 
     /**
      * A group drag where a station lands on its OWN label keeps it.
@@ -319,9 +313,7 @@ public class testStationLabelsFollowMoves
             "and the station itself should still have arrived");
     }
 
-    // ---------------------------------------------------------------------------------------------
     // What the user actually sees: the name the diagram reads off the label
-    // ---------------------------------------------------------------------------------------------
 
     /**
      * End to end, on real track: after the nudge the label still resolves to the station's name.
@@ -382,8 +374,6 @@ public class testStationLabelsFollowMoves
             }
         }
     }
-
-    // ---------------------------------------------------------------------------------------------
 
     /**
      * One platform, one label, one move: the station and its name both come out the other side.

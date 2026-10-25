@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -46,8 +45,8 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  *
  * **It is registered in build.xml, and it was written RED until Return Home staged this.**  Adam, on
  * being told the outcome was NO_PLAN_FOUND: "ok, so that test should then be red."  It has been green
- * since Return Home learned to stage the arrangement (PRW-B2 bisected the change; AMH-C3 found this
- * still saying red).  A test for something that does not work belongs in the battery being red rather
+ * since Return Home learned to stage the arrangement.
+ * A test for something that does not work belongs in the battery being red rather
  * than in an exclusion table being quiet.
  *
  * **IT RUNS AGAINST A FROZEN COPY, not against his railway (Adam, 2026-09-01: "let's get the current
@@ -115,14 +114,14 @@ public class testTrainsComeHomeToTheirPlatforms
 
         if (!frozen.isDirectory())
         {
-            throw new SkipException("test/operator_layout is not here - this suite runs his stations");
+            throw new AssertionError("test/operator_layout is not here - this suite runs his stations");
         }
 
         // The sandbox copy, before the model, because init reads the layout preference.
         sandbox = support.LayoutSandbox.open(frozen);
 
         // Debug mode, which simulation requires.
-        model = init(null, true, false, false, true);
+        model = support.TestStation.simulatedInDebug();
         model.stop();
 
         List<LayoutDiagram> pages = new ArrayList<>();
@@ -140,7 +139,7 @@ public class testTrainsComeHomeToTheirPlatforms
 
         if (layout == null || !layout.isValid())
         {
-            throw new SkipException("his setup did not parse here: " + Layout.getLastError());
+            throw new AssertionError("his setup did not parse here: " + Layout.getLastError());
         }
 
         layout.setSimulate(true);
@@ -234,7 +233,7 @@ public class testTrainsComeHomeToTheirPlatforms
 
             if (!plan.isPossible()) System.out.println(reachability());
 
-            // NO BRANCH HERE, and the attempt at one is worth recording (V36-A1).
+            // NO BRANCH HERE, and the attempt at one is worth recording.
             //
             // The battery caught this failing on an arrangement its premise does not cover, and the
             // first answer was to ask `canReachAnyDestination` about each train and assert that no
@@ -632,7 +631,7 @@ public class testTrainsComeHomeToTheirPlatforms
      *
      * A square trains can enter from two directions is emitted as one Point per arrival side, and the
      * builder puts the direction in the name - "BottomMainC (westbound)". Where a square has only one
-     * copy the direction is not modelled and the name is bare.
+     * copy the direction is not modeled and the name is bare.
      */
     private static Point pointFor(String station, String facing)
     {

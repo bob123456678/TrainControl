@@ -466,8 +466,7 @@ public class testAutoLayoutRace
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        // simulate=true, showUI=false, autoPowerOn=false, debug=true
-        testAutoLayoutRace.model = init(null, true, false, false, true);
+        testAutoLayoutRace.model = support.TestStation.simulatedInDebug();
         model.stop();
 
         model.newMM2Locomotive("Race loc A", 2);

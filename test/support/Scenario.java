@@ -18,7 +18,7 @@ import org.traincontrol.marklin.MarklinControlStation;
  * manipulated at will... a folder in the test folder to house many different scenarios, each linked to
  * a test case"**, and **"hand-authored for topology, lengths in code."**
  *
- * **The gap this closes is named in `test/README.md` (MON-C17 to C21).**  Every hand-built fixture in
+ * **The gap this closes is named in `test/README.md`.**  Every hand-built fixture in
  * this suite was a straight chain of two or three ordinary points - no switch, no curve, no split
  * square - so a whole class of defect could not be expressed by any fixture, and the tests that DID
  * have realistic geometry got it by opening the operator's live railway, whose ground truth moves as he
@@ -105,7 +105,7 @@ public final class Scenario
     {
         File folder = folderFor(name);
 
-        // INSIDE THE TRY, and closed again if anything below throws (TSX-B8).
+        // INSIDE THE TRY, and closed again if anything below throws.
         //
         // A test class opens its sandbox in `@BeforeClass` and is safe without this, because
         // `@AfterClass(alwaysRun = true)` runs even when the set-up threw. THIS method is not a setup

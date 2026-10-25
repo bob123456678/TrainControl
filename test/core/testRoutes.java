@@ -48,7 +48,7 @@ public class testRoutes
     private static final int MAX_NUM_COMMANDS = 10;
 
     /**
-     * The seed every `Random` in this class is built from (TCX-B10).
+     * The seed every `Random` in this class is built from.
      *
      * Three of them were unseeded, so a failure here named no inputs and could not be reproduced -
      * the suite's one violation of the fixed-seed rule in `docs/reviews/README.md`.  The worst was
@@ -314,7 +314,7 @@ public class testRoutes
     {
         // Initialize model and set states.
         //
-        // CREATED FIRST, AND ASSERTED (FV3-B1).  `setFeedbackState` returns false and does nothing for a
+        // CREATED FIRST, AND ASSERTED.  `setFeedbackState` returns false and does nothing for a
         // module that is not in the database, and these three came from Adam's saved `LocDB.data` rather
         // than from any test - so when one of them was not there, this failed eighteen assertions later
         // at the expression evaluation with `expected [true] but found [false]`, a message that says
@@ -637,7 +637,7 @@ public class testRoutes
     }
 
     /**
-     * A route run BY HAND runs whatever its conditions say (X8-B6).
+     * A route run BY HAND runs whatever its conditions say.
      *
      * **The conditions hold back the route's own firing, not a person's.** They are read in exactly two
      * places - the s88 monitor thread, and the editor's Test button, which reports what that thread
@@ -703,9 +703,9 @@ public class testRoutes
     }
 
     /**
-     * A delay the railway will not honour is not a delay the editor shows (X8-C2, X8V-C5, X8V-C7).
+     * A delay the railway will not honor is not a delay the editor shows.
      *
-     * **The number in the cell and the number on the railway disagreed silently.** `execRoute` honours a
+     * **The number in the cell and the number on the railway disagreed silently.** `execRoute` honors a
      * command's own delay only when it is the larger of it and `DEFAULT_SLEEP_MS`, and the editor
      * accepted any non-negative integer, stored it, wrote it to the file, read it back and redisplayed
      * it. Somebody lowering a pause from 300 to 100 to speed a route up saw the number change and the
@@ -715,7 +715,7 @@ public class testRoutes
      * commands, and `THREEWAY_ROUTE_DELAY_MS` is defined as sitting above it. What is fixed is that the
      * floor was invisible.
      *
-     * **Both directions**, which is `X8V-C7`: raising it only as it was typed left every delay that
+     * **Both directions**: raising it only as it was typed left every delay that
      * arrived another way - a route saved by an earlier build, imported from a station, read out of a
      * JSON file - still showing a number the railway would not use.
      *
@@ -771,7 +771,7 @@ public class testRoutes
     }
 
     /**
-     * A route file that fails half way through leaves nothing watching a sensor (S14-A1).
+     * A route file that fails half way through leaves nothing watching a sensor.
      *
      * **Constructing a `MarklinRoute` arms it.** The complete constructor ends in `executeAutoRoute()`,
      * which parks a thread on the route's s88 and fires the route whenever it triggers.
@@ -781,7 +781,7 @@ public class testRoutes
      * `routeDB.getItems()`, which never held it. It throws switches for the rest of the session and the
      * operator cannot even see that it exists.
      *
-     * `X8-D4` cleared this same method and was right about what it examined - the route DATABASE cannot
+     * An earlier review cleared this same method and was right about what it examined - the route DATABASE cannot
      * lose routes to a bad file, because the parse happens first. The layer below it is that the parse
      * has a side effect on the railway.
      *
@@ -853,7 +853,7 @@ public class testRoutes
     }
 
     /**
-     * A route parked during an import and released afterwards still watches its sensor (S14-A1).
+     * A route parked during an import and released afterwards still watches its sensor.
      *
      * This is the half that fails silently if it is wrong. An imported route arrives disabled - Adam,
      * 2026-09-10: *"they should not be armed. The user can choose to do this when they are ready."* - so
@@ -917,7 +917,7 @@ public class testRoutes
     }
 
     /**
-     * A speed outside 0-100 is clamped where the command is built, not in each parser (S14-B2, NSV-C2).
+     * A speed outside 0-100 is clamped where the command is built, not in each parser.
      *
      * **`fromLine` clamped and `fromJSON` did not.** A route imported from JSON - which is how a
      * hand-edited or shared file enters the database, through Routes then Import - could therefore carry
@@ -927,7 +927,7 @@ public class testRoutes
      * `wert / 1000 * 100` with a comment promising the range it did not enforce. Clamping in the FACTORY
      * covers all three, which is why the fix is here rather than in `fromJSON`.
      *
-     * **A negative is load-bearing and is not clamped to zero.** `fromLine` normalises any negative to
+     * **A negative is load-bearing and is not clamped to zero.** `fromLine` normalizes any negative to
      * `-1` and `execRoute` reads `-1` as an instant stop, so the clamp has to be that rule and not
      * `clamp(0, 100)`.
      *
@@ -971,7 +971,7 @@ public class testRoutes
     }
 
     /**
-     * A route read from a file arrives disabled, whatever the file says (Adam, 2026-09-10; S14-A1).
+     * A route read from a file arrives disabled, whatever the file says (Adam, 2026-09-10).
      *
      * *"They should not be armed. The user can choose to do this when they are ready."*
      *
@@ -1085,9 +1085,13 @@ public class testRoutes
             assertTrue(found, "the exported file does not contain the route this test made");
 
             // And back in through the real parser.
+            int cameBack = 0;
+
             for (MarklinRoute back : model.parseRoutesFromJson(json))
             {
                 if (!"MT352 active route".equals(back.getName())) continue;
+
+                cameBack++;
 
                 assertFalse(back.isEnabled(),
                     "a route exported as active came back armed.  Constructing a route parks a thread on "
@@ -1099,6 +1103,9 @@ public class testRoutes
 
                 assertEquals(back.getRoute().size(), 1, "control: the command survived it too");
             }
+
+            assertEquals(cameBack, 1, "the route that was exported did not come back from the parser, so what it came"
+                + " back as was never asked");
         }
         finally
         {
@@ -1617,7 +1624,7 @@ public class testRoutes
             MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED,
             "an absent triggerType must mean clear-then-occupied, not the opposite edge");
 
-        // An explicit value is still honoured
+        // An explicit value is still honored
         json.put("triggerType", MarklinRoute.s88Triggers.OCCUPIED_THEN_CLEAR.toString());
 
         assertEquals(MarklinRoute.fromJSON(json, model).getTriggerType(),
@@ -1683,7 +1690,7 @@ public class testRoutes
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        testRoutes.model = init(null, true, false, false, false);
+        testRoutes.model = support.TestStation.simulated();
     }
 
     @AfterClass(alwaysRun = true)
@@ -1717,7 +1724,7 @@ public class testRoutes
     }
 
     /**
-     * Editing a route keeps it in the autonomy "Activate routes" selection (AC2-A1).
+     * Editing a route keeps it in the autonomy "Activate routes" selection.
      *
      * **A setting silently discarded, and it takes some sessions to show.** `editRoute` works by
      * delete-then-re-add, and `deleteRoute` strips the route's id out of `activateRouteIDs` - which is
@@ -1779,7 +1786,7 @@ public class testRoutes
         }
     }
     /**
-     * Editing a route keeps its Central Station lock (X8-B5).
+     * Editing a route keeps its Central Station lock.
      *
      * **The lock is what the menu guards Delete and Change Route ID on.** `editRoute` edits by
      * delete-then-re-add, and `newRoute` builds a fresh route whose `locked` defaults to false - the
@@ -1910,7 +1917,7 @@ public class testRoutes
     }
 
     /**
-     * UC-C6: executing an unknown route name must be a no-op, not an NPE.
+     * Executing an unknown route name must be a no-op, not an NPE.
      *
      * execRoute is routeDB.getByName(name).execRoute(false) - null dereference.  The UI passes
      * names from live lists, but the programmatic API reaches this directly, and
@@ -2064,7 +2071,7 @@ public class testRoutes
         // A TO B, asked about Q and B while on the way to P
         runAndAsk(rail, x, new String[] {"O250 A", "O250 P", "O250 Q", "O250 B"}, new int[] {a, p, q, b});
 
-        // AND B TO A, asked about P and A, so a hash order that favours one end is caught at the other
+        // AND B TO A, asked about P and A, so a hash order that favors one end is caught at the other
         runAndAsk(rail, x, new String[] {"O250 B", "O250 Q", "O250 P", "O250 A"}, new int[] {b, q, p, a});
     }
 
@@ -2124,7 +2131,7 @@ public class testRoutes
     }
 
     /**
-     * "Train X at sensor T" is answered for the moment it is asked, the run's bookkeeping caught up first (RSA56-C1, the
+     * "Train X at sensor T" is answered for the moment it is asked, the run's bookkeeping caught up first (the
      * rest of OB-250; Adam, 2026-10-08: "X is at T now" - the last sensor X reached, or where it stands).  The train's
      * driver records a sensor some 200 ms after it reads occupied (`FEEDBACK_DURATION_THRESHOLD`), and a route fired by
      * that same sensor asked in the gap: about the sensor before, it was told yes, the milestone not yet moved on; and
@@ -2234,7 +2241,7 @@ public class testRoutes
     }
 
     /**
-     * A train turning at a reversing point on its way is answered at once, not after the turn (RSA57-C1).  The run keeps
+     * A train turning at a reversing point on its way is answered at once, not after the turn.  The run keeps
      * the sensor it turns on pending until the step ends - after the turn's pause - so round 90's wait, which held while
      * the pending sensor read occupied, held every "train X at sensor T" about that train for the length of the turn, up
      * to its three seconds: a route on another sensor fired seconds late.  A sensor the run has already recorded is not

@@ -54,19 +54,18 @@ import org.traincontrol.util.I18n;
  */
 public class RouteEditorFrame extends JFrame
 {
-    // THE APPLICATION'S LOOK AND FEEL, BEFORE THIS CLASS CAN BE INSTANTIATED (Adam, 2026-09-11).
+    // THE APPLICATION'S LOOK AND FEEL, BEFORE THIS CLASS CAN BE INSTANTIATED.
     //
-    // **A static block rather than the first line of the constructor, and the difference was measured.**
-    // `JFrame`'s own constructor runs before any constructor body here, and it creates the ROOT PANE -
-    // whose UI comes from whatever look and feel is installed at that instant. So installing inside the
-    // constructor is too late for the window's own chrome. Built cold, which is what a test does, this
-    // window came out with a `MetalRootPaneUI` and an operating-system title bar while the same window in
-    // the running program gets `FlatRootPaneUI`, FlatLaf's own title bar and the menu bar drawn inside it:
-    // 166x77 against 166x49 for the identical window, measured 2026-09-11.
+    // **A static block rather than the first line of the constructor.** `JFrame`'s own constructor runs
+    // before any constructor body here, and it creates the ROOT PANE - whose UI comes from whatever look
+    // and feel is installed at that instant. So installing inside the constructor is too late for the
+    // window's own chrome: built cold, which is what a test does, this window comes out with a
+    // `MetalRootPaneUI` and an operating-system title bar where the running program gets `FlatRootPaneUI`,
+    // FlatLaf's own title bar and the menu bar drawn inside it (166x77 against 166x49 for the identical
+    // window).
     //
-    // Class initialisation always finishes before the first instance is created, so this is early enough.
-    //
-    // Headless-guarded because a static initialiser that throws leaves the class unusable for the rest of
+    // Class initialization always finishes before the first instance is created, so this is early enough.
+    // Headless-guarded because a static initializer that throws leaves the class unusable for the rest of
     // the process, which is a worse failure than a window in the wrong font.
     static
     {
@@ -79,7 +78,7 @@ public class RouteEditorFrame extends JFrame
     private final String originalName;
 
     /**
-     * What the route looked like in the database when this window opened (GUX-B1).
+     * What the route looked like in the database when this window opened.
      *
      * Everything the window can write, as one string.  Compared at Save against the route as it stands now: this
      * window is not modal and does not hold the route, so Enable/Disable, a delete, an import or another editor can
@@ -90,7 +89,7 @@ public class RouteEditorFrame extends JFrame
     private final String loadedFromDatabase;
 
     /**
-     * The id of the route this window opened on, or null for a new one (OP2-C9).
+     * The id of the route this window opened on, or null for a new one.
      *
      * A route tile binds by id and so does an autonomy selection, so the id is what the route IS; the
      * name is what it is called this minute.  Kept so that a rename under the window reads as a rename
@@ -99,7 +98,7 @@ public class RouteEditorFrame extends JFrame
     private final Integer loadedId;
 
     private final JTextField nameField = new JTextField(24);
-    private final JTextField s88Field = digitsOnlyField(6);
+    private final JTextField s88Field = AutonomyEditorPanel.digitsOnlyField(null, 6, 0);
     private final JComboBox<String> triggerBox = new JComboBox<>();
     private final JCheckBox enabledBox = new JCheckBox(I18n.t("route.ui.frameEnabled"));
 
@@ -120,9 +119,7 @@ public class RouteEditorFrame extends JFrame
      *
      * The station owns those: TrainControl imports them, marks them locked, and shows them with a
      * star in the route list. Saving one would be writing over something the station will simply send
-     * again on the next sync, so the older editor greys its controls and this one has to as well - the
-     * new editor was reachable from the same menu and knew nothing about it, which made every one of
-     * them look editable.
+     * again on the next sync, so the editor grays its controls.
      */
     private boolean locked = false;
 
@@ -138,11 +135,9 @@ public class RouteEditorFrame extends JFrame
     /**
      * Whether this window will let the route be changed.
      *
-     * Asked before a mark is drawn and again before it acts.  Greying the tables was not enough:
-     * the marks in the rows are painted values rather than buttons, and the click that works them is
-     * a click on a cell picked up by a listener of this window's own - which a disabled table does
-     * nothing about.  So a route belonging to the Central Station opened with its name greyed, its
-     * Save switched off, and a working plus at the bottom of the command list.
+     * Asked before a mark is drawn and again before it acts. Graying the tables is not enough: the marks
+     * in the rows are painted values rather than buttons, and the click that works them is picked up by a
+     * listener of this window's own, which a disabled table does nothing about.
      *
      * @return true when the route is this window's to change
      */
@@ -152,7 +147,7 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * Held so that a route belonging to the Central Station can grey it.
+     * Held so that a route belonging to the Central Station can gray it.
      */
     private JButton saveButton;
 
@@ -166,8 +161,7 @@ public class RouteEditorFrame extends JFrame
      * While ticked, an accessory thrown on the layout adds itself to the command list.
      *
      * The old editor's most useful feature by some way: rather than looking up addresses, the user
-     * throws the switches by hand in the order they want them and watches the route write itself.  It
-     * would have been easy to leave out of a rebuild and hard to notice missing until somebody tried.
+     * throws the switches by hand in the order they want them and watches the route write itself.
      */
     private final JCheckBox captureBox = new JCheckBox(I18n.t("route.ui.frameCapture"));
 
@@ -189,21 +183,6 @@ public class RouteEditorFrame extends JFrame
     private final JLabel readsAs = new JLabel(" ");
 
     /**
-     * How the terms combine: "(A or B) and (C or D)".
-     *
-     * The second of the two steps. The table above says what the facts are; this says what has to be
-     * true of them. They are separate because a bracket cannot be drawn in a list of rows without the
-     * list pretending to be a tree - which is what the operator-per-row column was, and why it could
-     * only ever express one chain read left to right.
-     */
-    /**
-     * The formula itself. Shown as bubbles, never as text somebody can type into.
-
-
-
-
-
-    /**
      * @param parent the main window, which owns the model and the route list
      * @param routeName the route to edit, or null for a new one
      */
@@ -217,8 +196,8 @@ public class RouteEditorFrame extends JFrame
      * The same window, handed the route rather than sent to look it up.
      *
      * The name alone meant this window could only ever be opened against the running control
-     * station, which is also the only way its read-only behaviour could be exercised - and that
-     * behaviour is the half nobody notices is broken, because a route that cannot be changed looks
+     * station, which is also the only way its read-only behavior could be exercised - and that
+     * behavior is the half nobody notices is broken, because a route that cannot be changed looks
      * exactly like one nobody has tried to change.
      *
      * @param parent the main window, or null
@@ -230,10 +209,10 @@ public class RouteEditorFrame extends JFrame
         this.parent = parent;
         this.originalName = routeName == null ? "" : routeName;
 
-        // WHAT THE DATABASE SAID WHEN THIS WINDOW OPENED (GUX-B1), so Save can tell whether it still says it.
+        // WHAT THE DATABASE SAID WHEN THIS WINDOW OPENED, so Save can tell whether it still says it.
         this.loadedFromDatabase = signatureOf(route);
 
-        // AND WHICH ROUTE IT WAS, which the name alone cannot say once somebody renames it (OP2-C9).
+        // AND WHICH ROUTE IT WAS, which the name alone cannot say once somebody renames it.
         this.loadedId = route == null ? null : route.getId();
 
         setTitle(routeName == null ? I18n.t("route.ui.frameNewRoute")
@@ -271,16 +250,10 @@ public class RouteEditorFrame extends JFrame
         // asks about is the difference between this and the same question asked later.
         loadedSignature = stateSignature();
 
-        // ABOVE THE MAIN WINDOW IF IT IS (RC-B4).
-        //
-        // Every other child window does this - AddLocomotive, LayoutEditor, LayoutPopupUI,
-        // LocomotiveSelector, UsageHistogram - and so did the text editor this replaced.  It was the
-        // only one missed, and it is missed exactly where it matters: capture is ticked here and the
-        // switches are thrown on the layout window, so clicking over there put the window being
-        // watched behind the one being clicked.
-        // Null-checked, because this window is built with a null parent by five test classes and
-        // every other line of this constructor tolerates that - setLocationRelativeTo(null) is legal
-        // and centres on the screen (RC-B6).
+        // ABOVE THE MAIN WINDOW IF IT IS, as every other child window is: capture is ticked here and
+        // the switches are thrown on the layout window, so clicking over there would otherwise put the window
+        // being watched behind the one being clicked.  Null-checked, because this window is built with a null
+        // parent by five test classes and setLocationRelativeTo(null) is legal and centers on the screen.
         if (parent != null) setAlwaysOnTop(parent.isAlwaysOnTop());
 
         pack();
@@ -288,7 +261,7 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * Fills in a name for a route that does not exist yet (RC-B3).
+     * Fills in a name for a route that does not exist yet.
      *
      * NOT the constructor’s routeName, which is a different thing wearing the same word: that
      * becomes originalName, and a non-empty originalName is what makes Save an EDIT of an existing
@@ -311,9 +284,8 @@ public class RouteEditorFrame extends JFrame
     {
         JPanel content = new JPanel(new BorderLayout(8, 8));
 
-        // White, all the way out to the edges.  The panels inside are white with a line round them,
-        // and a grey window behind them made each one look like a card floating on something rather
-        // than like part of one window.
+        // White, all the way out to the edges, so the panels inside read as part of one window rather than
+        // as cards floating on gray.
         content.setBackground(java.awt.Color.WHITE);
         content.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
@@ -327,17 +299,16 @@ public class RouteEditorFrame extends JFrame
 
         captureBox.setToolTipText(I18n.t("route.ui.tooltipCapture"));
 
-        // NOT IN THE TAB ORDER (Adam, 2026-09-22, OB-271, filed from MT-446): *"make the test,
-        // capture, etc. buttons in the route editor non focusable"*.
+        // NOT IN THE TAB ORDER (OB-271, from MT-446): *"make the test, capture, etc. buttons in the route editor non
+        // focusable"*.
         //
-        // These are the controls somebody reaches for with the mouse in the middle of typing - the
-        // conditions test, the diagram highlight, the capture tick and where it writes to.  Clicking
-        // one took the keyboard with it, so the next thing typed went nowhere and the next Enter
-        // pressed whichever of them was last clicked.
+        // These are the controls somebody reaches for with the mouse in the middle of typing - the conditions
+        // test, the diagram highlight, the capture tick and where it writes to.  Clicking one would take the
+        // keyboard with it, so the next thing typed would go nowhere and the next Enter would press whichever
+        // of them was last clicked.
         //
-        // SAVE IS LEFT ALONE, deliberately: it is the one button in this window that Enter should
-        // still reach, and a dialog whose commit cannot be reached from the keyboard is a worse
-        // trade than the one this fixes.
+        // SAVE IS LEFT ALONE, deliberately: it is the one button in this window that Enter should still
+        // reach.
         captureBox.setFocusable(false);
         captureTarget.setFocusable(false);
 
@@ -359,13 +330,9 @@ public class RouteEditorFrame extends JFrame
         // the one place the run-of-the-same-word rule is spelled out, so it earns its line.
         readsAs.setVerticalAlignment(JLabel.TOP);
 
-        // The old editor's Test button, which the outline editor was missing.
-        //
-        // It answers the one question a condition list cannot answer by being looked at: whether the
-        // route would fire RIGHT NOW.  The conditions are about the state of the railway, and the
-        // railway is in a state while the editor is open - so the sensors can be read and the
-        // expression evaluated against them, which is a great deal quicker than shunting a train
-        // over a sensor to find out.
+        // The Test button answers the one question a condition list cannot answer by being looked at:
+        // whether the route would fire RIGHT NOW.  The sensors can be read and the expression evaluated
+        // against them, which is a great deal quicker than shunting a train over a sensor to find out.
         testButton = button(I18n.t("route.ui.testCondition"), this::testAgainstTheRailway);
 
         testButton.setToolTipText(I18n.t("route.ui.tooltipTestConditions"));
@@ -379,7 +346,7 @@ public class RouteEditorFrame extends JFrame
         //
         // A route is a list of addresses, and an address is not a place - so reading one and knowing
         // where on the layout it happens means looking each number up on the diagram by hand.  Two
-        // colours because a route has two kinds of square and they answer different questions: yellow
+        // colors because a route has two kinds of square and they answer different questions: yellow
         // for what it COMMANDS, orange for what it CHECKS before commanding anything.
         highlightButton = button(I18n.t("route.ui.highlightOnDiagram"), this::highlightOnDiagram);
 
@@ -391,34 +358,22 @@ public class RouteEditorFrame extends JFrame
 
         buttonsOf(conditionSection).add(highlightButton);
 
-        // Help beside Test rather than down beside Cancel.
-        //
-        // Both are about the conditions, and most of what the help has to say is about them - how the
-        // indenting means what it means, and which word joins what.  Beside Cancel it sat in the row
-        // a user reads on the way OUT of the window, which is the one moment they have stopped
-        // needing it.
+        // Help beside Test rather than beside Cancel: both are about the conditions, and most of what the help
+        // has to say is about them - how the indenting means what it means, and which word joins what.
         buttonsOf(conditionSection).add(button(I18n.t("ui.help"), this::showHelp));
 
-        // The reading and the buttons, stacked, in the one slot BorderLayout has at the bottom.
-        //
-        // The reading used to be added straight to SOUTH, where section() had already put the button
-        // row - and a second component at SOUTH does not sit under the first, it REPLACES it.  The
-        // row was still a child of the panel with nothing laying it out, so it had no size and never
-        // appeared.  Nobody noticed while the conditions section had no buttons of its own; adding
-        // Test to it is what made an invisible row visible as a missing feature.
+        // The reading and the buttons, stacked, in the one slot BorderLayout has at the bottom: a second
+        // component at SOUTH does not sit under the first, it REPLACES it, and the replaced row would have no
+        // size and never appear.
         JPanel below = new JPanel(new BorderLayout(4, 0));
 
         below.setBackground(java.awt.Color.WHITE);
 
-        // The reading goes ABOVE the table, under the heading (MT-108).
-        //
-        // "Stretch the condition window to end right above the test condition button." It could not,
-        // because the reading sat between the two and took a line plus two gaps out of the middle. Up
-        // here it costs the same line once, at the top, and the table runs all the way down to the
-        // buttons that act on it.
-        //
-        // It reads as a subtitle to the section rather than as a footnote to the table, which is what
-        // it is: a plain-English restatement of the whole condition, not of the selected row.
+        // The reading goes ABOVE the table, under the heading (MT-108): "Stretch the condition window to end
+        // right above the test condition button."  Between the table and the buttons it would take a line plus
+        // two gaps out of the middle; up here it costs the same line once, and the table runs all the way down
+        // to the buttons that act on it.  It reads as a subtitle to the section: a plain-English restatement
+        // of the whole condition, not of the selected row.
         conditionSection.add(readsAs, BorderLayout.NORTH);
 
         below.add(buttonsOf(conditionSection), BorderLayout.SOUTH);
@@ -429,37 +384,26 @@ public class RouteEditorFrame extends JFrame
 
         content.add(middle, BorderLayout.CENTER);
 
-        // Save in the bottom RIGHT corner, Cancel just left of it, and a line above the pair (OB-018).
+        // Save in the bottom RIGHT corner, Cancel just left of it (OB-018): together, with the one you usually
+        // want in the corner, is the arrangement every other dialog in this application uses.
         //
-        // They were at opposite ends of the window - Save bottom left, mirroring the old route editor,
-        // Cancel bottom right - which kept them clear of the Add and Remove buttons above but put the
-        // two answers to one question a window's width apart. Together, with the one you usually want
-        // in the corner, is the arrangement every other dialog in this application uses.
-        //
-        // Cancel FIRST, because a right-aligned FlowLayout still lays its children out left to right:
-        // the last one added is the one in the corner.
+        // Cancel FIRST, because a right-aligned FlowLayout still lays its children out left to right: the last
+        // one added is the one in the corner.
         JPanel buttons = new JPanel(new BorderLayout());
 
         buttons.setBackground(java.awt.Color.WHITE);
 
-        // No rule above them (MT-108).
-        //
-        // It was drawn to separate the buttons that finish with the window from the ones that act on a
-        // row. They are at opposite ends of the window now - Save in the corner, the table's own
-        // buttons up beside the table - so the line was separating two things that no longer touch,
-        // and a line with nothing on the other side of it reads as an edge that is not there.
+        // No rule above them (MT-108): the buttons that finish with the window and the ones that act on a row
+        // are at opposite ends of the window, so a line would read as an edge with nothing on the other side.
         buttons.setBorder(BorderFactory.createEmptyBorder(6, 0, 0, 0));
 
         JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
 
         right.setBackground(java.awt.Color.WHITE);
 
-        // Through the same question Escape asks, not straight to dispose.
-        //
-        // Escape has always run closeIfThrowingNothingAway - "closing one by accident threw away
-        // everything typed since it opened with no warning at all" - and the BUTTON went straight to
-        // dispose. So the obvious way out was the one that did not ask, and the keyboard shortcut was
-        // the safe one, which is exactly backwards.
+        // Through the same question Escape asks, not straight to dispose: Escape runs
+        // closeIfThrowingNothingAway, and a Cancel that went straight to dispose would make the obvious way
+        // out the one that does not ask.
         right.add(button(I18n.t("route.ui.frameCancel"), this::closeIfThrowingNothingAway));
 
         saveButton = button(I18n.t("route.ui.frameSave"), this::onSave);
@@ -482,7 +426,7 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * Everything a route says about itself, as one string, for the comparison above (GUX-B1).
+     * Everything a route says about itself, as one string, for the comparison above.
      *
      * Tolerant on purpose, like `stateSignature`: it is only ever compared with another of its own kind.
      *
@@ -505,7 +449,7 @@ public class RouteEditorFrame extends JFrame
             out.append(String.valueOf(command)).append('\u0003');
         }
 
-        // THE CONDITIONS BY THEIR CONTENT, not by the object (OP2-B5).  `NodeExpression` has no `toString`, so
+        // THE CONDITIONS BY THEIR CONTENT, not by the object.  `NodeExpression` has no `toString`, so
         // `String.valueOf` printed an identity hash - and `Route.locomotiveRenamed` rewrites condition commands IN
         // PLACE, so a locomotive renamed while this window was open left the signature identical and Save wrote the
         // dead name back into every condition.
@@ -519,16 +463,15 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * Whether the route this window is editing has changed in the database since it opened (GUX-B1).
+     * Whether the route this window is editing has changed in the database since it opened.
      *
      * Four answers, and they need different words: it is GONE (deleted, or replaced by an import that did not
      * carry it), it has been RENAMED (it is still there, under another name), it has CHANGED (somebody toggled
      * Enable/Disable, or edited it elsewhere), or it is as it was.
      *
-     * **Renamed used to read as gone** (OP2-C9), because this looked the route up by name only.  The message that
-     * followed named the two causes that had not happened - deleted, or replaced by an import - and the remedy it
-     * offered, save as new, would have left a second route beside the renamed one, with a fresh id that no route
-     * tile and no autonomy selection follows.
+     * **Renamed is not gone**: looking the route up by name only would call a renamed route gone,
+     * name two causes that had not happened, and offer save as new, which would leave a second route beside
+     * the renamed one, with a fresh id that no route tile and no autonomy selection follows.
      *
      * @return "gone", "renamed", "changed", or null
      */
@@ -543,7 +486,7 @@ public class RouteEditorFrame extends JFrame
 
         if (now == null) return nameNowHeldById() != null ? "renamed" : "gone";
 
-        // AND THE NAME MAY BE BACK, HELD BY SOMEBODY ELSE (FNL-C5).  A route renamed away and a second one
+        // AND THE NAME MAY BE BACK, HELD BY SOMEBODY ELSE.  A route renamed away and a second one
         // given its old name leaves a route answering to `originalName` that is not the one this window
         // opened: saving onto it would overwrite a stranger.  The id is what the route IS.
         if (loadedId != null && now.getId() != loadedId)
@@ -555,14 +498,13 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * Which name a save onto a renamed route should use (FXV-B2).
+     * Which name a save onto a renamed route should use.
      *
      * The window does not refresh and `originalName` is final, so the name field still holds the name this
      * window opened with unless the operator has typed in it.  Passing that as the new name renames the route
-     * back to what it was called before somebody else renamed it - which the first version of this did, while
-     * its own comment said it saved under the new name.
+     * back to what it was called before somebody else renamed it.
      *
-     * Typing in the field is a rename the operator is asking for, and is honoured; leaving it alone is not.
+     * Typing in the field is a rename the operator is asking for, and is honored; leaving it alone is not.
      *
      * @param typed what the name field holds
      * @param nowCalled what the route is called now, by whoever renamed it
@@ -576,7 +518,7 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * What the route this window opened on is called now, or null if no route carries that id (OP2-C9).
+     * What the route this window opened on is called now, or null if no route carries that id.
      *
      * By id, walking the list, because the view interface offers no lookup by id and a dialog can afford it.
      *
@@ -597,7 +539,7 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * Whether closing this window now would throw away work (UIX-B1).
+     * Whether closing this window now would throw away work.
      *
      * The question `closeIfThrowingNothingAway` asks, on its own and without a dialog, so that the exit can ask it
      * too and a test can ask it at all.  Compared against what was loaded rather than against a flag, for the reason
@@ -611,7 +553,7 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * What a test answers the discard question with, or null to ask the operator (SVT-B1).
+     * What a test answers the discard question with, or null to ask the operator.
      *
      * `maySettleBeforeExit` is modal, and the exit that calls it ends in `System.exit`, so the only way to pin the
      * exit's own decision rather than the predicate under it is to let a test answer the dialog.  Null in every
@@ -620,13 +562,13 @@ public class RouteEditorFrame extends JFrame
     public static Boolean discardAnswerForTest;
 
     /**
-     * Asked by the application's exit, which is a door out of this window too (UIX-B1).
+     * Asked by the application's exit, which is a door out of this window too.
      *
-     * The layout editor has had `maySettleBeforeExit` since OB-070 - *"one save/discard/cancel question, asked
-     * wherever a page is left"* - and this window, which is the other one holding unsaved typing, was not asked at
-     * all: File > Exit and the main window's X disposed it with the process and took the typing with them, silently.
-     * The same question the X and Escape ask, with the same two buttons; answering No leaves the application open,
-     * because the exit handler returns when this says no.
+     * The layout editor has `maySettleBeforeExit` since OB-070 - *"one save/discard/cancel question, asked
+     * wherever a page is left"* - and this window, which is the other one holding unsaved typing, is asked
+     * too: File > Exit and the main window's X would otherwise dispose it with the process and take the
+     * typing with them, silently.  The same question the X and Escape ask, with the same two buttons;
+     * answering No leaves the application open, because the exit handler returns when this says no.
      *
      * @return true when the exit may carry on
      */
@@ -634,8 +576,8 @@ public class RouteEditorFrame extends JFrame
     {
         if (!hasUnsavedWork()) return true;
 
-        // OUT OF THE TASKBAR before it asks (the popups sweep, on Adam's MT-703 note): a minimised window hides what it
-        // owns, and `toFront` does not restore one
+        // OUT OF THE TASKBAR before it asks (MT-703): a minimized window hides what it owns, and `toFront`
+        // does not restore one
         if ((getExtendedState() & java.awt.Frame.ICONIFIED) != 0)
         {
             setExtendedState(getExtendedState() & ~java.awt.Frame.ICONIFIED);
@@ -654,17 +596,14 @@ public class RouteEditorFrame extends JFrame
     /**
      * Closes, asking first if anything would be lost.
      *
-     * A route editor is a form with two tables in it, and closing one by accident - Escape, or the
-     * window's own X - threw away everything typed since it opened with no warning at all.  Save is
-     * the only way out that keeps anything, and nothing said so.
+     * A route editor is a form with two tables in it, and Escape or the window's own X would otherwise
+     * throw away everything typed since it opened with no warning.
      *
-     * Only asks when there IS something to lose, compared against what was loaded rather than against
-     * a flag: a flag has to be set by every path that changes anything, and the paths here are two
-     * table models, four fields and a capture that writes from another window.  One of them would have
-     * been missed, and a prompt that does not appear is worse than none - it teaches the user that
+     * Only asks when there IS something to lose, compared against what was loaded rather than against a
+     * flag: a flag has to be set by every path that changes anything (two table models, four fields and a
+     * capture that writes from another window), and a prompt that does not appear teaches the user that
      * closing is safe.
      */
-
     private void closeIfThrowingNothingAway()
     {
         if (!hasUnsavedWork())
@@ -770,10 +709,10 @@ public class RouteEditorFrame extends JFrame
     {
         boolean automatic = enabledBox.isSelected();
 
-        // Greyed rather than hidden.  Hiding them made the window rearrange itself as the tick was
-        // pressed, and worse, it took the trigger dropdown off the screen entirely for every route
-        // that does not fire by itself - so a control somebody was looking for simply was not there,
-        // with nothing to say it existed.  Greyed says "this belongs to the tick" and stays put.
+        // Grayed rather than hidden: hiding them made the window rearrange itself as the tick was pressed, and
+        // took the trigger dropdown off the screen entirely for a route that does not fire by itself, so a
+        // control somebody was looking for was simply not there.  Grayed says "this belongs to the tick" and
+        // stays put.
         sensorLabel.setEnabled(automatic);
         s88Field.setEnabled(automatic);
         triggerLabelText.setEnabled(automatic);
@@ -812,11 +751,10 @@ public class RouteEditorFrame extends JFrame
 
     private JPanel header()
     {
-        // No leading gap.  FlowLayout puts its hgap before the FIRST component as well as between
-        // them, so Name sat eight pixels in from the left edge while the framed panels below it
-        // started at the edge - near enough to look like a mistake rather than an indent.  The gaps
-        // between the fields are struts instead, which puts them where they were and leaves the
-        // first label flush with everything else down that side.
+        // No leading gap.  FlowLayout puts its hgap before the FIRST component as well as between them, so Name
+        // would sit eight pixels in from the left edge while the framed panels below it start at the edge.  The
+        // gaps between the fields are struts instead, which leaves the first label flush with everything else
+        // down that side.
         JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 4));
 
         row.setBackground(java.awt.Color.WHITE);
@@ -844,7 +782,7 @@ public class RouteEditorFrame extends JFrame
 
         enabledBox.addActionListener(e -> showSensorIfAutomatic());
 
-        // AND THE CONDITIONS SAY WHETHER THEY ARE ASKED AT ALL (Adam, 2026-10-18)
+        // AND THE CONDITIONS SAY WHETHER THEY ARE ASKED AT ALL
         enabledBox.addActionListener(e -> updateReadsAs());
 
         showSensorIfAutomatic();
@@ -867,12 +805,11 @@ public class RouteEditorFrame extends JFrame
             BorderFactory.createLineBorder(new java.awt.Color(204, 204, 204), 1),
             BorderFactory.createEmptyBorder(6, 8, 8, 8)));
 
-        // A heading rather than a box round everything.  Two framed panels stacked inside a third
-        // frame is three borders deep before any content, and the rest of this application says
-        // "here is a section" with a line of blue text instead.
-        // Styled the way GraphEdgeEdit is - see docs/UI-standards.md.  Section headings are Segoe UI
-        // Semibold 13 in 0,0,155, and take the same indentation as the panel they name so the heading
-        // and its contents line up down the left edge.
+        // A heading rather than a box round everything: two framed panels stacked inside a third frame is
+        // three borders deep before any content, and the rest of this application says "here is a section"
+        // with a line of blue text instead.  Styled the way GraphEdgeEdit is - see docs/UI-standards.md.
+        // Section headings are Segoe UI Semibold 13 in 0,0,155, and take the same indentation as the panel
+        // they name so the heading and its contents line up down the left edge.
         JLabel heading = new JLabel(title);
 
         heading.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13));
@@ -891,10 +828,9 @@ public class RouteEditorFrame extends JFrame
 
         panel.add(scroll, BorderLayout.CENTER);
 
-        // No button row.  Add, remove and reorder are marks in the rows themselves now - a button
-        // under a table acts on whichever row happens to be selected, which is one more thing to get
-        // right before anything happens: select the row, find the button, press it, check it did what
-        // you meant.  The row you are pointing at is not ambiguous.
+        // No button row.  Add, remove and reorder are marks in the rows themselves: a button under a table acts
+        // on whichever row happens to be selected, which is one more thing to get right before anything
+        // happens, and the row you are pointing at is not ambiguous.
         JPanel below = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 2));
 
         below.setOpaque(false);
@@ -906,92 +842,16 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * A text field that will only accept digits.
-     *
-     * @param columns how wide
-     * @return the field
-     */
-    private static JTextField digitsOnlyField(int columns)
-    {
-        JTextField field = new JTextField(columns);
-
-        ((javax.swing.text.AbstractDocument) field.getDocument()).setDocumentFilter(
-            new javax.swing.text.DocumentFilter()
-        {
-            @Override
-            public void insertString(FilterBypass bypass, int offset, String text,
-                javax.swing.text.AttributeSet attributes) throws javax.swing.text.BadLocationException
-            {
-                if (digits(text)) super.insertString(bypass, offset, text, attributes);
-            }
-
-            @Override
-            public void replace(FilterBypass bypass, int offset, int length, String text,
-                javax.swing.text.AttributeSet attributes) throws javax.swing.text.BadLocationException
-            {
-                if (digits(text)) super.replace(bypass, offset, length, text, attributes);
-            }
-
-            private boolean digits(String text)
-            {
-                if (text == null) return true;
-
-                for (int at = 0; at < text.length(); at++)
-                {
-                    if (!Character.isDigit(text.charAt(at))) return false;
-                }
-
-                return true;
-            }
-        });
-
-        return field;
-    }
-
-    /**
      * A cell editor that will only accept digits.
      *
-     * Refused as it is typed rather than at Save. A cell that takes "twelve" and complains later is a
-     * cell that produces a message about something the user did several minutes and several rows ago,
-     * and by then they are being asked to remember rather than to look.
+     * Refused as it is typed rather than at Save. A cell that takes "twelve" and complains later produces a
+     * message about something the user did several minutes and several rows ago.
      *
      * @return the editor
      */
     private static javax.swing.table.TableCellEditor digitsOnly()
     {
-        JTextField box = new JTextField();
-
-        ((javax.swing.text.AbstractDocument) box.getDocument()).setDocumentFilter(
-            new javax.swing.text.DocumentFilter()
-        {
-            @Override
-            public void insertString(FilterBypass bypass, int offset, String text,
-                javax.swing.text.AttributeSet attributes) throws javax.swing.text.BadLocationException
-            {
-                if (isDigits(text)) super.insertString(bypass, offset, text, attributes);
-            }
-
-            @Override
-            public void replace(FilterBypass bypass, int offset, int length, String text,
-                javax.swing.text.AttributeSet attributes) throws javax.swing.text.BadLocationException
-            {
-                if (isDigits(text)) super.replace(bypass, offset, length, text, attributes);
-            }
-
-            private boolean isDigits(String text)
-            {
-                if (text == null) return true;
-
-                for (int at = 0; at < text.length(); at++)
-                {
-                    if (!Character.isDigit(text.charAt(at))) return false;
-                }
-
-                return true;
-            }
-        });
-
-        return new DefaultCellEditor(box);
+        return new DefaultCellEditor(AutonomyEditorPanel.digitsOnlyField(null, 0, 0));
     }
 
     /**
@@ -1010,11 +870,53 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * The names to offer in a locomotive or route cell: the database's, and the name already in the cell (GSR-B5; Adam,
-     * 2026-10-08: "Fix b5 and 253").  A combo box cannot show a value it has not got: handed one, it keeps whatever was
-     * selected, so a route naming a locomotive or route since deleted had that cell rewritten to the first name in the list
-     * by a click and a click away - and the Save gate, which names "a locomotive nobody owns", was then satisfied.  Offered,
-     * the name survives being looked at, and the gate still names it.  The function column's rule (`functionsOffered`).
+     * A cell editor offering setting words: each is shown in the user's language and committed as the stored word.
+     *
+     * @param words the stored words
+     * @return the editor
+     */
+    private static javax.swing.table.TableCellEditor chooseSetting(String[] words)
+    {
+        JComboBox<String> box = new JComboBox<>();
+
+        for (String word : words) box.addItem(word);
+
+        box.setRenderer(new javax.swing.DefaultListCellRenderer()
+        {
+            @Override
+            public java.awt.Component getListCellRendererComponent(javax.swing.JList<?> list, Object value,
+                int index, boolean selected, boolean focused)
+            {
+                return super.getListCellRendererComponent(list,
+                    value instanceof String ? settingLabel((String) value) : value, index, selected, focused);
+            }
+        });
+
+        return new DefaultCellEditor(box);
+    }
+
+    /** The setting words a route stores, each with a `route.ui.setting.<word>` text in every bundle. */
+    private static final java.util.Set<String> SETTING_WORDS = new java.util.HashSet<>(java.util.Arrays.asList(
+        "straight", "turn", "green", "red", "on", "off", "forward", "backward", "left", "right"));
+
+    /**
+     * A stored setting word as the user reads it.
+     *
+     * @param word the stored word
+     * @return its text in the user's language, or the word itself when it is not a setting word (a number, a name)
+     */
+    static String settingLabel(String word)
+    {
+        return word != null && SETTING_WORDS.contains(word) ? I18n.t("route.ui.setting." + word) : word;
+    }
+
+    /**
+     * The names to offer in a locomotive or route cell: the database's, and the name already in the cell.
+     * A combo box cannot show a value it has not got: handed one, it keeps whatever was selected, so a route
+     * naming a locomotive or route since deleted would have that cell rewritten to the first name in the list
+     * by a click and a click away, and the Save gate, which names "a locomotive nobody owns", would then be
+     * satisfied.  Offered, the name survives being looked at, and the gate still names it.  The function
+     * column's rule (`functionsOffered`).
      *
      * @param names the database's names, or null
      * @param has what the cell holds, or null
@@ -1024,7 +926,7 @@ public class RouteEditorFrame extends JFrame
     {
         java.util.List<String> out = names == null ? new ArrayList<>() : new ArrayList<>(names);
 
-        // AS IT STANDS, spaces and all (RSA56-C3): offered trimmed, a name a hand-edited file padded was still not the
+        // AS IT STANDS, spaces and all: offered trimmed, a name a hand-edited file padded was still not the
         // value the combo box was handed, and the click wrote the first name in the list
         if (has != null && !has.trim().isEmpty() && !out.contains(has)) out.add(has);
 
@@ -1138,17 +1040,14 @@ public class RouteEditorFrame extends JFrame
      */
     private CommandRow asShown(CommandRow row)
     {
-        // THREE_WAY as well as ACCESSORY (MT-005).
+        // THREE_WAY as well as ACCESSORY (MT-005): a three-way row given a signal's address would otherwise
+        // stay a three-way pointing at a signal, a row standing for a PAIR of commands aimed at something that
+        // has no pair.
         //
-        // Adam: "Works for signals and switches. Does not work for 3-ways though." It could not: this
-        // returned any row that was not an ACCESSORY untouched, so a three-way row given a signal's
-        // address stayed a three-way pointing at a signal - a row standing for a PAIR of commands
-        // aimed at something that has no pair.
-        //
-        // The other direction is not available and is worth writing down so nobody looks for it: the
-        // model has no isThreeWay. A three-way is two accessories that this editor treats as one row,
-        // so nothing at an address can say "I am a three-way" the way isSignal() says it is a signal.
-        // An ACCESSORY row can therefore never become THREE_WAY by typing, only by being chosen.
+        // The other direction is not available and is worth writing down so nobody looks for it: the model
+        // has no isThreeWay. A three-way is two accessories that this editor treats as one row, so nothing at
+        // an address can say "I am a three-way" the way isSignal() says it is a signal. An ACCESSORY row can
+        // therefore never become THREE_WAY by typing, only by being chosen.
         if (row == null
             || (row.getKind() != CommandRow.Kind.ACCESSORY
                 && row.getKind() != CommandRow.Kind.THREE_WAY)) return row;
@@ -1159,10 +1058,10 @@ public class RouteEditorFrame extends JFrame
             return row;
         }
 
-        // And the SETTING with it.  The kind decides which pair of words the dropdown offers, so a
-        // signal row still carrying "turn" had a setting its own dropdown does not contain: the combo
-        // fell back to the first entry, green, and one click into that cell and out again committed
-        // it.  A route that put a signal to danger quietly became one that cleared it.
+        // And the SETTING with it.  The kind decides which pair of words the dropdown offers, so a signal row
+        // still carrying "turn" would have a setting its own dropdown does not contain: the combo falls back to
+        // the first entry, green, and one click into that cell and out again commits it, turning a route that
+        // put a signal to danger into one that clears it.
         String said = row.getSetting();
 
         if ("turn".equalsIgnoreCase(said)) said = "red";
@@ -1186,10 +1085,9 @@ public class RouteEditorFrame extends JFrame
     /**
      * The row of buttons under a section's table.
      *
-     * Asked of the layout rather than counted off by index.  It WAS an index, and adding a heading
-     * above the table moved everything down one - so the capture controls were added to the scroll
-     * pane, which is not a panel, and the editor stopped opening at all.  A layout knows where it put
-     * things; a number written down elsewhere does not.
+     * Asked of the layout rather than counted off by index: an index breaks when a heading is added above
+     * the table (the capture controls would land in the scroll pane, which is not a panel).  A layout knows
+     * where it put things; a number written down elsewhere does not.
      *
      * @param section a panel built by section()
      * @return its button row
@@ -1210,10 +1108,9 @@ public class RouteEditorFrame extends JFrame
     {
         JLabel out = new JLabel(text);
 
-        // The small labels beside a field - Name, S88, Trigger - are set the way the old route editor
-        // sets its own: plain 14 in the heading blue.  They name the box next to them rather than
-        // announcing a section, and semibold black made every one of them compete with the section
-        // headings above.
+        // The small labels beside a field - Name, S88, Trigger - are plain 14 in the heading blue: they name
+        // the box next to them rather than announcing a section, and semibold black would make every one of
+        // them compete with the section headings above.
         out.setFont(new java.awt.Font("Segoe UI", 0, 14));
         out.setForeground(HEADING_BLUE);
 
@@ -1231,10 +1128,8 @@ public class RouteEditorFrame extends JFrame
     /**
      * Says how the two halves of this window fit together.
      *
-     * Worth a dialog rather than a tooltip: Adam built a route, looked at the conditions, and said he
-     * did not understand how the logic worked and could see no objects in it. That is not a wording
-     * problem with one control - it is somebody meeting a small language with nothing to say what it
-     * is for.
+     * Worth a dialog rather than a tooltip: this is not a wording problem with one control, it is somebody
+     * meeting a small language with nothing to say what it is for.
      */
     private void showHelp()
     {
@@ -1270,9 +1165,8 @@ public class RouteEditorFrame extends JFrame
         triggerBox.setSelectedItem(triggerLabel(route.getTriggerType()));
         enabledBox.setSelected(route.isEnabled());
 
-        // setSelected fires no ActionEvent, so the listener that greys these two never ran on the way
-        // in: an existing automatic route opened with Automatic ticked and its sensor and trigger
-        // boxes dead, and the only way to reach them was to untick Automatic and tick it again.
+        // setSelected fires no ActionEvent, so the listener that grays these two does not run on the way in:
+        // an existing automatic route would open with Automatic ticked and its sensor and trigger boxes dead.
         showSensorIfAutomatic();
 
         List<RouteCommand> stored = route.getRoute();
@@ -1299,11 +1193,10 @@ public class RouteEditorFrame extends JFrame
                 continue;
             }
 
-            // A kind with no controls becomes a read-only row rather than a remembered index.  It was
-            // an index, held against the ORIGINAL position, and the editable rows moved under it: a
-            // route of [Switch 1, run "Yard", Switch 2] whose first row is deleted put "Yard" AFTER
-            // Switch 2, silently, having never shown it at all.  One list, one order, all of it on
-            // screen.
+            // A kind with no controls becomes a read-only row rather than a remembered index: an index held
+            // against the ORIGINAL position would let the editable rows move under it (a route of [Switch 1,
+            // run "Yard", Switch 2] whose first row is deleted would put "Yard" AFTER Switch 2, silently).
+            // One list, one order, all of it on screen.
             Entry loaded = Entry.of(stored.get(at));
 
             commands.rows.add(loaded.isEditable()
@@ -1315,10 +1208,6 @@ public class RouteEditorFrame extends JFrame
         conditionsAsFound = route.getConditions();
 
         // The condition as an outline: one row per term, indented where it was bracketed.
-        //
-        // A bracketed condition used to arrive here as "rows cannot say this" - the table was
-        // disabled, the expression printed underneath, capture refused, and the whole thing written
-        // back untouched on save.  An outline can say it, so it is editable for the first time.
         {
             conditions.rows.addAll(ConditionOutline.of(conditionsAsFound));
         }
@@ -1396,7 +1285,7 @@ public class RouteEditorFrame extends JFrame
      */
     public void appendCommand(String command)
     {
-        // The tick box that drives capture is greyed on a locked route, so nothing should arrive here
+        // The tick box that drives capture is grayed on a locked route, so nothing should arrive here
         // - but this is a public way into the command list, and the rule belongs with the list.
         if (locked) return;
 
@@ -1446,21 +1335,17 @@ public class RouteEditorFrame extends JFrame
 
             commands.rows.add(Entry.of(parsed));
 
-            // The same accessory thrown twice leaves ONE row, with the value it ended on.
+            // The same accessory thrown twice leaves ONE row, with the value it ended on: somebody capturing a
+            // route changes their mind (a turnout goes the wrong way and is thrown back), and without this both
+            // throws are in the route.  The filter lives in RouteCapture.
             //
-            // Somebody capturing a route changes their mind - a turnout goes the wrong way, is thrown
-            // back, and without this both throws are in the route.  The old text editor filtered its
-            // captured text this way and the rebuilt editor did not, so capture here recorded every
-            // throw; the filter moved into RouteCapture when that editor was deleted, and this is
-            // where it was always wanted.
+            // Through the LINES, because that is what the filter reads and what it has been tested against -
+            // and a round trip through them is cheap next to the click that caused it.
             //
-            // Through the LINES, because that is what the filter reads and what it has been tested
-            // against - and a round trip through them is cheap next to the click that caused it.
-            //
-            // Caught on its own, so that a settle which cannot be done does not take the capture with
-            // it.  It used to share the catch below: a row this could not express threw, the table was
-            // never told about the row just added, and the capture went on filling a table that had
-            // stopped changing on screen.  Everything it captured was still saved.
+            // Caught on its own, so that a settle which cannot be done does not take the capture with it: a row
+            // this could not express would otherwise throw before the table was told about the row just added,
+            // and the capture would go on filling a table that had stopped changing on screen.  Everything
+            // captured is still saved.
             try
             {
                 settleCapturedRows();
@@ -1572,7 +1457,7 @@ public class RouteEditorFrame extends JFrame
      * Sets a cell of the command table, as typing in it would.
      *
      * For tests.  These four go through the table MODEL rather than round it, because the model is
-     * where the interesting behaviour lives: what a row keeps and what it throws away when its kind
+     * where the interesting behavior lives: what a row keeps and what it throws away when its kind
      * changes is decided there, and a test that built a CommandRow directly would be testing its own
      * arithmetic rather than the editor's.
      *
@@ -1646,11 +1531,10 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * For tests: the condition outline as the table holds it (FR3-B1).
+     * For tests: the condition outline as the table holds it.
      *
-     * The command table has had `commandRowForTest` and `clickCommandMarkForTest` since it was
-     * written; the condition table had nothing, and `FR3-B1` - a silent change to when a route fires -
-     * lived in it undetected because of that.
+     * A silent change to when a route fires lived in the condition table undetected, for want of
+     * a way to look at it as the command table can be looked at.
      *
      * @return the live list, so a caller can read what an edit left behind
      */
@@ -1684,16 +1568,15 @@ public class RouteEditorFrame extends JFrame
     /**
      * For tests: move one condition row in or out, through the same door the indent marks use.
      *
-     * Written for FR-068 - Adam, 2026-09-09, on a condition with a bracket that is not the first
-     * term: *"it should be representable already in the UI, right?"*  That question is not about
-     * whether `ConditionOutline` can HOLD the shape, which `core.testConditionOutline` has covered
-     * since IPR-B2; it is about whether the indent marks can REACH it from a list somebody typed.
-     * Only this method can answer it, because the rule that decides - a row may be at most one level
-     * deeper than the row above it - lives in `ConditionTable.indent` and nowhere else.
+     * Written for FR-068, on a condition with a bracket that is not the first term: *"it should be
+     * representable already in the UI, right?"*  That question is not about whether `ConditionOutline` can
+     * HOLD the shape, which `core.testConditionOutline` has covered; it is about whether the
+     * indent marks can REACH it from a list somebody typed.  Only this method can answer it, because the
+     * rule that decides - a row may be at most one level deeper than the row above it - lives in
+     * `ConditionTable.indent` and nowhere else.
      *
-     * Through the private method the mark's click handler calls, for `clickCommandMarkForTest`'s
-     * reason: a second implementation of indenting could agree with itself while the real one is
-     * wrong.
+     * Through the private method the mark's click handler calls, for `clickCommandMarkForTest`'s reason:
+     * a second implementation of indenting could agree with itself while the real one is wrong.
      *
      * @param row which line - conditions and joining words alike, since both carry a depth
      * @param by 1 to indent, -1 to outdent
@@ -1701,6 +1584,32 @@ public class RouteEditorFrame extends JFrame
     public void indentConditionForTest(int row, int by)
     {
         conditions.indent(row, by);
+    }
+
+    /**
+     * For tests (FR-144): select these lines, as a Shift-click does, and press the indent or outdent mark on the
+     * first of them, through the same method the mouse uses.
+     *
+     * @param first the first line selected
+     * @param last the last line selected
+     * @param by 1 to indent, -1 to outdent
+     */
+    public void indentConditionsForTest(int first, int last, int by)
+    {
+        conditions.setRowSelectionInterval(first, last);
+        conditions.changeSelection(first, by > 0 ? INDENT : OUTDENT, false, false);
+        pressIndentMark(conditions, first, by > 0 ? INDENT : OUTDENT);
+    }
+
+    /**
+     * For tests (FR-144): press a condition's up or down arrow.
+     *
+     * @param line the condition
+     * @param by -1 for up, 1 for down
+     */
+    public void moveConditionForTest(int line, int by)
+    {
+        moveRow(conditions, line, by);
     }
 
     /**
@@ -1738,8 +1647,8 @@ public class RouteEditorFrame extends JFrame
     /**
      * For tests: leaves no row selected, so a rendered cell is painted in the table's own ink.
      *
-     * A selected row wears the look-and-feel's selection colours and the renderer leaves its
-     * foreground alone, so a claim about what colour a row is drawn in has to ask an unselected one.
+     * A selected row wears the look-and-feel's selection colors and the renderer leaves its
+     * foreground alone, so a claim about what color a row is drawn in has to ask an unselected one.
      */
     public void clearCommandSelectionForTest()
     {
@@ -1747,7 +1656,7 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * For tests: a command row's cell as the table paints it, colour and tooltip included (OB-246).
+     * For tests: a command row's cell as the table paints it, color and tooltip included (OB-246).
      *
      * Through the table's own renderer rather than by asking what is wrong, because what is being
      * claimed is what the user SEES - a test that asked `problemsWith` would pass with the mark not
@@ -1791,10 +1700,10 @@ public class RouteEditorFrame extends JFrame
         return (JLabel) conditions.prepareRenderer(conditions.getCellRenderer(line, column), line, column);
     }
 
-    /** The colour "Reads as" gives on, straight and green - the settings that let a train go. */
+    /** The color "Reads as" gives on, straight and green - the settings that let a train go. */
     public static final String READS_GO_COLOUR = "#1a7f37";
 
-    /** The colour "Reads as" gives off, turn and red. */
+    /** The color "Reads as" gives off, turn and red. */
     public static final String READS_STOP_COLOUR = "#c62828";
 
     /** The marks, so a test names them the way the table does */
@@ -1813,7 +1722,7 @@ public class RouteEditorFrame extends JFrame
      * Whether the command list is showing its plus.
      *
      * For tests.  The plus is a value the table paints rather than a button in a cell, so there is
-     * no component to ask - and it is exactly what went wrong: greying the table left the plus drawn
+     * no component to ask - and it is exactly what went wrong: graying the table left the plus drawn
      * and working on a route belonging to the Central Station.
      *
      * @return true when there is a way to add a command
@@ -1833,8 +1742,6 @@ public class RouteEditorFrame extends JFrame
 
     /**
      * How many conditions the list holds, so a test can see that a capture arrived.
-     *
-     * Reattached 2026-09-19 (GUX-C6): it sat above `setCommandKindForTest`, which has its own.
      */
     public int conditionCount()
     {
@@ -1862,7 +1769,7 @@ public class RouteEditorFrame extends JFrame
     {
         String reading = readingOfTheConditions();
 
-        // CHECKED ONLY WHEN THE ROUTE FIRES ITSELF (Adam, 2026-10-18): a sentence in red saying these conditions are only
+        // CHECKED ONLY WHEN THE ROUTE FIRES ITSELF: a sentence in red saying these conditions are only
         // evaluated when Automatically Fire is on - no warning triangle, which the font does not draw.  A route run by
         // hand ignores its conditions; only its own sensor's trigger asks them, and that only while Automatically Fire is on.
         boolean unasked = !enabledBox.isSelected()
@@ -1911,12 +1818,11 @@ public class RouteEditorFrame extends JFrame
 
         // What the outline means, in words and brackets.
         //
-        // The shape is on screen, so this is not there to explain the nesting - it is there for the
-        // one rule the shape alone does not state: a run of rows joined by the same word is a group,
-        // and a change of word starts a new one.  Reading it back settles that without anybody having
-        // to be told.
-        // BOLD WORDS AND COLOURED SETTINGS (Adam, 2026-09-14: "bold the operators, make on/straight/green green
-        // and off/turn/red red").  As markup, so everything the conditions carry is escaped on the way in.
+        // The shape is on screen, so this is not there to explain the nesting - it is there for the one rule
+        // the shape alone does not state: a run of rows joined by the same word is a group, and a change of
+        // word starts a new one.
+        // BOLD WORDS AND COLORED SETTINGS: "bold the operators, make on/straight/green green and
+        // off/turn/red red".  As markup, so everything the conditions carry is escaped on the way in.
         return "<html>" + I18n.f("route.ui.frameReadsAs",
             describe(ConditionOutline.toExpression(conditions.rows))) + "</html>";
     }
@@ -1981,11 +1887,10 @@ public class RouteEditorFrame extends JFrame
     /**
      * Copies a row, and puts the copy directly under it.
      *
-     * Beside the trash because the two are a pair: one takes a row away and the other makes another
-     * of it, and both act on the row they sit in.  Most of a route is near-repetition - the same
-     * switch at the next address, the same delay, the same protocol - and building each of those
-     * from a blank row means choosing the kind, the protocol and the delay again every time to get
-     * back to where the row above already was.
+     * Beside the trash because the two are a pair: one takes a row away and the other makes another of it,
+     * and both act on the row they sit in.  Most of a route is near-repetition (the same switch at the next
+     * address, the same delay, the same protocol), so a copy saves choosing the kind, the protocol and the
+     * delay again every time.
      */
     private static final int DUPLICATE = 10;
 
@@ -1999,13 +1904,10 @@ public class RouteEditorFrame extends JFrame
     private static final String INDENT_ROW = "indent";
     private static final String OUTDENT_ROW = "outdent";
 
-    // The same two marks, drawn pale and doing nothing.
-    //
-    // They used to disappear when a line was as deep as the line above allowed, and a control that
-    // vanishes reads as a feature that stops - which is exactly what Adam concluded, that only two
-    // levels were possible.  Nesting goes as deep as anybody wants; a line simply cannot jump two
-    // levels past its neighbour, and a pale mark says "not from here" where an absent one says
-    // nothing at all.
+    // The same two marks, drawn pale and doing nothing, when a line is as deep as the line above allows: a
+    // control that vanishes reads as a feature that stops (that only two levels were possible).  Nesting
+    // goes as deep as anybody wants; a line simply cannot jump two levels past its neighbor, and a pale
+    // mark says "not from here" where an absent one says nothing at all.
     private static final String INDENT_LIMIT = "indent-limit";
     private static final String OUTDENT_LIMIT = "outdent-limit";
 
@@ -2062,9 +1964,8 @@ public class RouteEditorFrame extends JFrame
                     || DELETE_ROW.equals(value) || ADD_HERE.equals(value)
                     || COPY_ROW.equals(value);
 
-                // Only a MARK is drawn as one.  This renderer also covers the column the plus sits
-                // under - which is the position column - and blanking every cell in it took the row
-                // numbers with it: a table numbered one to four showed four empty cells, and the
+                // Only a MARK is drawn as one.  This renderer also covers the column the plus sits under - which
+                // is the position column - and blanking every cell in it would take the row numbers with it: the
                 // numbers are the thing that makes "row 4 cannot be saved" mean anything.
                 JLabel out = (JLabel) super.getTableCellRendererComponent(which,
                     isMark ? "" : value, selected, false, row, column);
@@ -2085,11 +1986,10 @@ public class RouteEditorFrame extends JFrame
                 }
                 // In the selection's own ink when the row is picked.
                 //
-                // These three are drawn in their own colours - green to add, red to delete, grey to
+                // These three are drawn in their own colors - green to add, red to delete, gray to
                 // copy - and a selected row is painted in the look-and-feel's selection blue, against
-                // which a mid-green plus is very nearly invisible.  It is the row somebody has just
-                // clicked, so it is the mark they are most likely to be reaching for.  The arrows
-                // above already did this; these three were written before that was noticed.
+                // which a mid-green plus is very nearly invisible.  It is the row somebody has just clicked, so it
+                // is the mark they are most likely to be reaching for.  The arrows above do the same.
                 else if (DELETE_ROW.equals(value))
                 {
                     out.setIcon(ink == null ? RowIcons.trash(mark) : RowIcons.trash(mark, ink));
@@ -2113,15 +2013,10 @@ public class RouteEditorFrame extends JFrame
             if (column >= 0) table.getColumnModel().getColumn(column).setCellRenderer(marks);
         }
 
-        // Any further column that carries a mark gets the renderer and the pointer, and NOT a second
-        // copy of the listener below.
-        //
-        // This was a second whole call to this method, which added a second mouse listener to the same
-        // table - and the listener dispatches on the VALUE under the pointer rather than on the column,
-        // so both copies acted on every click.  One press of the trash deleted two commands: the first
-        // listener removed the row, the second read the same cell again, found the row that had just
-        // shifted up into it, and deleted that one too.  The arrows were worse than wrong - the second
-        // listener moved the row back, so they did nothing at all.
+        // Any further column that carries a mark gets the renderer and the pointer, and NOT a second copy of
+        // the listener below: the listener dispatches on the VALUE under the pointer rather than on the
+        // column, so two copies would both act on every click (one press of the trash deleting two commands,
+        // and the arrows moving a row back again).
         for (int column : alsoMarked)
         {
             if (column >= 0) table.getColumnModel().getColumn(column).setCellRenderer(marks);
@@ -2178,15 +2073,12 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * A cell with no wash on it, and this is the whole of OB-121.
+     * A cell with no wash on it (OB-121).
      *
-     * The two exemptions above used to `return out` - declining to ADD the grey, which is not the same
-     * thing as not having it. A table cell renderer hands back one recycled component for every cell
-     * in the table, so the label they were given had already been painted grey for the un-editable
-     * cell rendered a moment earlier, and returning it unchanged returned that grey.
-     *
-     * Which is why reading the code could not find this: the exemption was correct, ran, and covered
-     * exactly the right row. What it gave back was somebody else's paint.
+     * A table cell renderer hands back one recycled component for every cell in the table, so the label an
+     * exemption is given may already have been painted gray for the un-editable cell rendered a moment
+     * earlier, and returning it unchanged would return that gray: declining to ADD the wash is not the same
+     * as not having it.
      *
      * A SELECTED row is left as super made it, where the highlight is the point.
      *
@@ -2197,7 +2089,7 @@ public class RouteEditorFrame extends JFrame
      */
     private static java.awt.Component unshaded(java.awt.Component out, JTable which, boolean selected)
     {
-        // AND NO TOOLTIP (GUI-C2).  The same recycled component, and both rows that come here return before
+        // AND NO TOOLTIP.  The same recycled component, and both rows that come here return before
         // OB-246's tooltip is set - so the + row wore the refusal of the row drawn a moment before it.
         if (out instanceof javax.swing.JComponent) ((javax.swing.JComponent) out).setToolTipText(null);
 
@@ -2211,7 +2103,7 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * Files an accessory command under its address and the protocol it is sent in (GUI-C5).
+     * Files an accessory command under its address and the protocol it is sent in.
      *
      * @param into the addresses so far
      * @param command an accessory command
@@ -2225,11 +2117,10 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * Greys every cell somebody cannot type into.
+     * Grays every cell somebody cannot type into.
      *
      * A blank cell that will accept a value and a blank cell that will not look identical until one
-     * is clicked, and finding out by clicking is a poor way to learn the rules of a table. The
-     * commands table has done this since the columns were split; the conditions table had not.
+     * is clicked, and finding out by clicking is a poor way to learn the rules of a table.
      *
      * @param table the table
      */
@@ -2247,6 +2138,9 @@ public class RouteEditorFrame extends JFrame
                 Object shown = which instanceof ConditionTable
                     ? ((ConditionTable) which).shownAs(row, column, value) : value;
 
+                // OB-367: the setting is stored as the English word and shown in the user's language
+                if (column == 6 && shown instanceof String) shown = settingLabel((String) shown);
+
                 java.awt.Component out = was.getTableCellRendererComponent(which, shown, selected,
                     focused, row, column);
 
@@ -2254,11 +2148,10 @@ public class RouteEditorFrame extends JFrame
 
                 // A joining word's row is left alone.
                 //
-                // Only its own column can be typed into, so every other cell in it was shaded - and a
-                // row that is four-fifths grey reads as a row that is switched off, when it is one of
-                // the two things the outline is MADE of.  The shading exists to tell an empty cell that
-                // will take a value from one that will not, and a joiner has no such cells: there is
-                // one word and nothing else, which the row already shows.
+                // Only its own column can be typed into, so every other cell in it would be shaded, and a row
+                // that is four-fifths gray reads as switched off when it is one of the two things the outline is
+                // MADE of.  The shading tells an empty cell that will take a value from one that will not, and a
+                // joiner has no such cells.
                 if (which instanceof ConditionTable && ((ConditionTable) which).isJoinerRow(row))
                 {
                     return unshaded(out, which, selected);
@@ -2266,25 +2159,20 @@ public class RouteEditorFrame extends JFrame
 
                 // And so is the row at the bottom with the + on it.
                 //
-                // Nothing in it can be edited, because it is not a row yet - it is the button that
-                // makes one.  Shading it therefore shaded the whole line, which reads as a row that has
-                // been switched off rather than as the way to add another, and it is the one line in
-                // the table a new user is looking for.
+                // Nothing in it can be edited, because it is not a row yet - it is the button that makes one.
+                // Shading it would shade the whole line, which reads as a row that has been switched off rather
+                // than as the way to add another.
                 if (row >= which.getRowCount() - 1) return unshaded(out, which, selected);
 
-                // WHY SAVE WOULD REFUSE THIS ROW, said as it is typed (OB-246).
+                // WHY SAVE WOULD REFUSE THIS ROW, said as it is typed (OB-246): the target column offers
+                // locomotive names that its own Save refuses, and hiding such a name would refuse a legal
+                // selection with nothing shown, so the row is marked and the choice stays.  It is
+                // `everythingWrong`'s own answer, through `problemsWith`, shown while the user is still looking
+                // at the cell.
                 //
-                // Adam, 2026-09-22, on the target column offering locomotive names its own Save
-                // refuses: *"yes"*.  Hiding such a name would refuse a legal selection with nothing
-                // shown, which is the failure mode he has ruled against before - so the row is marked
-                // and the choice stays.  It is `everythingWrong`'s own answer, through
-                // `problemsWith`, shown while the user is still looking at the cell.
-                //
-                // SET ON EVERY CELL, never skipped: this renderer hands back one recycled component
-                // for the whole table, so a row that is fine would otherwise wear the tooltip of the
-                // marked row drawn a moment earlier - which is the defect the note above is about,
-                // in the other direction.  The two rows that return above have it cleared in
-                // `unshaded` (GUI-C2).
+                // SET ON EVERY CELL, never skipped: this renderer hands back one recycled component for the
+                // whole table, so a row that is fine would otherwise wear the tooltip of the marked row drawn a
+                // moment earlier.  The two rows that return above have it cleared in `unshaded`.
                 String refused = which instanceof CommandTable
                     ? ((CommandTable) which).whyWrong(row) : null;
 
@@ -2303,17 +2191,14 @@ public class RouteEditorFrame extends JFrame
                     out.setForeground(refused != null && editable ? WRONG
                         : editable ? which.getForeground() : java.awt.Color.GRAY);
 
-                    // And a background, not only grey text.
+                    // And a background, not only gray text: most of these cells are EMPTY (a function number on a
+                    // row that is not a function, a protocol on a locomotive command), and gray text in an empty
+                    // cell is exactly as visible as black text in an empty cell.  So the shade is what tells a
+                    // column that cannot be used from one that is simply not filled in yet.
                     //
-                    // Most of these cells are EMPTY - a function number on a row that is not a
-                    // function, a protocol on a locomotive command - and grey text in an empty cell
-                    // is exactly as visible as black text in an empty cell.  So a column that could
-                    // not be used looked no different from one that was simply not filled in yet,
-                    // and the way to find out was to click it and watch nothing happen.
-                    //
-                    // Not the position column, which is not a field somebody might try to fill in -
-                    // it is the row's number, and shading it would say it was disabled rather than
-                    // that it is not for typing in.
+                    // Not the position column, which is not a field somebody might try to fill in - it is the
+                    // row's number, and shading it would say it was disabled rather than that it is not for
+                    // typing in.
                     if (!editable && column != POSITION && out instanceof javax.swing.JComponent)
                     {
                         ((javax.swing.JComponent) out).setOpaque(true);
@@ -2384,19 +2269,20 @@ public class RouteEditorFrame extends JFrame
             @Override
             public void mousePressed(java.awt.event.MouseEvent e)
             {
-                int row = table.rowAtPoint(e.getPoint());
-                int column = table.columnAtPoint(e.getPoint());
-
-                if (row < 0 || column < 0) return;
-
-                Object value = table.getValueAt(row, column);
-
-                if (locked) return;
-
-                if (INDENT_ROW.equals(value)) table.indent(row, 1);
-                else if (OUTDENT_ROW.equals(value)) table.indent(row, -1);
+                pressIndentMark(table, table.rowAtPoint(e.getPoint()), table.columnAtPoint(e.getPoint()));
             }
         });
+    }
+
+    /** What a press on an indent mark does: the mark's own value says whether it may. */
+    private void pressIndentMark(ConditionTable table, int row, int column)
+    {
+        if (row < 0 || column < 0 || locked) return;
+
+        Object value = table.getValueAt(row, column);
+
+        if (INDENT_ROW.equals(value)) table.indent(row, 1);
+        else if (OUTDENT_ROW.equals(value)) table.indent(row, -1);
     }
 
     /**
@@ -2476,7 +2362,7 @@ public class RouteEditorFrame extends JFrame
      * formula, capture, and Save. Cancel stays, because closing a window you cannot change is the one
      * thing you certainly want to do, and so does Help.
      *
-     * The title says why. A window full of greyed controls with no explanation reads as broken
+     * The title says why. A window full of grayed controls with no explanation reads as broken
      * software rather than as a rule, and "this one belongs to the Central Station" is a fact a user
      * can act on - they can change it there.
      */
@@ -2484,12 +2370,10 @@ public class RouteEditorFrame extends JFrame
     {
         setTitle(I18n.f("route.ui.frameLockedTitle", originalName));
 
-        // Not focusable either, not merely uneditable.
-        //
-        // An uneditable text field still takes the caret: it can be tabbed into, clicked into, and
-        // its text selected, and it keeps the white background and the I-beam pointer of a box that
-        // is waiting to be typed in.  Somebody who does that and finds nothing happens has been told
-        // the window is broken rather than that the route belongs to the station.
+        // Not focusable either, not merely uneditable: an uneditable text field still takes the caret, can be
+        // tabbed into, clicked into and its text selected, and keeps the white background and the I-beam
+        // pointer of a box that is waiting to be typed in.  Somebody who tries it and finds nothing happens
+        // has been told the window is broken rather than that the route belongs to the station.
         nameField.setEditable(false);
         nameField.setFocusable(false);
 
@@ -2524,13 +2408,13 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * A setting word in the colour of what it does: green for on, straight and green, red for off, turn and red
-     * (Adam, 2026-09-14).  By the WORD, because the same true or false is "on" for a sensor and "turn" for a switch.
+     * A setting word in the color of what it does: green for on, straight and green, red for off, turn and red.
+     * By the WORD, because the same true or false is "on" for a sensor and "turn" for a switch.
      * Any other word - a direction, a three-way position - is left as it is.
      */
     private static String setting(String word)
     {
-        String safe = marked(word);
+        String safe = marked(settingLabel(word));
 
         if ("on".equals(word) || "straight".equals(word) || "green".equals(word))
         {
@@ -2580,7 +2464,7 @@ public class RouteEditorFrame extends JFrame
                 marked(row.getTarget()), marked(row.getSetting()));
 
             case LOCOMOTIVE_DIRECTION: return I18n.f("route.reads.direction",
-                marked(row.getTarget()), marked(row.getSetting()));
+                marked(row.getTarget()), marked(settingLabel(row.getSetting())));
 
             case ROUTE: return I18n.f("route.reads.route", marked(row.getTarget()));
 
@@ -2627,19 +2511,16 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * The s88 the user typed, with an empty field meaning none (OB-178).
-     *
-     * Adam: *"if a route's auto-fire checkbox is unchecked, and the s88 field is blank, the save will
-     * still fail asking the user to input an integer.  just treat this as 0."*
+     * The s88 the user typed, with an empty field meaning none (OB-178): *"if a route's auto-fire checkbox is
+     * unchecked, and the s88 field is blank, the save will still fail asking the user to input an integer.
+     * just treat this as 0."*
      *
      * **Blank is an answer, and it is the answer a manual route gives.** A route with no sensor cannot
      * fire itself and does not want to - the field is only meaningful with auto-fire on, which has its
-     * own rule below.  Refusing the empty field made a perfectly good manual route unsaveable, and the
-     * message asked for an integer as though the user had typed something wrong.
+     * own rule below.
      *
-     * ONE READER for the check and the save, which is the other half of the defect: they parsed the
-     * same field separately, so relaxing one without the other would have moved the failure from a
-     * refusal to an exception.
+     * ONE READER for the check and the save, so that relaxing one without the other cannot move the
+     * failure from a refusal to an exception.
      *
      * Still -1 for genuine rubbish - letters, a stray sign - because that IS somebody typing something
      * wrong, and it keeps the message it deserves.
@@ -2669,16 +2550,13 @@ public class RouteEditorFrame extends JFrame
     /**
      * Everything wrong with the window, in the order a reader would work through it.
      *
-     * Gathered rather than reported one at a time.  Save used to stop at the first problem, so a
-     * route with three things wrong took three attempts to find out - and each attempt named one
-     * cell, which reads as the editor changing its mind about what it wants.
+     * Gathered rather than reported one at a time, so a route with three things wrong does not take three
+     * attempts to find out.
      *
-     * The point of most of these is that the row LOOKS right.  Changing an accessory into a
-     * locomotive command used to leave the address behind in the name column, giving a command for a
-     * locomotive called "3" - a name no locomotive has.  Nothing refused it: the row built, the
-     * route saved, and it did nothing whatever when it ran.  A route that quietly does nothing is
-     * the worst thing this editor can produce, because there is no error anywhere to lead anybody
-     * back to it.
+     * The point of most of these is that the row LOOKS right and builds: a command for a locomotive called
+     * "3" (an address left behind in the name column when an accessory is changed into a locomotive command)
+     * saves, and then does nothing whatever when it runs.  A route that quietly does nothing is the worst
+     * thing this editor can produce, because there is no error anywhere to lead anybody back to it.
      *
      * @return the problems, empty when there are none
      */
@@ -2715,9 +2593,9 @@ public class RouteEditorFrame extends JFrame
             }
         }
 
-        // AN EMERGENCY STOP STANDS ALONE (Adam, 2026-09-25: *"if a route has emergency stop, it cannot have any other types
-        // of commands.  Reject it from being created or imported as such."*).  A route that should set something and then
-        // cut the power fires a stop-only route with a Route command, which the message says.
+        // AN EMERGENCY STOP STANDS ALONE: *"if a route has emergency stop, it cannot have any other types of
+        // commands.  Reject it from being created or imported as such."*  A route that should set something and
+        // then cut the power fires a stop-only route with a Route command, which the message says.
         boolean aStop = false;
         boolean anythingElse = false;
 
@@ -2729,7 +2607,7 @@ public class RouteEditorFrame extends JFrame
             else anythingElse = true;
         }
 
-        // In the editor's own words for the two rows (RLA5-C6, RLU5-C3)
+        // In the editor's own words for the two rows
         if (aStop && anythingElse)
         {
             wrong.add(I18n.f("route.ui.frameStopStandsAlone", I18n.t("route.kind.STOP"), I18n.t("route.kind.ROUTE")));
@@ -2804,17 +2682,14 @@ public class RouteEditorFrame extends JFrame
      */
     public java.util.List<String> functionChoicesForTest(int row)
     {
-        // THROUGH THE CELL EDITOR THE TABLE WOULD ACTUALLY USE (VD12-T3).
-        //
-        // This asked `functionsOffered` directly, which is the list but not the affordance: folding
-        // column 5 back onto the `digitsOnly()` line - the one mutation that matters here, because it
-        // is what the operator meets - left the helper untouched and the test green.  What decides
-        // whether a number can be typed is the editor this column is given, so that is what is asked.
+        // THROUGH THE CELL EDITOR THE TABLE WOULD ACTUALLY USE, not `functionsOffered` directly:
+        // that is the list but not the affordance, and what decides whether a number can be typed is the
+        // editor this column is given.
         return offeredBy(commands, row, 5);
     }
 
     /**
-     * What a command's locomotive or route cell would offer, for a test (GSR-B5).
+     * What a command's locomotive or route cell would offer, for a test.
      *
      * @param row which row
      * @return the names offered, or null where the cell is not a list
@@ -2825,7 +2700,7 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * What a condition's locomotive cell would offer, for a test (GSR-B5).
+     * What a condition's locomotive cell would offer, for a test.
      *
      * @param line which line of the conditions
      * @return the names offered, or null where the cell is not a list
@@ -2836,7 +2711,7 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * What one cell's editor offers, read through the editor the table would use (VD12-T3).
+     * What one cell's editor offers, read through the editor the table would use.
      *
      * @param table the table
      * @param row its row
@@ -2868,8 +2743,7 @@ public class RouteEditorFrame extends JFrame
      * Two sorts of thing.  The first is a row that cannot be built at all - a blank address, a speed
      * that is not a number - which the row itself refuses, and this asks it.  The second is a row
      * that builds perfectly well and names something that does not exist: a locomotive nobody owns,
-     * a route nobody wrote, an address no decoder can carry.  Only the layout knows about those, and
-     * nothing was asking it.
+     * a route nobody wrote, an address no decoder can carry.  Only the layout knows about those.
      *
      * @param row the row, or null for a kind the editor has no controls for
      * @return the problems with it
@@ -2898,8 +2772,8 @@ public class RouteEditorFrame extends JFrame
 
         switch (row.getKind())
         {
-            // The name of a locomotive on this layout, not any text at all.  This is the one Adam
-            // found: an accessory turned into a locomotive command kept its address as the name.
+            // The name of a locomotive on this layout, not any text at all: an accessory turned into a
+            // locomotive command kept its address as the name.
             case LOCOMOTIVE_SPEED:
             case LOCOMOTIVE_DIRECTION:
             case FUNCTION:
@@ -2912,16 +2786,13 @@ public class RouteEditorFrame extends JFrame
                 else if (!RouteCommand.isNameUsable(target))
                 {
                     // A COMMA in the name breaks the format a route is written in - the command line is
-                    // comma-separated.  BRACKETS ARE ALLOWED (Adam, 2026-09-04: *"bracketed loc names
-                    // should just be allowed"*), and this comment said otherwise until VD14-R11; the
-                    // condition parser's bracket handling was the reason for the old rule and is no
-                    // longer a reason to refuse a name.  The old editor refused such a name at both doors; this one
-                    // offered it in a dropdown and saved it, which produces a route file that reads
-                    // back as something else.  Real names look like this - "SBB 460 (2)".
+                    // comma-separated - and a name offered in a dropdown and saved would produce a route file that
+                    // reads back as something else.  BRACKETS ARE ALLOWED: *"bracketed loc names should just be
+                    // allowed"*.  Real names look like this - "SBB 460 (2)".
                     wrong.add(I18n.f("route.ui.frameNameNotUsable", target));
                 }
 
-                // AND THE SENSOR an "is at" condition watches, its setting (GSR-C1): saved as 0 or nothing, the condition
+                // AND THE SENSOR an "is at" condition watches, its setting: saved as 0 or nothing, the condition
                 // can never be true and the route never fires - FEEDBACK's own check, below
                 if (CommandRow.asksWhereATrainIs(row.getKind()) && numberOr(row.getSetting(), 0) <= 0)
                 {
@@ -2983,15 +2854,12 @@ public class RouteEditorFrame extends JFrame
             }
         }
 
-        // A speed the decoder cannot be given.  RouteCommand takes the number as typed, so a
-        // hundred and fifty is saved, sent, and quietly clipped by something further down.
+        // A speed the decoder cannot be given.  RouteCommand takes the number as typed, so a hundred and fifty
+        // is saved, sent, and quietly clipped by something further down.
         //
-        // A NEGATIVE speed is not a mistake: RouteCommand.parseLine documents it as an instant stop,
-        // and MarklinRoute calls instantStop() for it.  Refusing everything below zero blocked a
-        // route that already contained one from being saved AT ALL - the row loaded, the editor
-        // reported it as wrong, and the only ways out were to discard the edit or to change what the
-        // command meant.  Locking somebody out of their own route is worse than the typo this check
-        // was written to catch.
+        // A NEGATIVE speed is not a mistake: RouteCommand.parseLine documents it as an instant stop, and
+        // MarklinRoute calls instantStop() for it.  Refusing everything below zero would lock somebody out of
+        // saving their own route, which is worse than the typo this check catches.
         if (row.getKind() == CommandRow.Kind.LOCOMOTIVE_SPEED)
         {
             int speed = numberOr(row.getSetting(), Integer.MIN_VALUE);
@@ -3019,18 +2887,15 @@ public class RouteEditorFrame extends JFrame
 
         int address = numberOr(target, 0);
 
-        // THE LOGICAL ADDRESS, ASKED AS ONE (S14-C1).  Accessory's maxima are raw and say so, and this
-        // passed the operator's number in unconverted - so logical MM2 320 and logical DCC 2048 were
-        // refused here and accepted by the diagram editor, which converts.
+        // THE LOGICAL ADDRESS, ASKED AS ONE.  Accessory's maxima are raw and say so, so the operator's
+        // number has to be converted before it is compared: unconverted, logical MM2 320 and logical DCC 2048
+        // would be refused here and accepted by the diagram editor, which converts.
         if (address <= 0 || !Accessory.isValidLogicalAddress(address, speaks))
         {
             wrong.add(I18n.f("route.ui.frameNotAnAddress", target + " (" + speaks + ")"));
         }
     }
 
-    /**
-     * A number, or a fallback where the text is not one.
-     */
     /**
      * The speed that means "stop now" rather than "coast to zero".
      *
@@ -3051,6 +2916,9 @@ public class RouteEditorFrame extends JFrame
         return names == null || names.isEmpty() ? "" : names.get(0);
     }
 
+    /**
+     * A number, or a fallback where the text is not one.
+     */
     private static int numberOr(String text, int fallback)
     {
         try
@@ -3063,16 +2931,6 @@ public class RouteEditorFrame extends JFrame
         }
     }
 
-    /**
-     * Says whether this route would fire as the railway stands.
-     *
-     * The two halves are asked separately, because they fail for different reasons and a single
-     * "no" would leave the user to guess which: the trigger sensor is either occupied or it is not,
-     * and the conditions either hold or they do not.  Both have to be true for the route to run.
-     *
-     * Ported from the old editor, which read the expression out of a text box; this one asks the
-     * outline, so what is tested is what the table shows rather than what was last typed.
-     */
     /**
      * Lights this route on the track diagram: what it commands in yellow, what it checks in orange.
      *
@@ -3088,12 +2946,11 @@ public class RouteEditorFrame extends JFrame
     {
         if (parent == null) return;
 
-        // BY KIND, NOT BY NUMBER (MT-462).  Adam: *"Seems the highlighting doesn't care about item
-        // type."*  A command names an accessory, another route, or a locomotive; a condition names an
-        // s88 or an accessory - and a tile of any kind carries a number, so the kind has to travel
-        // with the address or the wrong tiles light.
+        // BY KIND, NOT BY NUMBER (MT-462): a command names an accessory, another route, or a locomotive; a
+        // condition names an s88 or an accessory - and a tile of any kind carries a number, so the kind has to
+        // travel with the address or the wrong tiles light.
         //
-        // AND BY DECODER (GUI-C5): an accessory address is one per protocol, so the protocol travels with it.
+        // AND BY DECODER: an accessory address is one per protocol, so the protocol travels with it.
         java.util.Map<Integer, java.util.Set<org.traincontrol.base.Accessory.accessoryDecoderType>> commanded =
             new java.util.LinkedHashMap<>();
         java.util.Set<Integer> commandedRoutes = new java.util.LinkedHashSet<>();
@@ -3101,30 +2958,27 @@ public class RouteEditorFrame extends JFrame
             new java.util.LinkedHashMap<>();
         java.util.Set<Integer> checkedSensors = new java.util.LinkedHashSet<>();
 
-        // A sensor a COMMAND names, which only a route saved by an older version can hold (VD13-C6).
+        // A sensor a COMMAND names, which only a route saved by an older version can hold.
         java.util.Set<Integer> commandedSensors = new java.util.LinkedHashSet<>();
 
         for (Entry entry : commands.rows)
         {
             org.traincontrol.base.RouteCommand command = entry.toCommand();
 
-            // ASKED WHETHER IT HAS ONE FIRST (IPR-B1).
+            // ASKED WHETHER IT HAS ONE FIRST.
             //
-            // `getAddress()` is `Integer.parseInt` over a key other command types do not carry, and
-            // its own javadoc says it throws for them - so a route holding a LOCOMOTIVE command threw
-            // out of Highlight on Diagram, which is a button a person presses to see what a route
-            // touches.  `hasAddress()` exists for exactly this and was not being asked.
+            // `getAddress()` is `Integer.parseInt` over a key other command types do not carry, and its own
+            // javadoc says it throws for them, so a route holding a LOCOMOTIVE command would throw out of
+            // Highlight on Diagram.  `hasAddress()` exists for exactly this.
             if (command == null || !command.hasAddress() || command.getAddress() <= 0) continue;
 
             if (command.isAccessory()) byDecoder(commanded, command);
 
             if (command.isRoute()) commandedRoutes.add(command.getAddress());
 
-            // AND A SENSOR THIS ROUTE COMMANDS (VD12-C4).  `canBeACommand` will not let a new FEEDBACK
-            // row be made, but a route saved by an older version can hold one and `CommandRow` says in
-            // as many words that such a row "still opens and still shows" - so splitting these rows by
-            // kind dropped it from the highlight altogether, and a route naming a sensor reported
-            // nothing to show.  It goes with the checked sensors, because that is what it is about.
+            // AND A SENSOR THIS ROUTE COMMANDS.  `canBeACommand` will not let a new FEEDBACK row be
+            // made, but a route saved by an older version can hold one and `CommandRow` says in as many words
+            // that such a row "still opens and still shows", so it has to reach the highlight.
             if (command.isFeedback()) commandedSensors.add(command.getAddress());
         }
 
@@ -3132,7 +2986,7 @@ public class RouteEditorFrame extends JFrame
         {
             if (row.isJoiner() || row.getCommand() == null) continue;
 
-            // The same question on the condition side (IPR-B1): a condition can name a locomotive.
+            // The same question on the condition side: a condition can name a locomotive.
             if (!row.getCommand().hasAddress() || row.getCommand().getAddress() <= 0) continue;
 
             if (row.getCommand().isAccessory()) byDecoder(checked, row.getCommand());
@@ -3140,18 +2994,17 @@ public class RouteEditorFrame extends JFrame
             if (row.getCommand().isFeedback()) checkedSensors.add(row.getCommand().getAddress());
         }
 
-        // AND THE SENSOR THAT FIRES IT, which Adam asked for in the same sentence: *"the S88 that
-        // triggers the route or is involved in conditions"*.  It is a thing the route is ABOUT and it
-        // was the one part of the route this button never showed.
+        // AND THE SENSOR THAT FIRES IT: *"the S88 that triggers the route or is involved in conditions"*.  It is
+        // a thing the route is ABOUT, and it was the one part of the route this button never showed.
         int trigger = numberOr(s88Field.getText(), 0);
 
         if (trigger > 0) checkedSensors.add(trigger);
 
         // A square that is BOTH commanded and checked is drawn as commanded.  It is the stronger of the
-        // two statements - the route does something to it - and two washes on one tile is a colour
+        // two statements - the route does something to it - and two washes on one tile is a color
         // neither of them chose.  Asked within a kind, because an accessory and a sensor numbered alike
         // are two different squares and neither says anything about the other - and within a decoder, for
-        // the same reason: MM2 5 and DCC 5 are two turnouts (GUI-C5).
+        // the same reason: MM2 5 and DCC 5 are two turnouts.
         for (java.util.Map.Entry<Integer, java.util.Set<org.traincontrol.base.Accessory.accessoryDecoderType>>
             both : commanded.entrySet())
         {
@@ -3164,23 +3017,16 @@ public class RouteEditorFrame extends JFrame
             if (alsoChecked.isEmpty()) checked.remove(both.getKey());
         }
 
-        // AND THE SAME FOR THE SENSORS, HERE, BEFORE EITHER IS PAINTED (VD13-C6, VD14-C3, VD15-B1).
+        // AND THE SAME FOR THE SENSORS, HERE, BEFORE EITHER IS PAINTED.
         //
-        // `canBeACommand` will not make a new FEEDBACK row, but an older route can hold one, and the
-        // first fix for that put its address in with the CHECKED sensors - so the legend said "what it
-        // checks in orange" over a square the route writes to.  Commanded is the stronger statement,
-        // the same way round as the accessories' rule above.
+        // `canBeACommand` will not make a new FEEDBACK row, but an older route can hold one, and the legend
+        // says "what it checks in orange", so a sensor the route writes to must not be washed as checked.
+        // Commanded is the stronger statement, the same way round as the accessories' rule above.
         //
         // **THE CASE THIS IS ACTUALLY FOR, on any route made since `canBeACommand`, is the route's own
-        // TRIGGER** (VD14-C3, restored by VD16-C2): a trigger is always in `checkedSensors`, so a
-        // route triggered by a sensor it also commands had that square painted as a condition.  The
-        // first version of this line pointed the other way and sent it back to the colour this bucket
-        // exists to take it out of.
-        //
-        // The first version of this sat BELOW the paint calls, where it changed nothing at all: the
-        // checked sensors had already been washed, and the tile ended up the right colour only because
-        // `LayoutLabel.flashHighlight` cancels a running wash and starts again from the tile's own
-        // icon.  A statement whose only effect is to be read as a rule is worse than no statement.
+        // TRIGGER**: a trigger is always in `checkedSensors`, so a route triggered by a
+        // sensor it also commands would have that square painted as a condition.  The removal has to come
+        // BEFORE the paint calls: after them the checked sensors have already been washed.
         checkedSensors.removeAll(commandedSensors);
 
         int lit = parent.highlightAccessories(commanded, org.traincontrol.util.ImageUtil.HIGHLIGHT,
@@ -3214,15 +3060,16 @@ public class RouteEditorFrame extends JFrame
     private JButton highlightButton;
 
     /**
-     * Answers "would this route fire right now", off the event thread (GSR-B1).
+     * Answers "would this route fire right now", off the event thread.
      *
      * **THE EVALUATION CANNOT RUN ON THE EVENT THREAD.**  An autoloc condition - "train X at sensor
-     * Y" - is evaluated by the static `Route.evaluate`, which began by waiting for the autonomy
-     * resolution to finish: `Layout.waitForS88Reached`, an untimed wait that held until the train
-     * reached the sensor it had been dispatched to.  (Since RSA56-C1 it waits only while the train stands
-     * on a sensor its run has not yet recorded, three seconds at most - and still not on this thread.)  Pressed while that train is running, this froze
-     * the whole window - Stop with it - until the train arrived, and for good where an emergency stop
-     * had left the run parked in its own feedback wait with nothing to clear the pending sensor.
+     * Y" - is evaluated by the static `Route.evaluate`, which waits for the autonomy resolution to finish
+     * (`Layout.waitForS88Reached`) while the train stands on a sensor its run has not yet recorded, three
+     * seconds at most.  Run on the event thread, that would freeze the whole window - Stop with it.
+     *
+     * The two halves are asked separately, because they fail for different reasons and a single "no" would
+     * leave the user to guess which: the trigger sensor is either occupied or it is not, and the conditions
+     * either hold or they do not.  Both have to be true for the route to run.
      *
      * The wait is right and is untouched: it is there so that a monitor does not read a sensor the
      * resolution has not finished with.  What moves is who does the waiting.  The button is disabled
@@ -3237,16 +3084,15 @@ public class RouteEditorFrame extends JFrame
 
         final String s88;
 
-        // READ ON THE EVENT THREAD, AND STILL INSIDE A TRY (VD17-C8, narrowed by VD18-C3).
+        // READ ON THE EVENT THREAD, AND STILL INSIDE A TRY.
         //
-        // The table's rows are the event thread's to read, so building the expression cannot move to
-        // the worker.  Everything that is KNOWN to throw here - a sensor that names nothing, an
-        // address that is not a number - is read inside the worker's own try and answered there.
-        // What is left is a belt: `ConditionOutline.toExpression` walks the rows with index
-        // arithmetic and no explicit throw, so an outline the table can produce that the builder
-        // cannot read may not be reachable at all.  If it is, the operator gets the sentence the
-        // single-threaded version gave rather than a stack trace out of an action listener; if it is
-        // not, this costs one branch.
+        // The table's rows are the event thread's to read, so building the expression cannot move to the
+        // worker.  Everything KNOWN to throw here - a sensor that names nothing, an address that is not a
+        // number - is read inside the worker's own try and answered there.  What is left is a belt:
+        // `ConditionOutline.toExpression` walks the rows with index arithmetic and no explicit throw, so an
+        // outline the table can produce that the builder cannot read may not be reachable at all.  If it is,
+        // the operator gets the sentence the single-threaded version gave rather than a stack trace out of an
+        // action listener; if it is not, this costs one branch.
         try
         {
             conditions = conditionsEditable
@@ -3352,32 +3198,31 @@ public class RouteEditorFrame extends JFrame
                 if (!parent.getModel().newRoute(name, built, s88, trigger, enabledBox.isSelected(),
                     expression))
                 {
-                    // Checked, the way the edit path below is.  It was discarded, so a refusal closed
-                    // the window with no route made and nothing said.
+                    // Checked, the way the edit path below is: a refusal says so rather than closing the window with
+                    // no route made and nothing said.
                     JOptionPane.showMessageDialog(this, I18n.f("route.ui.errorEditRouteFailed", name));
                     return;
                 }
             }
             else
             {
-                // THE ROUTE MAY HAVE MOVED UNDER THIS WINDOW (GUX-B1).
+                // THE ROUTE MAY HAVE MOVED UNDER THIS WINDOW.
                 //
                 // This is not a modal window and it does not hold the route: Enable/Disable, a delete, an import or
                 // another editor can change it while it is open, and Save is a delete-and-re-add of everything the
-                // window holds - so it wrote this window's idea of the route over theirs, silently.  The common one
-                // is the enable flag: toggle a route in the list with its editor open, press Save, and it is off
-                // again.  Asked rather than refused, because what to do about it is the operator's to decide.
+                // window holds, so it would write this window's idea of the route over theirs silently (toggle a
+                // route in the list with its editor open, press Save, and it is off again).  Asked rather than
+                // refused, because what to do about it is the operator's to decide.
                 String moved = howTheRouteMoved();
 
                 if ("renamed".equals(moved))
                 {
-                    // RENAMED IS NOT DELETED (OP2-C9).  Saving onto the route under its new name keeps its
-                    // id, and with it every route tile bound to it and any autonomy selection on it - which
-                    // is what save-as-new would have thrown away while telling the operator it had been
-                    // deleted or replaced by an import.
+                    // RENAMED IS NOT DELETED.  Saving onto the route under its new name keeps its id, and
+                    // with it every route tile bound to it and any autonomy selection on it, which save-as-new
+                    // would throw away.
                     String nowCalled = nameNowHeldById();
 
-                    // ASKED TWICE, AND IT CAN ANSWER DIFFERENTLY (FNL-C5).  `howTheRouteMoved` found a
+                    // ASKED TWICE, AND IT CAN ANSWER DIFFERENTLY.  `howTheRouteMoved` found a
                     // route under this id a moment ago; if it has gone since, the message would name it
                     // as "renamed to null" and the save would edit a route called null.  Treated as gone,
                     // which is what it now is.
@@ -3389,16 +3234,13 @@ public class RouteEditorFrame extends JFrame
                         return;
                     }
 
-                    // AND IT KEEPS THE NAME THE OTHER PARTY GAVE IT (FXV-B2).
+                    // AND IT KEEPS THE NAME THE OTHER PARTY GAVE IT.
                     //
-                    // `name` is what the name field holds, and this window does not refresh - so unless
-                    // the operator has typed in it themselves it is still the name the window opened
-                    // with, and passing it as the new name renamed the route straight back.  The first
-                    // version of this did exactly that while its own comment said it saved "under its
-                    // new name".
-                    //
-                    // Typing in the field is still honoured: that is the operator asking for a rename,
-                    // which is a different thing from not having touched it.
+                    // `name` is what the name field holds, and this window does not refresh, so unless the
+                    // operator has typed in it themselves it is still the name the window opened with, and passing
+                    // it as the new name would rename the route straight back.  Typing in the field is still
+                    // honored: that is the operator asking for a rename, which is a different thing from not
+                    // having touched it.
                     String saveAs = nameToSaveAs(name, nowCalled);
 
                     if (JOptionPane.showOptionDialog(this,
@@ -3419,8 +3261,8 @@ public class RouteEditorFrame extends JFrame
                 }
                 else if ("gone".equals(moved))
                 {
-                    // ADDED BACK RATHER THAN LOST.  The old behaviour was `editRoute` returning false and a message
-                    // with no way out: `originalName` is final, so the typing could never be saved as anything.
+                    // ADDED BACK RATHER THAN LOST: `originalName` is final, so without this the typing could never be
+                    // saved as anything (`editRoute` would return false and the message leave no way out).
                     if (JOptionPane.showOptionDialog(this,
                         I18n.f("route.ui.confirmRouteGoneSaveAsNew", originalName),
                         I18n.t("route.ui.titleRouteMoved"),
@@ -3464,46 +3306,28 @@ public class RouteEditorFrame extends JFrame
             parent.refreshRouteList();
             parent.repaintLayout();
 
-            // NO DIAGRAM EDIT TO COMPLETE (RLV7-A1).  This called `layoutEditingComplete`, from when a route
-            // tile carried its route's name and a rename here left it pointing at nothing.  A tile follows its
-            // route by number now - `rebindRouteTiles` runs after every write to the route database - and
-            // `repaintLayout` above redraws it.  The call re-read every page and reset autonomy, and during a run
-            // the reload after the reset asked to abandon it: Yes stood every train the run had moved back where
-            // it set off, with the square it stood on reading free, and No left the run going with no
-            // configuration to fold it into.  A route is no page of the diagram.
+            // NO DIAGRAM EDIT TO COMPLETE.  A tile follows its route by number - `rebindRouteTiles`
+            // runs after every write to the route database - and `repaintLayout` above redraws it, so
+            // `layoutEditingComplete` is not called: it re-reads every page and resets autonomy, and during a
+            // run the reload after the reset asks to abandon it (Yes stands every train the run had moved back
+            // where it set off, with the square it stood on reading free; No leaves the run going with no
+            // configuration to fold it into).  A route is no page of the diagram.
 
-            // A sync only when the route is NEW, which is what the old editor settled on years ago
-            // and what this one copied without reading the comment beside it.
+            // A sync only when the route is NEW and its own id could collide with one the station issued (OB-155).
             //
-            // Routes travel one way: the Central Station's are imported and marked locked, and
-            // nothing is ever written back - editRoute is a delete-then-re-add in the local database
-            // and the station is never told.  So a sync after an EDIT re-fetches the layouts, the
-            // locomotives, the accessories and the routes over the network to learn nothing, and the
-            // route import it runs is keyed by id: a local route sharing an id with one on the
-            // station is deleted and replaced by the station's version.  It cannot help and it can
-            // hurt.  Restarting the route's monitoring thread, which is the thing that really has to
-            // happen, editRoute already does - it disables the old route before re-adding it.
+            // Routes travel one way: the Central Station's are imported and marked locked, and nothing is ever
+            // written back - editRoute is a delete-then-re-add in the local database and the station is never
+            // told.  A sync after an EDIT would re-fetch everything over the network to learn nothing, and its
+            // route import, keyed by id, would replace a local route sharing an id with one on the station.
+            // editRoute already restarts the route's monitoring thread, which is the thing that has to happen.
             //
-            // A NEW route is different in one way worth the round trip: its id is the next free one
-            // in the LOCAL database, which knows nothing about routes added on the station since the
-            // last sync.  Syncing now surfaces a collision while the user is still looking at the
-            // route they just made, rather than at the next startup.
-            // And only when the station HAS routes of its own.
-            //
-            // The paragraph above is about an id collision with a route added on the station since the
-            // last sync.  A layout whose routes are all local cannot have one: every id in the database
-            // came from the database.  So the round trip - layouts, locomotives, accessories and routes,
-            // over the network - buys nothing there, and Adam asked why it was happening at all.
-            // AND ONLY WHEN THE NEW ROUTE'S OWN ID COULD COLLIDE (OB-155).
-            //
-            // The paragraph above is about a new route's id clashing with one added on the station
-            // since the last sync.  newRoute allocates from ROUTE_STARTING_ID upwards, so the ids it
-            // hands out are ones the station has never issued - and Adam asked for exactly this:
-            // "the route page should not have to sync with the cs2 after edits/deletions for routes
-            // >= ID 1000."
-            //
-            // Read back from the database rather than assumed, because newRoute picks the id and this
-            // window does not.
+            // A NEW route's id is the next free one in the LOCAL database, which knows nothing about routes
+            // added on the station since the last sync, so syncing surfaces a collision while the user is still
+            // looking at the route they just made.  But only when the station HAS routes of its own, and only
+            // when the id could be one the station issued: newRoute allocates from ROUTE_STARTING_ID upwards,
+            // which the station has never issued - "the route page should not have to sync with the cs2 after
+            // edits/deletions for routes >= ID 1000."  Read back from the database rather than assumed,
+            // because newRoute picks the id and this window does not.
             org.traincontrol.base.Route saved = parent.getModel().getRoute(name);
 
             boolean couldCollide = saved == null
@@ -3538,19 +3362,18 @@ public class RouteEditorFrame extends JFrame
     /**
      * The delay the railway will actually wait for, given the one somebody asked for.
      *
-     * **THE FLOOR, SHOWN RATHER THAN APPLIED SILENTLY (X8-C2).**  `MarklinRoute` sleeps
+     * **THE FLOOR, SHOWN RATHER THAN APPLIED SILENTLY.**  `MarklinRoute` sleeps
      * `max(delay, DEFAULT_SLEEP_MS)` between commands, because 150ms is the gap it leaves between two
      * route commands and `THREEWAY_ROUTE_DELAY_MS` is defined as sitting above it.  So a delay between
-     * 1 and 150 was accepted, stored, written to the file, read back and redisplayed - and never used.
-     * Somebody lowering a pause from 300 to 100 to speed a route up saw the number change and the
-     * railway not.
+     * 1 and 150 would be accepted, stored, written to the file, read back and redisplayed - and never used,
+     * and somebody lowering a pause from 300 to 100 would see the number change and the railway not.
      *
      * Zero is left alone: it means "no delay asked for", which is a different thing from "as short as
      * possible" and is what an untouched row holds.
      *
-     * ASKED ON THE WAY OUT AS WELL AS ON THE WAY IN (X8V-C7).  Raising it only as it was typed left
-     * every delay that arrived another way - a route saved by an earlier build, imported from a station,
-     * read out of a JSON file - showing a number the railway would not use.
+     * ASKED ON THE WAY OUT AS WELL AS ON THE WAY IN: a delay that arrives another way - a route
+     * saved by an earlier build, imported from a station, read out of a JSON file - must show a number the
+     * railway will use.
      *
      * @param asked what the row holds
      * @return what the railway will wait
@@ -3596,11 +3419,9 @@ public class RouteEditorFrame extends JFrame
      * One line of the command list: either a row the user can edit, or a command kept as found.
      *
      * Both live in the same list because the ORDER is the route, and an order kept in two places is an
-     * order that comes apart.  It did: the kept commands used to be held in a map keyed by the position
-     * they had when the route was loaded, while the editable rows moved around underneath them, so
-     * deleting one editable row moved a sub-route call to the wrong side of a turnout.
+     * order that comes apart.
      *
-     * A kept command is shown, greyed and uneditable, rather than hidden.  A user who cannot see it
+     * A kept command is shown, grayed and uneditable, rather than hidden.  A user who cannot see it
      * cannot understand why the route does something the table does not mention.
      */
     private static final class Entry
@@ -3672,11 +3493,9 @@ public class RouteEditorFrame extends JFrame
      * The columns every command shares: what kind, which one, what to do, and - for the kinds that
      * have them - which decoder speaks to it and how long to wait afterwards.
      *
-     * Protocol and delay are columns rather than assumptions because both were assumed once and both
-     * were lost on Save: every accessory was written as MM2, which is a DIFFERENT address space from
-     * DCC, and every delay was dropped, which is what holds a slow point motor apart from the command
-     * behind it.  A cell the kind cannot use is greyed rather than hidden, so the table stays one
-     * shape.
+     * Protocol and delay are columns rather than assumptions: an assumed MM2 is a DIFFERENT address space
+     * from DCC, and a dropped delay is what holds a slow point motor apart from the command behind it.  A
+     * cell the kind cannot use is grayed rather than hidden, so the table stays one shape.
      */
     private final class CommandTable extends JTable
     {
@@ -3714,10 +3533,8 @@ public class RouteEditorFrame extends JFrame
             {
                 switch (column)
                 {
-                    // Move, position, and delete all live IN the row now.  They were buttons under
-                    // the table acting on whichever row happened to be selected, which is one more
-                    // thing to get right before anything happens: select the row, find the button,
-                    // press it, check it did what you meant.
+                    // Move, position, and delete all live IN the row: a button under the table acts on whichever
+                    // row happens to be selected, which is one more thing to get right before anything happens.
                     case UP: return "";
                     case DOWN: return "";
 
@@ -3728,11 +3545,10 @@ public class RouteEditorFrame extends JFrame
                     case 3: return I18n.t("route.ui.frameColKind");
                     case 4: return I18n.t("route.ui.frameColTarget");
 
-                    // The function NUMBER, which only one kind has.  A function command names three
-                    // things - which locomotive, which function, and whether it goes on or off - and
-                    // the middle one used to be packed into the same cell as the last, written
-                    // "3:on".  That is a format to be learned rather than a thing to be chosen, and
-                    // it is why the on/off could not be a dropdown.
+                    // The function NUMBER, which only one kind has.  A function command names three things - which
+                    // locomotive, which function, and whether it goes on or off - and the middle one is not packed
+                    // into the same cell as the last ("3:on"): that would be a format to be learned rather than a
+                    // thing to be chosen, and the on/off could not be a dropdown.
                     case 5: return I18n.t("route.ui.frameColNumber");
 
                     case 6: return I18n.t("route.ui.frameColSetting");
@@ -3776,7 +3592,7 @@ public class RouteEditorFrame extends JFrame
                     case 3: return CommandRow.labelFor(at.getKind());
 
                     // Blank where the kind has no such thing, rather than whatever the row was
-                    // carrying before it became a stop.  A greyed cell with a stale address in it
+                    // carrying before it became a stop.  A grayed cell with a stale address in it
                     // reads as a value that is being used and cannot be changed, which is the
                     // opposite of what it means.
                     case 4: return CommandRow.hasTarget(at.getKind()) ? at.getTarget() : "";
@@ -3798,8 +3614,8 @@ public class RouteEditorFrame extends JFrame
                     default:
                         if (!CommandRow.hasDelay(at.getKind())) return "";
 
-                        // The number the railway will wait, not the number somebody once typed
-                        // (X8V-C7).  A delay below the floor arrives here from every route saved before
+                        // The number the railway will wait, not the number somebody once typed.
+                        // A delay below the floor arrives here from every route saved before
                         // the floor was made visible, and from every import.
                         int shown = delayTheRailwayWillUse(at.getDelay());
 
@@ -3827,17 +3643,14 @@ public class RouteEditorFrame extends JFrame
 
                 CommandRow at = entry.getRow();
 
-                // A KIND THE DROPDOWN DOES NOT OFFER CANNOT BE EDITED (LE2-B20).
+                // A KIND THE DROPDOWN DOES NOT OFFER CANNOT BE EDITED.
                 //
-                // The Kind dropdown is built from canBeACommand, which since OB-141 excludes FEEDBACK
-                // - but a stored row may still hold one, from the old text editor, from
-                // RouteCommand.fromLine, or from an imported route.  A non-editable JComboBox silently
-                // REFUSES a selected item that is not in its model, so the editor opened showing some
-                // other kind, and a single click and a click away wrote that kind back.  An s88
-                // command became an emergency stop, and the route saved without complaint.
-                //
-                // Read-only rather than offered-and-refused, which is the guard and the affordance
-                // asking one question.
+                // The Kind dropdown is built from canBeACommand, which since OB-141 excludes FEEDBACK, but a
+                // stored row may still hold one (from the old text editor, from RouteCommand.fromLine, or from an
+                // imported route).  A non-editable JComboBox silently REFUSES a selected item that is not in its
+                // model, so the editor would open showing some other kind, and a single click and a click away
+                // would write that kind back: an s88 command becoming an emergency stop.  Read-only rather than
+                // offered-and-refused, so the guard and the affordance ask one question.
                 if (column == 3) return CommandRow.canBeACommand(at.getKind());
 
                 if (column == 4) return CommandRow.hasTarget(at.getKind());
@@ -3866,21 +3679,18 @@ public class RouteEditorFrame extends JFrame
 
                 // A different kind is a different command, and it starts empty.
                 //
-                // The setting was already replaced, because the vocabularies do not overlap and the
-                // old word would be refused at Save.  The TARGET was carried over, and its
-                // vocabularies do not overlap either - they merely both accept text.  Turning
-                // "Accessory 3" into a locomotive command therefore produced a command for a
-                // locomotive called "3", which is a name no locomotive has: it saved without
-                // complaint and did nothing at all when the route ran.
+                // The setting is replaced, because the vocabularies do not overlap and the old word would be
+                // refused at Save.  The TARGET's vocabularies do not overlap either - they merely both accept
+                // text - so carrying it over would turn "Accessory 3" into a command for a locomotive called
+                // "3", which saves without complaint and does nothing when the route runs.
                 boolean became = column == 3 && kind != at.getKind();
 
                 String target = column == 4 ? text : at.getTarget();
 
-                // Changing the KIND replaces the setting with one the new kind accepts.  The
-                // vocabularies do not overlap, so carrying the old word over left a row that looks
-                // fine and is refused at Save with a message about a cell the user never touched.
-                // A function's two halves are edited in two columns and stored as one value, which
-                // is the model's business rather than the user's
+                // Changing the KIND replaces the setting with one the new kind accepts: the vocabularies do not
+                // overlap, so carrying the old word over would leave a row that looks fine and is refused at Save
+                // with a message about a cell the user never touched.  A function's two halves are edited in two
+                // columns and stored as one value, which is the model's business rather than the user's
                 String setting = at.getSetting();
 
                 if (column == 3 && kind != at.getKind()) setting = CommandRow.defaultSettingFor(kind);
@@ -3888,9 +3698,8 @@ public class RouteEditorFrame extends JFrame
                 else if (column == 6) setting = CommandRow.isFunction(kind)
                     ? functionNumberOf(at.getSetting()) + ":" + text : text;
 
-                // Every rebuild carries protocol and delay forward.  Editing the SETTING of a DCC
-                // accessory used to move it to MM2, because the row was rebuilt from three columns
-                // and the fourth thing it knew was simply not passed on.
+                // Every rebuild carries protocol and delay forward, or editing the SETTING of a DCC accessory would
+                // move it to MM2: the row is rebuilt from the columns, and anything not passed on is lost.
                 Accessory.accessoryDecoderType protocol = at.getProtocol();
                 int delay = at.getDelay();
 
@@ -3906,13 +3715,11 @@ public class RouteEditorFrame extends JFrame
 
                 // The address decides which of the two it really is.
                 //
-                // Switch and Signal are one command in two vocabularies, and only the layout knows
-                // which is standing at an address.  So typing one follows the layout: put in the
-                // address of a signal and the row becomes a Signal, with red and green in its
-                // setting box, without the user having to know that the kind box was the thing to
-                // fix.  Deliberately NOT done when the user has just chosen the kind by hand - that
-                // would make the box refuse to be set - and not for an address the layout has never
-                // heard of, which is every row the moment it is added.
+                // Switch and Signal are one command in two vocabularies, and only the layout knows which is
+                // standing at an address.  So typing one follows the layout: put in the address of a signal and
+                // the row becomes a Signal, with red and green in its setting box.  Deliberately NOT done when
+                // the user has just chosen the kind by hand - that would make the box refuse to be set - and not
+                // for an address the layout has never heard of, which is every row the moment it is added.
                 if (column == 4 && (kind == CommandRow.Kind.ACCESSORY
                     || kind == CommandRow.Kind.SIGNAL))
                 {
@@ -3963,9 +3770,8 @@ public class RouteEditorFrame extends JFrame
 
             JComboBox<String> kinds = new JComboBox<>();
 
-            // Only what a route can DO.  "Train at a sensor" is a fact rather than an instruction,
-            // so it belongs in the conditions and nowhere else - it was offered here because this
-            // list offered every kind there is.
+            // Only what a route can DO.  "Train at a sensor" is a fact rather than an instruction, so it belongs
+            // in the conditions and nowhere else.
             for (CommandRow.Kind kind : CommandRow.Kind.values())
             {
                 if (CommandRow.canBeACommand(kind)) kinds.addItem(CommandRow.labelFor(kind));
@@ -4002,7 +3808,7 @@ public class RouteEditorFrame extends JFrame
             // register a second mouse listener on this table, and both would act on every click
             actOnRowMarks(this, DELETE, UP, DOWN, UP, DUPLICATE);
 
-            // Kept commands are drawn greyed, so "you cannot edit this one" is something the table
+            // Kept commands are drawn grayed, so "you cannot edit this one" is something the table
             // says rather than something the user discovers by clicking
             setDefaultRenderer(Object.class, new DefaultTableCellRenderer()
             {
@@ -4015,30 +3821,21 @@ public class RouteEditorFrame extends JFrame
 
                     // The row at the bottom is left alone (MT-011).
                     //
-                    // It is not a row yet - it is the button that makes one - so `row < rows.size()`
-                    // is false for it and it fell straight into the "cannot be typed into" branch
-                    // below: disabled, and grey. greyWhatCannotBeEdited already exempts it from the
-                    // background wash for exactly this reason, and this renderer, which runs inside
-                    // that one, went on greying it anyway.
-                    //
-                    // On a route from the Central Station it is worse, and that is where Adam found
-                    // it: the route is locked, so the + is not drawn either, and what is left is a
-                    // full-width grey line under the last command with nothing in it. "make this be
-                    // white."
+                    // It is not a row yet - it is the button that makes one - so `row < rows.size()` is false for
+                    // it and it would fall straight into the "cannot be typed into" branch below: disabled, and
+                    // gray.  greyWhatCannotBeEdited already exempts it from the background wash, and this
+                    // renderer, which runs inside that one, must too.  On a route from the Central Station, where
+                    // the + is not drawn, the result would be a full-width gray line under the last command with
+                    // nothing in it: "make this be white."
                     if (row >= rows.size())
                     {
                         // SET, not skipped.
                         //
-                        // Returning here was the first attempt and it did not work, because a
-                        // DefaultTableCellRenderer is one shared component reused down the column: it
-                        // arrives carrying whatever the cell above left on it, and on a locked route
-                        // the cell above is grey-on-grey and disabled. Worse, setForeground and
-                        // setBackground latch into the renderer's unselectedForeground and
-                        // unselectedBackground, which super.getTableCellRendererComponent then puts
-                        // back on the next row - so the grey survived being "left alone".
-                        //
-                        // Adam's report was "a full-width grey line under the last command with
-                        // nothing in it ... make this be white", and it stayed grey.
+                        // A DefaultTableCellRenderer is one shared component reused down the column, so it arrives
+                        // carrying whatever the cell above left on it (on a locked route, gray-on-gray and
+                        // disabled), and setForeground and setBackground latch into the renderer's
+                        // unselectedForeground and unselectedBackground, which super.getTableCellRendererComponent
+                        // puts back on the next row.  Returning without setting would leave the gray in place.
                         c.setEnabled(true);
 
                         if (!selected)
@@ -4059,12 +3856,9 @@ public class RouteEditorFrame extends JFrame
 
                     c.setEnabled(editable);
 
-                    // THE REFUSAL MARK IS NOT SET HERE, and the first draft of OB-246 set it here.
-                    //
-                    // `greyWhatCannotBeEdited` WRAPS this renderer and is installed after it, so it
-                    // is the last thing to touch a cell's foreground - it set the ink again on the
-                    // way out and nothing was ever marked.  The mark lives there, beside the greying
-                    // it would otherwise fight with.
+                    // THE REFUSAL MARK IS NOT SET HERE (OB-246): `greyWhatCannotBeEdited` WRAPS this renderer and
+                    // is installed after it, so it is the last thing to touch a cell's foreground and would
+                    // overwrite the ink.  The mark lives there, beside the graying it would otherwise fight with.
                     if (!selected)
                     {
                         c.setForeground(editable
@@ -4075,17 +3869,12 @@ public class RouteEditorFrame extends JFrame
                 }
             });
 
-            // Wrapped AROUND the renderer above, and it has to be after it.
-            //
-            // It was called BEFORE, in the fix for AR-19, and setDefaultRenderer here replaced it six
-            // lines later - so the change I reported as landed had no effect at all.  That fix was also
-            // wrong about what was missing: this table has greyed by KIND all along, through
-            // model.isCellEditable in the renderer above.
-            //
-            // What it does not do is the background.  Most unusable cells are EMPTY - a function number
-            // on a signal command, a protocol on a stop - and grey text in an empty cell looks exactly
-            // like black text in an empty cell.  That is what Adam was asking for, and it is what
-            // greyWhatCannotBeEdited adds: a wash, plus the exemption that keeps the + row unshaded.
+            // Wrapped AROUND the renderer above, and it has to be after it: setDefaultRenderer replaces
+            // whatever was set before.  This table grays by KIND through model.isCellEditable in the renderer
+            // above; what that does not do is the background.  Most unusable cells are EMPTY - a function number
+            // on a signal command, a protocol on a stop - and gray text in an empty cell looks exactly like
+            // black text in an empty cell, so greyWhatCannotBeEdited adds a wash, plus the exemption that keeps
+            // the + row unshaded.
             greyWhatCannotBeEdited(this);
         }
 
@@ -4108,32 +3897,23 @@ public class RouteEditorFrame extends JFrame
             {
                 String[] words = settingWords(rows.get(row).getRow());
 
-                if (words != null) return chooseFrom(words);
+                if (words != null) return chooseSetting(words);
             }
 
-            // And the target, wherever the answer comes from a list this application already has.
-            //
-            // A locomotive is named exactly, or the command names nothing; a route likewise.  Typing
-            // either by hand is an invitation to a typo that is only discovered when the route does
-            // not do what it says - so where the set of right answers is known, it is offered.
             // A number where a number is meant.  An address is a number and a delay is a number, and
             // a cell that will take "twelve" or "12a" is a cell that produces a route refused at Save
             // for something typed several minutes earlier.
             if (column == 8) return digitsOnly();
 
-            // AND THE FUNCTIONS THAT LOCOMOTIVE ACTUALLY HAS (MT-464).
+            // AND THE FUNCTIONS THAT LOCOMOTIVE ACTUALLY HAS (MT-464): *"there is no validation of the function
+            // count on mm2 locomotives in the route view, F32 was accepted"*.  The Save gate refuses a function
+            // past the end of the locomotive, and nothing on the way in said so, because the command table has
+            // no live mark: the number sat in the cell looking ordinary until Save.
             //
-            // Adam, 2026-09-21: *"there is no validation of the function count on mm2 locomotives in the
-            // route view, F32 was accepted"*.  The Save gate has refused a function past the end of the
-            // locomotive since this editor was written - and nothing on the way in said so, because the
-            // command table has no live mark: the number sat in the cell looking ordinary until Save.
-            //
-            // This is the rule the two doors are meant to share (OB-057, OB-090): the control that
-            // offers a value asks the same question the guard asks.  Where the target names a locomotive
-            // this database has, the cell offers that locomotive's functions and nothing else - which is
-            // what the OLD editor did by building its list from the locomotive, and what this one gave up
-            // when it started taking a typed number.  Where it names one the database has not, there is
-            // nothing to ask and a typed number is still taken.
+            // This is the rule the two doors are meant to share (OB-057, OB-090): the control that offers a
+            // value asks the same question the guard asks.  Where the target names a locomotive this database
+            // has, the cell offers that locomotive's functions and nothing else; where it names one the
+            // database has not, there is nothing to ask and a typed number is still taken.
             if (column == 5)
             {
                 String[] functions = functionsOffered(rows.get(row).getRow());
@@ -4141,6 +3921,9 @@ public class RouteEditorFrame extends JFrame
                 return functions == null ? digitsOnly() : chooseFrom(functions);
             }
 
+            // And the target, wherever the answer comes from a list this application already has: a locomotive
+            // is named exactly, or the command names nothing; a route likewise.  Typing either by hand invites a
+            // typo that is only discovered when the route does not do what it says.
             if (column == 4)
             {
                 CommandRow.Kind kind = rows.get(row).getRow().getKind();
@@ -4152,7 +3935,7 @@ public class RouteEditorFrame extends JFrame
 
                 if (kind == CommandRow.Kind.ROUTE)
                 {
-                    // NOT THIS ROUTE (GSR-C3): Save refuses a route that calls itself (`frameRouteCallsItself`), so
+                    // NOT THIS ROUTE: Save refuses a route that calls itself (`frameRouteCallsItself`), so
                     // offering it was offering a mistake.  A cell already holding it keeps it (`withTheCellsOwn`), so it
                     // is still shown and the gate still names it.
                     java.util.List<String> others = new ArrayList<>(parent.getModel().getRouteList());
@@ -4291,9 +4074,7 @@ public class RouteEditorFrame extends JFrame
      * The conditions, as an indented list with the joining words on lines of their own.
      *
      * One line of the table is one line of the outline - a condition, or a word - so what is on screen
-     * and what is stored are the same shape. An earlier version kept the word on the condition and
-     * interleaved the two when drawing, which worked and meant that indenting a word was impossible:
-     * it had no depth of its own to change.
+     * and what is stored are the same shape, and a word has a depth of its own to indent.
      *
      * ConditionOutline holds the rule and the tests for it; this is what it looks like.
      */
@@ -4312,12 +4093,31 @@ public class RouteEditorFrame extends JFrame
             return line >= 0 && line < conditions.rows.size() && conditions.rows.get(line).isJoiner();
         }
 
+        /** A press on an indent mark inside a selection of several lines keeps it, so the mark acts on them all. */
+        @Override
+        public void changeSelection(int row, int column, boolean toggle, boolean extend)
+        {
+            if ((column == INDENT || column == OUTDENT) && !toggle && !extend && getSelectedRowCount() > 1
+                && isRowSelected(row)) return;
+
+            super.changeSelection(row, column, toggle, extend);
+        }
+
+        /** The marks of a selection depend on all of it, so every change of selection redraws them. */
+        @Override
+        public void valueChanged(javax.swing.event.ListSelectionEvent e)
+        {
+            super.valueChanged(e);
+
+            repaint();
+        }
+
         /**
          * What a cell shows, where that is more than what it holds (FR-141).
          *
-         * A train-at-a-sensor line's setting is the sensor's ADDRESS, and a bare number under "Setting" did not say so -
-         * Adam: *"setting" in this cas is/should be the sensor address, can it be made clearer?*  Only the painting
-         * changes: the cell's value, its editor and what Save reads are still the number.
+         * A train-at-a-sensor line's setting is the sensor's ADDRESS, and a bare number under "Setting" would
+         * not say so.  Only the painting changes: the cell's value, its editor and what Save reads are still
+         * the number.
          *
          * @param line the row
          * @param column the column
@@ -4410,10 +4210,20 @@ public class RouteEditorFrame extends JFrame
                 if (column == UP) return ConditionOutline.canMove(rows, line, -1) ? MOVE_UP : "";
                 if (column == DOWN) return ConditionOutline.canMove(rows, line, 1) ? MOVE_DOWN : "";
 
+                int[] chosen = column == INDENT || column == OUTDENT ? chosenLines() : null;
+
+                if (chosen != null && line >= chosen[0] && line <= chosen[1])
+                {
+                    boolean in = column == INDENT;
+
+                    return block(chosen[0], chosen[1], in ? 1 : -1) != null
+                        ? (in ? INDENT_ROW : OUTDENT_ROW) : (in ? INDENT_LIMIT : OUTDENT_LIMIT);
+                }
+
                 if (column == INDENT)
                 {
                     // The rules `indent` applies, so the mark never offers a press that does nothing: the first line
-                    // may go one level in (2026-09-14), every other line one level past the line above it.
+                    // may go one level in, every other line one level past the line above it.
                     if (line == 0) return rows.size() < 2 ? "" : row.getDepth() < 1 ? INDENT_ROW : INDENT_LIMIT;
 
                     return row.getDepth() <= rows.get(line - 1).getDepth()
@@ -4509,28 +4319,25 @@ public class RouteEditorFrame extends JFrame
 
                     if (became == null) return;
 
-                    // CHOOSING THE KIND A LINE ALREADY IS CHANGES NOTHING (Adam, 2026-09-14: "I set address to
-                    // 40, which makes it a Signal.  Then, if I click on Kind -> Signal and exit out, it snaps back
-                    // to Switch 1").  A drop-down commits what it holds when it closes, chosen or not, and the
-                    // reset below ran on every commit - so opening the box and leaving it put any line back to its
-                    // kind's starting address, which for a signal is address 1, where the layout has a switch.
+                    // CHOOSING THE KIND A LINE ALREADY IS CHANGES NOTHING.  A drop-down commits what it holds when
+                    // it closes, chosen or not, and the reset below runs on every commit, so opening the box and
+                    // leaving it would put any line back to its kind's starting address, which for a signal is
+                    // address 1, where the layout has a switch.
                     if (became == term.getKind()) return;
 
-                    // A different kind is a different condition, and it does not keep the old
-                    // target.  A sensor number left behind in an accessory row is an address, and it
-                    // would be a perfectly good one belonging to something else entirely.
+                    // A different kind is a different condition, and it does not keep the old target.  A sensor
+                    // number left behind in an accessory row is an address, and it would be a perfectly good one
+                    // belonging to something else entirely.
                     //
-                    // Reset to something that BUILDS rather than to blank: this table stores each
-                    // line as a built command, so a line with nothing in its address cannot be held
-                    // at all - the rebuild below would throw and the keystroke would vanish.  The
-                    // commands table above holds rows rather than commands and so can be left
-                    // properly empty.
+                    // Reset to something that BUILDS rather than to blank: this table stores each line as a built
+                    // command, so a line with nothing in its address cannot be held at all - the rebuild below
+                    // would throw and the keystroke would vanish.  The commands table above holds rows rather than
+                    // commands and so can be left properly empty.
                     //
-                    // "Train X is at sensor N" is the awkward one: its target is a NAME and its
-                    // setting is an address, and the blank default meant choosing it did nothing
-                    // whatever - the dropdown offered the kind, the row threw on rebuild, and the
-                    // cell snapped back with no message.  The first locomotive on the roster is a
-                    // starting point somebody can then change, which is what every other kind gets.
+                    // "Train X is at sensor N" is the awkward one: its target is a NAME and its setting is an
+                    // address, so the blank default would make choosing it do nothing.  The first locomotive on
+                    // the roster is a starting point somebody can then change, which is what every other kind
+                    // gets.
                     String starting = CommandRow.asksWhereATrainIs(became)
                         ? firstLocomotive() : (CommandRow.hasTarget(became) ? "1" : "");
 
@@ -4547,7 +4354,7 @@ public class RouteEditorFrame extends JFrame
                         edited = new CommandRow(became, term.getTarget(), term.getSetting());
                     }
 
-                    // EXCEPT BETWEEN SWITCH AND SIGNAL, which are one command in two vocabularies (2026-09-14):
+                    // EXCEPT BETWEEN SWITCH AND SIGNAL, which are one command in two vocabularies:
                     // the line keeps its address and says the same setting in the other words - turn is red,
                     // straight is green.  What it then SHOWS is still the layout's to say (`asShown`), because a
                     // condition is stored as an accessory command, which has no room for which of the two it is.
@@ -4578,12 +4385,10 @@ public class RouteEditorFrame extends JFrame
                         column == 7 ? protocolOf(text) : term.getProtocol(),
                         term.getDelay());
 
-                    // The address decides which of the two it really is - the same rule the commands
-                    // table follows, and for the same reason.  Switch and Signal are one command in
-                    // two vocabularies and only the layout knows which is standing at an address, so
-                    // typing a signal's address here turns the row into a Signal with red and green in
-                    // its setting box.  It worked when building a route and not when building the
-                    // condition that fires it, which is the same question asked in the same words.
+                    // The address decides which of the two it really is - the same rule the commands table follows,
+                    // and for the same reason.  Switch and Signal are one command in two vocabularies and only the
+                    // layout knows which is standing at an address, so typing a signal's address here turns the
+                    // row into a Signal with red and green in its setting box.
                     if (column == 5 && (edited.getKind() == CommandRow.Kind.ACCESSORY
                         || edited.getKind() == CommandRow.Kind.SIGNAL))
                     {
@@ -4680,10 +4485,9 @@ public class RouteEditorFrame extends JFrame
                         ? new java.awt.Font("Segoe UI", java.awt.Font.ITALIC, 13)
                         : new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 14));
 
-                    // A WARNING TRIANGLE AFTER A RED WORD, with the reason on its tooltip (Adam, 2026-09-14: "For
-                    // the red operators, can we add a warning triangle icon with a tooltip explaining what's
-                    // wrong next to it?").  This label is reused down the whole column, so a line that is not
-                    // flagged has both cleared, or it would wear the warning of the line painted before it.
+                    // A WARNING TRIANGLE AFTER A RED WORD, with the reason on its tooltip.  This label is reused down
+                    // the whole column, so a line that is not flagged has both cleared, or it would wear the warning
+                    // of the line painted before it.
                     ConditionOutline.Problem problem = why.get(line);
 
                     out.setHorizontalTextPosition(javax.swing.SwingConstants.LEADING);
@@ -4726,14 +4530,11 @@ public class RouteEditorFrame extends JFrame
 
             if (row.isJoiner()) return super.getCellEditor(line, column);
 
-            // As SHOWN, and this is the one that mattered.
-            //
-            // The cell DISPLAYS "red" - getValueAt has converted since this table was written - and the
-            // dropdown was built from the stored kind, so it offered "straight" and "turn".  A combo
-            // whose model does not contain the current value falls back to its first entry, and one
-            // click into that cell and out again committed it: a condition that tested a signal at
-            // danger quietly became one that tested it clear.  That is the exact mechanism asShown's
-            // own javadoc describes for the commands table, left in place here.
+            // As SHOWN, not as stored: the cell DISPLAYS "red" (getValueAt converts), so a dropdown built from
+            // the stored kind would offer "straight" and "turn".  A combo whose model does not contain the
+            // current value falls back to its first entry, and one click into that cell and out again would
+            // commit it: a condition that tested a signal at danger would quietly become one that tested it
+            // clear (the mechanism asShown describes for the commands table).
             CommandRow term = asShown(CommandRow.of(row.getCommand()));
 
             if (term == null) return super.getCellEditor(line, column);
@@ -4742,7 +4543,7 @@ public class RouteEditorFrame extends JFrame
             {
                 String[] words = settingWords(term);
 
-                if (words != null) return chooseFrom(words);
+                if (words != null) return chooseSetting(words);
 
                 if (CommandRow.asksWhereATrainIs(term.getKind())) return digitsOnly();
             }
@@ -4801,22 +4602,17 @@ public class RouteEditorFrame extends JFrame
          * A condition taken out on its own leaves the word that joined it with nothing on one side,
          * which is not what removing a requirement means.
          *
-         * AND A WORD TAKEN OUT TAKES THE TERM IT JOINS ON (OB-240, from Adam's note on MT-469,
-         * 2026-09-21: *"we can review [remove] operators (like and) without deleting the conditions they are
-         * linked to.  This permanently leaves an orphan entry.  Any linked entries should also be
-         * deleted."*).
+         * AND A WORD TAKEN OUT TAKES THE TERM IT JOINS ON (OB-240, MT-469): *"we can review [remove] operators
+         * (like and) without deleting the conditions they are linked to.  This permanently leaves an orphan
+         * entry.  Any linked entries should also be deleted."*
          *
-         * **What the orphan actually did is worse than looking untidy.**  Taking out the word left the
-         * two conditions with nothing between them; `tidy()` sweeps a word with nothing on one side and
-         * two words in a row, and a RUN WITH NO WORD AT ALL is legal to it.  `ConditionOutline.toExpression`
-         * then folds a wordless run with AND - so deleting an `or` silently turned it into an `and`,
-         * which is a change to WHEN THE ROUTE FIRES made by a delete that says nothing about firing.
-         * `whatIsWrong` returns empty for that shape, so no row went red and Save wrote it.  This door
-         * was the only way into it.
+         * **What the orphan would do is worse than looking untidy.**  `tidy()` sweeps a word with nothing on
+         * one side and two words in a row, but a RUN WITH NO WORD AT ALL is legal to it, and
+         * `ConditionOutline.toExpression` folds a wordless run with AND - so deleting an `or` would silently
+         * turn it into an `and`, a change to WHEN THE ROUTE FIRES that `whatIsWrong` does not flag.
          *
-         * The two halves are then symmetrical, which is the point: "1 and 2" without the 2 is "1", and
-         * "1 and 2" without the `and` is "1" as well.  Neither leaves a sentence that means something
-         * nobody typed.
+         * The two halves are then symmetrical: "1 and 2" without the 2 is "1", and "1 and 2" without the
+         * `and` is "1" as well.
          */
         void removeAt(int line)
         {
@@ -4831,18 +4627,17 @@ public class RouteEditorFrame extends JFrame
 
             if (!joiner)
             {
-                // THE WORD AT THIS ROW'S OWN DEPTH, and that is not always the one before it (VD13-B4).
+                // THE WORD AT THIS ROW'S OWN DEPTH, and that is not always the one before it.
                 //
-                // "1 and 2" without the 2 is "1", so the word before is the usual answer - but the
-                // FIRST row of a group has the OUTER word before it, one level shallower.  Deleting the
-                // 2 of `1 or (2 and 3)` took the `or` and left `[1(0), and(1), 3(1)]`: the reading
-                // changed from "1 or 3" to "1 and 3", the surviving word went red as JOINS_NOTHING, and
-                // Save then refused the route with no way out but Discard.  One keystroke changed when
-                // the route fires AND made it unsavable.
+                // "1 and 2" without the 2 is "1", so the word before is the usual answer - but the FIRST row of a
+                // group has the OUTER word before it, one level shallower.  Deleting the 2 of `1 or (2 and 3)`
+                // would take the `or` and leave `[1(0), and(1), 3(1)]`: the reading changes from "1 or 3" to
+                // "1 and 3", the surviving word goes red as JOINS_NOTHING, and Save then refuses the route with
+                // no way out but Discard.
                 //
-                // The word that belongs to this row is the adjacent joiner at the SAME depth; the other
-                // side is tried next, and a word at another depth is left for `tidy()`, which is what
-                // deletes a word with nothing on one side.
+                // The word that belongs to this row is the adjacent joiner at the SAME depth; the other side is
+                // tried next, and a word at another depth is left for `tidy()`, which deletes a word with
+                // nothing on one side.
                 boolean before = line - 1 >= 0 && rows.get(line - 1).isJoiner()
                     && rows.get(line - 1).getDepth() == depth;
 
@@ -4879,11 +4674,10 @@ public class RouteEditorFrame extends JFrame
         /**
          * Moves a condition past the one above or below it, leaving the outline's shape alone.
          *
-         * Not by moving the LINE.  The joining words are lines of their own here, so lifting a
-         * condition one line put it next to the word above instead of past it - and a word with a
-         * word on one side and nothing on the other is not a sentence, so tidy() swept it away.
-         * Three conditions joined by two ANDs came back as three conditions joined by one, which is
-         * a change to when the route fires made by a button that says nothing about firing.
+         * Not by moving the LINE.  The joining words are lines of their own here, so lifting a condition one
+         * line would put it next to the word above instead of past it, and tidy() would sweep away a word with
+         * nothing on one side: a change to when the route fires made by a button that says nothing about
+         * firing.
          *
          * So the two conditions trade places and every word stays where it is.  The shape on screen
          * IS the logic - which condition is nested inside which group, joined by which word - and
@@ -4898,6 +4692,8 @@ public class RouteEditorFrame extends JFrame
         {
             if (!ConditionOutline.canMove(rows, line, by)) return;
 
+            int landed = ConditionOutline.landing(rows, line, by);
+
             List<ConditionOutline.Row> after = ConditionOutline.moved(rows, line, by);
 
             rows.clear();
@@ -4907,17 +4703,91 @@ public class RouteEditorFrame extends JFrame
             settle();
             model.fireTableDataChanged();
 
-            // Where the condition ended up, which is past the words rather than one line along
-            int to = line + by;
+            setRowSelectionInterval(landed, landed);
+        }
 
-            while (to >= 0 && to < rows.size() && rows.get(to).isJoiner()) to += by;
+        /**
+         * The selected lines when there are several, so the indent marks act on all of them (FR-144).
+         *
+         * @return {first, last}, or null for one line or none
+         */
+        int[] chosenLines()
+        {
+            int[] picked = getSelectedRows();
 
-            setRowSelectionInterval(to, to);
+            if (picked.length < 2) return null;
+
+            return new int[]{Math.min(picked[0], picked[picked.length - 1]),
+                Math.max(picked[0], picked[picked.length - 1])};
+        }
+
+        /**
+         * The lines a block indent would move, or null where it would break the outline.
+         *
+         * A word at either edge stays: it joins the block to what is outside it.  The lines nested under
+         * the last one come along, as they do for a single line.
+         *
+         * @param first the first chosen line
+         * @param last the last chosen line
+         * @param by 1 to indent, -1 to outdent
+         * @return {first, last} of the lines to move
+         */
+        int[] block(int first, int last, int by)
+        {
+            last = Math.min(last, rows.size() - 1);
+
+            while (first <= last && rows.get(first).isJoiner()) first++;
+            while (last >= first && rows.get(last).isJoiner()) last--;
+
+            if (first < 0 || first > last) return null;
+
+            int top = Integer.MAX_VALUE;
+
+            for (int at = first; at <= last; at++) top = Math.min(top, rows.get(at).getDepth());
+
+            while (last + 1 < rows.size() && rows.get(last + 1).getDepth() > top) last++;
+
+            if (by < 0 && top == 0) return null;
+
+            if (by > 0)
+            {
+                int most = first == 0 ? 1 : rows.get(first - 1).getDepth() + 1;
+
+                if (rows.get(first).getDepth() + 1 > most) return null;
+            }
+
+            return new int[]{first, last};
         }
 
         void indent(int line, int by)
         {
             if (line < 0 || line >= rows.size()) return;
+
+            int[] chosen = chosenLines();
+
+            if (chosen != null && line >= chosen[0] && line <= chosen[1])
+            {
+                int[] moving = block(chosen[0], chosen[1], by);
+
+                if (moving == null) return;
+
+                for (int at = moving[0]; at <= moving[1]; at++)
+                {
+                    rows.set(at, rows.get(at).atDepth(rows.get(at).getDepth() + by));
+                }
+
+                tidy();
+
+                settle();
+                model.fireTableDataChanged();
+
+                if (!rows.isEmpty())
+                {
+                    setRowSelectionInterval(Math.min(moving[0], rows.size() - 1), Math.min(moving[1], rows.size() - 1));
+                }
+
+                return;
+            }
 
             int was = rows.get(line).getDepth();
             int depth = was + by;
@@ -4928,15 +4798,14 @@ public class RouteEditorFrame extends JFrame
             // hole in the middle, which the outline has no way to draw and no way to mean.
             if (line > 0 && depth > rows.get(line - 1).getDepth() + 1) return;
 
-            // THE FIRST LINE MAY GO ONE LEVEL IN (Adam, 2026-09-14: "the first condition for some reason cannot
-            // be indented for proper grouping").  It is measured against an unindented line above it, which is
+            // THE FIRST LINE MAY GO ONE LEVEL IN: it is measured against an unindented line above it, which is
             // what a condition that starts with a group - "(2 or 3) and (1 or 4)" - needs, and what the
             // one-level rule already allows every other line.
             if (line == 0 && depth > 1) return;
 
             // A word may be indented past the condition after it: building a group one row at a time does exactly
             // that for a moment.  Left there, it joins nothing at its depth, and `ConditionOutline.problems` shows
-            // it in red and Save refuses it (2026-09-14) - what it must never be again is read silently as nothing.
+            // it in red and Save refuses it - what it must never be again is read silently as nothing.
 
             // Everything nested UNDER this line comes with it.
             //
@@ -4965,7 +4834,7 @@ public class RouteEditorFrame extends JFrame
         /**
          * Pulls the outline back into a shape it can have.
          *
-         * Moving or deleting can leave a line indented two levels past its new neighbour, or a word
+         * Moving or deleting can leave a line indented two levels past its new neighbor, or a word
          * at either end with nothing to join. Rather than refuse the move - which would make
          * reordering feel arbitrary - the outline is straightened afterwards.
          */
@@ -4973,26 +4842,19 @@ public class RouteEditorFrame extends JFrame
         {
             for (int at = 0; at < rows.size(); at++)
             {
-                // ROW 0 KEEPS ITS OWN DEPTH (FR3-B1).
+                // ROW 0 KEEPS ITS OWN DEPTH.
                 //
-                // This read `at == 0 ? 0`, forcing the first row flat - and a condition that begins
-                // with a bracketed group legitimately starts one level in.  `ConditionOutline.write`
-                // emits `(A or B) and C` as `[A(1), or(1), B(1), and(0), C(0)]`, because `writeChild`
-                // bumps a cross-operator left child a level; `toExpression`'s own comment says such a
-                // condition "opens as an outline whose first row is one level in".
+                // Forcing the first row flat would be wrong: a condition that begins with a bracketed group
+                // legitimately starts one level in.  `ConditionOutline.write` emits `(A or B) and C` as
+                // `[A(1), or(1), B(1), and(0), C(0)]`, because `writeChild` bumps a cross-operator left child a
+                // level, and `toExpression` says such a condition "opens as an outline whose first row is one
+                // level in".  Deleting the UNRELATED `C` leaves `[A(1), or(1), B(1)]`; flattened to
+                // `[A(0), or(1), B(1)]` it reads back as `A and B` (the `or` alone in a one-item sub-run with
+                // nothing to join, the level-0 word defaulting to AND), `problems()` flags nothing, and Save
+                // writes the changed meaning: a change to when a route FIRES.
                 //
-                // So deleting the UNRELATED `C` left `[A(1), or(1), B(1)]`, this line flattened it to
-                // `[A(0), or(1), B(1)]`, and the outline then read back as `A and B`: the `or` was
-                // alone in a one-item sub-run with nothing to join, and the level-0 word defaulted to
-                // AND.  `problems()` flags nothing - one joiner alone at its depth is not a
-                // disagreement - so no row went red and Save wrote the changed meaning.
-                //
-                // What that alters is when a route FIRES, which is the hazard `everythingWrong`'s own
-                // comment names two lines above its gate.
-                //
-                // The floor for row 0 is its own depth: `tidy` exists to stop a row being indented
-                // more than one level past the row above it, and row 0 has no row above it to be
-                // measured against.
+                // The floor for row 0 is its own depth: `tidy` exists to stop a row being indented more than one
+                // level past the row above it, and row 0 has no row above it to be measured against.
                 int most = at == 0 ? rows.get(0).getDepth() : rows.get(at - 1).getDepth() + 1;
 
                 if (rows.get(at).getDepth() > most)

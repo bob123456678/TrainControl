@@ -25,6 +25,7 @@ import org.traincontrol.gui.TailCrossedPrompt;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.SourceOf;
 
 /**
  * The tail question is put on the diagram: the sensors are lit, and a click on one answers it (FR-100).
@@ -36,7 +37,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * On the frozen railway (OB-111): a five-unit train at Tunnel from the north has reached TunnelPre on the one rail and
  * 12,7 on the other, both on 1 - Main.  The question is asked owned by the main window, as a placement door asks it,
  * but off the event thread, so the test can click - a placement door asks on the event thread, which
- * `testAQuestionAskedOnTheEventThreadIsAnsweredByAClick` covers (TDU-C2); and the click is TunnelPre's own tile on the
+ * `testAQuestionAskedOnTheEventThreadIsAnsweredByAClick` covers; and the click is TunnelPre's own tile on the
  * main diagram, through the listener every s88 tile has.
  *
  * MUTATION: ask with the list again, and the click answers nothing.
@@ -59,7 +60,7 @@ public class testTheTailIsPickedOnTheDiagram
 
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = init(null, true, false, false, true);
+        model = support.TestStation.simulatedInDebug();
 
         javax.swing.SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
 
@@ -255,7 +256,7 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * A double-click on a lit sensor answers the question and does not then flip the sensor (TDU-B3).
+     * A double-click on a lit sensor answers the question and does not then flip the sensor.
      *
      * The first click answers and takes the question down; the second arrived with nothing waiting, and the sensor's own
      * click flipped it - announced as a real sensor change, which is what the question's taking the click exists to
@@ -309,7 +310,7 @@ public class testTheTailIsPickedOnTheDiagram
             assertEquals(model.getFeedbackState(sensor), before, "the second click of a double-click on TunnelPre, the"
                 + " sensor that answered the tail question, flipped the sensor - a faked occupancy change (TDU-B3)");
 
-            // AND ONLY THAT DOUBLE-CLICK (TDU2-C1): a later one on the same sensor, with nothing asked, flips it and flips
+            // AND ONLY THAT DOUBLE-CLICK: a later one on the same sensor, with nothing asked, flips it and flips
             // it back, as a double-click on a sensor always has - the guard is put down once its double-click is over.
             click(q.label, 1);
             click(q.label, 2);
@@ -331,7 +332,7 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * The paste door reads every part of its landing before the question is asked (TDU-B2).
+     * The paste door reads every part of its landing before the question is asked.
      *
      * Since FR-100 the question waits on the diagram with the window live, and a second Control+V in that wait runs the
      * paste door again and writes the same fields for its own train - so the first train's road, side and facing were
@@ -345,19 +346,9 @@ public class testTheTailIsPickedOnTheDiagram
     @Test
     public void testThePasteReadsItsLandingBeforeTheQuestionIsAsked() throws Exception
     {
-        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/TrainControlUI.java")), java.nio.charset.StandardCharsets.UTF_8).replace("\r\n", "\n");
+        String body = SourceOf.withoutComments(SourceOf.declaration(PASTE_DOOR));
 
-        int start = source.indexOf("private void rememberPlacement(");
-
-        assertTrue(start > 0, "precondition: TrainControlUI has no rememberPlacement");
-
-        int end = source.indexOf("\n    /**", start);
-
-        String body = source.substring(start, end < 0 ? source.length() : end)
-            .replaceAll("(?s)/\\*.*?\\*/", "").replaceAll("//[^\n]*", "");
-
-        int asked = body.indexOf("askAfterPlacement(");
+        int asked = body.indexOf(RECORDS);
 
         assertTrue(asked > 0, "precondition: the paste door no longer asks the tail question");
 
@@ -371,9 +362,37 @@ public class testTheTailIsPickedOnTheDiagram
         }
     }
 
+    /** The paste door: the window's method that remembers where a pasted train was put. */
+    private static final String PASTE_DOOR = "private void rememberPlacement(";
+
+    /**
+     * The three doors that put a train down and ask the tail question - the paste, the right-click Place and the
+     * locomotive dialog - each named by its declaration, found wherever the program keeps it.
+     */
+    private static final String[] PLACEMENT_DOORS = {PASTE_DOOR, "private void placeFacing(",
+        "public static void commitAndRecord(GraphLocAssign edit)"};
+
+    /** What each door does once its train is down: the tail's side, the save, the question and its answer. */
+    private static final String RECORD_TAIL = "static boolean recordTheTail(";
+
+    /** A door's call of it. */
+    private static final String RECORDS = "TailCrossedPrompt.recordTheTail(";
+
+    /** Asserts that every placement door goes through `recordTheTail`, and answers its source. */
+    private static String recordTheTail()
+    {
+        for (String door : PLACEMENT_DOORS)
+        {
+            assertTrue(SourceOf.declaration(door).contains(RECORDS), door + " no longer records the tail through"
+                + " TailCrossedPrompt.recordTheTail, so it keeps its own copy of the late-answer rules");
+        }
+
+        return SourceOf.declaration(RECORD_TAIL);
+    }
+
     /**
      * Asked on the event thread, as every placement door asks it, the question waits in a secondary loop and a click
-     * answers it (TDU-C2).
+     * answers it.
      *
      * The other claims here ask off the event thread, which is the latch branch; every real door is on the event thread.
      *
@@ -418,7 +437,7 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * With an editor open the question is the list, not the main window's diagram (TDU-C1).
+     * With an editor open the question is the list, not the main window's diagram.
      *
      * From the autonomy editor's Place door the question was put on the main window's diagram - lit on the editor's
      * squares too, which do not take the click - with its small window at the top of a main window the editor covers.
@@ -495,7 +514,7 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * A tail question answered after the square has changed writes nothing onto whatever stands there by then (TDU2-A1).
+     * A tail question answered after the square has changed writes nothing onto whatever stands there by then.
      *
      * Since FR-100 the question waits on the diagram with the window live - Start, the hand doors, another placement all
      * still work - and the door that asked writes its answer when it comes back.  Answered after a run has brought another
@@ -617,7 +636,7 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * Every placement door asks whether its placement still stands between the question and its writes (TDU2-A1) - the
+     * Every placement door asks whether its placement still stands between the question and its writes - the
      * paste door is asked by the claim above; the right-click Place and the locomotive dialog are asked here, of their
      * source, because each needs a menu or a dialog to reach.
      *
@@ -628,11 +647,10 @@ public class testTheTailIsPickedOnTheDiagram
     @Test
     public void testEveryPlacementDoorAsksWhetherItStillStands() throws Exception
     {
-        for (String file : new String[] {"src/org/traincontrol/gui/TrainControlUI.java",
-            "src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java", "src/org/traincontrol/gui/GraphLocAssign.java"})
+        // The three doors do this through the one helper, which recordTheTail() asserts.
+        for (String file : new String[] {RECORD_TAIL})
         {
-            String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(file)),
-                java.nio.charset.StandardCharsets.UTF_8);
+            String source = recordTheTail();
 
             int asked = source.indexOf("askAfterPlacement(");
 
@@ -662,11 +680,10 @@ public class testTheTailIsPickedOnTheDiagram
     {
         final String newline = String.valueOf((char) 10);
 
-        for (String file : new String[] {"src/org/traincontrol/gui/TrainControlUI.java",
-            "src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java", "src/org/traincontrol/gui/GraphLocAssign.java"})
+        // The three doors do this through the one helper, which recordTheTail() asserts.
+        for (String file : new String[] {RECORD_TAIL})
         {
-            String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(file)),
-                java.nio.charset.StandardCharsets.UTF_8).replace(String.valueOf((char) 13), "");
+            String source = recordTheTail();
 
             int asked = source.indexOf("askAfterPlacement(");
 
@@ -674,7 +691,7 @@ public class testTheTailIsPickedOnTheDiagram
 
             int saved = source.lastIndexOf("TailCrossedPrompt.saveBeforeAsking(", asked);
 
-            assertTrue(saved > 0 && !source.substring(saved, asked).contains(newline + "    }" + newline), file
+            assertTrue(saved >= 0 && !source.substring(saved, asked).contains(newline + "    }" + newline), file
                 + " asks the tail question without saving the placement first - a crash while it waits loses the"
                 + " train's place (OB-305)");
         }
@@ -793,7 +810,7 @@ public class testTheTailIsPickedOnTheDiagram
     /**
      * The paste door asks for a five-unit train at Tunnel from the north; `meanwhile` runs while the question waits;
      * then TunnelPre is clicked - read again from the diagram, since a rebuild may have drawn it anew - or the small
-     * window is cancelled; and the door returns.
+     * window is canceled; and the door returns.
      *
      * @param train the train pasted
      * @param meanwhile what happens in the wait
@@ -899,9 +916,9 @@ public class testTheTailIsPickedOnTheDiagram
 
     /**
      * Another configuration loaded in the wait, holding the same train on the same copy: the answer follows the train -
-     * into the configuration loaded now and onto the railway running (Adam, 2026-09-24, TDD5-C1: *"Follow the train."*).
+     * into the configuration loaded now and onto the railway running (Adam, 2026-09-24: *"Follow the train."*).
      *
-     * TDU4-C1 took the other way, dropping it, and the tail the operator had just given was then missing from the
+     * The other way dropped it, and the tail the operator had just given was then missing from the
      * railway in front of him: the running copy held the train with no road, and the track beyond the switch, where he
      * had said the tail lies, was free to route another train over.
      *
@@ -971,7 +988,7 @@ public class testTheTailIsPickedOnTheDiagram
 
     /**
      * The setup replaced in the wait - what closing the track-diagram editor does: the answer is not written, the new
-     * railway's copy keeps no road, and the old setup is not saved over the new one's file (TDU4-C4, TDU4-C2).
+     * railway's copy keeps no road, and the old setup is not saved over the new one's file.
      *
      * MUTATION: write where the session is not the window's any more, or save it, and this fails.
      *
@@ -1027,8 +1044,7 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * The facing is written before the question, so an answer dropped in the wait does not take it with it (TDU3-C1,
-     * TDU4-C4).
+     * The facing is written before the question, so an answer dropped in the wait does not take it with it.
      *
      * MUTATION: write the facing with the road, after the question, and this fails.
      *
@@ -1077,7 +1093,7 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * A dropped ANSWER is logged, naming the train and the square; a Cancel of a question made stale is not (TDU4-C3).
+     * A dropped ANSWER is logged, naming the train and the square; a Cancel of a question made stale is not.
      *
      * MUTATION: log every dropped reply, or none, and this fails.
      *
@@ -1094,7 +1110,7 @@ public class testTheTailIsPickedOnTheDiagram
 
             String first = dropped.substring(0, Math.min(25, dropped.length()));
 
-            // CANCELLED: nothing to say.
+            // CANCELED: nothing to say.
             pasteAndAnswerLate(train, () ->
             {
                 model.getAutoLayout().moveLocomotive(null, "Tunnel (southbound)", true);
@@ -1128,9 +1144,15 @@ public class testTheTailIsPickedOnTheDiagram
     /** What the model has logged since the listener below was put on - every line the operator's log shows. */
     private static final StringBuilder LOGGED = new StringBuilder();
 
+    /**
+     * The model's logger, held here: java.util.logging keeps loggers only weakly, so a handler put on a logger
+     * nothing else holds yet can be dropped by a garbage collection before the model's class loads (found under JaCoCo).
+     */
+    private static final java.util.logging.Logger MODEL_LOG = java.util.logging.Logger.getLogger(org.traincontrol.marklin.MarklinControlStation.class.getName());
+
     static
     {
-        java.util.logging.Logger.getLogger(org.traincontrol.marklin.MarklinControlStation.class.getName()).addHandler(
+        MODEL_LOG.addHandler(
             new java.util.logging.Handler()
             {
                 @Override
@@ -1167,7 +1189,7 @@ public class testTheTailIsPickedOnTheDiagram
 
     /**
      * The right-click and locomotive-dialog doors ask the railway running when the answer comes back, not the one they
-     * held before the question (TDU4-C4) - read, as the pin above is, because each needs a menu or a dialog to reach.
+     * held before the question - read, as the pin above is, because each needs a menu or a dialog to reach.
      *
      * MUTATION: pass either door the railway it held before the question, and this fails naming it.
      *
@@ -1176,11 +1198,10 @@ public class testTheTailIsPickedOnTheDiagram
     @Test
     public void testEveryDoorAsksTheRailwayRunningAtTheAnswer() throws Exception
     {
-        for (String file : new String[] {"src/org/traincontrol/gui/TrainControlUI.java",
-            "src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java", "src/org/traincontrol/gui/GraphLocAssign.java"})
+        // The three doors do this through the one helper, which recordTheTail() asserts.
+        for (String file : new String[] {RECORD_TAIL})
         {
-            String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(file)),
-                java.nio.charset.StandardCharsets.UTF_8);
+            String source = recordTheTail();
 
             int asked = source.indexOf("whereTheAnswerGoes(");
 
@@ -1194,12 +1215,12 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * The configuration renamed in the wait - the railway not rebuilt - keeps the answer (TDU5-C1): the same setup,
+     * The configuration renamed in the wait - the railway not rebuilt - keeps the answer: the same setup,
      * under a new name.  Asked only by the configuration's name, the check dropped the answer from the railway and from
      * the setup, and the log gave another configuration as the reason.
      *
      * MUTATION: ask for anything beyond the session - the configuration's name, the railway running - and this fails
-     * (TDD5-C1: the answer follows the train).
+     * (the answer follows the train).
      *
      * @throws Exception from the event thread
      */
@@ -1246,11 +1267,11 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * The right-click and locomotive-dialog doors keep every late-answer rule the paste door is claimed for above (TDU5-C4):
+     * The right-click and locomotive-dialog doors keep every late-answer rule the paste door is claimed for above:
      * the facing written before the question, the save skipped for a setup let go, only an answer logged, and the square
      * named as the diagram names it - read, as the pins above are, because each door needs a menu or a dialog.
      *
-     * And that each writes only where the answer goes somewhere (TDU2-A1).
+     * And that each writes only where the answer goes somewhere.
      *
      * MUTATION: undo any of the five at either door, and this fails naming it.
      *
@@ -1260,16 +1281,16 @@ public class testTheTailIsPickedOnTheDiagram
     public void testTheOtherDoorsKeepTheLateAnswerRules() throws Exception
     {
         String[][] doors = {
-            {"src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java", "session.setFacing(station, facing)",
-                "if (facing != null && session != null && setupStands)"},
-            {"src/org/traincontrol/gui/GraphLocAssign.java", "session.setFacing(tile,", "if (!setupStands) return;"}};
+            {PLACEMENT_DOORS[1], "session.setFacing(station, facing)",
+                "if (session != null && setupStands)"},
+            {PLACEMENT_DOORS[2], "session.setFacing(tile,", "if (!setupStands) return;"}};
 
+        // At each door: the facing before the question, and the door's own save guarded.
         for (String[] door : doors)
         {
-            String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(door[0])),
-                java.nio.charset.StandardCharsets.UTF_8);
+            String source = SourceOf.declaration(door[0]);
 
-            int asked = source.indexOf("askAfterPlacement(");
+            int asked = source.indexOf(RECORDS);
 
             assertTrue(asked > 0, "precondition: " + door[0] + " no longer asks the tail question");
 
@@ -1278,38 +1299,45 @@ public class testTheTailIsPickedOnTheDiagram
             assertTrue(facing > 0 && facing < asked, door[0] + " writes the facing after the tail question, where a"
                 + " dropped answer takes it with it (TDU3-C1)");
 
-            // THE WRITE WAITS ON WHERE THE ANSWER GOES (TDU2-A1): nothing is written where it goes nowhere.
-            int where = source.indexOf("whereTheAnswerGoes(", asked);
-            int write = source.indexOf("setArrivedAlong(", where);
-
-            String between = where > 0 && write > where ? source.substring(where, write) : "";
-
-            assertTrue(between.contains("landing != null)") || between.contains("answersTo != null)"), door[0]
-                + " writes the tail question's answer without asking where it goes (TDU2-A1)");
-
-            int noted = source.indexOf("noteADroppedAnswer(", asked);
-            int answered = source.lastIndexOf("wasAnswered()", noted);
-
-            assertTrue(noted > 0 && answered > asked, door[0] + " logs a dropped reply that carried no answer (TDU4-C3)");
-
-            String call = source.substring(noted, source.indexOf(";", noted));
-
-            assertTrue(call.contains("baseNameOf("), door[0] + " names the copy, not the square, when it logs a dropped"
-                + " answer (TDU4-C3): " + call);
-
             int save = source.indexOf("session.save()", asked);
             int guard = source.lastIndexOf(door[2], save);
 
             assertTrue(save > 0 && guard > asked, door[0] + " saves a setup the window let go in the wait (TDU4-C2)");
-
-            // AND AN EDITOR OPENED IN THE WAIT LETS THE SETUP GO TOO (RLU-C9, RLU2-C4): the paste door is claimed above.
-            int stands = source.indexOf("setupStands =", asked);
-
-            String rule = stands > 0 ? source.substring(stands, source.indexOf(";", stands)) : "";
-
-            assertTrue(rule.contains("anEditorOpenedInTheWait()"), door[0] + " writes a late answer into a setup that an"
-                + " editor opened in the wait holds a copy of (RLU-C9): " + rule);
         }
+
+        // And in the helper both go through, the rest.
+        String source = recordTheTail();
+
+        int asked = source.indexOf("askAfterPlacement(");
+
+        assertTrue(asked > 0, "precondition: " + RECORD_TAIL + " no longer asks the tail question");
+
+        // THE WRITE WAITS ON WHERE THE ANSWER GOES: nothing is written where it goes nowhere.
+        int where = source.indexOf("whereTheAnswerGoes(", asked);
+        int write = source.indexOf("setArrivedAlong(", where);
+
+        String between = where > 0 && write > where ? source.substring(where, write) : "";
+
+        assertTrue(between.contains("landing != null)") || between.contains("answersTo != null)"), RECORD_TAIL
+            + " writes the tail question's answer without asking where it goes (TDU2-A1)");
+
+        int noted = source.indexOf("noteADroppedAnswer(", asked);
+        int answered = source.lastIndexOf("wasAnswered()", noted);
+
+        assertTrue(noted > 0 && answered > asked, RECORD_TAIL + " logs a dropped reply that carried no answer (TDU4-C3)");
+
+        String call = source.substring(noted, source.indexOf(";", noted));
+
+        assertTrue(call.contains("baseNameOf("), RECORD_TAIL + " names the copy, not the square, when it logs a dropped"
+            + " answer (TDU4-C3): " + call);
+
+        // AND AN EDITOR OPENED IN THE WAIT LETS THE SETUP GO TOO.
+        int stands = source.indexOf("setupStands =", asked);
+
+        String rule = stands > 0 ? source.substring(stands, source.indexOf(";", stands)) : "";
+
+        assertTrue(rule.contains("anEditorOpenedInTheWait()"), RECORD_TAIL + " writes a late answer into a setup that an"
+            + " editor opened in the wait holds a copy of (RLU-C9): " + rule);
     }
 
     /** Cancel on the small window a waiting tail question leaves up. */
@@ -1482,7 +1510,7 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * An answer given after an editor was opened in the wait is not written into the setup, and the log says why (RLU-C9).
+     * An answer given after an editor was opened in the wait is not written into the setup, and the log says why.
      *
      * The editor holds the setup as it was when it opened, and its Cancel puts that back - so a road written into the
      * setup while it was open was taken back out by the Cancel, silently, and the rail the train lies on stopped being
@@ -1883,7 +1911,7 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * An answer given after the running railway was rebuilt reaches the railway (TDU3-B1).
+     * An answer given after the running railway was rebuilt reaches the railway.
      *
      * A rebuild in the wait - any setup change from the diagram, a page left out - builds new copies of every square and
      * puts each train back on its new one.  The door asked the copy it had placed the train on, which the rebuild leaves
@@ -1924,7 +1952,7 @@ public class testTheTailIsPickedOnTheDiagram
                 + " the railway was rebuilt, and the railway's Tunnel copy did not get the road - the train's tail stops at"
                 + " the switch and another train can be routed into it (TDU3-B1)");
 
-            // AND IN THE NEW RAILWAY'S OWN EDGES (TDU4-C4): the answer's road is the old railway's, whose edges end at
+            // AND IN THE NEW RAILWAY'S OWN EDGES: the answer's road is the old railway's, whose edges end at
             // copies nothing runs on any more.
             for (org.traincontrol.automation.Edge edge : late.tunnelNow.getArrivedAlong())
             {
@@ -1940,7 +1968,7 @@ public class testTheTailIsPickedOnTheDiagram
 
     /**
      * The same train on the copy, from the same side, with a road it did not have when the question was asked - the
-     * road a run brings it back by: a late Cancel leaves that road (TDD3-C7, the road condition alone).
+     * road a run brings it back by: a late Cancel leaves that road (the road condition alone).
      *
      * MUTATION: drop the road from `placementStillStands`, and this fails.
      *
@@ -1978,7 +2006,7 @@ public class testTheTailIsPickedOnTheDiagram
 
     /**
      * Another train put on the copy by hand, with no road, the same side: a late click on TunnelPre does not give it
-     * the first train's road (TDD3-C7, the train condition alone).
+     * the first train's road (the train condition alone).
      *
      * MUTATION: drop the train from `placementStillStands`, and this fails.
      *
@@ -2019,7 +2047,7 @@ public class testTheTailIsPickedOnTheDiagram
 
     /**
      * The same train, turned in the wait: a late click on TunnelPre - a road for a train that came in from the north -
-     * is not written for a train now recorded from the south (TDD3-C7, the side condition alone).
+     * is not written for a train now recorded from the south (the side condition alone).
      *
      * MUTATION: drop the side from `placementStillStands`, and this fails.
      *

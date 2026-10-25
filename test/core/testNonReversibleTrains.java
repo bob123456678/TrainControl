@@ -11,6 +11,7 @@ import org.traincontrol.automation.Point;
 import org.traincontrol.automationui.StationIndex;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
+import support.SourceOf;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
@@ -32,7 +33,7 @@ public class testNonReversibleTrains
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        model = init(null, true, false, false, false);
+        model = support.TestStation.simulated();
 
         // The sensors these points stand on.  A destination Point insists on a feedback that exists,
         // which is the model refusing to describe a platform with no way of knowing a train is there.
@@ -123,21 +124,21 @@ public class testNonReversibleTrains
      * Adam, 2026-09-13, asked whether autonomy should route such a train to a turning copy at all:
      * **"Never, unless it's part of a 'return home' backing in manoeuvre."**
      *
-     * **That is the behaviour, and it is spread across two methods.**  A TERMINUS copy is refused by
+     * **That is the behavior, and it is spread across two methods.**  A TERMINUS copy is refused by
      * `pickPath`'s own filter (`!end.isTerminus() || loc.isReversible()`); a REVERSING copy is refused
      * for everybody inside `isSendableDestination`.  Nothing asked the DOOR whether the pair of them
      * add up to his sentence, and the two are edited by different rounds for different reasons - MT-367
      * moved one of them this month.
      *
      * **The exception is not this door.**  Return Home plans through `HomeStaging` and executes with
-     * `ALWAYS_REVERSE`, which `turnsOnArrival` reads as a plan rather than an operator (SEV-B2); the
+     * `ALWAYS_REVERSE`, which `turnsOnArrival` reads as a plan rather than an operator; the
      * execution tier permits it, which `testAReversingPointIsRefusedToANonReversibleLocomotive` above
      * asserts by asking `isPathClear`. Backing into a terminus is how such a train gets home at all
      * (MT-245), so a rule that refused everywhere would stop Return Home working.
      *
      * The control is the same train made reversible: without it this would pass on a layout where
      * autonomy picks nothing for anybody.  The terminus is given a way back out for it, because a terminus
-     * nothing leads out of is refused to a reversible train too (E2E-B1, round 92).
+     * nothing leads out of is refused to a reversible train too (round 92).
      *
      * MUTATIONS, run 2026-09-13. Deleting `(!end.isTerminus() || loc.isReversible())` from `pickPath`
      * fails this. Deleting `!end.isReversing()` from `isSendableDestination` does NOT - a reversing
@@ -157,7 +158,7 @@ public class testNonReversibleTrains
 
             if (!reversing) layout.getPoint("REV_end").setTerminus(true);
 
-            // A WAY BACK OUT, for the control's sake (E2E-B1): since round 92 autonomy sends even a reversible train to a
+            // A WAY BACK OUT, for the control's sake: since round 92 autonomy sends even a reversible train to a
             // terminus only where some station is reachable from it again, and the fixture's one edge leads in and not out
             if (!reversing) layout.createEdge("REV_end", "REV_start");
 
@@ -280,7 +281,7 @@ public class testNonReversibleTrains
      * trains at every plain copy they passed - the "may" promoted to "must" that `AutonomyBuilder`
      * refuses to emit. It counts as nobody now.
      *
-     * The behaviour is asserted here and the WIRING by the census below, because a rule that behaves
+     * The behavior is asserted here and the WIRING by the census below, because a rule that behaves
      * correctly and a door that hands it the wrong policy are two different defects.
      */
     @Test
@@ -416,11 +417,11 @@ public class testNonReversibleTrains
         // ONE HAND DOOR since 2026-09-29 (Adam: "can all the checks go through a single door?"): the track diagram's
         // destinations and the Auto tab's list both send through TrainControlUI.sendATrainByHand, and dispatch nothing
         // themselves
-        for (String hand : new String[] {"src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java",
-            "src/org/traincontrol/gui/AutoLocomotiveStatus.java"})
+        for (String hand : new String[] {"final class LayoutRightclickAutonomyMenu extends JPopupMenu",
+            "public final class AutoLocomotiveStatus extends javax.swing.JPanel"})
         {
-            String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(hand)),
-                java.nio.charset.StandardCharsets.UTF_8).replaceAll("(?s)/[*].*?[*]/", " ").replaceAll("//[^\r\n]*", " ");
+            // The class itself is the claim: found by its declaration, wherever its file is.
+            String source = SourceOf.withoutComments(SourceOf.fileDeclaring(hand));
 
             assertTrue(source.contains("sendATrainByHand("), hand + " no longer sends through the one hand door");
 
@@ -429,18 +430,12 @@ public class testNonReversibleTrains
 
         final String[][] doors =
         {
-            {"src/org/traincontrol/gui/TrainControlUI.java", "the one hand door both hand doors send through"},
+            {"TrainControlUI.sendATrainByHand", "the one hand door both hand doors send through"},
         };
 
         for (String[] door : doors)
         {
-            java.io.File file = new java.io.File(door[0]);
-
-            assertTrue(file.exists(), "precondition: " + door[0] + " has to be readable, or this test "
-                + "reports every door as silent and means nothing");
-
-            String source = new String(java.nio.file.Files.readAllBytes(file.toPath()),
-                java.nio.charset.StandardCharsets.UTF_8).replaceAll("\\s+", " ");
+            String source = SourceOf.declaration("void sendATrainByHand(").replaceAll("\\s+", " ");
 
             // Either door may hand over the shared policy or call the prompt itself; what the census
             // refuses is a door that hands over neither.
@@ -449,19 +444,15 @@ public class testNonReversibleTrains
             // inside the run: "make it be on departure itself, that way there is no dispatch prior to
             // user input."
             // IN THE ONE HAND DOOR, before its dispatch
-            int at = source.indexOf("void sendATrainByHand(");
+            // ITS DISPATCH, by the name it has had since round 61 or the one before
+            int dispatch = source.indexOf("executePathByHand(");
 
-            assertTrue(at > 0, "precondition: the one hand door has gone from " + door[0]);
+            if (dispatch < 0) dispatch = source.indexOf("executePath(");
 
-            // ITS DISPATCH, by the name it has had since round 61 (BCR-C1) or the one before
-            int dispatch = source.indexOf("executePathByHand(", at);
-
-            if (dispatch < 0) dispatch = source.indexOf("executePath(", at);
-
-            assertTrue(dispatch > at, "precondition: the one hand door no longer dispatches through executePath or"
+            assertTrue(dispatch > 0, "precondition: the one hand door no longer dispatches through executePath or"
                 + " executePathByHand, so this checks nothing before it");
 
-            source = source.substring(at, dispatch);
+            source = source.substring(0, dispatch);
 
             assertTrue(source.contains("ManualReversalPrompt.forJourney(")
                     || source.contains("ManualReversalPrompt.forOperator(")
@@ -473,15 +464,18 @@ public class testNonReversibleTrains
         // AND THE UNATTENDED ONES DO NOT, which is the other half: the timetable is what Return Home
         // runs, and asking a dialog about a turn the planner chose would be asking about a decision
         // the operator already made.
-        String layout = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/automation/Layout.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
-
+        // The automation layer is its PACKAGE, every file of it (FR-136): read as the one file that declares
+        // executePath, a journey cluster split out of Layout could call the dialog and stay unseen.
+        //
         // COMMENTS STRIPPED FIRST.  This read the whole file and failed on a javadoc that names
         // `ManualReversalPrompt` while explaining why the automation layer must not call it - a guard
         // that cannot tell an explanation from an instruction reports on prose rather than on the
         // program, and this is the third one in this repository to do it.
-        String code = layout.replaceAll("(?s)/[*].*?[*]/", " ").replaceAll("//[^\\r\\n]*", " ");
+        String code = SourceOf.codeUnder("src/org/traincontrol/automation/");
+
+        assertTrue(code.contains("public boolean executePath(List<Edge> path, Locomotive loc, int speed,"),
+            "precondition: the method every door ends in is no longer in the automation package, so this reads the"
+            + " wrong folder");
 
         assertFalse(code.contains("ManualReversalPrompt"),
             "the automation layer now reaches into the window for a dialog, so an unattended run can "
@@ -493,7 +487,7 @@ public class testNonReversibleTrains
      * Adam, 2026-09-07: **"It is unnecessary to prompt on intermediates.  We care about the reversal
      * if it's the destination, since that dictates where the train can go, and where it is facing."**
      *
-     * **This dissolved `REG7-A1` rather than working around it.**  That finding was a journey routed
+     * **This dissolved the problem rather than working around it.**  The problem was a journey routed
      * through a turning copy the operator was asked about and could decline - "keep direction" being
      * the default, the Escape answer and the cannot-ask answer.  The fix before this one refused such
      * journeys before they started, which was correct and was a whole extra mechanism.  Asking only
@@ -579,10 +573,10 @@ public class testNonReversibleTrains
     }
     /**
      * A policy that overrides `asksAbout` is what the doors actually hand over - and until now, what
-     * nothing had ever run (CONF2-B2).
+     * nothing had ever run.
      *
      * **This is the gap that let one defect survive a fix, a review and a confirming pass.**  Every
-     * behavioural case in this class hands `shouldReverseAt` a `(train, where) -> ...` lambda, and a
+     * behavioral case in this class hands `shouldReverseAt` a `(train, where) -> ...` lambda, and a
      * lambda takes the interface DEFAULT `asksAbout`, which answers `at.isReversing()`.  The doors do
      * not: `ManualReversalPrompt` overrides it, and that override is the input `shouldReverseAt` uses
      * to tell a compulsory turn from a may-reverse one.  So the branch the railway runs had no test at
@@ -700,33 +694,16 @@ public class testNonReversibleTrains
     @Test
     public void testTheJourneyPolicyAnswersAsksAboutIndependentlyOfTheAnswer() throws Exception
     {
-        String prompt = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/ManualReversalPrompt.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
-
-        int journey = prompt.indexOf("forJourney(");
-
-        assertTrue(journey > 0, "forJourney has been renamed and this check now guards nothing");
-
-        int asks = prompt.indexOf("public boolean asksAbout(Point at)", journey);
-
-        assertTrue(asks > 0, "the journey policy no longer answers asksAbout");
-
-        StringBuilder code = new StringBuilder();
+        String journey = SourceOf.declaration(
+            "public static org.traincontrol.automation.Layout.ReversalPolicy forJourney(");
 
         // Comments stripped: the paragraph above this method explains the defect by name, and a guard
         // that reads its own explanation as code reports on prose rather than on the program.
-        for (String line : prompt.substring(asks,
-            prompt.indexOf("            }", asks)).split("\\r?\\n"))
-        {
-            String trimmed = line.trim();
-
-            if (!trimmed.startsWith("//")) code.append(trimmed).append(" ");
-        }
+        String code = SourceOf.withoutComments(SourceOf.declarationIn(journey, "public boolean asksAbout(Point at)"));
 
         // A WORD, not a substring: the first version of this check searched for "turn" and found it
         // inside "return", so it failed on the correct code it was written to protect.
-        assertFalse(code.toString().matches(".*\\bturn\\b.*"),
+        assertFalse(java.util.regex.Pattern.compile("\\bturn\\b").matcher(code).find(),
             "the journey policy answers asksAbout using the operator's answer. That lets a \"keep "
             + "direction\" make every may-reverse turning copy look compulsory to shouldReverseAt, "
             + "which turns the train against the explicit no (CONF2-B2). The answer belongs in "
@@ -779,7 +756,7 @@ public class testNonReversibleTrains
         Locomotive loc = model.getLocByName(model.getLocList().get(0));
 
         // THE CONTROL: the plain copy carries no flag, which is the whole reason the old rule missed
-        // it.  If this ever becomes true the fixture has stopped modelling a split.
+        // it.  If this ever becomes true the fixture has stopped modeling a split.
         assertFalse(plain.isReversing(),
             "control: the plain copy of a split must NOT be marked reversing, or this test is about "
             + "a must-reverse square and says nothing about may-reverse");
@@ -894,11 +871,7 @@ public class testNonReversibleTrains
     @Test
     public void testTheRunAsksThatRule() throws Exception
     {
-        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/automation/Layout.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
-
-        String flat = source.replaceAll("\\s+", " ");
+        String flat = SourceOf.declaration("private boolean executePathInternal(").replaceAll("\\s+", " ");
 
         // THE INTERMEDIATE POINTS.
         assertTrue(flat.contains(
@@ -906,7 +879,7 @@ public class testNonReversibleTrains
             "executePathInternal no longer decides an intermediate reversal through shouldReverseAt, "
             + "so the rule is tested here and something else decides what the railway does");
 
-        // AND THE ARRIVAL, which is a SECOND site and was asking nobody (DIR-A2).
+        // AND THE ARRIVAL, which is a SECOND site and was asking nobody.
         //
         // The policy is consulted from inside `if (i != path.size() - 1)`; the last point is turned
         // forty lines below the loop by a different statement. So a hand-driven send whose
@@ -937,7 +910,7 @@ public class testNonReversibleTrains
 
         // AND THE TRAIN IS STOPPED WHERE IT IS GOING TO BE TURNED.
         //
-        // This began as DIR-A1 - "stopped before anybody is asked" - because the dialog was modal, had
+        // This began as "stopped before anybody is asked", because the dialog was modal, had
         // no time limit, and everything that stopped the train sat inside the branch the answer
         // decides: measured at line speed when the question was put, and still at line speed five
         // seconds later.
@@ -946,7 +919,7 @@ public class testNonReversibleTrains
         // question to departure, so nobody is asked mid-journey any more and there is no dialog to
         // outrun.  What is left is the turn itself, which still needs the train standing.
         //
-        // `mayReverseAt` is the wrong test for that and was reported twice (SPEC-A2, REG6-B3): blocks
+        // `mayReverseAt` is the wrong test for that and was reported twice: blocks
         // are per-square, so it is true at the PLAIN copy of a split square as well as the turning
         // one, and autonomy - which reaches this line through ALWAYS_REVERSE - stopped dead and
         // re-accelerated at plain copies it used to pass at line speed.  `current.isReversing()` is
@@ -954,7 +927,7 @@ public class testNonReversibleTrains
         //
         // Pinned as source because there is no way to observe a stop that does not happen without
         // driving a train, and a test that drives one through `executePath` hangs this suite.
-        // THE STOP IS THE GATE'S OWN ANSWER, so the two cannot disagree (CONF-A2).
+        // THE STOP IS THE GATE'S OWN ANSWER, so the two cannot disagree.
         //
         // Three versions of this: two expressions meant to agree and which did not; then one shared
         // predicate, which agreed by construction but still had to be kept in step by hand as the gate
@@ -962,16 +935,16 @@ public class testNonReversibleTrains
         // exactly when it is about to be turned.
         //
         // Only safe because `df584d0b` moved the question to departure - while the policy could put a
-        // modal dialog up from inside the run, asking before stopping was the whole of DIR-A1.
+        // modal dialog up from inside the run, asking before stopping was the whole problem.
         assertTrue(flat.contains(
             "if (isCurrentLayout() && shouldReverseAt(current, path.get(path.size() - 1).getEnd(), "
             + "loc, reversals)) { loc.setSpeed(0).waitForSpeedBelow(1);"),
             "the stop and the gate are two expressions again, so a train can be turned somewhere it "
             + "was not stopped, or stopped somewhere it will not be turned (CONF-A2, REG6-B4)");
 
-        // AND A COMPULSORY TURN NEVER REACHES A POLICY (CONF-A1).
+        // AND A COMPULSORY TURN NEVER REACHES A POLICY.
         //
-        // Removing REG6-A1's prompt left the OUTCOME behind: the rule fell through to shouldReverse,
+        // Removing the prompt at compulsory turns left the OUTCOME behind: the rule fell through to shouldReverse,
         // which for a manual policy answers "keep direction", so the turn was skipped unconditionally
         // and the hazard went from "if the operator presses the default" to "always".
         //
@@ -980,7 +953,7 @@ public class testNonReversibleTrains
         // compulsory ones.  That is also why `asksAbout` must not depend on the ANSWER - when it
         // briefly returned `turn && ...`, "keep direction" made every may-reverse turning copy look
         // compulsory and turned the train against an explicit no.
-        assertTrue(flat.contains(
+        assertTrue(SourceOf.declaration("public boolean shouldReverseAt(").replaceAll("\\s+", " ").contains(
             "if (current.isReversing() && !reversals.asksAbout(current)) return true;"),
             "a compulsory turn can now reach a reversal policy, which answers \"keep direction\" - so "
             + "the train is driven forward off a turning copy whose only edges leave by the side it "
@@ -993,10 +966,10 @@ public class testNonReversibleTrains
         // its owner had set to run slow, and stayed there until the next point recalculated.  The stop
         // was added for the reversal question; handing back a speed limit was not part of it.
         //
-        // Written through `drive` since RSA-C1, which leaves a stop ordered since dispatch standing - and then the
+        // Written through `drive`, which leaves a stop ordered since dispatch standing - and then the
         // wait for the speed is not made either.
         //
-        // And its wait for the speed gives up on a stop or a retirement since RSA2-C2.
+        // And its wait for the speed gives up on a stop or a retirement.
         assertTrue(flat.contains("if (drive(loc, resume, stopsAtDispatch)) {")
             && flat.contains("loc.waitForSpeedAtOrAbove(resume, () -> this.stopsOrdered.get() != stopsAtDispatch"
             + " || !this.isCurrentLayout());"),

@@ -26,9 +26,9 @@ public class AddLocomotive extends javax.swing.JFrame
     // the running program gets `FlatRootPaneUI`, FlatLaf's own title bar and the menu bar drawn inside it:
     // 166x77 against 166x49 for the identical window, measured 2026-09-11.
     //
-    // Class initialisation always finishes before the first instance is created, so this is early enough.
+    // Class initialization always finishes before the first instance is created, so this is early enough.
     //
-    // Headless-guarded because a static initialiser that throws leaves the class unusable for the rest of
+    // Headless-guarded because a static initializer that throws leaves the class unusable for the rest of
     // the process, which is a worse failure than a window in the wrong font.
     static
     {

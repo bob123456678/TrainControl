@@ -8,6 +8,7 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
+import support.SourceOf;
 
 /**
  * A train is not sent by hand while the setup has errors, any more than autonomy is started (MT-263).
@@ -17,14 +18,14 @@ import org.testng.annotations.Test;
  * tab, which should throw an error instead."*  A hand send runs over the railway the same setup built, so the setup
  * that stops autonomy starting stops a hand send too: the same question, `autonomyHasErrors`, at both hand doors - the
  * diagram's right-click destinations and the Auto tab's list of paths - and at the two run doors that dispatch without
- * Start, Execute Timetable and Return Home (TDU-B1).
+ * Start, Execute Timetable and Return Home.
  *
- * **Asked of the words, then of the doors**, as `testTheRefusalToStartSaysWhichThing` asks Start's: a behavioural
+ * **Asked of the words, then of the doors**, as `testTheRefusalToStartSaysWhichThing` asks Start's: a behavioral
  * claim would have to raise the modal dialog each door shows, which is how a runner was stranded on 2026-09-09.
  *
  * MUTATION: take the refusal out of either door, or ask it after the reversal question, and the second claim fails
  * naming the door; make the window's rule answer nothing for a broken setup, or invert its guard, and the window's
- * claim does (TDD-C8, TDU-C3 - the first claim asks only the words).
+ * claim does (the first claim asks only the words).
  *
  * @author Adam
  */
@@ -80,53 +81,32 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
         // THROUGH ONE DOOR (Adam, 2026-09-29: "can all the checks go through a single door?"): both hand doors send through
         // `sendATrainByHand`, and neither dispatches past it
         for (String[] hand : new String[][] {
-            {"src/org/traincontrol/gui/AutoLocomotiveStatus.java", "private void locAvailPathsMouseClicked(",
-                "the Auto tab's list of paths"},
-            {"src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java", "private JMenuItem destinationItem(",
-                "the track diagram's right-click destinations"}})
+            {"private void locAvailPathsMouseClicked(", "the Auto tab's list of paths"},
+            {"private JMenuItem destinationItem(", "the track diagram's right-click destinations"}})
         {
-            String source = read(hand[0]);
+            String body = code(hand[0]);
 
-            int start = source.indexOf(hand[1]);
-
-            assertTrue(start >= 0, "cannot find " + hand[1] + " in " + hand[0] + " - if the door moved, move this");
-
-            int end = source.indexOf("\n    }", start);
-
-            String body = source.substring(start, end < 0 ? source.length() : end);
-
-            assertTrue(body.contains("sendATrainByHand("), hand[2] + " does not send through the one door both hand doors"
+            assertTrue(body.contains("sendATrainByHand("), hand[1] + " does not send through the one door both hand doors"
                 + " share, so what one asks the other can miss (RLV12-B1)");
 
-            assertFalse(body.contains("executePath(") || body.contains("executePathByHand("), hand[2] + " dispatches a train"
+            assertFalse(body.contains("executePath(") || body.contains("executePathByHand("), hand[1] + " dispatches a train"
                 + " itself, past the one door");
         }
 
-        door("src/org/traincontrol/gui/TrainControlUI.java", "void sendATrainByHand(",
-            "the one door both hand doors send through");
+        door("void sendATrainByHand(", "the one door both hand doors send through");
 
-        String window = read("src/org/traincontrol/gui/TrainControlUI.java");
-
-        int gate = window.indexOf("String whyNoTrainMayBeSent(");
-
-        assertTrue(gate >= 0, "the window has no whyNoTrainMayBeSent for the doors to ask");
-
-        assertTrue(window.substring(gate, window.indexOf("\n    }", gate)).contains(REFUSAL), "the gate every door asks"
+        assertTrue(code("static String whyNoTrainMayBeSent(TrainControlUI ui").contains(REFUSAL), "the gate every door asks"
             + " does not ask " + REFUSAL + " - a hand send goes out over a setup Start refuses (MT-263)");
 
-        int rule = window.indexOf("public String " + REFUSAL);
-
-        assertTrue(rule >= 0, "the window has no " + REFUSAL + " for the doors to ask");
-
-        String body = window.substring(rule, window.indexOf("\n    }", rule));
+        String body = code("static String whyAHandSendIsRefused(TrainControlUI ui)");
 
         assertTrue(body.contains("autonomyHasErrors()"), REFUSAL + " does not ask autonomyHasErrors(), the question"
             + " Start is refused on - so a hand send and Start can disagree about the same setup: " + body);
     }
 
     /**
-     * The two run doors that move trains without Start - Execute Timetable and Return Home - ask it too, before they grey
-     * anything or dispatch (TDU-B1).
+     * The two run doors that move trains without Start - Execute Timetable and Return Home - ask it too, before they gray
+     * anything or dispatch.
      *
      * The rule's own reason is not about the hand: a timetable run and a Return Home run drive over the railway the same
      * setup built, through the same dispatch, started by a button with nobody asking the setup.  With the graph broken,
@@ -139,29 +119,25 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
     @Test
     public void testTheRunDoorsAskItToo() throws Exception
     {
-        String window = read("src/org/traincontrol/gui/TrainControlUI.java");
-
         for (String[] door : new String[][] {
             {"private void executeTimetableActionPerformed(", "this.executeTimetable.setEnabled(false);", "Execute Timetable"},
-            {"public void requestReturnToHome()", "loadReturnToHomeTimetable(", "Return Home"}})
+            {"    void requestReturnToHome()", "loadReturnToHomeTimetable(", "Return Home"}})
         {
-            int start = window.indexOf(door[0]);
+            String body = code(door[0]);
 
-            assertTrue(start >= 0, "cannot find " + door[0] + " - if the door moved, move this");
+            int asked = body.indexOf(GATE);
+            int acts = body.indexOf(door[1]);
 
-            int asked = window.indexOf(GATE, start);
-            int acts = window.indexOf(door[1], start);
+            assertTrue(acts >= 0, "precondition: " + door[2] + " no longer does " + door[1]);
 
-            assertTrue(acts > start, "precondition: " + door[2] + " no longer does " + door[1]);
-
-            assertTrue(asked > start && asked < acts, door[2] + " runs trains without asking " + GATE + " - over a setup"
+            assertTrue(asked >= 0 && asked < acts, door[2] + " runs trains without asking " + GATE + " - over a setup"
                 + " Start refuses (TDU-B1)");
         }
     }
 
     /**
      * The window refuses while its setup has an error, and not once it is mended - asked of a real window, not of the
-     * words (TDU-C3).
+     * words.
      *
      * The first claim asks the sentence; the doors ask the window's own method, whose guard decides.  Inverted, or
      * answering nothing, it left both claims above green while no hand send was ever refused.
@@ -184,7 +160,7 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
             org.traincontrol.marklin.MarklinControlStation model =
-                org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, true);
+                support.TestStation.simulatedInDebug();
 
             javax.swing.SwingUtilities.invokeAndWait(() -> ui[0] = new TrainControlUI());
 
@@ -202,8 +178,8 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
             // there, and a change made from this thread raced it.
             final String[] outcome = new String[9];
 
-            // RETURN HOME OFFERED BEFORE ANYTHING IS BROKEN (ADU-C6): otherwise the item is greyed for that, and the
-            // greyed state below says nothing about the setup.
+            // RETURN HOME OFFERED BEFORE ANYTHING IS BROKEN: otherwise the item is grayed for that, and the
+            // grayed state below says nothing about the setup.
             java.lang.reflect.Method triage = TrainControlUI.class.getDeclaredMethod("awaitReturnHomeTriage", long.class);
 
             triage.setAccessible(true);
@@ -251,17 +227,17 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
                     outcome[1] = String.valueOf(ui[0].autonomyHasErrors());
                     outcome[2] = String.valueOf(ui[0].whyAHandSendIsRefused());
 
-                    // AND THE RIGHT-CLICK RETURN HOME ITEM (TDU2-C3): greyed, with the setup's sentence.
+                    // AND THE RIGHT-CLICK RETURN HOME ITEM: grayed, with the setup's sentence.
                     try
                     {
                         javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
 
-                        // Handed the sentence, as the menu hands it where Start is greyed (ADU-C3).
+                        // Handed the sentence, as the menu hands it where Start is grayed.
                         Method add = Class.forName("org.traincontrol.gui.HomeLocomotiveMenu").getDeclaredMethod(
                             "addReturnHomeItem", javax.swing.JComponent.class, TrainControlUI.class, String.class);
 
                         add.setAccessible(true);
-                        // From the one reading the menu takes (ADU2-C5), checked against the two rules it stands for.
+                        // From the one reading the menu takes, checked against the two rules it stands for.
                         String[] both = ui[0].whyStartAndAHandSendAreRefused();
 
                         outcome[8] = String.valueOf(both[0].equals(ui[0].whyAutonomyWillNotStart())
@@ -306,7 +282,7 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
 
             assertEquals(outcome[3], "null", "with the setup mended, a hand send is still refused");
 
-            // Adam, 2026-09-24, TDU2-C3: "Yes, go with your recommendation" - the item greyed with the setup's sentence,
+            // Adam, 2026-09-24: "Yes, go with your recommendation" - the item grayed with the setup's sentence,
             // the buttons live and explaining, as Start's is.
             assertEquals(outcome[6], "true", "precondition: Return Home is not offered on the frozen railway before anything"
                 + " is broken, so its item is greyed for that and nothing below is about the setup (ADU-C6)");
@@ -336,7 +312,7 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
 
     /**
      * A setup that is there and will not read is said to be unreadable, with the reason - not called a layout with no
-     * folder to keep one in (GSP-B2).
+     * folder to keep one in.
      *
      * `getAutonomySession` caught every failure to open the setup and handed back null, and every door read null as
      * "this layout cannot hold a setup": the editor's refusal said it needs a local layout folder TrainControl can write
@@ -376,7 +352,7 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
 
             Files.write(setup.toPath(), broken);
 
-            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, true);
+            model = support.TestStation.simulatedInDebug();
 
             javax.swing.SwingUtilities.invokeAndWait(() -> ui[0] = new TrainControlUI());
 
@@ -453,10 +429,10 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
 
     /**
      * The right-click menu asks the setup once where Start is offered: the Return Home item is handed the hand doors'
-     * sentence, worked out only where Start is greyed (ADU-C3, ADD-C10).
+     * sentence, worked out only where Start is grayed.
      *
-     * `AutonomySession.check()` is not cached, and a popup menu is built on the event thread; LD-C6 brought the walks a
-     * right-click costs down to one each, and TDU2-C3's item asked the whole check twice more on every right-click.
+     * `AutonomySession.check()` is not cached, and a popup menu is built on the event thread; the walks a
+     * right-click costs are down to one each, and the item asked the whole check twice more on every right-click.
      * Start offered means the setup has no errors, so the hand doors' sentence is then null without asking.
      *
      * MUTATION: have the item ask the setup itself again, and this fails.
@@ -466,8 +442,9 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
     @Test
     public void testTheMenuAsksTheSetupOnceWhereStartIsOffered() throws Exception
     {
-        String menu = read("src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java");
-        String item = read("src/org/traincontrol/gui/HomeLocomotiveMenu.java");
+        // The menu is built by its constructor; the Return Home item is the whole of HomeLocomotiveMenu's file.
+        String menu = code("private LayoutRightclickAutonomyMenu(");
+        String item = SourceOf.withoutComments(SourceOf.fileDeclaring("final class HomeLocomotiveMenu"));
 
         assertTrue(menu.contains("canStart ? null : ui.whyStartAndAHandSendAreRefused()"), "the right-click menu does"
             + " not work Start's and the hand doors' sentences out together from Start's answer (ADU-C3, ADU2-C5)");
@@ -488,7 +465,7 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
         assertTrue(menu.contains("HomeLocomotiveMenu.addReturnHomeItem(this, ui, broken)"), "the right-click menu does not"
             + " hand the Return Home item the sentence it worked out (ADU-C3)");
 
-        // AND EACH SENTENCE GOES WHERE IT BELONGS: Start's to Start's tooltip, the hand doors' to Return Home (ADU2-C5).
+        // AND EACH SENTENCE GOES WHERE IT BELONGS: Start's to Start's tooltip, the hand doors' to Return Home.
         assertTrue(building.contains("AutonomyEditorPanel.wrapped(why[0])") && menu.contains("String broken = why == null ? null : why[1];"),
             "the right-click menu hands one of the two sentences to the wrong item, or drops it (ADU2-C5)");
 
@@ -498,7 +475,7 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
 
     /**
      * Both hand doors say when a train would run into its own tail, after the berth's refusal and before the reversal
-     * question - the third standing refusal with a sentence (TDU-C4).
+     * question - the third standing refusal with a sentence.
      *
      * `isPathClear` still refuses at dispatch without it, but with "check the log" in place of the sentence that names
      * the longest train that goes - which is what Adam asked a door to say (MT-262).
@@ -512,13 +489,7 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
     {
         // ONE PLACE FOR BOTH (Adam, 2026-09-29): the standing rules are `whyThisPathCannotBeTaken`, which the one hand door
         // asks before the reversal question
-        String window = read("src/org/traincontrol/gui/TrainControlUI.java");
-
-        int rules = window.indexOf("static String whyThisPathCannotBeTaken(");
-
-        assertTrue(rules >= 0, "the standing rules a hand send explains are no longer asked in one place");
-
-        String body = window.substring(rules, window.indexOf("\n    }", rules));
+        String body = code("static String whyThisPathCannotBeTaken(");
 
         int berth = body.indexOf("whyABerthCannotHoldIt(");
         int ownTail = body.indexOf("whyItWouldMeetItsOwnTail(");
@@ -528,11 +499,7 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
         assertTrue(ownTail > berth, "the hand doors do not say when a train would run into its own tail (OB-294) - the"
             + " send is refused at dispatch with \"check the log\"");
 
-        int door = window.indexOf("void sendATrainByHand(");
-
-        assertTrue(door >= 0, "the one hand door has gone");
-
-        String send = window.substring(door, window.indexOf("\n    }", door));
+        String send = code("void sendATrainByHand(");
 
         int asked = send.indexOf("whyThisPathCannotBeTaken(");
         int question = send.indexOf("ManualReversalPrompt.forJourney(");
@@ -548,7 +515,7 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
             + " to keep the direction over a window other than the main one - from the diagram's menu, a window the"
             + " closed menu has left, so the question opens under an always-on-top main window");
 
-        // AND IT GIVES THE QUESTION THE RAILWAY (RSA49-A1): without it the operator is asked where no copy of the square
+        // AND IT GIVES THE QUESTION THE RAILWAY: without it the operator is asked where no copy of the square
         // faces on from the train's approach, and the arrival turns the train whatever was answered
         assertTrue(send.substring(question, send.indexOf(";", question)).replaceAll("\\s+", "").endsWith(",railway)"),
             "the one hand door does not give the reversal question the railway, so it asks where the answer could not be"
@@ -596,7 +563,7 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
             final org.traincontrol.marklin.MarklinControlStation model =
-                org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, true);
+                support.TestStation.simulatedInDebug();
 
             javax.swing.SwingUtilities.invokeAndWait(() -> ui[0] = new TrainControlUI());
 
@@ -610,8 +577,8 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
 
             for (int turn = 0; turn < 4; turn++) javax.swing.SwingUtilities.invokeAndWait(() -> { });
 
-            // RETURN HOME OFFERED BEFORE ANYTHING IS BROKEN (ADU-C6, and MT-573's comment of 2026-09-24): a train is away
-            // from its home, so a greyed item or a refused press below is about the setup.
+            // RETURN HOME OFFERED BEFORE ANYTHING IS BROKEN (and MT-573's comment of 2026-09-24): a train is away
+            // from its home, so a grayed item or a refused press below is about the setup.
             Method triage = TrainControlUI.class.getDeclaredMethod("awaitReturnHomeTriage", long.class);
 
             triage.setAccessible(true);
@@ -705,7 +672,7 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
 
             });
 
-            // THE BUTTONS, pressed.  Each is left live over a broken setup and explains at the press (TDU2-C3).
+            // THE BUTTONS, pressed.  Each is left live over a broken setup and explains at the press.
             for (String button : new String[] {"startAutonomy", "returnHomeButton", "executeTimetable"})
             {
                 press(ui[0], button, dismisser, seen);
@@ -949,17 +916,9 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
         }
     }
 
-    private static void door(String file, String handler, String what) throws Exception
+    private static void door(String handler, String what) throws Exception
     {
-        String source = read(file);
-
-        int start = source.indexOf(handler);
-
-        assertTrue(start >= 0, "cannot find " + handler + " in " + file + " - if the door moved, move this");
-
-        int end = source.indexOf("\n    }", start);
-
-        String body = source.substring(start, end < 0 ? source.length() : end);
+        String body = code(handler);
 
         int asked = body.indexOf(GATE);
 
@@ -968,7 +927,7 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
 
         int question = body.indexOf("ManualReversalPrompt.forJourney(");
         // THE DISPATCH, by either name: a hand send goes out through executePathByHand, which marks it as one for the cap
-        // on trains out (BCR-C1)
+        // on trains out
         int plain = body.indexOf("executePath(");
         int byHand = body.indexOf("executePathByHand(");
         int dispatch = plain < 0 ? byHand : byHand < 0 ? plain : Math.min(plain, byHand);
@@ -988,14 +947,9 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
         return (String) rule.invoke(null, errors, blocking);
     }
 
-    private static String read(String path) throws Exception
+    /** A declaration's code, found wherever the program keeps it, with its comments blanked. */
+    private static String code(String signature)
     {
-        File f = new File(path);
-
-        assertTrue(f.isFile(), "cannot find " + f.getAbsolutePath());
-
-        String raw = new String(Files.readAllBytes(f.toPath()), StandardCharsets.UTF_8);
-
-        return raw.replaceAll("(?s)/\\*.*?\\*/", " ").replaceAll("//[^\\n]*", " ");
+        return SourceOf.withoutComments(SourceOf.declaration(signature));
     }
 }

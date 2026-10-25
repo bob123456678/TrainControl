@@ -85,7 +85,7 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
         // machine (OB-111).
         sandbox = support.LayoutSandbox.open();
 
-        model = init(null, true, true, false, true);
+        model = support.TestStation.simulatedWithWindowInDebug();
 
         model.setNetworkCommState(false);
 
@@ -168,7 +168,7 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
                 + " editor did say: " + frame[0].problemsForTest());
 
             // THE CONTROL.  A rule that complains about everything is not a rule, and the address check
-            // beside this one was written without one and passed while asking nothing (S14-C1).
+            // beside this one was written without one and passed while asking nothing.
             SwingUtilities.invokeAndWait(() -> frame[0].setCommandFunctionNumberForTest(0, "3"));
 
             assertFalse(complains(frame[0], I18n.f("route.ui.frameNoSuchFunction", "3 / " + LOC)),
@@ -207,7 +207,7 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
      * while Save still refuses it.  Mark on the answer alone - drop the `named` clause - and the
      * fourth claim fails: a row nobody has filled in yet is red the moment it is added, and a mark
      * that is always there is a mark nobody reads.  Stop `unshaded` clearing the tooltip and the + row
-     * claim fails: that row wears the refusal of the row drawn before it (GUI-C2).
+     * claim fails: that row wears the refusal of the row drawn before it.
      *
      * @throws Exception from the event thread
      */
@@ -227,7 +227,7 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
 
                 // NOTHING SELECTED.  A selected row is painted in the look-and-feel's selection ink
                 // and the renderer leaves the foreground alone there, so a test that rendered the
-                // selected row would read the same colour whatever the rule said.
+                // selected row would read the same color whatever the rule said.
                 frame[0].clearCommandSelectionForTest();
             });
 
@@ -263,7 +263,7 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
                 "the row is marked for something Save does not refuse, so the mark and the gate"
                 + " disagree.  What Save said: " + frame[0].problemsForTest());
 
-            // AND THE + ROW UNDER IT SAYS NOTHING (GUI-C2).  It returned before the tooltip was set, and
+            // AND THE + ROW UNDER IT SAYS NOTHING.  It returned before the tooltip was set, and
             // this renderer is one recycled component for the whole table - so the line that adds a
             // command wore the refusal of the row drawn a moment before it.
             final int plus = frame[0].commandRowCountForTest();
@@ -421,7 +421,7 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
     }
 
     /**
-     * A name the database no longer has stays in the cell that holds it (GSR-B5; Adam, 2026-10-08: *"Fix b5 and 253"*).
+     * A name the database no longer has stays in the cell that holds it (Adam, 2026-10-08: *"Fix b5, 253"*).
      * The locomotive and route columns, and a condition's locomotive, offered only the names the database has; a combo box
      * handed a value it has not got keeps its own selection, so one click into a route naming a deleted locomotive and one
      * click away rewrote the command to the first locomotive in the list - and the Save gate, which names "a locomotive
@@ -471,7 +471,7 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
     }
 
     /**
-     * A condition that a locomotive is at a sensor names a sensor (GSR-C1): saved with the sensor 0, the route could
+     * A condition that a locomotive is at a sensor names a sensor: saved with the sensor 0, the route could
      * never fire, and nothing said so - a sensor condition is refused it (`frameNotASensor`), this one was not.
      *
      * MUTATION: drop the sensor check and this fails.
@@ -515,7 +515,7 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
     }
 
     /**
-     * A route is not offered as a route it can call (GSR-C3): Save refuses a route that calls itself
+     * A route is not offered as a route it can call: Save refuses a route that calls itself
      * (`frameRouteCallsItself`), and the ROUTE column's dropdown offered it, so the editor offered a choice it would then
      * refuse.
      *
@@ -557,7 +557,7 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
     }
 
     /**
-     * A name with a space at either end stays in its cell as it stands (RSA56-C3).  GSR-B5's cells offered the name
+     * A name with a space at either end stays in its cell as it stands.  The cells once offered the name
      * trimmed, and a combo box cannot select a value it has not got, so one click into a command naming " X " and one away
      * still wrote the first locomotive in the list.  Only a routes file edited by hand carries such a name.
      *

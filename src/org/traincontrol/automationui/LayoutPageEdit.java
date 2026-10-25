@@ -38,7 +38,7 @@ public class LayoutPageEdit
     }
 
     /**
-     * The floor `writeLayoutIndex` must not issue a fresh page id at or below (IAR-A1).
+     * The floor `writeLayoutIndex` must not issue a fresh page id at or below.
      *
      * The index remembers a retired id for exactly one write - the one that drops the page - and hands
      * it out again afterwards. Harmless for a page that was DELETED, because deletePage forgets its
@@ -47,9 +47,9 @@ public class LayoutPageEdit
      * would collect a stranger's stations, lengths and exclusions with nothing reporting a renumber.
      *
      * The setup is the thing that remembers, so it is the thing that is asked. Zero when there is no
-     * session or no setup, which is exactly the behaviour this had before.
+     * session or no setup, which is exactly the behavior this had before.
      *
-     * Takes the session rather than reading a field, which is the whole of SV-B2 made structural: the
+     * Takes the session rather than reading a field, which makes it structural: the
      * caller must hand over the session it ALREADY BUILT, and there is no lazy getter in scope here to
      * reach for by mistake.
      *
@@ -72,7 +72,7 @@ public class LayoutPageEdit
 
     /**
      * The page whose file a page of this name would be written to, other than the one named except - or null when no
-     * other page's file is that file (BCR-A2).
+     * other page's file is that file.
      *
      * A page lives in `sanitizeFilename(name) + ".cs2"`, and two names can come to one file: names that differ only in case,
      * which Windows does not tell apart, and names that differ only in a character a file name cannot hold.  A door that
@@ -145,11 +145,11 @@ public class LayoutPageEdit
      *
      * An overload rather than a parameter on the one signature, because the answer can only come from
      * a person and every caller that is not the menu item - six tests and counting - has nobody to
-     * ask. They keep the shorter call and get the behaviour they always had: an absent page's id is
+     * ask. They keep the shorter call and get the behavior they always had: an absent page's id is
      * retired, which is right when nothing is absent, and nothing is absent in a fixture.
      *
      * @param keepAbsent names to keep in the index though they are not in the list.  Null for the
-     *        behaviour above
+     *        behavior above
      */
     public static void renameOrDuplicate(List<String> layoutList, LayoutDiagram page,
         String layoutPath, String currentLayout, String newLayoutName, boolean rename,
@@ -185,7 +185,7 @@ public class LayoutPageEdit
         // own and goes at the end, which is where a page that did not exist before belongs.
         //
         // MOVED ABOVE THE WRITE, because the arrows have to be re-aimed before anything is written and
-        // the re-aim needs the final list (T10-B1, T10-B2, T10-B3).  Nothing here touches a file.
+        // the re-aim needs the final list.  Nothing here touches a file.
         if (renamedAt >= 0 && renamedAt <= layoutList.size())
         {
             layoutList.add(renamedAt, newLayoutName);
@@ -197,7 +197,7 @@ public class LayoutPageEdit
 
         // Told what was renamed, so the page keeps its ID under the new name - and so the arrows
         // that point AT it follow it, which is why this is built before the re-aim below rather
-        // than beside the index write at the end (T10-B3).
+        // than beside the index write at the end.
         //
         // Ids are a page's identity now rather than its place in the list, and they are read back from
         // the index by NAME - so a rename is the one operation where the name the id belongs to
@@ -227,7 +227,7 @@ public class LayoutPageEdit
         // Doing it here fixes all three at once, because every one of them is downstream of this line.
         List<LayoutDiagram> pages = loadedPages(log);
 
-        // HELD, so the page this gesture is about can be asked the same question (TWV-C7).
+        // HELD, so the page this gesture is about can be asked the same question.
         List<LayoutDiagram> changed = LayoutDiagram.repointLinksForNewOrder(pages, layoutList, renamed);
 
         for (LayoutDiagram moved : changed)
@@ -249,13 +249,13 @@ public class LayoutPageEdit
             }
         }
 
-        // A PAGE THAT KEEPS ITS OWN FILE IS SAVED TO IT (T10-B1, T10-B2).
+        // A PAGE THAT KEEPS ITS OWN FILE IS SAVED TO IT.
         //
         // Add and Duplicate write a NEW file below and leave the current page's own file alone, so the
         // correction above would never reach disk for it.  A rename has no such file - its old one is
         // deleted by the write below - which is why this asks about the gesture rather than about the
         // page.
-        // AND ONLY WHEN THE RE-AIM ACTUALLY CHANGED IT (TWV-C7).
+        // AND ONLY WHEN THE RE-AIM ACTUALLY CHANGED IT.
         //
         // This asked about the GESTURE - "was this an Add or a Duplicate" - and so rewrote the
         // operator's current page through `exportToCS2TextFormat` whether or not a single arrow on it
@@ -316,7 +316,7 @@ public class LayoutPageEdit
             if (session != null)
             {
                 // In memory always: it costs nothing and is right either way.  The setup's squares, and the
-                // railway's, which a carry reads (RSA7-B3).
+                // railway's, which a carry reads.
                 session.renamePage(currentLayout, newLayoutName);
 
                 // And the session is now holding page objects that describe a layout that no longer
@@ -368,7 +368,7 @@ public class LayoutPageEdit
             }
         }
 
-        // AND EVERY ARROW KEEPS ITS AIM (N8-A1).  A link tile holds a POSITION in the name-sorted page
+        // AND EVERY ARROW KEEPS ITS AIM.  A link tile holds a POSITION in the name-sorted page
         // list, so adding, renaming or duplicating a page changes what every arrow on the layout means -
         // measured on the five pages of the sample layout, adding one page repointed four of seven.
         //

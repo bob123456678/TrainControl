@@ -899,7 +899,7 @@ public class LayoutDiagramComponent
         //
         // getComponentType is many-to-one and getTypeString is one word per type, so writing the
         // canonical name back collapsed every variant the file distinguished: fifteen signal types
-        // became "signal", the four coloured lamps and the level crossing became "lampe", a CS3 double
+        // became "signal", the four colored lamps and the level crossing became "lampe", a CS3 double
         // slip half became an ordinary switch.  Worse for signals, the parser subtracts one from the
         // rotation of any type whose name contains "_f_" to correct the artwork - and the canonical
         // name does not, so the correction was baked in and the signal came back turned a step.
@@ -979,12 +979,12 @@ public class LayoutDiagramComponent
     
 
     /**
-     * Writes one key of an unmodelled element or block back in the syntax it was read in.
+     * Writes one key of an unmodeled element or block back in the syntax it was read in.
      *
      * The parser folds a CS2 array - a key line followed by " ..sub=value" lines - into ONE map entry
      * holding "{a=b,c=d}|{e=f}".  Writing that back as a single " .key=..." line preserves the text and
      * loses the syntax: the Central Station, and any parser including this one, would read it as a
-     * scalar whose value happens to contain braces.  Since the whole point of keeping unmodelled
+     * scalar whose value happens to contain braces.  Since the whole point of keeping unmodeled
      * content is that a later firmware's file survives a round trip, the one shape most likely to BE a
      * later firmware's is the one that must not be mangled.
      *
@@ -1115,7 +1115,7 @@ public class LayoutDiagramComponent
      * The same, for a type with no instance to hand.
      *
      * Static because the port map needs the answer while it is BUILDING the table, before any component
-     * exists - and it had a verbatim copy of the rule to get it (DD-C10). Two copies of "how many ways
+     * exists - and it had a verbatim copy of the rule to get it. Two copies of "how many ways
      * up can this tile be" is two chances to disagree about a tile somebody has just added.
      *
      * @param type the tile type
@@ -1242,7 +1242,7 @@ public class LayoutDiagramComponent
     }
 
     /**
-     * Whether a command to this accessory address, in this protocol, reaches this tile's decoder (GUI-C5).
+     * Whether a command to this accessory address, in this protocol, reaches this tile's decoder.
      *
      * **A three-way is two decoders**, at its address and the next - `layout.switchThreeWayAddr` prints both, and
      * a CS2 route sets the other diverging road by commanding the second.  Only the first is the logical address,

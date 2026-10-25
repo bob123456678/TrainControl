@@ -38,7 +38,7 @@ public class testParseCS2Routes
     public testParseCS2Routes() throws Exception
     {
         parser = new CS2File(null, null);
-        model = init(null, true, false, false, false); 
+        model = support.TestStation.simulated(); 
                         
         accs = parser.parseMags(
             CS2File.parseFile(CS2File.fetchURL(cs2_mags))
@@ -197,11 +197,11 @@ public class testParseCS2Routes
     }
 
     /**
-     * A route file whose FIRST route carries conditions parses, conditions and commands both (X8-B3).
+     * A route file whose FIRST route carries conditions parses, conditions and commands both.
      *
      * **The shipped fixture cannot see this.**  ` .S88Flag` has no `=`, so it takes the array-HEADER
      * arm of `parseFileContents`, whose character class was still `[a-z]+` while its sibling nine lines
-     * up had been widened to `[a-z0-9A-Z]+`.  The header was therefore not recognised and `lastKey` was
+     * up had been widened to `[a-z0-9A-Z]+`.  The header was therefore not recognized and `lastKey` was
      * not updated - and in `test/fahrstrassen.cs2` the first route has no conditions and opens with
      * ` .item`, so `lastKey` already held "item" by the time the first condition arrived and everything
      * landed in the right string by luck.  `testConditionsOnTheRealRouteFile` passes either way.
@@ -292,17 +292,27 @@ public class testParseCS2Routes
     {
         MarklinRoute r = this.getRoute("D1 dcc tst", routes_mags);
 
+        int mm = 0;
+        int dcc = 0;
+
         for (RouteCommand rc: r.getRoute())
         {
             if (rc.getAddress() == 119)
             {
                 assertEquals(rc.getProtocol(), Accessory.accessoryDecoderType.MM2);
+
+                mm++;
             }
             else if (rc.getAddress() == 121)
             {
                 assertEquals(rc.getProtocol(), Accessory.accessoryDecoderType.DCC);
+
+                dcc++;
             }
         }
+
+        assertTrue(mm > 0 && dcc > 0, "the route has no command for address 119 (" + mm + ") or 121 (" + dcc
+            + "), so the protocols were not asked: " + r.getRoute());
     }
     
     @Test
@@ -320,18 +330,28 @@ public class testParseCS2Routes
     public void testMM2RouteMags()
     {
         MarklinRoute r = this.getRoute("D1 dcc tst", routes_mags);
-        
+
+        int mm = 0;
+        int dcc = 0;
+
         for (RouteCommand rc: r.getRoute())
         {
             if (rc.getAddress() == 121)
             {
                 assertEquals(rc.getProtocol(), Accessory.accessoryDecoderType.DCC);
+
+                dcc++;
             }
             else
             {
                 assertEquals(rc.getProtocol(), Accessory.accessoryDecoderType.MM2);
+
+                mm++;
             }
         }
+
+        assertTrue(mm > 0 && dcc > 0, "the route has no MM2 command (" + mm + ") or none for address 121 (" + dcc
+            + "), so the protocols were not asked: " + r.getRoute());
     }
     
     @Test

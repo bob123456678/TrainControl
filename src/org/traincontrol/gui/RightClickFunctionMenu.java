@@ -24,7 +24,7 @@ public class RightClickFunctionMenu extends MouseAdapter
         this.fNumber = fNumber;
     }
 
-    // UXR-C21: mousePressed/mouseReleased overrides used to live here, extending MouseAdapter as
+    // mousePressed/mouseReleased overrides used to live here, extending MouseAdapter as
     // though this were registered as a mouse listener on the function button. It never is - the only
     // caller, TrainControlUI.EditFunction, constructs this and calls showPopup(evt) directly - so
     // those two overrides never ran. Removed rather than left behind, since dead listener methods on
@@ -89,7 +89,7 @@ public class RightClickFunctionMenu extends MouseAdapter
             // When a DIFFERENT function holds the slot the item stays clickable, shows unticked, and
             // says which function has it; choosing it moves the slot here, because that is what the
             // user just asked for.  See autonomySlot, which is where that is done.  This said the item
-            // was DISABLED in that case, which the method has never done (RC-C9).
+            // was DISABLED in that case, which the method has never done.
             //
             // Both may be the same function, which Adam asked for explicitly and which the model
             // allows: two Integers, nothing stopping them being equal.
@@ -290,7 +290,7 @@ public class RightClickFunctionMenu extends MouseAdapter
             }
             else
             {
-                // CANCEL PUTS THE TWO SLOTS BACK (SVN-B14).
+                // CANCEL PUTS THE TWO SLOTS BACK.
                 //
                 // Their tick boxes write straight to the locomotive, because the label beside each one
                 // names whichever function currently holds the slot and it has to follow the tick as
@@ -303,7 +303,7 @@ public class RightClickFunctionMenu extends MouseAdapter
                 activeLoc.setDepartureFunc(departureWas);
                 activeLoc.setArrivalFunc(arrivalWas);
 
-                // AND THE COPIED FUNCTIONS (GUX-C3).  Copy Customizations is the third door that
+                // AND THE COPIED FUNCTIONS.  Copy Customizations is the third door that
                 // writes straight through, for the same reason the slots do - the panel shows the
                 // other locomotive's functions the moment it is pressed - and it was the one the
                 // comment above was wrong about.

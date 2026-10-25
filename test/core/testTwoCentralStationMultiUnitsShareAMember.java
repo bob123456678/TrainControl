@@ -33,7 +33,7 @@ public class testTwoCentralStationMultiUnitsShareAMember
     {
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("single-switch"));
 
-        model = init(null, true, false, false, false);
+        model = support.TestStation.simulated();
         model.stop();
     }
 

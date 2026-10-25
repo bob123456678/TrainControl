@@ -17,7 +17,7 @@ import org.traincontrol.gui.AutonomyEditorPanel;
 import org.traincontrol.util.I18n;
 
 /**
- * Control+N offers a station name exactly where the right-click menu does (MFR-B3).
+ * Control+N offers a station name exactly where the right-click menu does.
  *
  * FR-086 (Adam, on MT-397, 2026-09-15): *"let's add a hotkey for 'show station name here' too"*.  The key's javadoc
  * says it asks what the menu asks; it did not ask `isIgnored`, so on an ignored square - a page left out of autonomy,
@@ -64,7 +64,7 @@ public class testControlNAsksTheMenusQuestion
             assertTrue(keyOffersAName(panel, track),
                 "the key offers no station name on plain track where the menu does: " + itemNames(menu));
 
-            // AND THE SQUARES THE MENU SENDS TO ITS TEXT MENU (MFV-C3): a label and an empty square, which carry no
+            // AND THE SQUARES THE MENU SENDS TO ITS TEXT MENU: a label and an empty square, which carry no
             // track - an empty square counts as ignored, so a predicate that asked `isIgnored` before the text branch
             // would refuse the very square a station name is usually put on, and the two squares above would not see it.
             for (TileKey square : new TileKey[] { new TileKey("main", 3, 3), new TileKey("main", 4, 2) })
@@ -100,10 +100,10 @@ public class testControlNAsksTheMenusQuestion
     }
 
     /**
-     * Every key in the editor puts down a gesture in progress, as the right-click menu does (MFV-C4).
+     * Every key in the editor puts down a gesture in progress, as the right-click menu does.
      *
      * The menu abandons an armed tool before it offers anything - opening it is how somebody says "not that, this
-     * instead".  Control+N does the same since MFR-B3; Control+S and Control+E did not, so with Test a Path armed one
+     * instead".  Control+N does the same; Control+S and Control+E did not, so with Test a Path armed one
      * key disarmed it and the next two left it waiting for a click.  Asked on a page left out of autonomy, where no key
      * opens a dialog - each key's own predicate is checked first, so a key that would open one fails a precondition
      * rather than hanging the run.
@@ -135,7 +135,7 @@ public class testControlNAsksTheMenusQuestion
             assertFalse(panel.offersAMaximumTrainLength(track), "precondition: Control+B would open a dialog on " + track);
             assertFalse(keyOffers(panel, "offersAHome", track), "precondition: Control+H would open a dialog on " + track);
 
-            // EVERY KEY THAT IS A DOOR ONTO THE MENU (MFW-C1): S, E, N, and B and H, which the first version left out.
+            // EVERY KEY THAT IS A DOOR ONTO THE MENU: S, E, N, and B and H, which the first version left out.
             String[] keys = { "Control+S", "Control+E", "Control+N", "Control+B", "Control+H" };
             Runnable[] presses = { () -> panel.promptNameFor(track), () -> panel.promptLengthFor(track),
                 () -> panel.showStationNameFor(track), () -> panel.promptMaxTrainLengthFor(track),
@@ -172,7 +172,7 @@ public class testControlNAsksTheMenusQuestion
 
     /**
      * A station square showing another station's only name asks before it shows its own, and No leaves that name where it
-     * is (GSE-C5); Yes still shows its own, the item being live there since SVV-C6 and SVX-B2.
+     * is; Yes still shows its own, the item being live there.
      *
      * A drag can leave a station square showing ANOTHER station's caption, and "Show a Station Name Here" on it captioned
      * the square with itself and asked nothing - so the other station was then named nowhere on the diagram, which the
@@ -369,12 +369,12 @@ public class testControlNAsksTheMenusQuestion
     }
 
     /**
-     * No station name is offered on a square the track diagram does not draw (AD-C6).
+     * No station name is offered on a square the track diagram does not draw.
      *
      * The autonomy editor shows the whole page, padding included; the running diagram draws only the part its components
      * cover, and a caption is not a component.  Show a Station Name Here on a blank square outside that part, Control+N
-     * over it, and a drop of a label on it stored a caption nothing would ever show - and the station counted as labelled.
-     * The menu item is present but greyed, with the reason on its tooltip, as it is on a station's own square; the key
+     * over it, and a drop of a label on it stored a caption nothing would ever show - and the station counted as labeled.
+     * The menu item is present but grayed, with the reason on its tooltip, as it is on a station's own square; the key
      * agrees; a dragged label is refused; and a blank square inside the area is still offered.
      *
      * MUTATION: leave the area test out of `offersAStationName`, the menu item or `refuseCaptionDrop`, and this fails.
@@ -414,7 +414,7 @@ public class testControlNAsksTheMenusQuestion
             assertTrue(panel.canDropCaption(new TileKey("main", 5, 2), inside, null), "precondition: a label cannot be dropped"
                 + " on a blank square inside the area");
 
-            // OUTSIDE IT: present, greyed, and the reason on the tooltip
+            // OUTSIDE IT: present, grayed, and the reason on the tooltip
             javax.swing.JMenuItem shown = itemNamed(panel.buildTileMenu(outside, null), name);
 
             assertNotNull(shown, "the item is gone from the menu of a square outside the area, rather than greyed");
@@ -465,9 +465,9 @@ public class testControlNAsksTheMenusQuestion
     }
 
     /**
-     * Control+H offers a home exactly where the right-click menu does (MFW-B1).
+     * Control+H offers a home exactly where the right-click menu does.
      *
-     * R28-C5 restored the key at Adam's word (*"set control+H for home"*) as one line that asked nothing, so on plain
+     * The key was restored at Adam's word (*"set control+H for home"*) as one line that asked nothing, so on plain
      * track, a switch or a page left out of autonomy it opened the home chooser and wrote a home onto a square that is
      * not a station - taking the locomotive's home off the platform it had.  The menu offers the item only on a station.
      *
@@ -529,9 +529,9 @@ public class testControlNAsksTheMenusQuestion
     }
 
     /**
-     * Control+H refused on a square that is not a station says why in its own words (MFX-C1).
+     * Control+H refused on a square that is not a station says why in its own words.
      *
-     * MFW-B1's refusal borrowed Control+B's sentence, which explains a maximum train length - the right remedy, make it a
+     * The refusal borrowed Control+B's sentence, which explains a maximum train length - the right remedy, make it a
      * station, under the wrong reason.
      *
      * @throws Exception from the session or the reflection
@@ -580,7 +580,7 @@ public class testControlNAsksTheMenusQuestion
     }
 
     /**
-     * The main window's menu does not name Control+N, which is the notes key there (MFX-C3).
+     * The main window's menu does not name Control+N, which is the notes key there.
      *
      * The same menu is built for the main window's track diagram with `setMenuOnly`, and on a text or empty square it
      * carries the caption items - whose tooltip named the editor's key.
@@ -828,7 +828,7 @@ public class testControlNAsksTheMenusQuestion
         page.addComponent(componentType.FEEDBACK, 6, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
 
         // A label, the other square the menu sends to its text menu; (4,2) is left blank inside the area the diagram
-        // draws, and (9,2) lies outside it (AD-C6).
+        // draws, and (9,2) lies outside it.
         page.addComponent(componentType.TEXT, 3, 3, 0, 0, 0, 0, accessoryDecoderType.MM2, "Yard");
 
         page.setPageId(name);

@@ -36,8 +36,8 @@ public class testLayoutFolderRobustness
      * A page named with a slash in it comes back after a save.
      *
      * "Up/Down" is an ordinary name for a page on a two-level railway and an impossible one for a file.
-     * The reader finds a page by taking the name out of the index and sanitising it, so a writer that
-     * does not sanitise produces a file the reader will never look for - and resolveSibling reads the
+     * The reader finds a page by taking the name out of the index and sanitizing it, so a writer that
+     * does not sanitize produces a file the reader will never look for - and resolveSibling reads the
      * slash as a directory, so the page went into a folder of its own and vanished from the layout.
      */
     @Test
@@ -109,7 +109,7 @@ public class testLayoutFolderRobustness
             write(new File(pages, "Here.cs2"),
                 "[gleisbildseite]\nversion\n .major=1\nelement\n .id=0x101\n .typ=gerade\n .artikel=0\n");
 
-            MarklinControlStation model = MarklinControlStation.init(null, true, false, false, false);
+            MarklinControlStation model = support.TestStation.simulated();
 
             model.stop();
 
@@ -194,7 +194,7 @@ public class testLayoutFolderRobustness
     }
 
     /**
-     * A page that will not read does not cost the sensors that only appear on it (RC-A3).
+     * A page that will not read does not cost the sensors that only appear on it.
      *
      * syncLayouts deletes every s88 in the database that no LOADED page mentions.  That was safe while
      * one bad page took the whole parse down with it; the per-page guard the tests above are about made
@@ -213,7 +213,7 @@ public class testLayoutFolderRobustness
         try
         {
             MarklinControlStation model =
-                MarklinControlStation.init(null, true, false, false, false);
+                support.TestStation.simulated();
 
             try
             {
@@ -245,7 +245,7 @@ public class testLayoutFolderRobustness
     }
 
     /**
-     * A folder that reads completely still prunes - the control (RC-A3).
+     * A folder that reads completely still prunes - the control.
      *
      * Without this, "do not prune when a page failed" is satisfied by never pruning at all, and the
      * stale-sensor cleanup the loop exists for is silently gone.
@@ -258,7 +258,7 @@ public class testLayoutFolderRobustness
         try
         {
             MarklinControlStation model =
-                MarklinControlStation.init(null, true, false, false, false);
+                support.TestStation.simulated();
 
             try
             {
@@ -286,7 +286,7 @@ public class testLayoutFolderRobustness
     }
 
     /**
-     * A folder where every page fails still throws, so the fallback runs (RC-A4).
+     * A folder where every page fails still throws, so the fallback runs.
      *
      * The revert to the Central Station lives in a catch around syncLayouts, so it needs a throw.  One
      * bad page used to provide it; with the per-page guard an all-bad folder returns an empty list
@@ -304,7 +304,7 @@ public class testLayoutFolderRobustness
         try
         {
             MarklinControlStation model =
-                MarklinControlStation.init(null, true, false, false, false);
+                support.TestStation.simulated();
 
             try
             {
@@ -342,9 +342,9 @@ public class testLayoutFolderRobustness
     }
 
     /**
-     * An EMPTY folder is not a failed one, and must not revert anything (RC-A4).
+     * An EMPTY folder is not a failed one, and must not revert anything.
      *
-     * The throw RC-A4 added is gated on pages having FAILED, not on the list coming back empty - and
+     * The throw is gated on pages having FAILED, not on the list coming back empty - and
      * the difference matters: syncLayoutsFromConfiguredSource answers a throw by clearing the user’s
      * layout-path preference and reverting to the Central Station.  A folder that simply holds no
      * pages must not trigger that.
@@ -372,7 +372,7 @@ public class testLayoutFolderRobustness
                 "[gleisbild]" + nl + "version" + nl + " .major=1" + nl + "groesse" + nl + " .wert=0" + nl);
 
             MarklinControlStation model =
-                MarklinControlStation.init(null, true, false, false, false);
+                support.TestStation.simulated();
 
             try
             {
@@ -535,8 +535,6 @@ public class testLayoutFolderRobustness
             delete(folder);
         }
     }
-
-    // ---------------------------------------------------------------------------------------------
 
     private static LayoutDiagram page(String name) throws IOException
     {

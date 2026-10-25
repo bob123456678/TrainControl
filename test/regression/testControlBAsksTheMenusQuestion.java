@@ -247,7 +247,7 @@ public class testControlBAsksTheMenusQuestion
     }
 
     /**
-     * The menu item's label up to its number, so a square with any maximum on it can be recognised.
+     * The menu item's label up to its number, so a square with any maximum on it can be recognized.
      *
      * Taken from the bundle rather than written here, so a reworded item does not quietly stop being
      * found - which would make the walk above compare "false" against "false" on every square.

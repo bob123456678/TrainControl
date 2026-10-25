@@ -35,13 +35,13 @@ public class testThreeWaySwitch
     @Test
     public void testTheThreeShapesAreTheOnesThatWereSpecified()
     {
-        assertEquals(lines(ThreeWaySwitch.Position.LEFT), "2 straight 300 | 1 turn 0",
+        assertEquals(lines(ThreeWaySwitch.Position.LEFT), "2 straight " + ThreeWaySwitch.SETTLE + " | 1 turn 0",
             "left settles the SECOND address and then turns the first");
 
-        assertEquals(lines(ThreeWaySwitch.Position.STRAIGHT), "1 straight 300 | 2 straight 0",
+        assertEquals(lines(ThreeWaySwitch.Position.STRAIGHT), "1 straight " + ThreeWaySwitch.SETTLE + " | 2 straight 0",
             "straight settles the first and then straightens the second");
 
-        assertEquals(lines(ThreeWaySwitch.Position.RIGHT), "1 straight 300 | 2 turn 0",
+        assertEquals(lines(ThreeWaySwitch.Position.RIGHT), "1 straight " + ThreeWaySwitch.SETTLE + " | 2 turn 0",
             "right settles the first and then turns the second");
     }
 
@@ -121,7 +121,7 @@ public class testThreeWaySwitch
      * A pair that is not one of the shapes stays two ordinary commands.
      *
      * The half that protects everything already on somebody's layout.  Two switch commands next to
-     * each other are the commonest thing in a route, and rolling an unrecognised pair up would show
+     * each other are the commonest thing in a route, and rolling an unrecognized pair up would show
      * the user a point that is not there and write a different pair back out on the next save.
      */
     @Test
@@ -162,7 +162,7 @@ public class testThreeWaySwitch
     /**
      * A pause other than the usual one is carried rather than replaced.
      *
-     * A layout with slower motors needs a bigger number, and a translation layer that normalised it
+     * A layout with slower motors needs a bigger number, and a translation layer that normalized it
      * to three hundred would undo that every time the route was opened.
      */
     @Test

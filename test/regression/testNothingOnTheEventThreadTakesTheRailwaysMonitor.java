@@ -89,7 +89,7 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
      * `HomeStaging.snapshot`, which calls `Layout.getHomeStations` - `synchronized`.  Naming it here is
      * what lets that tripwire be deleted rather than kept.
      *
-     * **SIX MORE SINCE 2026-09-10 (E8-C4), and they are the ones the UI touches.**  A review traced
+     * **SIX MORE SINCE 2026-09-10, and they are the ones the UI touches.**  A review traced
      * this class's blind spots: it reads `synchronized` METHOD DECLARATIONS, so it cannot see a member
      * that takes the same monitor with a `synchronized (this)` BLOCK, and it cannot see one that
      * reaches the monitor through a call.  Twelve `Layout` members do the second, five of them already
@@ -115,7 +115,7 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
         // Reached through isPathClear and configureAndLockPath, and held for a whole dispatch.
         "executePath", "executeTimetable", "runLocomotives",
 
-        // Reached through executePath: a hand send, marked as one for the cap on trains out (BCR-C1)
+        // Reached through executePath: a hand send, marked as one for the cap on trains out
         "executePathByHand",
 
         // `synchronized (this)` blocks, which the declaration scanner above cannot see.
@@ -134,7 +134,7 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
     {
         // ------------------------------------------------------------ off the event thread
 
-        // ------------------------------------------------------- the five dispatch doors (E8-C4)
+        // ------------------------------------------------------- the five dispatch doors
         //
         // These reach the monitor through `isPathClear` and `configureAndLockPath` rather than by
         // being `synchronized` themselves, so the scanner above could not see them and this guard was
@@ -148,11 +148,11 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
             "OFF THE EVENT THREAD: the one door both hand doors send through (2026-09-29) dispatches the run on"
             + " a `new Thread`, and a refusal is put back on the event thread with invokeLater.");
 
-        ALLOWED.put("TrainControlUI.java#deleteTimetableEntry",
+        ALLOWED.put("TimetableTab.java#deleteTimetableEntry",
             "OFF THE EVENT THREAD: the confirmed row is removed under the lock on a `new Thread` (OB-260), and the"
             + " timetable repainted through invokeLater.");
 
-        ALLOWED.put("TrainControlUI.java#clearTimetable",
+        ALLOWED.put("TimetableTab.java#clearTimetable",
             "OFF THE EVENT THREAD: the confirmed clear empties the list under the lock on a `new Thread` (RSA48-C1),"
             + " and the configuration's copy and the repaint are put back on the event thread with invokeLater.");
 
@@ -179,29 +179,29 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
             "OFF THE EVENT THREAD: the worker showFor starts before it builds the menu, which is the"
             + " whole reason that method exists");
 
-        ALLOWED.put("TrainControlUI.java#workOutCaptionVisibility",
+        ALLOWED.put("CaptionVisibility.java#workOutCaptionVisibility",
             "OFF THE EVENT THREAD: CoveredTrackRenderer, and the answer is painted by an invokeLater");
 
-        ALLOWED.put("TrainControlUI.java#workOutReturnHomeTriage",
+        ALLOWED.put("ReturnHomeController.java#workOutReturnHomeTriage",
             "OFF THE EVENT THREAD: ReturnHomeTriageRenderer, and the answer is painted by an"
             + " invokeLater");
 
-        ALLOWED.put("TrainControlUI.java#requestReturnToHome",
+        ALLOWED.put("ReturnHomeController.java#requestReturnToHome",
             "OFF THE EVENT THREAD: asked at the end of a staging run from inside the `new Thread` this"
             + " method has already started - the same thread that has been blocking on executeTimetable");
 
-        ALLOWED.put("TrainControlUI.java#repaintTimetable",
+        ALLOWED.put("TimetableTab.java#repaintTimetable",
             "OFF THE EVENT THREAD: this method bounces itself onto a thread when it finds itself on the"
             + " event thread, and takes the monitor only after that");
 
-        ALLOWED.put("AutonomyEditorPanel.java#composeWhy",
+        ALLOWED.put("EditorWhy.java#composeWhy",
             "OFF THE EVENT THREAD: WhyRenderer, submitted by applyWhy - which captures the Layout and"
             + " the station index on the event thread first, because both of those BUILD, and paints"
             + " the answer in an invokeLater.  This was the last ON THE EVENT THREAD allowance for a"
             + " graph walk (D3-C1, Adam 2026-09-09: \"I would rather take it off EDT\")");
 
         ALLOWED.put("AutonomySession.java#routesCoveredByStandingTrains",
-            "OFF THE EVENT THREAD: reached only from TrainControlUI.workOutCoveredTrack, on"
+            "OFF THE EVENT THREAD: reached only from CoveredTrackView.workOutCoveredTrack, on"
             + " CoveredTrackRenderer");
 
         ALLOWED.put("AutoLocomotiveStatus.java#whatTheOperatorMayChoose",
@@ -213,21 +213,21 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
             + " and the alternative is a lock-free copy of isOfferableToOperator, which is a second"
             + " answer to the question OB-205 exists to make there be one of (Adam, 2026-09-12)");
 
-        ALLOWED.put("TrainControlUI.java#namesWithHomes",
+        ALLOWED.put("ReturnHomeController.java#namesWithHomes",
             "OFF THE EVENT THREAD: reached only through describeStagingOutcome's IMPOSSIBLE branch,"
             + " and only describeStagingPlan passes a blocked list - which is called from inside the"
             + " Return Home worker thread, where the plan itself was made.  Every other caller of"
             + " describeStagingOutcome passes LOCOMOTIVES_RUNNING with a null list and never reaches"
             + " this (OB-206)");
 
-        // THE GREY'S OWN ANSWER, BACK (OB-208).  `tilesBlockedByStandingTrains` left this list when the two
+        // THE GRAY'S OWN ANSWER, BACK (OB-208).  `tilesBlockedByStandingTrains` left this list when the two
         // marks were made one, and a permission left behind for a member that had stopped calling would have
         // been one for whatever was written into it next.  Adam's ruling of 2026-09-23 - *"orange shows where
-        // the train is, gray shows what's blocked"* - gave the grey its own answer again, so the railway is
+        // the train is, gray shows what's blocked"* - gave the gray its own answer again, so the railway is
         // asked once more, by `routesBlockedByStandingTrains`, on the same worker: the places it claims
         // (OB-280), where OB-208 asked for the covered edges.
         ALLOWED.put("AutonomySession.java#routesBlockedByStandingTrains",
-            "OFF THE EVENT THREAD: reached only from TrainControlUI.workOutCoveredTrack, on"
+            "OFF THE EVENT THREAD: reached only from CoveredTrackView.workOutCoveredTrack, on"
             + " CoveredTrackRenderer - the covered set's sibling, asked in the same pass");
 
         ALLOWED.put("AutonomySession.java#drawTheTrainsThatCoverNoEdge",
@@ -270,29 +270,29 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
         ALLOWED.put("TrainControlUI.java#locomotiveGestureOnDiagram",
             "ON THE EVENT THREAD (D3-C4): a paste or a clear on the diagram, one gesture at a time");
 
-        ALLOWED.put("TrainControlUI.java#putTheTrainsBack",
+        ALLOWED.put("RunningLayoutSync.java#putTheTrainsBack",
             "ON THE EVENT THREAD: a setup rebuild puts every placement back into the layout it has just"
             + " built, and that layout is not the one anything else holds yet");
 
-        ALLOWED.put("TrainControlUI.java#noteTheRailwaysSettingsAsBuilt",
+        ALLOWED.put("RunningLayoutSync.java#noteTheRailwaysSettingsAsBuilt",
             "ON THE EVENT THREAD: reading the railway just built, at the end of its load, before anything runs on it"
             + " (RSA20-B1)");
 
-        ALLOWED.put("TrainControlUI.java#rebuildRunningLayoutFromSetup",
+        ALLOWED.put("RunningLayoutSync.java#rebuildRunningLayoutFromSetup",
             "ON THE EVENT THREAD: reading the railway's settings at rest, before the rebuild a setup gesture asked for -"
             + " refused while autonomy is busy, as the rebuild is (RSA20-B1)");
 
-        ALLOWED.put("TrainControlUI.java#recordTheTrainsNotPutBack",
+        ALLOWED.put("RunningLayoutSync.java#recordTheTrainsNotPutBack",
             "ON THE EVENT THREAD: the put-back's own step (RSA17-A1), over the layout the rebuild has just built and"
             + " nothing else holds yet, as putTheTrainsBack");
 
-        ALLOWED.put("TrainControlUI.java#deleteLoc",
+        ALLOWED.put("LocomotiveActions.java#deleteLoc",
             "ON THE EVENT THREAD: a locomotive leaving the database, from a confirmed dialog");
 
         ALLOWED.put("TrainControlUI.java#saveState",
             "ON THE EVENT THREAD: writing the session out, at shutdown and on an explicit save");
 
-        ALLOWED.put("TrainControlUI.java#captureRunningLayout",
+        ALLOWED.put("RunningLayoutSync.java#captureRunningLayout",
             "ON THE EVENT THREAD: capturing the running layout into the setup, on an explicit gesture");
     }
 
@@ -446,7 +446,7 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
     }
 
     /**
-     * The narrow tripwire this generalises is gone.
+     * The narrow tripwire this generalizes is gone.
      *
      * Two guards for one rule is how the two come to disagree - the narrow one pinned
      * `triageReturnToHome` while its own failure message stated the rule generally, and it reported
@@ -543,7 +543,7 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
      * a lambda inside a member is stepped over rather than named, which is what the allowlist wants: a
      * listener built in a constructor belongs to that constructor.
      *
-     * A field initialiser is not a member declaration for this purpose - it has an `=` before its
+     * A field initializer is not a member declaration for this purpose - it has an `=` before its
      * parenthesis - so a call inside one is attributed to the member above it.  That is wrong, and it
      * is harmless: the failure message quotes the file and the line, so the reader finds it anyway.
      *

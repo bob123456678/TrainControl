@@ -8,7 +8,7 @@
 > `autonomy.json` written for an older version can still be imported from the Autonomy menu.
 >
 > **What still applies in v3.0.0:** the Java API - `MarklinControlStation`, and the `Layout` class with `createPoint`,
-> `createEdge`, `addConfigCommand`, `addLockEdge`, `setLocomotive`, `runLocomotive`, the callbacks and `fromJSON` /
+> `createEdge`, `addConfigCommand`, `addLockEdge`, `setLocomotive`, `runLocomotives`, the callbacks and `fromJSON` /
 > `toJSON` - works as described here, as do the JSON keys and the settings in the reference sections at the bottom.  A
 > layout built in code runs on its own; it is not drawn on the track diagram.  Notes marked *Since v3.0.0* say where
 > the newer version behaves differently.  Changed in the API: a point's home locomotive (`getHomeLoc` / `setHomeLoc`) is
@@ -37,6 +37,19 @@ The `MarklinControlStation` class is your gateway to the CS2/CS3's database of l
 Note that as of v2.3.2, all TrainControl code has been moved into the org.traincontrol package.  Custom code using older versions would therefore need to be updated.
 
 For class and method details, read the Javadoc comments in the source: most public classes and methods carry one.
+
+### More examples
+
+Besides the program above, the folder [`test/examples`](test/examples) holds six short ones, each for one job you may want to do.  They are compiled with the tests (they are not in the program's jar) and a test runs every one of them, so they keep working as the program changes.
+
+* [`KnowYourStation`](test/examples/KnowYourStation.java): lists the locomotives, shows how fast the station answers, switches the track power and reads the stored routes.
+* [`DriveALocomotive`](test/examples/DriveALocomotive.java): sets direction, speed, lights and other functions of one locomotive, and keeps and restores its favorite settings.
+* [`SwitchesSignalsAndSensors`](test/examples/SwitchesSignalsAndSensors.java): sets switches and signals by name and by address, reads sensors, and stores and runs a route.
+* [`BuildAGraph`](test/examples/BuildAGraph.java): builds the two-station layout below in code, asks it questions, changes it, and saves and reloads it.
+* [`RunTrainsOnAGraph`](test/examples/RunTrainsOnAGraph.java): lets the layout drive a train, and shows where the train started, which sensors it passed and when it arrived.
+* [`ReactToEvents`](test/examples/ReactToEvents.java): switches something when a train trips a sensor, starts a stored route from a sensor, and counts the commands the program sends.
+
+Each program has a `run` method that takes the station as its only argument, so you can hand it your own.  Its `main` method uses a simulated station that sends nothing, so running one by itself is safe.  To use one on your railway, call `run` with the station you get from `MarklinControlStation.init("192.168.1.10", false, false, true, false)`, with your Central Station's address in place of the sample one.  Caution: the examples' graph, sensors, switch and signal addresses and the "Example train" are invented, so on a real railway replace them with your own track's first.  Run as they are, they drive whatever decoder answers to the address, throw those switch addresses and, in `KnowYourStation`, cut the track power.
 
 ## Sample Layout
 
@@ -156,11 +169,15 @@ These commands will execute before that edge is traversed by a locomotive.
     layout.getPoint("Station 2").setLocomotive(data.getLocByName("140 024-1 DB AG"));
 
     //
-    // Now we can run the locomotives!  This method also specifies the desired speed
-    // The layout class will automatically choose and execute an available route
+    // Now we can run the locomotives!  Each runs at its preferred speed (saved with the locomotive), and
+    // the layout automatically chooses and executes an available route, one journey after another.
+    // Warning: setPreferredSpeed changes the stored preferred speed of these locomotives, and the TrainControl
+    // UI saves it with its database.
     //
-    layout.runLocomotive(data.getLocByName("SNCF 422365"), 30);
-    layout.runLocomotive(data.getLocByName("140 024-1 DB AG"), 50);
+    data.getLocByName("SNCF 422365").setPreferredSpeed(30);
+    data.getLocByName("140 024-1 DB AG").setPreferredSpeed(50);
+    layout.setLocomotivesToRun(Arrays.asList(data.getLocByName("SNCF 422365"), data.getLocByName("140 024-1 DB AG")));
+    layout.runLocomotives();
 
 The `Layout` class also allows *optional* pre-departure, pre-arrival, and post-arrival callbacks to be set to turn on functions and lights as desired.
 In these lambda functions, `loc` is a reference to the locomotive itself.
@@ -178,8 +195,6 @@ In these lambda functions, `loc` is a reference to the locomotive itself.
     // Progress through intermediate stations
     data.getLocByName("140 024-1 DB AG").setCallback(Layout.CB_ROUTE_PROG, (lc) -> 
     {
-        Layout layout = ((MarklinLocomotive) lc).getModel().getAutoLayout();
-
         for (Edge e : layout.getActiveLocomotives().get(lc))
         {
             if (!layout.getReachedMilestones(lc).contains(e.getEnd()))
@@ -377,7 +392,7 @@ Details on advanced configuration parameters can be found at the end of this doc
 
 ```
 
-> **The graph window this section describes was removed in v3.0.0.** Its colours and shapes are kept here for anybody reading an older `autonomy.json`; on the track diagram a running train's route is drawn along the track instead (see [Automation.md](Automation.md)).
+> **The graph window this section describes was removed in v3.0.0.** Its colors and shapes are kept here for anybody reading an older `autonomy.json`; on the track diagram a running train's route is drawn along the track instead (see [Automation.md](Automation.md)).
 
 When the "Validate JSON" button was pressed, if the layout was valid, a visual representation was also shown, updated in real time as the paths executed.
 
@@ -559,7 +574,7 @@ Assignments are saved with the autonomy file.  If one names a locomotive that is
 
 If you pick a locomotive the station could never hold - one longer than its length limit, or one it excludes - you are told which locomotive and station, and where to look, and asked whether to go ahead.  (*Since v3.0.0* reversibility is not one of these reasons: a non-reversible locomotive may be homed at a terminus - see Returning home under Terminus Stations above.)  The assignment is still yours to make: you may well be setting the station up afterwards.  What it avoids is finding out later from a `Return Home` that says to check the track, when the track is not the problem.
 
-Trains must be stopped before returning them home, so press `Graceful Stop` first if autonomy is running.  The button greys out whenever the command cannot be run, and its tooltip says why: trains are still moving, every locomotive is already home, or nothing on the layout has a home to go back to.
+Trains must be stopped before returning them home, so press `Graceful Stop` first if autonomy is running.  The button grays out whenever the command cannot be run, and its tooltip says why: trains are still moving, every locomotive is already home, or nothing on the layout has a home to go back to.
 
 Getting everyone home is rarely as simple as driving each locomotive to its own station, because a station holds only one locomotive at a time - a train cannot go home while another is standing there.  TrainControl works out an order that succeeds, moving trains out of each other's way and bringing them back afterwards where that is what it takes.  The moves are then run one at a time, each waiting for the one before it to arrive rather than merely to set off.
 

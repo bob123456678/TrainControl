@@ -60,3 +60,9 @@ It also produces something else the suite has never had by hand: **a split squar
   invariants above: WestEnd is s88 10 and the turnout is accessory 1, so "accessory 10" is an
   address nothing here answers to as an accessory and one that a sensor does (MT-462)
 - `core.testTheArrowsTellTheWholeStory` - for the switch's two roads under one toe (OB-351)
+- `ui.testReturnHomeSetsTheSwitchesOnTheWayHome`
+- `ui.testOpenLayoutLeavesTheOldTrainsBehind`
+- `ui.testTheTrackEditorByHand` - the track editor driven by its keys, menu and mouse, read back from the saved page
+- `ui.testADiagramClickAsksFirst` - the turnout clicked on the diagram with the power off, and a signal added in the
+  sandbox copy protecting MainPlatform
+- `core.testARunLeavesItsStateBehind` - a simulated run and a Return Home over the switch, read afterwards (FR-136)

@@ -15,14 +15,14 @@ import org.traincontrol.base.ThreeWaySwitch;
  * parsed back on the way out - and both name a specific shape that got lost on that trip before.
  *
  * `testRouteRoundTrip` already covers the trip in general, including three-ways as a pair and the
- * feedback command that used to swallow its neighbour. What it does not cover is the two shapes below,
+ * feedback command that used to swallow its neighbor. What it does not cover is the two shapes below,
  * which is why these are here rather than added to it.
  *
  * @author Adam
  */
 public class testRouteEditorRoundTripCases
 {
-    // ---- MT-003 ---------------------------------------------------------------------------------
+    // MT-003
 
     /**
      * A condition that BEGINS with a bracket comes back whole.
@@ -39,7 +39,7 @@ public class testRouteEditorRoundTripCases
     public void testAConditionStartingWithABracketSurvives() throws Exception
     {
         // Built from objects and rendered, rather than hand-written: the text form is the editor's
-        // business, and inventing it in a test would pin my spelling rather than its behaviour.
+        // business, and inventing it in a test would pin my spelling rather than its behavior.
         NodeExpression bracketed = new org.traincontrol.base.NodeGroup(java.util.Collections.<NodeExpression>singletonList(
             new org.traincontrol.base.NodeOr(feedback(1, true), feedback(2, true))));
 
@@ -104,7 +104,7 @@ public class testRouteEditorRoundTripCases
             RouteCommand.RouteCommandFeedback(address, occupied));
     }
 
-    // ---- MT-004 ---------------------------------------------------------------------------------
+    // MT-004
 
     /**
      * All three positions of a three-way produce a pair, and the three pairs differ.
@@ -153,7 +153,7 @@ public class testRouteEditorRoundTripCases
      * in two states at once and settles wherever the hardware happens to finish. That is real ironwork,
      * two motors on consecutive addresses.
      *
-     * **This test used to be unable to fail** (TD-6). It built the route text from the same list, in
+     * **This test used to be unable to fail**. It built the route text from the same list, in
      * the same index order, that it read `first` and `second` from - so if `expand` returned its pair
      * the wrong way round, all three swapped together and the comparison came out the same. It was
      * order-invariant by construction, and could not fail for the reason its own message gave, while

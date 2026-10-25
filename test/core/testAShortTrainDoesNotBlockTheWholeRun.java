@@ -4,7 +4,6 @@ import java.util.List;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -62,7 +61,7 @@ public class testAShortTrainDoesNotBlockTheWholeRun
     {
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = MarklinControlStation.init(null, true, false, false, false);
+        model = support.TestStation.simulated();
 
         session = new AutonomySession(sandbox.getFolder());
 
@@ -74,7 +73,7 @@ public class testAShortTrainDoesNotBlockTheWholeRun
 
         layout = model.getAutoLayout();
 
-        if (layout == null) throw new SkipException("the snapshot did not build");
+        if (layout == null) throw new AssertionError("the snapshot did not build");
 
         // NOTHING OF HIS STANDING ABOUT.  The snapshot refrozen 2026-09-23 has 75 407 DB at BottomMainA, the end of the
         // very journey this class asks about - so the path was refused because its destination was occupied, which is
@@ -86,7 +85,7 @@ public class testAShortTrainDoesNotBlockTheWholeRun
 
         List<String> names = model.getLocList();
 
-        if (names.size() < 2) throw new SkipException("this fixture has fewer than two locomotives");
+        if (names.size() < 2) throw new AssertionError("this fixture has fewer than two locomotives");
 
         standing = model.getLocByName(names.get(0));
         travelling = model.getLocByName(names.get(1));
@@ -150,7 +149,7 @@ public class testAShortTrainDoesNotBlockTheWholeRun
 
         if (shared == null)
         {
-            throw new SkipException("no run into " + park.getName() + " shares metal with the way to "
+            throw new AssertionError("no run into " + park.getName() + " shares metal with the way to "
                 + to.getName() + " on this fixture, so the sweep this test is about cannot fire");
         }
 
@@ -281,7 +280,7 @@ public class testAShortTrainDoesNotBlockTheWholeRun
 
         if (name == null || !expected.equals(name))
         {
-            throw new SkipException("the snapshot no longer calls " + square + " " + expected
+            throw new AssertionError("the snapshot no longer calls " + square + " " + expected
                 + " (it is " + name + "), so this test is about a railway that has moved");
         }
 
@@ -294,7 +293,7 @@ public class testAShortTrainDoesNotBlockTheWholeRun
             }
         }
 
-        throw new SkipException("no running Point stands on " + square);
+        throw new AssertionError("no running Point stands on " + square);
     }
 
     /**

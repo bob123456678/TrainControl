@@ -35,12 +35,12 @@ import java.awt.image.BufferedImage;
 public class LocomotivePlaceholder
 {
     /**
-     * The light grey Adam asked for, and a slightly darker one for the outlines.
+     * The light gray Adam asked for, and a slightly darker one for the outlines.
      *
-     * Two greys rather than one: a single flat fill loses the wheels into the body and the trapezoid
+     * Two grays rather than one: a single flat fill loses the wheels into the body and the trapezoid
      * into the roof, which is a silhouette rather than the locomotive he described. The outline is
      * close enough to stay "light gray" as a whole - it is the difference between a shape and a
-     * smudge, not a second colour.
+     * smudge, not a second color.
      *
      * **Opaque, and lighter instead.** They were 40% transparent for a few hours, and a translucent
      * locomotive is see-through wherever its own parts overlap: the body let the tops of the wheels
@@ -248,7 +248,7 @@ public class LocomotivePlaceholder
      * Adam: "the pantographs need to be diamond - right now the top is flat."  They were a collector
      * bar with two arms under it, which is a pantograph seen from the side but reads as a flat-topped
      * hat at this size. A closed pantograph folds into a lozenge - the two arms meeting above and the
-     * two below - and that is a shape somebody recognises in twelve pixels.
+     * two below - and that is a shape somebody recognizes in twelve pixels.
      */
     private static void pantograph(Graphics2D g, int centre, int roofTop, int width, int height)
     {

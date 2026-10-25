@@ -57,6 +57,12 @@ before anything reads it, so the checked-in fixture is never written to either.
   `testTheFrozenRailwayIsStillTheRailway`, because far below that is the five-edge skeleton
   `support.LayoutSandbox.wiredPages` describes — a railway whose switches have no accessories — and a
   test standing on it passes by asserting about null.
+- **Two censuses**, pinned on purpose and changed by hand at a refresh:
+  `testEverySquareBuildsToTheCopiesTheSetupImplies.testTheCopyCensusIsWhatItWasMeasuredAt` (the squares and stations
+  that build to more than one Point) and `testTheRoomRuleCensusOnTheRealLayout.testTheCensusIsWhatSection5bSays`
+  (the routable pairs, also in behaviour.md section 5c).  Each failure message names every figure to change.  A trial
+  refresh on 2026-10-19 (branch `psnap`, not merged) changed only these and the line above; every other claim had
+  been made to set its trains, lengths, simulation and timetable in code first.
 
 ## Not invariants — set these in code
 
@@ -96,6 +102,7 @@ not fix it. Name the square.
 - `core.testTheAutoTierScopeMatchesTheRuntime`
 - `core.testTheFrozenRailwayIsStillTheRailway`
 - `core.testTheLengthGuardsOnTheRealLayout`
+- `regression.testTheCheckerAgreesWithTheBuild`
 - `core.testEverySquareBuildsToTheCopiesTheSetupImplies`
 - `core.testTheRoomRuleCensusOnTheRealLayout`
 - `core.testWhichSquaresTheRoomRuleClosesOff`
@@ -166,3 +173,8 @@ not fix it. Name the square.
 - `ui.testTheActiveTickPausesATrain`
 - `regression.testTheOrangeRunsOverTheSwitchesBehindTheTrain`
 - `ui.testATrainWithNoWayOutFacesAlongItsTrack`
+- `ui.testTheTimetableAnswersItsMenu`
+- `ui.testARestartKeepsTheRailway`
+- `ui.testOpenLayoutLeavesTheOldTrainsBehind`
+- `ui.testTheAutonomyEditorsQuestionsChangeTheSetup`
+- `ui.testStartingAutonomyFromTheWindow`

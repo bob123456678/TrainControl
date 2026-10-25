@@ -1,10 +1,7 @@
 package regression;
 
-import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.Arrays;
 import javax.swing.SwingUtilities;
 import org.traincontrol.base.Locomotive;
@@ -16,18 +13,19 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 import org.testng.annotations.Test;
+import support.SourceOf;
 
 /**
  * Cancel on the function editor undoes a Copy Customizations, as it already undoes the two slots.
  *
- * **The dialog's Cancel branch claimed everything in it waits for OK, and one thing did not** (GUX-C3).
+ * **The dialog's Cancel branch claimed everything in it waits for OK, and one thing did not**.
  * `copyCustomizationsActionPerformed` writes the other locomotive's function types, triggers and
  * custom flag straight onto this one - deliberately, so the panel can show them at once, which is the
  * same reason the departure and arrival slots write straight through.  Those two are put back on
  * Cancel and this was not, so Cancel kept the copy: press Copy Customizations, change your mind, and
  * the locomotive keeps somebody else's functions and icons.
  *
- * What makes it worth a test rather than a reading is the comment: SVN-B14 wrote *"everything else in
+ * What makes it worth a test rather than a reading is the comment: a comment says *"everything else in
  * this dialog waits for OK"* directly above the restore, so the next reader has been told this door
  * does not exist.
  *
@@ -36,12 +34,7 @@ import org.testng.annotations.Test;
 public class testCancelUndoesACustomizationCopy
 {
     /**
-     * Where the Cancel branch lives, for the call-site check below.
-     */
-    private static final String MENU = "src/org/traincontrol/gui/RightClickFunctionMenu.java";
-
-    /**
-     * A copy pressed and then cancelled leaves the locomotive exactly as it was.
+     * A copy pressed and then canceled leaves the locomotive exactly as it was.
      *
      * @throws Exception from the event thread
      */
@@ -54,7 +47,7 @@ public class testCancelUndoesACustomizationCopy
         {
             int[] wereTypes = Arrays.copyOf(up.loc.getFunctionTypes(), up.loc.getFunctionTypes().length);
 
-            // THE TRIGGERS TOO (OP3-C6).  `undoCopiedCustomizations` puts back two arrays and a flag,
+            // THE TRIGGERS TOO.  `undoCopiedCustomizations` puts back two arrays and a flag,
             // and asserting one array let a regression that dropped the triggers from either the save
             // or the restore pass.
             int[] wereTriggers = Arrays.copyOf(
@@ -132,7 +125,7 @@ public class testCancelUndoesACustomizationCopy
     @Test
     public void testTheCancelBranchCallsIt() throws Exception
     {
-        String source = new String(Files.readAllBytes(new File(MENU).toPath()), StandardCharsets.UTF_8);
+        String source = SourceOf.declaration("private void openEditDialog(JToggleButton b)");
 
         int cancel = source.indexOf("activeLoc.setDepartureFunc(departureWas)");
 
@@ -215,7 +208,7 @@ public class testCancelUndoesACustomizationCopy
         {
             up.sandbox = support.LayoutSandbox.open();
 
-            up.model = MarklinControlStation.init(null, true, false, false, false);
+            up.model = support.TestStation.simulated();
 
             final MarklinControlStation model = up.model;
             final TrainControlUI[] made = new TrainControlUI[1];

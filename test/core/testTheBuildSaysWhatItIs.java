@@ -21,7 +21,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 public class testTheBuildSaysWhatItIs
 {
     /**
-     * The build id describes the artefact being run, not what a build script recorded about it.
+     * The build id describes the artifact being run, not what a build script recorded about it.
      *
      * Taken from the code source this class was loaded from, so it is the jar's timestamp or - in an
      * IDE run, where the directory's own timestamp is when it was created rather than when anything

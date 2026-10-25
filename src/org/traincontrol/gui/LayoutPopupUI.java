@@ -60,7 +60,7 @@ public class LayoutPopupUI extends PositionAwareJFrame
         // this; this one did not.
         if (this.grid != null) this.grid.discard();
 
-        // NOT EMPTIED HERE - the grid does it, at the right moment (VLD-B4).
+        // NOT EMPTIED HERE - the grid does it, at the right moment.
         //
         // This is the position the flicker fix moved `removeAll` OUT of: emptying the panel before
         // the build leaves it blank for the whole of it, and the build is where the image decoding

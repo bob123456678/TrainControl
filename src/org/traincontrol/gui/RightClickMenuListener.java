@@ -198,7 +198,7 @@ public class RightClickMenuListener extends MouseAdapter
 
                 // Through `subject`, like every other line here.  This asked the button twice more,
                 // three lines under the paragraph above saying the locomotive is resolved ONCE - the
-                // comment had the intent right and this one line did not follow it (RC-C12).
+                // comment had the intent right and this one line did not follow it.
                 if (subject != null && subject.getLocalImageURL() != null)
                 {
                     submenu.add(LocomotiveMenuItems.clearLocalIcon(ui, subject));
@@ -216,7 +216,7 @@ public class RightClickMenuListener extends MouseAdapter
                 submenu.add(menuItem);
 
                 // How long this train is, when there is autonomy to care (FR-047).  Null when there
-                // is not, so the item simply is not there rather than being greyed.
+                // is not, so the item simply is not there rather than being grayed.
                 JMenuItem howLong = LocomotiveMenuItems.trainLength(ui, subject, null);
 
                 if (howLong != null) submenu.add(howLong);

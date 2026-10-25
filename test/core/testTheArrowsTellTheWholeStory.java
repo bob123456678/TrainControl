@@ -510,7 +510,7 @@ public class testTheArrowsTellTheWholeStory
     }
 
     /**
-     * Every road of the square stores an answer its blades leave a meaning (VD18-C2).  A road left at its default stores
+     * Every road of the square stores an answer its blades leave a meaning.  A road left at its default stores
      * nothing: a permanent turnout's is `BOTH`, which the blades narrow to the one way there is.
      */
     private static void assertPossible(AutonomySession on, TileKey square, String after)
@@ -724,7 +724,7 @@ public class testTheArrowsTellTheWholeStory
     }
 
     /**
-     * Track no station is on draws no arrows and is greyed in the editor, and a click there changes nothing; track joined
+     * Track no station is on draws no arrows and is grayed in the editor, and a click there changes nothing; track joined
      * to a station keeps its arrows (OB-353).  Adam: *"make it so that arrows are hidden from track segments not connected
      * (naively) to any station.  in this case, it's just cosmetic route tiles, so 3,4 should also be greyed out.  make
      * sure 4,14 keeps arrows."*  On the frozen railway: the route button at 1 - Main 9,4, which carries the line between
@@ -816,7 +816,7 @@ public class testTheArrowsTellTheWholeStory
      * Track no station is on still takes every other edit (OB-353; Adam, asked: "yes, it can accept edits"): a length set
      * on a square of it from the editor is kept.
      *
-     * MUTATION: grey it by `isIgnored`, which refuses every edit, and this fails.
+     * MUTATION: gray it by `isIgnored`, which refuses every edit, and this fails.
      *
      * @throws Exception from the panel
      */

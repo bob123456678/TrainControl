@@ -37,7 +37,7 @@ public class testParseCS3Routes
     public testParseCS3Routes() throws Exception
     {
         parser = new CS2File(null, null);
-        model = init(null, true, false, false, false); 
+        model = support.TestStation.simulated(); 
                 
         // We assume the TrainControl routes are correct.  Also possible to read a CS2 file to compare
         // routesCS2 = parser.parseRoutes(parseFile(fetchURL(cs2_routes)));
@@ -117,7 +117,7 @@ public class testParseCS3Routes
                     System.out.println("Should be:");
                     System.out.println(otherRoute.toVerboseString());
 
-                    // TST-B20: Route.getRoute() returns the LIVE list, not a copy - removeAll() on it
+                    // Route.getRoute() returns the LIVE list, not a copy - removeAll() on it
                     // directly emptied the route it was diagnosing, corrupting routesTC (shared, and
                     // read by whatever runs after this in the same JVM) on the failure path this
                     // diagnostic exists for.  Copied here so the diff below is read-only towards
@@ -161,13 +161,11 @@ public class testParseCS3Routes
     {
     }
 
-    // ---------------------------------------------------------------------------------------------
     // Three-way turnouts in CS3 routes
     //
     // The shipped fixtures do not reach this code: CS3_mags.json holds exactly one dreiwegweiche
     // (id 8, address 5, mm) and not one of the 50 routes in CS3_automatics.json references it.  So the
     // routes below are built here and parsed against the real accessory list.
-    // ---------------------------------------------------------------------------------------------
 
     /** The mag id of the fixture's only three-way, whose address is 5. */
     private static final int THREE_WAY_MAG_ID = 8;

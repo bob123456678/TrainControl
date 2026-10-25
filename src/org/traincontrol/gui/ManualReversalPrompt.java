@@ -43,7 +43,7 @@ public final class ManualReversalPrompt
      * departure itself, that way there is no dispatch prior to user input."**
      *
      * **The question was right and its moment was wrong.**  Asked from inside the run, the train has
-     * already been dispatched, already reserved its path and already travelled - and `DIR-A1` had to
+     * already been dispatched, already reserved its path and already traveled - and the run had to
      * stop it mid-journey so the dialog was not answered by somebody watching a moving train.  Asked
      * before departure there is nothing to stop: the train is standing where the operator left it, and
      * the answer is carried into the run.
@@ -56,7 +56,7 @@ public final class ManualReversalPrompt
      * Nothing is asked when the path reaches no such square, so an ordinary send is unchanged.
      *
      * @param session the setup, which knows what the operator marked
-     * @param parent what to centre the dialog on
+     * @param parent what to center the dialog on
      * @param path the journey about to be run
      * @param loc the train
      * @param railway the railway the path was offered on, or null
@@ -71,7 +71,7 @@ public final class ManualReversalPrompt
 
         Point first = null;
 
-        // A JOURNEY THAT ENDS AT A TERMINUS IS NOT ASKED ABOUT AT ALL (SPEC-B1 / REG6-B1).
+        // A JOURNEY THAT ENDS AT A TERMINUS IS NOT ASKED ABOUT AT ALL.
         //
         // `Layout.shouldReverseAt` answers a journey to a terminus from the flag and ignores any
         // policy - and it is right to: the reversal on the way is how a train backs into a terminus,
@@ -109,7 +109,7 @@ public final class ManualReversalPrompt
         // destination, since that dictates where the train can go, and where it is facing."**
         //
         // This used to name the destination when it qualified and fall back to the first may-turn
-        // square on the route otherwise.  That was the source of `REG7-A1`: a journey could depend on
+        // square on the route otherwise.  That was the defect: a journey could depend on
         // a turn at an intermediate, the operator was asked about it, and "keep direction" - the
         // default, the Escape answer and the cannot-ask answer - stranded the train off its path.
         //
@@ -135,7 +135,7 @@ public final class ManualReversalPrompt
         // says "no opinion" rather than "no", so the arrival would otherwise read the terminus flag on
         // a may-turn square's turning copy and turn the train anyway.
         //
-        // THE TWO HALVES ASK DIFFERENT QUESTIONS, AND ONE SHAPE TELLS THEM APART (SVV-C2).
+        // THE TWO HALVES ASK DIFFERENT QUESTIONS, AND ONE SHAPE TELLS THEM APART.
         //
         // This half fires on `asksAbout`, which is the SETUP's `mayTurnTiles()`.  The arrival's half
         // fires on `hasAWayThrough`, which is the GRAPH's "some copy of this square is neither a
@@ -149,7 +149,7 @@ public final class ManualReversalPrompt
         // right there is the reason given - the answer the operator could have given is not the one
         // they are going to get, it is the opposite - and the reason is the part a reader acts on.
         //
-        // Measured as unreachable on Adam's railway (PRV-C7): all four may-turn squares have plain
+        // Measured as unreachable on Adam's railway: all four may-turn squares have plain
         // copies.  Left as two rules with one sentence rather than merged, because merging them would
         // make this half ask the graph a question the setup can answer, and the setup is what the
         // operator edited.
@@ -186,13 +186,13 @@ public final class ManualReversalPrompt
                 // WHICH SQUARES THE OPERATOR HAS A SAY OVER - not which ones the answer acts on.
                 //
                 // This briefly returned `turn && asking.asksAbout(at)`, to stop a journey nobody was
-                // turning from braking at every may-turn square on it (REG6-B4).  That made the
+                // turning from braking at every may-turn square on it.  That made the
                 // answer change the QUESTION, and `Layout.shouldReverseAt` reads this to tell a
                 // compulsory turn from a may-reverse one: a reversing copy nobody is asked about is a
                 // compulsory turn.  So "keep direction" made every may-reverse turning copy look
                 // compulsory, and the train turned against the operator's explicit no.
                 //
-                // REG6-B4 is fixed where it belongs instead: the stop now asks `shouldReverseAt`
+                // That braking is fixed where it belongs instead: the stop now asks `shouldReverseAt`
                 // itself, so no stop happens where no turn happens, and this answer can go back to
                 // being about the railway rather than about what was said.
                 return at == asked && asking.asksAbout(at);
@@ -221,7 +221,7 @@ public final class ManualReversalPrompt
         // may-turn square, which is the one square this door exists to ask about.
         if (arrival == null || !asking.asksAbout(arrival)) return null;
 
-        // NOT WHERE THE ANSWER COULD NOT BE HONOURED (RSA49-A1): no copy of the square faces on from the way the train
+        // NOT WHERE THE ANSWER COULD NOT BE HONORED: no copy of the square faces on from the way the train
         // comes, so the arrival turns it whatever is said - `Layout.turnsOnArrival`, the same question
         if (railway != null && railway.noCopyFacesOnFrom(arrival, path.get(path.size() - 1).getStart())) return null;
 
@@ -261,7 +261,7 @@ public final class ManualReversalPrompt
      * Twice, because the first two fixes both looked for a flag in the running layout.
      *
      * @param session the setup, which knows what the operator marked
-     * @param parent what to centre the dialog on
+     * @param parent what to center the dialog on
      * @return the policy
      */
     public static org.traincontrol.automation.Layout.ReversalPolicy forOperator(
@@ -280,7 +280,7 @@ public final class ManualReversalPrompt
             {
                 if (at == null) return false;
 
-                // REG6-A1: THE `at.isReversing()` CLAUSE THAT USED TO BE HERE PROMPTED ON
+                // THE `at.isReversing()` CLAUSE THAT USED TO BE HERE PROMPTED ON
                 // COMPULSORY TURNS, AND DECLINING ONE DRIVES A TRAIN OFF ITS PATH.
                 //
                 // For a must-reverse square `AutonomyBuilder` emits ONLY turning copies and flags
@@ -351,15 +351,15 @@ public final class ManualReversalPrompt
      *
      * It first claimed the train was stopped when it was not: everything that stopped it was inside
      * the branch the answer decides, so it ran past the point at line speed for as long as the dialog
-     * stood there - measured at 30 when the question was put and still 30 five seconds later
-     * (`DIR-A1`).  Then `executePathInternal` was made to stop at any reversing point first, and the
+     * stood there - measured at 30 when the question was put and still 30 five seconds later.
+     * Then `executePathInternal` was made to stop at any reversing point first, and the
      * sentence became true.  Then the stop was collapsed into the rule itself - a train is stopped
      * exactly when it is about to be turned - and the rule is evaluated BEFORE the stop, so it is
-     * false again (`CONF2-B1`).
+     * false again.
      *
      * It is safe today only because nothing calls this from inside a run: both doors ask at departure
      * and hand `executePath` a constant answer.  `forOperator` is public, and a future caller that
-     * hands it straight to `executePath` gets `DIR-A1` back in full.  A comment asserting the
+     * hands it straight to `executePath` gets the first failure back in full.  A comment asserting the
      * comfortable version of what the code does is how the first one survived being written and
      * reviewed.
      *
@@ -367,7 +367,7 @@ public final class ManualReversalPrompt
      * leaves the train pointing the way it already points, which is the answer that changes nothing on
      * the railway. Turning a train because a dialog failed is the worse of the two mistakes.
      *
-     * @param parent what to centre the dialog on
+     * @param parent what to center the dialog on
      * @param train the locomotive
      * @param where the point it has reached
      * @return whether the operator asked for it to be turned
@@ -407,7 +407,7 @@ public final class ManualReversalPrompt
                 // Index 0 is Yes, and it is the default: keeping the direction changes nothing on the
                 // railway, so dismissing this dialog with the keyboard is safe.
                 //
-                // ACC4-1: AND IT WAS NOT, FOR HALF A DAY.  The line below read `chose != 0`, and
+                // AND IT WAS NOT, FOR HALF A DAY.  The line below read `chose != 0`, and
                 // `showOptionDialog` answers -1 for a dialog closed with Escape or the X - so -1 was
                 // not 0, and dismissing this turned the train at every asking square on the journey.
                 // The comment three lines up promised the opposite in the same commit that broke it.

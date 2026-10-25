@@ -85,7 +85,7 @@ public class ArrivalSidePrompt
     }
 
     /**
-     * What the arrival-side question calls the square: its name, not the copy's (GUI-C7).
+     * What the arrival-side question calls the square: its name, not the copy's.
      *
      * A split square's Points are named with a heading - "BottomMainB (eastbound)" - and this question is ABOUT
      * direction, so the copy's name put an answer in the question, and an arbitrary one: the Point is picked before
@@ -113,11 +113,11 @@ public class ArrivalSidePrompt
      * The combo calls the first and is the answer to the second.  Written as a dispatch rather than
      * duplicated, because a rule with two spellings is this project's most repeated defect.
      *
-     * @param layout the running layout, which knows where the neighbours are
+     * @param layout the running layout, which knows where the neighbors are
      * @param at the point the train is being put down on
      * @param facing which way it points, or null when nobody has said
      * @param mayReverse whether the operator marked this square as one trains may turn at
-     * @param parent what to centre the dialog on
+     * @param parent what to center the dialog on
      * @param arrivalSides the build's own sides, where the caller has them
      * @return the side, or null when it cannot be worked out and was not answered
      */
@@ -127,7 +127,7 @@ public class ArrivalSidePrompt
     {
         // AND THE QUESTION, on the squares where the assumption does not hold - asked through
         // `wouldAsk` rather than through a second spelling of its condition.  The paste door reads
-        // that same predicate to tell a dismissal from the other two nulls (IND9-B5), so the two have
+        // that same predicate to tell a dismissal from the other two nulls, so the two have
         // to agree; now they agree by construction rather than by inspection.
         if (wouldAsk(layout, at, mayReverse, arrivalSides))
         {
@@ -178,7 +178,7 @@ public class ArrivalSidePrompt
 
         // THE ASSUMPTION, on a station where it holds: a train faces the way it will leave, so it came
         // from behind.  Answered out of THE SIDES THIS SQUARE ACTUALLY HAS rather than off the
-        // compass - see `arrivedFrom` for why those are not the same question on a curve (REV9-B3).
+        // compass - see `arrivedFrom` for why those are not the same question on a curve.
         return arrivedFrom(sides, facing);
     }
 
@@ -187,7 +187,7 @@ public class ArrivalSidePrompt
      *
      * **THE BUILD'S SIDES when the caller has them**, which every caller in the application does.
      * The fallback is for a caller with no session - the tests that build a Layout by hand - and it is
-     * not a second opinion: since REV9-B3 it reads `Layout.entrySideOf` too, which is the build's own
+     * not a second opinion: it reads `Layout.entrySideOf` too, which is the build's own
      * answer where an edge carries one and the compass geometry where it does not.  A hand-built
      * Layout carries none, so those tests get exactly what they always got.
      *
@@ -212,11 +212,11 @@ public class ArrivalSidePrompt
     /**
      * Behind a train that drove in forwards, named in the vocabulary the tail walk compares against.
      *
-     * **REV9-B3.  "The opposite of the facing" is a compass answer, and everything else now speaks the
+     * **"The opposite of the facing" is a compass answer, and everything else now speaks the
      * build's sides.**  §4's rule - *"an ordinary station assumes the opposite of the facing"* - is
      * about where the train is relative to itself, and on a straight the compass says the same thing.
      * On a curve it does not.  A rail that leaves a square northwards and turns east reaches a
-     * neighbour lying east; the build enters that square by N and by E, and a train facing E did not
+     * neighbor lying east; the build enters that square by N and by E, and a train facing E did not
      * come from W, because there is no W.
      *
      * OB-182 moved the offered sides, the written arrival side and the walk's own comparison onto the
@@ -275,12 +275,12 @@ public class ArrivalSidePrompt
     }
 
     /**
-     * Whether a placement here would actually put a question to the operator (IND9-B5).
+     * Whether a placement here would actually put a question to the operator.
      *
      * `forPlacement` returns null in three different situations and only one of them is "the operator
      * said no": the square may have no compass-resolvable sides at all, or the dialog may have been
      * impossible to show. The paste door was reading all three as a dismissal, so a square whose copy
-     * connects only through neighbours the grid cannot place was **silently refused every paste,
+     * connects only through neighbors the grid cannot place was **silently refused every paste,
      * forever**, with no dialog and no log line - the operator could not put a train there and nothing
      * said why.
      *
@@ -300,7 +300,7 @@ public class ArrivalSidePrompt
         if (!mayReverse) return false;
 
         // THE SAME LIST, not a second assembly of it: the paste door reads a null from `forPlacement`
-        // as a dismissal only when this says a question was really put (IND9-B5), so the two have to
+        // as a dismissal only when this says a question was really put, so the two have to
         // offer the same sides.  Through `choicesFor` since 2026-09-11, so they cannot come apart.
         return choicesFor(layout, at, arrivalSides).size() > 1;
     }
@@ -316,7 +316,7 @@ public class ArrivalSidePrompt
      * answer that claims least: a tail nobody has placed blocks no track, which is the state the
      * railway was in before the question was asked.
      *
-     * @param parent what to centre on
+     * @param parent what to center on
      * @param at the point
      * @param sides the sides that actually have track
      * @return the chosen side, or null when dismissed
@@ -392,7 +392,7 @@ public class ArrivalSidePrompt
      * really go absent.
      *
      * @param side "N", "S", "E" or "W"
-     * @return the key, or the north one for anything unrecognised
+     * @return the key, or the north one for anything unrecognized
      */
     private static String keyFor(String side)
     {
@@ -411,8 +411,8 @@ public class ArrivalSidePrompt
      * Both directions, because a tail is not directional - the train lies across that rail whether the
      * graph runs traffic into this point along it or out.
      *
-     * **Through `Layout.entrySideOf`, which is the ONE definition** (REV9-B3).  This read
-     * `sideTowards` - where the neighbouring POINT lies - and a Point is the far end of a reduced edge
+     * **Through `Layout.entrySideOf`, which is the ONE definition**.  This read
+     * `sideTowards` - where the neighboring POINT lies - and a Point is the far end of a reduced edge
      * that may run several tiles and turn corners on the way, so on a curve it named a side the metal
      * does not leave by.  `entrySideOf` is the build's own answer where the edge carries one and that
      * same geometry where it does not, so a hand-built `Layout` - which is every layout in the tests
@@ -444,15 +444,15 @@ public class ArrivalSidePrompt
      * Adam, 2026-09-07: pasting onto BottomMainPost "asks if the train arrived from the south or from
      * the west, rather than the north or the south."
      *
-     * The geometric form above answers with the compass direction of the neighbouring POINT, and a
+     * The geometric form above answers with the compass direction of the neighboring POINT, and a
      * Point is the far end of a reduced edge that may run several tiles and turn corners on the way.
-     * A rail leaving north and curving east reaches a neighbour that lies east, so the geometry says
+     * A rail leaving north and curving east reaches a neighbor that lies east, so the geometry says
      * "E" while the metal leaves by "N". On a straight the two agree, which is why this survived
      * everywhere anybody looked.
      *
      * The builder already knows the answer and splits the square on it: `arrivalSides` goes to
      * `StationIndex` to `AutonomyBuilder.arrivalSidesOf`, which reads each reduced edge's ENTRY SIDE -
-     * the side the track comes in by. That is the same door `facingChoices` was moved onto (DR-B6),
+     * the side the track comes in by. That is the same door `facingChoices` was moved onto,
      * for the same reason: a second author computing what the builder already decided.
      *
      * @param sides the arrival sides from the session, as the build split them

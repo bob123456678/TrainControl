@@ -180,7 +180,7 @@ public class testAutonomyStoreSettingsMatrix
      */
     private static final Set<String> NOT_KEYED_BY_SQUARE = new LinkedHashSet<>(Arrays.asList(
         "excludedPages",         // by page
-        "keptDespiteRepeats",    // by page - the pages the operator turned back on (TST-B15)
+        "keptDespiteRepeats",    // by page - the pages the operator turned back on
         "unknownSharedFields",   // whatever a newer TrainControl wrote, kept so it can be written back
         "pageNameToId",          // by page
         "pageIdToName",          // by page id
@@ -193,9 +193,7 @@ public class testAutonomyStoreSettingsMatrix
         "heldForAbsentPages"
     ));
 
-    // =============================================================================================
     // The matrix
-    // =============================================================================================
 
     /**
      * Every setting follows its square when the tile moves.
@@ -391,7 +389,7 @@ public class testAutonomyStoreSettingsMatrix
     /**
      * Every setting survives being written to disk and read back.
      *
-     * **With page ids set, which they had not been until DR-B8.** The store keys by page NAME in
+     * **With page ids set, which they had not been before.** The store keys by page NAME in
      * memory and by page ID on disk, and `setPageIds` is what tells it the mapping. Without that call
      * `toStored` and `fromStored` pass keys through unchanged, `withoutAbsentPages` returns early on
      * an empty index, and the held path never runs - so this test, whose whole charter is "every
@@ -451,9 +449,7 @@ public class testAutonomyStoreSettingsMatrix
         }
     }
 
-    // =============================================================================================
     // The guard that keeps the matrix complete
-    // =============================================================================================
 
     /**
      * Every collection the store holds is either in this matrix or declared not to belong in it.
@@ -518,8 +514,6 @@ public class testAutonomyStoreSettingsMatrix
                 + ", and the store has no such field - so the guard is not guarding it");
         }
     }
-
-    // =============================================================================================
 
     /**
      * What this setting reads as on a square that has never had one, so that "gone" can be asserted
@@ -598,7 +592,7 @@ public class testAutonomyStoreSettingsMatrix
     /**
      * Every setting survives its page being RENUMBERED while the file sits on disk.
      *
-     * DR-B8's real subject. The test above now exercises the translation layer, but it translates
+     * The real subject. The test above now exercises the translation layer, but it translates
      * through the same numbering both ways, so a store that simply wrote names would still pass it.
      * This one changes the numbers between the save and the load, which is the thing page ids exist
      * for: the layout index is rewritten - a page added, deleted or combined - and the number a page
@@ -610,7 +604,7 @@ public class testAutonomyStoreSettingsMatrix
      * covers this ground for `pointNames` only.
      *
      * MUTATION: making `fromStored` return its argument unchanged fails this test, and does NOT fail
-     * the save-and-load test above - which is exactly the gap DR-B8 named.
+     * the save-and-load test above - which is exactly the gap.
      */
     @Test
     public void testEverySettingSurvivesItsPageBeingRenumbered() throws IOException
@@ -667,7 +661,7 @@ public class testAutonomyStoreSettingsMatrix
      *
      * The case page ids exist for, and the one the other two cannot see. A setup written with page
      * names in it round-trips fine under renumbering, because names do not change when numbers do -
-     * so DR-B8's "written raw" defect class needs a rename to show itself, and a rename is exactly
+     * so the "written raw" defect class needs a rename to show itself, and a rename is exactly
      * what cost Adam his setup on 23 August (MT-135).
      *
      * The store is keyed by name in memory and by id on disk. A rename changes the name and keeps the

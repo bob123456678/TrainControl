@@ -9,10 +9,10 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import support.SourceOf;
 
 /**
  * Importing the same 2.7.4c file twice fills what is missing and leaves what is there (MT-298).
@@ -55,13 +55,13 @@ public class testASecondImportFillsGapsAndDoesNotOverwrite
 
         if (!file.exists())
         {
-            throw new SkipException("the snapshot carries no 2.7.4c file at " + file);
+            throw new AssertionError("the snapshot carries no 2.7.4c file at " + file);
         }
 
         legacy = new org.json.JSONObject(new String(
             java.nio.file.Files.readAllBytes(file.toPath()), java.nio.charset.StandardCharsets.UTF_8));
 
-        model = MarklinControlStation.init(null, true, false, false, false);
+        model = support.TestStation.simulated();
 
         session = new AutonomySession(sandbox.getFolder());
 
@@ -83,8 +83,7 @@ public class testASecondImportFillsGapsAndDoesNotOverwrite
     }
 
     /**
-     * The import's {4} counts squares that had a name before it, and the old points that shared a square are said apart
-     * (RSA44-C3).
+     * The import's {4} counts squares that had a name before it, and the old points that shared a square are said apart.
      *
      * A second old point on a sensor - a station and its approach guard, the ordinary shape of an old file - found its
      * square already named by the same import, and was counted in {4} as a square that "already had a name and was left
@@ -137,7 +136,7 @@ public class testASecondImportFillsGapsAndDoesNotOverwrite
 
     /**
      * A second import of the same file counts in {4} the squares that had a name, once each, and says again the old points
-     * that shared a square (RSA45-C1).
+     * that shared a square.
      *
      * Names are shared by every configuration, so an import into a diagram that already has its names - a second import
      * of the same file (MT-298), or an old file brought into a new configuration of a named railway - finds every square
@@ -214,7 +213,7 @@ public class testASecondImportFillsGapsAndDoesNotOverwrite
                 + " plural: " + one);
         }
 
-        // AND IN EACH LANGUAGE'S OWN FORM (RSA46-C2): French says 0 in the singular, and Polish has a form of its own for 2
+        // AND IN EACH LANGUAGE'S OWN FORM: French says 0 in the singular, and Polish has a form of its own for 2
         // to 4 but not 12 to 14 - asked of the bundle's own One, Few and plain keys
         String[][] keys = {{"sharedSquaresSentence", "autosetup.ui.importSharedSquares"},
             {"leftBehindSentence", "autosetup.ui.leftBehind"}};
@@ -263,7 +262,7 @@ public class testASecondImportFillsGapsAndDoesNotOverwrite
 
     /**
      * An old autonomy.json is imported into the configuration named at the prompt, and the one in use is left as it was
-     * (Adam, 2026-09-25, choosing between honouring the name and not asking for one: *"(a)"*).
+     * (Adam, 2026-09-25, choosing between honoring the name and not asking for one: *"(a)"*).
      *
      * The Import asks for a configuration name, and warns when it would replace one - and on a layout that already had
      * configurations the old file's placements, homes and facings were then written into the one in use, the name thrown
@@ -307,16 +306,14 @@ public class testASecondImportFillsGapsAndDoesNotOverwrite
             + " the file's placements");
 
         // AND THE DOOR CHOOSES BEFORE THE IMPORT WRITES: the rule above is only as good as the one call that asks it.
-        String door = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/AutonomyViewerPanel.java")), java.nio.charset.StandardCharsets.UTF_8);
+        String door = SourceOf.declaration("private void importLegacyGraph(");
 
-        int start = door.indexOf("private void importLegacyGraph(");
-        int chosen = door.indexOf("activateTheConfigurationNamed(session().getStore(), name", start);
-        int writes = door.indexOf("session().importLegacy(", start);
+        int chosen = door.indexOf("activateTheConfigurationNamed(session().getStore(), name");
+        int writes = door.indexOf("session().importLegacy(");
 
-        assertTrue(start > 0 && writes > start, "precondition: the old-file import door is not where it was");
+        assertTrue(writes > 0, "precondition: the old-file import door no longer writes the old file");
 
-        assertTrue(chosen > start && chosen < writes, "the Import door writes the old file before choosing the"
+        assertTrue(chosen > 0 && chosen < writes, "the Import door writes the old file before choosing the"
             + " configuration named at the prompt, or never asks");
     }
 
@@ -359,7 +356,7 @@ public class testASecondImportFillsGapsAndDoesNotOverwrite
 
         if (named == null)
         {
-            throw new SkipException("the import gave no named station a maximum on this diagram, so there"
+            throw new AssertionError("the import gave no named station a maximum on this diagram, so there"
                 + " is nothing a second import could overwrite");
         }
 

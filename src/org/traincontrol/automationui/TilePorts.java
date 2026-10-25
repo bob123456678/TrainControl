@@ -34,8 +34,8 @@ import org.traincontrol.base.LayoutDiagramComponent.componentType;
  * It used to say "that script holds the same data; if this table changes, change it there too" - a
  * Python copy of the whole port map, kept in step by hand.  It went stale, as a copy kept in step by
  * hand does: it still marked the LINK side UNCONFIRMED long after d4d5b7ba confirmed it, and a
- * verification that has to be hand-synchronised with the thing it verifies is a second opinion with the
- * same author.  The script is retired (DD-C10); its table lives in
+ * verification that has to be hand-synchronized with the thing it verifies is a second opinion with the
+ * same author.  The script is retired; its table lives in
  * testAutonomyDiagramPorts.testTheWholePortTableIsWhatTheMapSaysItIs, where it is executed rather than
  * remembered, and where adding a tile type without stating its ports fails the build.
  *
@@ -116,7 +116,7 @@ public class TilePorts
         }
 
         /**
-         * The only side this route may be travelled toward, or null when it is traversable both ways.
+         * The only side this route may be traveled toward, or null when it is traversable both ways.
          * @return
          */
         public Side getDirectedToward()
@@ -245,7 +245,7 @@ public class TilePorts
 
     static
     {
-        // --- plain track -------------------------------------------------------------------------
+        // plain track
         fixed(componentType.STRAIGHT, route(Side.E, Side.W));
         fixed(componentType.CURVE, route(Side.E, Side.S));
         fixed(componentType.DOUBLE_CURVE, route(Side.N, Side.W), route(Side.E, Side.S));
@@ -267,7 +267,7 @@ public class TilePorts
         // condition of passing over the tile, so nothing is commanded when a path crosses one.
         fixed(componentType.UNCOUPLER, route(Side.E, Side.W));
 
-        // --- crossings ---------------------------------------------------------------------------
+        // crossings
         // Two independent through routes that share the tile.  They never join, but they do conflict:
         // one physical crossing, so edges using either are mutually exclusive.
         fixed(componentType.CROSSING, route(Side.N, Side.S), route(Side.E, Side.W));
@@ -276,7 +276,7 @@ public class TilePorts
         // conflict.  This is the single exception to "shared tile means mutually exclusive".
         fixed(componentType.OVERPASS, route(Side.N, Side.S), route(Side.E, Side.W));
 
-        // --- dead ends and portals ---------------------------------------------------------------
+        // dead ends and portals
         fixed(componentType.END, stub(Side.N));
 
         // A tunnel connects normally on its visible side; its continuation is a user-paired tile.
@@ -288,7 +288,7 @@ public class TilePorts
         fixed(componentType.LINK, stub(Side.W));
         PORTAL.put(componentType.LINK, Boolean.TRUE);
 
-        // --- switches ----------------------------------------------------------------------------
+        // switches
         // Thrown replaces the route set rather than adding to it.
         switched(componentType.SWITCH_LEFT,
             state(commands(accessorySetting.STRAIGHT), route(Side.N, Side.S)),
@@ -315,7 +315,7 @@ public class TilePorts
             state(commands(accessorySetting.STRAIGHT), route(Side.N, Side.S), route(Side.E, Side.W)),
             state(commands(accessorySetting.TURN), route(Side.N, Side.W), route(Side.S, Side.E)));
 
-        // --- defective switches ------------------------------------------------------------------
+        // defective switches
         // No address, so they cannot be thrown: trailing moves only, into the toe at S.
         fixed(componentType.CUSTOM_PERM_LEFT,
             into(Side.S, Side.N), into(Side.S, Side.W));
@@ -326,7 +326,7 @@ public class TilePorts
         fixed(componentType.CUSTOM_PERM_THREEWAY,
             into(Side.S, Side.N), into(Side.S, Side.W), into(Side.S, Side.E));
 
-        // --- not routable ------------------------------------------------------------------------
+        // not routable
         // Scissors are a drawing convention: two tiles depicting one double slip.  Their topology cannot
         // be expressed per tile, so a diagram carrying one cannot be used for autonomy at all.
         DISQUALIFIED.put(componentType.CUSTOM_SCISSORS, Boolean.TRUE);
@@ -342,7 +342,7 @@ public class TilePorts
         // connect can be read from the icon - and its orientation says nothing either, the same drehung
         // appearing in horizontal and vertical runs alike.  What it conducts therefore depends on what is
         // next to it, which is not something this class can see: TilePorts is a pure function of type and
-        // orientation.  TileGraph resolves it from the neighbours.
+        // orientation.  TileGraph resolves it from the neighbors.
         //
         // This matters because layouts thread them through running lines - the sample layout has 43 - so
         // treating them as decoration severs those lines, while treating them as a fixed crossing invents
@@ -350,7 +350,7 @@ public class TilePorts
         fixed(componentType.ROUTE);
         TRANSPARENT.put(componentType.ROUTE, Boolean.TRUE);
 
-        // --- decoration --------------------------------------------------------------------------
+        // decoration
         fixed(componentType.LAMP);
         fixed(componentType.TEXT);
     }
@@ -584,7 +584,7 @@ public class TilePorts
      * How many distinct orientations a tile type has.
      *
      * Asks LayoutDiagramComponent rather than answering itself. It used to be a verbatim copy of that
-     * method's body (DD-C10) - and the copies agreed only for as long as nobody added a tile type with
+     * method's body - and the copies agreed only for as long as nobody added a tile type with
      * an axis of symmetry, which is a promise about the future rather than a property of the code.
      *
      * @param type
@@ -595,7 +595,7 @@ public class TilePorts
         return org.traincontrol.base.LayoutDiagramComponent.getNumOrientations(type);
     }
 
-    // --- table construction helpers ---------------------------------------------------------------
+    // table construction helpers
 
     private static Route route(Side a, Side b)
     {
@@ -603,7 +603,7 @@ public class TilePorts
     }
 
     /**
-     * A route that may only be travelled toward the given side.
+     * A route that may only be traveled toward the given side.
      */
     private static Route into(Side toward, Side from)
     {

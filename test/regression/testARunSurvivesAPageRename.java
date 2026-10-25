@@ -18,11 +18,12 @@ import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.file.CS2File;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.SourceOf;
 
 /**
  * What a run did is folded into the setup BEFORE a page is renamed, not after.
  *
- * DW-A1, from the day review, and it is a defect I introduced myself a few hours earlier. The rename
+ * The rename fix itself introduced a defect. The rename
  * fix marked the session's pages stale and had `captureFromLayout` refuse while that held, on the
  * reasoning that "a rename is refused while autonomy is running, so there is nothing in that gap the
  * running layout knows that the store does not".
@@ -59,7 +60,7 @@ public class testARunSurvivesAPageRename
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        model = init(null, true, false, false, false);
+        model = support.TestStation.simulated();
     }
 
     /**
@@ -87,12 +88,12 @@ public class testARunSurvivesAPageRename
      * The test above proves the RULE - capture first keeps the run - but it drives both orders itself,
      * so it says nothing about which order `TrainControlUI` actually asks for. This reads the method
      * that does, `duplicateOrRenameCurrentLayout`, and checks the one line whose position is the whole
-     * fix for DW-A1.
+     * fix.
      *
      * Bounded to the method's own body, not the whole file: `captureRunningLayout()` and
      * `renameOrDuplicate(` are declared once each and could not disagree by a stray earlier or later
      * occurrence, but every other ordering scan in this suite that skipped the presence check first
-     * turned out to be vacuous (TST-B7), so both are proved present before they are compared - an
+     * turned out to be vacuous, so both are proved present before they are compared - an
      * absent term's index is -1, which is less than every real one and would make a reversed call
      * pass silently.
      *
@@ -104,20 +105,7 @@ public class testARunSurvivesAPageRename
     @Test
     public void testTheWindowCallsThemInThatOrder() throws Exception
     {
-        String ui = new String(Files.readAllBytes(
-            new File("src/org/traincontrol/gui/TrainControlUI.java").toPath()), StandardCharsets.UTF_8);
-
-        int methodStart = ui.indexOf("private void duplicateOrRenameCurrentLayout(");
-
-        assertTrue(methodStart >= 0,
-            "duplicateOrRenameCurrentLayout has moved or been renamed - this test is reading the "
-            + "wrong method, or none at all");
-
-        int methodEnd = ui.indexOf("\n    private ", methodStart + 1);
-
-        assertTrue(methodEnd > methodStart, "could not find the end of the method to bound the scan");
-
-        String body = ui.substring(methodStart, methodEnd);
+        String body = SourceOf.declaration("    void duplicateOrRenameCurrentLayout(");
 
         int captured = body.indexOf("captureRunningLayout();");
         int renamed = body.indexOf("renameOrDuplicate(");
@@ -221,7 +209,7 @@ public class testARunSurvivesAPageRename
         return "lost";
     }
 
-    // --- the running layout ------------------------------------------------------------------
+    // the running layout
 
     private static org.traincontrol.automation.Point occupiedPoint(
         org.traincontrol.automation.Layout layout)
@@ -245,7 +233,7 @@ public class testARunSurvivesAPageRename
         return null;
     }
 
-    // --- the setup ---------------------------------------------------------------------------
+    // the setup
 
     private static Map<String, String> placements(AutonomySession session)
     {

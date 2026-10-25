@@ -69,7 +69,7 @@ public class testAThrottleReversalIsFollowedFromItsEcho
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
         // Simulating, with a window, in debug - the echo below answers only in debug.
-        model = init(null, true, true, false, true);
+        model = support.TestStation.simulatedWithWindowInDebug();
 
         model.setNetworkCommState(false);
 
@@ -449,12 +449,35 @@ public class testAThrottleReversalIsFollowedFromItsEcho
      */
     private static void assertTheDiagramShows(Side facing) throws Exception
     {
-        assertEquals(session.facingOnTheRailway(MAIN_A, model.getAutoLayout()), facing, "the railway, which the caption's"
-            + " arrow reads, does not have the train facing " + facing);
+        // WAITED FOR, NOT READ AT ONCE: `flipFacing` writes the setup and then, a statement later on the event thread,
+        // stands the train on the other copy, and a caller that has just seen the setup turn can read the railway between
+        // the two - which a loaded machine makes likely.
+        waitFor(() -> railwayFacing() == facing, "the railway, which the caption's arrow reads, does not have the train"
+            + " facing " + facing + ": it has it facing " + railwayFacing());
+
+        assertEquals(railwayFacing(), facing, "the railway, which the caption's arrow reads, does not have the train"
+            + " facing " + facing);
 
         waitFor(() -> iconFacing() == facing, "the train was turned to face " + facing + " and its icon on the diagram"
             + " still faces " + iconFacing() + " - Adam, on MT-759: \"the label's arrow direction changes, but it does not"
             + " match the locomotive icon direction on the track diagram\"");
+    }
+
+    /** The way the railway has the train at BottomMainA facing (the caption's arrow), read on the event thread. */
+    private static Side railwayFacing()
+    {
+        final Side[] read = new Side[1];
+
+        try
+        {
+            SwingUtilities.invokeAndWait(() -> read[0] = session.facingOnTheRailway(MAIN_A, model.getAutoLayout()));
+        }
+        catch (Exception e)
+        {
+            throw new IllegalStateException(e);
+        }
+
+        return read[0];
     }
 
     /** Which way the diagram draws the train standing at BottomMainA, as its squares were last told, or null. */
@@ -502,7 +525,7 @@ public class testAThrottleReversalIsFollowedFromItsEcho
         if (model.getRoute(HOLD) != null) model.deleteRoute(HOLD);
     }
 
-    /** The train, standing at BottomMainA facing east on the running layout, with what the window has seen levelled. */
+    /** The train, standing at BottomMainA facing east on the running layout, with what the window has seen leveled. */
     private static void standEast() throws Exception
     {
         SwingUtilities.invokeAndWait(() ->

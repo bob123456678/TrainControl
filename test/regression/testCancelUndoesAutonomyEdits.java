@@ -67,7 +67,7 @@ public class testCancelUndoesAutonomyEdits
 
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = init(null, true, false, false, true);
+        model = support.TestStation.simulatedInDebug();
 
         SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
 
@@ -77,12 +77,12 @@ public class testCancelUndoesAutonomyEdits
 
         if (session == null || session.getStore().getActiveConfiguration() == null)
         {
-            throw new SkipException("no autonomy configuration, so there is no autonomy mode to open");
+            throw new AssertionError("no autonomy configuration, so there is no autonomy mode to open");
         }
 
         page = model.getLayout(PAGE);
 
-        if (page == null) throw new SkipException("no page " + PAGE);
+        if (page == null) throw new AssertionError("no page " + PAGE);
 
         // A CONFIGURATION LOADED, as it is on Adam's railway: the rebuild each gesture asks for - and the
         // save inside it that hid the edit - runs only when one is.
@@ -216,12 +216,12 @@ public class testCancelUndoesAutonomyEdits
     }
 
     /**
-     * Cancel puts back the track lengths a bulk clear took, which is what its confirmation now says (AUS-C2).
+     * Cancel puts back the track lengths a bulk clear took, which is what its confirmation now says.
      *
      * The sentence said the clear could not be undone.  That was true before OB-223 and is not now - `tileLengths`
      * is in the setup snapshot the editor takes when it opens - so the editor's confirmation says Cancel puts them
      * back and the viewer's, where every gesture saves at once, says the other thing.  A sentence nobody has run is
-     * how the locomotive clear came to say the wrong one for a fortnight (WK7-C2), so this runs it.
+     * how the locomotive clear came to say the wrong one for a fortnight, so this runs it.
      *
      * @throws Exception from the event thread
      */
@@ -316,7 +316,7 @@ public class testCancelUndoesAutonomyEdits
     }
 
     /**
-     * And the locomotives a bulk clear took off come back with Cancel (WK7-C2).
+     * And the locomotives a bulk clear took off come back with Cancel.
      *
      * Found by the seven-day review of 2026-09-14: the discard restores the setup as the editor opened it,
      * placements included, and the rebuild when the editor closes regenerates placements from that setup -
@@ -399,8 +399,7 @@ public class testCancelUndoesAutonomyEdits
     }
 
     /**
-     * Discard on the way out of the application puts back the locomotives a bulk clear took, as Cancel does
-     * (WKV-B2).
+     * Discard on the way out of the application puts back the locomotives a bulk clear took, as Cancel does.
      *
      * Closing TrainControl with the autonomy editor open asks Save / Discard / Cancel through
      * `LayoutEditor.maySettleBeforeExit`, and Discard restores the setup as the editor opened it - but the
@@ -484,7 +483,7 @@ public class testCancelUndoesAutonomyEdits
     }
 
     /**
-     * The exit asks each open window ONCE (VC2-B1).
+     * The exit asks each open window ONCE.
      *
      * `WindowClosed` asked the track diagram editor whether it might settle (OB-070), and when the route editor's
      * question was added beside it the original call was left in place - so a page with unsaved work was asked
@@ -606,7 +605,7 @@ public class testCancelUndoesAutonomyEdits
     }
 
     /**
-     * And a home set in the editor is put back by Discard on the way out (WKW-C1).
+     * And a home set in the editor is put back by Discard on the way out.
      *
      * The exit's fold carries more than placements - `active`, `maxTrainLength`, `speedMultiplier`, `priority`,
      * `home` and `excludedLocs` - so before round 2 a discarded home was written back as well.  The arrow claim
@@ -685,11 +684,10 @@ public class testCancelUndoesAutonomyEdits
     }
 
     /**
-     * A setup edit declined during a run is not removed by the next door that folds the running layout back
-     * (WKW-B2).
+     * A setup edit declined during a run is not removed by the next door that folds the running layout back.
      *
      * An edit made as a run starts reaches the file and not the running layout, and the message then says it
-     * will be picked up at the next load.  Since ACC-B3 the exit save skips its fold while that is so.
+     * will be picked up at the next load.  The exit save skips its fold while that is so.
      * `captureRunningLayout` is the same fold at every other door - opening an editor, closing one,
      * re-downloading the diagram, renaming or deleting a page - and did not ask, so opening the autonomy
      * editor after the run removed the edit before the exit could protect it.
@@ -769,7 +767,7 @@ public class testCancelUndoesAutonomyEdits
     }
 
     /**
-     * The declined-edit guard ends once a rebuild has carried the edit (AMS-B1).
+     * The declined-edit guard ends once a rebuild has carried the edit.
      *
      * `setupEditDeclinedDuringRun` stops every fold of the running layout back into the setup, because the
      * running layout was built before the edit.  It was never cleared - so after the run, when the next setup
@@ -807,7 +805,7 @@ public class testCancelUndoesAutonomyEdits
     }
 
     /**
-     * A rebuild that did NOT replace the running layout leaves the guard up (AMV-C7).
+     * A rebuild that did NOT replace the running layout leaves the guard up.
      *
      * The control on the claim above: clearing the flag unconditionally would pass that one.  A load can decline - a
      * configuration that will not build, a confirmation refused - and a declined load has carried no edit, so the fold
@@ -842,7 +840,7 @@ public class testCancelUndoesAutonomyEdits
                     break;
                 }
             }
-            if (second == null) throw new SkipException("no square to record a second copy of a placed train on");
+            if (second == null) throw new AssertionError("no square to record a second copy of a placed train on");
             session.setPointProperty(second, "loc", new org.json.JSONObject().put("name", twice));
             SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
             settle();
@@ -865,8 +863,7 @@ public class testCancelUndoesAutonomyEdits
     }
 
     /**
-     * A pre-edit note with a value of the wrong type inside it is refused, and the setup and the session survive it
-     * (GSP-C4).
+     * A pre-edit note with a value of the wrong type inside it is refused, and the setup and the session survive it.
      *
      * `unfinishedEdit` checks a note's top-level shape - `shared` and `configurations` are objects, its version is one
      * this build reads - and `restoreSetup` then emptied the store and read the note with the strict accessors.  A value
@@ -1186,7 +1183,7 @@ public class testCancelUndoesAutonomyEdits
         }
 
         /**
-         * How many dialogs this answerer has pressed a button on (VC2-B1).
+         * How many dialogs this answerer has pressed a button on.
          *
          * @param count unused, and there to keep the boolean overload above for its callers
          * @return the count
@@ -1220,7 +1217,7 @@ public class testCancelUndoesAutonomyEdits
 
                     answered = true;
 
-                    // COUNTED ONCE PER DIALOG, not once per scan (VC2-B1): the click is queued on the event
+                    // COUNTED ONCE PER DIALOG, not once per scan: the click is queued on the event
                     // thread and the dialog is still showing at the next scan 50 ms later, so counting
                     // every sighting turned one question into two.
                     if (window != lastAnswered)
@@ -1266,7 +1263,7 @@ public class testCancelUndoesAutonomyEdits
     }
 
     /**
-     * A fold between Cancel's discard and the hand-over behind it keeps the setup as it was (RSA26-C1).
+     * A fold between Cancel's discard and the hand-over behind it keeps the setup as it was.
      *
      * "Exit without saving" puts the setup back, and the railway - rebuilt after every gesture, so still carrying the
      * edit - was put back only by the hand-over posted after the window closed.  A door that folds the railway into the

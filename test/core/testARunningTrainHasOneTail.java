@@ -69,7 +69,7 @@ public class testARunningTrainHasOneTail
         // BEFORE the model: `init` reads the machine-global layout preference (OB-111).
         sandbox = support.LayoutSandbox.open();
 
-        model = MarklinControlStation.init(null, true, false, false, false);
+        model = support.TestStation.simulated();
 
         loc = model.getLocByName(model.getLocList().get(0));
 
@@ -114,11 +114,11 @@ public class testARunningTrainHasOneTail
         // claims below discriminate - see the note beside them.
         loc.setTrainLength(1);
 
-        // AND THE DEPARTURE SQUARE KEEPS A ROAD, or two of the claims below cannot fail (VD12-T2).
+        // AND THE DEPARTURE SQUARE KEEPS A ROAD, or two of the claims below cannot fail.
         //
         // `moveLocomotive` clears `arrivedFrom` and `arrivedAlong` on a change of occupant, and only a
         // completed run ever writes them - so a hand-placed train's square records no road, a tail
-        // walked from there meets the fork rule at a square with two neighbours and breaks, and the
+        // walked from there meets the fork rule at a square with two neighbors and breaks, and the
         // phantom claim this test exists to refuse could not have been made from it either way.  A
         // train that had DRIVEN in would carry the record, which is the state Adam's railway was in;
         // written here so the negative claims are about the rule rather than about the fixture.  The
@@ -188,7 +188,7 @@ public class testARunningTrainHasOneTail
         }
         finally
         {
-            // STOPPED, NOT JUST TOLD TO STOP (VD12-T6).  `stopLocomotives` clears the autonomy flag and
+            // STOPPED, NOT JUST TOLD TO STOP.  `stopLocomotives` clears the autonomy flag and
             // commands nothing, and the run thread is parked waiting for a sensor this test never
             // throws - so without this the operator's own first locomotive is left at speed for the
             // rest of the JVM, and `model.stop()` credits the elapsed minutes to its operating time.
@@ -205,7 +205,7 @@ public class testARunningTrainHasOneTail
     /**
      * A milestone part-way along a run is ordinary block, and so is the square a train comes to rest on.
      *
-     * **Adam, 2026-09-22, asked where the maximum train length should be checked** (OB-244 / VD12-C1):
+     * **Adam, 2026-09-22, asked where the maximum train length should be checked** (OB-244):
      * *"it is the arrival station only"*.  MT-438 had re-anchored a RUNNING train at its last milestone, and
      * the tail walk then spent nothing on that milestone - the exemption it gave the square a train stands
      * on - so the tail reached on past the square behind and `isPathClear` refused another train track that
@@ -242,7 +242,7 @@ public class testARunningTrainHasOneTail
         // one unit left over and reaches the leg behind its departure square; charged, it has none.
         loc.setTrainLength(2);
 
-        // THE DEPARTURE SQUARE KEEPS A ROAD, as in the claim above and for the same reason (VD12-T2):
+        // THE DEPARTURE SQUARE KEEPS A ROAD, as in the claim above and for the same reason:
         // a hand-placed train records none, and the walk this is about would break at the fork rule
         // rather than at the arithmetic being claimed.
         start.setArrivedFrom("W");
@@ -305,7 +305,7 @@ public class testARunningTrainHasOneTail
         }
         finally
         {
-            // STOPPED, NOT JUST TOLD TO STOP (VD12-T6) - see the note beside the claim above.
+            // STOPPED, NOT JUST TOLD TO STOP - see the note beside the claim above.
             layout.stopLocomotives();
 
             loc.setSpeed(0);

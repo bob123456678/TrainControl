@@ -55,16 +55,16 @@ public class testAReversalCommandIsEmitted
         sandbox = support.LayoutSandbox.open();
 
         // DEBUG ON, because setSimulate refuses outside it - and simulation is the only way the
-        // train ever arrives here.  The last argument is debug; testAutonomySimulationSanity does the
+        // train ever arrives here.  testAutonomySimulationSanity does the
         // same for the same reason.
-        model = init(null, true, false, false, true);
+        model = support.TestStation.simulatedInDebug();
         model.stop();
 
         model.newMM2Locomotive(DRIVER, ADDRESS);
 
         // A TRAIN THAT CAN REVERSE, which is the one the operator is asked about: a new locomotive is not, and one that
         // cannot is not turned where its destination has a copy it can stand on facing on (MT-368) - which, since the
-        // fixtures give the destination one (RSA50-A1), is every claim here
+        // fixtures give the destination one, is every claim here
         model.getLocByName(DRIVER).setReversible(true);
     }
 
@@ -144,7 +144,7 @@ public class testAReversalCommandIsEmitted
     /**
      * Makes the destination a square trains MAY turn at, as the build makes one a train can stand on facing on: its
      * turning copy and a plain copy beside it, one piece of track on one sensor, the plain one reached from the same
-     * approach (RSA50-A1).  A lone turning Point is the end of a line, where a train is turned whatever is answered -
+     * approach.  A lone turning Point is the end of a line, where a train is turned whatever is answered -
      * kept facing on there, it stood facing back out - so on that alone "keep" could not be asked about.
      *
      * @param layout the railway
@@ -317,7 +317,7 @@ public class testAReversalCommandIsEmitted
      * The same answer, on a journey of two legs - which is the shape Adam's was.
      *
      * `BottomMainA` to `BottomMainPost` is not one edge, and the single-leg test above passes, so if a
-     * reversal is being applied twice and cancelling itself out, this is where it shows: the loop in
+     * reversal is being applied twice and canceling itself out, this is where it shows: the loop in
      * `executePathInternal` offers `path.get(i).getEnd()` to the mid-path reversal branch for every
      * edge INCLUDING THE LAST, and the arrival block below the loop then asks the same question of the
      * same square.
@@ -364,7 +364,7 @@ public class testAReversalCommandIsEmitted
      * bottommainpost, but it could have been rampdown on some of the runs."* RampDown is on the way
      * to BottomMainPost, and it is a square trains turn at.
      *
-     * **The answer is honoured; the compulsory turn on the way is what surprises.** Measured both ways
+     * **The answer is honored; the compulsory turn on the way is what surprises.** Measured both ways
      * on 2026-09-08, same journey, same reversing square in the middle:
      *
      * - keep direction - started forward, ended BACKWARD
@@ -384,7 +384,7 @@ public class testAReversalCommandIsEmitted
      * split: *"only reverse if intended at the end or when backing in somewhere per the path, don't
      * reverse if passing onwards."*
      *
-     * So the cancelling pair of turns this shows cannot happen on a built railway, and the test earns
+     * So the canceling pair of turns this shows cannot happen on a built railway, and the test earns
      * its place as the guard that the two answers still differ rather than as a report of a defect.
      * `testTheTurnRuleDoesNotChangeTheRealRailway` holds the measurement that settled it.
      *

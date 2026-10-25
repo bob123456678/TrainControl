@@ -30,12 +30,12 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 
 /**
- * The Autonomy menu's Import, driven as Adam drives it, on a sandbox copy of his railway with his own 2.7.4c file (Adam,
- * 2026-09-25: automated tests supersede the MTs they answer).
+ * The Autonomy menu's Import, driven as Adam drives it, on a sandbox copy of his railway with his own 2.7.4c file.
  *
- * The door is `AutonomyViewerPanel.importConfiguration` - the file chooser, the name prompt, the question about a configuration of that name and the
- * messages it shows - answered from a thread of its own, as he would answer them.  What each import then says, logs and
- * leaves in the setup is what MT-491, MT-501, MT-502, MT-582 and MT-298 ask him to read.
+ * The door is `AutonomyViewerPanel.importConfiguration` - the file chooser, the name prompt, the question about a
+ * configuration of that name and the messages it shows - answered from a thread of its own, as he would answer them.
+ * What each import then says, logs and leaves in the setup is what MT-491, MT-501, MT-502, MT-582 and MT-298 ask him to
+ * read.
  *
  * @author Adam
  */
@@ -49,7 +49,7 @@ public class testTheImportDoorReadsAnOldFile
      * An old autonomy.json imported from the menu into a new configuration: the message says it placed his four trains
      * (MT-491), the log says the 176 pieces of track it ran one way were left as the diagram has them and changes no
      * direction (MT-501), ParkingTrack7 arrives as a station trains can stop at and autonomy does not choose (MT-502), Load
-     * Autonomy is as it was (MT-582) - and the configuration in use before is untouched (Adam, 2026-09-25: *"(a)"*).
+     * Autonomy is as it was (MT-582) - and the configuration in use before is untouched (Adam's choice, "(a)").
      *
      * MUTATION: import into the configuration in use, untick Load Autonomy, carry the old file's directions, or place the
      * trains facing a guessed way, and this fails.
@@ -76,6 +76,8 @@ public class testTheImportDoorReadsAnOldFile
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             AutonomySession session = ui[0].getAutonomySession();
@@ -90,7 +92,7 @@ public class testTheImportDoorReadsAnOldFile
             String directionsBefore = directionsHeld(session);
 
             // MT-582 STEP 1: LOAD AUTONOMY TICKED - read as found, an untick on a machine where it is already off would
-            // leave it as it was, and pass (RLD-C5).  Put back in the finally.
+            // leave it as it was, and pass.  Put back in the finally.
             TrainControlUI.getPrefs().putBoolean(TrainControlUI.AUTO_LOAD_AUTONOMY, true);
 
             List<String> said = importFromTheMenu(ui[0], MT491, "MT-491 import");
@@ -108,7 +110,7 @@ public class testTheImportDoorReadsAnOldFile
             assertEquals(session.getStore().getConfiguration(inUse).toString(), inUseBefore, "the import wrote into "
                 + inUse + ", the configuration in use, where another was named");
 
-            // AND IT SAYS WHERE THEY WENT (RLA-C1): into the configuration named, with the one in use still in use - the
+            // AND IT SAYS WHERE THEY WENT: into the configuration named, with the one in use still in use - the
             // diagram shows none of the trains it says it placed.
             String where = I18n.f("autosetup.ui.infoLegacyImportedNotInUse", "MT-491 import", inUse, whereChosen(inUse));
 
@@ -157,7 +159,7 @@ public class testTheImportDoorReadsAnOldFile
                     + " in full autonomy in the imported configuration (MT-502)");
 
                 // AND BECAUSE THE OLD FILE SWITCHED IT OFF, not only because it is a square trains turn at, which unticks
-                // the same box: the translation itself, "on, but not one autonomy chooses" (REG-B1).
+                // the same box: the translation itself, "on, but not one autonomy chooses".
                 assertEquals(session.getPointProperty(parking, org.traincontrol.automationui.AutonomyBuilder.AUTO_DESTINATION),
                     Boolean.FALSE, "the old file's switched-off ParkingTrack7 was not carried as a station autonomy does"
                     + " not choose (MT-502)");
@@ -229,6 +231,8 @@ public class testTheImportDoorReadsAnOldFile
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             AutonomySession session = ui[0].getAutonomySession();
@@ -271,7 +275,7 @@ public class testTheImportDoorReadsAnOldFile
                 }
             }
 
-            if (named == null) throw new SkipException("the import gave no named station a maximum on this diagram");
+            if (named == null) throw new AssertionError("the import gave no named station a maximum on this diagram");
 
             final TileKey changed = named;
             final int corrected = maxOf(session, changed) + 3;
@@ -286,17 +290,17 @@ public class testTheImportDoorReadsAnOldFile
 
             List<String> said = importFromTheMenu(ui[0], MT298, "MT-298 import");
 
-            // ASKED WHAT IT DOES (RLA-B2, RLU-B1, RLD-C4): an old file fills gaps, so the door does not ask to replace.
-            // AND SAYS WHAT COUNTS AS NOT SET (RLA3-B1; Adam, 2026-09-28): a setting at its default, a home taken off or
-            // an emptied exclusion list reads as a gap, and takes the file's
-            // THE WHOLE QUESTION, since `said` holds whole dialogs (RLV12-C6 added its third sentence)
+            // ASKED WHAT IT DOES: an old file fills gaps, so the door does not ask to replace.
+            // AND SAYS WHAT COUNTS AS NOT SET: a setting at its default, a home taken off or an emptied
+            // exclusion list reads as a gap, and takes the file's.  The whole question is compared, since `said` holds
+            // whole dialogs.
             assertTrue(said.contains(I18n.f("autosetup.ui.confirmImportFillsGaps", "MT-298 import") + "  "
                 + I18n.t("autosetup.ui.importTakesTheFilesForDefaults") + "  "
                 + I18n.f("autosetup.ui.importKeepsTheStationMaximums", "MT-298 import")), "importing an old file into a configuration of"
                 + " that name did not ask whether to fill in what it does not have, saying what counts as not having it"
                 + " (RLA3-B1): " + said);
 
-            // AND THE ONE SETTING A DEFAULT DOES NOT GIVE UP (RLV12-C6): every station of a configuration that has been
+            // AND THE ONE SETTING A DEFAULT DOES NOT GIVE UP: every station of a configuration that has been
             // loaded records its maximum, no limit included, so the file's maximum is kept out
             assertTrue(said.stream().anyMatch(q -> q.contains(I18n.t("autosetup.ui.importTakesTheFilesForDefaults") + "  "
                 + I18n.f("autosetup.ui.importKeepsTheStationMaximums", "MT-298 import"))), "the question said a setting at"
@@ -305,7 +309,7 @@ public class testTheImportDoorReadsAnOldFile
             assertFalse(said.contains(I18n.f("autosetup.ui.confirmImportOverwrites", "MT-298 import")), "importing an old"
                 + " file into a configuration of that name asked to replace it, and then filled gaps: " + said);
 
-            // AND COUNTS IN SQUARES (RSA45-C1): every square the first import met has a name now, and is counted once in {4}
+            // AND COUNTS IN SQUARES: every square the first import met has a name now, and is counted once in {4}
             // however many old points stand on it; the old points that shared a square are said again
             String imported = "autosetup.ui.infoLegacyImported", shared = "autosetup.ui.importSharedSquares";
 
@@ -334,7 +338,7 @@ public class testTheImportDoorReadsAnOldFile
             assertEquals(sharedNow, sharedThen, "the second import's message does not say again the old points that shared a"
                 + " square (RSA45-C1): " + said);
 
-            // AND THE LOG LISTS THEM (RSA45-C2): under its heading, one line for each point the two messages counted
+            // AND THE LOG LISTS THEM: under its heading, one line for each point the two messages counted
             String log = logged().substring(logFrom);
 
             assertTrue(log.contains(I18n.t("autosetup.ui.importSharedSquaresHeading")), "the log has no heading for the old"
@@ -343,9 +347,8 @@ public class testTheImportDoorReadsAnOldFile
             assertEquals(sharedLinesIn(log), sharedThen + sharedNow, "the log does not list each old point the messages say"
                 + " shared a square (RSA44-C3): " + log);
 
-            // AND EACH LIST ONE ENTRY, ITS HEADING FIRST (Adam, 2026-10-06: "Fix them", on RSA45's notes): the main window's
-            // log puts its newest entry on top, so a heading logged as an entry of its own before its lines stood below
-            // them, and the list read upwards.  One entry is put on top whole, and reads down from its heading.
+            // AND EACH LIST ONE ENTRY, ITS HEADING FIRST: the main window's log puts its newest entry on top, so each
+            // list is one entry put on top whole, and reads down from its heading.
             List<String> entries = loggedEntries().subList(entryFrom, loggedEntries().size());
 
             String sharedEntry = lastStartingWith(entries, I18n.t("autosetup.ui.importSharedSquaresHeading"));
@@ -399,11 +402,11 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * A second import of the same file, into a configuration where one of its trains has been moved since, does not stand
-     * that train on two squares: it stays where it was moved to, and the message says it was not placed (RLA-B2).
+     * that train on two squares: it stays where it was moved to, and the message says it was not placed.
      *
-     * One locomotive stands in one place was kept across the file only, so the square the train had left read as a gap
-     * and the import put it there as well - and a configuration naming one train on two squares is refused whole
-     * (`autosetup.ui.checkDuplicateLocomotive`).
+     * The one-place check covers the configuration's own trains as well as the file's: otherwise the square the train had
+     * left reads as a gap and the import puts it there too - and a configuration naming one train on two squares is
+     * refused whole (`autosetup.ui.checkDuplicateLocomotive`).
      *
      * MUTATION: start the one-place check empty again, and this fails.
      *
@@ -425,6 +428,8 @@ public class testTheImportDoorReadsAnOldFile
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -521,11 +526,11 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * An old file the import cannot finish reading leaves the setup as it was: no configuration made of it, the one in use
-     * still chosen, and nothing of it saved (RLA-C3, RLU-C1).
+     * still chosen, and nothing of it saved.
      *
-     * The door chose the new configuration before reading, and saved before the last of its reads - so a file whose
-     * timetable was not a list was imported, saved with its configuration chosen, and then reported as unreadable, and the
-     * next start resumed that configuration instead of the one that had been running.
+     * The door must neither choose the new configuration before reading nor save before the last of its reads: a file
+     * whose timetable was not a list would be imported, saved with its configuration chosen, and then reported as
+     * unreadable, and the next start would resume that configuration instead of the one that had been running.
      *
      * MUTATION: save before the file is read to its end, or leave the new configuration chosen on a failure, and this
      * fails.
@@ -558,6 +563,8 @@ public class testTheImportDoorReadsAnOldFile
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -604,13 +611,13 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * An import while autonomy runs is refused before it asks for anything, whatever it would be imported into, as
-     * Delete beside it is (RSA4-C5; Adam, 2026-09-28: *"There should be no setup edit possible during a run"*).
+     * Delete beside it is (Adam: *"There should be no setup edit possible during a run"*).
      *
-     * Into a configuration not in use it went on while trains ran: a bundle, or an old file, fills the gaps of the
+     * Into a configuration not in use it would go on while trains run: a bundle, or an old file, fills the gaps of the
      * setup's shared half - a station's name among them - and saves, and the reload it then asks may be declined.
-     * Nothing marked the setup newer than the running railway, so the next fold read the running railway through names
-     * the import had changed, and a train on a square it renamed was written nowhere.  Refused with it is the case
-     * RLD-C3 was: a declined reload after an import while trains moved, which left the imported configuration chosen
+     * Nothing marks the setup newer than the running railway, so the next fold would read the running railway through
+     * names the import had changed, and a train on a square it renamed would be written nowhere.  Refusing it also
+     * covers a declined reload after an import while trains moved, which left the imported configuration chosen
      * for the next start.
      *
      * The trains are "moving" as a Return Home in progress makes them: the flag the window asks.
@@ -640,6 +647,8 @@ public class testTheImportDoorReadsAnOldFile
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             AutonomySession session = ui[0].getAutonomySession();
@@ -658,7 +667,7 @@ public class testTheImportDoorReadsAnOldFile
 
             session = ui[0].getAutonomySession();
 
-            assertTrue(asked.said.contains(I18n.t("autosetup.ui.errorImportWhileRunning")), "an old file was imported"
+            assertTrue(asked.said.contains(I18n.t("ui.main.errorNoEditsWhileRunning")), "an old file was imported"
                 + " into another configuration while autonomy ran (RSA4-C5), or refused without saying what to do"
                 + " instead: " + asked.said);
 
@@ -691,15 +700,15 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * A bundle imported into the configuration in use, by its name, is refused and changes nothing: it is imported under
-     * another name and chosen from there (RLA2-B1, RLD3-C2).  The case is the backup round trip: Export suggests the
+     * another name and chosen from there.  The case is the backup round trip: Export suggests the
      * configuration's name and Import suggests the file's.
      *
-     * A bundle replaces the configuration it is imported into, and the reload after it captured the running railway
-     * straight back over its settings and timetable - so "Replace it?" answered Yes did not replace; and its placements
+     * A bundle replaces the configuration it is imported into, and the reload after it captures the running railway
+     * straight back over its settings and timetable - so "Replace it?" answered Yes would not replace; and its placements
      * are not where the running railway's trains stand, which is the railway's to say (OB-183).  An old file under that
-     * name is not refused: it fills gaps and places no train (RLD3-C1), as the claims below say.
+     * name is not refused: it fills gaps and places no train, as the claims below say.
      *
-     * MUTATION: import into the configuration in use again, or refuse and then ask to replace it anyway (RLD4-C4), and
+     * MUTATION: import into the configuration in use again, or refuse and then ask to replace it anyway, and
      * this fails.
      *
      * @throws Exception from the window or the import
@@ -720,6 +729,8 @@ public class testTheImportDoorReadsAnOldFile
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -783,14 +794,14 @@ public class testTheImportDoorReadsAnOldFile
     /**
      * An old file imported into the configuration in use, by its name, fills what it does not have and places none of the
      * file's trains: where a train stands on the railway running is the railway's to say, and a train moved on it before
-     * the import is where it was moved (RLD3-C1, RLA2-B3, RLD2-C3, OB-183).
+     * the import is where it was moved (OB-183).
      *
-     * Round 2 refused the name outright, which MT-298's own steps cannot get past: a hand change is made in the
-     * configuration chosen, and the second import is into that one.
+     * The name is not refused outright: MT-298's own steps make a hand change in the configuration chosen, and the
+     * second import is into that one.
      *
      * And what the file brings to it stays: a priority the configuration had lost is there after the reload, which does
-     * not capture again (RLU4-C2, RLA4-C2, RLD4-C2) - the moved train is kept by either capture, so it pins neither.  The
-     * question asked says the file's trains are not placed (RLU4-C3).
+     * not capture again - the moved train is kept by either capture, so it pins neither.  The
+     * question asked says the file's trains are not placed.
      *
      * MUTATION: refuse the name again, place the file's trains on the running railway, leave the capture to the reload,
      * or ask the question any configuration is asked, and this fails.
@@ -813,6 +824,12 @@ public class testTheImportDoorReadsAnOldFile
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
+
+            // ONE TRAIN STANDING, AND NONE OF THE FILE'S (FR-136): a train the configuration already stands is "already
+            // placed" rather than not placed, so the file's four are kept off the railway here and the train moved is named
+            sandbox.withNoTrains().standing(new TileKey("1 - Main", 20, 12), "75 407 DB", "E", "W");
 
             ui[0] = openTheWindow();
 
@@ -851,10 +868,14 @@ public class testTheImportDoorReadsAnOldFile
 
             for (org.traincontrol.automation.Point point : railway.getPoints())
             {
-                if (point.getCurrentLocomotive() != null && from == null) from = point;
+                if (from == null && point.getCurrentLocomotive() != null
+                    && "75 407 DB".equals(point.getCurrentLocomotive().getName()))
+                {
+                    from = point;
+                }
             }
 
-            assertNotNull(from, "precondition: no train stands on his railway");
+            assertNotNull(from, "precondition: 75 407 DB does not stand on his railway");
 
             for (org.traincontrol.automation.Point point : railway.getPoints())
             {
@@ -903,7 +924,7 @@ public class testTheImportDoorReadsAnOldFile
             assertTrue(said.stream().anyMatch(message -> message.contains(notPlaced)), "the import did not say why it"
                 + " placed none of the file's trains: " + said);
 
-            // AND A DOOR THAT PUTS ONE DOWN (RLU5-C1): the train chosen in the main window, then "Place <train>" on its
+            // AND A DOOR THAT PUTS ONE DOWN: the train chosen in the main window, then "Place <train>" on its
             // station - the placement dialog lists only trains already standing, and these are not
             String sentence = I18n.f("autosetup.ui.infoLegacyNotPlacedInUse", "@@@", inUse,
                 I18n.f("layout.ui.menuPlaceLocomotive", String.valueOf((char) 0x2026)));
@@ -913,19 +934,19 @@ public class testTheImportDoorReadsAnOldFile
             assertTrue(said.stream().anyMatch(message -> message.contains(remedy)), "the not-placed line does not end"
                 + " with a door that puts one of those trains down (RLU5-C1): " + said);
 
-            // WHAT THE IMPORT BROUGHT STAYS: the reload after it does not capture the railway back over it (RLA-C2)
+            // WHAT THE IMPORT BROUGHT STAYS: the reload after it does not capture the railway back over it
             assertEquals(priorityIn(session, inUse, prioritised), carried[1], "the priority the old file carried into "
                 + inUse + " was captured over by the reload after the import (RLU4-C2, RLA-C2): " + said);
 
-            // AND THE QUESTION SAID NONE WOULD BE PLACED (RLU4-C3)
-            // THE WHOLE QUESTION, since `said` holds whole dialogs (RLV12-C6 added its third sentence)
+            // AND THE QUESTION SAID NONE WOULD BE PLACED
+            // THE WHOLE QUESTION, since `said` holds whole dialogs
             assertTrue(said.contains(I18n.f("autosetup.ui.confirmImportFillsGapsInUse", inUse) + "  "
                 + I18n.t("autosetup.ui.importTakesTheFilesForDefaults") + "  "
                 + I18n.f("autosetup.ui.importKeepsTheStationMaximums", inUse)), "the question into " + inUse + ", the"
                 + " configuration in use, promised the file's trains, and Yes placed none (RLU4-C3), or did not say what"
                 + " counts as not set (RLA3-B1): " + said);
 
-            // AND THAT THE STATIONS KEEP THEIR MAXIMA (RLV12-C6): into the configuration in use, the file's never arrive
+            // AND THAT THE STATIONS KEEP THEIR MAXIMA: into the configuration in use, the file's never arrive
             assertTrue(said.stream().anyMatch(q -> q.contains(I18n.t("autosetup.ui.importTakesTheFilesForDefaults") + "  "
                 + I18n.f("autosetup.ui.importKeepsTheStationMaximums", inUse))), "the question into " + inUse + " said a"
                 + " setting at its default takes the file's value, and did not say its stations keep their maxima"
@@ -948,7 +969,7 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * MT-298 as its steps run it: the imported configuration chosen, a maximum changed by hand in it, and the same file
-     * imported again into it by name - which fills gaps and keeps the hand change (RLD3-C1).
+     * imported again into it by name - which fills gaps and keeps the hand change.
      *
      * MUTATION: refuse the configuration in use, or overwrite what is there, and this fails.
      *
@@ -970,6 +991,8 @@ public class testTheImportDoorReadsAnOldFile
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -1038,7 +1061,7 @@ public class testTheImportDoorReadsAnOldFile
     /**
      * A configuration of the older, bare shape - the setup folder's own configuration file, or an export from before
      * bundles - imported into the configuration in use by its name is refused as a bundle is, before anything is asked
-     * or written (RLU4-B1, RLA2-B1).  It replaces the configuration as a bundle does, and the reload after it captured
+     * or written.  It replaces the configuration as a bundle does, and the reload after it captures
      * the running railway straight back over it, after a message saying it was imported.
      *
      * MUTATION: refuse only a bundle, and this fails.
@@ -1061,6 +1084,8 @@ public class testTheImportDoorReadsAnOldFile
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -1125,11 +1150,11 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * An old file into the configuration in use while autonomy runs is refused, as Delete beside it is, and changes
-     * nothing (RLU4-C1, RLA4-C1, RLD4-C1).
+     * nothing.
      *
      * The capture before the import is skipped while autonomy is busy - the reload stops the trains and captures where
-     * they stopped - so the reload's capture took back the homes and settings the import had just written and counted;
-     * and with the stop declined, the next fold did the same.
+     * they stopped - so the reload's capture would take back the homes and settings the import had just written and
+     * counted; and with the stop declined, the next fold would do the same.
      *
      * The trains are "moving" as a Return Home in progress makes them: the flag the window asks.
      *
@@ -1158,6 +1183,8 @@ public class testTheImportDoorReadsAnOldFile
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             AutonomySession session = ui[0].getAutonomySession();
@@ -1172,12 +1199,12 @@ public class testTheImportDoorReadsAnOldFile
 
             staging.set(ui[0], true);
 
-            // REFUSED AT ONCE, into any configuration (RSA4-C5), and saying what to do instead (RLU5-C2, RLA5-C1)
+            // REFUSED AT ONCE, into any configuration, and saying what to do instead
             List<String> said = pressImport(ui[0], MT491, inUse, Collections.<String>emptySet()).said;
 
             session = ui[0].getAutonomySession();
 
-            assertTrue(said.contains(I18n.t("autosetup.ui.errorImportWhileRunning")), "an old file was taken into "
+            assertTrue(said.contains(I18n.t("ui.main.errorNoEditsWhileRunning")), "an old file was taken into "
                 + inUse + ", the configuration in use, while autonomy runs (RLU4-C1), or refused without saying what to"
                 + " do instead (RLU5-C2, RLA5-C1): " + said);
 
@@ -1207,12 +1234,11 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * A setup edit a run declined to apply - written to the file, not to the running layout, and waiting for the rebuild
-     * that carries it - survives an old file's import, into the configuration in use or beside it (RLD4-C3, ACC-B3,
-     * WKW-B2).
+     * that carries it - survives an old file's import, into the configuration in use or beside it.
      *
-     * The import into the configuration in use captured the running layout into it first, and the reload after an import
-     * into another captured it into the one running: each a fold of the layout built before the edit back over it, which
-     * the exit save and the editor doors refuse while such an edit waits.
+     * The import into the configuration in use would capture the running layout into it first, and the reload after an
+     * import into another would capture it into the one running: each a fold of the layout built before the edit back
+     * over it, which the exit save and the editor doors refuse while such an edit waits.
      *
      * MUTATION: fold without asking whether an edit waits - before the import, or at the reload - and this fails.
      *
@@ -1238,6 +1264,8 @@ public class testTheImportDoorReadsAnOldFile
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -1304,13 +1332,13 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * Reloading the configuration running while a setup edit a run declined waits for its rebuild keeps every train where
-     * the run left it, and the edit is then carried (RLA5-B1, RLU5-B2, RLD5-B1).
+     * the run left it, and the edit is then carried.
      *
-     * RLD4-C3 kept `load` from folding the older running layout over the edit, and `load` then rebuilt the railway from
-     * the setup with each train back where it stood before the run - so choosing the configuration from the Autonomy
-     * menu, ticking a page out of autonomy, or the reload after an import modelled a moved train on the square it had
-     * left, and the square it stood on read free.  It now rebuilds as the editor doors do, carrying the trains across,
-     * and lowers the flag.
+     * `load` rebuilds the railway as the editor doors do, carrying the trains across, and lowers the flag (which keeps
+     * it from folding the older running layout over the edit).  Rebuilt from the setup alone, each train would be back
+     * where it stood before the run, so choosing the configuration from the Autonomy menu, ticking a page out of
+     * autonomy, or the reload after an import would model a moved train on the square it had left, and the square it
+     * stood on would read free.
      *
      * MUTATION: reload without carrying the trains, or leave the flag up, and this fails.
      *
@@ -1335,6 +1363,8 @@ public class testTheImportDoorReadsAnOldFile
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             AutonomySession session = ui[0].getAutonomySession();
@@ -1343,7 +1373,7 @@ public class testTheImportDoorReadsAnOldFile
 
             assertEquals(ui[0].getActiveDiagramConfiguration(), inUse, "precondition: " + inUse + " is not running");
 
-            // THE EDIT THAT WAITS, written into the configuration and not the running layout (RLV7-C5)
+            // THE EDIT THAT WAITS, written into the configuration and not the running layout
             final Object[] edit = anEditWaits(ui[0], session, inUse);
 
             // ONE STANDING TRAIN MOVED ON THE RUNNING RAILWAY, to an empty station, as a run leaves it
@@ -1417,8 +1447,8 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * The reload after a track-diagram edit or a page operation, while a setup edit a run declined waits, keeps every
-     * train where the run left it (RLV6-B1, door a).  (A route editor's Save reached it too, until RLV7-A1.)  That reset forgets the configuration's
-     * name before it reloads, so round 5's fix, which asked for the configuration running by its name, missed it.
+     * train where the run left it (door a).  That reset forgets the configuration's name before it reloads, so the
+     * carrying must not depend on a load that names the configuration running.
      *
      * MUTATION: carry the trains only for a load that names the configuration running, and this fails.
      *
@@ -1443,6 +1473,8 @@ public class testTheImportDoorReadsAnOldFile
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             AutonomySession session = ui[0].getAutonomySession();
@@ -1451,7 +1483,7 @@ public class testTheImportDoorReadsAnOldFile
 
             assertEquals(ui[0].getActiveDiagramConfiguration(), inUse, "precondition: " + inUse + " is not running");
 
-            // THE EDIT THAT WAITS, written into the configuration and not the running layout (RLV7-C5)
+            // THE EDIT THAT WAITS, written into the configuration and not the running layout
             final Object[] edit = anEditWaits(ui[0], session, inUse);
 
             final String[] move = moveAStandingTrain(ui[0], session);
@@ -1495,7 +1527,7 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * Choosing another configuration while a setup edit a run declined waits leaves the configuration it leaves with every
-     * train where the run left it (RLV6-B1, door b): the one running is carried first - the edit and where the trains stand
+     * train where the run left it (door b): the one running is carried first - the edit and where the trains stand
      * - and then folded as any configuration left is.
      *
      * MUTATION: load the other configuration without carrying the one running, and this fails.
@@ -1523,6 +1555,8 @@ public class testTheImportDoorReadsAnOldFile
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             AutonomySession session = ui[0].getAutonomySession();
@@ -1542,7 +1576,7 @@ public class testTheImportDoorReadsAnOldFile
             assertEquals(ui[0].getActiveDiagramConfiguration(), inUse, "precondition: the import changed the configuration"
                 + " running");
 
-            // THE EDIT THAT WAITS, written into the configuration and not the running layout (RLV7-C5)
+            // THE EDIT THAT WAITS, written into the configuration and not the running layout
             final Object[] edit = anEditWaits(ui[0], session, inUse);
 
             final String[] move = moveAStandingTrain(ui[0], session);
@@ -1589,9 +1623,9 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * A reload of the configuration running, confirmed while autonomy is busy and a setup edit a run declined waits,
-     * replaces the running layout with every train carried across (RLV6-B1, door c).  It went to the editor doors'
+     * replaces the running layout with every train carried across (door c).  It must not go to the editor doors'
      * rebuild, which does nothing while autonomy reads busy - and a train stopped between sensors keeps the old layout
-     * reading busy - so the confirmed reload did nothing, and autonomy stayed busy until a restart.
+     * reading busy - or the confirmed reload would do nothing, and autonomy would stay busy until a restart.
      *
      * Busy as a Return Home in progress makes it: the flag the window asks.
      *
@@ -1622,6 +1656,8 @@ public class testTheImportDoorReadsAnOldFile
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             AutonomySession session = ui[0].getAutonomySession();
@@ -1630,7 +1666,7 @@ public class testTheImportDoorReadsAnOldFile
 
             assertEquals(ui[0].getActiveDiagramConfiguration(), inUse, "precondition: " + inUse + " is not running");
 
-            // THE EDIT THAT WAITS, written into the configuration and not the running layout (RLV7-C5)
+            // THE EDIT THAT WAITS, written into the configuration and not the running layout
             final Object[] edit = anEditWaits(ui[0], session, inUse);
 
             final String[] move = moveAStandingTrain(ui[0], session);
@@ -1676,8 +1712,8 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * A reload the operator asks for, while a setup edit a run declined waits, stops a train driven by hand, as the same
-     * reload does with nothing waiting (RLV6-C1, VD11-A2: *"whether the OPERATOR asked for a different railway.  Choosing
-     * a configuration is that"*).  It went through the editor doors' quiet rebuild, which stops nothing.
+     * reload does with nothing waiting (*"whether the OPERATOR asked for a different railway.  Choosing
+     * a configuration is that"*).  It must not go through the editor doors' quiet rebuild, which stops nothing.
      *
      * MUTATION: load quietly while an edit waits, and this fails.
      *
@@ -1702,6 +1738,8 @@ public class testTheImportDoorReadsAnOldFile
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             AutonomySession session = ui[0].getAutonomySession();
@@ -1710,7 +1748,7 @@ public class testTheImportDoorReadsAnOldFile
 
             assertEquals(ui[0].getActiveDiagramConfiguration(), inUse, "precondition: " + inUse + " is not running");
 
-            // THE EDIT THAT WAITS, written into the configuration and not the running layout (RLV7-C5)
+            // THE EDIT THAT WAITS, written into the configuration and not the running layout
             final Object[] edit = anEditWaits(ui[0], session, inUse);
 
             final org.traincontrol.base.Locomotive driven = ui[0].getModel().getLocByName(
@@ -1750,12 +1788,13 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * Saving a route while autonomy runs leaves the run alone (RLV7-A1).
+     * Saving a route while autonomy runs leaves the run alone.
      *
-     * The route editor's Save ended by completing a diagram edit, whose reset forgot the configuration running and whose
-     * reload asked to abandon the run.  Yes rebuilt the railway with every train the run had moved back where it set off,
-     * the square it stood on reading free; No left the run going with no configuration to fold it into.  A route is no
-     * page of the diagram - its tiles follow it by id (`rebindRouteTiles`) - so there is nothing of autonomy to rebuild.
+     * A route is no page of the diagram - its tiles follow it by id (`rebindRouteTiles`) - so there is nothing of
+     * autonomy to rebuild, and the route editor's Save must not complete a diagram edit: its reset forgets the
+     * configuration running and its reload asks to abandon the run.  Yes would rebuild the railway with every train the
+     * run had moved back where it set off, the square it stood on reading free; No would leave the run going with no
+     * configuration to fold it into.
      *
      * Running as `isRunning` reads it, set after the move since a move is refused while running.
      *
@@ -1792,6 +1831,8 @@ public class testTheImportDoorReadsAnOldFile
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -1889,16 +1930,15 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * A reload the operator confirms while a train is under way is made, with that train where it set off (RLV7-B1,
-     * RLV7-C1).
+     * A reload the operator confirms while a train is under way is made, with that train where it set off.
      *
      * Yes stops the trains and releases nothing: a train stopped between sensors keeps its path locked, and a locked path
-     * holds every point on it for its train.  The load then folded that layout into the configuration, placing the train
-     * on each of those squares, and the rebuild was refused as one locomotive in two places - the old layout staying,
-     * reading busy, until a restart.  A layout holding a path is now folded with each train under way written on one
+     * holds every point on it for its train.  Folding that layout into the configuration would place the train on each
+     * of those squares, and the rebuild would be refused as one locomotive in two places - the old layout staying,
+     * reading busy, until a restart.  So a layout holding a path is folded with each train under way written on one
      * point - the last station whose sensor it has tripped, or where it set off - so the Auto tab's settings and a
-     * captured timetable are kept too (RLV8-B1); and the destination turns the railway has made and not yet written down
-     * are kept across it (RLV9-C1).
+     * captured timetable are kept too; and the destination turns the railway has made and not yet written down
+     * are kept across it.
      *
      * MUTATION: fold each point's occupant, read each point's occupant, or leave the turns on the old railway, and this
      * fails.
@@ -1912,8 +1952,8 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * The same while a setup edit a run declined waits, which carried the train to whichever point of its path the layout
-     * met last - its destination, as here - with the square it stood on reading free (RLV7-C1).
+     * The same while a setup edit a run declined waits; reading each point's occupant would carry the train to whichever
+     * point of its path the layout met last - its destination, as here - with the square it stood on reading free.
      *
      * MUTATION: read each point's occupant, and this fails.
      *
@@ -1946,6 +1986,8 @@ public class testTheImportDoorReadsAnOldFile
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             AutonomySession session = ui[0].getAutonomySession();
@@ -1962,7 +2004,7 @@ public class testTheImportDoorReadsAnOldFile
 
             assertTheConfigurationHasItWhereItSetOff(session, inUse, move);
 
-            // AND WHAT ONLY A FOLD KEEPS (RLV8-B1): the Auto tab's settings changed since the last save, and a
+            // AND WHAT ONLY A FOLD KEEPS: the Auto tab's settings changed since the last save, and a
             // timetable captured this session - set while idle, as the sliders are, before the train sets off
             final org.traincontrol.automation.Layout idle = ui[0].getModel().getAutoLayout();
 
@@ -1994,7 +2036,7 @@ public class testTheImportDoorReadsAnOldFile
                     + " captured nothing");
             }
 
-            // AND A TURN THE RAILWAY MADE AND HAS NOT YET WRITTEN DOWN (RLV9-C1): turns are written only while the railway
+            // AND A TURN THE RAILWAY MADE AND HAS NOT YET WRITTEN DOWN: turns are written only while the railway
             // is idle, so during a run every one made since it started is still owed.  One nothing can write, so it stays
             // owed wherever it is kept
             java.util.Map<String, String> owed = new java.util.HashMap<>();
@@ -2003,7 +2045,7 @@ public class testTheImportDoorReadsAnOldFile
 
             before.restoreReversalsOnArrival(owed);
 
-            // THE RULE (RLV7-C1), as every carry reads it
+            // THE RULE, as every carry reads it
             String[] read = TrainControlUI.whereTheTrainsAre(before).get(train);
 
             assertEquals(read == null ? null : read[0], from, train + ", under way from " + from + " to " + bound + " and"
@@ -2081,8 +2123,8 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * Choosing another configuration while a train is under way leaves the configuration running with that train on one
-     * square, where it set off (RLV7-B1).  The fold into the configuration left placed it on every square of its path,
-     * and that configuration then refused to load until each was cleared by hand.
+     * square, where it set off.  Folding a layout that holds a path would place it on every square of its path,
+     * and that configuration would then refuse to load until each was cleared by hand.
      *
      * MUTATION: fold a layout that holds a path, and this fails.
      *
@@ -2106,6 +2148,8 @@ public class testTheImportDoorReadsAnOldFile
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -2183,12 +2227,12 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * Choosing another configuration while a setup edit waits, where the configuration running cannot be used with that
-     * edit, is refused and says why (RLV7-C4).  Here the edit places a train twice: an error, and a setup with errors
-     * still loads so that it can be fixed (SVN-B10), so the configuration running stays loaded with its errors.
+     * edit, is refused and says why.  Here the edit places a train twice: an error, and a setup with errors
+     * still loads so that it can be fixed, so the configuration running stays loaded with its errors.
      *
-     * The choice went ahead: the configuration left kept where its trains stood before the run, with nothing said; the
-     * log said it "could not be loaded at startup", about a load nobody made at start-up; and the flag stayed up over the
-     * configuration chosen, so nothing it did was folded until something rebuilt it.
+     * The choice must not go ahead: the configuration left would keep its trains where they stood before the run, with
+     * nothing said; the log would say it "could not be loaded at startup", about a load nobody made at start-up; and the
+     * flag would stay up over the configuration chosen, so nothing it did would be folded until something rebuilt it.
      *
      * MUTATION: load the configuration chosen whether or not the one running was carried, and this fails.
      *
@@ -2214,6 +2258,8 @@ public class testTheImportDoorReadsAnOldFile
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -2320,15 +2366,14 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * A switch of railway forgets the railway it leaves (RLV7-C2): the flag a declined edit raised, and the name of the
-     * configuration the reset forgot.  The load that followed read "no configuration running" as the reset after an
-     * edit, and carried the previous railway's trains across by Point name.  And only when the railway changes
-     * (RLV8-C5): choosing the folder already in use reloads the same railway, whose trains are carried as any reload
+     * A switch of railway forgets the railway it leaves: the flag a declined edit raised, and the name of the
+     * configuration the reset forgot.  A load that read "no configuration running" as the reset after an edit would carry
+     * the previous railway's trains across by Point name.  And only when the railway changes:
+     * choosing the folder already in use reloads the same railway, whose trains are carried as any reload
      * carries them.
      *
      * The door every switch of layout source ends in, `initializeTrackDiagram`: first over the same folder, then over a
-     * source named differently, then back to the first - another railway again, since the one shown is the second's
-     * (RLV9-C7).
+     * source named differently, then back to the first - another railway again, since the one shown is the second's.
      *
      * MUTATION: forget the railway on every switch, or on none, or leave the source switched to unrecorded, and this
      * fails.
@@ -2354,6 +2399,8 @@ public class testTheImportDoorReadsAnOldFile
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             AutonomySession session = ui[0].getAutonomySession();
@@ -2368,7 +2415,7 @@ public class testTheImportDoorReadsAnOldFile
 
             forgotten.setAccessible(true);
 
-            // THE SAME FOLDER, chosen again (RLV8-C5): the same railway, so nothing is forgotten, and the load carries
+            // THE SAME FOLDER, chosen again: the same railway, so nothing is forgotten, and the load carries
             declined.set(ui[0], true);
 
             SwingUtilities.invokeAndWait(() -> ui[0].initializeTrackDiagram(false));
@@ -2384,7 +2431,7 @@ public class testTheImportDoorReadsAnOldFile
             assertEquals(forgotten.get(ui[0]), inUse, "choosing the folder already in use forgot which configuration it"
                 + " ran (RLV8-C5)");
 
-            // AND THE FILE THE NEXT START READS has the train where the run left it (RSA21-A1): no configuration is named
+            // AND THE FILE THE NEXT START READS has the train where the run left it: no configuration is named
             // after the reset, so no door after it would fold the railway
             assertTheFileHasItWhereItWasMoved(sandbox.getFolder(), inUse, session, move, "after the folder in use was"
                 + " chosen again while an edit waited (RSA21-A1)");
@@ -2393,8 +2440,8 @@ public class testTheImportDoorReadsAnOldFile
 
             assertStandsWhereItWasMoved(ui[0], move, "after the folder in use was chosen again and loaded (RLV8-C5)");
 
-            // ANOTHER SOURCE (RLV7-C2): a copy of this railway's folder, made before the run moved the train, stands for a
-            // railway that is not this one - a folder of its own, so the fold into the railway left (RSA21-A1) is not read
+            // ANOTHER SOURCE: a copy of this railway's folder, made before the run moved the train, stands for a
+            // railway that is not this one - a folder of its own, so the fold into the railway left is not read
             // off the next one as a carry.  Another train, so that where its configuration has it and where it was moved
             // to differ
             final String source = TrainControlUI.getPrefs().get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
@@ -2423,7 +2470,7 @@ public class testTheImportDoorReadsAnOldFile
                 assertEquals(forgotten.get(ui[0]), null, "a switch of railway remembers the configuration the previous"
                     + " one ran, for a load to carry its trains across (RLV7-C2)");
 
-                // AND THE RAILWAY LEFT'S OWN FILE has the train where the run left it (RSA21-A1)
+                // AND THE RAILWAY LEFT'S OWN FILE has the train where the run left it
                 assertTheFileHasItWhereItWasMoved(new File(source), inUse, leaving, moved, "after a switch to another"
                     + " railway while an edit waited (RSA21-A1)");
 
@@ -2437,7 +2484,7 @@ public class testTheImportDoorReadsAnOldFile
                 assertEquals(where.getName(), moved[1], "a load after a switch of railway carried " + moved[0] + " across"
                     + " from the railway left, by Point name (RLV7-C2)");
 
-                // AND BACK TO THE FIRST (RLV9-C7): the source switched to is the one the next switch compares with, so the
+                // AND BACK TO THE FIRST: the source switched to is the one the next switch compares with, so the
                 // first chosen again is another railway than the one shown
                 declined.set(ui[0], true);
 
@@ -2476,14 +2523,14 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * Unload retires the railway it unloads (RLV8-A1): a train its thread was driving, stopped by Unload's Yes between
+     * Unload retires the railway it unloads: a train its thread was driving, stopped by Unload's Yes between
      * two sensors, is not driven on when it reaches the next one.  And the refresh that railway fires when its last
-     * thread ends builds no empty railway (RLV9-C2): the Return Home button asked the model for its layout, which makes
-     * one where there is none, and `hasAutoLayout` then answered yes about nothing.
+     * thread ends builds no empty railway: asking the model for its layout, as the Return Home button did,
+     * makes one where there is none, and `hasAutoLayout` then answers yes about nothing.
      *
      * A path's thread asks, at each sensor, whether its railway is still the current one, and every load replaces it
-     * with a newer one.  Unload replaced it with nothing, and the retirement came by accident - the autonomy panel's list
-     * built an empty railway as Unload remade it.  RLV7-C2 removed that, and the unloaded railway stayed current.
+     * with a newer one.  Unload replaces it with nothing, so it retires the railway itself; the autonomy panel's list no
+     * longer does it by accident, by building an empty railway as Unload remade it.
      *
      * MUTATION: drop the railway at Unload without retiring it, or ask `getAutoLayout` for the Return Home button's
      * layout, and this fails.
@@ -2507,6 +2554,8 @@ public class testTheImportDoorReadsAnOldFile
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             final Object[] dispatched = dispatchATrain(ui[0], null);
@@ -2528,7 +2577,7 @@ public class testTheImportDoorReadsAnOldFile
                 + " driving " + dispatched[0] + " drives it on at line speed when it reaches the sensor it waits for"
                 + " (RLV8-A1)");
 
-            // THE REFRESH ITS LAST THREAD FIRES AS IT ENDS (RLV9-C2), fired here as that thread's end fires it
+            // THE REFRESH ITS LAST THREAD FIRES AS IT ENDS, fired here as that thread's end fires it
             java.lang.reflect.Method finished = org.traincontrol.automation.Layout.class
                 .getDeclaredMethod("announceRunFinished");
 
@@ -2559,7 +2608,7 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * Deleting the configuration running forgets the railway, as Unload does (RLV7-C2, RLV8-C7): the flag and the name
+     * Deleting the configuration running forgets the railway, as Unload does: the flag and the name
      * the reset forgot.
      *
      * MUTATION: leave the delete door's forgetting out, and this fails.
@@ -2588,6 +2637,8 @@ public class testTheImportDoorReadsAnOldFile
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -2623,9 +2674,9 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * Unload forgets the railway it unloads (RLV7-C2): the flag, and the name the reset forgot.  And nothing brings an
-     * empty railway into being afterwards - asking the model for its layout builds one, and `hasAutoLayout` then answered
-     * yes about nothing (CS3-C4): the autonomy panel's list of where the trains are did, as Unload remade the panel, and
+     * Unload forgets the railway it unloads: the flag, and the name the reset forgot.  And nothing brings an
+     * empty railway into being afterwards - asking the model for its layout builds one, and `hasAutoLayout` then answers
+     * yes about nothing: the autonomy panel's list of where the trains are did, as Unload remade the panel, and
      * so would the carry.
      *
      * MUTATION: leave the flag up at Unload, or ask `getAutoLayout` for the layout in the panel's list or before the
@@ -2652,6 +2703,8 @@ public class testTheImportDoorReadsAnOldFile
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             java.lang.reflect.Field covered = TrainControlUI.class.getDeclaredField("coveredTrack");
@@ -2674,7 +2727,7 @@ public class testTheImportDoorReadsAnOldFile
 
             assertFalse(ui[0].getModel().hasAutoLayout(), "precondition: Unload left a railway loaded");
 
-            // NO WASH (RLV8-C1): with nothing loaded no track is covered by a standing train
+            // NO WASH: with nothing loaded no track is covered by a standing train
             until = System.currentTimeMillis() + 10000;
 
             while (!((java.util.Map<?, ?>) covered.get(ui[0])).isEmpty() && System.currentTimeMillis() < until)
@@ -2685,7 +2738,7 @@ public class testTheImportDoorReadsAnOldFile
             assertTrue(((java.util.Map<?, ?>) covered.get(ui[0])).isEmpty(), "after Unload the diagram still washes the"
                 + " track the unloaded configuration's trains covered (RLV8-C1)");
 
-            // NOR DOES THE LATENCY PING, OR A TIMETABLE REPAINT, BUILD ONE (RLV8-C2): with the power on, it asked the
+            // NOR DOES THE LATENCY PING, OR A TIMETABLE REPAINT, BUILD ONE: with the power on, it asked the
             // model for its railway, which makes one where there is none
             java.lang.reflect.Field power = MarklinControlStation.class.getDeclaredField("powerState");
 
@@ -2771,12 +2824,12 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * Stop Using Autonomy keeps what the run did (RLV9-A1): the configuration loaded again has a train the run moved
+     * Stop Using Autonomy keeps what the run did: the configuration loaded again has a train the run moved
      * where it was moved, the Auto tab's settings as they were, and a train under way at Unload once, where it set off.
      *
-     * Unload cleared the model before the reset, whose fold then found no railway - so nothing was folded, and the next
-     * load built every train back where the file had it before the run, with the square each really stands on reading
-     * free (DW-A1's shape).
+     * Unload folds before it clears the model: cleared first, the reset's fold would find no railway, nothing would be
+     * folded, and the next load would build every train back where the file had it before the run, with the square each
+     * really stands on reading free.
      *
      * MUTATION: leave Unload's fold out, or fold each point's occupant, and this fails.
      *
@@ -2798,6 +2851,8 @@ public class testTheImportDoorReadsAnOldFile
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -2871,9 +2926,9 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * A reload confirmed while Return Home runs keeps the configuration's own timetable (RLV9-B1).  Return Home borrows
-     * the timetable for its plan and hands it back when it ends; the fold a reload makes with a train under way (RLV8-B1)
-     * wrote the plan into the configuration as its timetable, marked to run one train at a time, and saved it.
+     * A reload confirmed while Return Home runs keeps the configuration's own timetable.  Return Home borrows
+     * the timetable for its plan and hands it back when it ends; the fold a reload makes with a train under way
+     * must not write the plan into the configuration as its timetable, marked to run one train at a time, and save it.
      *
      * The plan loaded as Return Home loads it, and a train sent as its first move would be.
      *
@@ -2897,6 +2952,8 @@ public class testTheImportDoorReadsAnOldFile
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -2969,13 +3026,14 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * The folder the Central Station's layout is downloaded into is the source a later switch compares with (RLV9-C8).
-     * The Download door writes the source and never reaches `initializeTrackDiagram`, so the source remembered stayed the
-     * Central Station's, and choosing that folder again read as a switch to another railway: the flag an edit a run
-     * declined raised came down, and every train the run moved stood back where it set off.
+     * The folder the Central Station's layout is downloaded into is the source a later switch compares with.
+     * The Download door writes the source and never reaches `initializeTrackDiagram`, so it must record the source
+     * itself: otherwise the source remembered stays the Central Station's, choosing that folder again reads as a switch
+     * to another railway, the flag an edit a run declined raised comes down, and every train the run moved stands back
+     * where it set off.
      *
      * The door's half after the download itself, over the folder in use as if the window had shown the Central Station's
-     * layout; then that folder chosen again.  Read by reflection, as the claim came first.
+     * layout; then that folder chosen again.
      *
      * MUTATION: leave the door's source unrecorded, and this fails.
      *
@@ -3001,6 +3059,8 @@ public class testTheImportDoorReadsAnOldFile
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -3066,10 +3126,9 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * Stop Using Autonomy while an edit a run declined waits keeps where the trains stand, and the edit (RLV10-B1).  Its
-     * fold is not made then - it would take the edit away - and nothing else was: the model was cleared, the flag
-     * lowered, and the next load built every train the run moved back where the file had it, as the loads did before
-     * they carried the trains (RLA5-B1, RLV6-B1).
+     * Stop Using Autonomy while an edit a run declined waits keeps where the trains stand, and the edit.  Its
+     * fold is not made then - it would take the edit away - so the trains must be kept another way: with nothing, the
+     * model is cleared, the flag lowered, and the next load builds every train the run moved back where the file had it.
      *
      * MUTATION: keep nothing at Unload while an edit waits, or fold the whole running layout then, and this fails.
      *
@@ -3093,6 +3152,8 @@ public class testTheImportDoorReadsAnOldFile
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -3143,10 +3204,10 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * A turn the railway owes when Stop Using Autonomy is confirmed during a run is written into the configuration it
-     * leaves (RLV10-C1): the train faces the way it came in.  The turns are written only while the railway is idle, so
-     * during a run every one made since it started is still owed, and Unload dropped them with the railway: the
-     * configuration had the turned train facing the way it arrived, and the next dispatch was offered paths for that
-     * heading (OB-189).
+     * leaves: the train faces the way it came in.  The turns are written only while the railway is idle, so
+     * during a run every one made since it started is still owed, and Unload must not drop them with the railway: the
+     * configuration would have the turned train facing the way it arrived, and the next dispatch would be offered paths
+     * for that heading (OB-189).
      *
      * MUTATION: leave the turns on the railway Unload drops, and this fails.
      *
@@ -3159,7 +3220,7 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * The same where another configuration is chosen (RLV10-C1): the turns are the configuration left's, written into it
+     * The same where another configuration is chosen: the turns are the configuration left's, written into it
      * with its fold.
      *
      * MUTATION: leave the turns on the railway the choice replaces, and this fails.
@@ -3188,6 +3249,8 @@ public class testTheImportDoorReadsAnOldFile
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             if (!unload) addAConfigurationLikeTheOneInUse("Other");
 
@@ -3312,7 +3375,7 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * The editor opened for a finding outlines what the finding names - its own square and those beside it - and a
-     * finding that names nothing beside its own is outlined as well (OB-352, RLV10-C5): the editor's own list does the
+     * finding that names nothing beside its own is outlined as well (OB-352): the editor's own list does the
      * same.  The Auto tab's list opens the editor this way, with each row's squares, an empty list for most.
      *
      * MUTATION: open without the outline, or outline only a finding that names other squares, and this fails.
@@ -3333,6 +3396,8 @@ public class testTheImportDoorReadsAnOldFile
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -3387,9 +3452,9 @@ public class testTheImportDoorReadsAnOldFile
     /**
      * A click on a train drawn on the diagram is a click on the station it stands on, to Test a Path and to Why Not
      * Moving? (OB-354).  Adam: *"if clicking on a locomotive in test a path / why not moving, make it register a click on
-     * the station."*  The train is drawn over the station's caption, so a click on it landed on the caption, which kept a
-     * left click to itself.  On the frozen railway: a station with a train standing on it, and a point on the train where
-     * something other than the station's own square is on top.
+     * the station."*  The train is drawn over the station's caption, which keeps a left click to itself, so a click on
+     * the train must not stop at the caption.  On the frozen railway: a station with a train standing on it, and a point
+     * on the train where something other than the station's own square is on top.
      *
      * MUTATION: take the click where it lands, and this fails.
      *
@@ -3407,7 +3472,7 @@ public class testTheImportDoorReadsAnOldFile
         String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
 
         // SHOW TRAINS ON, SET AND NOT TOGGLED: the editor's box is remembered in the preferences, and a run's copy of them
-        // starts as Adam's own, so a claim about the trains drawn was green only while his box was ticked
+        // starts as Adam's own, so a claim about the trains drawn would pass only while his box was ticked
         final java.util.prefs.Preferences viewPrefs =
             org.traincontrol.util.Util.preferencesFor(org.traincontrol.gui.AutonomyEditorPanel.class);
 
@@ -3418,6 +3483,8 @@ public class testTheImportDoorReadsAnOldFile
             viewPrefs.putBoolean("autonomyEditorTrains", true);
 
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -3631,11 +3698,11 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * No setup edit is made while trains run (Adam, 2026-09-28: *"There should be no setup edit possible during a
-     * run"*).  The diagram's Autonomy Setup menu is offered only at rest; one opened then and clicked after a run began
-     * wrote the setup, and the rebuild it asked for was declined - an edit waiting against a running railway, which every
-     * door that keeps where the trains stand then had to work around (RLV11-B1, RLV11-B2).  Refused at the click, and
-     * said.
+     * No setup edit is made while trains run (Adam: *"There should be no setup edit possible during a run"*).  The
+     * diagram's Autonomy Setup menu is offered only at rest; one opened then and clicked after a run began would write
+     * the setup, and the rebuild it asks for would be declined - an edit waiting against a running railway, which every
+     * door that keeps where the trains stand would then have to work around.  So it is refused at
+     * the click, and said.
      *
      * MUTATION: let the menu's items write while trains run, and this fails.
      *
@@ -3661,6 +3728,8 @@ public class testTheImportDoorReadsAnOldFile
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -3709,7 +3778,7 @@ public class testTheImportDoorReadsAnOldFile
             assertFalse((Boolean) declined.get(ui[0]), "a setup menu clicked during a run left an edit waiting against"
                 + " the running railway");
 
-            assertTrue(asked.contains(I18n.t("autolayout.errorCannotEditWhileRunning")), "a setup menu clicked during a"
+            assertTrue(asked.contains(I18n.t("ui.main.errorNoEditsWhileRunning")), "a setup menu clicked during a"
                 + " run did not say why it did nothing: " + asked);
         }
         finally
@@ -3729,6 +3798,417 @@ public class testTheImportDoorReadsAnOldFile
 
             if (sandbox != null) sandbox.close();
         }
+    }
+
+    /**
+     * MT-779, as the user does it: through the Autonomy menu's own items and dialogs, on a sandbox copy of the railway
+     * with a copy of the old file: Export your configuration, Import that file under a new name, Import the old 2.7.4c
+     * file under another, Import it again under that name and answer Yes, choose each imported configuration, delete
+     * both under Manage, and choose your own again.
+     *
+     * Each message is read from the bundle.  Yours is unchanged throughout and stays the one in use.
+     *
+     * MUTATION: make an import switch to the configuration it brought in, drop the sentence saying which configuration
+     * the old file went into, say something else for a bundle, write an empty file at Export, or have Delete take the
+     * configuration in use instead of the one chosen, and this fails.
+     *
+     * @throws Exception from the window or the import
+     */
+    @Test
+    public void testImportingYourOwnExportAndAnOldFileThroughTheAutonomyMenu() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        assertTrue(MT491.isFile(), "precondition: the MT-491 file is not in test/autonomy_formats");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
+
+            ui[0] = openTheWindow();
+
+            // THE FILES ARE IN THE SANDBOX: the old file as the manual test hands it over, and where Export writes
+            final File folder = new File(sandbox.getFolder(), "mt779");
+
+            assertTrue(folder.mkdirs(), "precondition: " + folder + " could not be made");
+
+            final File old = new File(folder, "MT-491-autonomy-2.7.4c.json");
+            final File exported = new File(folder, "mine.json");
+
+            java.nio.file.Files.copy(new File("docs/manual-tests/files/MT-491-autonomy-2.7.4c.json").toPath(), old.toPath());
+
+            AutonomySession session = ui[0].getAutonomySession();
+
+            final String inUse = session.getStore().getActiveConfiguration();
+
+            assertNotNull(inUse, "precondition: the frozen railway has no configuration in use");
+
+            final List<String> namesBefore = new ArrayList<>(session.getStore().getConfigurationNames());
+            final String mineBefore = session.getStore().getConfiguration(inUse).toString();
+
+            final String mine = "MT-779 mine", older = "MT-779 old";
+
+            // STEP 1: EXPORT, under a new file name
+            List<String> said = clickInTheAutonomyMenu(ui[0], I18n.t("autosetup.ui.btnExportConfiguration"), exported, null);
+
+            assertEquals(said, Collections.<String>emptyList(), "Export said something, where it writes the file quietly: "
+                + said);
+
+            assertTrue(exported.isFile(), "Export wrote no file where it was told to");
+
+            assertEquals(AutonomySession.detectImportFormat(new org.json.JSONObject(new String(
+                java.nio.file.Files.readAllBytes(exported.toPath()), java.nio.charset.StandardCharsets.UTF_8))),
+                AutonomySession.ImportFormat.BUNDLE, "what Export wrote is not an exported configuration");
+
+            // STEP 2: IMPORT IT UNDER A NEW NAME - "Imported." and its count, and yours unchanged
+            said = clickInTheAutonomyMenu(ui[0], I18n.t("autosetup.ui.btnImportConfiguration"), exported, mine);
+
+            session = ui[0].getAutonomySession();
+
+            assertEquals(said.size(), 1, "importing your own export said more or less than one thing: " + said);
+
+            assertTrue(said.get(0).startsWith(before(I18n.t("autosetup.ui.infoImported"), "{0}")), "the message does not"
+                + " begin as the bundle's \"Imported.\" does: " + said);
+
+            Integer brought = numberIn(said, "autosetup.ui.infoImported", 0);
+
+            assertNotNull(brought, "the message does not say how many names, lengths and settings were brought in: " + said);
+
+            assertEquals(said.get(0), I18n.f("autosetup.ui.infoImported", brought), "the message is not the bundle's own");
+
+            assertTrue(session.getStore().getConfigurationNames().contains(mine), "importing your own export made no"
+                + " configuration of the name given: " + session.getStore().getConfigurationNames());
+
+            assertEquals(session.getStore().getActiveConfiguration(), inUse, "importing your own export switched away from "
+                + inUse);
+
+            assertEquals(session.getStore().getConfiguration(inUse).toString(), mineBefore, "importing your own export"
+                + " changed " + inUse);
+
+            // STEP 3: THE OLD FILE UNDER ANOTHER NEW NAME - "Named ...", its six counts, and where it went
+            said = clickInTheAutonomyMenu(ui[0], I18n.t("autosetup.ui.btnImportConfiguration"), old, older);
+
+            session = ui[0].getAutonomySession();
+
+            assertEquals(said.size(), 1, "importing the old file said more or less than one thing: " + said);
+
+            final String first = said.get(0);
+
+            assertTrue(first.startsWith(before(I18n.t("autosetup.ui.infoLegacyImported"), "{0}")), "the message does not"
+                + " begin \"Named\": " + first);
+
+            Object[] counts = new Object[6];
+
+            for (int which = 0; which < 6; which++)
+            {
+                counts[which] = numberIn(said, "autosetup.ui.infoLegacyImported", which);
+
+                assertNotNull(counts[which], "the message does not give the count in place " + which + " (squares named,"
+                    + " locomotives placed, turning squares, other settings, squares already named, points unmatched): "
+                    + first);
+            }
+
+            assertEquals(counts[1], Integer.valueOf(4), "the message does not say it placed his four locomotives: " + first);
+
+            assertTrue(first.startsWith(I18n.f("autosetup.ui.infoLegacyImported", counts)), "the message is not the bundle's"
+                + " own sentence with its six counts: " + first);
+
+            final String where = I18n.f("autosetup.ui.infoLegacyImportedNotInUse", older, inUse, whereChosen(inUse));
+
+            assertTrue(first.contains(where), "the message does not end by saying which configuration it went into and that "
+                + inUse + " is still the one in use: " + first);
+
+            assertEquals(session.getStore().getActiveConfiguration(), inUse, "importing the old file switched away from " + inUse);
+
+            assertEquals(session.getStore().getConfiguration(inUse).toString(), mineBefore, "importing the old file changed "
+                + inUse);
+
+            // STEP 4: THE SAME FILE AGAIN UNDER THAT NAME - asked, Yes, and said to be imported into it again
+            said = clickInTheAutonomyMenu(ui[0], I18n.t("autosetup.ui.btnImportConfiguration"), old, older);
+
+            session = ui[0].getAutonomySession();
+
+            final String question = I18n.f("autosetup.ui.confirmImportFillsGaps", older);
+
+            assertTrue(said.stream().anyMatch(message -> message.startsWith(question)), "importing the old file under a name"
+                + " already held did not ask \"" + question + "\": " + said);
+
+            assertTrue(said.stream().anyMatch(message -> message.startsWith(
+                before(I18n.t("autosetup.ui.infoLegacyImported"), "{0}")) && message.contains(where)), "after Yes, no message"
+                + " says the file went into " + older + " again, with " + inUse + " still in use: " + said);
+
+            // STEP 5: EACH IMPORTED CONFIGURATION CHOSEN from the menu, and opening without an error
+            for (String chosen : new String[] {mine, older})
+            {
+                said = clickInTheAutonomyMenu(ui[0], chosen, null, null);
+
+                assertEquals(said, Collections.<String>emptyList(), "choosing " + chosen + " said something - an error,"
+                    + " or a question it should not ask: " + said);
+
+                session = ui[0].getAutonomySession();
+
+                assertEquals(ui[0].getActiveDiagramConfiguration(), chosen, chosen + " did not become the configuration"
+                    + " in use");
+
+                assertFalse(session.hasBlockingProblems(), chosen + " opened with problems that stop autonomy building it");
+            }
+
+            // AND DELETED under Manage Configurations, each the one chosen from the list
+            for (String doomed : new String[] {mine, older})
+            {
+                said = clickInTheAutonomyMenu(ui[0], I18n.t("autosetup.ui.menuDeleteConfiguration"), null, doomed);
+
+                session = ui[0].getAutonomySession();
+
+                assertFalse(session.getStore().getConfigurationNames().contains(doomed), "Delete left " + doomed + " in the"
+                    + " list: " + said);
+            }
+
+            assertEquals(new ArrayList<>(session.getStore().getConfigurationNames()), namesBefore, "after both were deleted"
+                + " the configurations are not the ones there were");
+
+            // AND YOURS CHOSEN AGAIN, as it was
+            clickInTheAutonomyMenu(ui[0], inUse, null, null);
+
+            session = ui[0].getAutonomySession();
+
+            assertEquals(ui[0].getActiveDiagramConfiguration(), inUse, "choosing " + inUse + " again did not make it the"
+                + " one in use");
+
+            assertEquals(session.getStore().getConfiguration(inUse).toString(), mineBefore, "after all that, " + inUse
+                + " is not as it was");
+        }
+        finally
+        {
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
+     * The Import... item of the Configuration menu, opened at rest and clicked once autonomy runs, refuses and says what
+     * to do instead: nothing is asked, nothing is imported, and the menu opened again grays the submenu that
+     * holds it.
+     *
+     * MUTATION: drop the refusal from Import, or leave the Configuration submenu live while autonomy runs, and this
+     * fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testTheImportItemOpenedAtRestRefusesOnceAutonomyRuns() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        Thread driving = null;
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
+
+            ui[0] = openTheWindow();
+
+            final File old = new File(sandbox.getFolder(), "MT-491-autonomy-2.7.4c.json");
+
+            java.nio.file.Files.copy(new File("docs/manual-tests/files/MT-491-autonomy-2.7.4c.json").toPath(), old.toPath());
+
+            AutonomySession session = ui[0].getAutonomySession();
+
+            final String inUse = session.getStore().getActiveConfiguration();
+
+            final List<String> namesBefore = new ArrayList<>(session.getStore().getConfigurationNames());
+            final String before = session.getStore().getConfiguration(inUse).toString();
+
+            // THE MENU OPENED AT REST, its Import... in hand
+            final javax.swing.JMenu menu = theAutonomyMenu(ui[0]);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                for (javax.swing.event.MenuListener listener : menu.getMenuListeners()) listener.menuSelected(null);
+            });
+
+            final javax.swing.JMenuItem importItem = itemCalled(menu, I18n.t("autosetup.ui.btnImportConfiguration"));
+
+            assertNotNull(importItem, "the Autonomy menu has no Import...");
+            assertTrue(importItem.isEnabled(), "precondition: Import... is greyed at rest");
+
+            // THEN A RUN BEGINS
+            final Object[] dispatched = dispatchATrain(ui[0], null);
+
+            driving = (Thread) dispatched[3];
+
+            assertTrue(ui[0].getModel().isAutonomyRunning(), "precondition: autonomy does not read busy with "
+                + dispatched[0] + " under way");
+
+            List<String> said;
+
+            try (support.Answering answering = support.Answering.start(message -> null).choosing(old))
+            {
+                SwingUtilities.invokeLater(importItem::doClick);
+
+                assertTrue(answering.awaitAsked(1, 30000), "Import... said nothing while autonomy ran");
+
+                support.Components.settle();
+
+                said = answering.asked();
+            }
+
+            assertEquals(said, Collections.singletonList(I18n.t("ui.main.errorNoEditsWhileRunning")), "Import..., clicked"
+                + " while autonomy ran, did not refuse with the bundle's sentence and nothing else");
+
+            session = ui[0].getAutonomySession();
+
+            assertEquals(new ArrayList<>(session.getStore().getConfigurationNames()), namesBefore, "a refused import left a"
+                + " configuration behind");
+
+            assertEquals(session.getStore().getConfiguration(inUse).toString(), before, "a refused import changed " + inUse);
+
+            // AND THE MENU, opened again, grays the submenu Import... is in
+            SwingUtilities.invokeAndWait(() ->
+            {
+                for (javax.swing.event.MenuListener listener : menu.getMenuListeners()) listener.menuSelected(null);
+            });
+
+            javax.swing.JMenuItem submenu = itemCalledAmongMenus(menu, I18n.f("autosetup.ui.menuConfigurations", inUse));
+
+            assertNotNull(submenu, "the Autonomy menu has no Configuration submenu while autonomy runs");
+
+            assertFalse(submenu.isEnabled(), "the Configuration submenu, with Import... in it, is live while autonomy runs");
+        }
+        finally
+        {
+            if (driving != null) driving.interrupt();
+
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
+     * Clicks an item of the Autonomy menu as the user does - the menu opened first, so it is built as it is then - and
+     * answers what it asks: the file, the name at the prompt or the one picked from Delete's list, and the first
+     * button of anything else (Yes, or OK).
+     *
+     * @param ui the window
+     * @param text the item's text: Import..., Export..., Delete, or the name of a configuration to choose
+     * @param file the file for the chooser, or null
+     * @param name the name to type or pick, or null
+     * @return every message and question the click showed, in order
+     */
+    private static List<String> clickInTheAutonomyMenu(TrainControlUI ui, String text, File file, String name)
+        throws Exception
+    {
+        final javax.swing.JMenu menu = theAutonomyMenu(ui);
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            for (javax.swing.event.MenuListener listener : menu.getMenuListeners()) listener.menuSelected(null);
+        });
+
+        final javax.swing.JMenuItem item = itemCalled(menu, text);
+
+        assertNotNull(item, "the Autonomy menu has no \"" + text + "\"");
+        assertTrue(item.isEnabled(), "the Autonomy menu's \"" + text + "\" is greyed");
+
+        try (support.Answering answering = support.Answering.start(message ->
+            I18n.t("autosetup.ui.promptImportName").equals(message)
+                || I18n.t("autosetup.ui.promptWhichConfigurationToDelete").equals(message)
+                ? support.Answering.type(name) : null).choosing(file))
+        {
+            final CountDownLatch done = new CountDownLatch(1);
+
+            SwingUtilities.invokeLater(() ->
+            {
+                try
+                {
+                    item.doClick();
+                }
+                finally
+                {
+                    done.countDown();
+                }
+            });
+
+            assertTrue(done.await(180, TimeUnit.SECONDS), "\"" + text + "\" did not finish; showing: " + answering.asked());
+
+            for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
+
+            // What it said and asked, the prompts for a name left out: those are answered, not said
+            List<String> said = answering.asked();
+
+            said.remove(I18n.t("autosetup.ui.promptImportName"));
+            said.remove(I18n.t("autosetup.ui.promptWhichConfigurationToDelete"));
+
+            return said;
+        }
+    }
+
+    /** The menu bar's Autonomy menu. */
+    private static javax.swing.JMenu theAutonomyMenu(TrainControlUI ui)
+    {
+        javax.swing.JMenuBar bar = ui.getJMenuBar();
+
+        String heading = I18n.t("autosetup.ui.menuAutonomy");
+
+        for (int i = 0; i < bar.getMenuCount(); i++)
+        {
+            javax.swing.JMenu menu = bar.getMenu(i);
+
+            if (menu != null && heading.equals(menu.getText())) return menu;
+        }
+
+        throw new AssertionError("precondition: the menu bar has no Autonomy menu");
+    }
+
+    /** The first submenu anywhere in this menu with this text, or null. */
+    private static javax.swing.JMenu itemCalledAmongMenus(javax.swing.JMenu menu, String text)
+    {
+        for (java.awt.Component part : menu.getMenuComponents())
+        {
+            if (!(part instanceof javax.swing.JMenu)) continue;
+
+            javax.swing.JMenu sub = (javax.swing.JMenu) part;
+
+            if (text.equals(sub.getText())) return sub;
+
+            javax.swing.JMenu deeper = itemCalledAmongMenus(sub, text);
+
+            if (deeper != null) return deeper;
+        }
+
+        return null;
     }
 
     /** The first item anywhere in this menu with this text. */
@@ -3757,10 +4237,10 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * Writing the turns the railway owes during a run leaves a train that turned and has set off again on its path
-     * (RLV11-C3).  A train's locked path records it on its start, where it turned, so the write took it for one still
-     * standing there and stood it on the copy facing the way it came in - which swept it off every other point of its
-     * path while it was under way.
+     * Writing the turns the railway owes during a run leaves a train that turned and has set off again on its path.
+     * A train's locked path records it on its start, where it turned, so a write that took it for one
+     * still standing there would stand it on the copy facing the way it came in - which sweeps it off every other point
+     * of its path while it is under way.
      *
      * MUTATION: write a turn for a train under way, and this fails.
      *
@@ -3782,6 +4262,8 @@ public class testTheImportDoorReadsAnOldFile
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -3917,10 +4399,10 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * A train's arrival after Unload builds no railway (RLV11-C5).  Its thread runs the arrival callback after its last
-     * check of whether its railway is still the current one, and the callback asked the model for its railway to decide
-     * whether to switch the train's functions off - which builds an empty one where there is none, and `hasAutoLayout`
-     * then answered yes about nothing.  The callbacks are fired here as the train's thread fires them.
+     * A train's arrival after Unload builds no railway.  Its thread runs the arrival callback after its last
+     * check of whether its railway is still the current one, so the callback must not ask the model for its railway to
+     * decide whether to switch the train's functions off: that builds an empty one where there is none, and
+     * `hasAutoLayout` then answers yes about nothing.  The callbacks are fired here as the train's thread fires them.
      *
      * MUTATION: ask `getAutoLayout` in the arrival or the departure callback, and this fails.
      *
@@ -3940,6 +4422,8 @@ public class testTheImportDoorReadsAnOldFile
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -3996,9 +4480,9 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * Nothing the station labels ask after Unload builds a railway (RLV11-C6): the update a train's arrival or a
-     * placement posts, run after Unload has cleared the model, as it can land.  RLV10-B1's claim caught the labels'
-     * builder only when that timing happened; this runs the label code itself.
+     * Nothing the station labels ask after Unload builds a railway: the update a train's arrival or a
+     * placement posts, run after Unload has cleared the model, as it can land.  This runs the label code itself, so it
+     * does not depend on that timing.
      *
      * MUTATION: ask `getAutoLayout` in the labels' arrow, their tile lookups or their update, and this fails.
      *
@@ -4018,6 +4502,8 @@ public class testTheImportDoorReadsAnOldFile
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -4088,10 +4574,9 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * Stop Using Autonomy while an edit a run declined waits writes what the railway owns - where the trains stand: the
-     * train, the side and road of its tail, and the facing of the copy it stands on (RLV11-C6); and the settings the
-     * railway changed since it was built, as every other fold then does (RSA21-C2) - and nothing of the setup's: not a
-     * square whose tile is gone, not a home's facing.  RLV10-B1's claim moved a train with no tail onto an unsplit square
-     * and waited on a priority, so it could see none of these.
+     * train, the side and road of its tail, and the facing of the copy it stands on; and the settings the
+     * railway changed since it was built, as every other fold then does - and nothing of the setup's: not a
+     * square whose tile is gone, not a home's facing.
      *
      * MUTATION: write no tail or no facing, or none of the settings, prune squares gone or clear a home's facing in that
      * write, and this fails.
@@ -4117,6 +4602,8 @@ public class testTheImportDoorReadsAnOldFile
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             final AutonomySession session = ui[0].getAutonomySession();
@@ -4141,6 +4628,21 @@ public class testTheImportDoorReadsAnOldFile
             }
 
             assertNotNull(at, "precondition: no train with a tail on a split square");
+
+            // A ROAD THE TAIL LIES ALONG, given when the snapshot's train has none (it records no road), so the claim about
+            // the road below always runs: one edge into the square, as the railway records a train that drove in
+            if (at.getArrivedAlong() == null)
+            {
+                for (org.traincontrol.automation.Edge into : railway.getEdges())
+                {
+                    if (into.getEnd() == at)
+                    {
+                        at.setArrivedAlong(java.util.Collections.singletonList(into));
+
+                        break;
+                    }
+                }
+            }
 
             final TileKey square = session.getStationIndex().squareOf(at.getName());
 
@@ -4217,12 +4719,12 @@ public class testTheImportDoorReadsAnOldFile
             assertEquals(written.optString("arrivedFrom", null), side, "Stop Using Autonomy while an edit waited did not"
                 + " write " + at.getCurrentLocomotive().getName() + "'s tail side on " + square + " (RLV11-C6)");
 
-            if (road != null)
-            {
-                assertEquals(String.valueOf(written.opt("arrivedAlong")), String.valueOf(road), "Stop Using Autonomy"
-                    + " while an edit waited did not write " + at.getCurrentLocomotive().getName() + "'s tail road"
-                    + " (RLV11-C6)");
-            }
+            assertNotNull(road, "precondition: the railway writes no road for " + at.getName() + ", so the claim about"
+                + " the road below would not run");
+
+            assertEquals(String.valueOf(written.opt("arrivedAlong")), String.valueOf(road), "Stop Using Autonomy"
+                + " while an edit waited did not write " + at.getCurrentLocomotive().getName() + "'s tail road"
+                + " (RLV11-C6)");
 
             assertEquals(written.optString(AutonomyBuilder.FACING, null), facing, "Stop Using Autonomy while an edit"
                 + " waited did not write the facing of the copy " + at.getCurrentLocomotive().getName() + " stands on"
@@ -4257,7 +4759,7 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * An edit a run declined, as RLD4-C3's claim makes one: a priority written into the configuration and not into the
+     * An edit a run declined, as the claim above makes one: a priority written into the configuration and not into the
      * running layout, on a station of his railway - and to the file, as a declined edit is, so a reset that reads the
      * setup again finds it.
      *
@@ -4358,8 +4860,8 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * Sends one standing train off along a path it would have been misread on (RLV7-C1): one whose destination, a
-     * station, is the point of the path the layout's own order meets last - the one the old reading kept it on.  It waits
+     * Sends one standing train off along a path it would be misread on: one whose destination, a station, is
+     * the point of the path the layout's own order meets last - the one a reading of each point's occupant keeps it on.  It waits
      * on a sensor nothing here sets, so it stays under way, holding every point of its path.
      *
      * @param notThis a train to leave standing
@@ -4440,8 +4942,8 @@ public class testTheImportDoorReadsAnOldFile
                     return;
                 }
 
-                // ASKED AGAIN AFTER THE SLEEP (RSA18-C3): told to stop during it, one more scan answered the next door's
-                // dialog - a timetable's stop - which the claim waiting for it then never saw
+                // ASKED AGAIN AFTER THE SLEEP: told to stop during it, one more scan would answer the next
+                // door's dialog - a timetable's stop - which the claim waiting for it would then never see
                 if (!going.get()) return;
 
                 for (Window window : Window.getWindows())
@@ -4560,18 +5062,18 @@ public class testTheImportDoorReadsAnOldFile
         {
             going.set(false);
 
-            // AND GONE BEFORE THE NEXT DOOR (RSA18-C3)
+            // AND GONE BEFORE THE NEXT DOOR
             answering.join(1000);
         }
     }
 
     /**
      * A train an old file places, on a square a train facing the other way stood on since, faces the way the file ran
-     * it (RLA2-B3).
+     * it.
      *
-     * The import asked the file for a placed train's facing only where the square had none recorded, and an empty square
-     * keeps its last occupant's - so a second import into a configuration that had been run stood its train facing the
-     * way another train had stood, and autonomy would drive it off the wrong end.  A facing on an empty square is no
+     * An empty square keeps its last occupant's facing, so asking the file for a placed train's facing only where the
+     * square has none recorded would stand the train of a second import into a configuration that had been run facing
+     * the way another train had stood, and autonomy would drive it off the wrong end.  A facing on an empty square is no
      * evidence about the train the file puts there.
      *
      * MUTATION: ask the file only where the square has no facing, and this fails.
@@ -4594,6 +5096,8 @@ public class testTheImportDoorReadsAnOldFile
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -4667,12 +5171,10 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * A home the configuration already has for a train is kept, and the message says the file's was not taken
-     * (RLA2-C3, RLD2-C6).
+     * A home the configuration already has for a train is kept, and the message says the file's was not taken.
      *
-     * The file gives the train it places at Tunnel a home at BottomMainB; the configuration it was imported into has since moved that home to
-     * BottomMainC; a second import leaves one home, at BottomMainC, and names the train.  The home half of RLA-B2 had no
-     * claim, and the dropped home was counted where nothing read it.
+     * The file gives the train it places at Tunnel a home at BottomMainB; the configuration it was imported into has
+     * since moved that home to BottomMainC; a second import leaves one home, at BottomMainC, and names the train.
      *
      * MUTATION: start the homes check empty again, or leave the kept homes unsaid, and this fails.
      *
@@ -4730,6 +5232,8 @@ public class testTheImportDoorReadsAnOldFile
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -4892,7 +5396,7 @@ public class testTheImportDoorReadsAnOldFile
     /** The main window over the sandbox, settled. */
     static TrainControlUI openTheWindow() throws Exception
     {
-        MarklinControlStation model = MarklinControlStation.init(null, true, false, false, true);
+        MarklinControlStation model = support.TestStation.simulatedInDebug();
 
         final TrainControlUI[] made = new TrainControlUI[1];
 
@@ -4954,7 +5458,7 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * Presses Import and answers whatever it asks, as above - where it may refuse before it asks anything (RSA4-C5).
+     * Presses Import and answers whatever it asks, as above - where it may refuse before it asks anything.
      *
      * @return what it was answered: what it said, and whether it asked for a file and a name
      */
@@ -5308,9 +5812,15 @@ public class testTheImportDoorReadsAnOldFile
     /** The same, entry by entry: the main window's log puts each on top whole. */
     private static final List<String> ENTRIES = new ArrayList<>();
 
+    /**
+     * The model's logger, held here: java.util.logging keeps loggers only weakly, so a handler put on a logger
+     * nothing else holds yet can be dropped by a garbage collection before the model's class loads (found under JaCoCo).
+     */
+    private static final java.util.logging.Logger MODEL_LOG = java.util.logging.Logger.getLogger(MarklinControlStation.class.getName());
+
     static
     {
-        java.util.logging.Logger.getLogger(MarklinControlStation.class.getName()).addHandler(
+        MODEL_LOG.addHandler(
             new java.util.logging.Handler()
             {
                 @Override
@@ -5358,12 +5868,13 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * A train the run moved onto a station is still on it after that station is renamed from the diagram's setup menu
-     * (RSA4-A1): the rebuild the rename makes puts each train back by the name the rename gave the Point it stands on.
+     * A train the run moved onto a station is still on it after that station is renamed from the diagram's setup menu:
+     * the rebuild the rename makes puts each train back by the name the rename gave the Point it stands on.
      *
      * The door's own path, on his railway: the setup's rename, then the rebuild every setup gesture on the diagram makes
      * - which captures nothing, so where the run left the train lives on the running layout alone.  Put back by the
-     * name recorded, the train was left where the setup last had it, and the station it stands on read free.
+     * name recorded alone, the train would be left where the setup last had it, and the station it stands on would
+     * read free.
      *
      * MUTATION: put the trains back at the door by the names recorded alone, and this fails.
      *
@@ -5383,6 +5894,8 @@ public class testTheImportDoorReadsAnOldFile
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -5437,9 +5950,9 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * Clear empties the timetable the configuration keeps as well as the one running, at once (RSA5-C1): the fold keeps
-     * the entries of a page ticked out of autonomy for its return, so a Clear pressed while it was out came back with
-     * the page.  Cleared in the configuration too, nothing is kept for any page.
+     * Clear empties the timetable the configuration keeps as well as the one running, at once: the fold keeps
+     * the entries of a page ticked out of autonomy for its return, so a Clear that emptied only the running timetable
+     * would come back with the page.  Cleared in the configuration too, nothing is kept for any page.
      *
      * MUTATION: clear the running timetable alone, and this fails.
      *
@@ -5462,6 +5975,8 @@ public class testTheImportDoorReadsAnOldFile
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -5589,9 +6104,9 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * Layouts > Delete Current Page leaves nothing of the page in the file the next start reads (RSA22-C2, MT-176: "The
-     * deleted page's settings must stay gone"): the fold behind the reset after it wrote the page's trains and its
-     * stations' lengths, priorities and homes back under its name.
+     * Layouts > Delete Current Page leaves nothing of the page in the file the next start reads (MT-176: "The
+     * deleted page's settings must stay gone"): the fold behind the reset after it must not write the page's trains and
+     * its stations' lengths, priorities and homes back under its name.
      *
      * MUTATION: delete the page in the store without marking the session's pages stale, and this fails.
      *
@@ -5617,6 +6132,8 @@ public class testTheImportDoorReadsAnOldFile
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             AutonomySession session = ui[0].getAutonomySession();
@@ -5629,7 +6146,7 @@ public class testTheImportDoorReadsAnOldFile
             assertTrue(onThePage(session.getStore().getConfiguration(inUse), going) > 0, "precondition: " + inUse
                 + " holds nothing on " + going);
 
-            // AND WHAT THE RUN DID ELSEWHERE, on the railway alone (RSA23-C3): a train moved on another page and an entry
+            // AND WHAT THE RUN DID ELSEWHERE, on the railway alone: a train moved on another page and an entry
             // captured - which the delete's own fold, before it, is now the one thing to write
             final org.traincontrol.automation.Layout railway = ui[0].getModel().getAutoLayout();
 
@@ -5745,7 +6262,7 @@ public class testTheImportDoorReadsAnOldFile
                 + going + "'s trains and settings after the page was deleted - the fold behind the reset wrote them back"
                 + " (RSA22-C2, MT-176)");
 
-            // AND KEEPS WHAT THE RUN DID ELSEWHERE (RSA23-C3)
+            // AND KEEPS WHAT THE RUN DID ELSEWHERE
             org.json.JSONObject there = onDisk.getConfiguration(inUse).getJSONObject("points")
                 .optJSONObject(toSquare.toString());
 

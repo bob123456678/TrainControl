@@ -59,7 +59,7 @@ public class testAutonomyTileMove
      * A caption on a square that did NOT move still names the station that did.
      *
      * The difference between a square that moves and a square that is merely named by something else.
-     * Move the second sort and the caption ends up on track nobody labelled; leave the reference
+     * Move the second sort and the caption ends up on track nobody labeled; leave the reference
      * pointing at the old square and it names a station that is not there any more.
      */
     @Test
@@ -511,7 +511,7 @@ public class testAutonomyTileMove
     /**
      * A snapshot is a COPY, so an edit that changes something in place cannot change the snapshot too.
      *
-     * UR-5, from the uninformed review. `snapshotPage` copies each map, entry by entry, and shares the
+     * `snapshotPage` copies each map, entry by entry, and shares the
      * VALUES. For eight of the ten collections that is exactly right - the values are strings and
      * numbers, which cannot change underneath anybody. Two of them hold something mutable:
      *

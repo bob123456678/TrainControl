@@ -18,10 +18,11 @@ import org.traincontrol.gui.ManualReversalPrompt;
 import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.file.CS2File;
+import support.SourceOf;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * A square the railway turns every train at is never put to the operator (REG6-A1).
+ * A square the railway turns every train at is never put to the operator.
  *
  * **This one could have derailed a train, so it is worth being exact about.**  The prompt's
  * `asksAbout` used to begin `if (at.isReversing()) return true;`.  For a MUST-reverse square,
@@ -62,7 +63,7 @@ public class testACompulsoryTurnIsNotAQuestion
         // every class over it say something different every week.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = init(null, true, false, false, false);
+        model = support.TestStation.simulated();
 
         String path = "file:///"
             + sandbox.getFolder().getAbsolutePath().replace(File.separatorChar, '/') + "/";
@@ -171,7 +172,7 @@ public class testACompulsoryTurnIsNotAQuestion
         //
         // Every named square here builds to one copy and the builder cannot split any of them, so a
         // compulsory turn produces no turning copy and `isReversing()` stays false. That means the
-        // exact shape REG6-A1 needs - a `reversing` copy that is a MUST-turn - cannot be constructed
+        // exact shape the defect needs - a `reversing` copy that is a MUST-turn - cannot be constructed
         // on this railway, and the assertion below, while true, is not exercising the clause that was
         // removed.  Said out loud rather than left as a green tick: `test-green-is-not-no-failures`.
         //
@@ -188,40 +189,21 @@ public class testACompulsoryTurnIsNotAQuestion
         // AND THE CLAUSE THAT CAUSED IT IS GONE, which is the half this layout cannot show by running.
         //
         // `guard-knows-only-what-it-lists` cuts the other way here and is the reason this is worth
-        // writing: the behavioural assertion above knows only about squares whose copies carry no
+        // writing: the behavioral assertion above knows only about squares whose copies carry no
         // flag, and would report clean about every railway where they do - which is every railway the
         // defect could actually hurt.
-        String prompt = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/ManualReversalPrompt.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
-
         // The one inside forOperator, which is the policy both manual doors hand over. Found by the
         // method it sits in rather than by position, so reordering the file does not silently move
         // this check onto a different asksAbout.
-        int door = prompt.indexOf("public static org.traincontrol.automation.Layout.ReversalPolicy"
+        String forOperator = SourceOf.declaration("public static org.traincontrol.automation.Layout.ReversalPolicy"
             + " forOperator(");
-
-        assertTrue(door > 0, "forOperator has been renamed and this check now guards nothing");
-
-        int asks = prompt.indexOf("public boolean asksAbout(Point at)", door);
-
-        assertTrue(asks > 0, "forOperator no longer answers asksAbout at all");
-
-        int endOfMethod = prompt.indexOf("            }", asks);
 
         // COMMENTS STRIPPED FIRST. The first version of this check read the prose as though it were
         // code and failed on the paragraph explaining the very defect it guards - a guard that cannot
         // tell an explanation from an instruction is not reporting on the program at all.
-        StringBuilder code = new StringBuilder();
+        String code = SourceOf.withoutComments(SourceOf.declarationIn(forOperator, "public boolean asksAbout(Point at)"));
 
-        for (String line : prompt.substring(asks, endOfMethod).split("\\r?\\n"))
-        {
-            String trimmed = line.trim();
-
-            if (!trimmed.startsWith("//")) code.append(trimmed).append(" ");
-        }
-
-        assertFalse(code.toString().contains("isReversing()"),
+        assertFalse(code.contains("isReversing()"),
             "REG6-A1 is back: asksAbout consults isReversing(), which is true for every copy of a"
             + " COMPULSORY turn as well as for a may-reverse one. The setup is the only thing that"
             + " can tell them apart, because canReverse is never emitted to parseAuto at all."
@@ -260,13 +242,13 @@ public class testACompulsoryTurnIsNotAQuestion
     }
 
     /**
-     * The covered track reaches the diagram as squares, so it can be greyed out.
+     * The covered track reaches the diagram as squares, so it can be grayed out.
      *
      * Adam: **"locked tiles in this way should be greyed out until the train blocking it moves."**
      *
      * The rule itself lives in `Layout` and is tested there over random railways; this checks the
      * JOIN - that the runtime edges it returns actually resolve to squares the diagram draws.  A
-     * mapping that silently resolves nothing returns an empty set, which greys nothing, and looks
+     * mapping that silently resolves nothing returns an empty set, which grays nothing, and looks
      * exactly like a railway with no trains protruding.
      *
      * @throws Exception on a failure to build
@@ -302,15 +284,8 @@ public class testACompulsoryTurnIsNotAQuestion
         java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> squares =
             session.tilesCoveredByStandingTrains(built);
 
-        // MEASURED, AND THE MEASUREMENT IS THE FINDING.
-        //
-        // With four fifty-unit trains standing on Adam's railway, NOTHING is covered.  The walk stops
-        // at the first segment without a positive length, and almost nothing on this layout carries
-        // one - so the protrusion rule is correct and inert here until more tile lengths are recorded.
-        //
-        // Said out loud rather than asserted away: a reader meeting this test needs to know that a
-        // green tick here does not mean track is being blocked on his railway today.  The day lengths
-        // are recorded, the branch below starts running and the join is checked for real.
+        // MEASURED: on the snapshot three edges are covered by the standing trains (2026-10-19, FR-136 1b, H0004), so the join
+        // below runs for real.  The empty branch stays for a layout with no recorded lengths, where nothing can be covered.
         if (edges.isEmpty())
         {
             assertTrue(squares.isEmpty(),
@@ -326,7 +301,7 @@ public class testACompulsoryTurnIsNotAQuestion
             + " to TileKey is not finding the reduced edges");
     }
 
-    // ---------------------------------------------------------------- fixtures
+    // Fixtures
 
     /**
      * A named station that is not already a terminus or a turn, so the marks below mean something.
@@ -363,13 +338,16 @@ public class testACompulsoryTurnIsNotAQuestion
         return null;
     }
 
-    // ------------------------------------------------------------------------------------------------ RSA50, built lines
+    // RSA50, built lines
 
     /**
      * A line of three stations - Alpha, Beta, Gamma - set up as an operator would and built into the running layout by the
-     * setup's own builder (RSA50-A1: a claim whose railway is assembled by hand can give a Point a block the build never
+     * setup's own builder (a claim whose railway is assembled by hand can give a Point a block the build never
      * emits, and pass on a shape no user has).  Alpha is a compulsory turn; Gamma is one too, or a may-turn square at the
      * end of the line; Beta may be a may-turn square.
+     *
+     * Built unpaced (`support.FastSimulation`): the claims are about where a train stands and which way it faces, and each
+     * turn waited out the builder's 1 to 5 seconds.  The railway goes with the line's folder, so the pace is not put back.
      *
      * @param folder where the setup is kept
      * @param tag what every name starts with
@@ -436,6 +414,8 @@ public class testACompulsoryTurnIsNotAQuestion
         model.parseAuto(line.buildConfiguration());
 
         assertNotNull(model.getAutoLayout(), "precondition: the line did not build");
+
+        support.FastSimulation.unpace(model.getAutoLayout());
 
         return line;
     }
@@ -610,9 +590,9 @@ public class testACompulsoryTurnIsNotAQuestion
 
     /**
      * The end of a line marked "Trains May Change Direction Here", as the build makes it - one copy, no block - turns a
-     * train sent there by hand, and the operator is not asked (RSA50-A1).  Round 82 left the copy with no block out, as
+     * train sent there by hand, and the operator is not asked.  Round 82 left the copy with no block out, as
      * a Point of a hand-written railway, and the build gives a single copy no block: so the operator was asked, "keep"
-     * was honoured, and the train stood facing the end of the line with its next journey routed back.
+     * was honored, and the train stood facing the end of the line with its next journey routed back.
      *
      * MUTATION: leave a copy with no block out of `Layout.noCopyFacesOnFrom` again, and this fails.
      *
@@ -661,7 +641,7 @@ public class testACompulsoryTurnIsNotAQuestion
     }
 
     /**
-     * A timetable entry recorded with "keep" plays back turned where the railway turns every train (RSA50-A2): the end of
+     * A timetable entry recorded with "keep" plays back turned where the railway turns every train: the end of
      * a line marked "may" - recorded before round 83 - or a station marked "must" after the recording.  The compulsory
      * turn is asked before the recorded answer.
      *
@@ -727,7 +707,7 @@ public class testACompulsoryTurnIsNotAQuestion
 
     /**
      * A train turned by hand at a may-turn station's plain copy is stood at once on the copy that faces the way it came
-     * in - the copy the window's idle drain would stand it on, which then changes nothing (RSA50-A3).  The drain ran only
+     * in - the copy the window's idle drain would stand it on, which then changes nothing.  The drain ran only
      * once the railway was idle: while another train was out, this one stood on the copy for its old heading, and its next
      * hand send set the route ahead while its decoder drove it back.
      *
@@ -806,12 +786,17 @@ public class testACompulsoryTurnIsNotAQuestion
     }
 
     /**
-     * A timetable recorded by hand where the operator turned a train at a may-turn station plays back (RSA50-B1): the
+     * A timetable recorded by hand where the operator turned a train at a may-turn station plays back: the
      * window's idle drain stood the turned train on another copy between the recorded sends, and the next entry was
      * recorded from it; playback is never idle, so the train was still on the copy it turned on and the next entry could
      * not start.  It is stood there at the arrival now, in the recording and in the playback alike.
      *
-     * MUTATION: leave a turned train for the idle drain again, and this fails.
+     * MUTATION: in `Layout.playedBack`, `final boolean turn = recorded && turnsTrains;` to `final boolean turn = false;`
+     * (the recorded turn not played back) and this fails: the second entry never starts.  The older mutation, leaving a
+     * turned train for the idle drain again (`else if (restandAfterTheTurn) standOnTheCopyItFacesAfterTheTurn(...)` to
+     * `else if (false) ...` in `Layout`), is an equivalent mutant here and leaves this green: the turn is
+     * made on the turning copy, which already faces the way the train came in, so the arrival's re-stand and the drain
+     * alike leave the train where it is.
      *
      * @throws Exception from the railway
      */
@@ -921,13 +906,19 @@ public class testACompulsoryTurnIsNotAQuestion
 
     /**
      * A train a plan turns - autonomy, Return Home, staging, a timetable recorded from autonomy - stays on the turning
-     * copy it arrived on, where the plan's next leg starts (RSA51-B1).  Round 83 stood every turned train at once on the
+     * copy it arrived on, where the plan's next leg starts.  Round 83 stood every turned train at once on the
      * copy the window's idle drain would choose, a plain copy of the other approach where there is one; Return Home's
-     * planner models the train on the move's end and plans its next move from there (AMH-D4), so that move was refused
+     * planner models the train on the move's end and plans its next move from there, so that move was refused
      * at its start check three times and the run stopped half-staged.  The re-stand at the arrival is for the turns an
      * operator answered, whose next journey nobody has planned.
      *
-     * MUTATION: stand a train a plan turned on the drain's copy again, and this fails.
+     * MUTATION: in `AutonomySession`'s re-stand onto the copy a train faces, take out the return
+     * (`if (from != null && facing == facingsFor(tile).get(from.getName()) && from.isDestination()) return;`) and this
+     * fails at the idle drain: the drain moves the train onto the other side's plain copy.  The older mutation, standing a
+     * train a plan turned on the drain's copy at the arrival again (`reversals != ALWAYS_REVERSE` dropped from
+     * `restandAfterTheTurn` in `Layout`), is an equivalent mutant and leaves this green: a plan turns a
+     * train on a turning copy, which already faces the way it came in, and `Layout.copyAfterTheTurn` answers such a copy
+     * with itself, so the re-stand it would add moves nothing.
      *
      * @throws Exception from the railway
      */
@@ -957,7 +948,7 @@ public class testACompulsoryTurnIsNotAQuestion
                 + " onto " + standing(rail, x) + " - the plan's next leg starts from the turning copy, and is refused"
                 + " (RSA51-B1)");
 
-            // AND THE WINDOW'S IDLE DRAIN LEAVES IT THERE (RSA52-B1): the copy already faces the way the train came in,
+            // AND THE WINDOW'S IDLE DRAIN LEAVES IT THERE: the copy already faces the way the train came in,
             // and trains may arrive at it - moved onto the other side's plain copy, the next entry of a timetable
             // recorded from the turning copy could not start after a Graceful Stop, or after any idle moment in the
             // recording
@@ -985,9 +976,9 @@ public class testACompulsoryTurnIsNotAQuestion
     }
 
     /**
-     * A turn recorded by hand is not played back where the station no longer lets trains turn (RSA52-C1; Adam,
+     * A turn recorded by hand is not played back where the station no longer lets trains turn (Adam,
      * 2026-10-07: *"The path should organically fail in the direction no longer allowed."*).  The recorded answer is
-     * honoured where a turn is still the railway's to make - a square with a turning copy - and otherwise the train
+     * honored where a turn is still the railway's to make - a square with a turning copy - and otherwise the train
      * keeps its direction, so an entry that needs it the other way fails as any journey would.  Playback turned it
      * where no door could any more.
      *
@@ -1063,7 +1054,7 @@ public class testACompulsoryTurnIsNotAQuestion
     }
 
     /**
-     * A train turned by hand on a may-turn station's turning copy stays on it (RSA52-B1): that copy already faces the way
+     * A train turned by hand on a may-turn station's turning copy stays on it: that copy already faces the way
      * the train came in, and trains may arrive at it.  The arrival moved it onto the other side's plain copy, which faces
      * the same way - while a plan's turned train, and now the window's idle drain, leave a train on the turning copy, so
      * the same turn stood the train on two different copies by which door had sent it.  On its way, the railway names the
@@ -1144,11 +1135,11 @@ public class testACompulsoryTurnIsNotAQuestion
 
     /**
      * A timetable entry that starts on a may-turn station's turning copy runs after TrainControl has been closed and opened
-     * again (RSA53-B1).  A turn there leaves the train on the turning copy, and the entry is recorded from it (RSA52-B1);
+     * again.  A turn there leaves the train on the turning copy, and the entry is recorded from it;
      * but the setup keeps a standing train as its square and facing only, and the next start stands it on the plain copy
      * of that square facing the same way - so Execute Timetable said the train *"must be moved to"* a square it already
      * stood on facing its way, and the entry's own check refused it.  Both now count it as at its start, and the entry
-     * runs from the copy it stands on (RSA54-A1).  The exit and the start are the two calls they make: the setup captures
+     * runs from the copy it stands on.  The exit and the start are the two calls they make: the setup captures
      * the railway, and the railway is built again from the setup.
      *
      * MUTATION: ask the entry's start by copy again, in the window's check or in the entry's own, and this fails.
@@ -1183,7 +1174,7 @@ public class testACompulsoryTurnIsNotAQuestion
 
             assertNotNull(back, "precondition: no edge from Beta's turning copy back to Alpha");
 
-            // AT REST ON THE TURNING COPY, as a turn there leaves a train (RSA52-B1), with an entry recorded from it
+            // AT REST ON THE TURNING COPY, as a turn there leaves a train, with an entry recorded from it
             turning.setLocomotive(x);
 
             rail.setTimetable(java.util.Arrays.asList(new org.traincontrol.automation.TimetablePath(x,
@@ -1252,7 +1243,7 @@ public class testACompulsoryTurnIsNotAQuestion
     }
 
     /**
-     * A train on the start square of a timetable entry facing the other way is not at its start (RSA53-B1's bound): only a
+     * A train on the start square of a timetable entry facing the other way is not at its start: only a
      * copy facing the start copy's way leaves to the same Points.  Counted as at its start, the entry would run it off
      * the way its decoder does not drive.
      *
@@ -1335,8 +1326,8 @@ public class testACompulsoryTurnIsNotAQuestion
 
     /**
      * A timetable entry recorded from a may-turn station's turning copy leaves a train that came in from the other side
-     * where it stands, with its tail where it lies (RSA54-A1).  The plain copy it stands on faces the turning copy's way,
-     * so the entry counts it as at its start (RSA53-B1) - but a turning copy has rails on one side only, the side it is
+     * where it stands, with its tail where it lies.  The plain copy it stands on faces the turning copy's way,
+     * so the entry counts it as at its start - but a turning copy has rails on one side only, the side it is
      * arrived at from, and round 86 stood the train on it with its own tail side: the railway then claimed none of the
      * track the train lay over, and a second train was routed onto it, while the entry waited for its way and after the
      * run gave up.  The entry runs from the copy the train stands on now.

@@ -12,7 +12,7 @@ public abstract class Feedback
     public static final int IGNORE_SUB_INTERVAL = 0;
     
     // The feedback state
-    // Volatile: written by the network's thread, read by every driving thread waiting on it (GST-C1)
+    // Volatile: written by the network's thread, read by every driving thread waiting on it
     private volatile boolean set;
         
     // Timestamp of the last event

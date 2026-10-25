@@ -19,14 +19,14 @@ import org.traincontrol.automation.Edge;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
+import support.SourceOf;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
  * One locomotive is dispatched onto one path at a time.
  *
- * REG9-A2 and REG9V-B2: the guard that enforces this had no assertion of any kind. It was removed and
- * seven dispatch classes - 179 tests - stayed green; its sibling nine lines away was removed and 180
- * stayed green. Both are now one predicate, `Layout.isAlreadyUnderway`, and this is its test.
+ * The guard that enforces this is one predicate, `Layout.isAlreadyUnderway`, and this is its
+ * test.  Removing the guard used to leave every other dispatch test green.
  *
  * **The two states are not the same question.** A locomotive joins `activeLocomotives` only after
  * `configureAndLockPath` RETURNS, and that call is seconds long - it throws every turnout and signal on
@@ -43,9 +43,9 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  *
  * **Why the refusal is timed rather than simply asserted false.** With the guard gone, `executePath`
  * does not return true - it goes on to dispatch, and a dispatch waits on sensors that nothing in this
- * fixture will ever set. A plain `assertFalse` would hang the battery for ever instead of failing
- * (`testLocomotive` did exactly that on 2026-09-09). So the call is made on a thread with a deadline,
- * and "did not refuse promptly" is the failure - which is what a missing guard actually looks like.
+ * fixture will ever set. A plain `assertFalse` would hang the battery for ever instead of failing.
+ * So the call is made on a thread with a deadline, and "did not refuse promptly" is the failure -
+ * which is what a missing guard actually looks like.
  *
  * **What the control is, and is not.** There is no "and a clean locomotive dispatches fine" claim here,
  * for the same reason: proving that would mean running a train the fixture cannot finish. The control
@@ -75,7 +75,7 @@ public class testATrainIsDispatchedOnce
         // regression.testSwitchingToACentralStationLayout.
         sandbox = support.LayoutSandbox.open();
 
-        model = init(null, true, false, false, false);
+        model = support.TestStation.simulated();
 
         for (int sensor = 194; sensor <= 198; sensor++)
         {
@@ -103,11 +103,11 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * A reader that finds a train's route finds the run's own reversal answer with it (RSA31-C1).
+     * A reader that finds a train's route finds the run's own reversal answer with it.
      *
-     * Round 49 kept the answer with the claim (RSA30-C3), but wrote the route first: a reader between the two writes found
-     * the new route with the previous run's answer, and the station label read the copy the last run would have stood the
-     * train on.  The answer is written first now.
+     * The answer is kept with the claim and written BEFORE the route: a reader between the two writes would
+     * find the new route with the previous run's answer, and the station label would read the copy the last run would
+     * have stood the train on.
      *
      * The claims' map replaced by one that reads, as the route is written, the answer a reader would then find; a
      * previous run's answer left behind, as one always is.
@@ -237,7 +237,7 @@ public class testATrainIsDispatchedOnce
 
     /**
      * The lock itself refuses a locomotive already claiming a route - where a race has let a second dispatch past the
-     * check outside it (AUT-C1).
+     * check outside it.
      *
      * `executePath` asks `isAlreadyUnderway` before it reaches `configureAndLockPath`, and the claim that answer reads is
      * taken inside the lock's monitor - seconds later when another train is throwing its accessories.  Two dispatches of
@@ -323,15 +323,14 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * A duplicate dispatch refused inside the lock leaves the winner's claim alone - on the same route too (AUT2-C1,
-     * TDY2-C6).
+     * A duplicate dispatch refused inside the lock leaves the winner's claim alone - on the same route too.
      *
-     * AUT-C1 made the refused dispatch's clean-up remove the claim only when it was "its own": `takingPath.remove(loc,
-     * path)`.  But that compares by value, and a list of edges equals any other listing the same edges - so a double
-     * dispatch of ONE route, the likeliest duplicate (a double click, or a hand send racing autonomy to the same square),
-     * removed the winner's claim while the winner was still locking.  The train was then in neither map: a third dispatch
-     * could pass, and the cap undercounted.  Every refusal inside `configureAndLockPath` either took nothing or has already
-     * dropped its own claim, so the caller had nothing of its own to remove.
+     * A refused dispatch must not remove the claim by value: `takingPath.remove(loc, path)` compares by value, and a
+     * list of edges equals any other listing the same edges, so a double dispatch of ONE route, the likeliest duplicate
+     * (a double click, or a hand send racing autonomy to the same square), would remove the winner's claim while the
+     * winner was still locking.  The train would then be in neither map: a third dispatch could pass, and the cap
+     * undercounts.  Every refusal inside `configureAndLockPath` either took nothing or has already dropped its own
+     * claim, so the caller has nothing of its own to remove.
      *
      * Two threads dispatch the same route.  This thread holds the layout's monitor until both are parked on it, and the
      * run list's throughout - so the winner, having claimed and locked, waits before it registers, and the loser is
@@ -421,7 +420,7 @@ public class testATrainIsDispatchedOnce
 
     /**
      * A train under way is last known where it set off, or at the last station on its path whose sensor it has tripped
-     * (RLV7-C1) - not at a point with no sensor it has only passed into, nor at a sensor that is no station.
+     * - not at a point with no sensor it has only passed into, nor at a sensor that is no station.
      *
      * A locked path holds every point on it for its train, so a reload confirmed while it is under way has to choose
      * one; `Layout.getLastPointsReached` is that choice, and every carry across a reload reads it.  A point with no
@@ -509,11 +508,11 @@ public class testATrainIsDispatchedOnce
 
     /**
      * A railway loaded into an empty model is the current one, even when something asked the model for its railway while
-     * the load was being parsed (RLV8-C3).
+     * the load was being parsed.
      *
-     * Asking an empty model builds a railway, and every railway built is newer than those before it.  The parse built
-     * the loaded one first, so one built during the parse was newer, and the one loaded was retired from the start:
-     * valid, named as running, and no train it sent would get under way.  The seam runs where the lookup would land.
+     * Asking an empty model builds a railway, and every railway built is newer than those before it, so a lookup that
+     * lands during the parse must not leave the loaded railway older and retired (valid, named as running, and no train
+     * it sent would get under way).  The seam runs where the lookup would land.
      *
      * MUTATION: assign the parsed railway without making it the current one, and this fails.
      *
@@ -556,15 +555,15 @@ public class testATrainIsDispatchedOnce
 
     /**
      * A train under way whose last station a release has cleared, atomic routes off, is read there - and written there
-     * by a fold - though another train's path now runs through it (RLV8-C4).
+     * by a fold - though another train's path now runs through it.
      *
-     * A second train locking a path through that point is recorded on it; the carry skipped the first train wherever the
-     * point had any occupant, so it was modelled back where it set off, and the fold wrote the second train there as if
-     * it stood.  A train only passing through stands elsewhere.
+     * A second train locking a path through that point is recorded on it, but a train only passing through stands
+     * elsewhere: the carry must not skip the first train wherever the point has any occupant (it would be modeled back
+     * where it set off), and the fold must not write the second train there as if it stood.
      *
      * Built by hand, as a run would leave it: the maps a dispatch writes, set directly.
      *
-     * And the side RC_x records - its occupant's, the passing train's - is not written as the kept train's (RLV9-C7).
+     * And the side RC_x records - its occupant's, the passing train's - is not written as the kept train's.
      *
      * MUTATION: skip wherever the point has an occupant, write each point's occupant, or write a point's side for
      * whichever train the fold writes there, and this fails.
@@ -610,7 +609,7 @@ public class testATrainIsDispatchedOnce
         assertEquals(layout.getPoint("RC_x").getCurrentLocomotive(), second, "precondition: RC_x does not record the"
             + " second train, whose path runs through it");
 
-        // A SIDE RECORDED FOR ITS OCCUPANT (RLV9-C7)
+        // A SIDE RECORDED FOR ITS OCCUPANT
         layout.getPoint("RC_x").setArrivedFrom("N");
 
         java.util.Map<Locomotive, List<Edge>> active =
@@ -682,11 +681,11 @@ public class testATrainIsDispatchedOnce
 
     /**
      * A train under way whose last station another train has since stopped on, atomic routes off, is kept on the first
-     * station ahead on its path that it still holds (RLV9-C4) - read there by the carry and written there by a fold.  It
-     * was kept on no point: the one standing there wins it, and a fold then erased the train under way from the
-     * configuration, so no later load brought it back.
+     * station ahead on its path that it still holds - read there by the carry and written there by a fold.
+     * Kept on no point (the one standing there wins the station), a fold would erase the train under way from the
+     * configuration, so no later load would bring it back.
      *
-     * And a fold writes no train the railway no longer shows anywhere, however it is kept (RLV9-C7).
+     * And a fold writes no train the railway no longer shows anywhere, however it is kept.
      *
      * Built by hand, as a run would leave it: the maps a dispatch writes, set directly.
      *
@@ -755,7 +754,7 @@ public class testATrainIsDispatchedOnce
             java.util.Map<Locomotive, org.traincontrol.automation.Point> keptAt =
                 new java.util.HashMap<>(layout.getLastPointsReached());
 
-            // A TRAIN THE RAILWAY SHOWS NOWHERE, kept at an empty station (RLV9-C7)
+            // A TRAIN THE RAILWAY SHOWS NOWHERE, kept at an empty station
             keptAt.put(third, layout.getPoint("RK_e"));
 
             org.json.JSONObject written = new org.json.JSONObject((String) kept.invoke(layout, keptAt));
@@ -790,13 +789,13 @@ public class testATrainIsDispatchedOnce
 
     /**
      * The station ahead a train is kept on is not one another train under way is kept at, whichever of the two the map
-     * yields first (RLV10-C2); and it is a station, not the first point it holds (RLV10-C5).
+     * yields first; and it is a station, not the first point it holds.
      *
      * A has set off from TA, past no sensor, along TA-TJ-TS-TB, and B has since stopped on TA; C set off from TS towards
      * TC, past no sensor, TS released behind it and then locked through for A.  A's station ahead that it holds is TS -
-     * where C is kept - so which of the two kept it followed the map's order, and in about half the orders C was read
-     * nowhere and a fold wrote it on no point.  Over every ordered pair of seven locomotives as A and C, both orders
-     * come up.  TJ, a point that is no station, is held by A and nearer.
+     * where C is kept - so which of the two keeps it must not follow the map's order, or C is read nowhere and a fold
+     * writes it on no point.  Over every ordered pair of seven locomotives as A and C, both orders come up.  TJ, a point
+     * that is no station, is held by A and nearer.
      *
      * MUTATION: decide against the map as it is rewritten, keep a train on a station another is kept at, or on the first
      * point ahead it holds, and this fails.
@@ -911,9 +910,9 @@ public class testATrainIsDispatchedOnce
 
     /**
      * A train bound for the station another train was last seen at takes it, and the other - past it, since the station
-     * was released behind it and then locked for the first - is kept on the station ahead it holds (RLV11-C1).  The rule
-     * ahead passed over another's kept point, so where that was the only station the first train held, its destination,
-     * it stayed where a third train now stands and a fold erased it, in every order.
+     * was released behind it and then locked for the first - is kept on the station ahead it holds.  The rule
+     * ahead must not pass over another's kept point where that is the only station the first train holds, its
+     * destination: it would stay where a third train now stands and a fold would erase it, in every order.
      *
      * A set off from TA along TA-TJ-TS, past no sensor, and B has since stopped on TA; C set off from TS towards TC, past
      * no sensor, and TS was released behind it and locked for A.
@@ -1003,8 +1002,8 @@ public class testATrainIsDispatchedOnce
 
     /**
      * Two trains under way last seen at one station that neither holds and nobody stands on are both kept, on different
-     * points, and the carry and a fold keep the same ones (RLV11-C2): one keeps the station, the other the station ahead
-     * it holds.  Both were kept at the station, the carry read one and a fold wrote the other, and one of them was erased
+     * points, and the carry and a fold keep the same ones: one keeps the station, the other the station ahead
+     * it holds.  Kept at one point, the carry would read one and a fold write the other, and one of them would be erased
      * from the configuration in every order.
      *
      * K1 set off from KP towards KS1 and K2 towards KS2, each past no sensor, and KP was released behind both.
@@ -1112,9 +1111,10 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * A chain of trains under way is moved on along it (RLV12-C1).  Z stands on P1, where A set off; B set off from P2,
+     * A chain of trains under way is moved on along it.  Z stands on P1, where A set off; B set off from P2,
      * which A now holds, and C from P3, which B now holds.  A can take P2 only if B goes on to P3, and B only if C goes on
-     * to P4.  One step was the limit: A stayed on Z's station, and the fold wrote it nowhere, in every order.
+     * to P4.  Moving a train on one step only would leave A on Z's station, and the fold would write it nowhere, in every
+     * order.
      *
      * MUTATION: move a train on one step only, and this fails.
      *
@@ -1209,10 +1209,10 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * A train under way is not kept on a square a standing train stands on, whichever copy either is on (RLV12-C2).  SE
+     * A train under way is not kept on a square a standing train stands on, whichever copy either is on.  SE
      * and SW are two copies of one square; A set off from SE towards T, past no sensor, and SE was released behind it; Z
-     * has since stopped on SW.  Kept at SE, A stood on Z's square: the fold wrote two trains on one square and the carry,
-     * putting A back, took Z off the railway.
+     * has since stopped on SW.  Kept at SE, A would stand on Z's square: the fold would write two trains on one square
+     * and the carry, putting A back, would take Z off the railway.
      *
      * MUTATION: keep trains apart by point rather than by square, and this fails.
      *
@@ -1286,9 +1286,9 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * Two trains under way last seen at the two copies of one square are not both kept there (RLV12-C2): one keeps its
-     * copy and the other the station ahead it holds.  Both were kept, the fold wrote two trains on one square, and the
-     * carry left one of them off the railway.
+     * Two trains under way last seen at the two copies of one square are not both kept there: one keeps its
+     * copy and the other the station ahead it holds.  Both kept there, the fold would write two trains on one square,
+     * and the carry would leave one of them off the railway.
      *
      * MUTATION: keep trains apart by point rather than by square, and this fails.
      *
@@ -1372,10 +1372,10 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * Of two trains last seen at one station, the one the station still records keeps it (RLV12-C7).  X tripped OP's
+     * Of two trains last seen at one station, the one the station still records keeps it.  X tripped OP's
      * sensor and is passing through it, and holds it; Y set off from OP before X locked it.  X is kept at OP and Y goes on
-     * to the station ahead it holds - in every order of their names, which is what the rule's first half is for: the
-     * claims before this had no point that recorded the train kept there, and a rule by name alone passed them.
+     * to the station ahead it holds - in every order of their names, which is what the rule's first half is for: a rule
+     * by name alone passes a claim where no point records the train kept there.
      *
      * MUTATION: prefer by name alone, and this fails.
      *
@@ -1644,9 +1644,10 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * A tail answered while Return Home is planning is not written (RLV13-C3).  Return Home plans with nothing yet
+     * A tail answered while Return Home is planning is not written.  Return Home plans with nothing yet
      * running, so the railway's `isRunning` reads false while the flow is under way; every other refusal of a setup edit
-     * asks whether autonomy is busy, which counts the planning.  `whereTheAnswerGoes` asked `isRunning` alone.
+     * asks whether autonomy is busy, which counts the planning, and `whereTheAnswerGoes` must ask that, not `isRunning`
+     * alone.
      *
      * MUTATION: let `whereTheAnswerGoes` answer while a staging flow owns the railway, and this fails.
      *
@@ -1684,11 +1685,11 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * A retired railway's journey ends with its railway (RSA-B1).  The reload's and Unload's Yes stop every train between
-     * two sensors, and each journey's thread went on waiting, with no time limit, for a sensor its stopped train would not
-     * reach - until any train occupied it, when the thread stopped its locomotive: by then, perhaps, a train the next
-     * railway was driving, left standing mid-route with its route held.  A retirement now wakes every wait, and a journey
-     * whose railway has gone ends there.
+     * A retired railway's journey ends with its railway.  The reload's and Unload's Yes stop every train between
+     * two sensors; each journey's thread then waits for a sensor its stopped train will not reach, and when any train
+     * occupied it the thread would stop its locomotive: by then, perhaps, a train the next railway was driving, left
+     * standing mid-route with its route held.  So a retirement wakes every wait, and a journey whose railway has gone
+     * ends there.
      *
      * MUTATION: let a retirement wake nothing, or let the wait go on past its railway, and this fails.
      *
@@ -1749,7 +1750,7 @@ public class testATrainIsDispatchedOnce
 
             // NOT STOPPED, which is what the old journey's sensor would do to it.  Not "the speed it was read at": the next
             // railway's one-edge journey drops to its own pre-arrival speed a fraction of a millisecond after it sets off,
-            // and a read landing between the two failed one run in eighty for nothing (RSA41-C1).
+            // and a read landing between the two failed one run in eighty for nothing.
             assertTrue(x.getSpeed() > 0, "a sensor the retired railway's journey had waited on stopped a train the next"
                 + " railway is driving (RSA-B1)");
         }
@@ -1765,9 +1766,9 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * The reload's Yes stops a train still claiming its route (RSA-C1, GS-C1).  The Yes stopped the trains already under
-     * way; one still locking its route - seconds, on a path with switches - was not among them, and when the lock came
-     * through it set off.  A claim that completes after the Yes is given back unrun, and the train stands where it was.
+     * The reload's Yes stops a train still claiming its route.  One still locking its route - seconds, on
+     * a path with switches - would otherwise set off when the lock came through.  A claim that completes after the Yes is
+     * given back unrun, and the train stands where it was.
      *
      * MUTATION: let a claim completed after the Yes go on to run, and this fails.
      *
@@ -1817,7 +1818,7 @@ public class testATrainIsDispatchedOnce
             assertEquals(rail.getPoint("HA").getCurrentLocomotive(), y, "the train given back is not standing where it"
                 + " was (RSA-C1)");
 
-            // AND SAYS SO (RSA2-C8): a hand send answers the false with "check log"
+            // AND SAYS SO: a hand send answers the false with "check log"
             assertTrue(logged.contains(org.traincontrol.util.I18n.f("autolayout.log.notSentAfterTheStop", y.getName())),
                 "a claim given back after the operator's Yes said nothing in the log (RSA2-C8): " + logged);
         }
@@ -1831,7 +1832,7 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * The reload's Yes stops a train whose journey has just been counted and not yet set off (RSA-C1, GS-C1): the
+     * The reload's Yes stops a train whose journey has just been counted and not yet set off: the
      * departure's speed is asked of the Yes as every other speed is.
      *
      * MUTATION: let the departure write its speed whatever the Yes said, and this fails.
@@ -1878,9 +1879,9 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * The reload's Yes is not undone at the next sensor (RSA-C1).  A train the Yes stopped between two sensors, braking
-     * onto the one ahead before any load had retired its railway, was given its speed back by its own journey - the next
-     * leg's, and then the pre-arrival speed.
+     * The reload's Yes is not undone at the next sensor.  A train the Yes stopped between two sensors, braking
+     * onto the one ahead before any load has retired its railway, must not be given its speed back by its own journey:
+     * the next leg's, or then the pre-arrival speed.
      *
      * MUTATION: let the next leg's speed, or the pre-arrival speed, be written whatever the Yes said, and this fails.
      *
@@ -1936,9 +1937,9 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * The reload's Yes stops a train still choosing its route (RSA-C1).  Autonomy's thread for a train chooses a route
-     * and then sends it, and it did not ask again in between whether the railway was still running - so a train whose
-     * choice was under way when the Yes came was sent after it.
+     * The reload's Yes stops a train still choosing its route.  Autonomy's thread for a train chooses a route
+     * and then sends it, and asks again in between whether the railway is still running, so a train whose choice was
+     * under way when the Yes came is not sent after it.
      *
      * MUTATION: let autonomy's thread send the route it chose without asking whether the railway still runs, and this
      * fails.
@@ -1990,7 +1991,7 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * The reload's door stops the trains through the railway's own stop, the one every journey asks (RSA-C1).
+     * The reload's door stops the trains through the railway's own stop, the one every journey asks.
      *
      * MUTATION: let the door stop the trains itself, one speed at a time, and this fails.
      *
@@ -1999,17 +2000,28 @@ public class testATrainIsDispatchedOnce
     @Test
     public void testTheReloadsYesIsTheRailwaysOwnStop() throws Exception
     {
-        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/TrainControlUI.java")), java.nio.charset.StandardCharsets.UTF_8);
+        String source = SourceOf.declaration("public boolean prepareAutonomyReload()");
 
-        int at = source.indexOf("public boolean prepareAutonomyReload()");
-
-        assertTrue(at >= 0, "cannot find prepareAutonomyReload");
-
-        String door = source.substring(at, source.indexOf("resetLayoutStationLabels();", at));
+        String door = source.substring(0, source.indexOf("resetLayoutStationLabels();"));
 
         assertTrue(door.contains(".stopEveryTrainWhereItIs()"), "the reload's Yes does not stop the trains through the"
             + " railway's own stop, so a journey still claiming, choosing or reaching its next sensor goes on (RSA-C1)");
+    }
+
+    /**
+     * A private int constant of the railway, read by reflection so a claim asks the rule instead of restating it.
+     *
+     * @param name the constant's name in Layout
+     * @return its value
+     * @throws Exception when Layout has no such constant
+     */
+    private static int layoutConstant(String name) throws Exception
+    {
+        java.lang.reflect.Field field = Layout.class.getDeclaredField(name);
+
+        field.setAccessible(true);
+
+        return field.getInt(null);
     }
 
     /** New sensors, all clear, at consecutive addresses from `first`. */
@@ -2148,11 +2160,11 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * A route may not end at, or pass, a sensor another train's route is still waiting on (RSA2-B1).  Two places on one
-     * sensor - a feedback double curve's two arcs, which are two pieces of metal (Adam, OB-238) with one contact - were
-     * kept apart by nothing: two trains were sent to them at once, the first arrival ended both journeys, and the second
-     * was recorded as arrived with its route handed back while it was still on it.  A journey waits on every sensor of
-     * its route it has not reached, so no other route may wait on one of them.
+     * A route may not end at, or pass, a sensor another train's route is still waiting on.  Two places on one
+     * sensor - a feedback double curve's two arcs, which are two pieces of metal with one contact (OB-238) - must be kept
+     * apart: two trains sent to them at once would have the first arrival end both journeys, and the second recorded as
+     * arrived with its route handed back while it was still on it.  A journey waits on every sensor of its route it has
+     * not reached, so no other route may wait on one of them.
      *
      * MUTATION: let a route wait on a sensor another train's route is waiting on, and this fails.
      *
@@ -2229,10 +2241,10 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * The reload's Yes ends a Return Home that was still planning (RSA2-C1).  Return Home plans on a worker with nothing
-     * yet moving; a load chosen then asked the Yes, and where the load was then refused, nothing was retired and the plan
-     * ran - trains moving after a Yes that said the run was abandoned.  The timetable is run with the stops counted when
-     * Return Home was pressed, and a stop ordered since starts nothing.
+     * The reload's Yes ends a Return Home that was still planning.  Return Home plans on a worker with nothing
+     * yet moving; a load chosen then asks the Yes, and where the load is then refused nothing is retired, so the plan must
+     * not run: trains would move after a Yes that said the run was abandoned.  The timetable is run with the stops
+     * counted when Return Home was pressed, and a stop ordered since starts nothing.
      *
      * MUTATION: let a timetable start after a stop ordered since it was chosen, and this fails.
      *
@@ -2314,10 +2326,10 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * A journey chosen before the Yes is not sent after it (RSA2-C2, RSA2-C8).  Autonomy's thread asked whether it still
-     * ran, and the journey read the stops only when it began - so a thread held between the two sent its train after the
-     * Yes.  A journey carries the stops counted where it was chosen, and one chosen before a stop sends nothing and says
-     * so in the log.
+     * A journey chosen before the Yes is not sent after it.  Autonomy's thread asks whether it still
+     * runs, but a journey that read the stops only when it began would let a thread held between the two send its train
+     * after the Yes.  A journey carries the stops counted where it was chosen, and one chosen before a stop sends nothing
+     * and says so in the log.
      *
      * MUTATION: let a journey chosen before a stop claim its route, or send it without a word, and this fails.
      *
@@ -2412,9 +2424,9 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * A turn's wait for its resumed speed gives up on a stop or a retirement (RSA2-C2).  A turn resumes its speed and
-     * waits for the train to reach it; a Yes landing between the two left the wait untimed and woken by nothing, so the
-     * thread outlived its railway until the next driver gave the train that speed - and then stopped it.
+     * A turn's wait for its resumed speed gives up on a stop or a retirement.  A turn resumes its speed and
+     * waits for the train to reach it; a Yes landing between the two must not leave the wait untimed and woken by
+     * nothing, or the thread outlives its railway until the next driver gives the train that speed, and then stops it.
      *
      * MUTATION: let the wait ignore what it is told to give up on, or let a retirement not wake it, and this fails.
      *
@@ -2476,10 +2488,10 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * Each retirement wakes the journeys waiting on its railway, once their waits have gone untimed (RSA2-C4).  A wait
-     * polls until its advisory is given and then waits untimed, so after five minutes only a wake ends it.  The round 16
-     * claim retired by building a railway and making it current, which wake twice over; each door is claimed alone here,
-     * with the advisory lowered so the wait is untimed at once.
+     * Each retirement wakes the journeys waiting on its railway, once their waits have gone untimed.  A wait
+     * polls until its advisory is given and then waits untimed, so after five minutes only a wake ends it.  Each door is
+     * claimed alone here, as retiring by building a railway and making it current wakes twice over, with the advisory
+     * lowered so the wait is untimed at once.
      *
      * MUTATION: take the wake out of Unload's retirement, a load made current, or a railway built, and this fails.
      *
@@ -2572,13 +2584,12 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * Autonomy chooses and sends nothing while the track power is off, and sends once it is back (GST-B1; Adam, 2026-10-10,
-     * asked: into 3.0.0).
+     * Autonomy chooses and sends nothing while the track power is off, and sends once it is back.
      *
-     * Nothing in autonomy read the power, so with it cut - from the window, by the Central Station, or by a route - autonomy
-     * went on choosing journeys and setting their routes: switches commanded on a railway with no power to move them, and
-     * trains given speeds that took effect when the power came back.  Its loop now waits, without stopping the run, and says
-     * so once.  The power is set here as the Central Station's STOP and GO echoes leave it.  Not Instant Stop, which halts
+     * With the power cut - from the window, by the Central Station, or by a route - autonomy must not go on choosing
+     * journeys and setting their routes: switches would be commanded on a railway with no power to move them, and trains
+     * given speeds that took effect when the power came back.  Its loop waits, without stopping the run, and says so
+     * once.  The power is set here as the Central Station's STOP and GO echoes leave it.  Not Instant Stop, which halts
      * the trains and leaves the power on: autonomy runs on through that, as Adam ruled (OB-251).
      *
      * MUTATION: take the wait out of autonomy's loop (`waitWhileThePowerIsOff` in `runLocomotive`), and this fails.
@@ -2661,7 +2672,7 @@ public class testATrainIsDispatchedOnce
 
     /**
      * Nor does a timetable start an entry while the track power is off - Execute Timetable, and Return Home, whose plan runs
-     * as one - and it starts it once the power is back (GST-B1; Adam, 2026-10-10, asked: into 3.0.0).
+     * as one - and it starts it once the power is back.
      *
      * MUTATION: take the wait out of the timetable's own loop (`waitWhileThePowerIsOff` in `executeTimetableInternal`), and
      * this fails.
@@ -2731,10 +2742,10 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * Nor is a journey set going when the track power goes off while its route is being set (RSA61-C1, GST-B1).  The loop
+     * Nor is a journey set going when the track power goes off while its route is being set.  The loop
      * asks the power before it chooses, and setting a long route takes a second and more - a switch every
-     * `CONFIGURE_SLEEP` - so a power cut in that window left the journey to throw the rest of its switches and give its
-     * train its speed, to take effect the moment the power came back.  With Path Integrity Validation off - a preference,
+     * `CONFIGURE_SLEEP` - so a power cut in that window must not leave the journey to throw the rest of its switches and
+     * give its train its speed, to take effect the moment the power comes back.  With Path Integrity Validation off - a preference,
      * and skipped in simulation; with it on, the commands the cut swallowed fail the check and the journey ends unrun.
      * Eight edges, a switch on each; the power cut as the route is set: the train is given no speed, and the journey is
      * not under way.
@@ -2787,10 +2798,13 @@ public class testATrainIsDispatchedOnce
 
             power.setBoolean(model, false);
 
-            assertFalse(waitFor(() -> v.getSpeed() > 0, 6000), "a journey whose route was being set when the power went"
-                + " off gave its train its speed during the cut, to take effect the moment the power came back (RSA61-C1)");
-
+            // UNTIL THE JOURNEY HAS ENDED rather than for six seconds: only its own thread gives its train a speed (FR-136)
             final Thread running = journey;
+
+            waitFor(() -> v.getSpeed() > 0 || !running.isAlive(), 9000);
+
+            assertFalse(v.getSpeed() > 0, "a journey whose route was being set when the power went"
+                + " off gave its train its speed during the cut, to take effect the moment the power came back (RSA61-C1)");
 
             assertTrue(waitFor(() -> !running.isAlive(), 3000) && !rail.getActiveLocomotives().containsKey(v), "a journey"
                 + " whose route was being set when the power went off is still under way, waiting to set off when the"
@@ -2807,9 +2821,9 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * Nor when the power goes off and on again while its route is being set (RSA62-C2): the power was asked once, after the
-     * route was set, so a cut that came and went in that second or two was not seen - the switches commanded during it did
-     * not move, nothing commanded them again, and the train was given its speed over them.  The cuts are counted as the
+     * Nor when the power goes off and on again while its route is being set: a cut that comes and goes in the
+     * second or two the route takes must be seen, as the switches commanded during it do not move and nothing commands
+     * them again, so the train would be given its speed over them.  The cuts are counted as the
      * Central Station reports them, and a journey compares the count where it was dispatched with the count once its route
      * is set.  As `testAJourneyIsNotSetGoingIfThePowerWentOffWhileItsRouteWasSet`, the power back on 300 ms after it went:
      * the train is given no speed, the journey is not under way, and the log says why.
@@ -2871,11 +2885,14 @@ public class testATrainIsDispatchedOnce
 
             power.invoke(model, true);
 
-            assertFalse(waitFor(() -> v.getSpeed() > 0, 6000), "a journey whose route was being set when the power went off"
+            // UNTIL THE JOURNEY HAS ENDED rather than for six seconds: only its own thread gives its train a speed (FR-136)
+            final Thread running = journey;
+
+            waitFor(() -> v.getSpeed() > 0 || !running.isAlive(), 9000);
+
+            assertFalse(v.getSpeed() > 0, "a journey whose route was being set when the power went off"
                 + " and came back gave its train its speed over the switches commanded with no power to move them"
                 + " (RSA62-C2)");
-
-            final Thread running = journey;
 
             assertTrue(waitFor(() -> !running.isAlive(), 3000) && !rail.getActiveLocomotives().containsKey(v), "a journey"
                 + " whose route was being set when the power went off and came back is still under way (RSA62-C2)");
@@ -2898,8 +2915,8 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * And a Return Home leg whose route setting the power cuts three times is still run once the power stays on
-     * (RSA62-C3): each give-back for the power counted as a refused attempt, and three of them ended Return Home with
+     * And a Return Home leg whose route setting the power cuts three times is still run once the power stays on:
+     * a give-back for the power must not count as a refused attempt, or three of them end Return Home with
      * "the path stayed blocked ... move the train out of the way by hand" - a train in nobody's way.  A one-leg plan run
      * one train at a time, as Return Home's is; each attempt's route cut 300 ms in for three seconds: the run goes on, and
      * the leg sets off once the cuts stop.
@@ -2944,17 +2961,22 @@ public class testATrainIsDispatchedOnce
         final java.util.concurrent.atomic.AtomicInteger attempts = new java.util.concurrent.atomic.AtomicInteger();
         final long[] lastSwitch = {0};
 
+        // The railway's own retry pause and attempt limit, asked rather than restated: a quiet gap three quarters of the
+        // pause is longer than the switches of one attempt and shorter than the pause between two.
+        final long quiet = layoutConstant("STAGING_RETRY_PAUSE") * 3 / 4;
+        final int maxAttempts = layoutConstant("STAGING_MAX_ATTEMPTS");
+
         model.setSentMessageObserver(m ->
         {
             if (m == null || !m.isAccessoryCommand() || m.getResponse()) return;
 
             long now = System.currentTimeMillis();
 
-            boolean starts = now - lastSwitch[0] > 1500;
+            boolean starts = now - lastSwitch[0] > quiet;
 
             lastSwitch[0] = now;
 
-            if (starts && attempts.incrementAndGet() <= 3)
+            if (starts && attempts.incrementAndGet() <= maxAttempts)
             {
                 Thread cut = new Thread(() ->
                 {
@@ -3000,7 +3022,8 @@ public class testATrainIsDispatchedOnce
             executor.setDaemon(true);
             executor.start();
 
-            assertTrue(waitFor(() -> attempts.get() >= 3, 20000), "precondition: the leg was not tried three times - "
+            assertTrue(waitFor(() -> attempts.get() >= maxAttempts, 20000), "precondition: the leg was not tried "
+                + maxAttempts + " times - "
                 + attempts.get() + " attempts seen");
 
             // RUNNING - given its speed, or counted among the trains running - and not merely claiming its route, which
@@ -3032,7 +3055,7 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * The power's state and its cuts are one number, read once (RSA63-C1): it changes at every cut and every return, and
+     * The power's state and its cuts are one number, read once: it changes at every cut and every return, and
      * is odd while the power is off.  Read as two - the state, then a count of cuts - a STOP landing between the reads was
      * taken as a cut that had not happened yet, with the power on.
      *
@@ -3081,7 +3104,7 @@ public class testATrainIsDispatchedOnce
 
     /**
      * And a journey dispatched in the instant the power went off - its epoch already odd, the state not yet written - is
-     * given back once its route is set, though the power is back by then (RSA63-C1).  The instant forced here by setting
+     * given back once its route is set, though the power is back by then.  The instant forced here by setting
      * the epoch alone: odd at dispatch, then on again 300 ms into the route; the state reads on throughout.
      *
      * MUTATION: ask only whether the power is on now, not whether its epoch moved since dispatch, and this fails.
@@ -3140,10 +3163,13 @@ public class testATrainIsDispatchedOnce
             // AND THE GO, while the route is still being set
             epoch.incrementAndGet();
 
-            assertFalse(waitFor(() -> v.getSpeed() > 0, 6000), "a journey dispatched in the instant the power went off was"
-                + " given its speed over the route set while it was off (RSA63-C1)");
-
+            // UNTIL THE JOURNEY HAS ENDED rather than for six seconds: only its own thread gives its train a speed (FR-136)
             final Thread running = journey;
+
+            waitFor(() -> v.getSpeed() > 0 || !running.isAlive(), 9000);
+
+            assertFalse(v.getSpeed() > 0, "a journey dispatched in the instant the power went off was"
+                + " given its speed over the route set while it was off (RSA63-C1)");
 
             assertTrue(waitFor(() -> !running.isAlive(), 3000) && !rail.getActiveLocomotives().containsKey(v), "a journey"
                 + " dispatched in the instant the power went off is still under way (RSA63-C1)");
@@ -3183,8 +3209,8 @@ public class testATrainIsDispatchedOnce
 
     /**
      * A sensor another train's journey has passed is free again for other routes once the rail to it is given back
-     * (RSA2-B1; Adam, 2026-09-29: *"that is OK as long as non-atomic rules are respected (it should be allowed once
-     * unlocked)"*).  Held from the head's arrival until that release (RSA3-C3, `testASensorIsHeldUntilTheRailToItIsGivenBack`);
+     * (Adam: *"that is OK as long as non-atomic rules are respected (it should be allowed once
+     * unlocked)"*).  Held from the head's arrival until that release (`testASensorIsHeldUntilTheRailToItIsGivenBack`);
      * the track here unmeasured, the release comes one sensor on.
      *
      * MUTATION: let a journey count a sensor it has passed as one it still waits on, and this fails.
@@ -3268,12 +3294,13 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * The sensor rule sees a train handing over from claim to journey (RSA3-C1): a check made across the hand-over is
+     * The sensor rule sees a train handing over from claim to journey: a check made across the hand-over is
      * refused, as it is before and after it.
      *
-     * The hand-over writes the train into the journeys and then takes its claim away; the rule read the journeys first
-     * and the claims second.  A check whose first read came before the hand-over and whose second came after saw the
-     * train in neither, and RSA2-B1's two trains on one sensor came back.  Held here exactly: X at the first statement of
+     * The hand-over writes the train into the journeys and then takes its claim away, so the rule must read the claims
+     * first and the journeys second: read the other way, a check whose first read came before the hand-over and whose
+     * second came after would see the train in neither, and the two trains on one sensor would come back.  Held
+     * here exactly: X at the first statement of
      * its hand-over, and the check let on to its second read only once the hand-over has finished.
      *
      * MUTATION: read the journeys before the claims again, and this fails.
@@ -3291,7 +3318,7 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * A train handing over from claim to journey is under way throughout (RSA3-C1, AUT-C1's family): asked across the
+     * A train handing over from claim to journey is under way throughout: asked across the
      * hand-over, it is still one a second dispatch must refuse.
      *
      * MUTATION: ask the journeys before the claims again, and this fails.
@@ -3308,7 +3335,7 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * A train handing over from claim to journey is counted, for the cap on trains out (RSA3-C1).
+     * A train handing over from claim to journey is counted, for the cap on trains out.
      *
      * MUTATION: count the journeys before the claims again, and this fails.
      *
@@ -3328,7 +3355,7 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * A route may not wait on a sensor another train is still CLAIMING a route to (RSA3-C2): the claim half of the sensor
+     * A route may not wait on a sensor another train is still CLAIMING a route to: the claim half of the sensor
      * rule, which is what keeps two trains off one sensor while a route's switches are confirmed.
      *
      * On a real railway the claim lasts as long as the Central Station takes to confirm the route's accessories; in a
@@ -3521,7 +3548,7 @@ public class testATrainIsDispatchedOnce
                 return super.containsKey(key);
             }
 
-            /** Read by `get` too, as the tail rule reads it (RSA4-C3) - for the train held, and no other. */
+            /** Read by `get` too, as the tail rule reads it - for the train held, and no other. */
             @Override
             public List<Edge> get(Object key)
             {
@@ -3530,7 +3557,7 @@ public class testATrainIsDispatchedOnce
                 return super.get(key);
             }
 
-            /** A copy made by a map's constructor asks the size first, and reads no entry of an empty map (RSA4-C3). */
+            /** A copy made by a map's constructor asks the size first, and reads no entry of an empty map. */
             @Override
             public int size()
             {
@@ -3588,11 +3615,11 @@ public class testATrainIsDispatchedOnce
 
     /**
      * A sensor is held for the train whose route runs to it until the rail to it is given back, not just until its head
-     * has reached it (RSA3-C3; Adam, 2026-09-29, on RSA2-B1: *"it should be allowed once unlocked"*).
+     * has reached it (Adam: *"it should be allowed once unlocked"*).
      *
-     * Between the head's arrival and the release, only the sensor's own reading kept a second train off the other place
-     * on it, and a gap between two axles reads clear: the second train was sent, and the first train's next axle ended
-     * its journey at once.  Non-atomic, the track unmeasured: the rail to the shared sensor is given back one sensor on,
+     * Between the head's arrival and the release, only the sensor's own reading would keep a second train off the other
+     * place on it, and a gap between two axles reads clear: the second train would be sent, and the first train's next
+     * axle would end its journey at once.  Non-atomic, the track unmeasured: the rail to the shared sensor is given back one sensor on,
      * which `testASensorAJourneyHasPassedIsFreeAgain` holds to.
      *
      * MUTATION: free the sensor when the head reaches it, and this fails.
@@ -3666,12 +3693,12 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * The Yes takes no lock an arriving journey holds (RSA3-C4): on the event thread, it may not wait for another train
+     * The Yes takes no lock an arriving journey holds: on the event thread, it may not wait for another train
      * to finish throwing its switches.
      *
      * An arrival takes the journeys' lock and then the railway's monitor, which a dispatch holds for as long as it throws
-     * a route's switches; the Yes took the journeys' lock too, on the event thread, so the window froze and every train
-     * ran on for the length of the wait.  Held here: the journeys' lock taken by another thread, and the Yes asked.
+     * a route's switches; the Yes taking the journeys' lock too, on the event thread, would freeze the window and let every
+     * train run on for the length of the wait.  Held here: the journeys' lock taken by another thread, and the Yes asked.
      *
      * MUTATION: take the journeys' lock in the Yes again, and this fails.
      *
@@ -3734,7 +3761,7 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * A timetable the stop count refuses at its start leaves nothing running (RSA3-C4): it sets `running` before it asks
+     * A timetable the stop count refuses at its start leaves nothing running: it sets `running` before it asks
      * the count - so a Yes between the two is seen either way - and clears it again where the count has moved.
      *
      * MUTATION: return without clearing it, and this fails.
@@ -3789,7 +3816,7 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * A timetable entry is running until it has left (RSA3-C5): after a stop, as it finishes, the railway is not yet
+     * A timetable entry is running until it has left: after a stop, as it finishes, the railway is not yet
      * idle - so no door can start the next run while it is still there.  Held here at its last line, where it says its
      * path is finished.
      *
@@ -3900,12 +3927,12 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * A timetable entry the Yes found refusing leaves with its run (RSA3-C5): it does not wake into the next run and stop
+     * A timetable entry the Yes found refusing leaves with its run: it does not wake into the next run and stop
      * it at its stuck limit, blaming the track.
      *
-     * The entry paused between refusals, counted by nothing, so the run read idle, its call returned and the next run
-     * began; the entry then woke into that run, could never be sent, and at its stuck limit stopped it.  Now an entry is
-     * counted while it lives, and a stop wakes it to leave.
+     * An entry is counted while it lives, and a stop wakes it to leave.  An entry paused between refusals that nothing
+     * counted would let the run read idle, its call return and the next run begin; the entry would then wake into that
+     * run, never be sent, and at its stuck limit stop it.
      *
      * MUTATION: let a stop not wake a pausing entry, or count it not at all, and this fails.
      *
@@ -4016,7 +4043,7 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * The route guard's list of switches in use sees a train handing over from claim to journey (RSA4-C3): a route set
+     * The route guard's list of switches in use sees a train handing over from claim to journey: a route set
      * by a sensor asks it before it throws a switch, and a train in neither map had its route's switches missing.
      *
      * MUTATION: read the journeys before the claims in `getActiveAccs`, and this fails.
@@ -4099,12 +4126,12 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * The tail rule sees a train handing over from claim to journey (RSA4-C3): the track behind its start, which its
+     * The tail rule sees a train handing over from claim to journey: the track behind its start, which its
      * body lies across, stays refused to a second train's route throughout.
      *
-     * Across the hand-over the walk found the train in neither map and anchored its tail at whichever reserved Point
-     * the railway's map gave first - the start is named so that another comes first - and the track behind the train's
-     * start was claimed by nobody.
+     * Across the hand-over the walk must not find the train in neither map and anchor its tail at whichever reserved
+     * Point the railway's map gives first (the start is named so that another comes first), which would leave the track
+     * behind the train's start claimed by nobody.
      *
      * MUTATION: read the journeys before the claims for the path a train holds, and this fails.
      *
@@ -4121,7 +4148,7 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * Where a train handing over from claim to journey is, for the tail overlay, is its start (RSA4-C3).
+     * Where a train handing over from claim to journey is, for the tail overlay, is its start.
      *
      * MUTATION: read the journeys before the claims for the path a train holds, and this fails.
      *
@@ -4269,7 +4296,7 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * A timetable's own loop is running until it has stopped dispatching, and a stop wakes its pause (RSA4-C1): after a
+     * A timetable's own loop is running until it has stopped dispatching, and a stop wakes its pause: after a
      * stop with no train moving the railway reads busy while the loop is still inside the timetable, so no door starts a
      * run it could join, and the loop leaves at once.
      *
@@ -4420,7 +4447,7 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * The Yes and a timetable's start cannot straddle each other (RSA4-C2): a Yes that has cleared `running` and not yet
+     * The Yes and a timetable's start cannot straddle each other: a Yes that has cleared `running` and not yet
      * counted holds back a timetable starting, which then reads the new count and starts nothing.
      *
      * Held here exactly: the Yes is made with the pause's monitor taken, so it blocks between clearing `running` and

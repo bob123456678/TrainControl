@@ -68,7 +68,7 @@ public class testTheEditorSaysWhatItsToolsDo
      * Adam, 2026-09-24: *"add brief tooltips on what entry guards and exit guards are to their items in the autonomy
      * right click menu"*.
      *
-     * Each its OWN guard's text (TDD2-C15): the two items sit next to each other and read alike, and a tooltip on the
+     * Each its OWN guard's text: the two items sit next to each other and read alike, and a tooltip on the
      * wrong one tells Adam the exit guard does what the entry guard does.
      *
      * MUTATION: leave either tooltip out, or give the two items each other's, and this fails.
@@ -106,7 +106,7 @@ public class testTheEditorSaysWhatItsToolsDo
             assertTrue(tip != null && !tip.replaceAll("<[^>]*>", "").trim().isEmpty(), I18n.t(key) + " has no tooltip -"
                 + " Adam, OB-293: \"add brief tooltips on what entry guards and exit guards are\"");
 
-            // ITS OWN GUARD'S TEXT (TDD2-C15), read past the wrapping.
+            // ITS OWN GUARD'S TEXT, read past the wrapping.
             String said = tip.replaceAll("<[^>]*>", " ").replace("&nbsp;", " ").replaceAll("\\s+", " ").trim();
             String own = I18n.t(pair[1]).replaceAll("\\s+", " ").trim();
 
@@ -153,7 +153,7 @@ public class testTheEditorSaysWhatItsToolsDo
 
     /**
      * Where a railway is running, the outline follows the trains on it, not the setup's placements - and once a square
-     * is clicked the outlines go (FR-102; TDU-C11, TDD-C9).
+     * is clicked the outlines go (FR-102).
      *
      * The javadoc of `whyWaitsOn`: *"The train as the running railway has it where there is one - a run moves trains the
      * setup has not been told about - and as the setup places it otherwise."*  The claim above builds the panel with no
@@ -175,7 +175,7 @@ public class testTheEditorSaysWhatItsToolsDo
             // A SANDBOX FIRST, so the model does not load the machine's own railway (OB-111).
             sandbox = support.LayoutSandbox.open();
 
-            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+            model = support.TestStation.simulated();
 
             org.traincontrol.base.Locomotive moved = model.newMM2Locomotive("FR-102 moved", 2301);
 
@@ -289,7 +289,7 @@ public class testTheEditorSaysWhatItsToolsDo
      *
      * Both guards are given as the steps give them: the station's own menu item, the window it opens, Click It on the
      * Diagram, and a click on the signal.  The exit guard first, because the frozen railway has none and step 1 starts
-     * from a station that has one.  `core.testAutonomyDiagramSession.testAStationsEntryGuardIsNeverItsExitGuard` holds the
+     * from a station that has one.  `core.testASignalGuardsItsStationAndTheNoticeNamesIt.testAStationsEntryGuardIsNeverItsExitGuard` holds the
      * store's own refusal below this.
      *
      * MUTATION: take the editor's refusal out, or have it say the other guard's sentence, and this fails.
@@ -308,7 +308,7 @@ public class testTheEditorSaysWhatItsToolsDo
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
             org.traincontrol.marklin.MarklinControlStation model =
-                org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+                support.TestStation.simulated();
 
             try
             {
@@ -369,16 +369,16 @@ public class testTheEditorSaysWhatItsToolsDo
     }
 
     /**
-     * A signal refused as a guard is refused in a popup, not only on the grey line (MT-505).
+     * A signal refused as a guard is refused in a popup, not only on the gray line (MT-505).
      *
      * Adam, 2026-09-29, on MT-505: *"There may have been a gray message, but it wouldn't have been clear since the popup
      * was in the foreground, so any rejection errors should trigger a popup."*  The guard window comes back the moment the
      * click is answered and sits in front of the line that said why nothing was added; his Signal 86 "doesn't get added to
      * the list in the popup after clicking on it on the diagram", and nothing he could see said why.
      *
-     * Both refusals a click can meet: a signal already on the list, and the station's other guard (AUT-C2).
+     * Both refusals a click can meet: a signal already on the list, and the station's other guard.
      *
-     * MUTATION: say either refusal on the grey line alone, and this fails.
+     * MUTATION: say either refusal on the gray line alone, and this fails.
      *
      * @throws Exception from the event thread
      */
@@ -409,7 +409,7 @@ public class testTheEditorSaysWhatItsToolsDo
 
             assertEquals(his.getProtectingSignals(SIGNALLED), Arrays.asList(SIGNAL_86), "the refusal changed the list");
 
-            // THE STATION'S OTHER GUARD (AUT-C2)
+            // THE STATION'S OTHER GUARD
             popups.clear();
 
             pickTheGuard(panel, his, SIGNALLED, SIGNAL_86, true, popups);
@@ -436,7 +436,7 @@ public class testTheEditorSaysWhatItsToolsDo
      * right-click menu again; now the popup says why and the window is back, its list as it was, with Click It on the
      * Diagram to try another square.
      *
-     * MUTATION: say it on the grey line alone, or leave the window closed after it, and this fails.
+     * MUTATION: say it on the gray line alone, or leave the window closed after it, and this fails.
      *
      * @throws Exception from the event thread
      */
@@ -495,7 +495,7 @@ public class testTheEditorSaysWhatItsToolsDo
      * Signals refused when given by address are refused in the one popup that reports the addresses (MT-505).
      *
      * By Address already raised a popup for an address that is no number or no signal; a signal it found and could not
-     * pair was said on the grey line alone, behind the guard window.  Now every refusal is in that one popup, however many
+     * pair was said on the gray line alone, behind the guard window.  Now every refusal is in that one popup, however many
      * addresses were typed - a popup per address would be a row of them to dismiss.
      *
      * MUTATION: leave the refusals out of that popup, and this fails.
@@ -612,7 +612,7 @@ public class testTheEditorSaysWhatItsToolsDo
             addressesOf(panel, paired));
     }
 
-    /** The station's menu item labelled so, clicked, and the guard window titled so that it opens. */
+    /** The station's menu item labeled so, clicked, and the guard window titled so that it opens. */
     private static javax.swing.JDialog openTheGuardWindow(final AutonomyEditorPanel panel, final TileKey station,
         final String label, String title) throws Exception
     {
@@ -1045,7 +1045,7 @@ public class testTheEditorSaysWhatItsToolsDo
             // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111)
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+            model = support.TestStation.simulated();
 
             String path = "file:///" + sandbox.getFolder().getAbsolutePath().replace(File.separatorChar, '/') + "/";
 
@@ -1347,15 +1347,15 @@ public class testTheEditorSaysWhatItsToolsDo
     }
 
     /**
-     * The guard notices follow the routes the built railway sets each guard by (RSA42-C2).
+     * The guard notices follow the routes the built railway sets each guard by.
      *
      * They walked the reduction, which knows a square and not which way a train faces on it, so a train could turn back at
      * any plain sensor and stop at any station square.  On the frozen railway: Adam's own nine exit guards get exactly two
      * notices - Signals 86 and 87, which routes between the tunnel sidings and the station throats cross, for BottomMainB and
-     * BottomMainA (RSA41-C2) - and his six exit signals none; Signal 39 as BottomMainA's exit guard, crossed only by routes
+     * BottomMainA - and his six exit signals none; Signal 39 as BottomMainA's exit guard, crossed only by routes
      * elsewhere, is noticed, where the walk turned back at BottomMainAPre and called it on the way out; and a guard no route
      * commands is told so, not that routes turn it green.  (Signal 107 as TopR1ParkLong's entry guard was asserted here as
-     * needing no notice; RSA43-C3 found no arriving train meets it, and how far the notices should follow the routes the
+     * needing no notice; no arriving train meets it, and how far the notices should follow the routes the
      * runtime runs is Adam's to decide - so it is not asserted either way.)
      *
      * MUTATION: walk the built edges as the reduction was walked - every edge from a square whatever its copy - and this
@@ -1374,7 +1374,7 @@ public class testTheEditorSaysWhatItsToolsDo
             // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111)
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+            model = support.TestStation.simulated();
 
             String path = "file:///" + sandbox.getFolder().getAbsolutePath().replace(File.separatorChar, '/') + "/";
 

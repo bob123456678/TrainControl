@@ -24,7 +24,7 @@ import org.testng.annotations.Test;
  * one changed: iteration still found it, but contains(), remove() and get() did not.
  *
  * hashCode is now identity-based, which removes the hazard at the root rather than repairing each
- * collection after the fact.  These tests are kept because they assert the *behaviour* - an exclusion
+ * collection after the fact.  These tests are kept because they assert the *behavior* - an exclusion
  * still applies after a rename, a deleted locomotive stops being excluded - which must hold however
  * that is achieved.  They are what would prove the remaining repair calls safe to delete, and
  * testHashNeverMovesWhenAnIdentityFieldChanges guards the root fix itself.
@@ -60,7 +60,7 @@ public class testLayoutRenameKeys
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        model = init(null, true, false, false, true);
+        model = support.TestStation.simulatedInDebug();
         model.stop();
 
         hadAutoLayout = readAutoLayout();
@@ -76,7 +76,7 @@ public class testLayoutRenameKeys
             if (model != null) model.deleteLoc(name);
         }
 
-        // TST-B20: attach() installs a hand-built Layout into the shared model by reflection, and
+        // attach() installs a hand-built Layout into the shared model by reflection, and
         // nothing put back what was there before - so whatever this class ran last stayed installed as
         // model.getAutoLayout() for every class that shares this JVM after it.
         attach(hadAutoLayout);
@@ -290,7 +290,7 @@ public class testLayoutRenameKeys
     }
 
     /**
-     * UC-C5: renaming a point onto an existing name must be refused by the model.
+     * Renaming a point onto an existing name must be refused by the model.
      *
      * renamePoint checks only that the OLD name exists.  points.put(newName, p) overwrites the
      * existing point, and the edge-key rebuild below it drops colliding edges - graph corruption.
@@ -326,7 +326,7 @@ public class testLayoutRenameKeys
     }
 
     /**
-     * UC-C18: a rename is refused while the staging planner is at work, not only while trains run.
+     * A rename is refused while the staging planner is at work, not only while trains run.
      *
      * The first guard tested the bare running flag, which the staging planning window passes - yet
      * the planner runs bfs over exactly the structures a rename mutates, with nothing dispatched at

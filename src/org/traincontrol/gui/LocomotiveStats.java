@@ -432,7 +432,7 @@ public class LocomotiveStats extends javax.swing.JPanel
                 // Loop so a failed write re-prompts for another location instead of aborting
                 while (true)
                 {
-                    File f = chooseSaveFile();   // shown on the EDT; null means the user cancelled
+                    File f = chooseSaveFile();   // shown on the EDT; null means the user canceled
 
                     if (f == null)
                     {
@@ -471,7 +471,7 @@ public class LocomotiveStats extends javax.swing.JPanel
     }//GEN-LAST:event_exportDataActionPerformed
 
     /**
-     * Shows the CSV save chooser on the EDT and returns the chosen file, or null if the user cancelled.
+     * Shows the CSV save chooser on the EDT and returns the chosen file, or null if the user canceled.
      * @return the selected file, or null
      * @throws InterruptedException
      * @throws InvocationTargetException

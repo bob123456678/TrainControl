@@ -138,13 +138,13 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
      * not.
      *
      * **A PARKING BERTH IS SPELLED `autoDestination:false`** in anything the builder has emitted since,
-     * and that limb was not here at all (MON-B1) - so the one case this marker was written for was the
+     * and that limb was not here at all - so the one case this marker was written for was the
      * one it got wrong, for as long as it has existed. `!isActive()` was missing with it.
      *
      * Reversing NON-stations never appear here - getPossiblePaths only enumerates destinations - so
      * the full predicate is spelled out to match the rule in Layout rather than relying on that.
      *
-     * **A TERMINUS THIS TRAIN CANNOT BACK INTO IS THE THIRD REASON** (SVN-C4).  `280ff08b` moved that
+     * **A TERMINUS THIS TRAIN CANNOT BACK INTO IS THE THIRD REASON**.  `280ff08b` moved that
      * rule out of `isPathClear` into `pickPath`, `hasAutonomousDestination` and `barredFromAutonomy`,
      * and this fourth mirror was missed - so before the move a terminus never reached
      * `getPossiblePaths` for a non-reversible locomotive, and after it, one is listed with no dash.
@@ -160,7 +160,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     {
         if (p == null) return "";
 
-        // ALL FIVE LIMBS, in the rule's order (MON-B1).  Two were missing and the guard could not say
+        // ALL FIVE LIMBS, in the rule's order.  Two were missing and the guard could not say
         // so - it built the terminus case and claimed to catch "removing any limb", which a test that
         // constructs one case cannot do for a limb that was never written.
         return !p.isActive()
@@ -270,7 +270,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
             // compiling and always answered false.
             final boolean atAssignedHome = at != null && locomotive.equals(at.getHomeLoc());
 
-            // Grey out locomotives on inactive points / not on the graph
+            // Gray out locomotives on inactive points / not on the graph
             if ((layout.getLocomotiveLocation(locomotive) != null && !layout.getLocomotiveLocation(locomotive).isActive()) ||
                     layout.getLocomotiveLocation(locomotive) == null
             )
@@ -278,7 +278,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 this.locName.setForeground(Color.LIGHT_GRAY);
                 this.pauseButton.setVisible(false);
                 
-                // Grey out label
+                // Gray out label
                 locStation.setBackground(Color.LIGHT_GRAY);
                 locStation.setForeground(Color.WHITE);
                 locStation.setBorder(new FlatLineBorder(new Insets(0,2,0,2), Color.LIGHT_GRAY, 1, 999));
@@ -334,7 +334,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 this.locAvailPaths.setVisible(false);
             }
             // Layout is in auto mode but loc is not running - show status message and hide the list
-            // AND WHILE A STAGING FLOW OWNS THE RAILWAY (RSA2-C3): the double-click sends nothing then, so nothing is
+            // AND WHILE A STAGING FLOW OWNS THE RAILWAY: the double-click sends nothing then, so nothing is
             // offered to double-click
             else if (layout.isAutoRunning() || layout.isStagingInProgress())
             {
@@ -691,7 +691,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
         area.setEditable(false);
         area.setMargin(new java.awt.Insets(6, 6, 6, 6));
 
-        // FlatLaf derives a non-editable JTextPane's background from the panel behind it - a grey,
+        // FlatLaf derives a non-editable JTextPane's background from the panel behind it - a gray,
         // not the white every other text area in the app uses (OB-096, Adam: "make the text area of
         // 'no available paths window' with the text be white"). White is set explicitly here, the same
         // way the rest of the app does it (e.g. AutonomyViewerPanel's `findings` list and RouteEditorFrame's
@@ -703,7 +703,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
         // Asking the L&F for "Label.font" and using it whole was the previous attempt at "the standard
         // size of all other windows", and it is why Adam asked for the same thing twice: FlatLaf's
         // label font is smaller than the size this application sets on its own components, so taking it
-        // whole made this window smaller than its neighbours rather than the same.
+        // whole made this window smaller than its neighbors rather than the same.
         //
         // The number is not invented. Ninety-eight components in the gui package are built with a
         // Segoe UI font at size 14, against a single one at 12, so 14 IS the standard in this
@@ -729,7 +729,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
             javax.swing.SwingUtilities.invokeLater(() ->
             {
                 // No guard on which locomotive this is about, and the one that used to stand here was
-                // worse than nothing (FBR-C1).
+                // worse than nothing.
                 //
                 // It captured `locomotive` into a local and compared the two, under a comment saying
                 // "the panel is reused as trains are placed and cleared". The field is final and
@@ -757,7 +757,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
      * which matters here more than it looks, because the whole point of the grouping is that the first
      * list is worth waiting for and the second is not.
      *
-     * A heading is recognised by position rather than by matching its text: the report writes each one
+     * A heading is recognized by position rather than by matching its text: the report writes each one
      * on its own line immediately before an indented block, and the lines that are not indented and
      * not blank are exactly the headings and the opening sentence. Matching the translated text would
      * mean this working in English and quietly doing nothing in the other seven bundles.
@@ -805,7 +805,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
      * would then be a second answer to "can autonomy pick this station" - drifting from the one the
      * search itself uses is exactly how the reason and the grouping would come to disagree.
      *
-     * Arrival-side copies are collapsed to the station a person would recognise, the same way the
+     * Arrival-side copies are collapsed to the station a person would recognize, the same way the
      * tooltip does it.  A station counts as choosable if ANY of its copies is: one reachable from one
      * side and barred from the other is a station autonomy can choose.
      *
@@ -827,7 +827,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                     .append("\n");
             }
 
-            // FOR THE TIER THIS LIST IS IN (the REG4 lead, GUI3-C1): on Manual it offers routes picked by hand, so the
+            // FOR THE TIER THIS LIST IS IN (the REG4 lead): on Manual it offers routes picked by hand, so the
             // reasons are the ones a hand-driven send meets, as the diagram's Why not Moving? gives them on Manual.
             boolean byHand = !layout.isAutoRunning();
 
@@ -841,7 +841,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 return out.append("\n").append(cannotStart).append("\n").toString();
             }
 
-            // Both halves under ONE acquisition of the Layout monitor (FBR-C6).
+            // Both halves under ONE acquisition of the Layout monitor.
             //
             // Asked separately, the reasons and the grouping could be computed against two different
             // states - a train arrives, or a station is switched off, between the two calls - and a
@@ -851,7 +851,6 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
             Layout.Destinations destinations = layout.explainDestinationsGrouped(locomotive, byHand);
 
             java.util.Map<String, String> reasons = destinations.getReasons();
-            java.util.Set<String> barredPoints = destinations.getBarred();
 
             java.util.Map<String, String> choosable = new java.util.TreeMap<>();
             java.util.Map<String, String> barred = new java.util.TreeMap<>();
@@ -860,22 +859,8 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
             {
                 if (entry.getValue() == null) continue;
 
-                String station = stationName(layout.getPoint(entry.getKey()));
-
-                if (barredPoints.contains(entry.getKey()))
-                {
-                    // Only when no copy of it has already gone into the other group.
-                    if (!choosable.containsKey(station) && !barred.containsKey(station))
-                    {
-                        barred.put(station, entry.getValue());
-                    }
-                }
-                else
-                {
-                    barred.remove(station);
-
-                    if (!choosable.containsKey(station)) choosable.put(station, entry.getValue());
-                }
+                destinations.fileUnderStation(entry.getKey(), stationName(layout.getPoint(entry.getKey())), choosable,
+                    barred);
             }
 
             if (choosable.isEmpty() && barred.isEmpty())
@@ -975,7 +960,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                     javax.swing.SwingUtilities.invokeLater(() ->
                     {
                         // Still in the STATE the answer was about, which is the half of this guard that
-                        // was ever real (FBR-C1).
+                        // was ever real.
                         //
                         // It used to also check that the locomotive had not changed under it. It cannot:
                         // the field is final and a panel belongs to one locomotive for its whole life.
@@ -1003,7 +988,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
 
             String cannotStart = layout.explainCannotStart(locomotive, byHand);
 
-            // WRAPPED (GUI4-C5): the sentences with a remedy run to two hundred characters, on one line otherwise.
+            // WRAPPED: the sentences with a remedy run to two hundred characters, on one line otherwise.
             if (cannotStart != null) return AutonomyEditorPanel.wrapped(cannotStart);
 
             java.util.Map<String, String> reasons = layout.explainDestinations(locomotive, byHand);
@@ -1073,7 +1058,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
      * being shown the internals invites them to wonder which is the real one.
      *
      * @param point a Point of the running graph
-     * @return the station name a reader would recognise
+     * @return the station name a reader would recognize
      */
     private String stationName(org.traincontrol.automation.Point point)
     {
@@ -1170,7 +1155,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 // trap, since before this class existed.
                 if (index < 0 || !list.getCellBounds(index, index).contains(evt.getPoint())) return;
 
-                // NOR WHILE RETURN HOME OWNS THE RAILWAY (RSA-C2): autonomy's flag is down while it plans, and a train
+                // NOR WHILE RETURN HOME OWNS THE RAILWAY: autonomy's flag is down while it plans, and a train
                 // sent by hand then spent the press on positions the railway no longer had.  A second hand send while
                 // another runs stays allowed here (Adam, OB-164: "The user can rely on full autonomy or the panels to
                 // send trains more clearly.").
@@ -1185,8 +1170,8 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                     final List<Edge> chosen = this.paths.get(index);
 
                     // THROUGH THE ONE DOOR both hand doors send through (Adam, 2026-09-29: "can all the checks go through
-                    // a single door?"): whether a train may be sent at all - the editor, which this copy did not ask
-                    // (RLV12-B1), the setup, the power - this path's standing rules, the reversal question, the
+                    // a single door?"): whether a train may be sent at all - the editor, which this copy did not ask,
+                    // the setup, the power - this path's standing rules, the reversal question, the
                     // last-moment question again, the atomic-routes gate and the dispatch, in that order.
                     this.parent.sendATrainByHand(this.layout, chosen, locomotive);
                 }
@@ -1224,7 +1209,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     private void pauseButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_pauseButtonActionPerformed
         locomotive.setAutonomyPaused(pauseButton.isSelected());
 
-        // AND ITS ICON ON THE DIAGRAM (FR-117), grey while paused.  The train alone: this button is pressed while trains
+        // AND ITS ICON ON THE DIAGRAM (FR-117), gray while paused.  The train alone: this button is pressed while trains
         // run, when the setup is not edited (Adam, 2026-09-28), and the fold takes it into the setup with the rest of this
         // tab's settings.
         parent.trainsPausedChanged();

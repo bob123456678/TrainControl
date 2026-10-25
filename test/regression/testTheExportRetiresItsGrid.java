@@ -16,12 +16,12 @@ import org.testng.annotations.Test;
 /**
  * An export that fails hands its grid back, exactly as one that works does.
  *
- * **The leak is written out beside the discard itself** (NR-3): the export builds a grid into a panel
+ * **The leak is written out beside the discard itself**: the export builds a grid into a panel
  * nobody will ever show, and every caption it registers stays in the window's label table for the rest
  * of the session unless the grid is retired - keeping that whole grid, its tiles and its listeners
  * reachable.  The panel is a local, so no later export will ever match its owner and prune them.
  *
- * The discard sat after the paint with no `finally` (GUX-C4).  Two statements above it can leave by
+ * The discard sat after the paint with no `finally`.  Two statements above it can leave by
  * the other door: the wait for tile images throws `InterruptedException`, and the paint runs under
  * `invokeAndWait`, which rethrows whatever the paint threw.
  *
@@ -52,7 +52,7 @@ public class testTheExportRetiresItsGrid
         {
             int before = quiesced(up.ui);
 
-            // THE PAGE HAS CAPTIONS TO LOSE (OP3-C5).  Both claims below compare a count with itself, so
+            // THE PAGE HAS CAPTIONS TO LOSE.  Both claims below compare a count with itself, so
             // a sandbox page with no station squares would make them pass about nothing at all.
             assertTrue(before > 0,
                 "the first page of the sandbox registered no caption labels, so this class is comparing"
@@ -94,10 +94,10 @@ public class testTheExportRetiresItsGrid
     }
 
     /**
-     * And the export that works still hands them back, which is the case NR-3 covered.
+     * And the export that works still hands them back, which is the other case.
      *
      * Here because the fix moves the discard into a `finally`: a mistake there would take the working
-     * path with it, and this is the half of the behaviour that was never in doubt.
+     * path with it, and this is the half of the behavior that was never in doubt.
      *
      * @throws Exception from start-up
      */
@@ -123,7 +123,7 @@ public class testTheExportRetiresItsGrid
     }
 
     /**
-     * A grid can be retired by the panel it was built into, without a reference to it (FNL-C1).
+     * A grid can be retired by the panel it was built into, without a reference to it.
      *
      * **This is the door the export's bracket could not cover.**  `LayoutGrid`'s constructor registers itself
      * against its panel before it builds anything, and assigns the caller's reference only by returning - so a
@@ -266,7 +266,7 @@ public class testTheExportRetiresItsGrid
         {
             up.sandbox = support.LayoutSandbox.open();
 
-            up.model = MarklinControlStation.init(null, true, false, false, false);
+            up.model = support.TestStation.simulated();
 
             final MarklinControlStation model = up.model;
             final TrainControlUI[] made = new TrainControlUI[1];

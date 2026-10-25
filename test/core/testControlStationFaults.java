@@ -10,6 +10,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.marklin.file.CS2File;
 import org.traincontrol.marklin.udp.CS2Message;
+import support.SourceOf;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
@@ -117,11 +118,15 @@ public class testControlStationFaults
         MarklinControlStation.DEBUG_SIMULATE_PACKETS = false;
         MarklinControlStation.DEBUG_LOG_NETWORK = true;
 
+        // The retry window is the railway's own, asked: a wait of a tenth of a second past it, and an outage reading at
+        // least as long as the window.
+        long retryMs = millisOf("PING_RETRY_NS");
+
         model.sendPing(true);
 
-        Thread.sleep(2100);
+        Thread.sleep(retryMs + 100);
 
-        assertTrue(model.getTimeSinceLastPing() >= 2000,
+        assertTrue(model.getTimeSinceLastPing() >= retryMs,
             "with no answer, the time since the last ping must keep growing - that reading is what "
             + "the lost-connection warning is made of");
 
@@ -132,14 +137,14 @@ public class testControlStationFaults
         // which is exactly the distinction the warning exists to draw.
         model.sendPing(false);
 
-        assertTrue(model.getTimeSinceLastPing() >= 2000,
+        assertTrue(model.getTimeSinceLastPing() >= retryMs,
             "the retry reset the outage clock, so the connection reads as healthy for five seconds "
             + "out of every five while the station says nothing at all");
 
         // Past the retry window again.  The retry above reset the in-flight clock, which is what it
         // is supposed to do - so asking for another one immediately would be refused as a ping
         // already in flight, and the recovery below would have nothing to answer.
-        Thread.sleep(2100);
+        Thread.sleep(retryMs + 100);
 
         // Now the station answers again, as it would when the network came back
         MarklinControlStation.DEBUG_SIMULATE_PACKETS = true;
@@ -248,7 +253,7 @@ public class testControlStationFaults
     }
 
     /**
-     * A database file that reads, and holds something other than a locomotive list, is unreadable too (GSP-C1).
+     * A database file that reads, and holds something other than a locomotive list, is unreadable too.
      *
      * `restoreState` took the list when the file held one and logged success either way, so a file that deserialized
      * to anything else - written by another program, or swapped in by hand - left the mark that guards the exit save
@@ -308,9 +313,9 @@ public class testControlStationFaults
      * added to prevent - and brought it back silently, because everything about the timetable looks
      * right until it runs.
      *
-     * A fold no longer writes a plan: while one has the timetable, the owner's is written, with no flag
-     * (RLV9-B1).  What this keeps working is a file a fold wrote before that, with a plan as its
-     * timetable and the flag set - stated here by hand, as the file states it (RLV10-C4).
+     * A fold no longer writes a plan: while one has the timetable, the owner's is written, with no flag.
+     * What this keeps working is a file a fold wrote before that, with a plan as its
+     * timetable and the flag set - stated here by hand, as the file states it.
      */
     @Test
     public void testAStagingPlanIsStillSequentialAfterASaveAndLoad() throws Exception
@@ -332,7 +337,7 @@ public class testControlStationFaults
     /**
      * And an ordinary timetable is not turned into a sequential one by the same round trip.
      *
-     * Overlapping execution is the normal behaviour and much the faster one; a flag that defaulted
+     * Overlapping execution is the normal behavior and much the faster one; a flag that defaulted
      * the wrong way would make every layout's timetable crawl for no visible reason.
      */
     @Test
@@ -407,7 +412,7 @@ public class testControlStationFaults
             + "them is news");
 
         // Past the window a double-send could possibly span
-        Thread.sleep(400);
+        Thread.sleep(millisOf("DUPLICATE_WINDOW_NS") + 150);
 
         model.receiveMessage(accessoryPacket());
 
@@ -480,7 +485,7 @@ public class testControlStationFaults
      * The save cleared its "unreadable" mark first and then tried the copy.  When the copy failed, the failure was logged
      * and the save went on to replace the unreadable file - the copy the mark was there to guarantee was never made, and
      * the file was gone.  The mark is now cleared only once the copy is known to exist, and until then the file is left
-     * as it is; the next save tries again (BPV-C7, fixed for 2.8.2 on master and brought here as RLD-B1).
+     * as it is; the next save tries again (fixed for 2.8.2 on master and brought here).
      *
      * The copy alone is made to fail by a folder, with something in it, standing at every name the copy could be given
      * in the next minute.  It writes the database file, so it runs only where the run has its own copy of the data
@@ -555,7 +560,7 @@ public class testControlStationFaults
      * A UI state file that will not read is not saved over while its copy cannot be kept.
      *
      * The window's save had the same order as the database's: the mark cleared, the copy tried, a failed copy logged,
-     * and the file replaced - every key mapping and page name gone, with no copy anywhere (BPV-C7, RLD-B1).  The copy is
+     * and the file replaced - every key mapping and page name gone, with no copy anywhere.  The copy is
      * made to fail as above.  The window is one allocated without its constructor, holding only what its save reads,
      * over a model that answers nothing.
      *
@@ -1017,17 +1022,20 @@ public class testControlStationFaults
     @Test
     public void testTheFirstSyncOfAStartGoesThroughTheQuestion() throws Exception
     {
-        String code = codeOf("src/org/traincontrol/marklin/MarklinControlStation.java");
+        // The whole program, flat: no code anywhere syncs once and takes the result as it comes, and every station built
+        // is told whether it is a simulation
+        String code = codeOf(SourceOf.allCode());
 
-        int from = code.indexOf("public MarklinControlStation(NetworkProxy network, View view, boolean autoPowerOn,"
-            + " boolean debug, boolean simulate)");
-        int to = code.indexOf("this.logf(\"log.csDataImported\"", from);
+        String restore = codeOf(SourceOf.declaration("public MarklinControlStation(NetworkProxy network, View view,"
+            + " boolean autoPowerOn, boolean debug, boolean simulate)"));
 
-        assertTrue(from >= 0 && to > from, "precondition: the constructor's restore path was not found in the source");
+        int to = restore.indexOf("this.logf(\"log.csDataImported\"");
 
-        String restore = code.substring(from, to);
+        assertTrue(to > 0, "precondition: the constructor's restore path was not found in the source");
 
-        assertFalse(restore.contains("if (syncWithCS2()"), "the restore path syncs once and takes the result as it comes,"
+        restore = restore.substring(0, to);
+
+        assertFalse(code.contains("if (syncWithCS2()"), "the restore path syncs once and takes the result as it comes,"
             + " so a failed first sync is never asked about");
         assertTrue(restore.contains("syncUntilConnected(this::syncWithCS2, this::getLastSyncError, asker,"),
             "the restore path does not sync through the question, with the reason of the sync that just failed");
@@ -1056,7 +1064,7 @@ public class testControlStationFaults
     }
 
     /**
-     * Exit forgets the saved address, then ends the application, once each (OB-338, RSA67-C3).
+     * Exit forgets the saved address, then ends the application, once each (OB-338).
      *
      * The owner's rule is that Exit forgets the saved Central Station address, as a start that does not connect always
      * has.  The claims above run the loop with an exit of their own and read only that the constructor names the
@@ -1144,7 +1152,7 @@ public class testControlStationFaults
     }
 
     /**
-     * The Exit the dialog reaches is the one that forgets the real address and ends with code 1 (OB-338, RSA67-C3).
+     * The Exit the dialog reaches is the one that forgets the real address and ends with code 1 (OB-338).
      *
      * The claim above runs the halves on a node of its own.  What makes them Exit's is the constructor naming the
      * no-argument method and that method passing the operator's preferences and `System.exit(1)` - the exit code the
@@ -1160,7 +1168,7 @@ public class testControlStationFaults
     @Test
     public void testExitUnconnectedForgetsTheRealAddressAndEndsWithCodeOne() throws Exception
     {
-        String code = codeOf("src/org/traincontrol/marklin/MarklinControlStation.java");
+        String code = codeOf(SourceOf.allCode());
 
         assertTrue(code.contains("asker, MarklinControlStation::exitUnconnected)"),
             "an Exit answer is not wired to the method that forgets the saved address");
@@ -1344,14 +1352,24 @@ public class testControlStationFaults
     }
 
     /**
-     * A source file as code: the comments taken out and every run of white space made one space.
+     * Source as code: the comments taken out and every run of white space made one space.
      */
-    private static String codeOf(String path) throws Exception
+    private static String codeOf(String text)
     {
-        String text = new String(java.nio.file.Files.readAllBytes(new java.io.File(path).toPath()),
-            java.nio.charset.StandardCharsets.UTF_8);
+        return SourceOf.withoutComments(text).replaceAll("\\s+", " ");
+    }
 
-        return text.replaceAll("(?s)/\\*.*?\\*/|//[^\\n]*", " ").replaceAll("\\s+", " ");
+    /**
+     * A private nanosecond window of the station, as milliseconds, read by reflection so a claim waits for the
+     * station's own rule instead of a number of its own.
+     */
+    private static long millisOf(String nanosConstant) throws Exception
+    {
+        java.lang.reflect.Field window = MarklinControlStation.class.getDeclaredField(nanosConstant);
+
+        window.setAccessible(true);
+
+        return window.getLong(null) / 1000000L;
     }
 
     /**
@@ -1450,9 +1468,8 @@ public class testControlStationFaults
         for (long t = first; t <= now + 60000; t += 1000)
         {
             // Named exactly as the saves name the copy
-            java.io.File folder = new java.io.File(org.traincontrol.util.Util.getBackupPath("unreadable"
-                + org.traincontrol.util.Conversion.convertSecondsToDatetime(t).replace(':', '-').replace(' ', '_')
-                + fileName));
+            java.io.File folder = new java.io.File(org.traincontrol.util.Util.getBackupPath(
+                org.traincontrol.util.Util.unreadableCopyName(t, fileName)));
 
             if (folder.exists()) continue;
 

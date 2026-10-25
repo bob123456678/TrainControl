@@ -220,7 +220,7 @@ public class testImportRename
     {
         MarklinLocomotive mine = model.newMM2Locomotive("IR cs dupe", CS_DUPE_ADDRESS);
 
-        // TST-B20: this clears the decoder so the precondition below can hold - but against a
+        // This clears the decoder so the precondition below can hold - but against a
         // restored database, "everything else on this decoder" can be a real locomotive that has
         // nothing to do with this test.  Names are captured before deleting, and recreated in the
         // finally below, so the restored database is not left permanently missing a locomotive for
@@ -298,7 +298,7 @@ public class testImportRename
      * ACROSS addresses through the names: sources are unique and Central Station names are unique, so
      * the list is a permutation - and a permutation can contain a cycle.
      *
-     * Swapping two names is what a user does after noticing a mislabelling, and it produces
+     * Swapping two names is what a user does after noticing a mislabeling, and it produces
      * [{A to B}, {B to A}].  Both entries are individually correct.  Applied in order against a
      * database each entry mutates, the first deletes the locomotive the second was about to rename,
      * and the second then renames the survivor back to the name it started with: one locomotive
@@ -473,7 +473,7 @@ public class testImportRename
     /**
      * A locomotive the Central Station has never heard of is left alone.
      *
-     * TST-C8: an empty proposal list used to pass this test just as well as a correct one, since
+     * An empty proposal list used to pass this test just as well as a correct one, since
      * nothing forced the loop below to run over anything.  "IR mismatch" guarantees at least one real
      * proposal (the floor assertion below proves the loop actually ran), and "IR unknown" is a DCC
      * locomotive at an address the CS3 fixture never mentions - DCC_BASE (0xc000) plus 999, and the

@@ -294,7 +294,7 @@ public class testDiagramShiftKeepsSetup
      * transposed bound is invisible - and the station sits on column 18: inside 0..20 (`getSx() - 1`,
      * the correct bound for a ROW shift) but outside 0..15 (`getSy() - 1`, the wrong one).
      *
-     * MUTATION this catches: transpose `LayoutEditor.java`'s `setupShift` so a row shift
+     * MUTATION this catches: transpose `LayoutEditorReshape.java`'s `setupShift` so a row shift
      * (`across == false`) bounds the column loop by `getSy() - 1` instead of `getSx() - 1`. On this
      * page that stops the loop at column 15 of 20, and the station on column 18 - deliberately placed
      * past that - never enters the map: `moveTiles` never hears about it, and it is left behind on the
@@ -320,7 +320,7 @@ public class testDiagramShiftKeepsSetup
             // reads the layout-path preference, and without the sandbox it is Adam's own railway.
             sandbox = support.LayoutSandbox.open();
 
-            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, true);
+            model = support.TestStation.simulatedInDebug();
 
             final org.traincontrol.marklin.MarklinControlStation finalModel = model;
 

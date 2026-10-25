@@ -23,6 +23,7 @@ import org.traincontrol.gui.TailCrossedPrompt;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
+import support.SourceOf;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
@@ -60,7 +61,7 @@ public class testWhereHisTrainsMayBeSent
         // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111).
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = init(null, true, true, false, true);
+        model = support.TestStation.simulatedWithWindowInDebug();
         model.setNetworkCommState(false);
 
         ui = (TrainControlUI) model.getGUI();
@@ -72,7 +73,7 @@ public class testWhereHisTrainsMayBeSent
 
         session = ui.getAutonomySession();
 
-        if (session == null) throw new SkipException("no autonomy setup on this railway");
+        if (session == null) throw new AssertionError("no autonomy setup on this railway");
 
         assertNotNull(railway(), "the frozen railway built no autonomy layout");
 
@@ -111,7 +112,7 @@ public class testWhereHisTrainsMayBeSent
 
     /**
      * A send the right-click refuses says why in a message that belongs to the main window: with the power off, "-> a
-     * station" on his train's right-click tells him to turn the power on, in front of the window he is using (RLU-B2).
+     * station" on his train's right-click tells him to turn the power on, in front of the window he is using.
      *
      * The refusals were parented on the popup menu, which has left the window by the time its item runs, so the message
      * belonged to Swing's hidden frame - and with Window Always on Top ticked, the default, it opened beneath the main
@@ -188,8 +189,8 @@ public class testWhereHisTrainsMayBeSent
 
     /**
      * No message on either right-click menu - the diagram's autonomy menu, or the track-diagram editor's - belongs to the
-     * menu itself, and none on the autonomy viewer panel to the panel (RLU-B2, RLU2-C5, RLU2-C6, RLD4-C9).  The setup's
-     * tidy report is a message too (IND9X-C4, RLD3-C4).
+     * menu itself, and none on the autonomy viewer panel to the panel.  The setup's
+     * tidy report is a message too.
      *
      * The claim above drives one refusal; the rest are read here.  A menu has left its window by the time its item runs,
      * so a message parented on it belongs to Swing's hidden frame and, with Window Always on Top, opens beneath the
@@ -206,15 +207,15 @@ public class testWhereHisTrainsMayBeSent
         int messages = 0;
 
         // The panel is built and never shown, so a message parented on it belongs to the hidden frame as a menu's does
-        for (String path : new String[] {"src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java",
-            "src/org/traincontrol/gui/LayoutEditorRightclickMenu.java", "src/org/traincontrol/gui/AutonomyViewerPanel.java"})
+        for (String path : new String[] {"final class LayoutRightclickAutonomyMenu extends JPopupMenu",
+            "final class LayoutEditorRightclickMenu extends JPopupMenu", "public class AutonomyViewerPanel extends JPanel"})
         {
-            String[] lines = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(path)),
-                java.nio.charset.StandardCharsets.UTF_8).split("\n");
+            // Each class, found by its declaration
+            String[] lines = SourceOf.fileDeclaring(path).split("\n");
 
             for (int i = 0; i < lines.length; i++)
             {
-                // A message, or the setup's tidy report, which is one (RLD3-C4, RLD4-C9)
+                // A message, or the setup's tidy report, which is one
                 String shows = lines[i].contains("JOptionPane.show") ? "JOptionPane.show"
                     : lines[i].contains("AutonomyReport.show(") ? "AutonomyReport.show(" : null;
 
@@ -234,12 +235,9 @@ public class testWhereHisTrainsMayBeSent
 
         assertTrue(messages > 10, "precondition: the two menus show only " + messages + " messages");
 
-        // AND THE SETUP'S TIDY REPORT (IND9X-C4, RLU3-C3): the viewer panel is built and never shown, so a report
+        // AND THE SETUP'S TIDY REPORT: the viewer panel is built and never shown, so a report
         // parented on it belonged to the hidden frame too.
-        String panel = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/AutonomyViewerPanel.java")), java.nio.charset.StandardCharsets.UTF_8);
-
-        assertTrue(panel.contains("AutonomyReport.show(ui, session().save())"), "the setup's tidy report is not parented on"
+        assertTrue(SourceOf.allCode().contains("AutonomyReport.show(ui, session().save())"), "the setup's tidy report is not parented on"
             + " the main window (IND9X-C4, RLU3-C3)");
 
         assertTrue(onAMenu.isEmpty(), "a message on a right-click menu belongs to the menu, which has left its window by"
@@ -598,7 +596,7 @@ public class testWhereHisTrainsMayBeSent
      * The 0 is given as the steps give it: the squares of that stretch selected with Shift-click in the autonomy editor on
      * 1 - Main, then Segment Length... on one of them, 0 and OK; the running railway is then rebuilt, as closing the editor
      * saving the change rebuilds it.  The train is sent with the right-click's "-> Tunnel" and driven in simulation.  The
-     * grey behind a standing train is the track the railway holds for it, read here from the railway.
+     * gray behind a standing train is the track the railway holds for it, read here from the railway.
      *
      * MUTATION: stop the measured way in at the stretch answered 0, and this fails.
      *
@@ -732,7 +730,7 @@ public class testWhereHisTrainsMayBeSent
             assertNotNull(arrived, "75 407 DB, sent to Tunnel, did not arrive (MT-586): it stands at "
                 + railway().getLocomotiveLocation(his));
 
-            // AND THE GREY BEHIND IT: the track held for it reaches back past TunnelPre and BottomSecondary onto the track
+            // AND THE GRAY BEHIND IT: the track held for it reaches back past TunnelPre and BottomSecondary onto the track
             // towards RampDown.
             Map<String, Locomotive> held = railway().placesCoveredByStandingTrains();
 
@@ -1222,7 +1220,7 @@ public class testWhereHisTrainsMayBeSent
             if (!skip.contains(name)) return model.getLocByName(name);
         }
 
-        throw new SkipException("this data has too few trains");
+        throw new AssertionError("this data has too few trains");
     }
 
     /** The railway as the model has it NOW; a rebuild replaces it. */
@@ -1239,7 +1237,7 @@ public class testWhereHisTrainsMayBeSent
             if (name.equals(session.getStore().getPointName(key))) return key;
         }
 
-        throw new SkipException("this railway has no " + name);
+        throw new AssertionError("this railway has no " + name);
     }
 
     private static String name(TileKey square)

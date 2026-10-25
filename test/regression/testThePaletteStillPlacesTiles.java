@@ -36,7 +36,7 @@ public class testThePaletteStillPlacesTiles
      * A tile from the palette lands on a square that already has track on it.
      *
      * MUTATION: putting back the press handler's unconditional `initCopy(label, null, true)` - the
-     * pick-up-to-drag arm - fails this, which is the shipped behaviour it was written against.
+     * pick-up-to-drag arm - fails this, which is the shipped behavior it was written against.
      */
     @Test
     public void testAPaletteTileLandsOnOccupiedTrack() throws Exception
@@ -53,7 +53,7 @@ public class testThePaletteStillPlacesTiles
             // reads the layout-path preference, and without the sandbox it is Adam's own railway.
             sandbox = support.LayoutSandbox.open();
 
-            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, true);
+            model = support.TestStation.simulatedInDebug();
 
             final org.traincontrol.marklin.MarklinControlStation finalModel = model;
 
@@ -187,7 +187,7 @@ public class testThePaletteStillPlacesTiles
         }
         finally
         {
-            // THE PREFERENCE COMES BACK WHATEVER ELSE HAPPENS (V34-C7).
+            // THE PREFERENCE COMES BACK WHATEVER ELSE HAPPENS.
             //
             // `sandbox.close()` is the line that puts `LAYOUT_OVERRIDE_PATH_PREF` back, and its own
             // javadoc says why that is the most important line in this block: a test that leaves a
@@ -200,7 +200,7 @@ public class testThePaletteStillPlacesTiles
             // expensive ones.  Its own `finally` now.
             try
             {
-                // THE EDITOR TOO, not only the window that owns it (V33-C11).
+                // THE EDITOR TOO, not only the window that owns it.
                 //
                 // Both siblings this test was written from dispose theirs, and a LayoutEditor left
                 // undisposed keeps a frame, its grid and its listeners alive for the rest of the JVM -

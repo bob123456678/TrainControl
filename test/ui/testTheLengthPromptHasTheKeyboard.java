@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
@@ -63,7 +64,7 @@ public class testTheLengthPromptHasTheKeyboard
 
         // THE WHOLE APPLICATION, as testNonAtomicRoutesNeedTheirLengths starts it: only its own start-up puts the
         // setup's trains on the running railway, and the walk is about those.
-        model = init(null, true, true, false, true);
+        model = support.TestStation.simulatedWithWindowInDebug();
 
         model.setNetworkCommState(false);
 
@@ -78,7 +79,7 @@ public class testTheLengthPromptHasTheKeyboard
 
         if (session == null || session.getStore().getActiveConfiguration() == null || !model.hasAutoLayout())
         {
-            throw new SkipException("no autonomy configuration, so there is no walk to open");
+            throw new AssertionError("no autonomy configuration, so there is no walk to open");
         }
 
         // TWO TRAINS WITH NO LENGTH, the walk's subject - standing on the page on screen, so each is outlined and
@@ -96,7 +97,7 @@ public class testTheLengthPromptHasTheKeyboard
         running.removeIf(l -> l == null || !onThisPage.contains(l.getName()));
         running.sort((a, b) -> a.getName().compareTo(b.getName()));
 
-        if (running.size() < 2) throw new SkipException("the frozen railway places fewer than two trains on " + PAGE);
+        if (running.size() < 2) throw new AssertionError("the frozen railway places fewer than two trains on " + PAGE);
 
         for (Locomotive loc : running.subList(0, 2))
         {
@@ -107,7 +108,7 @@ public class testTheLengthPromptHasTheKeyboard
 
         final LayoutDiagram page = model.getLayout(PAGE);
 
-        if (page == null) throw new SkipException("no page " + PAGE);
+        if (page == null) throw new AssertionError("no page " + PAGE);
 
         final LayoutEditor[] built = new LayoutEditor[1];
 
@@ -299,7 +300,364 @@ public class testTheLengthPromptHasTheKeyboard
         answer(first, I18n.t("ui.cancel"));
     }
 
-    // ---------------------------------------------------------------------------------------------
+    /**
+     * Name Everything asks in the same prompt: its field has the keyboard, and its long question wraps (OB-371).
+     *
+     * MUTATION: give `askForName` its own prompt again, labeled `new JLabel(question)`: red on the wrapping.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testTheNamePromptHasTheFieldFocusedAndWrapsItsQuestion() throws Exception
+    {
+        awaitTheEditorFocused();
+
+        // A SENSOR ON THE PAGE MADE UNNAMED, so the walk has one to ask about; its name is given back afterwards.
+        final org.traincontrol.automationui.TileGraph.TileKey[] sensor = new org.traincontrol.automationui.TileGraph.TileKey[1];
+        final String[] itsName = new String[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            for (org.traincontrol.automationui.GraphReducer.ReducedPoint point : session.getReducer().getPoints().values())
+            {
+                if (sensor[0] == null && PAGE.equals(point.getTile().getPage())) sensor[0] = point.getTile();
+            }
+
+            if (sensor[0] == null) return;
+
+            itsName[0] = session.getStore().getPointName(sensor[0]);
+            session.setPointName(sensor[0], "");
+            editor.getAutonomyPanel().refresh();
+        });
+
+        assertNotNull(sensor[0], "precondition: " + PAGE + " has no sensor to name");
+
+        try
+        {
+            final String title = I18n.t("autosetup.ui.btnNameEverything");
+            final javax.swing.JMenuItem item = bulkItem("autosetup.ui.btnNameEverything");
+
+            assertNotNull(item, "precondition: Bulk Tools has no Name Everything item");
+            assertTrue(item.isEnabled(), "precondition: Name Everything is grayed with a sensor made unnamed");
+
+            SwingUtilities.invokeLater(item::doClick);
+
+            javax.swing.JDialog prompt = awaitPrompt(null, title);
+
+            final String[] question = new String[1];
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                Object message = findPane(prompt.getContentPane()).getMessage();
+
+                for (java.awt.Component c : ((java.awt.Container) message).getComponents())
+                {
+                    if (c instanceof javax.swing.JLabel) question[0] = ((javax.swing.JLabel) c).getText();
+                }
+            });
+
+            focusedField(prompt, "Name Everything's prompt");
+
+            answer(prompt, I18n.t("ui.cancel"));
+
+            assertTrue(question[0] != null && question[0].startsWith("<html><body style='width"),
+                "Name Everything's question runs on one line instead of wrapping: " + question[0]);
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() ->
+            {
+                session.setPointName(sensor[0], itsName[0] == null ? "" : itsName[0]);
+                editor.getAutonomyPanel().refresh();
+            });
+        }
+    }
+
+    /**
+     * Name Everything refuses a name another square already has, says so, and asks again; the free name typed next is
+     * stored and the taken one is not (OB-376; Adam, MT-815: "shouldn't a name that's already taken be refused?").
+     *
+     * MUTATION: drop the `isPointNameTaken` test from `whyNotNamed`: red, as no refusal appears.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testNameEverythingRefusesATakenName() throws Exception
+    {
+        // A SENSOR ON THE PAGE MADE UNNAMED, and A NAME ANOTHER SQUARE HAS, plain text so the refusal's markup is not
+        // in the way.
+        final org.traincontrol.automationui.TileGraph.TileKey[] sensor = new org.traincontrol.automationui.TileGraph.TileKey[1];
+        final String[] itsName = new String[1];
+        final String[] taken = new String[1];
+        final List<org.traincontrol.automationui.TileGraph.TileKey> unnamed = new ArrayList<>();
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            for (org.traincontrol.automationui.GraphReducer.ReducedPoint point : session.getReducer().getPoints().values())
+            {
+                if (sensor[0] == null && PAGE.equals(point.getTile().getPage())) sensor[0] = point.getTile();
+            }
+
+            if (sensor[0] == null) return;
+
+            for (org.traincontrol.automationui.TileGraph.TileKey other : session.getStore().getNamedTiles())
+            {
+                String name = session.getStore().getPointName(other);
+
+                if (taken[0] == null && !other.equals(sensor[0]) && name != null && name.trim().matches("[A-Za-z0-9 ]+"))
+                {
+                    taken[0] = name.trim();
+                }
+            }
+
+            itsName[0] = session.getStore().getPointName(sensor[0]);
+            session.setPointName(sensor[0], "");
+            editor.getAutonomyPanel().refresh();
+
+            // Every square the walk can ask about, any of which may come first
+            for (org.traincontrol.automationui.GraphReducer.ReducedPoint point : session.getReducer().getPoints().values())
+            {
+                String name = session.getStore().getPointName(point.getTile());
+
+                if (PAGE.equals(point.getTile().getPage()) && (name == null || name.trim().isEmpty()))
+                {
+                    unnamed.add(point.getTile());
+                }
+            }
+        });
+
+        assertNotNull(sensor[0], "precondition: " + PAGE + " has no sensor to name");
+        assertNotNull(taken[0], "precondition: no other square has a plain name to reuse");
+
+        final String free = "OB376 Free Name";
+        final String title = I18n.t("autosetup.ui.btnNameEverything");
+
+        try
+        {
+            final javax.swing.JMenuItem item = bulkItem("autosetup.ui.btnNameEverything");
+
+            assertNotNull(item, "precondition: Bulk Tools has no Name Everything item");
+
+            SwingUtilities.invokeLater(item::doClick);
+
+            javax.swing.JDialog prompt = awaitPrompt(null, title);
+
+            type(fieldIn(prompt), taken[0]);
+
+            javax.swing.JDialog refusal = awaitMessage(prompt, title, "\"" + taken[0] + "\", another square's name,"
+                + " was typed into Name Everything and no refusal appeared");
+
+            final String[] said = new String[1];
+
+            SwingUtilities.invokeAndWait(() -> said[0] = String.valueOf(findPane(refusal.getContentPane()).getMessage()));
+
+            closeMessage(refusal);
+
+            assertTrue(said[0].contains(I18n.f("autosetup.ui.errorPointNameTaken", taken[0])),
+                "Name Everything's refusal of a taken name does not say it is taken: " + said[0]);
+
+            javax.swing.JDialog again = awaitPrompt(prompt, title);
+
+            type(fieldIn(again), free);
+
+            // The walk goes on to the next square, or ends
+            Thread.sleep(500);
+            closeEveryPrompt();
+
+            final List<org.traincontrol.automationui.TileGraph.TileKey> holdingTaken = new ArrayList<>();
+            final List<org.traincontrol.automationui.TileGraph.TileKey> holdingFree = new ArrayList<>();
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                for (org.traincontrol.automationui.TileGraph.TileKey tile : session.getStore().getNamedTiles())
+                {
+                    String name = session.getStore().getPointName(tile);
+
+                    if (taken[0].equalsIgnoreCase(name == null ? null : name.trim())) holdingTaken.add(tile);
+                    if (free.equals(name)) holdingFree.add(tile);
+                }
+            });
+
+            assertEquals(holdingTaken.size(), 1, "the taken name was stored by Name Everything as well: " + holdingTaken);
+            assertEquals(holdingFree.size(), 1, "the free name typed after the refusal was not stored: " + holdingFree);
+            assertTrue(unnamed.contains(holdingFree.get(0)), "the free name went on a square the walk does not ask"
+                + " about: " + holdingFree);
+        }
+        finally
+        {
+            closeEveryPrompt();
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                for (org.traincontrol.automationui.TileGraph.TileKey tile : unnamed) session.setPointName(tile, "");
+
+                session.setPointName(sensor[0], itsName[0] == null ? "" : itsName[0]);
+                editor.getAutonomyPanel().refresh();
+            });
+        }
+    }
+
+    /**
+     * Rename... on a square's right-click menu refuses a name another square already has, says so, and renames nothing
+     * (OB-376, the walk's sibling door).
+     *
+     * MUTATION: `promptName` asking `AutonomySession.whyNotAPointName(name)` instead of `whyNotNamed`: red, as no
+     * refusal appears and the square takes the other's name.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testRenameRefusesATakenName() throws Exception
+    {
+        // A NAMED SQUARE ON THE PAGE, and A NAME ANOTHER SQUARE HAS, plain text so the refusal's markup is not in the way
+        final org.traincontrol.automationui.TileGraph.TileKey[] target = new org.traincontrol.automationui.TileGraph.TileKey[1];
+        final String[] itsName = new String[1];
+        final String[] taken = new String[1];
+        final javax.swing.JMenuItem[] rename = new javax.swing.JMenuItem[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            for (org.traincontrol.automationui.GraphReducer.ReducedPoint point : session.getReducer().getPoints().values())
+            {
+                String name = session.getStore().getPointName(point.getTile());
+
+                if (target[0] == null && PAGE.equals(point.getTile().getPage()) && name != null && !name.trim().isEmpty()
+                    && editor.getAutonomyPanel().canBeNamed(point.getTile()))
+                {
+                    target[0] = point.getTile();
+                    itsName[0] = name;
+                }
+            }
+
+            if (target[0] == null) return;
+
+            for (org.traincontrol.automationui.TileGraph.TileKey other : session.getStore().getNamedTiles())
+            {
+                String name = session.getStore().getPointName(other);
+
+                if (taken[0] == null && !other.equals(target[0]) && name != null && name.trim().matches("[A-Za-z0-9 ]+")
+                    && !name.trim().equalsIgnoreCase(itsName[0].trim()))
+                {
+                    taken[0] = name.trim();
+                }
+            }
+
+            // THE REAL MENU's item, as the right-click builds it
+            javax.swing.JPopupMenu menu = editor.getAutonomyPanel().buildTileMenu(target[0],
+                model.getLayout(PAGE).getComponent(target[0].getX(), target[0].getY()));
+
+            for (java.awt.Component c : menu.getComponents())
+            {
+                if (c instanceof javax.swing.JMenuItem
+                    && I18n.t("autosetup.ui.menuRename").equals(((javax.swing.JMenuItem) c).getText()))
+                {
+                    rename[0] = (javax.swing.JMenuItem) c;
+                }
+            }
+        });
+
+        assertNotNull(target[0], "precondition: " + PAGE + " has no named square that can be renamed");
+        assertNotNull(taken[0], "precondition: no other square has a plain name to reuse");
+        assertNotNull(rename[0], "precondition: " + target[0] + "'s menu has no Rename... item");
+
+        try
+        {
+            SwingUtilities.invokeLater(rename[0]::doClick);
+
+            javax.swing.JDialog prompt = awaitInputPrompt();
+
+            type(fieldIn(prompt), taken[0]);
+
+            javax.swing.JDialog refusal = awaitMessage(prompt, prompt.getTitle(), "\"" + taken[0] + "\", another"
+                + " square's name, was typed into Rename... and no refusal appeared");
+
+            final String[] said = new String[1];
+
+            SwingUtilities.invokeAndWait(() -> said[0] = String.valueOf(findPane(refusal.getContentPane()).getMessage()));
+
+            closeMessage(refusal);
+
+            assertTrue(said[0].contains(I18n.f("autosetup.ui.errorPointNameTaken", taken[0])),
+                "Rename's refusal of a taken name does not say it is taken: " + said[0]);
+
+            final String[] now = new String[1];
+
+            SwingUtilities.invokeAndWait(() -> now[0] = session.getStore().getPointName(target[0]));
+
+            assertEquals(now[0], itsName[0], "Rename... gave " + target[0] + " another square's name");
+        }
+        finally
+        {
+            closeEveryPrompt();
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                session.setPointName(target[0], itsName[0]);
+                editor.getAutonomyPanel().refresh();
+            });
+        }
+    }
+
+    /** A showing option pane that asks for text: Rename's prompt. */
+    private static javax.swing.JDialog awaitInputPrompt() throws Exception
+    {
+        long giveUp = System.currentTimeMillis() + 10000;
+
+        while (System.currentTimeMillis() < giveUp)
+        {
+            final javax.swing.JDialog[] found = new javax.swing.JDialog[1];
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                for (java.awt.Window window : java.awt.Window.getWindows())
+                {
+                    if (window instanceof javax.swing.JDialog && window.isShowing())
+                    {
+                        JOptionPane pane = findPane(((javax.swing.JDialog) window).getContentPane());
+
+                        if (pane != null && pane.getWantsInput()) found[0] = (javax.swing.JDialog) window;
+                    }
+                }
+            });
+
+            if (found[0] != null) return found[0];
+
+            Thread.sleep(50);
+        }
+
+        fail("Rename... showed no prompt.  Showing now: " + showing());
+
+        return null;
+    }
+
+    /** The prompt's text field, found rather than waited for: this claim is about the answer, not the keyboard. */
+    private static javax.swing.JTextField fieldIn(javax.swing.JDialog prompt) throws Exception
+    {
+        final javax.swing.JTextField[] field = new javax.swing.JTextField[1];
+
+        SwingUtilities.invokeAndWait(() -> field[0] = findField(prompt.getContentPane()));
+
+        assertNotNull(field[0], "the Name Everything prompt has no text field");
+
+        return field[0];
+    }
+
+    private static javax.swing.JTextField findField(java.awt.Container container)
+    {
+        for (java.awt.Component child : container.getComponents())
+        {
+            if (child instanceof javax.swing.JTextField) return (javax.swing.JTextField) child;
+
+            if (child instanceof java.awt.Container)
+            {
+                javax.swing.JTextField found = findField((java.awt.Container) child);
+
+                if (found != null) return found;
+            }
+        }
+
+        return null;
+    }
 
     private static void awaitTheEditorFocused() throws Exception
     {
@@ -395,7 +753,11 @@ public class testTheLengthPromptHasTheKeyboard
 
     private static javax.swing.JDialog awaitPrompt(javax.swing.JDialog notThisOne) throws Exception
     {
-        String title = I18n.t(TRAINS);
+        return awaitPrompt(notThisOne, I18n.t(TRAINS));
+    }
+
+    private static javax.swing.JDialog awaitPrompt(javax.swing.JDialog notThisOne, String title) throws Exception
+    {
         long giveUp = System.currentTimeMillis() + 10000;
 
         while (System.currentTimeMillis() < giveUp)
@@ -420,7 +782,12 @@ public class testTheLengthPromptHasTheKeyboard
     /** The refusal: a dialog on screen that is neither the prompt it answers nor a window of the application. */
     private static javax.swing.JDialog awaitMessage(javax.swing.JDialog prompt) throws Exception
     {
-        String title = I18n.t(TRAINS);
+        return awaitMessage(prompt, I18n.t(TRAINS), "0 was typed and no refusal appeared");
+    }
+
+    private static javax.swing.JDialog awaitMessage(javax.swing.JDialog prompt, String title, String failure)
+        throws Exception
+    {
         long giveUp = System.currentTimeMillis() + 10000;
 
         while (System.currentTimeMillis() < giveUp)
@@ -437,7 +804,7 @@ public class testTheLengthPromptHasTheKeyboard
             Thread.sleep(50);
         }
 
-        fail("0 was typed and no refusal appeared.  Showing now: " + showing());
+        fail(failure + ".  Showing now: " + showing());
 
         return null;
     }

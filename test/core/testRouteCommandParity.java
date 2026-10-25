@@ -7,6 +7,7 @@ import org.testng.annotations.Test;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.RouteCommand;
+import support.SourceOf;
 
 /**
  * Every kind of route command survives being written out and read back.
@@ -124,17 +125,9 @@ public class testRouteCommandParity
     @Test
     public void testEveryKindOfferedAsACommandIsOneExecutionActsOn() throws Exception
     {
-        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/marklin/MarklinRoute.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
-
         // The dispatch only, so a mention in a comment or in the s88 TRIGGER machinery - which is a
         // different thing entirely and does use feedback - cannot be read as a branch.
-        int from = source.indexOf("private void execRoute(boolean auto, int recursionLimit,");
-
-        assertTrue(from >= 0, "execRoute has moved or changed shape - this test is reading nothing");
-
-        // TO THE END OF THE METHOD, not to the end of the file (TSX-C12).
+        // TO THE END OF THE METHOD, not to the end of the file.
         //
         // `substring(from)` took `execRoute` and the 363 lines after it, and one of the predicates the
         // table below asks about already lives out there - `if (r.isAccessory())`, inside `toCSV`.
@@ -143,28 +136,12 @@ public class testRouteCommandParity
         // are NOT offered were protected by nothing but their predicate happening to be absent from
         // unrelated methods.
         //
-        // Walked on braces, which is what the method's own extent is.
-        int opens = source.indexOf('{', from);
-
-        assertTrue(opens > from, "execRoute has no body - this test is reading nothing");
-
-        int depth = 0;
-        int closes = -1;
-
-        for (int i = opens; i < source.length(); i++)
-        {
-            if (source.charAt(i) == '{') depth++;
-            else if (source.charAt(i) == '}' && --depth == 0) { closes = i; break; }
-        }
-
-        assertTrue(closes > opens,
-            "could not find the end of execRoute, so the extent this test reads is not a method");
-
-        String dispatch = source.substring(from, closes);
-
+        // Walked on braces, which is what the method's own extent is: SourceOf cuts the declaration to its closing brace.
+        //
         // Comments stripped, for the reason three findings this round were about: prose that describes
         // a branch reads exactly like the branch.
-        dispatch = dispatch.replaceAll("(?s)/\\*.*?\\*/", "").replaceAll("//[^\n]*", "");
+        String dispatch = SourceOf.withoutComments(SourceOf.declaration(
+            "private void execRoute(boolean auto, int recursionLimit,"));
 
         // Kind -> the RouteCommand predicate execRoute would have to test to act on it.
         String[][] handledBy =

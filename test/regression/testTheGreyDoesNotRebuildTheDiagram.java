@@ -30,7 +30,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * MT-334's shape, asked of the grey wash that came back on 2026-09-09.
+ * MT-334's shape, asked of the gray wash that came back on 2026-09-09.
  *
  * Adam asked for the wash back beside the line and said how: *"That plus the line, **drawn and
  * refreshed carefully**, should do the trick."*  This codebase has already paid for the other kind of
@@ -55,7 +55,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * `ui.testBlockedTrackIsGreyWhileAutonomyRuns` does and for the same reason: asking the window under
  * test what the right answer is agrees with it whatever it says.
  *
- * **THE GESTURE IS A TRAIN LENGTH NOW, AND IT USED TO BE STARTING AUTONOMY** (W7B-B1).  The grey was
+ * **THE GESTURE IS A TRAIN LENGTH NOW, AND IT USED TO BE STARTING AUTONOMY**.  The gray was
  * fenced on a running railway, so starting and stopping a run was what put the wash on and took it
  * off.  Adam, 2026-09-09: *"yes, this greyout should appear at idle and be regenerated if a placement
  * or train/track length is changed."*  With the fence gone, starting a run changes not one square -
@@ -114,6 +114,15 @@ public class testTheGreyDoesNotRebuildTheDiagram
     private static Set<JComponent> onStart;
     private static Set<JComponent> onStop;
 
+    /** Why the set-up found no fixture, or null; each claim asks it, so it fails rather than skips. */
+    private static String unbuilt;
+
+    /** Fails the claim when the set-up found no fixture: a skip or an assert in `setUpClass` reads as skipped tests. */
+    private static void assertBuilt()
+    {
+        if (unbuilt != null) throw new AssertionError(unbuilt);
+    }
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {
@@ -135,7 +144,7 @@ public class testTheGreyDoesNotRebuildTheDiagram
         // what it names before anything reads it.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = init(null, true, true, false, true);
+        model = support.TestStation.simulatedWithWindowInDebug();
         model.setNetworkCommState(false);
 
         ui = (TrainControlUI) model.getGUI();
@@ -147,7 +156,11 @@ public class testTheGreyDoesNotRebuildTheDiagram
 
         session = ui.getAutonomySession();
 
-        if (session == null) throw new SkipException("no autonomy setup on this railway");
+        if (session == null)
+        {
+            unbuilt = "no autonomy setup on this railway";
+            return;
+        }
 
         SwingUtilities.invokeAndWait(() -> measureEveryTileAs(1));
 
@@ -157,7 +170,11 @@ public class testTheGreyDoesNotRebuildTheDiagram
 
         oneTrainThatCoversSomething();
 
-        if (train == null) throw new SkipException("no standing train covers any track here");
+        if (train == null)
+        {
+            unbuilt = "no standing train covers any track here";
+            return;
+        }
 
         assertFalse(layout.isRunning(),
             "the frozen railway came up with autonomy running, and this class is about the gesture"
@@ -170,12 +187,17 @@ public class testTheGreyDoesNotRebuildTheDiagram
 
         if (blocked.isEmpty())
         {
-            throw new SkipException("the standing train blocks no square, so there is no wash to add");
+            unbuilt = "the standing train blocks no square, so there is no wash to add";
+            return;
         }
 
         page = model.getLayout(blocked.iterator().next().getPage());
 
-        if (page == null) throw new SkipException("the blocked squares are on no page this model has");
+        if (page == null)
+        {
+            unbuilt = "the blocked squares are on no page this model has";
+            return;
+        }
 
         SwingUtilities.invokeAndWait(() ->
         {
@@ -191,8 +213,9 @@ public class testTheGreyDoesNotRebuildTheDiagram
 
         if (tilesBefore.size() < 10)
         {
-            throw new SkipException("the page drew " + tilesBefore.size() + " tiles - too few to say"
-                + " anything about a full-page redraw");
+            unbuilt = "the page drew " + tilesBefore.size() + " tiles - too few to say"
+                + " anything about a full-page redraw";
+            return;
         }
 
         Counting counter = new Counting();
@@ -205,8 +228,8 @@ public class testTheGreyDoesNotRebuildTheDiagram
 
             // THE TRAIN IS UNMEASURED TO BEGIN WITH, so the gesture below is what puts the wash on.
             //
-            // This used to start and stop AUTONOMY, because the grey was fenced on a running railway.
-            // That fence is gone (W7B-B1, Adam 2026-09-09: *"yes, this greyout should appear at idle
+            // This used to start and stop AUTONOMY, because the gray was fenced on a running railway.
+            // That fence is gone (Adam 2026-09-09: *"yes, this greyout should appear at idle
             // and be regenerated if a placement or train/track length is changed"*), so starting a run
             // no longer changes a single square and the measurement would have been of nothing at all.
             // The gesture that adds and removes the wash at idle is one of the three he named, and
@@ -279,6 +302,8 @@ public class testTheGreyDoesNotRebuildTheDiagram
     @Test
     public void testMeasuringTheTrainDoesNotRebuildThePage()
     {
+        assertBuilt();
+
         assertEquals(tilesAfterStart.size(), tilesBefore.size(),
             "the page has a different number of tiles after the train was measured");
 
@@ -294,6 +319,8 @@ public class testTheGreyDoesNotRebuildTheDiagram
     @Test
     public void testMeasuringTheTrainRedrawsOnlyTheSquaresThatChanged()
     {
+        assertBuilt();
+
         Set<JComponent> allowed = tilesOfTheChangedSquares();
 
         assertFalse(onStart.isEmpty(),
@@ -322,6 +349,8 @@ public class testTheGreyDoesNotRebuildTheDiagram
     @Test
     public void testUnmeasuringTheTrainTakesTheWashOffAgain()
     {
+        assertBuilt();
+
         assertEquals(replaced(tilesBefore, tilesAfterStop), 0,
             "the page was rebuilt when the train was unmeasured");
 
@@ -350,7 +379,7 @@ public class testTheGreyDoesNotRebuildTheDiagram
      * the two differ, and every component here is offscreen.
      */
     /**
-     * A tile whose picture changes - a switch thrown, a sensor occupied - redraws its own neighbourhood, not the whole
+     * A tile whose picture changes - a switch thrown, a sensor occupied - redraws its own neighborhood, not the whole
      * window it sits in (speed, 2026-10-04).
      *
      * `LayoutLabel.setImageOnEDT` repainted the tile and then its `parent` - the panel the diagram sits in, which on the
@@ -365,6 +394,8 @@ public class testTheGreyDoesNotRebuildTheDiagram
     @Test
     public void testATileThatChangesRedrawsItsNeighbourhoodOnly() throws Exception
     {
+        assertBuilt();
+
         // A PAGE UNDER A TAB, as the main window builds one: the grid's master is what a tile calls its parent
         final JPanel tab = new JPanel();
 
@@ -465,6 +496,8 @@ public class testTheGreyDoesNotRebuildTheDiagram
     @Test
     public void testACaptionRefreshThatChangesNothingLaysNothingOut() throws Exception
     {
+        assertBuilt();
+
         Counting counter = new Counting();
 
         RepaintManager was = RepaintManager.currentManager(HOST);
@@ -491,7 +524,7 @@ public class testTheGreyDoesNotRebuildTheDiagram
                 if (c instanceof org.traincontrol.gui.StationCaption) captions.add(c);
             }
 
-            if (captions.isEmpty()) throw new SkipException("no station caption on the window's page was refreshed");
+            if (captions.isEmpty()) throw new AssertionError("no station caption on the window's page was refreshed");
 
             Set<java.awt.Container> pages = new LinkedHashSet<>();
 
@@ -524,7 +557,7 @@ public class testTheGreyDoesNotRebuildTheDiagram
      * skips an unchanged mark never saw one, and every marked square was redrawn twice.  It sets each mark, and clears only
      * the squares that dropped out.
      *
-     * LAST IN THE CLASS: it shows the main window's static layer, and the tests about the grey count every square redrawn
+     * LAST IN THE CLASS: it shows the main window's static layer, and the tests about the gray count every square redrawn
      * - with the layer showing, the main window's own squares are among them.
      *
      * MUTATION: clear every mark first again, and this fails.
@@ -534,6 +567,8 @@ public class testTheGreyDoesNotRebuildTheDiagram
     @Test(priority = 1)
     public void testAStaticLayerThatChangesNothingRedrawsNothing() throws Exception
     {
+        assertBuilt();
+
         Counting counter = new Counting();
 
         RepaintManager was = RepaintManager.currentManager(HOST);
@@ -562,7 +597,7 @@ public class testTheGreyDoesNotRebuildTheDiagram
                 for (Object label : (java.util.Collection<?>) labels) if (markField.get(label) != null) marked++;
             }
 
-            if (marked == 0) throw new SkipException("no square of the window's page wears a mark of the static layer");
+            if (marked == 0) throw new AssertionError("no square of the window's page wears a mark of the static layer");
 
             counter.clear();
 

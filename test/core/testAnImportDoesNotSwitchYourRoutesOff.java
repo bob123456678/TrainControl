@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -66,12 +65,12 @@ public class testAnImportDoesNotSwitchYourRoutesOff
         java.io.File file = new java.io.File(new java.io.File(sandbox.getFolder(),
             "config" + java.io.File.separator + "autonomy_legacy"), "autonomy.json");
 
-        if (!file.exists()) throw new SkipException("this fixture carries no legacy autonomy.json");
+        if (!file.exists()) throw new AssertionError("this fixture carries no legacy autonomy.json");
 
         org.json.JSONObject legacy = new org.json.JSONObject(new String(
             java.nio.file.Files.readAllBytes(file.toPath()), java.nio.charset.StandardCharsets.UTF_8));
 
-        model = MarklinControlStation.init(null, true, false, false, false);
+        model = support.TestStation.simulated();
 
         // A ROUTE OF OUR OWN, enabled and watching a sensor.  The fixture's own routes are asserted
         // over too, but a class whose subject exists only if somebody else's file happens to contain
@@ -90,7 +89,7 @@ public class testAnImportDoesNotSwitchYourRoutesOff
 
         if (enabledCount(enabledBefore) == 0)
         {
-            throw new SkipException("no route is enabled at all, so nothing here could be switched off");
+            throw new AssertionError("no route is enabled at all, so nothing here could be switched off");
         }
 
         session = new AutonomySession(sandbox.getFolder());
@@ -198,7 +197,7 @@ public class testAnImportDoesNotSwitchYourRoutesOff
     {
         if (model.getAutoLayout() == null)
         {
-            throw new SkipException("the imported setup did not build a running layout, so the"
+            throw new AssertionError("the imported setup did not build a running layout, so the"
                 + " mechanism could not be turned on");
         }
 

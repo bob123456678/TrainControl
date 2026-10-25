@@ -10,11 +10,13 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.lang.reflect.Field;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.function.IntConsumer;
@@ -26,6 +28,22 @@ import org.traincontrol.marklin.file.CS2File;
  */
 public class Util
 {
+    /**
+     * An empty JSONObject that keeps its keys in insertion order (the library's own map is unordered).
+     * @return the object
+     * @throws NoSuchFieldException if the library no longer has a "map" field
+     * @throws IllegalAccessException if the field cannot be opened
+     */
+    public static JSONObject orderedJSON() throws NoSuchFieldException, IllegalAccessException
+    {
+        JSONObject jsonObj = new JSONObject();
+        Field map = jsonObj.getClass().getDeclaredField("map");
+        map.setAccessible(true);
+        map.set(jsonObj, new LinkedHashMap<>());
+        map.setAccessible(false);
+        return jsonObj;
+    }
+
     /**
      * Opens a URL in a browser
      * @param url
@@ -66,6 +84,13 @@ public class Util
      * Folder (relative to the working directory) that timestamped backup files are written to.
      */
     public static final String BACKUP_FOLDER = "tc_backup";
+
+    /**
+     * What a data file's backup is named when the file would not read and is about to be written over: this, then
+     * the time, then the file's own name.  The user interface state and the locomotive database both keep such a
+     * copy.
+     */
+    public static final String UNREADABLE_BACKUP_PREFIX = "unreadable";
 
     /**
      * Folder (relative to the working directory) that cropped locomotive icons are written to.
@@ -187,8 +212,42 @@ public class Util
             return new File(dir, fileName).getPath();
         }
 
-        // Folder unavailable - fall back to the current directory (the original behaviour)
+        // Folder unavailable - fall back to the current directory (the original behavior)
         return fileName;
+    }
+
+    /**
+     * The name an unreadable data file is kept under, beside the backups, before a save writes over it:
+     * {@link #UNREADABLE_BACKUP_PREFIX}, the time to the second (colons and the space made safe for a file name), then the
+     * file's own name.
+     * @param timeMillis the time the copy is made
+     * @param fileName the data file's own name
+     * @return the name to hand {@link #getBackupPath}
+     */
+    public static String unreadableCopyName(long timeMillis, String fileName)
+    {
+        return UNREADABLE_BACKUP_PREFIX + Conversion.convertSecondsToDatetime(timeMillis).replace(':', '-')
+            .replace(' ', '_') + fileName;
+    }
+
+    /**
+     * Copies a data file that would not read aside, under {@link #unreadableCopyName}, before a save writes over it.
+     *
+     * @param fileName the data file's own name
+     * @return the copy, or null when there is no file to keep
+     * @throws IOException when the copy could not be made
+     */
+    public static File keepUnreadableCopy(String fileName) throws IOException
+    {
+        File existing = new File(dataPath(fileName));
+
+        if (!existing.exists()) return null;
+
+        File kept = new File(getBackupPath(unreadableCopyName(System.currentTimeMillis(), fileName)));
+
+        Files.copy(existing.toPath(), kept.toPath(), StandardCopyOption.REPLACE_EXISTING);
+
+        return kept;
     }
 
     /**
@@ -197,11 +256,11 @@ public class Util
      *
      * Unlike getBackupPath there is no fall back to the current directory.  A backup that lands
      * beside the file it protects is still a backup; an icon written into the working directory
-     * would sit among the application's own data files under a name nobody would recognise as ours,
+     * would sit among the application's own data files under a name nobody would recognize as ours,
      * and it would never be cleaned up.  Null instead, so the caller can leave the locomotive
      * pointing at the uncropped original - which is exactly what it did before this existed.
      *
-     * @param fileName the intended file name, already sanitised
+     * @param fileName the intended file name, already sanitized
      * @return the file to write to, or null if the folder could not be created
      */
     public static File getLocIconFile(String fileName)
@@ -629,14 +688,14 @@ public class Util
             throw e;
         }
 
-        // AND THE STAGING FILE GOES EITHER WAY (AC3-C1).
+        // AND THE STAGING FILE GOES EITHER WAY.
         //
         // The catch above deletes it when the WRITE fails, with a comment about a half-written file
         // accumulating beside the target.  The move was outside that, so the Windows failure - a
-        // target somebody holds open - left the staging file behind, which is how AC3-B1's probe
+        // target somebody holds open - left the staging file behind, which is how a probe
         // found a `LocDB.data.part` sitting next to a corrupt `LocDB.data`.
         //
-        // Deleted rather than kept as a recovery artefact.  It holds the GOOD data, which is an
+        // Deleted rather than kept as a recovery artifact.  It holds the GOOD data, which is an
         // argument for keeping it - but a file nothing reads, nothing mentions, and nothing cleans
         // up is litter whatever it contains, and the caller is told the save failed.
         try
@@ -749,13 +808,13 @@ public class Util
     {
         String name = gitHubReleaseInfo.getString("name");
 
-        // THE ONE AFTER THE "v" FIRST (IND9-C2).  Matching the first number outright was the same
+        // THE ONE AFTER THE "v" FIRST.  Matching the first number outright was the same
         // mistake as the original, pointing the other way: "TrainControl 2026 Edition v3.0.0" gave
         // "2026" - newer than anything, so the menu offers an update that does not exist - and
         // "Build 1 v3.0.0" gave "1", which compares as older and hides a real release in silence.
         // Release names are typed by hand at tag time and carry both a "v" and, sometimes, other
         // numbers.
-        // The "v" has to BE the tag marker, not the last letter of a word (VAL9-B3).  Without the left
+        // The "v" has to BE the tag marker, not the last letter of a word.  Without the left
         // boundary "Nov2026 build - TrainControl v3.0.0" matched the v of "Nov" and invented 2026, and
         // taking the FIRST anchored match made "Marklin CS3 v2.6 compatibility - TrainControl v3.0.0"
         // report 2.6, which compares older and hides the release. Longest wins among the anchored ones,
@@ -848,7 +907,7 @@ public class Util
 
         StringBuilder content = new StringBuilder();
 
-        // TRY-WITH-RESOURCES, so a bad response does not keep the connection (AC2-C4).
+        // TRY-WITH-RESOURCES, so a bad response does not keep the connection.
         //
         // The plain close() at the end was skipped by anything thrown from readLine, which leaked the
         // reader and the HTTPS connection under it.  Every other fetch in this project was converted

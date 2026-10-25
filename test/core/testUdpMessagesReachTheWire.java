@@ -14,7 +14,7 @@ import org.traincontrol.marklin.udp.NetworkProxy;
 /**
  * A message handed to the proxy arrives on the wire, byte for byte.
  *
- * TA-B7, from the test suite audit, inside [OB-089]: "nothing anywhere asserts an outgoing datagram".
+ * From the test suite audit, inside [OB-089]: "nothing anywhere asserts an outgoing datagram".
  * The existing `testNetworkProxy` covers the socket's LIFECYCLE well - a transient receive error does
  * not stop the listener, closing stops it, a send reopens a closed socket - and `testSendReopensAClosedSocket`
  * asserts that `sendMessage` returned true and that the socket is open afterwards. Neither of those
@@ -60,7 +60,7 @@ public class testUdpMessagesReachTheWire
     /**
      * The bytes that arrive are the bytes the message is made of.
      *
-     * Compared against the message's OWN serialisation rather than against a hand-written array. A
+     * Compared against the message's OWN serialization rather than against a hand-written array. A
      * literal here would be a second statement of the CAN frame format, and the two would drift - the
      * DR family of findings is entirely about that. What is being tested is the transmission path, not
      * the encoding, and this asserts exactly that: whatever `getRawMessage` says, that is what left.

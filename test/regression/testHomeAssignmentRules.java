@@ -1,19 +1,17 @@
 package regression;
 
-import java.io.File;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.AutonomyEditorPanel;
+import support.SourceOf;
 
 /**
  * The three rules about a station's home locomotive.
  *
- * MT-112, from OB-022 / DD-A6. All three were code that existed, was commented, was believed to work -
+ * MT-112, from OB-022. All three were code that existed, was commented, was believed to work -
  * and had lost every caller that ran it. The review put it plainly: `HomeLocomotiveMenu` lost four of
  * its five callers, "two safety warnings are now unreachable and their tests still pass".
  *
@@ -29,9 +27,6 @@ import org.traincontrol.gui.AutonomyEditorPanel;
  */
 public class testHomeAssignmentRules
 {
-    private static final File PANEL =
-        new File("src/org/traincontrol/gui/AutonomyEditorPanel.java");
-
     /**
      * Rule 1: the list keeps a home naming a locomotive autonomy no longer runs.
      *
@@ -136,10 +131,8 @@ public class testHomeAssignmentRules
     @Test
     public void testEachRuleIsStillWiredToSomething() throws Exception
     {
-        assertTrue(PANEL.isFile(),
-            "cannot find " + PANEL.getAbsolutePath() + " - a test that reads the source cannot pass by not finding it. This returned quietly, so renaming or moving that file would have taken this rule with it and said nothing");
-
-        String source = new String(Files.readAllBytes(PANEL.toPath()), StandardCharsets.UTF_8);
+        // The program's code, wherever the panel keeps these calls: a comment naming one is not a caller.
+        String source = SourceOf.allCode();
 
         assertTrue(source.contains("homeChoices(I18n.t("),
             "the home dialog no longer builds its list with homeChoices, so the rule about keeping a "
@@ -149,7 +142,7 @@ public class testHomeAssignmentRules
             "nothing asks homeBrokenBy about a station's actual home, so the exclusion warning is "
             + "unreachable - which is the exact fault DD-A6 found");
 
-        // whyNotAHome, not canBeHome (LD-9).
+        // whyNotAHome, not canBeHome.
         //
         // canBeHome answers false for two unrelated reasons and this panel is about one of them.
         // Rolling them together made it warn "no train can come to rest here" about a square whose
@@ -167,11 +160,11 @@ public class testHomeAssignmentRules
             + "warning about whichever reason came back - including the one the model refuses "
             + "outright, which is what LD-9 was");
 
-        // The CALL SITES, not only the bodies (TA-B4).
+        // The CALL SITES, not only the bodies.
         //
         // The three checks above search for tokens that live inside private helpers, so they prove
         // the helper still exists - not that anything reaches it. Deleting `mayRestHere`'s single
-        // caller leaves every one of them satisfied and rule 2 unreachable, which is DD-A6's exact
+        // caller leaves every one of them satisfied and rule 2 unreachable, which is exactly the
         // shape: "a rule with no caller passes every test written about the rule". Demonstrated by
         // mutation, 5 of 5 green with the caller gone.
         //
@@ -188,7 +181,7 @@ public class testHomeAssignmentRules
             "nothing calls the homeBrokenBy overload that takes a tile, so the exclusion warning is "
             + "unreachable from the assignment path (TA-B4)");
 
-        assertTrue(source.contains("() -> promptHome("),
+        assertTrue(source.contains("() -> editor.promptHome("),
             "nothing opens the home dialog, so all three of these rules are unreachable at once and "
             + "the checks above would still pass (TA-B4)");
     }

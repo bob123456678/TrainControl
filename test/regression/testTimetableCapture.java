@@ -25,7 +25,7 @@ import org.traincontrol.marklin.MarklinControlStation;
  * Layout starts with capture off. So every rebuild - applying a diagram edit, placing a locomotive,
  * loading a configuration - quietly turned capture off underneath a toggle button that stayed lit.
  *
- * That is why the tests below are in two halves. The first two are the behaviour anybody would have
+ * That is why the tests below are in two halves. The first two are the behavior anybody would have
  * written; the third is the one that would have caught this, and it is about a piece of state
  * surviving something that looks unrelated to it.
  *
@@ -38,7 +38,7 @@ public class testTimetableCapture
     @BeforeClass
     public static void setUpModel() throws Exception
     {
-        model = MarklinControlStation.init(null, true, false, false, true);
+        model = support.TestStation.simulatedInDebug();
 
         for (int address : new int[]{47441, 47442})
         {
@@ -143,8 +143,6 @@ public class testTimetableCapture
             + "moment, so it stays lit over a layout that is no longer capturing - and the operator "
             + "drives a whole session that records nothing");
     }
-
-    // ---------------------------------------------------------------------------------------------
 
     /**
      * How long the run from A to B is measured, and it is LONGER THAN THE TRAIN on purpose.

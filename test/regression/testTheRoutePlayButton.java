@@ -1,12 +1,10 @@
 package regression;
 
 import java.awt.Rectangle;
-import java.io.File;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.TrainControlUI;
+import support.SourceOf;
 
 /**
  * The play button on a route cell is drawn where it can be pressed (FR-043).
@@ -31,7 +29,7 @@ public class testTheRoutePlayButton
     /**
      * The button sits inside its cell, against the right edge, and is about the height of the text.
      *
-     * The numbers are not asserted exactly - "about the same height as the text" is a judgement, and a
+     * The numbers are not asserted exactly - "about the same height as the text" is a judgment, and a
      * test that pins 13 pixels would fail the next time somebody nudges it for good reason. What is
      * asserted is what would make it unusable: falling outside the cell, drifting away from the right
      * edge, or growing to fill the row.
@@ -145,13 +143,11 @@ public class testTheRoutePlayButton
     @Test
     public void testBothSidesAskTheSameMethod() throws Exception
     {
-        String ui = new String(Files.readAllBytes(
-            new File("src/org/traincontrol/gui/TrainControlUI.java").toPath()), StandardCharsets.UTF_8);
+        // Over the whole program's code, comments blanked.
+        String code = SourceOf.allCode();
 
-        String code = ui.replaceAll("(?s)/\\*.*?\\*/", "").replaceAll("//[^\n]*", "");
-
-        int declared = countOf(code, "static java.awt.Rectangle routePlayButtonBox(");
-        int asked = countOf(code, "routePlayButtonBox(") - declared;
+        int declared = SourceOf.occurrences("static java.awt.Rectangle routePlayButtonBox(");
+        int asked = SourceOf.occurrences("routePlayButtonBox(") - declared;
 
         assertEquals(declared, 1,
             "routePlayButtonBox is declared " + declared + " times - there should be exactly one place "
@@ -189,14 +185,7 @@ public class testTheRoutePlayButton
     @Test
     public void testTheHoverAsksTheSameQuestionAsTheClick() throws Exception
     {
-        String ui = new String(Files.readAllBytes(
-            new File("src/org/traincontrol/gui/TrainControlUI.java").toPath()), StandardCharsets.UTF_8);
-
-        int from = ui.indexOf("private void RouteListMouseMoved(");
-
-        assertTrue(from >= 0, "RouteListMouseMoved has gone - this test is reading nothing");
-
-        String body = ui.substring(from, ui.indexOf("//GEN-LAST:event_RouteListMouseMoved", from));
+        String body = SourceOf.declaration("private void RouteListMouseMoved(");
 
         assertTrue(body.contains("routesExecuting.contains("),
             "the hover no longer asks whether the route is already running, so a greyed button still "
@@ -211,12 +200,7 @@ public class testTheRoutePlayButton
             "the hover no longer sets a hand cursor, so nothing tells the user the strip is a control "
             + "(OB-147)");
 
-        int exited = ui.indexOf("private void RouteListMouseExited(");
-
-        assertTrue(exited >= 0, "RouteListMouseExited has gone");
-
-        String leaving = ui.substring(exited,
-            ui.indexOf("//GEN-LAST:event_RouteListMouseExited", exited));
+        String leaving = SourceOf.declaration("private void RouteListMouseExited(");
 
         assertTrue(leaving.contains("setCursor"),
             "leaving the route table no longer restores the cursor. A cursor belongs to the component "
@@ -225,15 +209,15 @@ public class testTheRoutePlayButton
     }
 
     /**
-     * A running route's button is greyed, refuses the click, and shows no hand (MT-217).
+     * A running route's button is grayed, refuses the click, and shows no hand (MT-217).
      *
      * Adam: "there is no animation / change in state while it is running.  It should gray out and then
      * become reenabled once the route finishes."
      *
      * Three surfaces have to agree about one fact, and they are the three that made OB-057 and OB-090:
-     * what the button LOOKS like, what the click DOES, and what the cursor PROMISES. A greyed button
+     * what the button LOOKS like, what the click DOES, and what the cursor PROMISES. A grayed button
      * that still fires is a lie; a hand over it is the same lie in a different form; and either would
-     * also let the same route be started twice, which is the thing the greying exists to say cannot
+     * also let the same route be started twice, which is the thing the graying exists to say cannot
      * happen.
      *
      * MUTATION: delete any one of the three `routesExecuting.contains(...)` guards and this fails.
@@ -241,13 +225,11 @@ public class testTheRoutePlayButton
     @Test
     public void testARunningRouteIsShownAndTreatedAsDisabled() throws Exception
     {
-        String ui = new String(Files.readAllBytes(
-            new File("src/org/traincontrol/gui/TrainControlUI.java").toPath()), StandardCharsets.UTF_8);
+        // Over the whole program's code, comments blanked.
+        String code = SourceOf.allCode();
 
-        String code = withoutComments(ui);
-
-        assertEquals(countOf(code, "routesExecuting.contains("), 4,
-            "the running-route check appears " + countOf(code, "routesExecuting.contains(")
+        assertEquals(SourceOf.occurrences("routesExecuting.contains("), 4,
+            "the running-route check appears " + SourceOf.occurrences("routesExecuting.contains(")
             + " times; it should be exactly four - the cell wash, the greyed triangle, the click "
             + "that refuses it, and the cursor that stops promising it. Fewer means one of those "
             + "surfaces disagrees with the rest about whether the button is available");
@@ -272,38 +254,34 @@ public class testTheRoutePlayButton
         // THE ROUTE CELL'S OWN PAINTING, not the whole window (FR-077).  The Return Home button turns an
         // arc while its plan is worked out, on purpose and on a different control; what this guards is
         // the route play button's spinner, which lived in the renderer that paints `paintingRoute`.
-        int renderer = code.indexOf("paintingRoute");
+        String cell = SourceOf.withoutComments(SourceOf.declaration(
+            "public class CustomTableRenderer extends DefaultTableCellRenderer"));
 
-        int rendererEnds = renderer < 0 ? -1 : code.indexOf("getTableCellRendererComponent(", renderer);
+        int renderer = cell.indexOf("paintingRoute");
+
+        int rendererEnds = renderer < 0 ? -1 : cell.indexOf("getTableCellRendererComponent(", renderer);
 
         assertTrue(renderer >= 0 && rendererEnds > renderer,
             "precondition: the route cell renderer could not be found, so nothing below looks at it");
 
-        assertFalse(code.substring(renderer, rendererEnds).contains("drawArc("),
+        // AN ARC IS DRAWN TWO WAYS in this program: `drawArc(`, and an `Arc2D` shape - the Return Home spinner is the
+        // second, because whole-pixel `drawArc` was rejected for its jitter.  Both are refused in this cell.
+        assertTrue(drawsAnArc(code),
+            "precondition: no arc is drawn anywhere in the program's code by `drawArc(` or `Arc2D`, so the search for one"
+            + " in the route cell looks for a shape this program no longer draws arcs with");
+
+        assertFalse(drawsAnArc(cell.substring(renderer, rendererEnds)),
             "the spinner arc is back; the button greys now instead");
     }
 
     /**
-     * Source with its comments taken out.
+     * Whether code draws an arc, either way this program does it.
      *
-     * Every scan in this class needs it, and for the reason three findings this round were about: the
-     * prose in this codebase describes the code beside it closely enough to be mistaken for it, so a
-     * comment saying what something used to do reads exactly like it still doing it.
+     * @param code program code, comments blanked
+     * @return true when it calls `drawArc(` or builds an `Arc2D`
      */
-    private static String withoutComments(String source)
+    private static boolean drawsAnArc(String code)
     {
-        return source.replaceAll("(?s)/\\*.*?\\*/", "").replaceAll("//[^\\n]*", "");
-    }
-
-    private static int countOf(String text, String needle)
-    {
-        int count = 0;
-
-        for (int at = text.indexOf(needle); at >= 0; at = text.indexOf(needle, at + 1))
-        {
-            count++;
-        }
-
-        return count;
+        return code.contains("drawArc(") || code.contains("Arc2D");
     }
 }

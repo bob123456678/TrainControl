@@ -33,8 +33,8 @@ import javax.swing.Timer;
  * parts.
  *
  * The turn at the end of each cycle is free: an emptied hourglass turned through half a circle is
- * pixel for pixel a full one, so there is no frame where the sand jumps back up the glass. (VAL-C3:
- * that used to describe the whole loop, drawn by rotating rather than by resetting; as of 2026-08-29
+ * pixel for pixel a full one, so there is no frame where the sand jumps back up the glass.
+ * (That used to describe the whole loop, drawn by rotating rather than by resetting; as of 2026-08-29
  * only the turn itself rotates and the drain is always drawn upright - see the halfTurns comment in
  * paintComponent - so "loops by rotating" is now true of the twelve turn frames only.)
  *
@@ -99,7 +99,7 @@ public class LoadingSpinner extends JPanel
     /**
      * Frames since the animation started, modulo two whole cycles.
      *
-     * VAL-C3: two whole cycles used to be load-bearing, because the drawing alternated between upright
+     * Two whole cycles used to be load-bearing, because the drawing alternated between upright
      * and inverted and one cycle left it standing on its head. As of 2026-08-29 the drain is always
      * drawn upright and only the twelve turn frames rotate (see the halfTurns comment in
      * paintComponent), so every frame `n` now renders identically to `n + CYCLE_FRAMES` and the true
@@ -114,7 +114,7 @@ public class LoadingSpinner extends JPanel
         setOpaque(false);
 
         // Matches the diagram's own background so the swap to the finished grid is not also a flash of
-        // a different colour
+        // a different color
         setBackground(Color.WHITE);
 
         timer = new Timer(FRAME_MS, e ->
@@ -167,12 +167,11 @@ public class LoadingSpinner extends JPanel
     /**
      * A default only, and only when nobody has said otherwise.
      *
-     * This used to return 120x120 unconditionally, which quietly overrode all three callers (DOC-C24:
-     * there are now three, not two - LayoutGrid.showWhenTilesAreReady, BusyDialog, and StartupSplash):
+     * This used to return 120x120 unconditionally, which quietly overrode all three callers (LayoutGrid.showWhenTilesAreReady, BusyDialog and StartupSplash):
      * the grid asks for the space the diagram is about to take so that nothing jumps when the two are
      * swapped, the busy dialog asks for something small enough to sit above a line of text, and the
      * splash asks for its own fixed size. None of them got what they asked for, and the grid's comment
-     * described a behaviour that could not happen.
+     * described a behavior that could not happen.
      */
     @Override
     public Dimension getPreferredSize()
@@ -223,9 +222,9 @@ public class LoadingSpinner extends JPanel
                 halfTurns += (at - DRAIN_FRAMES + 1) / (double) TURN_FRAMES;
             }
 
-            // WK-C3: centred on the VISIBLE part of this component, not the whole of it. This
+            // Centered on the VISIBLE part of this component, not the whole of it. This
             // component is sized to the whole diagram page (LayoutGrid.showWhenTilesAreReady), which
-            // on a page bigger than the LayoutArea viewport put the glass's true centre off whatever
+            // on a page bigger than the LayoutArea viewport put the glass's true center off whatever
             // screenful the operator happens to be scrolled to - the "blank page" symptom OB-129 was
             // filed for, arrived at by a different route. getVisibleRect() is the standard way to ask
             // a component what part of itself is actually on screen inside a JScrollPane; it degrades
@@ -255,13 +254,13 @@ public class LoadingSpinner extends JPanel
     }
 
     /**
-     * Draws the glass and its sand, centred on the origin of the transform it is given.
+     * Draws the glass and its sand, centered on the origin of the transform it is given.
      *
      * Kept apart from the frame arithmetic above so the shape can be reasoned about on its own:
      * everything here is a function of the three numbers passed in, with no reference to what frame it
      * is or which way up the glass has been turned.
      *
-     * @param g2 a graphics already translated to the centre and rotated to the current turn
+     * @param g2 a graphics already translated to the center and rotated to the current turn
      * @param glassW the width across the plates
      * @param glassH the height from plate to plate
      * @param drained how much of the sand has run through, 0 for none and 1 for all of it
@@ -278,7 +277,7 @@ public class LoadingSpinner extends JPanel
 
         float line = (float) Math.max(1.5, glassW * 0.05);
 
-        // --- the silhouette --------------------------------------------------------------------------
+        // the silhouette
         //
         // Curved sides rather than two triangles.  A triangle pair meeting at a point is equally a bow
         // tie, and on a diagram that is how the first attempt at this read; the pinch just below each
@@ -298,7 +297,7 @@ public class LoadingSpinner extends JPanel
         glass.quadTo(halfW * 0.78, -bulbH * 0.12, halfW, -bulbH);
         glass.closePath();
 
-        // --- the sand, drawn first so the outline stays crisp over it -------------------------------
+        // the sand, drawn first so the outline stays crisp over it
         //
         // Cut out of the silhouette rather than drawn as its own shape: a level is a horizontal line
         // across the glass, whatever the glass happens to be shaped like, and intersecting says that
@@ -345,7 +344,7 @@ public class LoadingSpinner extends JPanel
             g2.draw(new Line2D.Double(0, 0, 0, bulbH * remaining));
         }
 
-        // --- the glass ------------------------------------------------------------------------------
+        // the glass
         g2.setColor(FRAME_GREY);
         g2.setStroke(new BasicStroke(line, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
 

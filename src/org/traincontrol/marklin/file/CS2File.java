@@ -454,7 +454,7 @@ public final class CS2File
         String lastKey = null;
         Map<String, String> item = null;
 
-        // Keys at the left margin, which arrive before any block is opened (X8-A1).
+        // Keys at the left margin, which arrive before any block is opened.
         Map<String, String> bare = null;
         
         Map<String, String> array = new HashMap<>();
@@ -528,11 +528,11 @@ public final class CS2File
                     array.clear();
                 }
                 
-                // CASE-INSENSITIVE, LIKE THE OTHER READER OF THIS FILE (T10-C6, after X8V-C4).
+                // CASE-INSENSITIVE, LIKE THE OTHER READER OF THIS FILE.
                 //
-                // `X8V-C4` made LayoutDiagram.readLayoutIndexIds match the block name without regard to
+                // LayoutDiagram.readLayoutIndexIds matches the block name without regard to
                 // case, on the measured ground that "an index spelling the block `Seite` gave no page an
-                // id at all".  Its twin here was not swept, and this one is worse: a capitalised block
+                // id at all".  Its twin here was not swept, and this one is worse: a capitalized block
                 // is not a block to this parser, so the file comes back with ZERO pages and ZERO
                 // unreadable pages - and the guard that reverts to the Central Station asks whether
                 // anything failed, not whether anything was expected.  The operator would get an empty
@@ -542,7 +542,7 @@ public final class CS2File
                 // The premise is this project's own files: `sample_layout` spells its version block
                 // `Version` and `cs2_sample_layout` spells it `version`, so the station's casing is not
                 // uniform across firmware.  No `gleisbild.cs2` here spells `Seite` with a capital, so
-                // this is a trap rather than a live defect - and it is the same trap X8V-C4 accepted the
+                // this is a trap rather than a live defect - and it is the same trap the other reader accepted the
                 // premise of and half-fixed.
                 if (s.matches("^[a-zA-Z]+$"))
                 {
@@ -552,7 +552,7 @@ public final class CS2File
                     }
 
                     // THE BARE KEYS GO FIRST, because that is where the file has them: they sit
-                    // between the header and the first block (X8-A1).
+                    // between the header and the first block.
                     if (bare != null)
                     {
                         bare.put("_type", "_bareKeys");
@@ -565,10 +565,10 @@ public final class CS2File
                     item = new HashMap<>();
 
                     // LOWER-CASED, so that the twelve `"xxx".equals(m.get("_type"))` readers keep
-                    // working whatever the file's casing (T10-C6).
+                    // working whatever the file's casing.
                     item.put("_type", s.toLowerCase());
 
-                    // AND THE SPELLING THE FILE USED IS KEPT (TWV-C1).
+                    // AND THE SPELLING THE FILE USED IS KEPT.
                     //
                     // `exportToCS2TextFormat` writes `_type` back as the block name for every block this
                     // program does not model, and that machinery exists to put back what the file said -
@@ -593,7 +593,7 @@ public final class CS2File
                 }   
                 else if (s.matches("^ \\.[a-z0-9A-Z]+$"))
                 {
-                    // THE SAME CHARACTER CLASS AS THE ARM ABOVE (X8-B3).
+                    // THE SAME CHARACTER CLASS AS THE ARM ABOVE.
                     //
                     // It read `[a-z]+` while its sibling nine lines up read `[a-z0-9A-Z]+`, and the
                     // Central Station spells a route's condition block ` .S88Flag`.  That line has no
@@ -612,7 +612,7 @@ public final class CS2File
                 }
                 else if (s.matches("^[a-zA-Z0-9_]+=.*$"))
                 {
-                    // A KEY AT THE LEFT MARGIN (X8-A1).
+                    // A KEY AT THE LEFT MARGIN.
                     //
                     // `page=1` is the second line of a genuine Central Station page export, and it
                     // matched none of the three arms above: it carries an `=`, so it is not a block
@@ -643,7 +643,7 @@ public final class CS2File
                     items.add(item);
                 }
 
-                // And bare keys that no block ever followed (X8-A1), which is what a file holding
+                // And bare keys that no block ever followed, which is what a file holding
                 // nothing but a header and a `page=` line is.
                 if (bare != null)
                 {
@@ -823,7 +823,7 @@ public final class CS2File
                 }
                 catch (NumberFormatException | ArrayIndexOutOfBoundsException e)
                 {
-                    // SKIP THE RECORD, NOT THE IMPORT (AC2-C2).
+                    // SKIP THE RECORD, NOT THE IMPORT.
                     //
                     // The three sibling parsers were each given this guard with a comment explaining
                     // the blast radius - `parseRoutes`, `parseLocomotives`, `parseLocomotivesCS3` -
@@ -881,17 +881,17 @@ public final class CS2File
                 {
                     MarklinRoute r = new MarklinRoute(control, m.get("name"), Integer.parseInt(m.get("id")));
 
-                    // THE CONDITIONS AND THE COMMANDS, IN FILE ORDER (X8-B3).
+                    // THE CONDITIONS AND THE COMMANDS, IN FILE ORDER.
                     //
                     // A route file writes its conditions under ` .S88Flag` and its commands under
                     // ` .item`, and this method used to read `item` alone.  It got the conditions
-                    // anyway, by accident: the array-header regex did not recognise ` .S88Flag`, so
+                    // anyway, by accident: the array-header regex did not recognize ` .S88Flag`, so
                     // `lastKey` was left holding "item" and the condition group was flushed in beside
                     // the commands.  The loop below tells the two apart by asking each piece whether it
                     // carries `kont`, so the result was right.
                     //
                     // That accident is what broke when the regex was corrected, and it is why the two
-                    // halves had to be done together: with the header recognised, the conditions arrive
+                    // halves had to be done together: with the header recognized, the conditions arrive
                     // under their own key, and a route read from `item` alone keeps every command and
                     // silently loses every condition.
                     //
@@ -1081,65 +1081,19 @@ public final class CS2File
      */
     public static int[] parseLocomotiveFunctions(String functionList)
     {
-        // Sanity check in case no functions are specified in the CS2 file
-        if (functionList == null || functionList.isEmpty())
-        {
-            return new int[0];
-        }
-
-        String[] data = functionList.replace("{", "").replace("}", "").split("\\|");
-
-        // Collected first, because the function number is the INDEX in the returned array while the
-        // entry count only bounds how many are listed.  A CS2 file may list functions sparsely, and
-        // indexing an entry-count-sized array by function number then threw - which escaped
-        // parseLocomotives and aborted the entire Central Station sync for one bad locomotive.
-        Map<Integer, Integer> parsed = new HashMap<>();
-        int highest = -1;
-
-        // Loop through each function
-        for (String functionInfo : data)
-        {
-            int fn = 0;
-            int type = 0;
-
-            // Loop through the keys in each function
-            for (String functionItem : functionInfo.split(","))
-            {
-                // A key with no value would otherwise run off the end of the array below
-                if (!functionItem.contains("=")) continue;
-
-                String[] item = functionItem.split("=");
-
-                if ("nr".equals(item[0]))
-                {
-                    fn = Integer.parseInt(item[1]);
-                }
-                else if ("typ".equals(item[0]))
-                {
-                    type = Integer.parseInt(item[1]);
-                }
-            }
-
-            if (fn >= 0)
-            {
-                parsed.put(fn, type);
-
-                if (fn > highest) highest = fn;
-            }
-        }
-
-        // At least data.length, so a contiguous list returns exactly what it always did
-        int[] output = new int[Math.max(data.length, highest + 1)];
-
-        for (Map.Entry<Integer, Integer> function : parsed.entrySet())
-        {
-            output[function.getKey()] = function.getValue();
-        }
-
-        return output;
+        return parseFunctionList(functionList, false);
     }
 
     public static int[] parseFunctionTriggerTypes(String functionList)
+    {
+        return parseFunctionList(functionList, true);
+    }
+
+    /**
+     * Slot n holds function n's "typ", or with triggerTypes its "dauer" (else pulse for typ 128 and up, toggle).
+     * "dauer" is read only for triggerTypes, so a malformed one never fails the "typ" answer.
+     */
+    private static int[] parseFunctionList(String functionList, boolean triggerTypes)
     {
         // Sanity check in case no functions are specified in the CS2 file
         if (functionList == null || functionList.isEmpty())
@@ -1149,8 +1103,9 @@ public final class CS2File
 
         String[] data = functionList.replace("{", "").replace("}", "").split("\\|");
 
-        // Collected first - see parseLocomotiveFunctions above for why the array cannot be sized by the
-        // number of entries
+        // Collected first: the function number is the index in the returned array, and a CS2 file may list functions
+        // sparsely, so the array is sized by the highest number, not the entry count.  An out-of-range index here would
+        // escape parseLocomotives and abort the whole Central Station sync for one locomotive.
         Map<Integer, Integer> parsed = new HashMap<>();
         int highest = -1;
 
@@ -1177,7 +1132,7 @@ public final class CS2File
                 {
                     type = Integer.parseInt(item[1]);
                 }
-                else if ("dauer".equals(item[0]))
+                else if (triggerTypes && "dauer".equals(item[0]))
                 {
                     dauer = Integer.parseInt(item[1]);
                 }
@@ -1185,12 +1140,14 @@ public final class CS2File
 
             if (fn >= 0)
             {
-                parsed.put(fn, dauer > 0 ? dauer : (type >= 128 ? Locomotive.FUNCTION_PULSE : Locomotive.FUNCTION_TOGGLE));
+                parsed.put(fn, !triggerTypes ? type
+                        : dauer > 0 ? dauer : (type >= 128 ? Locomotive.FUNCTION_PULSE : Locomotive.FUNCTION_TOGGLE));
 
                 if (fn > highest) highest = fn;
             }
         }
 
+        // At least data.length, so a contiguous list gives one slot per entry
         int[] output = new int[Math.max(data.length, highest + 1)];
 
         for (Map.Entry<Integer, Integer> function : parsed.entrySet())
@@ -2032,7 +1989,7 @@ public final class CS2File
         
         for (String layoutName : parseLayoutList())
         {
-            // Sanitised, and matching what getLayoutURL will look for when this folder is read back.
+            // Sanitized, and matching what getLayoutURL will look for when this folder is read back.
             // The remote fetch above is unaffected: it goes through sanitizeURL on the http branch.
             File layoutFile = new File(layoutsDir, sanitizeFilename(layoutName) + ".cs2");
 
@@ -2055,7 +2012,7 @@ public final class CS2File
         //
         // Tolerated when absent, unlike the three above. A Central Station with no routes defined is
         // an ordinary thing, and the whole download should not fail because there is nothing to
-        // fetch - which is a different judgement from the accessory file, whose absence would mean
+        // fetch - which is a different judgment from the accessory file, whose absence would mean
         // the station is not answering properly.
         try
         {
@@ -2227,7 +2184,7 @@ public final class CS2File
 
                 Map<String, String> page = new java.util.LinkedHashMap<>();
                 page.put("name", name);
-                // Through LayoutDiagram's rule rather than a second copy of it (DR-B4).
+                // Through LayoutDiagram's rule rather than a second copy of it.
                 //
                 // This said `m.get("id") != null ? m.get("id") : position`, which is the same rule for
                 // an ABSENT id and a different one for a corrupt id: a `.id=` line that is not a
@@ -2419,7 +2376,7 @@ public final class CS2File
     }
     
     /**
-     * How many pages the last parseLayout could not read (RC-A3).
+     * How many pages the last parseLayout could not read.
      *
      * Not a total across the life of the parser - parseLayout resets it - so it always describes the
      * list it just handed back.  A caller holding that list has no other way to tell a complete railway
@@ -2427,7 +2384,7 @@ public final class CS2File
      */
     private int pagesThatCouldNotBeRead;
 
-    // How many pages the index named, which is what "did anything read" is asked against (T10-C6).
+    // How many pages the index named, which is what "did anything read" is asked against.
     private int pagesTheIndexNamed;
 
     /**
@@ -2441,8 +2398,8 @@ public final class CS2File
     /**
      * How many pages the index NAMED, whether or not any of them arrived.
      *
-     * The caller's "did anything read" guard needs something to ask against (T10-C6).  A page can fail
-     * loudly - it throws, and is counted as unread - or it can simply never be recognised, which is what
+     * The caller's "did anything read" guard needs something to ask against.  A page can fail
+     * loudly - it throws, and is counted as unread - or it can simply never be recognized, which is what
      * an index this parser does not understand produces: zero pages AND zero failures, a layout that
      * read nothing at all and reported no fault.  The index is the statement of what should be there.
      *
@@ -2461,7 +2418,7 @@ public final class CS2File
      */
     public List<LayoutDiagram> parseLayout(List<MarklinAccessory> accDB) throws Exception
     {
-        // Answers about THIS parse, not about every parse this object has ever done (RC-A3).
+        // Answers about THIS parse, not about every parse this object has ever done.
         this.pagesThatCouldNotBeRead = 0;
 
         this.pagesTheIndexNamed = 0;
@@ -2584,8 +2541,8 @@ public final class CS2File
                         
                 for (Map<String, String> m : l)
                 {
-                    // The left-margin keys, which are not a block and must not be written as one
-                    // (X8-A1).  `page=1` is the only one a real export carries.
+                    // The left-margin keys, which are not a block and must not be written as one.
+                    // `page=1` is the only one a real export carries.
                     if ("_bareKeys".equals(m.get("_type")))
                     {
                         for (Map.Entry<String, String> bare : m.entrySet())
@@ -2722,7 +2679,7 @@ public final class CS2File
                                 added.setUnmodelledKeys(m);
 
                                 // And the file's own word for the type, plus its rotation exactly as given.
-                                // Both ARE modelled, and both are lossy: the type mapping is many-to-one, so
+                                // Both ARE modeled, and both are lossy: the type mapping is many-to-one, so
                                 // writing the canonical word back collapses every variant the file
                                 // distinguished, and the rotation of a semaphore signal is corrected on the
                                 // way in by a rule keyed on the word that has just been thrown away.
@@ -2749,7 +2706,7 @@ public final class CS2File
             }
             catch (Exception | Error bad)
             {
-                // COUNTED, AND SAID OUT LOUD (RC-A3, RC-A5).
+                // COUNTED, AND SAID OUT LOUD.
                 //
                 // This was debugOnly, so the one thing that explains an incomplete railway was
                 // invisible unless debug mode happened to be on.  A page that will not read is a fault
@@ -2757,14 +2714,14 @@ public final class CS2File
                 // warning worth showing from noise.
                 //
                 // The count is what everything downstream needs.  A caller that prunes, or reverts, is
-                // entitled to know it is not looking at the whole railway, and until RC-A3 nothing
+                // entitled to know it is not looking at the whole railway, and nothing
                 // could tell: most of a railway and all of one came back the same way.
                 this.pagesThatCouldNotBeRead++;
 
                 logMessage(I18n.f("layout.warningPageCouldNotBeRead", name, String.valueOf(bad)),
                     null, false);
 
-                // AND THE PAGE KEEPS ITS PLACE IN THE LIST (NSV-B3, Adam's ruling of 2026-09-10).
+                // AND THE PAGE KEEPS ITS PLACE IN THE LIST (Adam's ruling of 2026-09-10).
                 //
                 // Skipping it entirely left `getLayoutList()` one entry short, and a link tile holds a
                 // POSITION in that list - so every arrow at or past this page resolved one page early,

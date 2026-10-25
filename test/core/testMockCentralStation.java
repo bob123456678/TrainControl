@@ -35,7 +35,7 @@ import org.traincontrol.marklin.file.CS2File;
  * same, because the sync acts on what came off the wire.
  *
  * Exactly what it acts on is worth being precise about, because this file used to say something
- * stronger than the code does (TA-B5). `syncWithCS2` does NOT replace the locomotive database
+ * stronger than the code does. `syncWithCS2` does NOT replace the locomotive database
  * wholesale - it matches by UID, renames, re-addresses, and never deletes a locomotive. The database
  * it deletes from is the ROUTES: a fetched route whose commands, s88 or trigger differ from the
  * stored route of that id is deleted and re-added, and a fetched name belonging to another id deletes
@@ -185,7 +185,7 @@ public class testMockCentralStation
      * Both sides share the parser, so what this can catch is a transport-level loss - a truncated
      * body, a mangled encoding, a dropped block - and not a parser that is wrong in the same way
      * twice.  It used to compare sorted NAMES alone, which left the addresses and decoder types
-     * outside the comparison entirely (TA-B5): a fetch that read every name correctly and every
+     * outside the comparison entirely: a fetch that read every name correctly and every
      * address as zero passed under a docstring saying the two agreed.  The address is the field that
      * decides which engine a command reaches, so it is in the comparison now.
      */
@@ -332,7 +332,7 @@ public class testMockCentralStation
      * Nothing is listening on the port: the connection is refused, and that is reported.
      *
      * This test used to carry a `took < 30000` assertion said to be about the connect timeout, and it
-     * could not fail (TA-B5): a closed port on the loopback interface answers RST in microseconds, so
+     * could not fail: a closed port on the loopback interface answers RST in microseconds, so
      * the timeout is never reached and deleting `setConnectTimeout` changed nothing here.  The timing
      * claim has moved to the test below, which uses an address that really does go quiet.  What is
      * left is the property this fixture can actually demonstrate, and it is worth having on its own:
@@ -368,7 +368,7 @@ public class testMockCentralStation
     /**
      * A station that has been switched off is given up on rather than waited for.
      *
-     * This is the freeze the connect timeout exists to prevent, and TA-B5 found that nothing tested
+     * This is the freeze the connect timeout exists to prevent, and nothing tested
      * it: a station whose power has been pulled does not refuse the connection, it stops answering
      * altogether, and the SYNs go into a hole.  The operating system then retries for its own idea of
      * long enough - measured on this machine at 21 seconds - with the interface waiting on it.
@@ -419,7 +419,7 @@ public class testMockCentralStation
 
     /**
      * A sync that gives a member of a standing multi-unit the address of another standing train takes that train off the
-     * graph, as the window's Change Name or Address does (RLA2-B2).
+     * graph, as the window's Change Name or Address does.
      *
      * The sync is the fourth writer of a locomotive's address, and the only door a Central Station multi-unit's members
      * come in by; it re-addressed and re-linked and swept nothing, so both trains stood and autonomy would run the second
@@ -520,7 +520,7 @@ public class testMockCentralStation
 
     /**
      * Stands the Central Station's OBB 1043 on one point and the member its database copy does not have on another
-     * (OB-303; and RLA4-C7: the database's copy of OBB 1043 given one member before the sync, with the other standing).
+     * (OB-303: the database's copy of OBB 1043 given one member before the sync, with the other standing).
      *
      * A first sync brings OBB 1043 in with the two members `test/lokomotive.cs2` gives it; each member is made a
      * locomotive of the name the file gives it, where this database has none; then the database's copy is cut back to
@@ -609,7 +609,7 @@ public class testMockCentralStation
      * A sync that gives a standing Central Station multi-unit a member standing on the graph takes that member off, and
      * redraws the railway (OB-303).
      *
-     * The sync is the only door a Central Station multi-unit's members come in by, and since RLA2-B2 it sweeps a
+     * The sync is the only door a Central Station multi-unit's members come in by, and it sweeps a
      * multi-unit whose members it changed - but only the address half had a claim, and the sweep redrew nothing: the
      * window's own doors call the layout's refresh after the same sweep, and the autonomy panels went on drawing the
      * member standing.  Here the served OBB 1043, its database copy short of one member, stands on one point and that
@@ -751,7 +751,7 @@ public class testMockCentralStation
 
         // `requests` is class-static and never reset, and three earlier tests have already fetched
         // through it.  Asserting `requests.get() > 0` after the sync therefore said nothing about the
-        // sync at all (TA-B5) - it was true before the sync ran.  The delta is the fact
+        // sync at all - it was true before the sync ran.  The delta is the fact
         int before = requests.get();
 
         TestStationAddress.set(address);
@@ -861,7 +861,7 @@ public class testMockCentralStation
      * The premise here used to be stronger than the code: "this is the case that would cost a user
      * every locomotive they own".  It would not, as things stand - `syncWithCS2` matches locomotives
      * by UID, renames and re-addresses them, and has no path that deletes one, so there is no wipe for
-     * a failed fetch to trigger (TA-B5).  What this test is really worth is as a ratchet: the day
+     * a failed fetch to trigger.  What this test is really worth is as a ratchet: the day
      * something in the sync learns to remove a locomotive that the station no longer lists, a failed
      * fetch will look exactly like a station that lists nothing, and this fails.
      *

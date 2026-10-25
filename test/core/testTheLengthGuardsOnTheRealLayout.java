@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -99,6 +100,9 @@ public class testTheLengthGuardsOnTheRealLayout
      */
     private static final TileKey BOTTOM_MAIN_B = new TileKey(MAIN, 20, 13);
 
+    /** BottomMainA, where the claim about his two one-unit segments stands 75 407 DB. */
+    private static final TileKey BOTTOM_MAIN_A = new TileKey(MAIN, 20, 12);
+
     /**
      * The tile the whole of Adam's 2026-09-09 ruling turns on.
      *
@@ -123,7 +127,7 @@ public class testTheLengthGuardsOnTheRealLayout
         // where the snapshot's trains stand either.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = init(null, true, false, false, false);
+        model = support.TestStation.simulated();
 
         // THIS CLASS'S OWN TRAIN, before anything is measured or placed.
         ourTrain = model.newMM2Locomotive(OUR_TRAIN, OUR_ADDRESS);
@@ -755,7 +759,7 @@ public class testTheLengthGuardsOnTheRealLayout
      *
      * Adam: **"if we made both lengths 4, would it then be accepted?  That should be the minimum
      * acceptable length."** The guard agrees in code - `loc.getTrainLength() > room` refuses, so four
-     * into four is admitted - and this is the behavioural half of it.
+     * into four is admitted - and this is the behavioral half of it.
      *
      * **Three things this test has now stopped naming**, each of which went stale in turn:
      *
@@ -982,7 +986,7 @@ public class testTheLengthGuardsOnTheRealLayout
         session.setTileLength(new TileKey(MAIN, 19, 12), 1);
         session.setTileLength(new TileKey(MAIN, 22, 7), 1);
 
-        // AND THEY ARE ON TRACK THE GUARD COUNTS (E8V-C1).
+        // AND THEY ARE ON TRACK THE GUARD COUNTS.
         //
         // Two named tiles are a measurement only while they lie on a stretch the room walk reaches,
         // and this file records what it costs when they do not: the RampDown claim's own note (it was
@@ -994,8 +998,8 @@ public class testTheLengthGuardsOnTheRealLayout
         // counts with, so a small answer on the route to this berth is the two lengths above landing
         // where they were meant to - and a large one, or none, says they did not.
         //
-        // This is the invariant `roomOf` carried until it was deleted as unreachable (E8-C9), and
-        // which was then asserted nowhere at all (E8V-C1).
+        // This is the invariant `roomOf` carried until it was deleted as unreachable, and
+        // which was then asserted nowhere at all.
 
         Locomotive train = model.getLocByName("75 407 DB");
 
@@ -1004,11 +1008,19 @@ public class testTheLengthGuardsOnTheRealLayout
         // PUT BACK, like the other two sites that borrow this engine.  This one kept the length.
         Integer was = train.getTrainLength();
 
+        // ALONE, AND STANDING WHERE THIS CLAIM SAYS (FR-136): at BottomMainA, facing east, in from the west.  Where his
+        // trains stand is working state, and a train standing on its way blocks a route this claim needs.  Put back after.
+        Map<TileKey, Object[]> standing = liftEveryTrain();
+
+        session.placeLocomotive(BOTTOM_MAIN_A, "75 407 DB");
+        session.setPointProperty(BOTTOM_MAIN_A, "facing", "E");
+        session.setPointProperty(BOTTOM_MAIN_A, "arrivedFrom", "W");
+
         try
         {
             train.setTrainLength(4);
 
-            // THE FLOOR (E8-B4).  `offers` answers false when the railway offers this train nothing
+            // THE FLOOR.  `offers` answers false when the railway offers this train nothing
             // at all - an unplaced locomotive, a configuration that drops its Point - so without this
             // the refusal below is satisfied by a railway that has closed down entirely.
             assertFalse(offeredDestinations(train).isEmpty(),
@@ -1020,7 +1032,7 @@ public class testTheLengthGuardsOnTheRealLayout
                 + " TunnelLongPark - so the guard is wrong and the stale lengths were not the cause");
 
             // AND THE LENGTH IS WHAT REFUSES IT, which is the claim this test's NAME makes and which
-            // it did not make until 2026-09-10 (E8-B4).
+            // it did not make until 2026-09-10.
             //
             // `testTunnelLongParkIsRefusedForReasonsOtherThanLength` already asserts that this berth
             // refuses this locomotive with every tile measured at eight - so something other than
@@ -1068,6 +1080,8 @@ public class testTheLengthGuardsOnTheRealLayout
         finally
         {
             train.setTrainLength(was == null ? 0 : was);
+
+            putTheTrainsBack(standing);
         }
     }
 
@@ -1337,6 +1351,40 @@ public class testTheLengthGuardsOnTheRealLayout
         }
 
         return null;
+    }
+
+    /**
+     * Takes every train off the setup, and hands back where each stood, for `putTheTrainsBack`.
+     */
+    private static Map<TileKey, Object[]> liftEveryTrain()
+    {
+        Map<TileKey, Object[]> standing = new java.util.LinkedHashMap<>();
+
+        for (TileKey tile : session.tilesWithALocomotive())
+        {
+            standing.put(tile, new Object[] {session.getPointProperty(tile, "loc"), session.getPointProperty(tile, "facing"),
+                session.getPointProperty(tile, "arrivedFrom"), session.getPointProperty(tile, "arrivedAlong")});
+        }
+
+        session.clearEveryPlacement();
+
+        return standing;
+    }
+
+    /**
+     * Takes every train off the setup and stands again those `liftEveryTrain` took off, as they stood.
+     */
+    private static void putTheTrainsBack(Map<TileKey, Object[]> standing)
+    {
+        session.clearEveryPlacement();
+
+        for (Map.Entry<TileKey, Object[]> at : standing.entrySet())
+        {
+            session.setPointProperty(at.getKey(), "loc", at.getValue()[0]);
+            session.setPointProperty(at.getKey(), "facing", at.getValue()[1]);
+            session.setPointProperty(at.getKey(), "arrivedFrom", at.getValue()[2]);
+            session.setPointProperty(at.getKey(), "arrivedAlong", at.getValue()[3]);
+        }
     }
 
     private Layout rebuild() throws Exception

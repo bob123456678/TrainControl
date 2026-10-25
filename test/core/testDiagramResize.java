@@ -32,7 +32,7 @@ public class testDiagramResize
     {
         LayoutDiagram diagram = new LayoutDiagram("test", 6, 6, null, null);
 
-        // A recognisable tile, away from every edge so that neither operation touches it
+        // A recognizable tile, away from every edge so that neither operation touches it
         diagram.addComponent(new LayoutDiagramComponent(
             LayoutDiagramComponent.componentType.STRAIGHT, 2, 3, 0, 0, 12, 11,
             Accessory.accessoryDecoderType.MM2), 2, 3);
@@ -158,7 +158,7 @@ public class testDiagramResize
     /**
      * A page with nothing on it has bounds a grid can be built from.
      *
-     * UR-8, from the uninformed review. `checkBounds` seeds `minx = sx` and `maxx = 0` outside edit
+     * `checkBounds` seeds `minx = sx` and `maxx = 0` outside edit
      * mode and only ever lowers `minx` for a square that HOLDS something, so a page with no components
      * keeps both seeds. `LayoutGrid` then computes `maxx - minx + 1 + 1`, which on a thirty-wide page is
      * -28, and `new LayoutLabel[width][height]` throws NegativeArraySizeException.
@@ -193,7 +193,7 @@ public class testDiagramResize
     }
 
     /**
-     * A shift moves what this build cannot draw along with the track, by the rule it moves a tile by (GSP-C2).
+     * A shift moves what this build cannot draw along with the track, by the rule it moves a tile by.
      *
      * An element whose type TrainControl does not know is kept as the file had it and written back on save - id and
      * all, and its id IS its square, x + (y << 8).  The four shifts moved every tile and left these on their old ids, so
@@ -231,7 +231,7 @@ public class testDiagramResize
 
     /**
      * The id one element this build cannot draw is written back with, after one shift at column or row 1 of a page
-     * carrying a straight at 3,3 (GSP-C2).
+     * carrying a straight at 3,3.
      *
      * @param shift "right", "down", "left" or "up"
      * @param x the element's column before the shift

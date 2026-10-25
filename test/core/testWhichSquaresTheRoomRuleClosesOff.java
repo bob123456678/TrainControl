@@ -88,7 +88,7 @@ public class testWhichSquaresTheRoomRuleClosesOff
         // one moves as he works.  `live-snapshot` is the same railway with the clock stopped.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = init(null, true, false, false, false);
+        model = support.TestStation.simulated();
 
         for (Integer units : LENGTHS)
         {

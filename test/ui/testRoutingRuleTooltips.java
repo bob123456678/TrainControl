@@ -102,7 +102,7 @@ public class testRoutingRuleTooltips
         try
         {
             // Inside the try, so nothing between the open and the close can leave the
-            // preference behind (TSX-B8).
+            // preference behind.
             sandbox = support.LayoutSandbox.open();
 
             javax.swing.SwingUtilities.invokeAndWait(() -> built[0] = new TrainControlUI());

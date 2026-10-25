@@ -10,7 +10,6 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.Test;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.Point;
@@ -53,7 +52,7 @@ public class testPlaceAllAtTheirHomes
     {
         File frozen = new File("test/operator_layout");
 
-        if (!frozen.isDirectory()) throw new SkipException("test/operator_layout is not here");
+        if (!frozen.isDirectory()) throw new AssertionError("test/operator_layout is not here");
 
         support.LayoutSandbox sandbox = null;
         MarklinControlStation model = null;
@@ -62,7 +61,7 @@ public class testPlaceAllAtTheirHomes
         {
             sandbox = support.LayoutSandbox.open(frozen);
 
-            model = init(null, true, false, false, true);
+            model = support.TestStation.simulatedInDebug();
             model.stop();
 
             model.newMM2Locomotive(HOMED, 2401);
@@ -183,7 +182,7 @@ public class testPlaceAllAtTheirHomes
     {
         File frozen = new File("test/operator_layout");
 
-        if (!frozen.isDirectory()) throw new SkipException("test/operator_layout is not here");
+        if (!frozen.isDirectory()) throw new AssertionError("test/operator_layout is not here");
 
         support.LayoutSandbox sandbox = null;
         MarklinControlStation model = null;
@@ -192,7 +191,7 @@ public class testPlaceAllAtTheirHomes
         {
             sandbox = support.LayoutSandbox.open(frozen);
 
-            model = init(null, true, false, false, true);
+            model = support.TestStation.simulatedInDebug();
             model.stop();
 
             model.newMM2Locomotive(TWICE, 2404);
@@ -299,6 +298,6 @@ public class testPlaceAllAtTheirHomes
             if (name.equals(session.getStore().getPointName(key))) return key;
         }
 
-        throw new SkipException("his railway has no " + name);
+        throw new AssertionError("his railway has no " + name);
     }
 }

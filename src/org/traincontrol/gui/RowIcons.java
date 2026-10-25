@@ -5,6 +5,7 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import javax.swing.Icon;
 
@@ -20,7 +21,7 @@ import javax.swing.Icon;
  */
 public final class RowIcons
 {
-    /** Grey enough to read as a control rather than as content. */
+    /** Gray enough to read as a control rather than as content. */
     private static final Color QUIET = new Color(110, 110, 110);
 
     /** For delete, which is the one action here somebody might regret. */
@@ -42,7 +43,7 @@ public final class RowIcons
     }
 
     /**
-     * The same, in a colour of the caller's choosing - see plus(int, Color).
+     * The same, in a color of the caller's choosing - see plus(int, Color).
      */
     public static Icon trash(final int size, final Color colour)
     {
@@ -94,7 +95,7 @@ public final class RowIcons
     }
 
     /**
-     * The same, in a colour of the caller's choosing - see plus(int, Color).
+     * The same, in a color of the caller's choosing - see plus(int, Color).
      */
     public static Icon copy(final int size, final Color colour)
     {
@@ -105,9 +106,11 @@ public final class RowIcons
             {
                 g.setStroke(new BasicStroke(1.3f));
 
-                int w = Math.round(width * 0.52f);
-                int h = Math.round(height * 0.62f);
-                int gap = Math.max(2, Math.round(width * 0.20f));
+                Rectangle front = frontSheet(width, height);
+
+                int w = front.width;
+                int h = front.height;
+                int gap = front.x - 1;
 
                 // The sheet behind, only where it shows - the one in front hides its lower right corner, so
                 // the two read as two sheets rather than as a little grid.  Not by filling the front one white
@@ -125,6 +128,21 @@ public final class RowIcons
     }
 
     /**
+     * Where the copy mark's front sheet is drawn in an icon of this size; the sheet behind is drawn from the same
+     * figures, a gap up and to the left.
+     *
+     * @param width the icon's width
+     * @param height the icon's height
+     * @return the front sheet's outline
+     */
+    static Rectangle frontSheet(int width, int height)
+    {
+        int gap = Math.max(2, Math.round(width * 0.20f));
+
+        return new Rectangle(1 + gap, 1 + gap, Math.round(width * 0.52f), Math.round(height * 0.62f));
+    }
+
+    /**
      * A plus.
      *
      * @param size how many pixels square
@@ -136,10 +154,10 @@ public final class RowIcons
     }
 
     /**
-     * The same, in a colour of the caller's choosing.
+     * The same, in a color of the caller's choosing.
      *
-     * For a row that is SELECTED.  These marks are drawn in their own colours - green for add, red
-     * for delete, grey for copy - and a selected row is painted in the look-and-feel's selection
+     * For a row that is SELECTED.  These marks are drawn in their own colors - green for add, red
+     * for delete, gray for copy - and a selected row is painted in the look-and-feel's selection
      * blue, against which a mid-green plus is very nearly invisible.  It is the row somebody has just
      * clicked, so it is the one mark they are most likely to be reaching for.
      *
@@ -178,9 +196,9 @@ public final class RowIcons
     }
 
     /**
-     * The same, in a given colour.
+     * The same, in a given color.
      *
-     * A selected row is painted in the table's selection colours, and a mark drawn in a fixed grey
+     * A selected row is painted in the table's selection colors, and a mark drawn in a fixed gray
      * disappears into it - which is exactly when somebody is most likely to be reaching for it, since
      * selecting a row is how you decide which one to move.
      *
@@ -223,7 +241,7 @@ public final class RowIcons
     }
 
     /**
-     * The same, in a given colour.
+     * The same, in a given color.
      *
      * @param size how many pixels square
      * @param inward true to indent

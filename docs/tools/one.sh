@@ -31,6 +31,8 @@
 
 set -u
 
+. "$(dirname "$0")/wait-for-slot.sh"
+
 S="${TC_SCRATCH:-}"
 
 if [ -z "$S" ] || [ ! -d "$S" ]
@@ -65,162 +67,70 @@ fingerprint()
 live_before=$(fingerprint)
 
 # ------------------------------------------------------------------------------------------------
-# NOT WHILE SOMETHING ELSE IS TESTING.  The same guard battery.sh carries, kept identical on purpose.
+# NOT WHILE SOMETHING ELSE IS TESTING - UNLESS IT HAS STATE OF ITS OWN (FR-136 Phase 1a).
 #
-# Test JVMs share the Java Preferences store that LayoutSandbox redirects, and two runs redirecting it
-# at once is how the real railway was damaged on 2026-08-30.
+# Test JVMs used to share the Java Preferences store that LayoutSandbox redirects, and two runs redirecting it at
+# once is how the real railway was damaged on 2026-08-30; so this refused while any test JVM ran, and one lock file
+# let one run go at a time.  Every run has had its own data folder and preference node since 2026-09-23, and its
+# own temp folder since Phase 1a, so the lock is now a count of slots (slots.sh, shared with battery.sh): this run
+# takes one, beside a battery's lanes or another worker's run, and refuses only while test JVMs WITHOUT a state of
+# their own are going - an IDE or ant run, or a runner from before the isolation.
 #
-# THE PROBE MATCHES OUR COMPILES BY THEIR ARGFILE (TV2-C1).  battery.sh first tried
-# `javac.exe ... '*TrainControl*'`, which cannot match either runner's compile in a session whose
-# cp.txt holds relative paths - and this session's does.  What is always on the command line is the
-# argfile, `one-files.txt` or `battery-files.txt`, and the testng jar on the classpath.  A compile is
-# the window that matters: both runners own no JVM at all while javac is running, which is exactly
-# where the two runs of 2026-09-01 overlapped.  Measured, that window is a few seconds rather than
-# the minute an earlier comment claimed - short, not absent.
-PROBE="(Get-CimInstance Win32_Process -Filter \"Name='java.exe' OR Name='javac.exe'\" | Where-Object { \$_.CommandLine -like '*anyReceivePort*' -or \$_.CommandLine -like '*testng*' -or \$_.CommandLine -like '*TestNG*' -or \$_.CommandLine -like '*one-files*' -or \$_.CommandLine -like '*battery-files*' } | Measure-Object).Count"
+# A class in serial-lane.txt needs the machine to itself (the keyboard focus, the clipboard), so a run naming one
+# takes every slot and refuses while any test JVM runs, as this always did.  The lock still covers the COMPILE: the
+# probe sees JVMs, and two runs that overlap in javac own none (2026-09-01).
+TOOLS="$(cd "$(dirname "$0")" && pwd)"
 
-RUNNING_JVMS=$(powershell.exe -NoProfile -Command "$PROBE" 2>/dev/null | tr -d '\r\n ')
+. "$TOOLS/slots.sh"
 
-# The arms test the WHOLE answer, not its first character: "12abc" matched [0-9]* before, the -gt then
-# failed with its diagnostic discarded, and the run proceeded without the warning meant for that case.
-case "$RUNNING_JVMS" in
-    ''|*[!0-9]*)
-        echo "*** WARNING: could not count running test JVMs - this check DID NOT RUN ***"
-        echo ""
-        echo "PowerShell returned: '$RUNNING_JVMS'.  Make sure nothing else is running tests."
-        echo ""
-        ;;
-    *)
-        if [ "$RUNNING_JVMS" -gt 0 ]
-        then
-            echo "*** TEST JVMS ARE ALREADY RUNNING ($RUNNING_JVMS of them) - nothing was run ***"
-            echo ""
-            echo "A battery, an ant run, or another one.sh is going.  Wait for it, or stop it."
-            echo "Nothing needs deleting: this check clears itself when those processes exit."
-            exit 2
-        fi
-        ;;
-esac
+SERIAL_LANE=$(serial_lane_classes)
 
-# AND THE SAME LOCK battery.sh takes, at the same user-wide path.
-#
-# Per-session was the whole defect: the lock used to live under TC_SCRATCH, so two sessions took two
-# different files and neither ever saw the other.  TEMP is one directory for the user, which is the
-# scope the hazard has - the Preferences store these runs fight over is per user, not per session.
-LOCK="${TC_LOCK:-${TEMP:-${TMP:-/tmp}}/traincontrol-battery.lock}"
+ALONE=""
 
-# THE SAME TAKE, TOO, WORD FOR WORD (REL-B2).
-#
-# battery.sh was hardened on 2026-09-03 and this file was not, on the same lock: the take was still
-# test-then-write, the fallback still wrote a bare MSYS pid, and this reader could not parse the
-# "msys:NNN" the other file had started writing - so a one.sh could read a LIVE battery's lock as
-# clear and overwrite it.  Three legs of one defect, and the third was created by fixing the first
-# somewhere else.  This project's most repeated mistake, in the file that documents it.
-#
-# What the lock covers is the COMPILE.  The JVM probe above sees test JVMs; two runs that overlap in
-# javac own no JVM at all, which is exactly where the 2026-09-01 double-run overlapped.
-LOCK_PID=$(cat /proc/$$/winpid 2>/dev/null | tr -d '\r\n ')
-
-# THE NAMESPACE, WRITTEN WITH THE NUMBER (SV2-C2).
-#
-# A bare integer that is an MSYS pid is one `Get-Process` is guaranteed to call dead, so a lock
-# written from a shell with no /proc could be cleared while its run was still going.
-case "$LOCK_PID" in
-    ''|*[!0-9]*) LOCK_PID="msys:$$" ;;
-esac
-
-# Whether the holder is alive, dead, or a number this shell cannot resolve.
-lock_holder_state()
-{
-    held="$1"
-
-    case "$held" in
-        '') echo "unknown"; return;;
-        msys:*) held_msys=${held#msys:}; held_win="";;
-        *[!0-9]*) echo "unknown"; return;;
-        *) held_msys="$held"; held_win="$held";;
+for T in "$@"
+do
+    case "$T" in
+        *:*) named=$(echo "${T#*:}" | tr ',' '\n' | sed 's/\.[^.]*$//');;
+        *) named="$T";;
     esac
 
-    state="unknown"
+    for c in $named
+    do
+        if echo "$SERIAL_LANE" | grep -qxF "$c"; then ALONE="$c"; fi
+    done
+done
 
-    if [ -n "$held_win" ]
-    then
-        state=$(powershell.exe -NoProfile -Command \
-            "if (Get-Process -Id $held_win -ErrorAction SilentlyContinue) { 'yes' } else { 'no' }" \
-            2>/dev/null | tr -d '\r\n ')
-    fi
-
-    # Only ever ADDS a yes: two tests that can say "still running" cannot combine into a false stale,
-    # which is the only direction that costs anything here.
-    if [ "$state" != "yes" ] && [ -n "$held_msys" ] && kill -0 "$held_msys" 2>/dev/null
-    then
-        state="yes"
-    fi
-
-    # A number Windows was never asked about is unknown rather than dead: this may simply be a
-    # different MSYS runtime.
-    if [ "$state" != "yes" ] && [ -z "$held_win" ]
-    then
-        state="unknown"
-    fi
-
-    echo "$state"
-}
-
-# TAKEN, OR NOT, IN ONE STEP (SV2-C3, and REL-C9's correction of it).
-#
-# `set -o noclobber` with `: >` makes "create it only if it does not exist" one operation the
-# filesystem decides.  A lock whose holder is gone, or whose number nobody can resolve, is taken OVER
-# with `mv` - which is also one operation, so two shells racing past the same stale lock cannot both
-# win it.  The pid is written to a temp file and moved into place, so the lock is never present and
-# empty for a reader to find (REL-C9's second half).
-take_the_lock()
-{
-    if ( set -o noclobber; : > "$LOCK" ) 2>/dev/null
-    then
-        printf "%s\n" "$LOCK_PID" > "$LOCK.mine.$$" && mv -f "$LOCK.mine.$$" "$LOCK"
-
-        return 0
-    fi
-
-    return 1
-}
-
-if [ -f "$LOCK" ]
+if [ -n "$ALONE" ]
 then
-    HELD=$(cat "$LOCK" 2>/dev/null | tr -d '\r\n ')
+    echo "($ALONE needs the machine to itself - serial-lane.txt - so this run takes every test slot)"
 
-    case "$(lock_holder_state "$HELD")" in
-        yes)
-            echo "*** A BATTERY OR ANOTHER RUN IS ALREADY GOING (pid $HELD) - nothing was run ***"
-            exit 2
-            ;;
-        no)
-            echo "(clearing a stale lock from pid $HELD, which is no longer running)"
-            echo ""
+    refuse_if_test_jvms all
 
-            mv "$LOCK" "$LOCK.stale.$$" 2>/dev/null && rm -f "$LOCK.stale.$$"
-            ;;
-        *)
-            # WARNS AND PROCEEDS, which is what the unknown arm is for (REL-C10).
-            #
-            # A lock nobody can resolve is possibly days old, and refusing here would leave deleting
-            # the file by hand as the only way past - the learned behaviour the probe's own comment
-            # forbids.  Taken over with `mv`, so two shells arriving together cannot both take it.
-            echo "*** WARNING: could not tell whether the run holding this lock (pid $HELD) is still"
-            echo "    going - that check DID NOT RUN.  Make sure nothing else is running tests."
-            echo ""
+    take_every_slot
+else
+    refuse_if_test_jvms unisolated
 
-            mv "$LOCK" "$LOCK.stale.$$" 2>/dev/null && rm -f "$LOCK.stale.$$"
-            ;;
-    esac
+    take_one_slot
 fi
 
-if ! take_the_lock
+# NO RUN STARVES (2026-10-19).  A run that needs every slot and is refused leaves a "waiting for every slot" marker
+# (slots.sh), and take_one_slot above refuses, saying "nothing was run", while a fresh one stands - so the single-slot
+# runs that kept the slots taken at every 30 s retry stop starting, and the waiting run gets in once those going finish.
+# The marker comes down when this run gets the slots (take_every_slot) and in the exit trap below.
+
+# AND ONE RUN PER SCRATCH DIRECTORY.  one-run.txt, oneout and the compile's argfile are named by the directory, so
+# two runs from one directory - possible since the slots - would write over each other's results.
+SCRATCH_LOCK="$S/one.lock"
+
+LOCK_HELD_BY=""
+
+if ! clear_if_stale "$SCRATCH_LOCK" || ! take_lock_file "$SCRATCH_LOCK"
 then
-    echo "*** ANOTHER RUN TOOK THE LOCK IN THE SAME INSTANT - nothing was run ***"
+    release_all_slots
+
+    echo "*** ANOTHER one.sh IS RUNNING FROM $S (pid ${LOCK_HELD_BY:-unknown}) - nothing was run ***"
     echo ""
-    echo "Two started within a few milliseconds of each other.  Wait for the other one and try again."
+    echo "Its results would be written over.  Wait for it, or give this run a scratch directory of its own."
 
     exit 2
 fi
@@ -288,10 +198,12 @@ reap()
 # script looked at.  Only when the run did NOT reach its own report, which does this properly.
 release_the_lock()
 {
-    if [ "$(cat "${LOCK:-}" 2>/dev/null | tr -d '\r\n ')" = "${LOCK_PID:-}" ]
-    then
-        rm -f "${LOCK:-}"
-    fi
+    release_all_slots
+
+    # A run that waited for every slot and got them has taken its marker down already; this is the second chance.
+    clear_waiting_marker
+
+    release_lock_file "${SCRATCH_LOCK:-}"
 }
 
 REPORTED=""
@@ -439,6 +351,13 @@ done
 
 JAVA_FLAGS="$JAVA_FLAGS -Dtraincontrol.dataDir=$(cygpath -ws "$ISOLATED") -Dtraincontrol.preferences=$RUN_ID"
 
+# AND A TEMP FOLDER OF ITS OWN (FR-136 Phase 1a), since runs can overlap now: LayoutSandbox keeps its repair marker
+# under a fixed name in java.io.tmpdir, and another run's sandbox would read it as its own.  With the separator at
+# the end, as the JVM's own default has it.
+mkdir -p "$ISOLATED/tmp"
+
+JAVA_FLAGS="$JAVA_FLAGS -Djava.io.tmpdir=$(cygpath -ws "$ISOLATED/tmp")\\"
+
 # CAPTURED TO A FILE, NOT PIPED INTO head.
 #
 # `... | grep | head -30` closes the pipe as soon as head has its thirty lines, and the SIGPIPE that
@@ -492,8 +411,19 @@ do
     # NOT THE LAST RUN'S RESULTS, which the check of the methods asked for reads below (RLV12-C8)
     rm -f "$S/oneout/testng-results.xml"
 
-    "$JAVA" $JAVA_FLAGS -Dtraincontrol.batteryRun="$RUN_ID" \
-        -cp "$BUILD;$CP" org.testng.TestNG $TARGS -d "$S/oneout" > "$RUN_OUT" 2>&1 &
+    # EXTRA JVM ARGUMENTS (FR-136 Phase 6): TC_JVM_ARGS adds arguments to every test JVM, for a coverage agent.  Unset, nothing
+    # changes.  A "%s" in it becomes the class's label, so each JVM can write a file of its own; the JVM and its arguments split on
+    # spaces, so no argument may hold one.
+    EXTRA=""
+
+    if [ -n "${TC_JVM_ARGS:-}" ]
+    then
+        EXTRA=$(printf '%s' "$TC_JVM_ARGS" | sed "s/%s/$(printf '%s' "${T%%:*}" | tr -c 'A-Za-z0-9._-' '_')/g")
+    fi
+
+    # NO UPDATE CHECK: support.NoUpdateCheck turns it off in this run's preference node before any test (FR-136)
+    "$JAVA" $JAVA_FLAGS $EXTRA -Dtraincontrol.batteryRun="$RUN_ID" \
+        -cp "$BUILD;$CP" org.testng.TestNG -listener support.NoUpdateCheck,support.WindowsNotOnTop $TARGS -d "$S/oneout" > "$RUN_OUT" 2>&1 &
 
     JVM=$!
 

@@ -74,7 +74,7 @@ public class testAutonomySimulationSanity
     private static final int MIN_TOTAL_ACTUATIONS = 5;
     private static final int MIN_STATION_CHANGES_PER_LOC = 3;
 
-    // TST-A4: these addresses (1-7 MM2) are exactly what a real layout occupies, and
+    // These addresses (1-7 MM2) are exactly what a real layout occupies, and
     // MarklinControlStation.newAccessory carries over whatever actuation count already sits at the
     // address - init() restores the operator's own LocDB, not a fresh one. Taken once, before the run,
     // so the assertion below can compare the DELTA rather than the raw total.
@@ -83,7 +83,7 @@ public class testAutonomySimulationSanity
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        model = init(null, true, false, false, true);
+        model = support.TestStation.simulatedInDebug();
 
         // Not connected: the layout may enter simulate mode, and exec() takes the simulated-echo branch so
         // accessory actuations are confirmed (which is what advances getNumActuations()).
@@ -122,16 +122,16 @@ public class testAutonomySimulationSanity
     /**
      * Two turns in one session do not add up to a flip of anything: the record names the LAST one.
      *
-     * **This test used to assert that they cancel** (VAL9-A1), and that was right for a record whose
+     * **This test used to assert that they cancel**, and that was right for a record whose
      * membership was a parity - because the window applied each entry by FLIPPING the facing the setup
-     * had stored, and two flips undo each other. `REV9-A1` took the flip away: the setup's stored
+     * had stored, and two flips undo each other. The flip has since been taken away: the setup's stored
      * facing is stale at exactly the moment the drain reads it (behaviour.md 6a), so the window now
      * writes the facing ABSOLUTELY, from the side the train came in by at the square it turned at.
      *
      * Once the write is absolute the parity has nothing left to protect. The hazard it was for - *"a
      * shuttle that turned at both ends came back facing the way it started and had its facing flipped
      * once"* - cannot arise from an absolute write, which says the same thing however many times it is
-     * applied; and cancelling would now be the defect, because it would leave the graph with nothing
+     * applied; and canceling would now be the defect, because it would leave the graph with nothing
      * to say about a train standing at the far end of the shuttle having turned there.
      *
      * So what this runs is the same shuttle, and what it asserts is that the record follows the train:
@@ -272,7 +272,7 @@ public class testAutonomySimulationSanity
     }
 
     /**
-     * A train stopped to turn on its way is where it turns, not at the sensor before (RSA30-C4).
+     * A train stopped to turn on its way is where it turns, not at the sensor before.
      *
      * The run turns a train at a reversing point it has reached - its sensor has answered - and recorded the point as
      * reached only after the turn.  So for the length of the turn the railway placed the train a square back, and the
@@ -281,7 +281,7 @@ public class testAutonomySimulationSanity
      * A line A, M, R, B with R a reversing point; every place the railway gives while the train stands still between its
      * start and its end.  Beside the turn at the destination, because it needs a run that completes.
      *
-     * And the railway says so while the train turns, so the track diagram is redrawn then (RSA31-C2).
+     * And the railway says so while the train turns, so the track diagram is redrawn then.
      *
      * MUTATION: record the turning point only after the turn again, or tell nothing at the turn's stop, and this fails.
      *
@@ -302,7 +302,7 @@ public class testAutonomySimulationSanity
 
         final boolean[] sampling = {true};
 
-        // WHAT THE RAILWAY TELLS WHILE THE TRAIN TURNS (RSA31-C2)
+        // WHAT THE RAILWAY TELLS WHILE THE TRAIN TURNS
         final boolean[] toldWhileTurning = {false};
 
         Thread sampler = null;
@@ -338,7 +338,7 @@ public class testAutonomySimulationSanity
 
             loc.setReversible(true);
 
-            // AND THE RAILWAY SAYS SO WHILE IT TURNS (RSA31-C2): the track diagram is redrawn only when the railway's
+            // AND THE RAILWAY SAYS SO WHILE IT TURNS: the track diagram is redrawn only when the railway's
             // callbacks fire, and none fired between the point's record and the end of the step - so a train turning
             // alone was drawn at the sensor before, running, for the whole of its turn
             layout.setCallback("RSA31-C2", (edges, train, flag) ->
@@ -415,7 +415,7 @@ public class testAutonomySimulationSanity
     }
 
     /**
-     * A turn the railway makes at the destination is recorded there (IND9-B4).
+     * A turn the railway makes at the destination is recorded there.
      *
      * Adam, 2026-09-07: **"it should be recorded at the destination.  Otherwise, it’s just the same as
      * always."**
@@ -535,7 +535,7 @@ public class testAutonomySimulationSanity
                 "the record was not drained, so the same reversal is written to the graph again on"
                 + " every refresh, flipping the facing back and forth instead of recording it once");
 
-            // AND A DRAIN THAT WAS NOT WRITTEN CAN BE PUT BACK (RGD-C7).
+            // AND A DRAIN THAT WAS NOT WRITTEN CAN BE PUT BACK.
             //
             // Draining happens before the caller has written anything, and the caller can fail: no
             // setup to write to, a store that throws on the second of three names. Those turns were
@@ -645,7 +645,7 @@ public class testAutonomySimulationSanity
                 sawActivity = true;
             }
 
-            // WHAT THIS CAN AND CANNOT CATCH (TCX-B7).
+            // WHAT THIS CAN AND CANNOT CATCH.
             //
             // It reads as a check on the path-integrity guard and is not one.  That guard compares
             // each accessory against the state it was commanded to, and in simulate mode no accessory
@@ -714,7 +714,7 @@ public class testAutonomySimulationSanity
         }
 
         // And no path abandoned as misconfigured across the whole run.  See the same assertion
-        // earlier in this class for what that does and does not cover (TCX-B7).
+        // earlier in this class for what that does and does not cover.
         assertTrue(layout.getPathValidationFailureCount() == 0,
             "a path was abandoned as misconfigured during the run - a configure that failed or a lock "
             + "that threw; the actuation guard itself is skipped in simulate and cannot be covered here");
@@ -801,7 +801,7 @@ public class testAutonomySimulationSanity
                 }
 
                 // Let the final detached clear threads settle before the next iteration resets state.
-                // Belt and braces since the CP-C1 fence: constructing the next iteration's Layout
+                // Belt and braces since the stand-down fence: constructing the next iteration's Layout
                 // retires this one, so its stragglers stand down on their own.
                 Thread.sleep(300);
             }
@@ -814,12 +814,13 @@ public class testAutonomySimulationSanity
     }
 
     /**
-     * CP-C1: a clear-behind that outlives its Layout must not clear a sensor the NEXT run needs.
+     * A clear-behind that outlives its Layout must not clear a sensor the NEXT run needs.
      *
      * The clear is spawned detached after a delay of up to maxDelay SECONDS, so a run can end - and its
      * Layout be replaced by a reload - with clears still pending.  The epoch map is per instance, so an
      * orphan clear consults a map the new run never bumps: it passes its own stand-down check and
-     * clears the sensor anyway.  That is the SF-B1 wedge, one Layout boundary later.
+     * clears the sensor anyway.  That is the same stale-clear wedge the epoch guard fixes within one Layout,
+     * one Layout boundary later.
      *
      * Deterministic, unlike its sibling: the delay makes the clear provably still pending when the
      * Layout is retired, and the precondition below asserts exactly that - so if the timing margin were
@@ -883,7 +884,7 @@ public class testAutonomySimulationSanity
     }
 
     /**
-     * TST-A4: proves the actuation-confirmation guard that testSimulatedAutonomyRaisesNoWarning trusts to
+     * Proves the actuation-confirmation guard that testSimulatedAutonomyRaisesNoWarning trusts to
      * stay silent is actually capable of firing.
      *
      * That soak test runs entirely against the fixture's own Layout, which loads with "simulate": true

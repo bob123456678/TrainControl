@@ -63,7 +63,7 @@ public class testReturnHomeSequencesAReversal
     {
         sandbox = support.LayoutSandbox.open();
 
-        model = init(null, true, false, false, false);
+        model = support.TestStation.simulated();
 
         for (int i = 0; i < 5; i++)
         {
@@ -321,7 +321,7 @@ public class testReturnHomeSequencesAReversal
     /**
      * A train STANDING on a reversing point has already turned, and the reachability proof must agree.
      *
-     * D24-B1.  Two searches in this class ask whether a route turns the train round, and they disagreed
+     * Two searches in this class ask whether a route turns the train round, and they disagreed
      * about where the train starts.  `firstClearRoute` sets off with `turned = from.isReversing()` -
      * "a train already standing on a reversing point sets off turned" - and `connected` set off with
      * `false`, always.
@@ -407,15 +407,14 @@ public class testReturnHomeSequencesAReversal
      * down.  `executePath` flips direction on arrival at a terminus and at a reversing point alike, in
      * one statement - true, and it does not mean the two seed a search the same way.  At a reversing
      * point the arrival flip leaves the train trailing, so it goes on backing.  At a terminus that flip
-     * is the one that turns a backed-in train round to face OUT; it is spent.  `SV2-A1` caught that
-     * before it shipped and `D24-B1` is the other half of it.  Nothing reads the flag as a rule now,
+     * is the one that turns a backed-in train round to face OUT; it is spent.
+     * Nothing reads the flag as a rule now,
      * but it still decides how a route is described, and a wrong description is what the next rule
      * would be built on.
      *
      * MUTATION: putting `mustBackIn` back at `firstClearRoute`'s arrival test returns this to
      * `NO_PLAN_FOUND`.  (This also named a `|| from.isTerminus()` clause in `firstClearRoute`'s seed, with an
-     * assertion of its own below; the seed is `from.isReversing()` alone and there is no such assertion -
-     * AMH-C3.)
+     * assertion of its own below; the seed is `from.isReversing()` alone and there is no such assertion.)
      */
     @Test
     public void testALeavingTerminusDoesNotCountAsHavingBackedIn() throws Exception
@@ -446,7 +445,7 @@ public class testReturnHomeSequencesAReversal
 
             HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
 
-            // THE OUTCOME ITSELF, which is what this test is about (TV2-C5).
+            // THE OUTCOME ITSELF, which is what this test is about.
             //
             // Named exactly rather than asserted as "not impossible", which is the shape this had
             // before and which admitted five of the seven outcomes: if the home assignment ever
@@ -478,8 +477,8 @@ public class testReturnHomeSequencesAReversal
      * `plan()`'s search ends a move at any station and starts the next one from there.  Stopping at a
      * terminus and setting off again is an ordinary two-move plan.
      *
-     * So the proof was stricter than the planner it guards, which is the same defect as `D24-B1` in a
-     * different limb, and the invariant `SV2` wrote down: **a proof may be looser than the search, never
+     * So the proof was stricter than the planner it guards, which is the same defect in a
+     * different limb, and the invariant: **a proof may be looser than the search, never
      * tighter.**  IMPOSSIBLE sends the operator to look at track that is fine.
      *
      * MUTATION: restoring `if (!next.isTerminus())` in `connected` makes the outcome IMPOSSIBLE again
@@ -550,7 +549,7 @@ public class testReturnHomeSequencesAReversal
      * that is enough to lose the plan among the permutations.
      *
      * No mutation is named: the search scores `cost + misplaced(next)` and has no separate staging
-     * estimate to swap it for.  (This named one against such an estimate - AMH-C3.)
+     * estimate to swap it for.
      */
     @Test
     public void testTwoTrainsQueueThroughOneStagingSquare() throws Exception

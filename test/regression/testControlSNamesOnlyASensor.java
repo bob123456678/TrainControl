@@ -57,7 +57,7 @@ public class testControlSNamesOnlyASensor
         // every class over it say something different every week.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = init(null, true, false, false, false);
+        model = support.TestStation.simulated();
         model.stop();
 
         String path = "file:///"

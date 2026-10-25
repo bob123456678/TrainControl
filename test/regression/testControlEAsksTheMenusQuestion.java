@@ -304,7 +304,7 @@ public class testControlEAsksTheMenusQuestion
     }
 
     /**
-     * And the predicate's CONTENT, named off the fixture rather than read off itself (E8-C7).
+     * And the predicate's CONTENT, named off the fixture rather than read off itself.
      *
      * The whole-page comparison above asks `buildTileMenu` on one side and `offersALength` on the
      * other, and since the menu adds its item inside `if (offersALength(tile))` those are the same

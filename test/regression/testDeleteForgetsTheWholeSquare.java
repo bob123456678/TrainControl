@@ -19,7 +19,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * X8-B4: deleting a square from the diagram forgets everything the setup wrote about it.
+ * Deleting a square from the diagram forgets everything the setup wrote about it.
  *
  * **It forgot the caption and left the rest.** `delete` called `forgetCaptionsAt`, which touches the
  * captions map alone, so a deleted platform kept its station membership, point name, length, facing,
@@ -64,7 +64,7 @@ public class testDeleteForgetsTheWholeSquare
 
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = init(null, true, false, false, true);
+        model = support.TestStation.simulatedInDebug();
 
         SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
 
@@ -74,12 +74,12 @@ public class testDeleteForgetsTheWholeSquare
 
         if (session == null || session.getStore().getActiveConfiguration() == null)
         {
-            throw new SkipException("no autonomy configuration, so there is no setup to forget");
+            throw new AssertionError("no autonomy configuration, so there is no setup to forget");
         }
 
         page = model.getLayout(PAGE);
 
-        if (page == null) throw new SkipException("no page " + PAGE);
+        if (page == null) throw new AssertionError("no page " + PAGE);
 
         final LayoutEditor[] built = new LayoutEditor[1];
 
@@ -174,7 +174,7 @@ public class testDeleteForgetsTheWholeSquare
             }
         });
 
-        if (found[0] == null) throw new SkipException("no square on " + PAGE + " the editor agrees about");
+        if (found[0] == null) throw new AssertionError("no square on " + PAGE + " the editor agrees about");
 
         final TileKey square = chosen[0];
 
@@ -194,7 +194,7 @@ public class testDeleteForgetsTheWholeSquare
 
         // THE LABEL IS RE-FETCHED HERE, not reused from the block above.  `render()` and every repaint
         // rebuild the grid, so a label held across two EDT blocks is a label the editor no longer
-        // recognises - `getCoordinates` scans for the object and answers -1,-1 - and `delete` then
+        // recognizes - `getCoordinates` scans for the object and answers -1,-1 - and `delete` then
         // looks at the wrong square and quietly does nothing.
         SwingUtilities.invokeAndWait(() ->
         {
@@ -227,13 +227,13 @@ public class testDeleteForgetsTheWholeSquare
     }
 
     /**
-     * Forgetting squares nothing was ever written about reports that nothing changed (X8V-B2).
+     * Forgetting squares nothing was ever written about reports that nothing changed.
      *
      * **The answer used to be manufactured from the size of the list.** `moveTiles` computed it as
      * `builtOver != null && !builtOver.isEmpty()`, which is true before it has looked at anything, and
      * four call sites read it as "something was forgotten, so write the setup to disk" - `delete` says
-     * so in as many words, in a comment `X8-B4` kept while moving the call onto a method that no longer
-     * honoured it.
+     * so in as many words, in a comment kept while moving the call onto a method that no longer
+     * honored it.
      *
      * So deleting a piece of plain track that no station, name, length or facing had ever been written
      * about rebuilt the graph over every page and wrote every file of the setup, to a folder under

@@ -102,7 +102,7 @@ public class GraphLocAssign extends javax.swing.JPanel
         this.trainLength.setModel(new javax.swing.DefaultComboBoxModel<>(lengths));
         
         // THE TRAINS AUTONOMY RUNS.  A `newOnly` flag offered the database's other trains instead, for a caller that was
-        // deleted (DD-C4); every door that opens this asks about a train already on the graph.
+        // deleted; every door that opens this asks about a train already on the graph.
         List<String> locs = new LinkedList<>();
 
         for (Locomotive l : parent.getModel().getAutoLayout().getLocomotivesToRun())
@@ -176,7 +176,7 @@ public class GraphLocAssign extends javax.swing.JPanel
      * *"the missing arrival side should be set - either from the data, by the user, or randomly"*).
      *
      * It used to be left out, on the reasoning that a train nobody watched arrive has no honest
-     * answer - but `behaviour.md` section 4 recorded that as an open defect (`REV9-B2`) and it was:
+     * answer - but `behaviour.md` section 4 recorded that as an open defect and it was:
      * the diagram's drag and paste door works the side out and blocks the track behind the train,
      * while these two put an identical train down and blocked nothing. `GraphLocAssign` offers it as a
      * combo rather than a second popup on top of this one; `getArrivedFrom` answers from that combo,
@@ -186,7 +186,7 @@ public class GraphLocAssign extends javax.swing.JPanel
      * `arrivedFrom` whenever the occupant changes, which is right - a different train did not come in
      * the way the last one did - and writing before would be writing into that.
      *
-     * **Both stores, like the heading above it** (VAL8-A2): the walk that blocks track reads the live
+     * **Both stores, like the heading above it**: the walk that blocks track reads the live
      * `Point`, and the setup value only reaches it at the next rebuild. Written to one only, the
      * operator answers the question, watches nothing become blocked, and cannot tell "it does not
      * work" from "it has not been rebuilt yet".
@@ -212,7 +212,7 @@ public class GraphLocAssign extends javax.swing.JPanel
         org.traincontrol.automationui.TilePorts.Side heading =
             arriving == null || session == null ? null : session.facingOf(arriving, layout);
 
-        // THE COPY IT WILL STAND ON, chosen by the rule the facing is recorded with (GUI-B3), as the paste chooses it
+        // THE COPY IT WILL STAND ON, chosen by the rule the facing is recorded with, as the paste chooses it
         // (OB-270).  The copy IS the direction: this door moved the train onto whichever copy the menu was opened on -
         // "any copy will do" on an empty square - and then recorded the train's old heading, so on a square with two
         // copies facing opposite ways the setup said west while the train stood on the east copy, until the next load
@@ -235,7 +235,7 @@ public class GraphLocAssign extends javax.swing.JPanel
 
         final org.traincontrol.automation.Point point = edit.p;
 
-        // WHAT THE TRAIN HAD ON THE RAILWAY, before the dialog's commit moves it (TLW-A1).
+        // WHAT THE TRAIN HAD ON THE RAILWAY, before the dialog's commit moves it.
         org.traincontrol.automation.Point wasOn = null;
 
         if (layout != null && arriving != null)
@@ -254,7 +254,7 @@ public class GraphLocAssign extends javax.swing.JPanel
         final org.traincontrol.automationui.TileGraph.TileKey squareBefore = wasOn == null || session == null
             || session.getStationIndex() == null ? null : session.getStationIndex().squareOf(wasOn);
 
-        // A REFUSED PLACEMENT RECORDS NOTHING (GST-B2): the railway did not put the train there, so the setup is not
+        // A REFUSED PLACEMENT RECORDS NOTHING: the railway did not put the train there, so the setup is not
         // told it did - no placement, no facing, no tail, and no save.
         if (!edit.commitChanges()) return;
 
@@ -269,7 +269,7 @@ public class GraphLocAssign extends javax.swing.JPanel
         session.placeLocomotive(tile,
             point.getCurrentLocomotive() == null ? null : point.getCurrentLocomotive().getName());
 
-        // Whether the setup this door writes to is still the window's once its tail question is answered (TDU4-C2).
+        // Whether the setup this door writes to is still the window's once its tail question is answered.
         boolean setupStands = true;
 
         // After the commit this IS the arriving train, which is why the guard reads the point rather
@@ -281,64 +281,20 @@ public class GraphLocAssign extends javax.swing.JPanel
                 org.traincontrol.automationui.AutonomySession.facingAfterAPaste(
                     session.departableFacingsFor(tile, layout), heading, point.getName()));
 
-            // AND WHERE ITS TAIL IS (REV9-B2, closed 2026-09-11).  See the note above: answered in the
-            // dialog, written here, and into both stores because the walk that blocks track reads the
-            // live Point while the setup is the half that survives a restart.
-            String tail = edit.getArrivedFrom();
-
-            // (What the train had before is read from the railway above, before the commit - TLW-A1.)
-
-            session.setArrivedFrom(tile, tail);
-
-            point.setArrivedFrom(tail);
-
-            // AND HOW FAR BACK ITS TAIL REACHES, asked after this dialog rather than on top of it (Adam, 2026-09-14).
-            // OWNED BY THE MAIN WINDOW (TLV-C3): the dialog's own panel has gone with the dialog.
-            final org.traincontrol.base.Locomotive placed = point.getCurrentLocomotive();
-            final java.util.List<org.traincontrol.automation.Edge> roadAtTheQuestion = point.getArrivedAlong();
-
-            // SAVED BEFORE THE QUESTION WAITS (OB-305): the train, its facing and its side are written above, and the
-            // question below can wait as long as the operator likes - a crash in that wait lost them.  See
-            // `TailCrossedPrompt.saveBeforeAsking`; what it reconciled goes unsaid, as this door's own save leaves it.
-            TailCrossedPrompt.saveBeforeAsking(session, layout, point, tail,
-                point.getCurrentLocomotive().getTrainLength(), edit.parent);
-
-            TailCrossedPrompt.Answer answer = TailCrossedPrompt.askAfterPlacement(layout, point, tail,
-                point.getCurrentLocomotive().getTrainLength(), point.getCurrentLocomotive().getName(), edit.parent,
-                session::baseNameOf, roadBefore);
-
-            // THE ANSWER, OR THE ROAD IT HAD ON THE RAILWAY (TLW-A1), as the paste does: OK pressed on a train's own
-            // dialog right after a run, with nothing asked, keeps the road it drove in on - in both stores.
-            // ONLY WHERE THE PLACEMENT STILL STANDS (TDU2-A1, TDU3-B1): the question waited with the window live, and the
-            // copy may hold another train now, or have been replaced by a rebuild.
-            setupStands = TailCrossedPrompt.sameSetup(session, edit.parent.getAutonomySession())
-                && !answer.anEditorOpenedInTheWait();
-
-            final org.traincontrol.automation.Point landing = TailCrossedPrompt.whereTheAnswerGoes(
-                TailCrossedPrompt.runningNow(edit.parent.getModel()), point, placed, tail, roadAtTheQuestion, setupStands);
-
-            if (landing != null)
-            {
-                java.util.List<org.traincontrol.automation.Edge> road = answer.roadToRecord(roadBefore,
-                    tile.equals(squareBefore), sideBefore, tail);
-
-                session.setArrivedAlong(tile, org.traincontrol.automation.Layout.namesOfRoad(road));
-                TailCrossedPrompt.writeRoad(landing, point, TailCrossedPrompt.runningNow(edit.parent.getModel()), road);
-            }
-            else if (answer.wasAnswered())
-            {
-                TailCrossedPrompt.noteADroppedAnswer(edit.parent.getModel(), placed.getName(),
-                    session.baseNameOf(point.getName()), answer);
-            }
+            // AND WHERE ITS TAIL IS: answered in the dialog, written here, and asked how far back it reaches after
+            // this dialog rather than on top of it, owned by the main window since the dialog's panel has gone.
+            setupStands = TailCrossedPrompt.recordTheTail(session, tile, layout, point, edit.getArrivedFrom(),
+                point.getCurrentLocomotive().getName(), roadBefore, tile.equals(squareBefore), sideBefore, edit.parent,
+                null);
         }
 
-        // AND WRITTEN TO DISK (VAL9-B1).  The two writes above change the setup in memory only, and
-        // "the placement is gone at the next configuration load" is the symptom REG8-B2 was filed for -
+        // AND WRITTEN TO DISK.  The two writes above change the setup in memory only, and
+        // "the placement is gone at the next configuration load" is the symptom of leaving the save out -
         // so extracting the door without the save would have moved the defect rather than fixed it.
         //
         // Every other door that writes the setup saves it: the paste door, the facing menu, placeFacing
         // beside this one on the same menu.  This is the door for two menus, so it is the one place
-        // that has to.  NOT A SETUP THE WINDOW HAS LET GO in the wait (TDU4-C2), which the reset that replaced it wrote.
+        // that has to.  NOT A SETUP THE WINDOW HAS LET GO in the wait, which the reset that replaced it wrote.
         if (!setupStands) return;
 
         try
@@ -348,7 +304,7 @@ public class GraphLocAssign extends javax.swing.JPanel
         catch (java.io.IOException cannotSave)
         {
             // The assignment stands either way; only the memory of it is at risk.  Logged rather than
-            // shown, for the reason given at the other placement door (DR-B10).
+            // shown, for the reason given at the other placement door.
             if (edit.parent != null && edit.parent.getModel() != null)
             {
                 edit.parent.getModel().log(cannotSave);
@@ -418,7 +374,7 @@ public class GraphLocAssign extends javax.swing.JPanel
         // two things, and each says so where it is.
         this.arrivedFromLabel = new javax.swing.JLabel(I18n.t("autolayout.ui.trainArrived"));
         this.arrivedFromLabel.setFont(new java.awt.Font("Segoe UI", 0, 14));
-        // THE STANDARD'S BLUE, not the retired one (UIX-C3).  `docs/UI-standards.md` gives minor headings
+        // THE STANDARD'S BLUE, not the retired one.  `docs/UI-standards.md` gives minor headings
         // 0,0,155; the 0,0,115 labels beside this one are inside the generated block below, which the
         // standard exempts because it cannot be hand-edited.  This label is hand-written and newer than
         // the standard, so it follows it.
@@ -440,7 +396,7 @@ public class GraphLocAssign extends javax.swing.JPanel
      *
      * Adam, 2026-09-07: pasting onto BottomMainPost "asks if the train arrived from the south or from
      * the west, rather than the north or the south."  The geometric answer names where the
-     * neighbouring POINT lies, and a reduced edge may turn corners on the way; the builder splits the
+     * neighboring POINT lies, and a reduced edge may turn corners on the way; the builder splits the
      * square on the side the track actually comes in by, and that is the vocabulary the tail walk
      * compares against (OB-182).
      *
@@ -828,7 +784,7 @@ public class GraphLocAssign extends javax.swing.JPanel
     /**
      * Applies all changes from the UI, once the railway has accepted the placement.
      *
-     * NOTHING WHEN THE MOVE IS REFUSED (GST-B2).  `moveLocomotive` refuses while autonomy runs, for a point the
+     * NOTHING WHEN THE MOVE IS REFUSED.  `moveLocomotive` refuses while autonomy runs, for a point the
      * railway does not have and for one that is no station, and answers false with a line in the log.  The answer was
      * thrown away and the form's length, speed, functions and reversing written anyway - so the operator read that the
      * train had not been placed and found its settings changed regardless.

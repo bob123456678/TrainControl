@@ -26,6 +26,9 @@ public class testTheDiagramPrintsItsCoordinates
     /** A square, big enough for two digits at the ruler's own font size. */
     private static final int SIZE = 30;
 
+    /** The room the ruler reserves at the top and on the left, asked of the ruler's own border insets. */
+    private static final int GUTTER = AxisRuler.uniform(SIZE, 0, 0, 1, 1).getBorderInsets(null).top;
+
     /**
      * The gutter is on the top and the left, and nowhere else.
      *
@@ -82,17 +85,17 @@ public class testTheDiagramPrintsItsCoordinates
     /**
      * A square too small for its number prints nothing rather than something misleading.
      *
-     * A number wider than the square it belongs to overhangs its neighbour, and a number pointing at
+     * A number wider than the square it belongs to overhangs its neighbor, and a number pointing at
      * the wrong square is worse than a gap - this is a feature for finding a square by its coordinate.
      */
     @Test
     public void testANumberTooWideForItsSquareIsLeftOut()
     {
-        // THE READER FIRST (TSX-C7).
+        // THE READER FIRST.
         //
-        // `digitsIn` recognises numbers by re-rendering each candidate with a font it chooses itself
+        // `digitsIn` recognizes numbers by re-rendering each candidate with a font it chooses itself
         // and sliding the stamp over the painted ink.  If that font ever stops matching the one the
-        // ruler draws with, it recognises NOTHING - and an assertion that nothing was drawn is then
+        // ruler draws with, it recognizes NOTHING - and an assertion that nothing was drawn is then
         // satisfied by a reader that cannot read.  A sibling two methods up would fail loudly, which
         // is a rescue rather than a guard.
         String big = paint(AxisRuler.uniform(30, 100, 100, 6, 6));
@@ -116,7 +119,7 @@ public class testTheDiagramPrintsItsCoordinates
      * rest aren't.  That's why it looks off by one."*
      *
      * **The first version worked the positions out as `column * size`**, and that is right only while
-     * every cell is exactly one tile wide.  With the grey grid switched on each square wears a line
+     * every cell is exactly one tile wide.  With the gray grid switched on each square wears a line
      * border that reserves room, so the real pitch is a pixel or two more - and the error is
      * cumulative.  The first few numbers land over their squares; the twentieth is a whole square out.
      *
@@ -133,7 +136,7 @@ public class testTheDiagramPrintsItsCoordinates
     {
         final int pitch = 31;
         final int cell = 30;
-        final int gutter = 18;
+        final int gutter = GUTTER;
         final int columns = 12;
 
         AxisRuler drifting = new AxisRuler(0, 0, columns, 0,
@@ -308,7 +311,7 @@ public class testTheDiagramPrintsItsCoordinates
      * captions - and that did not work: the override ran, the border was the ruler and the clip was
      * the whole component, and the numbers were still rubbed out.  Swing hands each child its own
      * graphics inside `paintChildren`.  This sentence described that first attempt for a while after
-     * it was reverted (FR3-C4).
+     * it was reverted.
      *
      * MUTATION: removing that block fails this. The first assertion is what stops the mutation passing
      * by painting nothing at all.
@@ -323,7 +326,7 @@ public class testTheDiagramPrintsItsCoordinates
 
         container.setLayout(null);
 
-        // WHITE, so that "ink" means a number rather than the panel's own grey.  The first version of
+        // WHITE, so that "ink" means a number rather than the panel's own gray.  The first version of
         // this test left the default background and counted 3024 non-white pixels in an 18x168 strip -
         // which is every pixel of it, and told me nothing about the numbers at all.
         container.setOpaque(true);
@@ -331,7 +334,7 @@ public class testTheDiagramPrintsItsCoordinates
 
         container.setBorder(AxisRuler.uniform(size, 0, 0, columns, columns));
 
-        container.setBounds(0, 0, 18 + columns * size, 18 + columns * size);
+        container.setBounds(0, 0, GUTTER + columns * size, GUTTER + columns * size);
 
         // AN OPAQUE CHILD ACROSS THE WHOLE GUTTER, which is what a caption at the edge amounts to.
         javax.swing.JPanel intruder = new javax.swing.JPanel();
@@ -359,7 +362,7 @@ public class testTheDiagramPrintsItsCoordinates
 
         for (int x = 0; x < img.getWidth(); x++)
         {
-            for (int y = 0; y < 18; y++)
+            for (int y = 0; y < GUTTER; y++)
             {
                 if ((img.getRGB(x, y) & 0xFFFFFF) != 0xFFFFFF) inkInGutter++;
             }
@@ -389,7 +392,7 @@ public class testTheDiagramPrintsItsCoordinates
 
         for (int x = 0; x < clean.getWidth(); x++)
         {
-            for (int y = 0; y < 18; y++)
+            for (int y = 0; y < GUTTER; y++)
             {
                 if ((clean.getRGB(x, y) & 0xFFFFFF) != 0xFFFFFF) inkWithout++;
             }
@@ -419,7 +422,7 @@ public class testTheDiagramPrintsItsCoordinates
         {
             boolean inked = false;
 
-            for (int y = 0; y < 18; y++)
+            for (int y = 0; y < GUTTER; y++)
             {
                 if (ink.charAt(y * 400 + x) == '#') inked = true;
             }
@@ -511,8 +514,9 @@ public class testTheDiagramPrintsItsCoordinates
 
         g.setColor(java.awt.Color.WHITE);
         g.fillRect(0, 0, 40, 20);
-        g.setFont(new javax.swing.JPanel().getFont().deriveFont(java.awt.Font.PLAIN, 10f));
-        g.setColor(java.awt.Color.GRAY);
+        g.setFont(new javax.swing.JPanel().getFont().deriveFont(java.awt.Font.PLAIN,
+            (float) support.ProgramConstants.real(AxisRuler.class, "FONT_SIZE")));
+        g.setColor(support.ProgramConstants.colour(AxisRuler.class, "INK"));
         g.drawString(number, 2, 14);
         g.dispose();
 

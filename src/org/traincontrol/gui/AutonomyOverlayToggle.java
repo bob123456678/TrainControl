@@ -14,7 +14,7 @@ import org.traincontrol.util.I18n;
  *
  * A thin strip above the track diagram. It was the scroll pane's column header until OB-148 took
  * it out of the pane, and it is now a sibling above the diagram - so it no longer scrolls with the
- * track, which was the point of moving it (RC-C2). A strip above the track that the pane
+ * track, which was the point of moving it. A strip above the track that the pane
  * reserves anyway, so no generated layout is touched and the grid keeps the whole viewport.
  *
  * @author Adam
@@ -59,7 +59,7 @@ public class AutonomyOverlayToggle extends JPanel
      * has a dozen answers scattered through the main window - power off, nothing placed, a locomotive
      * still moving, a configuration not loaded, the tabs pulled - and a second implementation of it
      * would be wrong the first time any of them changed.  Instead this shows exactly what the real
-     * button currently is: its words, its colour, and whether it is available at all.
+     * button currently is: its words, its color, and whether it is available at all.
      */
     private final javax.swing.JButton run = new javax.swing.JButton();
 
@@ -113,10 +113,10 @@ public class AutonomyOverlayToggle extends JPanel
 
         // Red, and a way out of it.  A page left out of autonomy is a deliberate setting, but it is
         // also the reason nothing on this page has stations, arrows or trains - so saying it quietly in
-        // grey read as decoration, and the setting that causes it lives three levels into a menu the
+        // gray read as decoration, and the setting that causes it lives three levels into a menu the
         // user would have to know to open.  Clicking takes them there.
         //
-        // The banner's font, like the findings count beside it, and not bold: the colour already says
+        // The banner's font, like the findings count beside it, and not bold: the color already says
         // this matters, and a bold red line shouts where a red line was enough.
         left_out.setFont(AutonomyBanner.MESSAGE_FONT);
         left_out.setForeground(EXCLUDED_TEXT);
@@ -196,7 +196,7 @@ public class AutonomyOverlayToggle extends JPanel
         // The banner pads by 4 above and below and 8 at the sides; this strip padded by 2 all round and
         // then let its FlowLayout add 4 more at the left, so its text began six pixels in against the
         // banner's eight and sat two pixels higher.  Small numbers, and the two bands are the same
-        // colour block one above the other - a step of two pixels between them is exactly the sort of
+        // color block one above the other - a step of two pixels between them is exactly the sort of
         // thing that reads as "something is broken" without the reader being able to say what.
         //
         // Four here plus the FlowLayout's own four makes eight at the leading edge, matching.
@@ -208,7 +208,7 @@ public class AutonomyOverlayToggle extends JPanel
         //
         // The first attempt took two off the TOP only, which fixed that and broke the other half of
         // OB-151: "center them vertically within their shaded backgrounds."  An asymmetric border is
-        // exactly what off-centre means. So both insets come down together - less space above, and
+        // exactly what off-center means. So both insets come down together - less space above, and
         // still the same above as below.
         setBorder(javax.swing.BorderFactory.createEmptyBorder(2, 4, 2, 4));
 
@@ -249,7 +249,7 @@ public class AutonomyOverlayToggle extends JPanel
         /** Autonomy is running and can be stopped. */
         STOP,
 
-        /** A stop has been asked for and the trains are still finishing: shown, but greyed. */
+        /** A stop has been asked for and the trains are still finishing: shown, but grayed. */
         STOP_PENDING
     }
 
@@ -265,12 +265,12 @@ public class AutonomyOverlayToggle extends JPanel
      * answer to "neither" was to hide itself. The control vanished from under the hand that had just
      * pressed it and came back seconds later as something else.
      *
-     * Greying rather than hiding is the honest thing to show: the brake IS applied, and the strip
+     * Graying rather than hiding is the honest thing to show: the brake IS applied, and the strip
      * saying so - in the same place, at the same size - is what makes the eventual swap to Start read
      * as the run ending rather than as the interface changing its mind.
      *
      * **Only when a stop is genuinely pending.** "Neither button is enabled" has other causes - most
-     * of them before anything has run at all - and a greyed Graceful Stop offered to somebody who has
+     * of them before anything has run at all - and a grayed Graceful Stop offered to somebody who has
      * never started anything would be worse than the gap it replaces. `isGracefulStopPending` is the
      * narrow question: was a stop asked for, and is autonomy still busy.
      *
@@ -355,7 +355,7 @@ public class AutonomyOverlayToggle extends JPanel
         // Against START only.  Stop wins the line above and must keep winning: an error appearing
         // while trains are running is the moment stopping matters most, and swapping the brake for a
         // button that opens an editor would take it away.
-        // THE GUARD'S OWN QUESTION, and only that (AU-C1, V31-B1, V32-B1, then V34-B1).
+        // THE GUARD'S OWN QUESTION, and only that.
         //
         // `fixing` decides what pressing this strip DOES - open the editor, or click Start - so it is
         // not a display.  It asked a COUNT while the guard asked `hasErrors()`, which also covers a
@@ -365,14 +365,14 @@ public class AutonomyOverlayToggle extends JPanel
         //
         // The count that used to be read here is gone rather than kept beside this.  Nothing else in
         // this method reads it - the number the strip displays comes from setFindings' own arguments,
-        // and the band's colour follows `fixing` and `excluded` - so keeping it was a second whole
+        // and the band's color follows `fixing` and `excluded` - so keeping it was a second whole
         // walk of the graph on the event thread, `check()` being uncached, discarded immediately.
         //
-        // That is `LD-C6`'s cost, at one of the doors it names.  **The door is not closed**: the window
+        // That is the cost, at one of the doors.  **The door is not closed**: the window
         // walks `check()` itself to count the findings and hands the counts to `setFindings`, which
-        // calls straight back into here - so a refresh is two walks rather than three (`V36-C5`).  The
+        // calls straight back into here - so a refresh is two walks rather than three.  The
         // strip cannot simply be given the boolean, because `hasErrors()` is wider than `errors > 0`
-        // and that width is `V31-B1`; caching `check()` on the session is what would close it.
+        // so caching `check()` on the session is what would close it.
         //
         // `lastTotalErrors` is what the last `setFindings` left behind, and it is read only when there
         // is no window to ask - a strip built before its owner, not a running application.  As a
@@ -382,7 +382,7 @@ public class AutonomyOverlayToggle extends JPanel
 
         fixing = source != null && source == start && broken;
 
-        // The band's colour follows this, so it is repainted here as well as when the page changes -
+        // The band's color follows this, so it is repainted here as well as when the page changes -
         // errors appear and go without anything else about the strip moving.
         paintState();
 
@@ -403,17 +403,17 @@ public class AutonomyOverlayToggle extends JPanel
         run.setFont(source.getFont());
 
         // THE TURNING MARK, whichever button this stands in for (Adam, 2026-10-03: "Can we show the spinner next to
-        // start/graceful stop on the track diagram viewer page as well?").  Start's own, so the two turn as one; greyed
-        // too, as the coast-down after Graceful Stop shows this greyed (OB-309).
+        // start/graceful stop on the track diagram viewer page as well?").  Start's own, so the two turn as one; grayed
+        // too, as the coast-down after Graceful Stop shows this grayed (OB-309).
         javax.swing.Icon mark = start != null ? start.getIcon() : null;
 
         run.setIcon(mark);
         run.setDisabledIcon(mark);
 
-        // White, with the STRIP behind it carrying the colour instead (MT-173).
+        // White, with the STRIP behind it carrying the color instead (MT-173).
         //
         // Adam: "I would like a shaded background in light yellow when fix it is active.  then change
-        // the color of the fix it button back to white."  The first attempt coloured the button and
+        // the color of the fix it button back to white."  The first attempt colored the button and
         // left the strip white, which put the one warm thing on the panel inside a control the eye
         // reads as a button first and a warning second.  Shading the band and leaving the button plain
         // says the same thing about the whole strip rather than about the button.
@@ -433,7 +433,7 @@ public class AutonomyOverlayToggle extends JPanel
         // than the Edit button beside it.
         run.setPreferredSize(new java.awt.Dimension(wanted.width, BUTTON_HEIGHT));
 
-        // GREYED, NOT GONE, while the stop it already carries is being carried out (OB-143).
+        // GRAYED, NOT GONE, while the stop it already carries is being carried out (OB-143).
         //
         // The button keeps its place, its size and its words; all that changes is that it stops
         // accepting presses, because the thing it asks for has been asked for. Pressing it again is
@@ -527,9 +527,9 @@ public class AutonomyOverlayToggle extends JPanel
     /**
      * The strip's fill while the setup has something that must be dealt with before it will run.
      *
-     * A light yellow rather than the amber the button itself first used: this colours a band the full
+     * A light yellow rather than the amber the button itself first used: this colors a band the full
      * width of the diagram, so it has to sit under black text at a glance without becoming the loudest
-     * thing on screen. The findings count keeps its own stronger amber and red - a word coloured
+     * thing on screen. The findings count keeps its own stronger amber and red - a word colored
      * inside a tinted band still reads.
      */
     private static final java.awt.Color FIX_BACKGROUND = new java.awt.Color(255, 248, 205);
@@ -583,7 +583,7 @@ public class AutonomyOverlayToggle extends JPanel
         }
 
         // Red whenever there is an error ANYWHERE, not only on this page.  One error stops the whole
-        // setup from running, so it is worth the colour wherever the reader happens to be looking -
+        // setup from running, so it is worth the color wherever the reader happens to be looking -
         // this is the one thing on the strip that is not a statement about the page in front of them.
         findings.setForeground(totalErrors > 0
             ? new java.awt.Color(170, 0, 0) : new java.awt.Color(150, 95, 0));
@@ -614,7 +614,7 @@ public class AutonomyOverlayToggle extends JPanel
      */
     public static String findingsCountText(int errors, int warnings, int onThisPage)
     {
-        // In the language's own forms (RSA28-C2): Polish has one for 2 to 4, French counts 0 with the singular
+        // In the language's own forms: Polish has one for 2 to 4, French counts 0 with the singular
         String warned = I18n.f("autosetup.ui.countWarnings" + I18n.countForm(warnings), warnings);
         String here = I18n.f("autosetup.ui.countOnThisPage", onThisPage);
 
@@ -665,7 +665,7 @@ public class AutonomyOverlayToggle extends JPanel
     /**
      * Says the page is left out of autonomy, in place of the controls that would act on it.
      *
-     * The checkbox goes rather than being greyed: there is nothing on this page for it to show or
+     * The checkbox goes rather than being grayed: there is nothing on this page for it to show or
      * hide, and an unticked box invites the reader to tick it and wonder why nothing happened.  What
      * replaces it says the one thing worth knowing.  The run button stays - starting autonomy is not a
      * statement about the page being looked at.
@@ -755,7 +755,7 @@ public class AutonomyOverlayToggle extends JPanel
     }
 
     /**
-     * Colours the strip for the state it is in.
+     * Colors the strip for the state it is in.
      */
     private void paintState()
     {
@@ -769,7 +769,7 @@ public class AutonomyOverlayToggle extends JPanel
 
         setBackground(background);
 
-        // The checkbox paints its own square, so it has to be told as well or it keeps the old colour
+        // The checkbox paints its own square, so it has to be told as well or it keeps the old color
         show.setBackground(background);
 
         repaint();

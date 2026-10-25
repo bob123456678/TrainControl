@@ -24,11 +24,11 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * A running route's captions speak the route's colours, its destination is a warm yellow, and the Auto tab's station
+ * A running route's captions speak the route's colors, its destination is a warm yellow, and the Auto tab's station
  * badge is the captions' blue (Adam, 2026-10-09: "Build 2,3,5,6" - the diagram look proposals' second, third and
  * sixth), asked of the real window on his frozen railway with a run staged part way along its route.
  *
- * The colours themselves are claimed beside the pill (`ui.testDiagramLooksRight`); this asks the place that chooses
+ * The colors themselves are claimed beside the pill (`ui.testDiagramLooksRight`); this asks the place that chooses
  * them for a running train - `TrainControlUI.updateStationLabels` - because a rule tested apart from its caller says
  * nothing about whether the caller asks it.
  */
@@ -46,9 +46,26 @@ public class testARunsCaptionsSpeakInItsColours
         return c != null && c.getRed() == r && c.getGreen() == g && c.getBlue() == b;
     }
 
+    /** Whether a color is this one, whatever its transparency. */
+    private static boolean sameInk(Color c, Color wanted)
+    {
+        return rgb(c, wanted.getRed(), wanted.getGreen(), wanted.getBlue());
+    }
+
     /**
-     * Staged on the frozen railway: the placed train with the longest offered route, past its first sensor, then held
-     * there - simulation switched off once the run is waiting for that sensor, so the next never comes.
+     * The darker blue the window's own labels are written in: the program's `HEADING_COLOUR`, which the Auto tab's
+     * `TAB_BLUE` is.  Asked rather than restated, so a change of the labels' blue is followed by the tab.
+     */
+    private static final Color LABEL_BLUE =
+        support.ProgramConstants.colour(org.traincontrol.gui.AutonomyViewerPanel.class, "HEADING_COLOUR");
+
+    /** The train the run is staged with, from TopMainR2Inter to TopMainR1. */
+    private static final String MOVER = "2-8-4 3505 SP";
+
+    /**
+     * Staged on the frozen railway: 2-8-4 3505 SP from TopMainR2Inter to TopMainR1, with 75 407 DB standing at BottomMainA,
+     * past its first sensor, then held there - simulation switched off once the run is waiting for that sensor, so the next
+     * never comes.
      *
      * MUTATION: put the old yellow back on a destination, or the old red on a station not yet reached, or the navy on
      * the Auto tab's badge, and this fails.
@@ -65,13 +82,34 @@ public class testARunsCaptionsSpeakInItsColours
         MarklinControlStation model = null;
         TrainControlUI ui = null;
         Thread run = null;
+        final Map<Locomotive, Integer> lengthsWere = new java.util.HashMap<>();
 
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-            model = init(null, true, true, false, true);
+            sandbox.simulated();
+
+            // ITS TRAINS, NAMED (FR-136): where his trains stand is working state.  The run, and one train standing by.
+            sandbox.withNoTrains()
+                .standing(new org.traincontrol.automationui.TileGraph.TileKey("1 - Main", 0, 11), MOVER, "E", "N")
+                .standing(new org.traincontrol.automationui.TileGraph.TileKey("1 - Main", 20, 12), "75 407 DB", "E", "W");
+
+            model = support.TestStation.simulatedWithWindowInDebug();
             model.setNetworkCommState(false);
+
+            // ITS TRAINS' LENGTHS, CLEARED: a length is the database's working state, and his 3505 SP of four units
+            // cannot stop at TopMainR1 (room for three).  A claim about colors keeps the length rule out.
+            for (String name : new String[] {MOVER, "75 407 DB"})
+            {
+                Locomotive borrowed = model.getLocByName(name);
+
+                assertNotNull(borrowed, "precondition: the database has no " + name);
+
+                lengthsWere.put(borrowed, borrowed.getTrainLength());
+
+                borrowed.setTrainLength(0);
+            }
 
             ui = (TrainControlUI) model.getGUI();
 
@@ -81,7 +119,7 @@ public class testARunsCaptionsSpeakInItsColours
 
             AutonomySession session = ui.getAutonomySession();
 
-            if (session == null) throw new SkipException("no autonomy setup on this railway");
+            if (session == null) throw new AssertionError("no autonomy setup on this railway");
 
             model.parseAuto(session.buildConfiguration());
 
@@ -97,10 +135,12 @@ public class testARunsCaptionsSpeakInItsColours
             {
                 Locomotive l = p.getCurrentLocomotive();
 
-                if (l == null) continue;
+                if (l == null || !MOVER.equals(l.getName())) continue;
 
                 for (List<Edge> candidate : layout.getPossiblePaths(l, false))
                 {
+                    if (!"TopMainR1".equals(candidate.get(candidate.size() - 1).getEnd().getName())) continue;
+
                     if (candidate.size() >= 3 && (path == null || candidate.size() > path.size()))
                     {
                         train = l;
@@ -109,7 +149,7 @@ public class testARunsCaptionsSpeakInItsColours
                 }
             }
 
-            assertNotNull(path, "precondition: no train on the frozen railway has a route of three legs");
+            assertNotNull(path, "precondition: " + MOVER + " has no route of three legs from TopMainR2Inter to TopMainR1");
 
             final Locomotive mover = train;
             final List<Edge> road = path;
@@ -182,7 +222,7 @@ public class testARunsCaptionsSpeakInItsColours
                 // THE TRAIN'S LINE AS IT SHOWS ON WHITE, SOLID (Adam, 2026-10-09: "Make the yellow labels (trains on their
                 // way somewhere) have the same orange background color as occupied train tiles, just without the fading",
                 // then "Go with as the line actually looks on white")
-                if (rgb(fill, 255, 171, 115) && fill.getAlpha() == 255) destination = pill;
+                if (sameInk(fill, DiagramColours.DESTINATION) && fill.getAlpha() == 255) destination = pill;
                 if (rgb(fill, 255, 214, 64)) warmYellow++;
                 if (rgb(fill, 255, 255, 0)) oldYellow++;
                 if (text != null && text.getBlue() > text.getRed() + 60 && text.getBlue() > text.getGreen() + 40) ahead++;
@@ -195,7 +235,7 @@ public class testARunsCaptionsSpeakInItsColours
                 + " train is on");
 
             assertNotNull(destination, mover.getName() + "'s destination is not the train's line as it shows on white,"
-                + " rgb(255,171,115), solid");
+                + " " + DiagramColours.DESTINATION + ", solid");
 
             Color text = destination.getForeground();
 
@@ -208,7 +248,7 @@ public class testARunsCaptionsSpeakInItsColours
 
             // THE AUTO TAB'S BADGE AND TEXT, the window's label blue (Adam, 2026-10-09: "On the Autonomy Locomotive
             // Commands tab, match the color of the text and pills to the darker blue used on text labels"): every card
-            // whose badge is neither idle grey nor the home teal, and every destination not written in red
+            // whose badge is neither idle gray nor the home teal, and every destination not written in red
             List<AutoLocomotiveStatus> cards = new ArrayList<>();
 
             collect(ui.getContentPane(), cards);
@@ -231,15 +271,15 @@ public class testARunsCaptionsSpeakInItsColours
 
                 blueBadges++;
 
-                assertTrue(rgb(badge, 0, 0, 115), "an Auto tab card's station badge is " + badge + ", not the darker blue"
-                    + " the window's labels are written in, rgb(0,0,115)");
+                assertTrue(sameInk(badge, LABEL_BLUE), "an Auto tab card's station badge is " + badge + ", not the darker"
+                    + " blue the window's labels are written in, " + LABEL_BLUE);
 
                 Color written = ((JLabel) destinationField.get(card)).getForeground();
 
                 if (written.getRed() > 140) continue;
 
-                assertTrue(rgb(written, 0, 0, 115), "an Auto tab card's text is " + written + ", not the darker blue the"
-                    + " window's labels are written in, rgb(0,0,115)");
+                assertTrue(sameInk(written, LABEL_BLUE), "an Auto tab card's text is " + written + ", not the darker blue"
+                    + " the window's labels are written in, " + LABEL_BLUE);
             }
 
             assertTrue(blueBadges > 0, "precondition: no Auto tab card has a station badge in blue to look at");
@@ -247,6 +287,8 @@ public class testARunsCaptionsSpeakInItsColours
         finally
         {
             if (run != null) run.interrupt();
+
+            for (Map.Entry<Locomotive, Integer> was : lengthsWere.entrySet()) was.getKey().setTrainLength(was.getValue());
 
             if (model != null) model.stop();
 
@@ -274,10 +316,10 @@ public class testARunsCaptionsSpeakInItsColours
     /**
      * An empty station's dash is drawn dimmer than a name on the running diagram, as the diagram's own rule for a
      * placeholder says (D1 of the look's design pass; Adam, 2026-10-09: "Do D1 and D2").  `StationCaption.onPill` dims a
-     * placeholder, and the editors ask it with the placeholder grey; the running diagram asked it with black, so the dash
+     * placeholder, and the editors ask it with the placeholder gray; the running diagram asked it with black, so the dash
      * was as loud as a train's name.
      *
-     * MUTATION: colour the dash black again and this fails.
+     * MUTATION: color the dash black again and this fails.
      *
      * @throws Exception from the window or the railway
      */
@@ -295,7 +337,9 @@ public class testARunsCaptionsSpeakInItsColours
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-            model = init(null, true, true, false, true);
+            sandbox.simulated();
+
+            model = support.TestStation.simulatedWithWindowInDebug();
             model.setNetworkCommState(false);
 
             ui = (TrainControlUI) model.getGUI();
@@ -306,7 +350,7 @@ public class testARunsCaptionsSpeakInItsColours
 
             AutonomySession session = ui.getAutonomySession();
 
-            if (session == null) throw new SkipException("no autonomy setup on this railway");
+            if (session == null) throw new AssertionError("no autonomy setup on this railway");
 
             model.parseAuto(session.buildConfiguration());
 
