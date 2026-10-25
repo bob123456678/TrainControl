@@ -28,15 +28,12 @@ public class RightClickRouteMenu extends PopupListener
     }
 
     /**
-     * Opens this menu wherever the pointer is, for a click that was not a popup trigger (FR-043).
+     * Opens this menu wherever the pointer is, for a click that was not a popup trigger (FR-043).  Adam: "make all
+     * other left or clicks on the table cells open the right-click menu."  The play button on the cell executes a route
+     * without asking, so every other click opens the menu rather than doing nothing.
      *
-     * Adam: "make all other left or clicks on the table cells open the right-click menu."  A left click
-     * on a route used to ask "execute this?" in a dialog; the play button on the cell now does that
-     * without asking, and everything else about a route is in this menu - so every other click on the
-     * cell opens it rather than doing nothing.
-     *
-     * Here rather than copied into the window, because the menu knows how to refuse: a click that is
-     * not over a route opens nothing at all.
+     * Here rather than copied into the window, because the menu knows how to refuse: a click not over a route opens
+     * nothing.
      *
      * @param ui the main window
      * @param e the click
@@ -92,17 +89,11 @@ public class RightClickRouteMenu extends PopupListener
                 menuItem.addActionListener(event -> ui.duplicateRoute(routeName));
                 add(menuItem);
 
-                // `hasS88()` alone was right against the action as it read an
-                // hour ago - the whole body was gated on it, disable included - and a second fix has
-                // since corrected that, because turning autofire OFF never needed a sensor.
-                //
-                // So the affordance has to move with it, or it is stricter than the thing it offers:
-                // a route whose s88 was removed while autofire was still on could be disabled from
-                // Bulk Disable and not from its own menu. That is the original defect reflected.
-                //
-                // This is the predicate `BulkEnableOrDisable` has always used, and it is the action's
-                // rule seen from here: offering DISABLE on an enabled route always works; offering
-                // ENABLE needs a sensor.
+                // `hasS88()` alone was the rule while the action was gated on it wholesale, but turning autofire OFF
+                // never needed a sensor, so the affordance has to move with the action or it is stricter than the thing
+                // it offers: a route whose s88 was removed while autofire was on could be disabled from Bulk Disable
+                // and not from its own menu.  This is the predicate `BulkEnableOrDisable` uses: offering DISABLE on an
+                // enabled route always works, ENABLE needs a sensor.
                 if (route.hasS88() || route.isEnabled())
                 {
                     addSeparator();
