@@ -20945,11 +20945,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Delegates to `ReturnHomeController.awaitReturnHomeTriage`.
+     * Delegates to `ReturnHomeController.awaitSettled`: true once every return-home ask already made has landed.
      */
     boolean awaitReturnHomeTriage(long millis)
     {
-        return this.returnHomeController.awaitReturnHomeTriage(millis);
+        return this.returnHomeController.awaitSettled(millis);
     }
 
     /**

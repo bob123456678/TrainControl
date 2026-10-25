@@ -15,7 +15,7 @@ import org.traincontrol.util.I18n;
  *
  * Every field, `stagingFlowActive` and the triage's among them, stays on `TrainControlUI`.
  */
-final class ReturnHomeController
+final class ReturnHomeController extends SettledQuestion
 {
     private final TrainControlUI ui;
 
@@ -332,7 +332,7 @@ final class ReturnHomeController
         {
             // Submitting can be refused - the pool is shut down when the window closes - and the flag
             // is set by then.  Clearing it here keeps the latch from coming back at one remove.
-            settleReturnHomeTriage();
+            settle();
         }
     }
 
@@ -380,7 +380,7 @@ final class ReturnHomeController
         }
         finally
         {
-            settleReturnHomeTriage();
+            settle();
 
             // AN ASK THAT ARRIVED IN THE GAP - between the loop reading the flag for the last time and
             // the line above giving the job up.  `workOutCoveredTrack` says why this matters: on the
@@ -422,53 +422,26 @@ final class ReturnHomeController
     }
 
     /**
-     * Says the job is given up, and wakes anybody waiting for the answer, both under the one monitor
-     * `awaitReturnHomeTriage` waits on, so a waiter cannot check the flags, find an ask outstanding, and sleep in the
-     * instant between this clearing them and announcing it.
+     * The triage's monitor: THIS window's own object, held only to set two fields, never the `Layout` monitor a dispatch
+     * holds across a `CONFIGURE_SLEEP` per accessory of a path (OB-192), so the event thread may wait on it, bounded.
      */
-    private void settleReturnHomeTriage()
+    @Override
+    Object settledLock()
     {
-        synchronized (this.ui.returnHomeTriageSettled)
-        {
-            this.ui.returnHomeTriageInFlight.set(false);
-
-            this.ui.returnHomeTriageSettled.notifyAll();
-        }
+        return this.ui.returnHomeTriageSettled;
     }
 
-    /**
-     * Waits until every return-home ask already made has landed; true when the answer is up to date, false when the
-     * wait ran out after at most `millis`.  BOUNDED, ALWAYS: the only wait a caller on the event thread may make about
-     * this question, because it is on THIS window's own object, held for no longer than it takes to set two fields,
-     * never on the `Layout` monitor, which a dispatch holds across a `CONFIGURE_SLEEP` per accessory of a path
-     * (OB-192).
-     */
-    boolean awaitReturnHomeTriage(long millis)
+    /** The triage is outstanding while a worker is on it or an ask has not been picked up. */
+    @Override
+    boolean outstanding()
     {
-        long deadline = System.currentTimeMillis() + millis;
+        return this.ui.returnHomeTriageInFlight.get() || this.ui.returnHomeTriageDirty.get();
+    }
 
-        synchronized (this.ui.returnHomeTriageSettled)
-        {
-            while (this.ui.returnHomeTriageInFlight.get() || this.ui.returnHomeTriageDirty.get())
-            {
-                long left = deadline - System.currentTimeMillis();
-
-                if (left <= 0) return false;
-
-                try
-                {
-                    this.ui.returnHomeTriageSettled.wait(left);
-                }
-                catch (InterruptedException stopped)
-                {
-                    Thread.currentThread().interrupt();
-
-                    return false;
-                }
-            }
-        }
-
-        return true;
+    @Override
+    void giveUp()
+    {
+        this.ui.returnHomeTriageInFlight.set(false);
     }
 
     /**
