@@ -620,17 +620,7 @@ public final class SelfUpdate
      */
     public static Updater startDetached(List<String> command, File folder) throws IOException
     {
-        File nowhere = new File(File.separatorChar == '\\' ? "NUL" : "/dev/null");
-
-        ProcessBuilder builder = new ProcessBuilder(command)
-            .directory(folder)
-            .redirectErrorStream(true)
-            .redirectOutput(ProcessBuilder.Redirect.appendTo(nowhere))
-            .redirectInput(ProcessBuilder.Redirect.from(nowhere));
-
-        JarUpdater.prepareEnvironment(builder.environment(), null);
-
-        final Process process = builder.start();
+        final Process process = JarUpdater.startDetached(command, folder, null);
 
         return new Updater()
         {

@@ -896,6 +896,22 @@ public final class JarUpdater
      */
     public static Started startProcess(List<String> command, File folder, File startedMarker) throws IOException
     {
+        final Process process = startDetached(command, folder, startedMarker);
+
+        return process::isAlive;
+    }
+
+    /**
+     * Starts a program whose input and output are nowhere, for a starter whose own JVM exits soon after.
+     *
+     * @param command the program and its arguments
+     * @param folder the working directory
+     * @param startedMarker the file a starting TrainControl is to write, or null for none (`prepareEnvironment`)
+     * @return the started program
+     * @throws IOException when it could not be started
+     */
+    public static Process startDetached(List<String> command, File folder, File startedMarker) throws IOException
+    {
         File nowhere = new File(File.separatorChar == '\\' ? "NUL" : "/dev/null");
 
         ProcessBuilder builder = new ProcessBuilder(command)
@@ -906,9 +922,7 @@ public final class JarUpdater
 
         prepareEnvironment(builder.environment(), startedMarker);
 
-        final Process process = builder.start();
-
-        return process::isAlive;
+        return builder.start();
     }
 
     /**
