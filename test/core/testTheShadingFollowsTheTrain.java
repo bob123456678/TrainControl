@@ -159,7 +159,7 @@ public class testTheShadingFollowsTheTrain
      * 1. A train standing somewhere covers track, and the labels for that track are drawn WITH the
      *    wash.  Without this the rest is a test that nothing is ever shaded, which passes on a railway
      *    where the feature does not work at all.
-     * 2. Once it has run to the next station, the squares behind where it USED to stand are no longer
+     * 2. Once it has run to the next station, the squares behind where it stood are no longer
      *    covered AND their labels have been redrawn without the wash.  That second half is OB-180: the
      *    model was always right about this and the screen was not.
      * 3. Where it is standing now covers something, so the wash moved rather than merely vanishing.
