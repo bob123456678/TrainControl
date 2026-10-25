@@ -28,51 +28,19 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * MT-309, third ruling - **the drawing says "track is blocked" again, and it says it in gray**.
+ * MT-309, third ruling: the drawing says "track is blocked" again, and says it in gray (Adam: *"'train is here' should
+ * also mean 'track is blocked' - that is the whole point."*). The orange line as long as the train and the gray on the
+ * tiles stand together, so the drawing and the guard agree: orange on a square (a train lies there), gray and no orange
+ * (track a train's presence has made unusable), neither (free).
  *
- * Adam, 2026-09-09: *"'train is here' should also mean 'track is blocked' - that is the whole point.
- * it's the same as greying out edges, just in a different way."*  And, choosing between widening the
- * line, narrowing the guard, and carrying two marks at once: *"Let's do c, but can we just grey out
- * the tiles just like blocked edges while autonomy is running?  That plus the line, drawn and
- * refreshed carefully, should do the trick."*
+ * The gray is not bounded to a run, as the refusal it draws never was; `ui.testTheGreyAppearsAtIdleToo` carries the
+ * idle half. The blocked extent is worked out here from the railway, not asked of the window under test: what is drawn
+ * must be what `Layout.edgesCoveredByStandingTrains` refuses, endpoint squares excluded. Asserted in pixels, because
+ * whether a square is grayed is decided when the tile is PAINTED (OB-180, `support.Rendered`).
  *
- * **What went wrong, and why a test could not see it.**  The wash used to wash the whole EDGE - one
- * hop between two sensors, which can be a dozen squares - so a train of length one grayed seventeen.
- * On 2026-09-08 the wash was replaced by an orange line as long as the train, which answered that
- * report and Adam's separate complaint about double curves.  It also made the picture a strict SUBSET
- * of what routing refuses, and behaviour.md 5c was changed to say so in bold.  That is the half being
- * reversed here: both marks now stand together, and between them the drawing and the guard agree
- * again.
- *
- * **Three kinds of square, and each has to look different:**
- *
- * - orange on it - a train is lying there;
- * - gray and no orange - track a train's presence has made unusable;
- * - neither - free.
- *
- * **And the gray is NOT bounded to while autonomy is running, which it once was.**  The
- * bound was Adam's own - *"while autonomy is running"* - and the refusal it draws never had one, so a
- * stopped railway refused manual sends over track this drew as free.  Adam, 2026-09-09: *"yes, this
- * greyout should appear at idle and be regenerated if a placement or train/track length is changed."*
- * This class keeps its name and its subject - while autonomy runs, blocked track is gray - and
- * `ui.testTheGreyAppearsAtIdleToo` carries the idle half.
- *
- * **The blocked extent is worked out here from the railway rather than asked of the window**, which
- * is deliberate: the claim is that what is drawn is what `Layout.edgesCoveredByStandingTrains`
- * refuses, and asking the window would be asking the thing under test what the right answer is.  The
- * endpoint squares are excluded, which is Adam's own ruling about the covered set - *"edges, because
- * the points are technically unoccupied"* - and the same exclusion `AutonomySession.pathBetween`
- * makes.
- *
- * **Asserted in pixels**, because none of it can be read off the model.  Whether a square is grayed
- * is decided when the tile is PAINTED; every model-level assertion available answers identically with
- * the gray present and absent, which is the lesson OB-180 and `support.Rendered` were written for.
- *
- * MUTATION: fence the wash on `isAutonomyBusy()` again and `testAStoppedRailwayShowsTheSameGrey`
- * fails.  Draw it only where the line is drawn - the state before the gray came back - and
- * `testBlockedTrackIsGreyedWhileAutonomyRuns` fails.  Draw the wash OVER the line and
- * `testASquareWithATrainOnItIsStillOrange` fails.  Wash the whole page and
- * `testFreeTrackIsNotTouched` fails.
+ * MUTATION: fence the wash on `isAutonomyBusy()` again and `testAStoppedRailwayShowsTheSameGrey` fails. Draw it only
+ * where the line is drawn and `testBlockedTrackIsGreyedWhileAutonomyRuns` fails. Draw the wash OVER the line and
+ * `testASquareWithATrainOnItIsStillOrange` fails. Wash the whole page and `testFreeTrackIsNotTouched` fails.
  *
  * @author Adam
  */
@@ -135,9 +103,9 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
             throw new SkipException("painting a tile needs a display");
         }
 
-        // THE DIAGRAM'S ARROWS AS THEY ARE BY DEFAULT, not as the operator last left them.  A run's preferences start as
-        // a copy of his, and since MT-675 the green arrows can be drawn on every open square, with the red or alone - on
-        // top of the fade this class measures, so a square read as partly unfaded.  Put back by the teardown.
+        // The diagram's arrows as they are by default, not as the operator last left them: a run's preferences start as
+        // a copy of his, and since MT-675 the green arrows can be drawn on every open square, on top of the fade this
+        // class measures. Put back by the teardown.
         java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
 
         restrictionsWere = prefs.get(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, null);
@@ -146,17 +114,10 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
         prefs.putBoolean(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, true);
         prefs.putBoolean(TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS, false);
 
-        // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111, and `test/layouts/live-snapshot`).
-        //
-        // This opened `cs2_sample_layout`, whose placements and lengths move as Adam runs trains on it
-        // - so on 2026-09-09 this class reported "no standing train covers any track here" against a
-        // working tree where every train had been driven away, and a class that skips everything reads
-        // as a green one.  `live-snapshot` is the same railway with the clock stopped at `e6f4649c`,
-        // which is the state these assertions were written against.
-        //
-        // `Scenario.folderFor` rather than a path: it is the only naming of a fixture folder that
-        // cannot spell its way out to the operator's own railway, and `LayoutSandbox` still copies
-        // what it names before anything reads it.
+        // The frozen copy, not the railway he is operating (OB-111, and `test/layouts/live-snapshot`):
+        // `cs2_sample_layout`'s placements and lengths move as Adam runs trains on it, and a class that skips
+        // everything reads as a green one. `Scenario.folderFor` is the only naming of a fixture folder that cannot
+        // spell its way out to the operator's own railway.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
         model = support.TestStation.simulatedWithWindowInDebug();
@@ -203,7 +164,7 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
         blockedTile = drawnTileFor(blockedSquare);
         freeTile = drawnTileFor(freeSquare);
 
-        // STOPPED, with the train exactly where it is.  Both marks are drawn.
+        // STOPPED, with the train exactly where it is. Both marks are drawn.
         setRunning(false);
 
         refreshCoveredTrack();
@@ -225,9 +186,8 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
         runningBlocked = paint(blockedTile);
         runningFree = paint(freeTile);
 
-        // AND RUNNING WITH NOTHING STANDING ANYWHERE, which is the reference every "is this square
-        // marked at all" question is asked against.  A length of zero is how this railway says "not
-        // set", and an unmeasured train covers nothing.
+        // And running with nothing standing anywhere, the reference every "is this square marked at all" question is
+        // asked against. A length of zero is how this railway says "not set", and an unmeasured train covers nothing.
         train.setTrainLength(0);
 
         refreshCoveredTrack();
@@ -272,19 +232,14 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
 
     // ---------------------------------------------------------------- the four claims
 
-    /**
-     * A square nothing is drawn on, but which the railway refuses, is grayed while autonomy runs.
-     */
+    /** A square nothing is drawn on, but which the railway refuses, is grayed while autonomy runs. */
     @Test
     public void testBlockedTrackIsGreyedWhileAutonomyRuns()
     {
         assertBuilt();
 
-        // THE ORANGE IS EXPECTED HERE NOW, and this used to assert its absence (MT-373).
-        //
-        // The square is the one the train is standing on, because since the wash was narrowed that is
-        // also the only kind of square a standing train grays.  The claim below is unchanged and is
-        // the one that matters: the tile is drawn FAINTER when the railway refuses it.
+        // The orange is expected here (MT-373): the square is the one the train stands on, since the wash was narrowed
+        // to the train. The claim that matters is that the tile is drawn FAINTER when the railway refuses it.
         assertTrue(orangePixels(runningBlocked) > 0,
             "the orange line is not drawn on " + blockedSquare + ", so the train is not shown where"
             + " this class thinks it is and the fade below is about some other square");
@@ -296,9 +251,7 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
             + "here' should also mean 'track is blocked' - that is the whole point\"");
     }
 
-    /**
-     * And it is gray rather than another line: the whole square is faded, not a stroke drawn across it.
-     */
+    /** And it is gray rather than another line: the whole square is faded, not a stroke drawn across it. */
     @Test(dependsOnMethods = "testBlockedTrackIsGreyedWhileAutonomyRuns")
     public void testTheBlockedMarkIsTheWholeSquareAndNotAStrokeAcrossIt()
     {
@@ -308,9 +261,8 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
 
         int drawn = drawnPixels(bareBlocked);
 
-        // A REAL FRACTION OF THE SQUARE, not one pixel.  `drawn > 0` admits a tile with
-        // eight drawn pixels, where "seven of them changed" is satisfied by any mark at all - and the
-        // claim below is meant to tell a fade of the whole tile from a stroke across part of it.
+        // A real fraction of the square, not one pixel: `drawn > 0` admits a tile with eight drawn pixels, and the
+        // claim is meant to tell a fade of the whole tile from a stroke across part of it.
         assertTrue(drawn > TILE * TILE / 10,
             "almost nothing is drawn on " + blockedSquare + " when it is free, so there is nothing "
             + "for the fade to move and this claim would pass on a blank square");
@@ -323,26 +275,11 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
     }
 
     /**
-     * And a stopped railway shows exactly the same gray - the mark is NOT bounded to a run.
-     *
-     * **This test asserted the opposite until 2026-09-09, and the reversal is the point of it.**  The
-     * bound was Adam's own sentence - *"can we just grey out the tiles just like blocked edges while
-     * autonomy is running?"* - and the reasoning written down for it was that blocked track is a fact
-     * about routing, and nothing is routing when nothing is running.
-     *
-     * That reasoning is wrong about this railway, and the review that found it says how: the REFUSAL
-     * was never fenced.  `Layout.isPathClear` sweeps the covered edges in every tier at every time,
-     * correctly, because a tail lying across the rail is physical.  So at idle a right-click manual
-     * send across a parked train's tail was refused over track this drew as free - which is the same
-     * complaint that brought the gray back for the running case, arriving through the other door.
-     *
-     * Adam, asked about the idle case directly, 2026-09-09: *"yes, this greyout should appear at idle
-     * and be regenerated if a placement or train/track length is changed."*
-     *
-     * **What this class still claims** is its own name: while autonomy runs, blocked track is gray.
-     * That was true before and is true now.  What has gone is the word ONLY.
-     * `ui.testTheGreyAppearsAtIdleToo` carries the idle half, including the regeneration Adam asked
-     * for in the same sentence.
+     * And a stopped railway shows exactly the same gray: the mark is NOT bounded to a run. `Layout.isPathClear` sweeps
+     * the covered edges in every tier at every time, because a tail lying across the rail is physical, so at idle a
+     * manual send across a parked train's tail was refused over track this drew as free. Adam: *"this greyout should
+     * appear at idle and be regenerated if a placement or train/track length is changed."*
+     * `ui.testTheGreyAppearsAtIdleToo` carries the regeneration.
      */
     @Test
     public void testAStoppedRailwayShowsTheSameGrey()
@@ -363,9 +300,7 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
             + "unusable");
     }
 
-    /**
-     * The orange line is untouched by any of it - drawn stopped, drawn running, and the same line.
-     */
+    /** The orange line is untouched by any of it - drawn stopped, drawn running, and the same line. */
     @Test
     public void testTheOrangeLineIsDrawnEitherWay()
     {
@@ -388,20 +323,14 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
             + "adding a wash beneath it");
     }
 
-    /**
-     * A square that is both - the train is on it AND it is blocked - reads as both.
-     */
+    /** A square that is both - the train is on it AND it is blocked - reads as both. */
     @Test(dependsOnMethods = "testTheOrangeLineIsDrawnEitherWay")
     public void testASquareWithATrainOnItIsStillOrange()
     {
         assertBuilt();
 
-        // AGAINST THE BARE PICTURE, and it used to be against the STOPPED one.
-        //
-        // While the gray was fenced on a running railway, "stopped" was the same square with no wash
-        // on it and that comparison said what this claim means.  The fence is gone: the two pictures
-        // are now identical by design, and the difference this looked for could only ever be zero.
-        // The square with nothing standing anywhere is the picture that has no wash on it now.
+        // Against the bare picture: the gray is no longer fenced on a running railway, so "stopped" and "running" are
+        // identical by design, and the square with nothing standing anywhere is the picture that has no wash on it.
         assertTrue(contrast(runningCovered) < contrast(bareCovered) - 2,
             "the square the train stands on is drawn no fainter while a train covers it ("
             + contrast(runningCovered) + ") than with nothing standing anywhere ("
@@ -413,9 +342,8 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
     }
 
     /**
-     * CONTROL - track no train blocks is left alone, running or not.
-     *
-     * Without this every assertion above is satisfied by graying the whole page while autonomy runs.
+     * CONTROL: track no train blocks is left alone, running or not. Without it every assertion above is satisfied by
+     * graying the whole page while autonomy runs.
      */
     @Test
     public void testFreeTrackIsNotTouched()
@@ -433,15 +361,9 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
     // ---------------------------------------------------------------- the railway's own answer
 
     /**
-     * The squares the railway holds blocked, worked out from the covered EDGES.
-     *
-     * Not asked of the window: the window is what is under test, and a test that asks it what the
-     * answer is agrees with it whatever it says.  This is the translation `AutonomySession` performs -
-     * a covered `Edge` runs between two `Point`s, each `Point` maps back to a square, and the reducer
-     * holds the tiles lying between two squares - with the endpoints excluded, because a train
-     * standing at a sensor is shown standing there and the points are technically unoccupied.
-     *
-     * @return the blocked squares
+     * The squares the railway holds blocked, worked out from the covered EDGES, not asked of the window (which would
+     * agree with itself whatever it says). This is the translation `AutonomySession` performs, with the endpoints
+     * excluded because a train at a sensor is shown standing there.
      */
     private static Set<TileKey> blockedSquares()
     {
@@ -483,13 +405,9 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
     private static int trainLength;
 
     /**
-     * Finds a train length at which the railway blocks a square the train is not drawn on.
-     *
-     * Both marks have to be visible at once for any of this to be assertable, and how far each of them
-     * reaches depends on the length: the line is as long as the train, the blocked extent is whole
-     * edges.  A short train on a long edge separates them, and how short depends on the railway.
-     *
-     * @return true when all three squares were found
+     * Finds a train length at which the railway blocks a square the train is not drawn on: both marks must be visible
+     * at once, and the line is as long as the train while the blocked extent is whole edges, so a short train on a long
+     * edge separates them.
      */
     private static boolean chooseTheThreeSquares() throws Exception
     {
@@ -513,22 +431,11 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
                 }
             }
 
-            // A SQUARE THAT IS GRAY AND NOT ORANGE NO LONGER EXISTS FOR A STANDING TRAIN, and that is
-            // Adam's ruling rather than a regression (MT-373, 2026-09-12).
-            //
-            // This class used to hunt for one: the gray came from the whole covered EDGE and the
-            // orange from the train's own extent, so a long run behind a short train was gray with no
-            // line on it.  He asked for the wash to be narrowed to the train - *"the visuals look
-            // perfect now"* - and the two marks then covered the same squares.
-            //
-            // *"grey out the blocked path only if on a double curve.  otherwise, greyed out means
-            // either edge locked or path blocked."*  So the gray still has a meaning of its own, and
-            // it is EDGE LOCKED - a square an active route is holding, which carries no train.  That
-            // is `TileOverlay`'s wash and `ui.testTheWashDoesNotStack` is where it is tested; it needs
-            // a running route, which this class does not have.
-            //
-            // What this class still claims is its own name: while autonomy runs, blocked track is
-            // gray.  The square it claims it of is the one the train is on.
+            // A square that is gray and not orange no longer exists for a standing train, by Adam's ruling (MT-373:
+            // *"grey out the blocked path only if on a double curve.  otherwise, greyed out means either edge locked or
+            // path blocked."*). The gray's own meaning is EDGE LOCKED, a square an active route is holding with no
+            // train on it: that is `TileOverlay`'s wash, tested in `ui.testTheWashDoesNotStack`, and needs a running
+            // route this class does not have. The square this class claims is the one the train is on.
             TileKey blockedOnly = onTheTrain;
 
             if (onTheTrain == null) continue;
@@ -574,11 +481,9 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
     // ---------------------------------------------------------------- looking at the picture
 
     /**
-     * Whether this color is the orange a person would call orange.
-     *
-     * The same test `support.Rendered` and `testTheTrainIsShownAsALine` use, by hue rather than
-     * against production's own constant: the claim is about what somebody looking at the diagram
-     * sees, and a test reading the constant would agree with any value it was changed to.
+     * Whether this color is the orange a person would call orange: by hue, as `support.Rendered` and
+     * `testTheTrainIsShownAsALine` do, not against production's own constant, which would agree with any value it was
+     * changed to.
      */
     private static boolean isOrange(int rgb)
     {
@@ -606,30 +511,9 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
 
 
     /**
-     * How much light and shade the square holds - its own contrast, and nothing about the theme.
-     *
-     * The difference between the brightest and the darkest pixel on the tile.  A tile drawn at reduced
-     * alpha blends toward whatever is behind it, so this falls; whether the MEAN rises or falls depends
-     * on the panel's color, which is exactly the thing a claim about the mark should not depend on.
-     * These claims said "darker" until MT-278 item 1 replaced the wash with a fade, and on a light
-     * panel a fade is brighter.
-     *
-     * @param image the painted tile
-     * @return the spread, 0 for a flat square
-     */
-    /**
-     * How many pixels of this tile carry anything but its own background.
-     *
-     * The background is the commonest color on the square, which on a tile is the panel showing
-     * through around the track.  What is left is the drawing.
-     *
-     * Used to say what "the whole tile is marked" means for a FADE: a wash paints every pixel, and a
-     * fade moves only the pixels that were not already the background - so counting changed pixels
-     * against the square's area is the wash's claim, and counting them against the DRAWN pixels is
-     * the same claim about a fade.
-     *
-     * @param image the painted tile
-     * @return how many pixels are not the background color
+     * How many pixels of this tile carry anything but its own background, the commonest color on the square (the panel
+     * showing through). A wash paints every pixel and a fade moves only those that were not background, so "the whole
+     * tile is marked" is counted against the DRAWN pixels.
      */
     private static int drawnPixels(java.awt.image.BufferedImage image)
     {
@@ -655,6 +539,7 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
         return image.getWidth() * image.getHeight() - background;
     }
 
+    /** Brightest minus darkest pixel on the tile: its own contrast, independent of the theme. */
     private static int contrast(java.awt.image.BufferedImage image)
     {
         int darkest = 255;
@@ -697,10 +582,8 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
     }
 
     /**
-     * Paints one tile, on its own, exactly as the diagram paints it.
-     *
-     * `paint` and not `printAll`: both of those begin with an isShowing() check and do nothing for a
-     * component that is not on screen, which is every component here.
+     * Paints one tile, on its own, exactly as the diagram paints it: `paint` and not `printAll`, which do nothing for a
+     * component that is not on screen.
      */
     private static BufferedImage paint(final LayoutLabel label) throws Exception
     {
@@ -733,10 +616,8 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
     // ---------------------------------------------------------------- the fixture
 
     /**
-     * Sets the railway's own running flag, the way `executeTimetable` sets it.
-     *
-     * By reflection, like `testHomeStaging`: `runLocomotives` dispatches trains down Adam's real
-     * railway, and what is under test is a drawing rule fenced on the flag rather than the dispatch.
+     * Sets the railway's own running flag, the way `executeTimetable` sets it, by reflection: `runLocomotives`
+     * dispatches trains down Adam's real railway, and what is under test is a drawing rule fenced on the flag.
      */
     private static void setRunning(boolean value) throws Exception
     {
@@ -748,10 +629,8 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
 
     private static void refreshCoveredTrack() throws Exception
     {
-        // AND WAITED FOR (OB-192).  The window works the marks out on a worker now, because asking
-        // for them on the event thread meant waiting on the `Layout` monitor a dispatch holds - so
-        // asking and reading are two moments, and `support.CoveredMarks` is the one place that knows
-        // it.
+        // And waited for (OB-192): the window works the marks out on a worker, so asking and reading are two moments,
+        // and `support.CoveredMarks` is the one place that knows it.
         support.CoveredMarks.refresh(ui);
 
         pump();
@@ -769,9 +648,7 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
         pump();
     }
 
-    /**
-     * A real tile for a square, drawn and ready to be painted.
-     */
+    /** A real tile for a square, drawn and ready to be painted. */
     private static LayoutLabel drawnTileFor(TileKey square) throws Exception
     {
         org.traincontrol.base.LayoutDiagram page = model.getLayout(square.getPage());
@@ -814,9 +691,8 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
     }
 
     /**
-     * Leaves one train standing, and only one that actually covers track - a train whose recorded
-     * arrival side leads nowhere the graph can follow covers nothing, and every picture here would be
-     * of an ordinary square.
+     * Leaves one train standing, and only one that actually covers track: a train whose recorded arrival side leads
+     * nowhere covers nothing.
      */
     private static void oneTrainThatCoversSomething()
     {
