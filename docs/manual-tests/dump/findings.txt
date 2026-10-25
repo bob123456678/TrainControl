@@ -38987,6 +38987,149 @@ cited_by:
 status: Closed
 status_note: A D finding: checked and clean (3.0.3 validation round 1, RSA76 (b6f3dfcb..ab54c48b; 0 A, 2 B, 14 C) (2026-10-24))
 
+[finding RSA77-C1 in RSA77.md]
+line: 17
+severity: C
+title: MT-820 asks Adam to try doors that are grayed while a run holds the setup, so its expected messages cannot appear
+disposition: Open: a new MT replaces MT-820 once the grayed items' tooltips match their doors (Adam, 2026-10-24: "make tooltips match").
+evidence: AutonomyMenu.java:50
+commit_id: 063a3ed6
+cited_by:
+status:
+status_note:
+
+[finding RSA77-C2 in RSA77.md]
+line: 31
+severity: C
+title: The Readme's cluster 45 line says a load or Unload waits while autonomy runs, but there they still offer to stop the trains
+disposition: Fixed - `ccadfbd5`: the Readme line says loads and Unload wait only while a route runs.
+evidence: Readme.md:425
+commit_id: c0ab7a5c
+cited_by:
+status: Closed
+status_note: Fixed in ccadfbd5 (the Readme line) - 3.0.3 validation round 2, RSA77 (ab54c48b..063a3ed6; 0 A, 0 B, 4 C; converged) (2026-10-24)
+
+[finding RSA77-C3 in RSA77.md]
+line: 44
+severity: C
+title: The committed dump disagrees with findings.tsv on six RSA76 rows
+disposition: Fixed - `ccadfbd5`: the dump rewritten; `triagedb.py verify` green.  A finding write needs `triagedb.py dump` after render_findings.
+evidence:
+commit_id: 063a3ed6
+cited_by:
+status: Closed
+status_note: Fixed in ccadfbd5 (the dump) - 3.0.3 validation round 2, RSA77 (ab54c48b..063a3ed6; 0 A, 0 B, 4 C; converged) (2026-10-24)
+
+[finding RSA77-C4 in RSA77.md]
+line: 54
+severity: C
+title: Three comments in the range tell history or break the wrap
+disposition: Fixed - `ccadfbd5`: the three comments to the rule and the wrap (comment-only, 840 classes identical).
+evidence: CoveredTrackView.java:68
+commit_id: 611b1602
+cited_by:
+status: Closed
+status_note: Fixed in ccadfbd5 (comments) - 3.0.3 validation round 2, RSA77 (ab54c48b..063a3ed6; 0 A, 0 B, 4 C; converged) (2026-10-24)
+
+[finding RSA77-D1 in RSA77.md]
+line: 66
+severity: D
+title: CoalescedAsk keeps each owner's worker as it was
+disposition: Not a defect
+evidence: CoveredTrackView.java:51
+commit_id: 611b1602
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.3 validation round 2, RSA77 (ab54c48b..063a3ed6; 0 A, 0 B, 4 C; converged) (2026-10-24))
+
+[finding RSA77-D2 in RSA77.md]
+line: 83
+severity: D
+title: Cluster 45 keeps every door's refusal set, its gesture undo and its re-checks
+disposition: Not a defect
+evidence: TrainControlUI.java:18810
+commit_id: c0ab7a5c
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.3 validation round 2, RSA77 (ab54c48b..063a3ed6; 0 A, 0 B, 4 C; converged) (2026-10-24))
+
+[finding RSA77-D3 in RSA77.md]
+line: 104
+severity: D
+title: Round 1's API fixes do what their findings asked
+disposition: Not a defect
+evidence: AutomationAPI.md:53
+commit_id: 2179b67d
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.3 validation round 2, RSA77 (ab54c48b..063a3ed6; 0 A, 0 B, 4 C; converged) (2026-10-24))
+
+[finding RSA77-D4 in RSA77.md]
+line: 116
+severity: D
+title: Round 1's claim and leak fixes are real
+disposition: Not a defect
+evidence: LayoutEditor.java:1312
+commit_id: e615a9af
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.3 validation round 2, RSA77 (ab54c48b..063a3ed6; 0 A, 0 B, 4 C; converged) (2026-10-24))
+
+[finding RSA77-D5 in RSA77.md]
+line: 128
+severity: D
+title: The comment passes are comment-only and lose no test's anchor
+disposition: Not a defect
+evidence:
+commit_id: aa9cd579
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.3 validation round 2, RSA77 (ab54c48b..063a3ed6; 0 A, 0 B, 4 C; converged) (2026-10-24))
+
+[finding RSA77-D6 in RSA77.md]
+line: 138
+severity: D
+title: Clusters 18, 38 and 224 are behavior-preserving
+disposition: Not a defect
+evidence:
+commit_id: eda58639
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.3 validation round 2, RSA77 (ab54c48b..063a3ed6; 0 A, 0 B, 4 C; converged) (2026-10-24))
+
+[finding RSA77-D7 in RSA77.md]
+line: 148
+severity: D
+title: Cluster 43 paints a switch key as before
+disposition: Not a defect
+evidence:
+commit_id: 74365ed4
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.3 validation round 2, RSA77 (ab54c48b..063a3ed6; 0 A, 0 B, 4 C; converged) (2026-10-24))
+
+[finding RSA77-D8 in RSA77.md]
+line: 156
+severity: D
+title: OB-373 saves the diagram's Place without a facing, and logs a failed save
+disposition: Not a defect
+evidence: LayoutRightclickAutonomyMenu.java:1155
+commit_id: a2794f13
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.3 validation round 2, RSA77 (ab54c48b..063a3ed6; 0 A, 0 B, 4 C; converged) (2026-10-24))
+
+[finding RSA77-D9 in RSA77.md]
+line: 168
+severity: D
+title: The range's Readme lines follow the house rules
+disposition: Not a defect
+evidence: Readme.md:425
+commit_id:
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.3 validation round 2, RSA77 (ab54c48b..063a3ed6; 0 A, 0 B, 4 C; converged) (2026-10-24))
+
 [finding RSA8-B1 in RSA8.md]
 line: 26
 severity: B

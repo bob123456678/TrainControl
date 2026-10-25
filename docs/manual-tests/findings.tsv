@@ -3558,6 +3558,19 @@ RSA76-D6	RSA76.md	Closed	Not a defect	The Phase 5 extractions are delegations wi
 RSA76-D7	RSA76.md	Closed	Not a defect	SettledQuestion keeps each of the three waits' own rule
 RSA76-D8	RSA76.md	Closed	Not a defect	No synchronized member or event-thread hand-off was lost in gui/ or automationui/
 RSA76-D9	RSA76.md	Closed	Not a defect	The public API of 3.0.2 is all there, with the same signatures
+RSA77-C1	RSA77.md	-	Open: a new MT replaces MT-820 once the grayed items' tooltips match their doors (Adam, 20	MT-820 asks Adam to try doors that are grayed while a run holds the setup, so its expected messages cannot appear
+RSA77-C2	RSA77.md	Closed	Fixed - `ccadfbd5`: the Readme line says loads and Unload wait only while a route runs.	The Readme's cluster 45 line says a load or Unload waits while autonomy runs, but there they still offer to stop the trains
+RSA77-C3	RSA77.md	Closed	Fixed - `ccadfbd5`: the dump rewritten; `triagedb.py verify` green. A finding write needs 	The committed dump disagrees with findings.tsv on six RSA76 rows
+RSA77-C4	RSA77.md	Closed	Fixed - `ccadfbd5`: the three comments to the rule and the wrap (comment-only, 840 classes	Three comments in the range tell history or break the wrap
+RSA77-D1	RSA77.md	Closed	Not a defect	CoalescedAsk keeps each owner's worker as it was
+RSA77-D2	RSA77.md	Closed	Not a defect	Cluster 45 keeps every door's refusal set, its gesture undo and its re-checks
+RSA77-D3	RSA77.md	Closed	Not a defect	Round 1's API fixes do what their findings asked
+RSA77-D4	RSA77.md	Closed	Not a defect	Round 1's claim and leak fixes are real
+RSA77-D5	RSA77.md	Closed	Not a defect	The comment passes are comment-only and lose no test's anchor
+RSA77-D6	RSA77.md	Closed	Not a defect	Clusters 18, 38 and 224 are behavior-preserving
+RSA77-D7	RSA77.md	Closed	Not a defect	Cluster 43 paints a switch key as before
+RSA77-D8	RSA77.md	Closed	Not a defect	OB-373 saves the diagram's Place without a facing, and logs a failed save
+RSA77-D9	RSA77.md	Closed	Not a defect	The range's Readme lines follow the house rules
 RSA8-B1	RSA8.md	Closed	Fixed - a build for inspection settles the timetable for the look and puts it back (Autono	The Autonomy menu's Pages tick loses every timetable entry set aside for a page when it is ticked back in: the findings refresh it runs before its rel
 RSA8-B2	RSA8.md	Closed	Fixed - a move moves what the carry of names remembers (squareOfNameSeen) with the squares	A move of stations in the track editor - saved, cancelled or undone - rebinds the timetable's legs through them to the stations now on the squares the
 RSA8-B3	RSA8.md	Closed	Fixed with B2 - the undo point holds the railway's squares and an undo puts them back, as 	The track editor's Ctrl+Z after a move puts back the page's setup and not the railway's squares, which round 23 now moves: while a declined edit waits
