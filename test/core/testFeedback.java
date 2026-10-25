@@ -8,18 +8,15 @@ import org.testng.annotations.Test;
 /**
  * The s88 debounce gate, which turns out to have exactly one circumstance in which it does anything.
  *
- * IGNORE_SUB_INTERVAL is 0, so "has enough time passed" is always yes - unless the subtraction comes
- * out negative, and the only way that happens is the wall clock moving backwards.  The gate was
- * therefore not a debounce at all in practice; it was a rule that said to ignore sensors after a clock
- * correction, which is the one moment nothing should be ignored.
+ * IGNORE_SUB_INTERVAL is 0, so "has enough time passed" is always yes unless the subtraction comes out negative, which
+ * only the wall clock moving backwards does.  The gate was a rule that ignored sensors after a clock correction, the
+ * one moment nothing should be ignored.
  *
  * @author Adam
  */
 public class testFeedback
 {
-    /**
-     * The smallest thing that is a Feedback, so the gate can be asked directly.
-     */
+    /** The smallest thing that is a Feedback, so the gate can be asked directly. */
     private static class Probe extends Feedback
     {
         Probe()
@@ -53,14 +50,11 @@ public class testFeedback
     /**
      * A sensor is not ignored because the clock went backwards.
      *
-     * System.currentTimeMillis is not monotonic, and every s88 update is gated on it.  An NTP
-     * correction that steps the clock back thirty seconds made every sensor that had fired inside that
-     * window refuse its next transitions until real time caught up - and because the state is only
-     * recorded when it CHANGES, the model was left holding the wrong occupancy while a driving thread
-     * waited for an arrival it had already been told about.
-     *
-     * Asking the gate directly rather than through MarklinFeedback is deliberate: the defect is in the
-     * comparison, and a test that needed a control station to reach it would be testing the plumbing.
+     * System.currentTimeMillis is not monotonic, and every s88 update is gated on it.  A clock stepped back thirty
+     * seconds would make every sensor that had fired inside that window refuse its next transitions, and because the
+     * state is only recorded when it CHANGES, the model would hold the wrong occupancy while a driving thread waited
+     * for an arrival it had already been told about.  The gate is asked directly rather than through MarklinFeedback:
+     * the defect is in the comparison.
      */
     @Test
     public void testAFeedbackIsNotGatedByAClockThatWentBackwards() throws Exception
@@ -80,8 +74,7 @@ public class testFeedback
     /**
      * The gate still lets an ordinary, forward-moving update through.
      *
-     * The precondition that keeps the test above honest: a fix that made readyForUpdate return true
-     * unconditionally would satisfy it, and would also be the right answer only by accident.
+     * The precondition that keeps the test above honest: a gate that returned true unconditionally would satisfy it.
      */
     @Test
     public void testAnOrdinaryUpdateIsStillAccepted() throws Exception
