@@ -153,8 +153,7 @@ public class CS3TestServer
     /**
      * The port this is listening on, which is only meaningful after {@link #startServer(int)}.
      *
-     * It used to read a constant back, which made it an accessor that implied the number was
-     * answerable when it was not.
+     * It reads the bound port back, not a constant, so it cannot imply the number is answerable before then.
      *
      * @return the port, or 0 before the first start
      */
