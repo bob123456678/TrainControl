@@ -15,14 +15,9 @@ import support.SourceOf;
 /**
  * FR-034: "Show station label here" opens on the station the square is next to.
  *
- * Adam, 2026-08-27: "prefill it with the label of the nearest station by tile distance.  change to
- * current behavior: only prefill the last clicked station for one right click somewhere else - then
- * revert to the distance."
- *
- * Two rules. The distance one is arithmetic and is driven directly below. The memory one is a
- * sequence - a value used once and then gone - which needs the panel, a session and a railway to
- * exercise, so it is read out of the source instead; what can silently break there is the taking
- * turning back into a reading, and that is visible.
+ * Two rules.  The distance one is arithmetic and is driven directly.  The memory one is a sequence - a last-clicked
+ * station used once and then gone - which needs a panel, a session and a railway, so it is read out of the source
+ * instead.
  *
  * @author Adam
  */
@@ -59,12 +54,8 @@ public class testStationLabelPrefill
             "three squares up beat three across and three down, so the distance is not being "
             + "measured in two dimensions");
 
-        // A case that BOTH terms have to be present to get right.
-        //
-        // Every case above happens to be decided by the horizontal distance alone, so dropping the
-        // vertical term from the comparison passed all of them - which the mutation run found and I
-        // had not. Here the nearer station is further away horizontally and much closer vertically,
-        // so ignoring either term picks the wrong one.
+        // A case that both terms have to be present to get right: the cases above are decided by the horizontal
+        // distance alone, so here the nearer station is further away horizontally and much closer vertically.
         TileKey acrossABit = new TileKey("main", 7, 5);
         TileKey farBelow = new TileKey("main", 5, 20);
 
@@ -80,11 +71,8 @@ public class testStationLabelPrefill
     }
 
     /**
-     * A station on another page is not a candidate at all.
-     *
-     * A page is its own drawing with its own coordinates, so subtracting one page's numbers from
-     * another's is arithmetic on unrelated things - and it would win whenever its coordinates happened
-     * to be small, offering a station from a diagram nobody is looking at.
+     * A station on another page is not a candidate at all: a page has its own coordinates, and a station there would
+     * win whenever its coordinates happened to be small.
      *
      * MUTATION: dropping the page test makes ELSEWHERE, at (1,1), beat NEAR for the square below.
      */
@@ -108,14 +96,8 @@ public class testStationLabelPrefill
     }
 
     /**
-     * The last-clicked station is used ONCE and then forgotten.
-     *
-     * "Only prefill the last clicked station for one right click somewhere else - then revert to the
-     * distance." Before this it was set whenever a station was clicked and won every label afterwards,
-     * anywhere on the diagram, for the rest of the session.
-     *
-     * Read rather than run: the sequence needs the panel, a session and a graph. What can silently
-     * break is the taking becoming a reading again, which is one line and is visible.
+     * The last-clicked station is used once and then forgotten, so one right click elsewhere gets it and the next goes
+     * back to the distance.  Read rather than run: what can silently break is the taking becoming a reading again.
      *
      * MUTATION: removing `lastStationTouched = null;` fails the second assertion; putting the nearest
      * lookup before the memory fails the ordering one.
@@ -143,25 +125,15 @@ public class testStationLabelPrefill
     }
 
     /**
-     * The caller nearestOf serves is untested: nearestStation, which turns the graph into the list
-     * nearestOf chooses from by keeping only the reduced points the user marked as stations.
+     * `nearestStation` turns the graph into the list `nearestOf` chooses from, keeping only the reduced points the user
+     * marked as stations.  It is private, so it is reached by reflection over the smallest session, three-feedback
+     * diagram and `AutonomyEditorPanel` that will do.
      *
-     * The two tests above drive nearestOf hard; nothing before this called
-     * nearestStation itself - the class javadoc said doing so needed "the panel, a session and a
-     * railway" and settled for reading the source instead (testTheLastClickedStationIsSpentAfterOneUse,
-     * above). It does need those three, and this builds the smallest ones that will do: a session
-     * over a temporary folder, a three-feedback diagram, and an AutonomyEditorPanel bound to it -
-     * nearestStation is private, so it is reached by reflection, the way testRouteEditorLocked
-     * reaches addTo.
+     * The middle point is the closest tile to the square asked about but an ordinary point of track, so only a filter
+     * that reads `isStation()` can tell the right answer from the geometrically nearest tile.
      *
-     * The middle point is deliberately the CLOSEST tile to the square asked about, and deliberately
-     * left as an ordinary point of track rather than a station - so the right answer and the
-     * geometrically nearest tile disagree, and only a filter that actually reads isStation() can
-     * tell them apart.
-     *
-     * Mutation this must fail: drop `point.isStation()` from the filter at
-     * AutonomyEditorPanel.java:2147. The excluded middle point would then be offered - it is nearer
-     * than either real station - and win.
+     * MUTATION: drop `point.isStation()` from the filter in `AutonomyEditorPanel.nearestStation`, and the excluded
+     * middle point, nearer than either real station, wins.
      */
     @Test
     public void testNearestStationOnlyOffersRealStations() throws Exception
@@ -227,8 +199,8 @@ public class testStationLabelPrefill
                 AutonomyEditorPanel.class.getDeclaredMethod("nearestStation", TileKey.class);
             nearestStation.setAccessible(true);
 
-            // Right beside the excluded point, and further from both real stations - so a filter
-            // that let the excluded point through would win on distance alone.
+            // Right beside the excluded point and further from both real stations, so a filter that let it through
+            // would win on distance alone.
             TileKey asking = new TileKey("main", 5, 2);
 
             Object offered = nearestStation.invoke(panel, asking);
@@ -244,9 +216,7 @@ public class testStationLabelPrefill
         }
     }
 
-    /**
-     * A temporary directory and everything under it.
-     */
+    /** A temporary directory and everything under it. */
     private static void deleteRecursively(java.io.File file)
     {
         java.io.File[] children = file.listFiles();
