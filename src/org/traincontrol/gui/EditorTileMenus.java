@@ -118,16 +118,16 @@ final class EditorTileMenus
         if (isPoint)
         {
             // Locomotives first, because placing one is the commonest reason to open this menu.  PUTTING one down is only at a
-            // station (a locomotive can only be SENT to one); TAKING one off is not, because the square under a train can stop being
-            // a station while the train stays recorded on it, and the placement could then only be cleared by making the square a
-            // station again.  So that item follows the LOCOMOTIVE, as the track diagram's own menu does.
+            // station (a locomotive can only be SENT to one); TAKING one off is not, because the square under a train can stop
+            // being a station while the train stays recorded on it.  So that item follows the LOCOMOTIVE, as the track
+            // diagram's own menu does.
             final boolean isStation = editor.session.getStore().isStation(target);
             final String standing = editor.locomotiveAt(target);
 
-            // The locomotive's own settings (Place, Facing, Remove) are left out of the DEEP menu: the track diagram's own menu carries
-            // them one level up.  Order (MT-053): put one here, edit what is here, take it away, then its facing, then its station.
-            // "Add to autonomy" stays in the deep menu: the diagram's menu places the locomotive selected on the KEYBOARD, while this
-            // asks which locomotive.
+            // The locomotive's own settings (Place, Facing, Remove) are left out of the DEEP menu: the track diagram's own
+            // menu carries them one level up (order, MT-053: put one here, edit what is here, take it away, then its facing,
+            // then its station).  "Add to autonomy" stays here: the diagram's menu places the locomotive selected on the
+            // KEYBOARD, while this asks which locomotive.
             if (isStation)
             {
                 menu.add(editor.item(I18n.t("autosetup.ui.menuAddToAutonomy"),
@@ -164,11 +164,10 @@ final class EditorTileMenus
                 // No "Move a Locomotive to This Station..." (OB-009): the edit dialog below also asks which locomotive, and
                 // does more.  The list "Add to Autonomy" offers is the whole roster, so it does what Move did.
 
-                // Which way round the train is standing: asked here because the user is looking at the square, offered only where the
-                // answer could be more than one thing and only while a train is on it.  Nobody has to answer it: left alone it takes the
-                // first facing, and once autonomy runs, where the train ends up says which way it was pointing and that is written back.
-                // Built by buildFacingMenu so the two surfaces cannot drift (OB-039); it returns null on the conditions this would
-                // otherwise test itself.
+                // Which way round the train is standing: asked here because the user is looking at the square, offered only
+                // where the answer could be more than one thing and only while a train is on it.  Nobody has to answer: left
+                // alone it takes the first facing, and once autonomy runs, where the train ends up says which way it was
+                // pointing.  Built by buildFacingMenu so the two surfaces cannot drift (OB-039).
                 if (!editor.menuOnly)
                 {
                     javax.swing.JMenu facingMenu = buildFacingMenu(target);
@@ -244,12 +243,11 @@ final class EditorTileMenus
                 "autosetup.ui.hintAutoDestination", editor.session.isAutoDestination(target),
                 on -> editor.session.setAutoDestination(target, on));
 
-            // Greyed rather than hidden, so the shape of the choice stays visible.  NOT greyed for an out-of-service square: Adam,
-            // *"Can Be Chosen in Full Autonomy - does not apply to returning home, of course.  these should be allowed."*  `active` is
-            // whether the railway may use the square and this is whether autonomy chooses it as a destination; requiring `isOpen` made
-            // closing the square (the obvious way to say "autonomy, not here") disable the control that says it properly.  Homing
-            // never consults it, which is what makes a parking berth work.  Still greyed on a square that is not a station: autonomy
-            // cannot choose somewhere trains do not stop.
+            // Greyed rather than hidden, so the shape of the choice stays visible.  NOT greyed for an out-of-service square
+            // (Adam: *"Can Be Chosen in Full Autonomy - does not apply to returning home, of course.  these should be
+            // allowed."*): `active` is whether the railway may use the square, this is whether autonomy chooses it as a
+            // destination, and homing never consults it, which is what makes a parking berth work.  Still greyed on a square
+            // that is not a station: autonomy cannot choose somewhere trains do not stop.
             auto.setEnabled(isStation);
 
             stationMenu.add(auto);
@@ -268,9 +266,8 @@ final class EditorTileMenus
                     () -> editor.promptNumber(target, "maxTrainLength",
                         "autolayout.ui.promptEnterMaxTrainLength", 0));
 
-                // WHAT THE NUMBER MEANS, AND THE KEY THAT SETS IT.  The units are the operator's own, so "4" says nothing
-                // about carriages, centimetres or squares, and a reader cannot discover by opening the dialog that a
-                // shortcut exists.
+                // What the number means, and the key that sets it: the units are the operator's own, so "4" says nothing
+                // about carriages, centimeters or squares, and a reader cannot discover the shortcut by opening the dialog.
                 maximum.setToolTipText(AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.tooltipMaxTrainLength")
                     + (editor.menuOnly ? "" : "  " + I18n.t("autosetup.ui.tooltipMaxTrainLengthKey"))));
 
@@ -360,17 +357,16 @@ final class EditorTileMenus
                 // may go OUT by) and the two are added together, below.
             }
 
-            // The signal that is thrown to red while this platform is claimed, paired by hand rather than inferred: the nearest signal
-            // on the approach is not always the one that protects a platform, and a wrong guess throws a real signal on real hardware.
-            // Last of the station settings, under the arrivals, each answer assuming the one above it.  Labelled with the signal's
-            // ADDRESS (how anybody refers to a signal) and outlined on the diagram while the item is acted on; left out of the deep
-            // menu, where pairing means clicking a diagram the menu is drawn over.
+            // The signal thrown to red while this platform is claimed, paired by hand rather than inferred: the nearest signal
+            // on the approach is not always the one that protects a platform, and a wrong guess throws a real signal.  Last
+            // of the station settings, under the arrivals; labelled with the signal's ADDRESS and outlined on the diagram
+            // while the item is acted on; left out of the deep menu, where pairing means clicking a diagram it is drawn over.
             if (isStation && !editor.menuOnly)
             {
                 java.util.List<TileKey> paired = editor.session.getProtectingSignals(target);
 
-                // HELD rather than added (MT-104).  It goes at the foot of the menu, under the arrive/depart pair and
-                // beside Advanced Parameters, where Adam put it: the last of the platform's own settings.
+                // Held, not added (MT-104): it goes at the foot of the menu, under the arrive/depart pair and beside
+                // Advanced Parameters, the last of the platform's own settings.
                 signalItem = editor.item(
                     paired.isEmpty()
                         ? I18n.t("autosetup.ui.menuPairSignal")
@@ -421,9 +417,8 @@ final class EditorTileMenus
                 : "autolayout.ui.menuExcludedLocomotives", editor.strings(target, "excludedLocs").size()),
                 () -> editor.promptLocomotives(target, "excludedLocs", editor.allLocomotives())));
 
-            // FR-001: the same idea as excluded locomotives, about PLACES rather than trains - *"we should be able to
-            // exclude the autonomous selection of a station when another (specified) point is occupied"*.  It sits beside
-            // them as a restriction on what autonomy may choose.
+            // FR-001: like excluded locomotives, about PLACES rather than trains, and a restriction on what autonomy may
+            // choose.
             advanced.add(editor.item(I18n.f("autolayout.ui.menuBlockedByPoints",
                 editor.session.getStore().getBlockingPoints(target).size()),
                 () -> editor.promptBlockingPoints(target)));
@@ -580,9 +575,9 @@ final class EditorTileMenus
                 menu.add(editor.item(I18n.f("autosetup.ui.menuGoToLinkPartner", editor.linkLabel(partner)),
                     () -> editor.goToLink(partner)));
 
-                // AND THE RAILWAY HAS TO BE TOLD, because this item REMOVES an edge: `session.unpairPortal` rebuilds only the
-                // editor's own graph, so on the track-diagram door, which saves at once, the unpair would reach disk while autonomy went
-                // on routing through it.  (Go To Link Partner is navigation and tells the railway nothing.)
+                // The railway has to be told, because this item REMOVES an edge: `session.unpairPortal` rebuilds only the
+                // editor's own graph, so on the track-diagram door, which saves at once, the unpair would reach disk while
+                // autonomy went on routing through it.
                 menu.add(editor.item(I18n.t("autosetup.ui.menuUnpairLink"),
                     () ->
                     {
@@ -606,9 +601,9 @@ final class EditorTileMenus
             menu.add(editor.item(I18n.t("autosetup.ui.menuSetName"), () -> editor.promptLinkName(target)));
         }
 
-        // On the menu itself rather than inside Advanced Parameters (OB-013): Advanced belongs to a STATION and a length to any
-        // square.  OFFERED WHERE `offersALength` SAYS, AND BOUND TO THE SQUARE IT NAMES (FR-066): Control+E and this item ask the
-        // same question, and two copies of it agree only by being typed identically; so there is one.
+        // On the menu itself rather than inside Advanced Parameters (OB-013): Advanced belongs to a STATION and a length to
+        // any square.  Offered where `offersALength` says and bound to the square it names (FR-066): Control+E and this
+        // item ask the same question, so there is one.
         if (editor.offersALength(tile))
         {
             javax.swing.JMenuItem lengthItem = editor.item(I18n.t("autosetup.ui.menuSetLength"),
@@ -621,11 +616,11 @@ final class EditorTileMenus
         }
 
 
-        // A station name can go on almost any square, not only on a text square: the label is drawn beside the tile wherever it
-        // sits.  Allowed on curves and dead ends (OB-042, OB-044), which are often the only squares near a station with nothing
-        // else to say; refused only on clickable elements (switches and signals), because a caption on one puts text over a
-        // control.  The CLICKED square, not the run leader: a name belongs where it was put.  Editor only: they write text onto
-        // the DIAGRAM, and the deep menu is reached by right-clicking the diagram itself.
+        // A station name can go on almost any square, not only on a text square: the label is drawn beside the tile wherever
+        // it sits.  Allowed on curves and dead ends (OB-042, OB-044); refused only on clickable elements (switches and
+        // signals), because a caption there puts text over a control.  The CLICKED square, not the run leader: a name
+        // belongs where it was put.  Editor only: they write text onto the DIAGRAM, and the deep menu is reached by
+        // right-clicking the diagram itself.
         final LayoutDiagramComponent here = editor.componentAt(tile);
 
         if (editor.mayCarryACaption(here) && !editor.menuOnly)
@@ -645,10 +640,9 @@ final class EditorTileMenus
             addCaptionItems(menu, tile, here, "", editor.session.getCaptionTarget(tile), true);
         }
 
-        // BULK TOOLS, LAST (Adam: *"can we make 'bulk tools' be the last item in the right-click menu in the autonomy editor?
-        // mind the separators."*).  They are about the WHOLE SETUP rather than this square (MT-257), so they sit at the bottom
-        // behind a divider.  The separator is added unconditionally and `tidy` decides whether it survives, so this cannot leave
-        // a stray line above the submenu.
+        // Bulk tools last (MT-257): they are about the WHOLE SETUP rather than this square, so they sit at the bottom
+        // behind a divider.  The separator is added unconditionally and `tidy` decides whether it survives, so this cannot
+        // leave a stray line above the submenu.
         menu.addSeparator();
 
         menu.add(editor.bulkTools());
@@ -682,9 +676,8 @@ final class EditorTileMenus
         // left a state with no way out; a question is a way out, a disabled item is not.
         addCaptionItems(menu, tile, component, label, captioned, false);
 
-        // AND BULK TOOLS, as every square of track ends with (MT-474: *"when right clicking an empty square, show the
-        // bulk tools menu option."*).  They are about the whole setup rather than the square under the pointer, so they go
-        // at the bottom behind a divider, as `buildTileMenu` places them (MT-257).
+        // And bulk tools, as every square of track ends with (MT-474): they are about the whole setup rather than the
+        // square under the pointer, so they go at the bottom behind a divider, as `buildTileMenu` places them (MT-257).
         menu.addSeparator();
 
         menu.add(editor.bulkTools());
@@ -719,17 +712,13 @@ final class EditorTileMenus
 
         // The name is NOT repeated here (MT-162): the item below already reads "Stop Showing <name>".  The two keys still differ
         // ("a Station Name" when the square shows none, "a Different Station" when it already shows one).
-        // A STATION SQUARE HAS THREE STATES, AND ONLY ONE OF THEM HAS NOTHING TO DO.  `promptStationLabel`
-        // captions a STATION square with itself whatever it is showing, so none is ever offered a choice; what differs is whether
-        // choosing it would CHANGE anything:
-        //
+        // A station square has three states, and `promptStationLabel` captions it with itself whatever it is showing, so
+        // none is ever offered a choice; what differs is whether choosing it would CHANGE anything:
         //   already showing itself    nothing to do.  Greyed, and the label says why.
         //   showing another station   resets it to its own.  Live - a drag can produce this.
-        //   showing nothing           captions it with itself.  Live: "Stop Showing" leaves this state, and greying it would
-        //                             make Stop Showing one-way.
-        //
-        // Neither live case reads "a DIFFERENT station", because a station square cannot show one.  The greyed item is disabled
-        // rather than removed, and its tooltip carries the reason.
+        //   showing nothing           captions it with itself.  Live: greying it would make Stop Showing one-way.
+        // Neither live case reads "a DIFFERENT station", because a station square cannot show one.  The greyed item is
+        // disabled rather than removed, and its tooltip carries the reason.
         boolean showsItself = editor.session.getStore().isStation(tile) && tile.equals(captioned);
 
         boolean aStationSquare = editor.session.getStore().isStation(tile);
@@ -792,10 +781,8 @@ final class EditorTileMenus
     /**
      * Where the tail of the train standing here lies - the "arrived from" side.
      *
-     * Adam, 2026-09-07: **"expose this property in the right-click menu advanced settings, both for the autonomy editor
-     * and track diagram viewer."**
-     *
-     * **Built here rather than twice.**  `TrainControlUI.buildAutonomyTileMenu` serves this panel's menu to the track
+     * Exposed in the right-click menu's advanced settings, in both the autonomy editor and the track diagram viewer.
+     * Built here rather than twice: `TrainControlUI.buildAutonomyTileMenu` serves this panel's menu to the track
      * diagram, so one implementation reaches both surfaces (two copies is how `OB-039` survived being fixed).
      *
      * The sides offered are the ones the railway HAS: `ArrivalSidePrompt.sidesOf` is the same list the placement prompt
@@ -819,11 +806,11 @@ final class EditorTileMenus
 
         if (point == null) return null;
 
-        // A TRAIN HAS TO BE STANDING THERE ON THE RUNNING RAILWAY: the offer above asks the SETUP, and `pointOnTheLayout`
-        // falls back to any copy, so a square the setup assigns a train to while the running layout has not placed one would
-        // write a side onto an unoccupied Point, which `Point.toJSON` declines to save.  The cost: while the
-        // running layout is held (during a run, before the first rebuild after a configuration is loaded) the item is absent
-        // rather than greyed; otherwise `setupChanged`'s rebuild catches the placement up within the gesture.
+        // A train has to be standing there on the RUNNING railway: the offer above asks the SETUP, and `pointOnTheLayout`
+        // falls back to any copy, so a square the setup assigns a train while the running layout has not placed one would
+        // write a side onto an unoccupied Point, which `Point.toJSON` declines to save.  While the running layout is held
+        // (during a run, before the first rebuild after a configuration is loaded) the item is absent rather than greyed;
+        // otherwise `setupChanged`'s rebuild catches the placement up within the gesture.
         if (point.getCurrentLocomotive() == null) return null;
 
         // THE BUILD'S SIDES, which the model reads as well (OB-182): the entry side travels in the configuration, and
@@ -837,13 +824,12 @@ final class EditorTileMenus
 
         final String recorded = editor.session.getArrivedFrom(target);
 
-        // A RECORDED SIDE THE TRACK DOES NOT HAVE IS SHOWN, NOT OFFERED (Adam: **"75 407 DB's menu now lets you select
-        // arrival from the west at BottomMainPost, which makes no sense"**).  The radios are a ButtonGroup ticked by
-        // `side.equals(recorded)`, so a recorded side not in the list would tick NOTHING and read as "no tail recorded" for a
-        // square that has one, a value still steering the tail walk.  Unlike the facing menu (OB-177) it is not added to the list:
-        // an arrival side the track does not have can never match the geometry, so it is no answer.  It appears once, ticked,
-        // DISABLED, saying what it is.  "Not offered here" rather than "not on the track", because the list is the sides of the
-        // COPY this train stands on and a split square has several.
+        // A recorded side the track does not have is shown, not offered: the radios are ticked by `side.equals(recorded)`,
+        // so a recorded side not in the list would tick NOTHING and read as "no tail recorded" for a square that has one,
+        // a value still steering the tail walk.  Unlike the facing menu (OB-177) it is not added to the list, since an
+        // arrival side the track does not have can never match the geometry: it appears once, ticked, DISABLED.  "Not
+        // offered here" rather than "not on the track", because the list is the sides of the COPY this train stands on and
+        // a split square has several.
         final String recordedButGone =
             recorded != null && !sides.contains(recorded) ? recorded : null;
 
@@ -864,8 +850,8 @@ final class EditorTileMenus
                 {
                     editor.session.setArrivedFrom(target, side);
 
-                    // A ROAD BACK DESCRIBES ONE SIDE (2026-09-14): the tail cannot lie along a road that leaves by
-                    // another, so a changed side forgets it, here and on the railway below.
+                    // A road back describes one side: the tail cannot lie along a road that leaves by another, so a
+                    // changed side forgets it, here and on the railway below.
                     if (!side.equals(recorded)) editor.session.setArrivedAlong(target, null);
 
                     // SAVED AND SHOWN, like every other door that writes a point property.
@@ -956,13 +942,14 @@ final class EditorTileMenus
         // (OB-348): there the menu is greyed (OB-347) whatever is recorded.
         if (recorded != null && !facings.isEmpty() && !facings.contains(recorded)) facings.add(recorded);
 
-        // SHOWN EVEN WITH ONE ANSWER, so the menu explains itself instead of vanishing: "no menu" reads as a fault.  A facing has
-        // to be one the BUILD can hold (`placementCopy` matches it against the copies the split made, and anything else falls back
-        // to `startableCopy` and quietly turns the train round), so a second facing is never offered where the railway holds one;
-        // the one facing is shown, ticked, with a line saying why there is nothing to choose.
+        // Shown even with one answer, so the menu explains itself instead of vanishing ("no menu" reads as a fault).  A
+        // facing has to be one the BUILD can hold (`placementCopy` matches it against the copies the split made, and
+        // anything else falls back to `startableCopy` and quietly turns the train round), so a second facing is never
+        // offered where the railway holds one; the one facing is shown, ticked, with a line saying why there is nothing
+        // to choose.
         //
-        // AND GREYED, NOT HIDDEN, WHERE NO TRACK LEADS OUT (OB-347; Adam: *"rather than hiding it, grey it out."*).  ONE SUBMENU
-        // (OB-348): built once, here, so the track diagram and the editor cannot offer two that drift apart.
+        // Greyed, not hidden, where no track leads out (OB-347; Adam: *"rather than hiding it, grey it out."*).  ONE
+        // SUBMENU (OB-348): built once, here, so the track diagram and the editor cannot offer two that drift apart.
         javax.swing.JMenu facingMenu = new javax.swing.JMenu(
             I18n.f("autosetup.ui.menuFacingGroup", standing));
 
@@ -990,10 +977,9 @@ final class EditorTileMenus
                 // the build stands the train on a copy it can start from, which need not be the first facing.  Where
                 // the square holds one facing, that one IS known - the only copy is where the train stands.
                 recorded != null ? facing == recorded : facings.size() == 1,
-                // The redraw is in radio() itself, where every one of these answers gets it.
-                //
-                // AND THE RAILWAY, NOT ONLY THE SETUP: `setFacingAndMove` stands the train on the copy that says
-                // the new direction, so the caption and the train cannot disagree until the next build.
+                // The redraw is in radio() itself.  The railway too, not only the setup: `setFacingAndMove` stands the train
+                // on the copy that says the new direction, so the caption and the train cannot disagree until the next
+                // build.
                 () -> editor.session.setFacingAndMove(target, facing)));
         }
 
@@ -1028,8 +1014,8 @@ final class EditorTileMenus
             }
         }
 
-        // AND HOW FAR BACK ITS TAIL REACHES (2026-09-14): the same list as the placement question, in the same menu as
-        // the side it follows from, on both surfaces - and in the editor a way to click the sensor instead.
+        // And how far back its tail reaches: the same list as the placement question, in the same menu as the side it
+        // follows from, on both surfaces - and in the editor a way to click the sensor instead.
         appendTailCrossed(facingMenu, target);
 
         return facingMenu;

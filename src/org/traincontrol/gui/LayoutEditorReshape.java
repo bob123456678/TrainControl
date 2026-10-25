@@ -5,12 +5,11 @@ import org.traincontrol.util.I18n;
 
 /**
  * What the track editor does to the whole page at once: shifting everything past the hovered square up, down, left or
- * right, and growing or shrinking the page by an edge (FR-136 Phase 4; the bodies are `LayoutEditor`'s, moved
- * unchanged).
+ * right, and growing or shrinking the page by an edge (FR-136 Phase 4).
  *
  * The page, the hovered square and the undo history stay on the editor and are read through `editor`; each public
  * method of the editor that does one of these keeps its name and calls in here, because the right-click menu and the
- * autonomy editor call them on the editor.  Nothing here is `synchronized`, and nothing was before the move.
+ * autonomy editor call them on the editor.  Nothing here is `synchronized`.
  */
 final class LayoutEditorReshape
 {
@@ -21,26 +20,13 @@ final class LayoutEditorReshape
         this.editor = editor;
     }
 
-    // The four "shift the whole diagram" wrappers used to live here, then didn't, then did again.
-    //
-    // Taken off the menu when multi-select arrived, on the reasoning that making room by dragging
-    // what is in the way out of it can be seen before it happens. Restored below - see shiftUp's own
-    // javadoc - once that reasoning turned out to describe a different job: dragging moves the
-    // squares you picked, this moves everything below or to the right of one, which on a diagram of
-    // two hundred tiles is not a selection anybody wants to make by hand. Left here as a record that
-    // "no caller" was not, and is not, the same test as "not wanted" - check before deleting a set of
-    // methods a second time.
-
-
     /**
      * Whether shiftUp would do anything.
      *
-     * Public because the menu asks it before offering the item, and the method asks it before acting -
-     * ONE predicate, asked in both places. Written out twice, the menu and the method drift, and the
-     * drift is exactly this finding: the item was offered on the last row, where it returned in
-     * silence.
+     * Public because the menu asks it before offering the item and the method asks it before acting: ONE predicate,
+     * asked in both places, so the two cannot drift.
      *
-     * False on the edge, where there is no the row below it to move up into.
+     * False on the edge, where there is no row below to move up into.
      *
      * @return true when there is a hovered square this can work from
      */
@@ -52,18 +38,10 @@ final class LayoutEditorReshape
     /**
      * Whether the page has room to grow by this much.
      *
-     * **The ceiling had three copies and two of the gestures that need it had none.**  It was written
-     * out in `growEdges`, again in `addRowsAndColumns`, and a third time in the right-click menu that
-     * greys Increase Size - while `shiftDown` and `shiftRight`, two items away on the same popup, grow
-     * the page by a row or a column and asked nothing.  `LayoutDiagram.shiftDown` opens with
-     * `addRowsAndColumns(1, 0)`, and neither it nor the model's own grower knows the limit exists.
-     *
-     * So at the ceiling the menu greyed one item with a tooltip explaining why, and offered another
-     * that did the same thing and worked.  That was one submenu
-     * expressing one rule two ways.
-     *
-     * Public because the menu asks it before offering an item and the methods ask it before acting:
-     * ONE predicate, asked in both places, which is the arrangement.
+     * ONE predicate for every gesture that grows the page (growEdges, addRowsAndColumns, shiftDown, shiftRight and the
+     * right-click menu's Increase Size), asked by the menu before offering an item and by the methods before acting.
+     * Neither `LayoutDiagram.shiftDown`, which opens with `addRowsAndColumns(1, 0)`, nor the model's own grower knows
+     * the limit.
      *
      * @param rows how many rows the gesture would add
      * @param columns how many columns it would add
@@ -71,16 +49,9 @@ final class LayoutEditorReshape
      */
     boolean roomToGrow(int rows, int columns)
     {
-        // EACH DIMENSION ONLY WHERE THE GESTURE ADDS TO IT.
-        //
-        // Written as one conjunction over both, `roomToGrow(0, 1)` still asked `getSy() <= MAX_SIZE` -
-        // so a page taller than the ceiling refused a COLUMN shift, which adds nothing to its height,
-        // and a page wider than it refused a row shift.  That is not hypothetical here: a page's size
-        // comes from its largest element coordinate with nothing clamping it, and three fixture pages
-        // in this repository parse at 17 x 129.
-        //
-        // Asking about a dimension the caller is not growing is asking whether the page is already too
-        // big, which is a different question and not one a shift can make worse.
+        // Each dimension only where the gesture adds to it.  A page's size comes from its largest element coordinate
+        // with nothing clamping it (fixture pages parse at 17 x 129), so asking about a dimension the caller is not
+        // growing would refuse a column shift on a tall page and a row shift on a wide one.
         if (rows > 0 && this.editor.layout.getSy() + rows > LayoutEditor.MAX_SIZE) return false;
 
         if (columns > 0 && this.editor.layout.getSx() + columns > LayoutEditor.MAX_SIZE) return false;
@@ -91,12 +62,10 @@ final class LayoutEditorReshape
     /**
      * Whether shiftLeft would do anything.
      *
-     * Public because the menu asks it before offering the item, and the method asks it before acting -
-     * ONE predicate, asked in both places. Written out twice, the menu and the method drift, and the
-     * drift is exactly this finding: the item was offered on the last row, where it returned in
-     * silence.
+     * Public because the menu asks it before offering the item and the method asks it before acting: ONE predicate,
+     * asked in both places, so the two cannot drift.
      *
-     * False on the edge, where there is no the column to its right to move left into.
+     * False on the edge, where there is no column to its right to move left into.
      *
      * @return true when there is a hovered square this can work from
      */
@@ -108,76 +77,49 @@ final class LayoutEditorReshape
     /**
      * Whether shiftDown would do anything.
      *
-     * The twin of canShiftUp, and it was missed when that one was written - so the same submenu
-     * expressed one rule two ways, which is drift.
-     *
-     * Asked by addShift alongside canShiftUp and canShiftLeft, and the answer goes straight to
-     * setEnabled - so this is live, not dormant. It is
-     * nearly always true, because opening the popup sets the hovered position, but "nearly always" is
-     * not the same as "never asked".
+     * Asked by addShift alongside canShiftUp and canShiftLeft, and the answer goes straight to setEnabled.  It is nearly
+     * always true, because opening the popup sets the hovered position, but "nearly always" is not "never asked".
      *
      * @return true when there is a hovered square this can work from
      */
     boolean canShiftDown()
     {
-        // AND THE CEILING.  This grows the page by a row, and Increase Size beside it on the
-        // same popup is greyed at the limit with a tooltip saying why.
+        // And the ceiling: this grows the page by a row, and Increase Size beside it on the same popup is greyed at the
+        // limit with a tooltip saying why.
         return this.editor.lastHoveredY >= 0 && roomToGrow(1, 0);
     }
 
     /**
      * Whether shiftRight would do anything.
      *
-     * The twin of canShiftUp, and it was missed when that one was written - so the same submenu
-     * expressed one rule two ways, which is drift.
-     *
-     * Asked by addShift alongside canShiftUp and canShiftLeft, and the answer goes straight to
-     * setEnabled - so this is live, not dormant. It is
-     * nearly always true, because opening the popup sets the hovered position, but "nearly always" is
-     * not the same as "never asked".
+     * Asked by addShift alongside canShiftUp and canShiftLeft, and the answer goes straight to setEnabled.  It is nearly
+     * always true, because opening the popup sets the hovered position, but "nearly always" is not "never asked".
      *
      * @return true when there is a hovered square this can work from
      */
     boolean canShiftRight()
     {
-        // AND THE CEILING, for the same reason as canShiftDown: this grows the page by a
-        // column.
+        // And the ceiling, as in canShiftDown: this grows the page by a column.
         return this.editor.lastHoveredX >= 0 && roomToGrow(0, 1);
     }
 
     /**
      * Inserts a row or a column at the hovered square and pushes everything past it along.
      *
-     * Restored after being taken out with the rest of the bulk operations when multi-select arrived.
-     * The reasoning then was that making room by dragging what is in the way out of it can be seen
-     * before it happens, and that is still true - but it is a different job.  Dragging moves the
-     * squares you picked; this moves everything below or to the right of one square, which on a
+     * Dragging moves the squares you picked; this moves everything below or to the right of one square, which on a
      * diagram of two hundred tiles is not a selection anybody wants to make by hand.
      *
-     * Undoable, which is what makes it safe to reach for: each one takes a snapshot first, so a
-     * mis-aimed shift is one Control+Z away.
+     * Undoable: each one takes a snapshot first, so a mis-aimed shift is one Control+Z away.
      *
-     * The autonomy setup FOLLOWS the shift.  Everything it holds about a page is keyed by SQUARE, so
-     * moving the track without moving those keys leaves every station, name, facing and restriction on
-     * coordinates the track has walked away from - which is what these four did until moveTiles was
-     * added below.
-     *
-     * That sentence used to read the other way round: "the reason these do not appear in autonomy mode
-     * is that shifting moves the track without moving those keys." It was true when it was written and
-     * false eighteen lines later in the same method, and it was stated as established fact, which is
-     * the form a reader trusts without checking.
+     * The autonomy setup FOLLOWS the shift.  Everything it holds about a page is keyed by SQUARE, so moving the track
+     * without moving those keys leaves every station, name, facing and restriction on coordinates the track has walked
+     * away from.
      */
     void shiftUp()
     {
-        // Refused on the last row, rather than quietly meaning something else.
-        //
-        // LayoutDiagram.shiftUp normalises any start row past sy - 2 to the FIRST row, so hovering the
-        // bottom row - the natural gesture for "take this empty row away" - shifted the entire page up
-        // by one and destroyed row 0.  The map handed to the setup is built from the row the user
-        // pointed at, so it came out empty: the track moved and every station, name, length and
-        // pairing on the page stayed on the square it used to be on.  Nothing was dropped by the next
-        // reconcile either, because every square still had a tile - the whole page's setup was simply
-        // attached to the wrong tiles, silently.
+        // Refused on the last row, rather than quietly meaning something else: LayoutDiagram.shiftUp normalizes any start
+        // row past sy - 2 to the FIRST row, so hovering the bottom row shifted the entire page up and destroyed row 0,
+        // and the map handed to the setup came out empty, leaving the page's setup attached to the wrong tiles.
         if (!canShiftUp()) return;
 
         this.editor.snapshotLayout();
@@ -187,19 +129,12 @@ final class LayoutEditorReshape
 
     void shiftDown()
     {
-        // No refusal here, unlike shiftUp and shiftLeft, and the reason is worth stating rather than
-        // being left to be worked out from a side effect two files away.
-        //
-        // LayoutDiagram normalises an out-of-range start to the FIRST row or column in all four
-        // directions, which is what made the destructive pair dangerous.  This pair calls
-        // addRowsAndColumns BEFORE the range is checked, so the page has already grown by one and the
-        // out-of-range start cannot be reached from a hover.  If that ever stops being true - if the
-        // growth moves or becomes conditional - this needs shiftUp's guard, which costs nothing.
-        // GUARDED BEFORE THE SNAPSHOT.
-        //
-        // Snapshotting first pushed an undo entry for an edit that never happened: with no hovered
-        // square this method does nothing, but the entry clears the redo stack and makes the editor
-        // ask about saving work nobody did. shiftUp and shiftLeft already checked first.
+        // No range refusal here, unlike shiftUp and shiftLeft: LayoutDiagram normalizes an out-of-range start to the
+        // FIRST row or column in all four directions, but this pair calls addRowsAndColumns BEFORE the range is checked,
+        // so the page has already grown by one and the start cannot be out of range from a hover.  If that growth moves
+        // or becomes conditional, this needs shiftUp's guard.
+        // Guarded before the snapshot, which would otherwise push an undo entry for an edit that never happened,
+        // clearing the redo stack and making the editor ask about saving work nobody did.
         if (!canShiftDown()) return;
 
         this.editor.snapshotLayout();
@@ -219,19 +154,8 @@ final class LayoutEditorReshape
 
     void shiftRight()
     {
-        // No refusal here, unlike shiftUp and shiftLeft, and the reason is worth stating rather than
-        // being left to be worked out from a side effect two files away.
-        //
-        // LayoutDiagram normalises an out-of-range start to the FIRST row or column in all four
-        // directions, which is what made the destructive pair dangerous.  This pair calls
-        // addRowsAndColumns BEFORE the range is checked, so the page has already grown by one and the
-        // out-of-range start cannot be reached from a hover.  If that ever stops being true - if the
-        // growth moves or becomes conditional - this needs shiftUp's guard, which costs nothing.
-        // GUARDED BEFORE THE SNAPSHOT.
-        //
-        // Snapshotting first pushed an undo entry for an edit that never happened: with no hovered
-        // square this method does nothing, but the entry clears the redo stack and makes the editor
-        // ask about saving work nobody did. shiftUp and shiftLeft already checked first.
+        // No range refusal here, for the reason given in shiftDown.  Guarded before the snapshot, which would otherwise
+        // push an undo entry for an edit that never happened.
         if (!canShiftRight()) return;
 
         this.editor.snapshotLayout();
@@ -333,27 +257,12 @@ final class LayoutEditorReshape
     /**
      * Grows the diagram by one: a column on the right and a row at the bottom.
      *
-     * NOT a row at the top, which is what was asked for and what the first version of this did.
-     *
-     * Inserting a row at the top moves every tile on the page down by one - and everything autonomy
-     * knows about that page is keyed by SQUARE. Stations, protecting signals, barred arrival sides,
-     * parking and reversing marks, home locomotives, station captions: all of them name a square, and
-     * none of them would move. A user with a set-up page who pressed "+" to make room would find
-     * every station one row above its platform, every signal pairing pointing at plain track, and
-     * every arrival restriction applied to the wrong square - silently, with the diagram still
-     * looking exactly right.
-     *
-     * Doing it properly means rewriting every key the companion store holds for that page, which is a
-     * change with its own test suite and not one to make in passing. Growing at the right and the
-     * bottom moves nothing, so it is safe today; the mirror property that made top-and-bottom
-     * attractive is kept, because shrinkEdges takes away exactly these two.
-     *
-     * FOR ADAM: the top row is deliberately not done. Say the word and it becomes a proper
-     * shift-the-page operation with the store rewritten to match.
-     *
-     * (This block used to sit 280 lines away, above shiftUp, attached to nothing - Java
-     * attaches only the last javadoc before a declaration, and a second block followed it before this
-     * method ever got one. Moved here, onto the method it is actually about.)
+     * NOT a row at the top: that would move every tile down by one while everything autonomy knows about the page
+     * (stations, protecting signals, barred arrival sides, parking and reversing marks, home locomotives, station
+     * captions) is keyed by SQUARE and would not move, leaving every station one row above its platform with the
+     * diagram still looking right.  Doing it properly means rewriting every key the companion store holds for the
+     * page, a change with its own test suite.  Growing at the right and the bottom moves nothing, and keeps the mirror
+     * property that shrinkEdges takes away exactly these two.
      */
     void growEdges()
     {
@@ -372,10 +281,8 @@ final class LayoutEditorReshape
 
             this.editor.showDiagramSize();
 
-            // The picked squares are let go of.  A selection that outlived a resize would still name
-            // coordinates by number, and after a SHRINK some of those numbers are off the diagram -
-            // the next group move would then read a square that no longer exists.  Growing is safe
-            // today, but the two have to behave the same way or the difference becomes a trap.
+            // The picked squares are let go of: a selection that outlived a resize would name coordinates by number,
+            // and after a SHRINK some of those are off the diagram.  Growing does the same so the two behave alike.
             this.editor.clearSelection();
 
             this.editor.refreshGrid();
@@ -435,19 +342,11 @@ final class LayoutEditorReshape
 
         try
         {
-            // THE EDGE MAY HOLD A NAME EVEN WHEN IT HOLDS NO TRACK.
-            //
-            // edgesAreEmpty looks at the grid, which is track. A station's caption is placed on a blank
-            // square by preference - placeCaption looks for "an empty square next to it" - and the
-            // bottom row and right column are blank squares like any other. Trimmed away underneath
-            // one, the caption kept coordinates that are now off the page: not drawn on the diagram,
-            // still present, so the "station is not shown anywhere" check stayed quiet, and no square
-            // remained for the user to click to move or remove it.
-            //
-            // Forgotten rather than refused. The caption is where a name is DRAWN, not the name
-            // itself: the station keeps its name, the check notices it has nowhere to show it, and the
-            // user is offered it again. Refusing the shrink instead would block a tidy-up over a label
-            // that can be re-placed in one click.
+            // The edge may hold a caption even when it holds no track: edgesAreEmpty looks at the grid, and a caption is
+            // placed on a blank square by preference.  Trimmed away beneath one, it would keep coordinates now off the
+            // page, drawn nowhere yet present, with no square left to click.  Forgotten rather than refused: the caption
+            // is where a name is DRAWN, not the name, so the station keeps its name, the check notices it has nowhere to
+            // show it and the user is offered it again.
             forgetCaptionsOnTrimmedEdge();
 
             this.editor.layout.trimEdges();
@@ -467,10 +366,8 @@ final class LayoutEditorReshape
 
     void addRowsAndColumns(int rows, int cols)
     {
-        // ASKED ABOUT WHAT IS BEING ADDED.  `roomToGrow(1, 1)` is the question "is there room
-        // for one more of each", which a call adding twenty rows can pass and then overflow.  It could
-        // not today - the one caller pads a blank page to 16 x 21 - and it is the "one
-        // predicate" rule asked about the wrong amount.
+        // Asked about what is being added: roomToGrow(1, 1) asks only whether there is room for one more of each, which
+        // a call adding twenty rows can pass and then overflow.
         if (!roomToGrow(rows, cols))  // ONE PREDICATE
         {
             JOptionPane.showMessageDialog(

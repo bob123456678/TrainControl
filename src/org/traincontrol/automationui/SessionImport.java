@@ -172,8 +172,7 @@ final class SessionImport
     }
 
     /**
-     * Sets the track each of the old file's edges ran over running the way it ran (Adam, 2026-09-24: *"Carry the old
-     * file's directions onto the diagram - yes, to the extent possible."*).
+     * Sets the track each of the old file's edges ran over running the way it ran, to the extent possible.
      *
      * A 2.8.1 graph is one-way edges: a train on a point went only along the edges starting there.  The diagram's
      * defaults - plain track both ways, a switch out of its toe only - can forbid the very way the old graph ran a
@@ -442,7 +441,7 @@ final class SessionImport
 
         Map<String, List<TileKey>> edgesLeadTo = new java.util.HashMap<>();
 
-        // And each edge as the two squares it joins, for the directions it ran (Adam, 2026-09-24).
+        // And each edge as the two squares it joins, for the directions it ran.
         List<TileKey[]> oldEdges = new ArrayList<>();
 
         org.json.JSONArray edges = legacy.optJSONArray("edges");
