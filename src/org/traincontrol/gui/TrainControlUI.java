@@ -8272,22 +8272,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 JToggleButton key = this.switchMapping.get(address - offset);
 
-                if (this.model.getAccessoryStateIfPresent(address, getKeyboardProtocol()))
-                {
-                    key.setSelected(true);
-                    key.setBackground(COLOR_SWITCH_RED);        
-                }
-                else
-                {
-                    key.setSelected(false);
-                    key.setBackground(COLOR_SWITCH_GREEN);
-                }
+                boolean red = this.model.getAccessoryStateIfPresent(address, getKeyboardProtocol());
 
-                // Underline when red
-                Font font = key.getFont();
-                Map<TextAttribute, Object> attributes = new HashMap<>(font.getAttributes());
-                attributes.put(TextAttribute.UNDERLINE, key.isSelected() ? TextAttribute.UNDERLINE_ON : -1);
-                key.setFont(font.deriveFont(attributes));
+                key.setSelected(red);
+                paintSwitchKey(key, red);
             }
             
             // The new editor belongs in this gate too: capture did nothing unless the old editor was also open.
@@ -8410,22 +8398,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 if (key != null)
                 {           
                     // Painting is looking: getAccessoryState creates a switch on a miss, registering all 64 addresses.
-                    if (this.model.getAccessoryStateIfPresent(i + offset, getKeyboardProtocol()))
-                    {
-                        key.setSelected(true);
-                        key.setBackground(COLOR_SWITCH_RED);        
-                    }
-                    else
-                    {
-                        key.setSelected(false);
-                        key.setBackground(COLOR_SWITCH_GREEN);
-                    }
+                    boolean red = this.model.getAccessoryStateIfPresent(i + offset, getKeyboardProtocol());
 
-                    // Underline when red
-                    Font font = key.getFont();
-                    Map<TextAttribute, Object> attributes = new HashMap<>(font.getAttributes());
-                    attributes.put(TextAttribute.UNDERLINE, key.isSelected() ? TextAttribute.UNDERLINE_ON : -1);
-                    key.setFont(font.deriveFont(attributes));
+                    key.setSelected(red);
+                    paintSwitchKey(key, red);
                 }
             }
         });
@@ -17951,6 +17927,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return false;
     }
 
+    /** A keyboard switch key's look: red (pink, underlined) or green.  The caller sets whether it is selected. */
+    private static void paintSwitchKey(javax.swing.JToggleButton key, boolean red)
+    {
+        key.setBackground(red ? COLOR_SWITCH_RED : COLOR_SWITCH_GREEN);
+
+        Font font = key.getFont();
+        Map<TextAttribute, Object> attributes = new HashMap<>(font.getAttributes());
+        attributes.put(TextAttribute.UNDERLINE, red ? TextAttribute.UNDERLINE_ON : -1);
+        key.setFont(font.deriveFont(attributes));
+    }
+
     private void UpdateSwitchState(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_UpdateSwitchState
         javax.swing.JToggleButton b = (javax.swing.JToggleButton) evt.getSource();
         int switchId = Integer.parseInt(b.getText());
@@ -17960,19 +17947,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (allowed == KeyboardSwitch.REFUSED) return;
 
-        if (b.isSelected())
-        {
-            b.setBackground(COLOR_SWITCH_RED);
-        }
-        else
-        {
-            b.setBackground(COLOR_SWITCH_GREEN);
-        }
-
-        Font font = b.getFont();
-        Map<TextAttribute, Object> attributes = new HashMap<>(font.getAttributes());
-        attributes.put(TextAttribute.UNDERLINE, b.isSelected() ? TextAttribute.UNDERLINE_ON : -1);
-        b.setFont(font.deriveFont(attributes));
+        // The click has already toggled the key's selection
+        paintSwitchKey(b, b.isSelected());
 
         new Thread(() ->
             {
