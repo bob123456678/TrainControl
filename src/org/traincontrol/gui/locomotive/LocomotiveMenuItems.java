@@ -8,27 +8,13 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
 
 /**
- * The menu items that belong to a locomotive rather than to the place it was right-clicked (FR-047).
+ * The menu items that belong to a locomotive rather than to the place it was right-clicked (FR-047).  Adam: "SAFELY
+ * consolidate the code between these two right click menus to minimize duplication."
  *
- * Adam: "SAFELY consolidate the code between these two right click menus to minimize duplication."
- *
- * Eight items were written out twice, once in {@link RightClickMenuListener} for a key-mapping button
- * and once in {@link RightClickSelectorMenu} for a tile in the locomotive database: set and clear the
- * local icon, customize function icons, edit the name and address, edit the notes, find similar
- * locomotives, and delete from the database. Two copies of a menu item is two places to fix a label
- * and one place to forget - the customize-icons item already differed between them, and nothing said
- * which was intended.
- *
- * **Why this is provably safe rather than merely tidy.** The two copies called the same methods with
- * different arities: `setLocIcon(loc)` in one and `setLocIcon(loc, evt)` in the other. Every one of
- * those one-argument forms is a delegate that passes null - `setLocIcon(l)` is `setLocIcon(l, null)`,
- * and so are changeLocAddress, changeLocNotes and deleteLoc. So a single item taking a nullable event
- * makes exactly the same call as whichever copy it replaces, and passing null is what the key-mapping
- * menu was already doing.
- *
- * **What is deliberately NOT consolidated: the order.** Each menu adds these where it wants them,
- * among its own items and its own separators. Merging the order would have changed both menus'
- * appearance to save nothing - the duplication was in the item bodies, not in the arrangement.
+ * Eight items were written out twice, in {@link RightClickMenuListener} and {@link RightClickSelectorMenu}.  Safe
+ * because each one-argument form (`setLocIcon(l)`, changeLocAddress, changeLocNotes, deleteLoc) is a delegate that
+ * passes null, so a single item taking a nullable event makes the same call as whichever copy it replaces.  The order
+ * is deliberately NOT consolidated: each menu adds these among its own items and separators.
  *
  * @author Adam
  */
@@ -114,8 +100,8 @@ final class LocomotiveMenuItems
     }
 
     /**
-     * Set as, edit or view a multi-unit - the locomotive's own, so the keyboard's menu and the locomotive database's offer
-     * the same item (Adam, 2026-10-03).  A multi-unit the Central Station defines is shown, not edited.
+     * Set as, edit or view a multi-unit - the locomotive's own, so the keyboard's menu and the locomotive database's
+     * offer the same item.  A multi-unit the Central Station defines is shown, not edited.
      *
      * @param ui the main window
      * @param loc the locomotive
@@ -135,15 +121,10 @@ final class LocomotiveMenuItems
     }
 
     /**
-     * How long this train is, or null when there is no reason to ask (FR-047).
-     *
-     * Adam: "visible only when autonomy is loaded."  The number decides one thing only - whether a
-     * train is refused a platform too short for it - so on a layout with no autonomy setup it is a box
-     * to fill in for no reason, and on one WITH a setup it is the other half of the warning FR-046
-     * raises about a train that has no length.
-     *
-     * Null rather than a disabled item, because a grayed entry invites the question "why not", and the
-     * answer - there is no autonomy here - is not something this menu can say in the space it has.
+     * How long this train is, or null when there is no reason to ask (FR-047).  Adam: "visible only when autonomy is
+     * loaded." The number decides only whether a train is refused a platform too short for it (the other half of the
+     * FR-046 warning).  Null rather than a disabled item, because a grayed entry invites "why not" and this menu cannot
+     * say there is no autonomy.
      *
      * @return the item, or null when autonomy is not loaded
      */
@@ -151,9 +132,8 @@ final class LocomotiveMenuItems
     {
         if (ui == null || loc == null) return null;
 
-        // LOADED, not merely available (Adam).  hasAutoLayout() is true whenever a graph exists, which
-        // includes a layout whose setup nobody has loaded - so this appeared where there was nothing to
-        // apply it to.
+        // Loaded, not merely available: hasAutoLayout() is true whenever a graph exists, including one whose setup
+        // nobody has loaded.
         if (!ui.isAutonomyLoaded()) return null;
 
         Integer length = loc.getTrainLength();
