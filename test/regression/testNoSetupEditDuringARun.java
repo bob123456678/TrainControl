@@ -435,7 +435,7 @@ public class testNoSetupEditDuringARun
                 + dispatched[0] + " was under way, wrote " + standing + "'s facing into the setup - no setup edit is made"
                 + " during a run (RLV12-C3): " + after);
 
-            assertTrue(asked.contains(I18n.t("autolayout.errorCannotEditWhileRunning")), "the diagram's Edit Locomotive,"
+            assertTrue(asked.contains(I18n.t("ui.main.errorNoEditsWhileRunning")), "the diagram's Edit Locomotive,"
                 + " clicked during a run, did not say why it did nothing: " + asked);
         }
         finally
@@ -888,7 +888,7 @@ public class testNoSetupEditDuringARun
                     + " wrote the setup when clicked while " + dispatched[0] + " was under way - no setup edit is made during"
                     + " a run (RLV12-C7): " + said);
 
-                assertTrue(said.contains(I18n.t("autolayout.errorCannotEditWhileRunning")), click[0] + " of the setup"
+                assertTrue(said.contains(I18n.t("ui.main.errorNoEditsWhileRunning")), click[0] + " of the setup"
                     + " menu, clicked during a run, did not say why it did nothing: " + said);
 
                 assertFalse((Boolean) declined.get(ui[0]), click[0] + " of the setup menu, clicked during a run, left an"
@@ -1758,7 +1758,7 @@ public class testNoSetupEditDuringARun
             assertFalse(ui[0].isLayoutEditorOpen(), "an editor asked for at rest was built over a run that began before"
                 + " its build ran (RLV13-C2)");
 
-            assertTrue(asked.contains(I18n.t("autolayout.errorCannotEditWhileRunning")), "the editor's build, refused"
+            assertTrue(asked.contains(I18n.t("ui.main.errorNoEditsWhileRunning")), "the editor's build, refused"
                 + " once a run had begun, did not say why: " + asked);
 
             java.lang.reflect.Field button = TrainControlUI.class.getDeclaredField("editLayoutButton");
@@ -1960,7 +1960,7 @@ public class testNoSetupEditDuringARun
             assertFalse(after.has(AutonomyBuilder.FACING), "the diagram's Edit Locomotive, answered OK after a run began"
                 + " while its dialog was open, wrote " + standing + "'s facing into the setup (RLV13-C9): " + after);
 
-            assertTrue(asked.contains(I18n.t("autolayout.errorCannotEditWhileRunning")), "the diagram's Edit Locomotive,"
+            assertTrue(asked.contains(I18n.t("ui.main.errorNoEditsWhileRunning")), "the diagram's Edit Locomotive,"
                 + " answered OK once a run had begun, did not say why it did nothing: " + asked);
         }
         finally
@@ -3427,7 +3427,7 @@ public class testNoSetupEditDuringARun
 
             assertTrue(choosers.isEmpty(), "Export opened its file chooser while autonomy ran (MT-601)");
 
-            assertTrue(asked.contains(I18n.t("autosetup.ui.errorExportWhileRunning")), "Export did not say it waits for"
+            assertTrue(asked.contains(I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop")), "Export did not say it waits for"
                 + " autonomy to stop: " + asked);
         }
         finally
@@ -3549,7 +3549,7 @@ public class testNoSetupEditDuringARun
 
             answeringWith(asked, going, "RSA10 copy");
 
-            String refusal = I18n.t("autolayout.errorCannotEditWhileRunning");
+            String refusal = I18n.t("ui.main.errorNoEditsWhileRunning");
 
             String prompt = I18n.t("autosetup.ui.promptConfigurationName");
 
@@ -4167,7 +4167,7 @@ public class testNoSetupEditDuringARun
             assertEquals(railway.getMaxActiveTrains(), was, "a setting was written while autonomy was busy, nothing"
                 + " moving (RSA12-C1); said: " + asked);
 
-            assertTrue(asked.contains(I18n.t("autolayout.ui.errorUnableToChangeSettingsWhileTrainsRunning")), "the refusal"
+            assertTrue(asked.contains(I18n.t("ui.main.errorNoEditsWhileRunning")), "the refusal"
                 + " was not said: " + asked);
         }
         finally
@@ -4194,7 +4194,7 @@ public class testNoSetupEditDuringARun
      * other Layout menu door that changes the diagram is (MT-141): a folder chosen switched the layout, synced with the
      * Central Station and reset the autonomy session under the moving trains, taking Graceful Stop off the window.
      *
-     * MUTATION: open the folder window whatever runs, and this fails; so does `RunGates.refuseWhile` giving a layout
+     * MUTATION: open the folder window whatever runs, and this fails; so does `RunGates.refuseWhileARunHoldsTheSetup` giving a layout
      * door the locomotive sentence again (OB-370).
      *
      * @throws Exception from the window

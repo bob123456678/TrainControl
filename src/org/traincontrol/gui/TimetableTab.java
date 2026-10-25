@@ -102,14 +102,7 @@ final class TimetableTab
     {
         javax.swing.SwingUtilities.invokeLater(() -> 
         {
-            if (this.ui.aRunHoldsTheSetup())
-            {
-                JOptionPane.showMessageDialog(
-                    this.ui,
-                    this.ui.whyTheSetupIsHeld("autolayout.ui.errorWaitForActiveLocomotivesToStop")
-                );
-                return;
-            }
+            if (this.ui.refuseWhileARunHoldsTheSetup(this.ui)) return;
 
             int dialogResult = JOptionPane.showOptionDialog(
                 this.ui,
@@ -129,11 +122,7 @@ final class TimetableTab
 
             // ASKED AGAIN AFTER THE QUESTION, as Delete Entry asks (OB-260): it can stay open as long as the
             // operator likes, and a run may have started meanwhile
-            if (this.ui.aRunHoldsTheSetup())
-            {
-                JOptionPane.showMessageDialog(this.ui, this.ui.whyTheSetupIsHeld("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
-                return;
-            }
+            if (this.ui.refuseWhileARunHoldsTheSetup(this.ui)) return;
 
             final org.traincontrol.automation.Layout layout = this.ui.getModel().getAutoLayout();
 
@@ -172,11 +161,7 @@ final class TimetableTab
     {
         try
         {
-            if (this.ui.aRunHoldsTheSetup())
-            {
-                JOptionPane.showMessageDialog(this.ui, this.ui.whyTheSetupIsHeld("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
-                return;
-            }
+            if (this.ui.refuseWhileARunHoldsTheSetup(this.ui)) return;
             
             int index = this.ui.getTimetableIndexAtCursor(evt);
             
@@ -208,11 +193,7 @@ final class TimetableTab
 
                 // ASKED AGAIN AFTER THE QUESTION (OB-260): it can stay open as long as the operator likes, and a run may
                 // have started meanwhile
-                if (this.ui.aRunHoldsTheSetup())
-                {
-                    JOptionPane.showMessageDialog(this.ui, this.ui.whyTheSetupIsHeld("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
-                    return;
-                }
+                if (this.ui.refuseWhileARunHoldsTheSetup(this.ui)) return;
 
                 if (!(shown instanceof TimetablePath)) return;
 
@@ -241,11 +222,7 @@ final class TimetableTab
     {
         try
         {
-            if (this.ui.aRunHoldsTheSetup())
-            {
-                JOptionPane.showMessageDialog(this.ui, this.ui.whyTheSetupIsHeld("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
-                return;
-            }
+            if (this.ui.refuseWhileARunHoldsTheSetup(this.ui)) return;
             
             TimetablePath ttp = (TimetablePath) this.ui.getTimetableEntryAtCursor(evt);
 
@@ -261,11 +238,7 @@ final class TimetableTab
                 {
                     // ASKED AGAIN AFTER THE QUESTION, as the other timetable doors ask: it can stay open as
                     // long as the operator likes, and a run started meanwhile may be waiting on this entry's delay
-                    if (this.ui.aRunHoldsTheSetup())
-                    {
-                        JOptionPane.showMessageDialog(this.ui, this.ui.whyTheSetupIsHeld("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
-                        return;
-                    }
+                    if (this.ui.refuseWhileARunHoldsTheSetup(this.ui)) return;
 
                     ttp.setSecondsToNext(Long.parseLong(input) * 1000);
                     this.repaintTimetable();
@@ -287,11 +260,7 @@ final class TimetableTab
     {
         javax.swing.SwingUtilities.invokeLater(() -> 
         {
-            if (this.ui.aRunHoldsTheSetup())
-            {
-                JOptionPane.showMessageDialog(this.ui, this.ui.whyTheSetupIsHeld("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
-                return;
-            }
+            if (this.ui.refuseWhileARunHoldsTheSetup(this.ui)) return;
             
             // Check if a reset will do anything
             if (this.ui.getModel().getAutoLayout().getUnfinishedTimetablePathIndex() == 0
@@ -322,11 +291,7 @@ final class TimetableTab
 
             // ASKED AGAIN AFTER THE QUESTION: a reset under a timetable started meanwhile would set back the
             // execution times its loop waits on
-            if (this.ui.aRunHoldsTheSetup())
-            {
-                JOptionPane.showMessageDialog(this.ui, this.ui.whyTheSetupIsHeld("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
-                return;
-            }
+            if (this.ui.refuseWhileARunHoldsTheSetup(this.ui)) return;
 
             this.ui.getModel().getAutoLayout().resetTimetable();
             this.repaintTimetable();

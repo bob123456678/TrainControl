@@ -3854,10 +3854,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 ? "autosetup.ui.errorSetupUnreadable" : "autosetup.ui.errorNoSetupToEdit";
         }
 
-        // Not while a route runs either (`aRunHoldsTheSetup`); `whyTheSetupIsHeld` names what runs where it is not
-        // autonomy.
-        if (this.aRunHoldsTheSetup()) return isAutonomyBusy() ? "autolayout.errorCannotEditWhileRunning"
-            : "ui.main.tooltip.placeAtHomesWhileRunning";
+        // Not while a route runs either: the edit refusal's own sentence (`RunGates.refuseWhileARunHoldsTheSetup`)
+        if (this.aRunHoldsTheSetup()) return RunGates.NO_EDITS_WHILE_RUNNING;
 
         if (!this.editLayoutButton.isEnabled() && !isLayoutEditorOpen())
         {
@@ -3938,11 +3936,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         // Neither editor while trains run (OB-047): a tile could be moved or deleted under a train on its way to it.
         // No silent fallback, as falling back means opening something; a route counts too (`aRunHoldsTheSetup`).
-        if (this.aRunHoldsTheSetup())
-        {
-            JOptionPane.showMessageDialog(this, whyTheSetupIsHeld("autolayout.errorCannotEditWhileRunning"));
-            return;
-        }
+        if (refuseWhileARunHoldsTheSetup(this)) return;
 
         // One editor at a time, gated on the same button: two editors share one LayoutDiagram and one edit flag, so
         // closing either sets edit false under the other and re-enables the button for a third.
@@ -3993,14 +3987,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 // Trains may have started since the question above (Start's worker, a staging flow): refuse, say so,
                 // give Edit back.
-                if (this.aRunHoldsTheSetup())
+                if (refuseWhileARunHoldsTheSetup(this, () ->
+                    {
+                        this.editorOnItsWay = false;
+
+                        setEditLayoutEnabled(true);
+                    }))
                 {
-                    this.editorOnItsWay = false;
-
-                    setEditLayoutEnabled(true);
-
-                    JOptionPane.showMessageDialog(this, whyTheSetupIsHeld("autolayout.errorCannotEditWhileRunning"));
-
                     return;
                 }
 
@@ -4640,7 +4633,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /** Delegates to `RunGates.refuseWhileARunHoldsTheSetup`. */
     boolean refuseWhileARunHoldsTheSetup(Component source)
     {
-        return RunGates.refuseWhileARunHoldsTheSetup(this, source);
+        return RunGates.refuseWhileARunHoldsTheSetup(this, source, null);
+    }
+
+    /** Delegates to `RunGates.refuseWhileARunHoldsTheSetup`. */
+    boolean refuseWhileARunHoldsTheSetup(Component source, Runnable putBack)
+    {
+        return RunGates.refuseWhileARunHoldsTheSetup(this, source, putBack);
+    }
+
+    /** Delegates to `RunGates.refuseUntilTheTrainsStop`. */
+    boolean refuseUntilTheTrainsStop(Component source)
+    {
+        return RunGates.refuseUntilTheTrainsStop(this, source);
     }
 
     /** Delegates to `RunGates.refuseWhileEditorOpen`. */
@@ -8724,17 +8729,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 if (this.model.hasAutoLayout())
                 {
-                    if (this.aRunHoldsTheSetup())
-                    {
-                        this.applyAutoRouteListSelections();
-
-                        // Back before the modal message: a changed rule mid-run would leave two in force.
-                        restoreRoutingLogicSelection();
-
-                        JOptionPane.showMessageDialog(this,
-                            whyTheSetupIsHeld("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
-                    }
-                    else
+                    // Back before the modal message: a changed rule mid-run would leave two in force.
+                    if (!refuseWhileARunHoldsTheSetup(this, () ->
+                        {
+                            this.applyAutoRouteListSelections();
+                            restoreRoutingLogicSelection();
+                        }))
                     {
                         int at = algorithmType.getSelectedIndex();
 
@@ -18838,15 +18838,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Says why, and answers true, where something other than autonomy holds the setup; while autonomy is busy the doors
-     * that load or unload a configuration keep their own offer to stop the trains.
+     * that load or unload a configuration keep their own offer to stop the trains.  A load acts on the railway rather
+     * than editing the setup, so it waits.
      */
     boolean refusedWhileSomethingElseRuns()
     {
-        if (!aRunHoldsTheSetup() || isAutonomyBusy()) return false;
-
-        JOptionPane.showMessageDialog(this, whyTheSetupIsHeld("autosetup.ui.tooltipNotWhileRunning"));
-
-        return true;
+        return !isAutonomyBusy() && refuseUntilTheTrainsStop(this);
     }
 
     String whyTheSetupIsHeld(String autonomyKey)
@@ -20303,11 +20300,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         javax.swing.SwingUtilities.invokeLater(() ->
             {
-                if (this.aRunHoldsTheSetup())
-                {
-                    JOptionPane.showMessageDialog(this, whyTheSetupIsHeld("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
-                }
-                else
+                if (!refuseWhileARunHoldsTheSetup(this))
                 {
                     this.model.getAutoLayout().setTimetableCapture(!this.model.getAutoLayout().isTimetableCapture());
                 }
@@ -21367,17 +21360,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     boolean isAutoLayoutRunning()
     {
         // While autonomy is busy, not only while the railway runs: Return Home plans before any train moves.
-        if (this.aRunHoldsTheSetup())
-        {
-            JOptionPane.showMessageDialog(
-                this,
-                whyTheSetupIsHeld("autolayout.ui.errorUnableToChangeSettingsWhileTrainsRunning")
-            );
-            loadAutoLayoutSettings();
-            return true;
-        }
-        
-        return false;
+        if (!refuseWhileARunHoldsTheSetup(this)) return false;
+
+        loadAutoLayoutSettings();
+
+        return true;
     }
     
     /**

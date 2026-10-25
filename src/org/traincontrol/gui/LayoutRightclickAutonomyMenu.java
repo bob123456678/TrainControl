@@ -199,12 +199,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
      */
     private boolean refusedWhileRunning()
     {
-        // A ROUTE TOO (`TrainControlUI.aRunHoldsTheSetup`)
-        if (!ui.aRunHoldsTheSetup()) return false;
-
-        JOptionPane.showMessageDialog(ui, ui.whyTheSetupIsHeld("autolayout.errorCannotEditWhileRunning"));
-
-        return true;
+        return ui.refuseWhileARunHoldsTheSetup(ui);
     }
 
     /**

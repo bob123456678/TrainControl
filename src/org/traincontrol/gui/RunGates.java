@@ -56,40 +56,53 @@ final class RunGates
 
     static boolean refuseWhileAutonomyRunning(TrainControlUI ui, Component source)
     {
-        return refuseWhile(ui, source, false);
+        if (ui.getModel() == null || !ui.getModel().isAutonomyRunning()) return false;
+
+        JOptionPane.showMessageDialog(over(ui, source), I18n.t("autolayout.ui.errorCannotEditLocomotivesWhileRunning"));
+
+        return true;
+    }
+
+    /** What a door that edits the setup, the diagram, the timetable or the settings says while a run holds the setup. */
+    static final String NO_EDITS_WHILE_RUNNING = "ui.main.errorNoEditsWhileRunning";
+
+    /** What a door that would start, send, export or load, rather than edit, says while a run holds the setup. */
+    static final String WAIT_FOR_THE_TRAINS = "autolayout.ui.errorWaitForActiveLocomotivesToStop";
+
+    /**
+     * Refuses an edit while a run holds the setup (`aRunHoldsTheSetup`), with one sentence for autonomy and a route
+     * alike (OB-370).  `putBack` (or null) runs before the modal message, to put back what the gesture changed.  True
+     * when it refused.
+     */
+    static boolean refuseWhileARunHoldsTheSetup(TrainControlUI ui, Component source, Runnable putBack)
+    {
+        return refuseWhileHeld(ui, source, putBack, NO_EDITS_WHILE_RUNNING);
+    }
+
+    /** The same for a door that must wait for the run rather than edit (`WAIT_FOR_THE_TRAINS`). */
+    static boolean refuseUntilTheTrainsStop(TrainControlUI ui, Component source)
+    {
+        return refuseWhileHeld(ui, source, null, WAIT_FOR_THE_TRAINS);
+    }
+
+    private static boolean refuseWhileHeld(TrainControlUI ui, Component source, Runnable putBack, String key)
+    {
+        if (!ui.aRunHoldsTheSetup()) return false;
+
+        if (putBack != null) putBack.run();
+
+        JOptionPane.showMessageDialog(over(ui, source), I18n.t(key));
+
+        return true;
     }
 
     /**
-     * The same for a door that edits the setup or the diagram, which a route running also holds (`aRunHoldsTheSetup`):
-     * one sentence for autonomy and for a route, not the locomotives one (OB-370).
+     * Over the main window where the source is not showing (MT-703): a menu's item has left its window by the time it
+     * runs, and the message went to Swing's hidden frame, under an always-on-top main window.
      */
-    static boolean refuseWhileARunHoldsTheSetup(TrainControlUI ui, Component source)
+    private static Component over(TrainControlUI ui, Component source)
     {
-        return refuseWhile(ui, source, true);
-    }
-
-    /** `refuseWhileAutonomyRunning`, and with `aRoute` `refuseWhileARunHoldsTheSetup`. */
-    private static boolean refuseWhile(TrainControlUI ui, Component source, boolean aRoute)
-    {
-        final boolean autonomy = ui.getModel() != null && ui.getModel().isAutonomyRunning();
-
-        if (aRoute && (autonomy || ui.aRunHoldsTheSetup()))
-        {
-            JOptionPane.showMessageDialog(source == null || !source.isShowing() ? ui : source,
-                I18n.t("ui.main.errorNoEditsWhileRunning"));
-
-            return true;
-        }
-
-        if (!autonomy) return false;
-
-        // OVER THE MAIN WINDOW where the source is not showing (the popups sweep, on Adam's MT-703 note): a menu's item
-        // has left its window by the time it runs, and the message went to Swing's hidden frame - under an
-        // always-on-top main window
-        JOptionPane.showMessageDialog(source == null || !source.isShowing() ? ui : source,
-            I18n.t("autolayout.ui.errorCannotEditLocomotivesWhileRunning"));
-
-        return true;
+        return source == null || !source.isShowing() ? ui : source;
     }
 
     /**
@@ -180,8 +193,8 @@ final class RunGates
     }
 
     /**
-     * What a door refusing a setup edit says: its own sentence (`autonomyKey`) where autonomy is busy, and one naming a
-     * route too where something else holds the setup (`aRunHoldsTheSetup`).
+     * What a grayed control's tooltip or a log line says while a run holds the setup: its own sentence (`autonomyKey`)
+     * where autonomy is busy, and one naming a route too otherwise.  A refusal says one of the two sentences above.
      */
     static String whyTheSetupIsHeld(TrainControlUI ui, String autonomyKey)
     {

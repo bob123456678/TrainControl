@@ -34,12 +34,7 @@ final class AutonomySettingsTab
             {
                 if (this.ui.getModel().hasAutoLayout())
                 {
-                    if (this.ui.aRunHoldsTheSetup())
-                    {
-                        this.ui.applyAutoRouteListSelections();
-                        JOptionPane.showMessageDialog(this.ui, this.ui.whyTheSetupIsHeld("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
-                    }
-                    else
+                    if (!this.ui.refuseWhileARunHoldsTheSetup(this.ui, this.ui::applyAutoRouteListSelections))
                     {
                         // Collect IDs of all selected routes
                         List<Integer> activateRouteIDs = new ArrayList<>();
@@ -67,11 +62,7 @@ final class AutonomySettingsTab
 
         javax.swing.SwingUtilities.invokeLater(() ->
             {
-                if (this.ui.aRunHoldsTheSetup())
-                {
-                    JOptionPane.showMessageDialog(this.ui, this.ui.whyTheSetupIsHeld("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
-                }
-                else
+                if (!this.ui.refuseWhileARunHoldsTheSetup(this.ui))
                 {
                     this.ui.getModel().getAutoLayout().setActivateRoutes(!this.ui.getModel().getAutoLayout().isActivateRoutes());
                     this.ui.getModel().applyAutonomyRouteActivations();

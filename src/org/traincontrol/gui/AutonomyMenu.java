@@ -759,11 +759,7 @@ public class AutonomyMenu extends JMenu
      */
     private void deleteEverything(AutonomySession session)
     {
-        if (ui.aRunHoldsTheSetup())
-        {
-            JOptionPane.showMessageDialog(ui, ui.whyTheSetupIsHeld("autolayout.errorCannotEditWhileRunning"));
-            return;
-        }
+        if (ui.refuseWhileARunHoldsTheSetup(ui)) return;
 
         int names = session.getStore().getConfigurationNames().size();
 
@@ -822,15 +818,7 @@ public class AutonomyMenu extends JMenu
                 // made right-clicks on that page's stations do nothing, while the layout carried on
                 // routing trains to those very stations.  The interface said the page was out of
                 // autonomy and the railway disagreed.
-                if (ui.aRunHoldsTheSetup())
-                {
-                    box.setSelected(!box.isSelected());
-
-                    JOptionPane.showMessageDialog(ui,
-                        ui.whyTheSetupIsHeld("autolayout.errorCannotEditWhileRunning"));
-
-                    return;
-                }
+                if (ui.refuseWhileARunHoldsTheSetup(ui, () -> box.setSelected(!box.isSelected()))) return;
 
                 // Applying this rebuilds the layout, and every configuration load stops everything -
                 // including a train somebody is driving by hand.

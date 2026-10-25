@@ -667,7 +667,7 @@ public class testTheImportDoorReadsAnOldFile
 
             session = ui[0].getAutonomySession();
 
-            assertTrue(asked.said.contains(I18n.t("autosetup.ui.errorImportWhileRunning")), "an old file was imported"
+            assertTrue(asked.said.contains(I18n.t("ui.main.errorNoEditsWhileRunning")), "an old file was imported"
                 + " into another configuration while autonomy ran (RSA4-C5), or refused without saying what to do"
                 + " instead: " + asked.said);
 
@@ -1204,7 +1204,7 @@ public class testTheImportDoorReadsAnOldFile
 
             session = ui[0].getAutonomySession();
 
-            assertTrue(said.contains(I18n.t("autosetup.ui.errorImportWhileRunning")), "an old file was taken into "
+            assertTrue(said.contains(I18n.t("ui.main.errorNoEditsWhileRunning")), "an old file was taken into "
                 + inUse + ", the configuration in use, while autonomy runs (RLU4-C1), or refused without saying what to"
                 + " do instead (RLU5-C2, RLA5-C1): " + said);
 
@@ -3778,7 +3778,7 @@ public class testTheImportDoorReadsAnOldFile
             assertFalse((Boolean) declined.get(ui[0]), "a setup menu clicked during a run left an edit waiting against"
                 + " the running railway");
 
-            assertTrue(asked.contains(I18n.t("autolayout.errorCannotEditWhileRunning")), "a setup menu clicked during a"
+            assertTrue(asked.contains(I18n.t("ui.main.errorNoEditsWhileRunning")), "a setup menu clicked during a"
                 + " run did not say why it did nothing: " + asked);
         }
         finally
@@ -4077,7 +4077,7 @@ public class testTheImportDoorReadsAnOldFile
                 said = answering.asked();
             }
 
-            assertEquals(said, Collections.singletonList(I18n.t("autosetup.ui.errorImportWhileRunning")), "Import..., clicked"
+            assertEquals(said, Collections.singletonList(I18n.t("ui.main.errorNoEditsWhileRunning")), "Import..., clicked"
                 + " while autonomy ran, did not refuse with the bundle's sentence and nothing else");
 
             session = ui[0].getAutonomySession();

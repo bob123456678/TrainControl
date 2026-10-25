@@ -1138,7 +1138,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
 
         railway.setTimetable(before);
 
-        final String refusal = org.traincontrol.util.I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop");
+        final String refusal = org.traincontrol.util.I18n.t("ui.main.errorNoEditsWhileRunning");
 
         try
         {

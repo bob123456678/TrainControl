@@ -1149,18 +1149,17 @@ public class testEditorSurfaceRules
 
         java.util.List<String> refusals = new java.util.ArrayList<>();
 
-        // A refusal is said either as its own sentence or, where a run holds the setup, as the one that names what runs
-        // (`whyTheSetupIsHeld`, which takes the autonomy sentence's key)
-        for (String opening : new String[] {"I18n.t(" + QUOTE, "whyTheSetupIsHeld(" + QUOTE})
+        // A refusal is said as its own sentence, or where a run holds the setup through the edit refusal, whose key the
+        // predicate must answer with
+        for (int at = 0; (at = opener.indexOf("I18n.t(" + QUOTE, at)) >= 0; at++)
         {
-            for (int at = opening.length(); (at = opener.indexOf(opening, at)) >= 0; at++)
-            {
-                int from = at + opening.length();
-                int to = opener.indexOf(QUOTE, from);
+            int from = at + ("I18n.t(" + QUOTE).length();
+            int to = opener.indexOf(QUOTE, from);
 
-                if (to > from) refusals.add(opener.substring(from, to));
-            }
+            if (to > from) refusals.add(opener.substring(from, to));
         }
+
+        if (opener.contains("refuseWhileARunHoldsTheSetup(")) refusals.add("RunGates.NO_EDITS_WHILE_RUNNING");
 
         // THREE LITERALS AND ONE INDIRECTION (OB-126).  The fourth refusal goes through
         // `reasonLayoutIsNotEditable()`, because the Edit button has three causes of greyness and a literal named

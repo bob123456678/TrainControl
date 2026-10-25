@@ -1008,12 +1008,7 @@ public class AutonomyViewerPanel extends JPanel
     public void initialize()
     {
         // NOT WHILE AUTONOMY RUNS: it writes a configuration, and may tick pages out, under the railway
-        if (ui.aRunHoldsTheSetup())
-        {
-            JOptionPane.showMessageDialog(ui, ui.whyTheSetupIsHeld("autolayout.errorCannotEditWhileRunning"));
-
-            return;
-        }
+        if (ui.refuseWhileARunHoldsTheSetup(ui)) return;
 
         String name = (String) JOptionPane.showInputDialog(ui,
             I18n.t("autosetup.ui.promptConfigurationName"),
@@ -1152,12 +1147,7 @@ public class AutonomyViewerPanel extends JPanel
         // shared half - a station's name among it - and the fold after a declined reload read the running railway through
         // names it had changed: a train on a square it renamed was written nowhere.  It was refused into the configuration
         // in use alone; what it says says what to do instead.
-        if (ui.aRunHoldsTheSetup())
-        {
-            JOptionPane.showMessageDialog(ui, ui.whyTheSetupIsHeld("autosetup.ui.errorImportWhileRunning"));
-
-            return;
-        }
+        if (ui.refuseWhileARunHoldsTheSetup(ui)) return;
 
         javax.swing.JFileChooser chooser = chooser();
 
@@ -1856,12 +1846,7 @@ public class AutonomyViewerPanel extends JPanel
     {
         // NOT WHILE A RUN HOLDS THE SETUP, as Import is not (Adam, 2026-09-30, MT-601: "Export should also only be allowed
         // once we are stopped"), and before anything is asked: the export folds the running railway into the setup first
-        if (ui.aRunHoldsTheSetup())
-        {
-            JOptionPane.showMessageDialog(ui, ui.whyTheSetupIsHeld("autosetup.ui.errorExportWhileRunning"));
-
-            return;
-        }
+        if (ui.refuseUntilTheTrainsStop(ui)) return;
 
         String name = selected();
 
@@ -1896,12 +1881,7 @@ public class AutonomyViewerPanel extends JPanel
     public void duplicate()
     {
         // NOT WHILE AUTONOMY RUNS, as Import, Export and Delete are not - before anything is asked
-        if (ui.aRunHoldsTheSetup())
-        {
-            JOptionPane.showMessageDialog(ui, ui.whyTheSetupIsHeld("autolayout.errorCannotEditWhileRunning"));
-
-            return;
-        }
+        if (ui.refuseWhileARunHoldsTheSetup(ui)) return;
 
         String from = selected();
 
@@ -1985,12 +1965,7 @@ public class AutonomyViewerPanel extends JPanel
     public void rename()
     {
         // NOT WHILE AUTONOMY RUNS: it renames the running configuration's file under the railway
-        if (ui.aRunHoldsTheSetup())
-        {
-            JOptionPane.showMessageDialog(ui, ui.whyTheSetupIsHeld("autolayout.errorCannotEditWhileRunning"));
-
-            return;
-        }
+        if (ui.refuseWhileARunHoldsTheSetup(ui)) return;
 
         String from = selected();
 
@@ -2029,11 +2004,7 @@ public class AutonomyViewerPanel extends JPanel
         // this mid-run went through to clearAutoLayout and stopped every locomotive - which is a
         // reasonable thing to ask for and not a reasonable thing to have happen as a side effect of
         // tidying up a list of configurations.
-        if (ui.aRunHoldsTheSetup())
-        {
-            JOptionPane.showMessageDialog(ui, ui.whyTheSetupIsHeld("autolayout.errorCannotEditWhileRunning"));
-            return;
-        }
+        if (ui.refuseWhileARunHoldsTheSetup(ui)) return;
 
         // WHICH ONE, where there is a choice (OB-319; Adam, 2026-10-04: *"If there is a setup cant be used, it cant be
         // selected from the list of configs, which prevents subsequent deletion."*).  Delete acted on the configuration

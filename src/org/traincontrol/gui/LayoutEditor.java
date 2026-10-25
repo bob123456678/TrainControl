@@ -3814,12 +3814,14 @@ public class LayoutEditor extends PositionAwareJFrame
             org.traincontrol.automationui.AutonomySession session =
                 autonomy ? parent.editableAutonomySession() : null;
 
-            if (autonomy && (session == null || parent.aRunHoldsTheSetup()))
+            if (autonomy && session == null)
             {
-                javax.swing.JOptionPane.showMessageDialog(this,
-                    session == null ? I18n.t("autosetup.ui.errorNoSetupToEdit")
-                        : parent.whyTheSetupIsHeld("autolayout.errorCannotEditWhileRunning"));
+                javax.swing.JOptionPane.showMessageDialog(this, I18n.t("autosetup.ui.errorNoSetupToEdit"));
 
+                autonomy = false;
+            }
+            else if (autonomy && parent.refuseWhileARunHoldsTheSetup(this))
+            {
                 autonomy = false;
                 session = null;
             }
@@ -3933,14 +3935,7 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         try
         {
-            // A route too
-            if ((parent.getModel() != null && parent.getModel().isAutonomyRunning()) || parent.aRunHoldsTheSetup())
-            {
-                JOptionPane.showMessageDialog(this,
-                    parent.whyTheSetupIsHeld("autolayout.errorCannotEditWhileRunning"));
-
-                return false;
-            }
+            if (parent.refuseWhileARunHoldsTheSetup(this)) return false;
 
             // And the undo point taken again, or a close before the switch would ask straight after a save
             if (isAutonomyMode())
@@ -4755,12 +4750,7 @@ public class LayoutEditor extends PositionAwareJFrame
     private void saveButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_saveButtonActionPerformed
         try
         {
-            // A route too
-            if (parent.getModel().isAutonomyRunning() || parent.aRunHoldsTheSetup())
-            {
-                JOptionPane.showMessageDialog(this, parent.whyTheSetupIsHeld("autolayout.errorCannotEditWhileRunning"));
-                return;
-            }
+            if (parent.refuseWhileARunHoldsTheSetup(this)) return;
 
             // In autonomy mode Save means the setup, the only thing edited.
             if (isAutonomyMode())

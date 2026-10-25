@@ -2956,7 +2956,7 @@ public class testTheActiveTickPausesATrain
                 {
                     List<String> said = clickAndDismiss(tool);
 
-                    assertTrue(said.contains(I18n.t("autolayout.errorCannotEditWhileRunning")), tool.getText() + ", clicked"
+                    assertTrue(said.contains(I18n.t("ui.main.errorNoEditsWhileRunning")), tool.getText() + ", clicked"
                         + " while autonomy ran, did not say why it did nothing: " + said);
                 }
             }
