@@ -431,7 +431,7 @@ until 2026-09-03 it did not say (`SV2-C7`).
   what covers it now - it counts test JVMs machine-wide rather than trusting the lock.
 
 **The lock is a count of test slots now** (FR-136 Phase 1a, `docs/tools/slots.sh`), one per four logical
-processors, from two to six, each a lock file beside the old one (which is slot 1).  Every run has its own
+processors plus two, from two to eight, each a lock file beside the old one (which is slot 1).  Every run has its own
 data folder, preference node and temp folder, so runs no longer share anything but the screen:
 
 - `one.sh` takes one slot, and so runs beside a battery's lanes or another worker's run.  Two runs from the

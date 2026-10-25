@@ -28,20 +28,21 @@
 
 SLOT_BASE="${TC_LOCK:-${TEMP:-${TMP:-/tmp}}/traincontrol-battery.lock}"
 
-# How many slots there are: one per four logical processors, from two to six.  From the processor count only, so
-# every runner on the machine counts the same number whenever it asks; TC_SLOTS overrides it.
+# How many slots there are: one per four logical processors plus two, from two to eight (Adam, 2026-10-25: "Can we
+# increase test concurrency by 1 or 2?"; 7 on his 20-thread machine).  From the processor count only, so every
+# runner on the machine counts the same number whenever it asks; TC_SLOTS overrides it.
 slot_count()
 {
     n="${TC_SLOTS:-}"
 
     case "$n" in
         ''|*[!0-9]*)
-            n=$(( $(nproc 2>/dev/null || echo 4) / 4 ))
+            n=$(( $(nproc 2>/dev/null || echo 4) / 4 + 2 ))
             ;;
     esac
 
     [ "$n" -lt 2 ] && n=2
-    [ "$n" -gt 6 ] && [ -z "${TC_SLOTS:-}" ] && n=6
+    [ "$n" -gt 8 ] && [ -z "${TC_SLOTS:-}" ] && n=8
 
     echo "$n"
 }
