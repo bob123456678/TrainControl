@@ -28,41 +28,20 @@ import org.traincontrol.marklin.file.CS2File;
 /**
  * The route-wide room rule leaves no train with nowhere to go.
  *
- * **The census counts JOURNEYS, and that is not the number that decides whether the railway runs.**
- * `core.testTheRoomRuleCensusOnTheRealLayout` measures Adam's ruling of 2026-09-09 at about one
- * journey in three refused for want of room, and that is the figure he was given and accepted.  A
- * third of journeys refused EVENLY leaves nobody stranded.  A third refused because three tiles
- * measured at one unit sit on every road out of the bottom main strands every train standing there,
- * and the two are the same number.
+ * The census (`core.testTheRoomRuleCensusOnTheRealLayout`) counts JOURNEYS, which is not the number that decides
+ * whether the railway runs: a third of journeys refused evenly strands nobody, while a third refused because three
+ * one-unit tiles sit on every road out of the bottom main strands every train standing there. So this asks the door the
+ * operator asks, `Layout.getPossiblePaths(loc, true)`, from every square a train can stand on, for each of the census's
+ * six lengths, on a railway with nothing else on it.
  *
- * So this asks the door the operator asks - `Layout.getPossiblePaths(loc, true)` - from every square
- * a train can stand on, for each of the census's six lengths, on a railway with nothing else on it.
+ * Since MT-333 both numbers are ZERO, and that is the claim: with a passed square no longer judged, no square is closed
+ * to a longer train. Before it, a train of two units or more was offered nothing at all from seven squares (the bottom
+ * main berths) that had offered it 31 to 34 destinations under the berth-only rule. A train with no destination is one
+ * autonomy never dispatches and a Return Home that reports `NO_PLAN_FOUND`; the remedy is to measure the track
+ * (`behaviour.md` section 5a).
  *
- * **Since MT-333 (2026-09-14) both numbers are ZERO**, and that is the claim now: with a passed square no longer
- * judged, no square is closed to a longer train.  What follows is the finding that stood until then.
- *
- * **Measured on 2026-09-10, and both claims below are red.**  A one-unit train is offered somewhere
- * to go from all 45 squares.  A train of TWO units or more is offered nothing at all from seven of
- * them - `BottomMainA (eastbound)`, `BottomMainB (eastbound)`, `BottomMainB (eastbound, reverse)`,
- * `BottomMainC (eastbound)`, `BottomMainC (westbound, reverse)`, `BottomMainPost (northbound,
- * reverse)` and `BottomMainPost (southbound)` - each of which offered that same train between 31 and
- * 34 destinations under the berth-only rule, over the same routes.  Not fewer: none.
- *
- * A train with no destination is a train autonomy will never dispatch and a Return Home that reports
- * `NO_PLAN_FOUND`.  Whether that is the right railway is Adam's to say - the remedy is to measure the
- * track, which `behaviour.md` section 5a already states - but it is a different fact from "one
- * journey in three", and it is the one an operator meets first.
- *
- * **`ParkingTrack12` used to be on this list and is not on it.**  It appeared at every length while
- * this class emptied the railway once instead of once per pass, so each length after the first ran
- * with the previous pass's train still standing somewhere.  Seven squares, not eight; 35 pairs, not
- * 40.  A review found it after both wrong numbers had been published.
- *
- * Read against a `LayoutSandbox` copy of `test/layouts/live-snapshot` - the frozen railway, not the
- * one Adam is operating - with the three tight tiles set by this class rather than carried in the
- * fixture.  Adam, 2026-09-10: *"We put the lengths of 1 in there for testing.  Actual tracks are much
- * longer."*  So these figures are what a rule about room does on a railway with no room, which is what
- * makes them worth measuring, and are not a survey of his track.
+ * Read against a `LayoutSandbox` copy of `test/layouts/live-snapshot`, with the three tight tiles set by this class:
+ * these figures are what a rule about room does on a railway with no room, not a survey of his track.
  *
  * @author Adam
  */
@@ -82,10 +61,8 @@ public class testWhichSquaresTheRoomRuleClosesOff
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111, and the review's B8).
-        //
-        // Every figure below is a measurement of the lengths on the railway it opens, and his live
-        // one moves as he works.  `live-snapshot` is the same railway with the clock stopped.
+        // The frozen copy, not the railway he is operating (OB-111): every figure below is a measurement of the lengths
+        // on the railway it opens, and his live one moves as he works.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
         model = support.TestStation.simulated();
@@ -111,26 +88,15 @@ public class testWhichSquaresTheRoomRuleClosesOff
         session = new AutonomySession(sandbox.getFolder());
         session.open(pages);
 
-        // HIS MEASUREMENTS AND STATION SIZES COME OFF FIRST (the refreeze of 2026-09-23).  Until then the snapshot
-        // carried neither, so the three tiles below were the whole of what this measured.  It carries both now, and
-        // this is still the experiment it was: what a rule about room does on a railway with no room.
+        // His measurements and station sizes come off first, so this stays an experiment on a railway with no room.
         session.clearEveryTileLength();
         session.clearEveryMaxTrainLength();
 
-        // THE THREE TIGHT TILES, SET HERE RATHER THAN READ OUT OF THE FIXTURE (Adam, 2026-09-10).
+        // The three tight tiles are set here, not read from the fixture: a rule about room says nothing on a railway
+        // with room to spare, and it is not a claim about what his track measures.
         //
-        // `live-snapshot` carried these three at one unit and nothing else at all, so every figure
-        // below was really a measurement of a railway with three one-unit tiles on it - which is what
-        // Adam had set them to for testing.  **"A/B/C are distinct pieces of track.  We put the lengths
-        // of 1 in there for testing.  Actual tracks are much longer."**
-        //
-        // So the fixture carries no lengths now and this census states its own configuration: the
-        // tight case, deliberately, because a rule about room says nothing on a railway with room to
-        // spare.  It is not a claim about what his track measures.
-        //
-        // 22,7 is the last unswitched square before BottomMainPost; the other two are the equivalent
-        // squares before BottomMainB and BottomMainC.  Together they are the four berths the MT-262
-        // census named.
+        // 22,7 is the last unswitched square before BottomMainPost; the other two are the equivalent squares before
+        // BottomMainB and BottomMainC.
         for (TileKey tight : new TileKey[] { new TileKey("1 - Main", 22, 7),
             new TileKey("1 - Main", 19, 12), new TileKey("1 - Main", 14, 13) })
         {
@@ -163,42 +129,25 @@ public class testWhichSquaresTheRoomRuleClosesOff
     }
 
     /**
-     * (square, length) pairs that had somewhere to go before the ruling and have nowhere after it.
-     *
-     * Measured on `test/layouts/live-snapshot` with the three tight tiles this class sets itself.
-     * **A pin, not an endorsement**: it says nobody changes the number without saying so.
-     *
-     * **0 since MT-333 (2026-09-14)**, 35 before it.  Every one of the 35 was closed by a square the train only
-     * passed, which was never what the rule was for: *"this switch blocking should only affect berthes"* (Adam,
-     * 2026-09-14, confirming it as the ruling of 2026-09-09 read as meant).
+     * (square, length) pairs that had somewhere to go before the ruling and have nowhere after it, on
+     * `test/layouts/live-snapshot` with the three tight tiles this class sets. A pin, not an endorsement: nobody
+     * changes the number without saying so. 0 since MT-333; every one of the 35 before it was closed by a square the
+     * train only passed, which was never what the rule was for (*"this switch blocking should only affect berthes"*).
      */
     private static final int CLOSED_BY_THE_RULING = 0;
 
     /**
-     * How many routes between one pair the search will look at.
-     *
-     * "This square offers the train nothing" is a claim about EVERY route out of it, so a cap that
-     * binds turns it into a claim about the first few - and in the direction that matters here, which
-     * is reporting a square closed that is not.
-     *
-     * 30 until a full battery found a pair at exactly that in the sibling census: a different JVM
-     * yields routes in a different order, so a cap that never binds in one run can bind in the next.
-     * 150 leaves five times the deepest pair measured, and the whole census still runs in seconds.
+     * How many routes between one pair the search will look at: "this square offers the train nothing" is a claim about
+     * EVERY route out of it, so a cap that binds reports a square closed that is not. A different JVM yields routes in
+     * a different order, so a cap that never binds in one run can bind in the next; 150 leaves five times the deepest
+     * pair measured.
      */
     private static final int ROUTE_CAP = 150;
 
     /**
-     * (square, length) pairs that offer a train nothing at all where a one-unit train has somewhere
-     * to go - so the square is closed by the room rule rather than by the shape of the track.
-     *
-     * **0 since MT-333 (2026-09-14)**: no square offers a longer train nothing where a one-unit train has
-     * somewhere, because the squares that did it were squares on the way.  35 until then.
-     *
-     * **40 until 2026-09-10, and five of those forty were this class's own leftover train.**  The
-     * railway was cleared once, before the sweep over lengths, and `whereItMayGo` lifts only the train
-     * it is about to place - so from two units on, the previous pass's probe was still standing on the
-     * last square it had been put on.  It made `ParkingTrack12` read as closed at every length, which
-     * is where the eighth square in the published figures came from.  A review found it.
+     * (square, length) pairs that offer a train nothing at all where a one-unit train has somewhere to go, so the
+     * square is closed by the room rule rather than by the shape of the track. 0 since MT-333: the squares that did it
+     * were squares on the way.
      */
     private static final int STRANDED = 0;
 
@@ -268,11 +217,8 @@ public class testWhichSquaresTheRoomRuleClosesOff
         System.out.println("### squares the ruling of 2026-09-09 closed completely");
         System.out.println("  " + closedByTheRuling);
 
-        // PINNED, NOT REQUIRED TO BE ZERO.
-        //
-        // Whether this is the railway Adam wants is his to say - the remedy is a tape measure on three
-        // tiles, not a change to the rule - and his standing rule is to price a trade rather than
-        // block on it.  What must not happen is the number moving without anybody noticing.
+        // Pinned, not required to be zero: whether this is the railway Adam wants is his to say (the remedy is a tape
+        // measure on three tiles), and what must not happen is the number moving without anybody noticing.
         assertEquals(closedByTheRuling.size(), CLOSED_BY_THE_RULING,
             closedByTheRuling.size() + " (square, length) pairs had somewhere to go under the"
             + " berth-only rule and have nowhere under Adam's ruling of 2026-09-09, against the "
@@ -281,18 +227,9 @@ public class testWhichSquaresTheRoomRuleClosesOff
     }
 
     /**
-     * Which squares offer a train of each length nothing at all, on an empty railway.
-     *
-     * The number to read beside the journey census: a third of journeys refused evenly strands nobody,
-     * and a third refused at the squares on every road out closes those squares to everybody standing
-     * there.
-     *
-     * **Emptied at the top of every pass, and that is not a detail.**  It used to be emptied once, and
-     * `whereItMayGo` lifts only the train it is about to place - so each length after the first ran
-     * against a railway with the previous length's probe still standing on it, which reported an
-     * eighth square closed that is not and put five phantom pairs into the pinned figure.
-     *
-     * @throws Exception on a failure to search
+     * Which squares offer a train of each length nothing at all, on an empty railway: the number to read beside the
+     * journey census. The railway is emptied at the top of every pass, because `whereItMayGo` lifts only the train it
+     * is about to place, and a previous length's probe left standing reports a square closed that is not.
      */
     @Test
     public void testWhichSquaresOfferALongTrainNothingAtAll() throws Exception
@@ -319,7 +256,7 @@ public class testWhichSquaresTheRoomRuleClosesOff
 
             assertNotNull(train, "the " + units + "-unit probe train is gone");
 
-            // THE PREVIOUS PASS'S TRAIN IS STILL STANDING SOMEWHERE, and a train blocks track.
+            // The previous pass's train is still standing somewhere, and a train blocks track.
             emptyTheRailway();
 
             int total = 0;
@@ -339,9 +276,8 @@ public class testWhichSquaresTheRoomRuleClosesOff
 
                     Integer shortOne = shortTrainReach.get(start.getName());
 
-                    // Stranded BY THE ROOM RULE, not by the shape of the railway: a square that
-                    // offers a one-unit train nothing offers nobody anything, and that is a fact
-                    // about the track rather than about this rule.
+                    // Stranded BY THE ROOM RULE, not by the shape of the railway: a square that offers a one-unit train
+                    // nothing offers nobody anything.
                     if (shortOne != null && shortOne > 0)
                     {
                         stranded.put(units + "-unit at " + start.getName(),
@@ -376,10 +312,8 @@ public class testWhichSquaresTheRoomRuleClosesOff
     }
 
     /**
-     * Takes every locomotive off the railway.
-     *
-     * `whereItMayGo` lifts only the train it is about to place, which is enough within one pass and
-     * not enough between two.
+     * Takes every locomotive off the railway: `whereItMayGo` lifts only the train it is about to place, enough within
+     * one pass and not between two.
      */
     private void emptyTheRailway()
     {
@@ -392,15 +326,7 @@ public class testWhichSquaresTheRoomRuleClosesOff
         }
     }
 
-    /**
-     * Every destination the railway offers this train from a square, asked at the door the operator
-     * asks it at.
-     *
-     * @param train the locomotive
-     * @param start where to stand it
-     * @return the destination names
-     * @throws Exception on a failure to search
-     */
+    /** Every destination the railway offers this train from a square, asked at the door the operator asks it at. */
     private Set<String> whereItMayGo(Locomotive train, Point start) throws Exception
     {
         for (Point point : built.getPoints())
