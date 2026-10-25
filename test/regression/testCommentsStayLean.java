@@ -192,11 +192,10 @@ public class testCommentsStayLean
     private static final Set<String> TRACKER_PREFIXES = new HashSet<>(java.util.Arrays.asList("OB", "MT", "FR"));
 
     /** Review ids in comments, as they stand.  Lower it whenever some go; never raise it. */
-    private static final int IDS_ALLOWED = 2;
+    private static final int IDS_ALLOWED = 0;
 
     /** WHICH files carry them, so that a swap between files fails and names both.  Files at zero are not listed. */
     private static final String[] IDS_BY_FILE = {
-        "src/org/traincontrol/gui/TrainControlUI.java (2)",
     };
 
     @Test
