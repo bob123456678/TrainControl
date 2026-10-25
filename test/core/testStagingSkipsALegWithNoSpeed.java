@@ -14,24 +14,14 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.MarklinLocomotive;
 
 /**
- * A locomotive with no speed loses its own leg, not everybody else's.
+ * A locomotive with no speed loses its own leg, not everybody else's.  `runLocomotives` skips a locomotive whose
+ * preferred speed is outside 1 to 100 and every other one still starts; the timetable's dispatch loop never learned it:
+ * executePath refuses at once, the retry loop reads that as a busy track, declares the entry stuck after three
+ * attempts, and ends the run.  On a Return Home that abandons every remaining leg because one hand-placed train has no
+ * speed (MT-233 closed the file half).
  *
- * `runLocomotives` learned this in the release-candidate round: a locomotive whose preferred
- * speed is outside 1 to 100 is SKIPPED, with a line in the log, and every other locomotive still
- * starts. The timetable's dispatch loop one method over never learned it.
- *
- * executePath refuses such a locomotive immediately and returns false, which the retry loop reads as
- * a busy track. It waits, asks again, and after three attempts declares the entry stuck - "the track
- * it needs never became free", which is not what is wrong - stops every train and ends the run. On a
- * Return Home that is every remaining leg abandoned because one train, placed on the diagram by hand
- * after the configuration was loaded, has never been given a speed.
- *
- * Only a hand-placed locomotive can be in that state: parseAuto fills an unset speed from
- * defaultLocSpeed as it loads, and MT-233 closed the file half of it.
- *
- * **Its own class, because it needs debug mode.** `setSimulate` refuses without it, and
- * `testHomeStaging` - where the rest of the staging tests live - inits without it on purpose: it is
- * seventy-seven tests that never move a train and do not want a simulation thread behind them.
+ * Its own class because it needs debug mode (`setSimulate` refuses without it), which `testHomeStaging`, where the rest
+ * of the staging tests live, inits without on purpose.
  *
  * @author Adam
  */
@@ -40,11 +30,8 @@ public class testStagingSkipsALegWithNoSpeed
     private static MarklinControlStation model;
 
     /**
-     * Points the layout preference somewhere that is not Adam's railway (OB-111).
-     *
-     * The window is never opened here, but `init` reads that preference and loads whatever layout it
-     * names - so a test that builds a model without this one opens his real diagram, and
-     * testNoTestOpensTheOperatorsRailway counts the classes that do.
+     * Points the layout preference somewhere that is not Adam's railway (OB-111): `init` loads whatever layout it
+     * names.
      */
     private static support.LayoutSandbox sandbox;
 
@@ -84,14 +71,10 @@ public class testStagingSkipsALegWithNoSpeed
     }
 
     /**
-     * The second entry runs even though the first cannot.
+     * The second entry runs even though the first cannot.  ON A DEADLINE: this drives a real dispatch loop, where a
+     * regression is a hang rather than a failure.
      *
-     * ON A DEADLINE: this drives a real dispatch loop, and a
-     * regression here is a hang rather than a failure. A minute is far more than a simulated
-     * two-station run needs, and the TestNG timeout behind it is the backstop for a thread that
-     * cannot be joined at all.
-     *
-     * MUTATION this catches: removing the skip restores the abandonment - executeTimetable returns
+     * MUTATION: removing the skip restores the abandonment - executeTimetable returns
      * false and the second locomotive is still standing where it started.
      */
     @Test(timeOut = 180000)
@@ -120,8 +103,7 @@ public class testStagingSkipsALegWithNoSpeed
 
         layout.setTimetable(entries);
 
-        // One train at a time, which is what a staging run is - and setTimetable clears the flag, so
-        // this has to come after it.
+        // One train at a time, as a staging run is; setTimetable clears the flag, so this comes after it.
         layout.setTimetableSequential(true);
 
         assertTrue(layout.isTimetableSequential(),
@@ -131,11 +113,8 @@ public class testStagingSkipsALegWithNoSpeed
         loc(LOC_MOVING).setPreferredSpeed(35);
         loc(LOC_STUCK).setPreferredSpeed(0);
 
-        // NOT A PRECONDITION ON THE TWO LINES ABOVE (the rule stated at testHomeStaging).
-        //
-        // Reading a speed back after setting it proves that a setter sets.  What this test needs to be
-        // true is that the two ENTRIES are different trains on different paths - if the fixture built
-        // one path twice, a skipped leg and a run leg are the same leg and nothing here could tell.
+        // NOT A PRECONDITION ON THE TWO LINES ABOVE (the rule stated at testHomeStaging): what must be true is that the
+        // two ENTRIES are different trains on different paths, or a skipped leg and a run leg are the same leg.
         assertNotSame(entries.get(0).getLoc(), entries.get(1).getLoc(),
             "precondition: both timetable entries name the same locomotive, so a skipped leg cannot be "
             + "told from a run one");
@@ -185,14 +164,7 @@ public class testStagingSkipsALegWithNoSpeed
 
     // Fixtures
 
-    /**
-     * Four stations in a ring, every edge in both directions, so the graph never refuses anything.
-     *
-     * @param locAtA the locomotive on SG A, or null
-     * @param locAtB the locomotive on SG B, or null
-     * @param locAtC the locomotive on SG C, or null
-     * @return the graph JSON
-     */
+    /** Four stations in a ring, every edge in both directions, so the graph never refuses anything. */
     private static String ring(String locAtA, String locAtB, String locAtC)
     {
         return ("{'points': ["
@@ -236,14 +208,7 @@ public class testStagingSkipsALegWithNoSpeed
         return model.getLocByName(name);
     }
 
-    /**
-     * The locomotive's own path to a named station, taken from the routes the runtime offers it.
-     *
-     * @param layout the graph
-     * @param locName the locomotive
-     * @param to the station it should end at
-     * @return the path
-     */
+    /** The locomotive's own path to a named station, taken from the routes the runtime offers it. */
     private static List<Edge> pathTo(Layout layout, String locName, String to)
     {
         for (List<Edge> path : layout.getPossiblePaths(loc(locName), true))
