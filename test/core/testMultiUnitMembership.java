@@ -40,15 +40,11 @@ public class testMultiUnitMembership
     /**
      * A member whose name contains a comma and a space keeps it, and is still found.
      *
-     * The array block of a CS2 file used to be flattened by calling HashMap.toString() and then
-     * rewriting its ", " entry separator back to ",".  That rewrite cannot tell the separator from a
-     * ", " INSIDE a value, and exactly one array key carries free text: lokname, the name of a
-     * multi-unit member.  "BR 50, Ep. III" was stored as "BR 50,Ep. III", matched no locomotive in the
-     * database, and was dropped from its consist with a log line for company - so commanding the head
-     * moved one engine of two.
-     *
-     * The twin of this, four lines further up in the same block, was fixed when a member named
-     * "BR 50 = Ep.III" was lost the same way.
+     * Flattening a CS2 file's array block through HashMap.toString(), then rewriting its ", " entry separator back to
+     * ",", cannot tell the separator from a ", " INSIDE a value, and exactly one array key carries free text: lokname,
+     * the name of a multi-unit member.  "BR 50, Ep. III" would be stored as "BR 50,Ep. III", match no locomotive in
+     * the database, and be dropped from its consist with a log line for company - so commanding the head would move
+     * one engine of two.
      *
      * Driven through parseFile rather than a whole sync: the defect is in the flattening, and the
      * recovery below is the exact expression parseLocomotives uses to read it back.
@@ -260,16 +256,13 @@ public class testMultiUnitMembership
     }
 
     /**
-     * A consist can drive every function any of its members has (Adam, MT-359, 2026-09-11).
+     * A consist can drive every function any of its members has (Adam, MT-359).
      *
      * *"Make the allowed function be the highest possible for the consist - so two MM2 locs mean F0-4
      * do something.  one mm2 loc and one dcc/mfx mean all functions are unlocked."*
      *
-     * **This replaces the opposite claim.** It was found that an MM2 head passed f6 to an MFX member
-     * and recorded it nowhere - no button, `functionsOff` could not clear it, and the next press sent ON
-     * again - and fixed it by refusing anything the HEAD could not do. That fixed the real defect and
-     * answered the wrong question: the point of a consist is that a member can do what the head cannot.
-     * Adam ran it and said so.
+     * **The head's range does not cap the consist.**  Refusing anything the HEAD could not do answered the wrong
+     * question: the point of a consist is that a member can do what the head cannot.
      *
      * What must stay true is the part that made it a finding: nothing can be switched on that nothing
      * can switch off. So three things are asserted together - the function reaches the member, the
@@ -411,14 +404,13 @@ public class testMultiUnitMembership
     /**
      * A function inside the consist's range is SENT to every locomotive in it, head included.
      *
-     * Adam, MT-359, 2026-09-13: *"Pressing F6 on the MM2 head, if it has a MFX/DCC member, should simply
+     * Adam, MT-359: *"Pressing F6 on the MM2 head, if it has a MFX/DCC member, should simply
      * propagate a F6 command to all the consist's locomotives as per normal.  The CS will figure out
      * whether that means anything."*  And, asked whether the range stays: **"Send to all, keep the cap."**
      *
-     * The first repair passed the number to each member through the member's own `setF`, whose
-     * `validF` refused anything its own decoder does not list - so an MM2 member of an MFX-headed consist
-     * never heard f6, and neither did the MM2 head of an MFX member.  Whether a decoder does something
-     * with f6 is the station's business, not a guess made from a function count.
+     * Passing the number through each member's own `setF` would let its `validF` refuse anything its own decoder does
+     * not list, so an MM2 member of an MFX-headed consist would never hear f6, nor would the MM2 head of an MFX member.
+     * Whether a decoder does something with f6 is the station's business, not a guess made from a function count.
      *
      * **Read off what the locomotives asked the station to send**, through the observer on `exec`: in a
      * test the network is off and a discarded command is otherwise visible nowhere, and the recorded
