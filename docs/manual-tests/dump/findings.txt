@@ -38657,6 +38657,336 @@ cited_by:
 status: Closed
 status_note: A D finding: checked and clean (3.0.2 validation round 5, RSA75 (everything since RSA74; 0 A, 0 B, 6 C; converged) (2026-10-18))
 
+[finding RSA76-B1 in RSA76.md]
+line: 16
+severity: B
+title: AutomationAPI.md invites running the new examples on a real railway, and RunTrainsOnAGraph would leave a train running there
+disposition: Open
+evidence: AutomationAPI.md:53
+commit_id: 3c7d8c8d
+cited_by:
+status:
+status_note:
+
+[finding RSA76-B2 in RSA76.md]
+line: 30
+severity: B
+title: The AutomationAPI.md progress-callback sample does not compile as written, and once renamed it stops the run on its first sensor
+disposition: Follow-up: older than the range (`902c647c`, 2026-08-19); not a 3.0.3 regression
+evidence: AutomationAPI.md:193
+commit_id: 902c647c
+cited_by:
+status:
+status_note:
+
+[finding RSA76-C1 in RSA76.md]
+line: 44
+severity: C
+title: OB-366's three-line cap also shortens the main window's autonomy strip
+disposition: Open
+evidence: AutonomyBanner.java:408
+commit_id: 07bb2e90
+cited_by:
+status:
+status_note:
+
+[finding RSA76-C10 in RSA76.md]
+line: 126
+severity: C
+title: Several of the range's claims reach their door by reflection or a test hook, not the user's gesture
+disposition: Open
+evidence:
+commit_id:
+cited_by:
+status:
+status_note:
+
+[finding RSA76-C11 in RSA76.md]
+line: 139
+severity: C
+title: OB-369's sample now writes preferred speeds into the user's locomotive database
+disposition: Open
+evidence: Layout.java:1812
+commit_id: 4b013b52
+cited_by:
+status:
+status_note:
+
+[finding RSA76-C12 in RSA76.md]
+line: 147
+severity: C
+title: AutomationAPI.md's new text and the new examples are not US English, and two sentences are not true
+disposition: Open
+evidence: AutomationAPI.md:46
+commit_id:
+cited_by:
+status:
+status_note:
+
+[finding RSA76-C13 in RSA76.md]
+line: 162
+severity: C
+title: The Readme's v3.0.3 list has no line for FR-138's six API examples
+disposition: Open: Adam's call
+evidence:
+commit_id:
+cited_by:
+status:
+status_note:
+
+[finding RSA76-C14 in RSA76.md]
+line: 170
+severity: C
+title: The code split off LayoutEditor and AutonomyEditorPanel missed the Phase 2 comment trim
+disposition: Open
+evidence: LayoutEditorSelection.java:73
+commit_id: aecaf627
+cited_by:
+status:
+status_note:
+
+[finding RSA76-C2 in RSA76.md]
+line: 54
+severity: C
+title: Each entry into autonomy mode adds a viewport listener that is never removed
+disposition: Open
+evidence: AutonomyBanner.java:231
+commit_id:
+cited_by:
+status:
+status_note:
+
+[finding RSA76-C3 in RSA76.md]
+line: 62
+severity: C
+title: OB-368 makes the Track Directions box narrower in English too
+disposition: Open
+evidence: AutonomyEditorPanel.java:186
+commit_id: d84b9ea5
+cited_by:
+status:
+status_note:
+
+[finding RSA76-C4 in RSA76.md]
+line: 72
+severity: C
+title: The OB-368 claim reads the override's own answer
+disposition: Open
+evidence:
+commit_id: d84b9ea5
+cited_by:
+status:
+status_note:
+
+[finding RSA76-C5 in RSA76.md]
+line: 80
+severity: C
+title: DD-B9: Test a Path and the findings now disagree at a station whose stopping copy cannot leave
+disposition: Open
+evidence:
+commit_id: c7e0ca6b
+cited_by:
+status:
+status_note:
+
+[finding RSA76-C6 in RSA76.md]
+line: 94
+severity: C
+title: DD-B9's checker claim checks BuiltReach against a copy of its own rule
+disposition: Open
+evidence:
+commit_id:
+cited_by:
+status:
+status_note:
+
+[finding RSA76-C7 in RSA76.md]
+line: 102
+severity: C
+title: OB-370's sentence names autonomy or routes when Return Home, a hand send or a graceful stop holds the setup, and it drops the remedy
+disposition: Open
+evidence: RunGates.java:72
+commit_id: 3e00f243
+cited_by:
+status:
+status_note:
+
+[finding RSA76-C8 in RSA76.md]
+line: 110
+severity: C
+title: The OB-364 claim has no precondition that the page hides its text
+disposition: Open
+evidence: LayoutEditor.java:3858
+commit_id:
+cited_by:
+status:
+status_note:
+
+[finding RSA76-C9 in RSA76.md]
+line: 118
+severity: C
+title: Cluster 27's rewritten source claim asks the same thing twice
+disposition: Open
+evidence: testATrainCoversTheTrackBehindIt.java:1062
+commit_id: 0e5c1525
+cited_by:
+status:
+status_note:
+
+[finding RSA76-D1 in RSA76.md]
+line: 191
+severity: D
+title: The autonomy clusters merged into one place are behavior-preserving
+disposition: Not a defect
+evidence:
+commit_id: fb2feef8
+cited_by:
+status:
+status_note:
+
+[finding RSA76-D10 in RSA76.md]
+line: 321
+severity: D
+title: OB-369 fixes the sample's start
+disposition: Not a defect
+evidence:
+commit_id: 4b013b52
+cited_by:
+status:
+status_note:
+
+[finding RSA76-D11 in RSA76.md]
+line: 329
+severity: D
+title: The bundles are complete, ASCII and US English
+disposition: Not a defect
+evidence:
+commit_id:
+cited_by:
+status:
+status_note:
+
+[finding RSA76-D12 in RSA76.md]
+line: 347
+severity: D
+title: The Readme's v3.0.3 section matches the fixes and the house rules
+disposition: Not a defect
+evidence:
+commit_id:
+cited_by:
+status:
+status_note:
+
+[finding RSA76-D13 in RSA76.md]
+line: 355
+severity: D
+title: The user-facing fixes do what their lines say
+disposition: Not a defect
+evidence:
+commit_id: 0e8437bf
+cited_by:
+status:
+status_note:
+
+[finding RSA76-D14 in RSA76.md]
+line: 370
+severity: D
+title: DD-B6's station start-ups map one for one
+disposition: Not a defect
+evidence:
+commit_id: d3e7965c
+cited_by:
+status:
+status_note:
+
+[finding RSA76-D2 in RSA76.md]
+line: 207
+severity: D
+title: The editor clusters merged into one place are behavior-preserving
+disposition: Not a defect
+evidence: AutonomyEditorPanel.java:3527
+commit_id: a1b3c64d
+cited_by:
+status:
+status_note:
+
+[finding RSA76-D3 in RSA76.md]
+line: 219
+severity: D
+title: The other clusters merged into one place are behavior-preserving
+disposition: Not a defect
+evidence: LayoutRightclickAutonomyMenu.java:1055
+commit_id: 7eac943a
+cited_by:
+status:
+status_note:
+
+[finding RSA76-D4 in RSA76.md]
+line: 234
+severity: D
+title: OB-371 merges the two walk prompts without losing either one's behavior
+disposition: Not a defect
+evidence: AutonomyEditorPanel.java:1713
+commit_id: 50eb7c9a
+cited_by:
+status:
+status_note:
+
+[finding RSA76-D5 in RSA76.md]
+line: 249
+severity: D
+title: OB-372 changes only flipFacing's reading, and that is the intended fix
+disposition: Not a defect
+evidence: AutonomySession.java:1863
+commit_id: 83b84a85
+cited_by:
+status:
+status_note:
+
+[finding RSA76-D6 in RSA76.md]
+line: 261
+severity: D
+title: The Phase 5 extractions are delegations with the same bodies, locks and threads
+disposition: Not a defect
+evidence:
+commit_id: 0b12b0ab
+cited_by:
+status:
+status_note:
+
+[finding RSA76-D7 in RSA76.md]
+line: 276
+severity: D
+title: SettledQuestion keeps each of the three waits' own rule
+disposition: Not a defect
+evidence: CoveredTrackView.java:165
+commit_id: b0db0ddd
+cited_by:
+status:
+status_note:
+
+[finding RSA76-D8 in RSA76.md]
+line: 290
+severity: D
+title: No synchronized member or event-thread hand-off was lost in gui/ or automationui/
+disposition: Not a defect
+evidence:
+commit_id:
+cited_by:
+status:
+status_note:
+
+[finding RSA76-D9 in RSA76.md]
+line: 302
+severity: D
+title: The public API of 3.0.2 is all there, with the same signatures
+disposition: Not a defect
+evidence:
+commit_id:
+cited_by:
+status:
+status_note:
+
 [finding RSA8-B1 in RSA8.md]
 line: 26
 severity: B
