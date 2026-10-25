@@ -46,13 +46,9 @@ final class EditorSignals
     }
 
     /**
-     * Asks which signals protect a station, and how the user would like to say.
-     *
-     * Two ways, because two quite different people ask this question: somebody looking at the diagram knows the signal
-     * by where it is and can point at it; somebody who set the layout up knows it by its address.
-     *
-     * Both ways ADD to a list rather than replace one answer, because a platform reachable from two directions needs a
-     * signal on each approach.  What is paired so far is on screen the whole time.
+     * Asks which signals protect a station, and how the user would like to say: by pointing at it on the diagram, or by
+     * its address.  Both ways ADD to a list, because a platform reachable from two directions needs a signal on each
+     * approach.  What is paired so far is on screen the whole time.
      *
      * @param station the station's square
      */
@@ -78,9 +74,8 @@ final class EditorSignals
         }
         finally
         {
-            // Cleared HERE, in the finally, and not in the button handlers: the window has four ways out (Done, Escape,
-            // the close box, and "click it on the diagram"), and a flag that quietens the whole diagram strands the editor
-            // gray and arrowless if any one of them forgets.  This is the only place all four pass through.
+            // Cleared HERE, in the finally: the window has four ways out (Done, Escape, the close box, "click it on the
+            // diagram"), and a flag that quietens the diagram strands the editor gray and arrowless if any one forgets.
             editor.signalWindowOpen = false;
 
             editor.highlightedSignals.clear();
@@ -89,25 +84,20 @@ final class EditorSignals
     }
 
     /**
-     * The list itself, with the highlight held around it by the caller.
-     *
-     * One window that stays open, because the answer is a LIST: adding a second signal, removing one paired by mistake
-     * and looking at what is there are the same gesture repeated, and a window that closed and reopened between each
-     * hid the list at the moment it changed.  The one answer that gives the window back is "click it on the diagram",
-     * because the next click belongs to the diagram.
+     * The list itself, with the highlight held around it by the caller.  One window that stays open, because the answer
+     * is a LIST: adding, removing and looking are the same gesture repeated, and closing between each hid the list as
+     * it changed.  Only "click it on the diagram" gives the window back, because the next click belongs to the diagram.
      *
      * @param station the station's square
      */
     void askAboutSignals(final AutonomyEditorPanel.Guard guard, TileKey station)
     {
-        // A dialog of its own, held open while the list is worked on: an option pane re-shown in a loop makes the whole
-        // window blink on every change and jumps the list out from under the reader.
+        // A dialog of its own, held open while the list is worked on: an option pane re-shown in a loop blinks.
         final javax.swing.JDialog dialog = new javax.swing.JDialog(
             editor.ownerWindow(),
             I18n.t(guard.title),
             java.awt.Dialog.ModalityType.APPLICATION_MODAL);
 
-        // OB-124: built here rather than being a class of its own, and just as much a window.
         TrainControlUI.applyWindowIcon(dialog);
 
         final javax.swing.DefaultListModel<String> model = new javax.swing.DefaultListModel<>();
@@ -175,10 +165,9 @@ final class EditorSignals
 
         panel.add(buttons, java.awt.BorderLayout.SOUTH);
 
-        // THE SENTENCE ON TWO LINES, NOT ONE (MT-479: *"make the sentence split over 2 lines so the window isn't too wide."*): the
-        // heading wraps at half the first sentence, never narrower than the row of buttons; the longer sentence once signals are
-        // paired takes more lines at that width, and the heading keeps the taller of the two heights, so pairing the first signal
-        // changes the words and not the window.
+        // THE SENTENCE ON TWO LINES, NOT ONE (MT-479): the heading wraps at half the first sentence, never narrower
+        // than the row of buttons, and keeps the taller of the two heights, so pairing the first signal changes the
+        // words and not the window.
         String[] sentences = { I18n.f(guard.how, editor.describeTile(station)), I18n.f(guard.paired, editor.describeTile(station)) };
 
         headingWidth[0] = AutonomyEditorPanel.twoLineWidth(heading.getFontMetrics(heading.getFont()), buttons.getPreferredSize().width,
@@ -248,26 +237,20 @@ final class EditorSignals
         dialog.setContentPane(panel);
         dialog.pack();
 
-        // Not smaller than it packed to (OB-107): dragging the edge up would hide the buttons at the bottom, which are how
-        // the pairing is finished.
+        // Not smaller than it packed to (OB-107): dragging the edge up would hide the buttons that finish the pairing.
         dialog.setMinimumSize(dialog.getSize());
 
-        // Beside the diagram rather than on top of it (OB-107): this window's own text says the signals "are outlined on the
-        // diagram behind this window", so centring would cover them.  Offset from center, not pinned to a corner, and clamped to
-        // the owner so it cannot land off-screen.
+        // Beside the diagram rather than on top of it (OB-107): this window's text says the signals "are outlined on
+        // the diagram behind this window", so centring would cover them.
         placeBesideOwner(dialog);
 
         dialog.setVisible(true);
     }
 
     /**
-     * Puts a dialog beside the diagram rather than over the middle of it.
-     *
-     * For the windows that describe something drawn on the diagram behind them (the paired signals are outlined while
-     * this is open), where a window centered on them hides what it is describing (OB-107).
-     *
-     * Offset from the owner's center rather than pinned to a corner: a dialog in the corner of the screen reads as
-     * belonging to nothing.  Clamped so it stays within the owner, which keeps it on the same monitor.
+     * Puts a dialog beside the diagram rather than over the middle of it, for the windows that describe something drawn
+     * behind them (OB-107).  Offset from the owner's center, not pinned to a corner, and clamped to the owner so it
+     * stays on the same monitor.
      *
      * @param dialog a packed dialog, ready to show
      */
@@ -286,15 +269,10 @@ final class EditorSignals
     }
 
     /**
-     * Finds signals by the addresses written on them and adds them.
-     *
-     * The LOGICAL address, the number the user sees everywhere (on the tile, in the switch panel, in the accessory
-     * list), taken off the diagram component.  The control station subtracts one to reach the accessory, because the
-     * protocol counts from zero, and asking the accessory would mean asking the user to subtract that one themselves.
-     *
-     * SEVERAL at once, separated by commas or spaces, because somebody who knows the addresses knows all of them.  Every
-     * address that resolves is added, and the ones that do not are reported together at the end: stopping at the first
-     * would throw away the good ones typed after it.
+     * Finds signals by the addresses written on them and adds them.  The LOGICAL address, the number the user sees
+     * everywhere, taken off the diagram component (the control station subtracts one to reach the accessory).  SEVERAL
+     * at once, separated by commas or spaces; every address that resolves is added and the rest are reported together
+     * at the end, since stopping at the first would throw away the good ones typed after it.
      *
      * @param station the station's square
      */
@@ -332,8 +310,8 @@ final class EditorSignals
             else if (!found.contains(at)) found.add(at);
         }
 
-        // A SIGNAL FOUND AND REFUSED is said with the addresses that found nothing (MT-505): on the gray line alone
-        // it was behind this window.
+        // A SIGNAL FOUND AND REFUSED is said with the addresses that found nothing (MT-505); on the gray line alone it
+        // was behind this window.
         java.util.List<String> refused = new java.util.ArrayList<>();
 
         for (TileKey one : found)
@@ -395,10 +373,8 @@ final class EditorSignals
     }
 
     /**
-     * Adds one signal to a station's protection, and says so in words.
-     *
-     * A refusal is RETURNED rather than said, so the caller can say it where it will be seen (MT-505): a click in a
-     * popup of its own, a list of addresses in the one popup that reports them all.
+     * Adds one signal to a station's protection, and says so in words.  A refusal is RETURNED rather than said, so the
+     * caller can say it where it will be seen (MT-505).
      *
      * @param station the station's square
      * @param signal the signal's square
