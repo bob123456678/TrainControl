@@ -16,13 +16,13 @@ final class CaptionVisibility
     }
 
     /**
-     * Re-applies the caption rule to every label the diagram currently holds, for the moments when the ANSWER changes without the
-     * labels being rebuilt (the setting toggled, a configuration loaded or unloaded); visibility is otherwise decided once, as each
-     * label is registered.
+     * Re-applies the caption rule to every label the diagram currently holds, for the moments when the ANSWER changes
+     * without the labels being rebuilt (the setting toggled, a configuration loaded or unloaded); visibility is
+     * otherwise decided once, as each label is registered.
      *
-     * **THE ANSWER IS WORKED OUT ON A WORKER AND PAINTED WHEN IT LANDS**: the rule reaches `Layout.isChoosableByAutonomy`,
-     * `synchronized` on the `Layout`, once per captioned square, and an `invokeLater` loop over every registered station parked the
-     * event thread on the railway's monitor for the length of a dispatch.  `refreshCoveredTrack` is the same fix for the same reason.
+     * **WORKED OUT ON A WORKER AND PAINTED WHEN IT LANDS**: the rule reaches `Layout.isChoosableByAutonomy`,
+     * `synchronized` on the `Layout`, once per captioned square, and a loop on the event thread parked it on the
+     * railway's monitor for the length of a dispatch (the same fix, for the same reason, as `refreshCoveredTrack`).
      */
     void refreshCaptionVisibility()
     {
@@ -40,9 +40,8 @@ final class CaptionVisibility
 
     /**
      * Puts one worker on "which squares can autonomy choose", unless one is already on it, COALESCED (`CoalescedAsk`).
-     * On `CoveredTrackRenderer` rather than a pool of its own, deliberately: this answer changes when the SETUP changes (a
-     * handful of times a session, not once a tick), and a fourth pool would be a fourth thing to shut down.  It has no
-     * await, so it settles with no lock.
+     * On `CoveredTrackRenderer` rather than a pool of its own: this answer changes with the SETUP, a handful of times a
+     * session, and it has no await, so it settles with no lock.
      */
     void askForCaptionVisibility()
     {
@@ -51,12 +50,11 @@ final class CaptionVisibility
     }
 
     /**
-     * Asks the railway which squares autonomy can choose, off the event thread, and paints the answer.  Any copy of a square
-     * autonomy could choose is enough: a square split into several Points is one place to the person looking at it, and hiding its
-     * name because one of its directions is barred would be a lie about the other.
-     *
-     * `isChoosableByAutonomy`, NOT `isDestination` (a different flag, which left an inactive terminus's name showing): "will
-     * autonomy ever pick this" is answered by the standing bars in `barredFromAutonomy` (inactive, reversing, not an auto destination).
+     * Asks the railway which squares autonomy can choose, off the event thread, and paints the answer.  Any copy of a
+     * square autonomy could choose is enough: a square split into several Points is one place to the person looking,
+     * and hiding its name because one direction is barred would be a lie about the other.  `isChoosableByAutonomy`, NOT
+     * `isDestination` (which left an inactive terminus's name showing): it is answered by the standing bars in
+     * `barredFromAutonomy`.
      *
      * @see #refreshCaptionVisibility()
      */
@@ -101,9 +99,8 @@ final class CaptionVisibility
             cannot = java.util.Collections.unmodifiableSet(found);
         }
 
-        // DISCARDED IF THE SETUP MOVED ON.  `parseAuto` replaces the Layout wholesale, and an
-        // answer about the graph that has just been thrown away must not hide captions on the
-        // one that replaced it.
+        // DISCARDED IF THE SETUP MOVED ON: `parseAuto` replaces the Layout wholesale, and an answer about the graph
+        // just thrown away must not hide captions on the one that replaced it.
         if (ask != this.ui.captionVisibilitySubject) return;
 
         this.ui.captionsAutonomyCannotChoose = cannot;
