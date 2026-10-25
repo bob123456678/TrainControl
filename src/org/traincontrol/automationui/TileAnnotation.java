@@ -941,32 +941,7 @@ public class TileAnnotation
             // red arrows its sensor shows while it reads occupied, which stay visible.
             if (!marks.isEmpty() && !blockedOnly && !portal && !outOfService())
             {
-                // WHAT IS LEFT OF THE TILE, rather than all of it or none of it.
-                //
-                // `alreadyFaint` is the region the caller has already drawn faint.  On an ordinary square that
-                // is the whole tile and nothing is washed here (MT-375).  On a DOUBLE CURVE it is one road's
-                // band, since a train covers one road and not the other; clipping keeps the covered road at
-                // one level and gives the other the wash.
-                java.awt.geom.Area rest = new java.awt.geom.Area(
-                    new java.awt.Rectangle(0, 0, width, height));
-
-                if (alreadyFaint != null) rest.subtract(new java.awt.geom.Area(alreadyFaint));
-
-                if (!rest.isEmpty())
-                {
-                    java.awt.Composite before = g.getComposite();
-                    java.awt.Shape beforeClip = g.getClip();
-
-                    g.clip(rest);
-
-                    g.setComposite(java.awt.AlphaComposite.getInstance(
-                        java.awt.AlphaComposite.SRC_OVER, DIM));
-                    g.setColor(DIM_COLOUR);
-                    g.fillRect(0, 0, width, height);
-
-                    g.setComposite(before);
-                    g.setClip(beforeClip);
-                }
+                TileOverlay.washWhatIsLeft(g, width, height, alreadyFaint, DIM, DIM_COLOUR);
             }
 
             // UNDER the arrows and the badge, so the highlight says "measure this" without hiding which way the track

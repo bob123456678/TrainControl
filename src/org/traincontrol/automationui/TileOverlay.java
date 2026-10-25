@@ -1140,6 +1140,35 @@ public class TileOverlay
     }
 
     /**
+     * Washes what is left of the tile once `alreadyFaint` is taken out (MT-375): nothing on an ordinary square the
+     * caller already drew faint, and on a double curve the road a train does not cover.  The annotation's wash too.
+     * @return false when nothing was left to wash
+     */
+    static boolean washWhatIsLeft(Graphics2D g, int width, int height, java.awt.Shape alreadyFaint, float alpha,
+        Color color)
+    {
+        java.awt.geom.Area rest = new java.awt.geom.Area(new java.awt.Rectangle(0, 0, width, height));
+
+        if (alreadyFaint != null) rest.subtract(new java.awt.geom.Area(alreadyFaint));
+
+        if (rest.isEmpty()) return false;
+
+        java.awt.Composite before = g.getComposite();
+        java.awt.Shape beforeClip = g.getClip();
+
+        g.clip(rest);
+
+        g.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, alpha));
+        g.setColor(color);
+        g.fillRect(0, 0, width, height);
+
+        g.setComposite(before);
+        g.setClip(beforeClip);
+
+        return true;
+    }
+
+    /**
      * The path itself, drawn through the square rather than around it.
      *
      * A border said WHERE a path went and nothing about which way it ran, or which part of it the train
@@ -1181,29 +1210,8 @@ public class TileOverlay
 
         if (onlyHeld && !segments.isEmpty())
         {
-            // WHAT IS LEFT OF THE TILE.  The whole of it on an ordinary square, which is
-            // MT-375's fix unchanged; on a double curve, everything but the road already faded - so
-            // the road a route is holding keeps its wash even when the other road carries a tail.
-            java.awt.geom.Area rest = new java.awt.geom.Area(
-                new java.awt.Rectangle(0, 0, width, height));
-
-            if (alreadyFaint != null) rest.subtract(new java.awt.geom.Area(alreadyFaint));
-
-            if (rest.isEmpty()) return;
-
-            java.awt.Composite before = g.getComposite();
-            java.awt.Shape beforeClip = g.getClip();
-
-            g.clip(rest);
-
-            g.setComposite(java.awt.AlphaComposite.getInstance(
-                java.awt.AlphaComposite.SRC_OVER, LOCKED_WASH_ALPHA));
-
-            g.setColor(LOCKED_WASH);
-            g.fillRect(0, 0, width, height);
-
-            g.setComposite(before);
-            g.setClip(beforeClip);
+            // On a double curve the road a route is holding keeps its wash even when the other road carries a tail.
+            if (!washWhatIsLeft(g, width, height, alreadyFaint, LOCKED_WASH_ALPHA, LOCKED_WASH)) return;
         }
 
         // Track merely held clear is dropped where a path is actually running over the same square.
