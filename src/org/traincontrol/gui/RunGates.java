@@ -61,7 +61,7 @@ final class RunGates
 
     /**
      * The same for a door that edits the setup or the diagram, which a route running also holds (`aRunHoldsTheSetup`):
-     * the same sentence while autonomy runs, one naming a route otherwise (OB-287).
+     * one sentence for autonomy and for a route, not the locomotives one (OB-370).
      */
     static boolean refuseWhileARunHoldsTheSetup(TrainControlUI ui, Component source)
     {
@@ -71,15 +71,17 @@ final class RunGates
     /** `refuseWhileAutonomyRunning`, and with `aRoute` `refuseWhileARunHoldsTheSetup`. */
     private static boolean refuseWhile(TrainControlUI ui, Component source, boolean aRoute)
     {
-        if (aRoute && (ui.getModel() == null || !ui.getModel().isAutonomyRunning()) && ui.aRunHoldsTheSetup())
+        final boolean autonomy = ui.getModel() != null && ui.getModel().isAutonomyRunning();
+
+        if (aRoute && (autonomy || ui.aRunHoldsTheSetup()))
         {
             JOptionPane.showMessageDialog(source == null || !source.isShowing() ? ui : source,
-                I18n.t("ui.main.tooltip.placeAtHomesWhileRunning"));
+                I18n.t("ui.main.errorNoEditsWhileRunning"));
 
             return true;
         }
 
-        if (ui.getModel() == null || !ui.getModel().isAutonomyRunning()) return false;
+        if (!autonomy) return false;
 
         // OVER THE MAIN WINDOW where the source is not showing (the popups sweep, on Adam's MT-703 note): a menu's item
         // has left its window by the time it runs, and the message went to Swing's hidden frame - under an

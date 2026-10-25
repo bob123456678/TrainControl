@@ -4194,7 +4194,8 @@ public class testNoSetupEditDuringARun
      * other Layout menu door that changes the diagram is (MT-141): a folder chosen switched the layout, synced with the
      * Central Station and reset the autonomy session under the moving trains, taking Graceful Stop off the window.
      *
-     * MUTATION: open the folder window whatever runs, and this fails.
+     * MUTATION: open the folder window whatever runs, and this fails; so does `RunGates.refuseWhile` giving a layout
+     * door the locomotive sentence again (OB-370).
      *
      * @throws Exception from the window
      */
@@ -4262,8 +4263,11 @@ public class testNoSetupEditDuringARun
             assertTrue(choosers.isEmpty(), "Create New Layout opened its folder window while autonomy ran (RSA13-B2): "
                 + choosers + "; said: " + asked);
 
-            assertTrue(asked.contains(I18n.t("autolayout.ui.errorCannotEditLocomotivesWhileRunning")), "Create New Layout"
-                + " did not say it waits for autonomy to stop: " + asked);
+            assertTrue(asked.contains(I18n.t("ui.main.errorNoEditsWhileRunning")), "Create New Layout"
+                + " did not say that edits wait for autonomy to stop: " + asked);
+
+            assertFalse(asked.contains(I18n.t("autolayout.ui.errorCannotEditLocomotivesWhileRunning")), "Create New"
+                + " Layout named locomotives, which it does not edit (OB-370): " + asked);
         }
         finally
         {

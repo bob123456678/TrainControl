@@ -574,7 +574,10 @@ public class testNoSetupEditWhileARouteRuns
      * saying why before anything is asked, and none of them changes the setup or the pages; at rest they ask their own
      * questions instead.
      *
-     * MUTATION: let any of them ask autonomy alone again, and this fails naming it.
+     * The layout doors say "Edits are not allowed while autonomy or routes are running." (OB-370).
+     *
+     * MUTATION: let any of them ask autonomy alone again, and this fails naming it; so does `RunGates.refuseWhile`
+     * giving a layout door the old sentence.
      *
      * @throws Exception from the window
      */
@@ -602,6 +605,7 @@ public class testNoSetupEditWhileARouteRuns
             final Object panel = ui.getAutonomyViewerPanel();
             final String refusal = I18n.t(ANY_RUN);
             final String anyRun = I18n.t(ANY_RUN);
+            final String noEdits = I18n.t("ui.main.errorNoEditsWhileRunning");
 
             // A PAGE'S TICK, from the menu opened at rest
             JMenuItem pages = autonomyMenuItems(ui).get(I18n.t("autosetup.ui.btnExcludePage"));
@@ -630,23 +634,23 @@ public class testNoSetupEditWhileARouteRuns
             doors.put("Autonomy: Delete Everything", new Object[] {refusal, (Runnable) () -> invoke(deleteEverything,
                 autonomyMenu, session)});
             doors.put("Autonomy: a page's tick", new Object[] {refusal, (Runnable) tick::doClick});
-            doors.put("Layout: Delete Page", new Object[] {anyRun, (Runnable) () -> callUi(window,
+            doors.put("Layout: Delete Page", new Object[] {noEdits, (Runnable) () -> callUi(window,
                 "deleteLayoutMenuItemActionPerformed", new Class<?>[] {java.awt.event.ActionEvent.class}, (Object) null)});
-            doors.put("Layout: Rename Page", new Object[] {anyRun, (Runnable) () -> callUi(window,
+            doors.put("Layout: Rename Page", new Object[] {noEdits, (Runnable) () -> callUi(window,
                 "duplicateOrRenameCurrentLayout", new Class<?>[] {String.class, boolean.class, boolean.class, boolean.class},
                 "renamed while a route runs", true, false, false)});
-            doors.put("Layout: Duplicate Page", new Object[] {anyRun, (Runnable) () -> callUi(window,
+            doors.put("Layout: Duplicate Page", new Object[] {noEdits, (Runnable) () -> callUi(window,
                 "duplicateOrRenameCurrentLayout", new Class<?>[] {String.class, boolean.class, boolean.class, boolean.class},
                 "copied while a route runs", false, true, false)});
-            doors.put("Layout: Combine Linked Pages", new Object[] {anyRun, (Runnable) () -> callUi(window,
+            doors.put("Layout: Combine Linked Pages", new Object[] {noEdits, (Runnable) () -> callUi(window,
                 "combineLinkedPages", new Class<?>[0])});
-            doors.put("Layout: Switch to the Central Station's Layout", new Object[] {anyRun, (Runnable) () -> callUi(
+            doors.put("Layout: Switch to the Central Station's Layout", new Object[] {noEdits, (Runnable) () -> callUi(
                 window, "switchCSLayoutMenuItemActionPerformed", new Class<?>[] {java.awt.event.ActionEvent.class},
                 (Object) null)});
-            doors.put("Layout: Choose Local Data Folder", new Object[] {anyRun, (Runnable) () -> callUi(window,
+            doors.put("Layout: Choose Local Data Folder", new Object[] {noEdits, (Runnable) () -> callUi(window,
                 "chooseLocalDataFolderMenuItemActionPerformed", new Class<?>[] {java.awt.event.ActionEvent.class},
                 (Object) null)});
-            doors.put("Layout: Initialize Local Layout", new Object[] {anyRun, (Runnable) () -> callUi(window,
+            doors.put("Layout: Initialize Local Layout", new Object[] {noEdits, (Runnable) () -> callUi(window,
                 "initializeLocalLayoutMenuItemActionPerformed", new Class<?>[] {java.awt.event.ActionEvent.class},
                 (Object) null)});
 
@@ -699,7 +703,8 @@ public class testNoSetupEditWhileARouteRuns
 
                 List<String> said = answering.since(from);
 
-                assertFalse(said.contains(refusal) || said.contains(anyRun), name + " refused at rest: " + said);
+                assertFalse(said.contains(refusal) || said.contains(anyRun) || said.contains(noEdits), name + " refused at"
+                    + " rest: " + said);
 
                 assertFalse(said.isEmpty(), "precondition: " + name + " asked nothing at rest");
             }
