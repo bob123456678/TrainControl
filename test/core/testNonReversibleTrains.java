@@ -15,16 +15,9 @@ import support.SourceOf;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * A train that cannot reverse is only turned round where nobody would call that service.
- *
- * Both of these come from Adam watching his own layout run. He saw two non-reversible trains sent to
- * an ordinary platform and turned round there, through a reversing point - and he saw the platform's
- * caption showing one train twice, facing both ways at once.
- *
- * The two are not the same fault, but they share a cause worth stating: a square is several Points,
- * one per side a train can arrive by, and a rule written about one of them is not a rule about the
- * square. The reversal rule had been written about the terminus flag and not about the other way a
- * layout says "turn round here"; the caption had been written about Points and not about trains.
+ * A train that cannot reverse is only turned round where nobody would call that service, and a platform caption shows
+ * one train once.  A square is several Points, one per side a train can arrive by: a rule about one of them is not a
+ * rule about the square.
  */
 public class testNonReversibleTrains
 {
@@ -35,21 +28,14 @@ public class testNonReversibleTrains
     {
         model = support.TestStation.simulated();
 
-        // The sensors these points stand on.  A destination Point insists on a feedback that exists,
-        // which is the model refusing to describe a platform with no way of knowing a train is there.
+        // A destination Point insists on a feedback that exists.
         model.newFeedback(170, null);
         model.newFeedback(171, null);
         model.newFeedback(172, null);
         model.newFeedback(173, null);
     }
 
-  /**
-     * A terminus is offered to a locomotive that cannot reverse, and never chosen for it.
-     *
-     * The long-standing rule, kept here because the round that changed everything around it is
-     * exactly when a rule like this gets lost. A terminus is a place a train can only leave by
-     * reversing, so sending one there that cannot is sending it somewhere it cannot leave.
-     */
+    /** A terminus is offered to a locomotive that cannot reverse, and never chosen for it. */
     @Test
     public void testATerminusIsOfferedByHandAndNotChosenByAutonomy() throws Exception
     {
@@ -65,19 +51,10 @@ public class testNonReversibleTrains
         {
             loc.setReversible(false);
 
-            // ALLOWED AT EXECUTION, as of Adam's ruling of 2026-09-01.
-            //
-            // "In manual operation, non reversing trains must be able to back into a terminus if the
-            // graph makes that possible.  Otherwise we'd need a third kind of station."
-            //
-            // isPathClear is the tier EVERY door passes through, so refusing here refused the
-            // right-click menu too. Measured on his own layout: 2-8-4 3505 SP is non-reversible,
-            // stands at TopMainR2, and there is a five-edge route to TopMainR0Park - the graph makes
-            // it possible and this said no.
-            //
-            // The rule has not gone; it has moved to where the reversing-station rule already lived,
-            // on the doctrine written beside it: "Filtering at selection, never refusing at
-            // execution." The half of this test that matters is now the one below.
+            // Allowed at execution: isPathClear is the tier every door passes through, so refusing there refused the
+            // right-click menu too.  Adam: "In manual operation, non reversing trains must be able to back into a
+            // terminus if the graph makes that possible.  Otherwise we'd need a third kind of station."  The rule
+            // moved to selection: "Filtering at selection, never refusing at execution."
             assertTrue(layout.isPathClear(pathAcross(layout), loc, false),
                 "a locomotive that cannot reverse was refused a terminus at EXECUTION, which refuses "
                 + "the operator asking for it by hand as well as autonomy");
@@ -88,16 +65,12 @@ public class testNonReversibleTrains
                 "and one that can reverse must still be allowed there - a rule that refused "
                 + "everybody would pass the line above and close the terminus");
 
-            // AND THE HALF THAT KEEPS THE RULE: autonomy will not CHOOSE it.
-            //
-            // Asked through the explainer, which is the one list of standing reasons a station is
-            // never picked - the same list pickPath's filter mirrors, and the one the "no available
-            // paths" window prints.
+            // And the half that keeps the rule: autonomy will not CHOOSE it.  The explainer is the one list of standing
+            // reasons a station is never picked, the same one pickPath's filter mirrors.
             loc.setReversible(false);
 
-            // ON THE GRAPH, because the explainer answers about a locomotive that is somewhere: with
-            // nothing placed there are no paths to enumerate and it reports on nothing at all, which
-            // would make the assertion below pass for the wrong reason.
+            // On the graph: with the loco nowhere there are no paths to enumerate and the assertion would pass
+            // vacuously.
             assertTrue(layout.moveLocomotive(loc.getName(), "REV_start", false),
                 "could not place the locomotive, so the explainer has nothing to explain");
 
@@ -119,35 +92,17 @@ public class testNonReversibleTrains
     }
 
     /**
-     * Autonomy never picks a square a train that cannot reverse would have to turn on.
+     * Autonomy never picks a square a train that cannot reverse would have to turn on.  Adam: **"Never, unless it's
+     * part of a 'return home' backing in manoeuvre."**
      *
-     * Adam, 2026-09-13, asked whether autonomy should route such a train to a turning copy at all:
-     * **"Never, unless it's part of a 'return home' backing in manoeuvre."**
+     * A TERMINUS copy is refused by `pickPath`'s own filter, a REVERSING copy by `isSendableDestination`; nothing asked
+     * the door whether the two add up to his sentence.  Return Home plans through `HomeStaging` with `ALWAYS_REVERSE`,
+     * which the execution tier permits, so it is not this door (MT-245).  The control is the same train made
+     * reversible, with the terminus given a way back out.
      *
-     * **That is the behavior, and it is spread across two methods.**  A TERMINUS copy is refused by
-     * `pickPath`'s own filter (`!end.isTerminus() || loc.isReversible()`); a REVERSING copy is refused
-     * for everybody inside `isSendableDestination`.  Nothing asked the DOOR whether the pair of them
-     * add up to his sentence, and the two are edited by different rounds for different reasons - MT-367
-     * moved one of them this month.
-     *
-     * **The exception is not this door.**  Return Home plans through `HomeStaging` and executes with
-     * `ALWAYS_REVERSE`, which `turnsOnArrival` reads as a plan rather than an operator; the
-     * execution tier permits it, which `testAReversingPointIsRefusedToANonReversibleLocomotive` above
-     * asserts by asking `isPathClear`. Backing into a terminus is how such a train gets home at all
-     * (MT-245), so a rule that refused everywhere would stop Return Home working.
-     *
-     * The control is the same train made reversible: without it this would pass on a layout where
-     * autonomy picks nothing for anybody.  The terminus is given a way back out for it, because a terminus
-     * nothing leads out of is refused to a reversible train too (round 92).
-     *
-     * MUTATIONS, run 2026-09-13. Deleting `(!end.isTerminus() || loc.isReversible())` from `pickPath`
-     * fails this. Deleting `!end.isReversing()` from `isSendableDestination` does NOT - a reversing
-     * point is refused to such a train by the execution tier too, which is the subject of the class's
-     * own reversing-point claim. So this holds the OUTCOME Adam asked for rather than one conjunct,
-     * and the reversing half is belt and braces: either rule alone keeps it true, which is worth
-     * knowing before somebody removes one of them on the strength of this being green.
-     *
-     * @throws Exception on a failure to build
+     * MUTATIONS: deleting `(!end.isTerminus() || loc.isReversible())` from `pickPath` fails this; deleting
+     * `!end.isReversing()` from `isSendableDestination` does not, since the execution tier refuses a reversing point
+     * too.
      */
     @Test
     public void testAutonomyNeverPicksATurningCopyForATrainThatCannotReverse() throws Exception
@@ -158,8 +113,8 @@ public class testNonReversibleTrains
 
             if (!reversing) layout.getPoint("REV_end").setTerminus(true);
 
-            // A WAY BACK OUT, for the control's sake: since round 92 autonomy sends even a reversible train to a
-            // terminus only where some station is reachable from it again, and the fixture's one edge leads in and not out
+            // A way back out: autonomy sends even a reversible train to a terminus only where a station is reachable
+            // from it again.
             if (!reversing) layout.createEdge("REV_end", "REV_start");
 
             Locomotive loc = model.getLocByName(model.getLocList().get(0));
@@ -198,35 +153,21 @@ public class testNonReversibleTrains
         }
     }
 
-    // Where the reversing-point rule actually lives, so nobody looks for it here.
-    //
-    // "In full autonomy a train is only ever reversed at a terminus" is a rule about which routes
-    // autonomy CHOOSES, not about which routes are legal - a hand-driven move and the staging planner
-    // may both use a headshunt. It is therefore tested in
-    // test/core/testLayoutPickPath.java's testFullAutonomyDoesNotDriveThroughAReversingPoint, beside
-    // the other choosing rules, and a first attempt to put it here took the manual route and the
-    // staging run out with it.
-    //
-    // This used to be a @Test method whose entire body was assertNotNull(testLayoutPickPath.class,
-    // ...) - a compile-time-guaranteed non-null that asserted nothing and only occupied a slot in the
-    // test count. A comment says the same thing without doing that.
+    // The rule "in full autonomy a train is only ever reversed at a terminus" is about which routes autonomy CHOOSES,
+    // so it is tested in testLayoutPickPath.testFullAutonomyDoesNotDriveThroughAReversingPoint.
 
     /**
-     * One locomotive on several copies of a square is one train in the caption, not several.
-     *
-     * Locking a path RESERVES every point along it for that train, deliberately without taking it off
-     * anywhere else - that is how a junction is held against a second train. Where a path runs through
-     * two copies of one square, the train really is on both, and the caption showed it twice with a
-     * different arrow each time: "[BR &lt; |BR &gt;]", one train apparently facing both ways.
+    /**
+     * One locomotive on several copies of a square is one train in the caption, not several: a locked path reserves
+     * every point along it, so the train is on both copies and the caption showed "[BR &lt; |BR &gt;]".
      */
     @Test
     public void testOneTrainIsNotShownTwice() throws Exception
     {
         Locomotive loc = model.getLocByName(model.getLocList().get(0));
 
-        // Two copies of one platform, both holding the same train.  Points built by hand have no
-        // layout behind them and so do not sweep, which is what makes this state constructible here -
-        // and it is the state a locked path produces in life.
+        // Points built by hand have no layout behind them and so do not sweep, which makes this state constructible;
+        // a locked path produces it in life.
         Point east = new Point("PLATFORM (eastbound)", false, null);
         Point west = new Point("PLATFORM (westbound)", false, null);
 
@@ -242,13 +183,7 @@ public class testNonReversibleTrains
             + "locomotive appeared on the diagram as two trains facing opposite ways");
     }
 
-    /**
-     * Two different trains on one platform are still both shown.
-     *
-     * This is a real thing on a real layout - two trains sent to one platform from opposite ends, each
-     * arriving on the copy facing its own way - and the caption exists to say so. A fix that collapsed
-     * them would hide a train.
-     */
+    /** Two different trains on one platform are still both shown; a fix that collapsed them would hide a train. */
     @Test
     public void testTwoTrainsAreStillBothShown() throws Exception
     {
@@ -270,19 +205,12 @@ public class testNonReversibleTrains
     }
 
     /**
-     * Nobody is prompted unless a MANUAL send reaches a may-reverse point (Adam, 2026-09-06).
+     * Nobody is prompted unless a MANUAL send reaches a may-reverse point.  Adam: **"Be sure to add tests that confirm
+     * no prompting unless manual is sending to a 'may reverse'", point.  This means no prompting in return home or
+     * auto, and prompting in all types of manual."**
      *
-     * **"Be sure to add tests that confirm no prompting unless manual is sending to a 'may reverse'",
-     * point.  This means no prompting in return home or auto, and prompting in all types of manual."**
-     *
-     * **That request found a defect.** `ALWAYS_REVERSE` is what the four-argument overload hands to
-     * autonomy's own loop and to the timetable, which is what Return Home runs. It is not null, so it
-     * fell through to the manual branch, answered yes to everything, and would have turned staged
-     * trains at every plain copy they passed - the "may" promoted to "must" that `AutonomyBuilder`
-     * refuses to emit. It counts as nobody now.
-     *
-     * The behavior is asserted here and the WIRING by the census below, because a rule that behaves
-     * correctly and a door that hands it the wrong policy are two different defects.
+     * `ALWAYS_REVERSE` (autonomy's loop, Return Home) is not null, so it once fell through to the manual branch and
+     * counted as somebody; it counts as nobody now.  The behavior is asserted here and the wiring by the census below.
      */
     @Test
     public void testOnlyAManualSendIsEverPrompted() throws Exception
@@ -304,8 +232,7 @@ public class testNonReversibleTrains
 
         Locomotive loc = model.getLocByName(model.getLocList().get(0));
 
-        // A policy that RECORDS being asked, so "was anybody prompted" is measured rather than
-        // inferred from the answer.
+        // A policy that records being asked, so "was anybody prompted" is measured.
         final int[] asked = {0};
 
         Layout.ReversalPolicy counting = (train, where) ->
@@ -351,14 +278,8 @@ public class testNonReversibleTrains
             "an ordinary square raised the question, so every manual send on the railway would stop "
             + "the train and open a dialog");
 
-        // AND THE DOOR CAN SAY THAT A SQUARE IS ASKED ABOUT, which is the half the runtime cannot
-        // answer at all.
-        //
-        // `canReverse` never reaches `parseAuto` - `AutonomyBuilder` skips it with "it is the
-        // instruction to split, not something parseAuto knows" - so on a square that cannot be split,
-        // the operator's marking leaves NO trace here.  Adam met that twice: he marked a square
-        // may-reverse, sent a train to it, and nothing asked, because both earlier fixes looked for a
-        // flag in the running layout.
+        // The door can say a square is asked about, which the runtime cannot: `canReverse` never reaches `parseAuto`,
+        // so on a square that cannot be split the operator's marking leaves no trace in the running layout.
         final int[] askedByDoor = {0};
 
         Layout.ReversalPolicy fromTheSetup = new Layout.ReversalPolicy()
@@ -385,8 +306,7 @@ public class testNonReversibleTrains
             + "The runtime cannot know that - canReverse is never emitted - so a square the build "
             + "could not split leaves no trace, and the question never appears (Adam, twice)");
 
-        // And the default answer is still the runtime's own, so a policy that does not care behaves
-        // exactly as it did.
+        // The default answer is still the runtime's own.
         final int[] lambdaAsked = {0};
 
         layout.shouldReverseAt(layout.getPoint("ASK_ordinary"), plain, loc, (t, w) ->
@@ -402,21 +322,14 @@ public class testNonReversibleTrains
     }
 
     /**
-     * Every door into `executePath` either asks a person or is one that has nobody to ask.
-     *
-     * Adam: *"prompting in all types of manual."*  The rule above is right and says nothing about
-     * which doors hand it a person - and a new door written with four arguments inherits
-     * `ALWAYS_REVERSE` silently, which is how it would come to be the one that never asks.
-     *
-     * Counted rather than located: the two hand-driven doors pass a prompt, and the two unattended
-     * ones take the shorter overload.
+     * Every door into `executePath` either asks a person or has nobody to ask.  Adam: *"prompting in all types of
+     * manual."*  A new door written with four arguments inherits `ALWAYS_REVERSE` silently and would never ask, so the
+     * census counts: the two hand-driven doors pass a prompt, the two unattended ones take the shorter overload.
      */
     @Test
     public void testEveryManualDoorHandsOverAPrompt() throws Exception
     {
-        // ONE HAND DOOR since 2026-09-29 (Adam: "can all the checks go through a single door?"): the track diagram's
-        // destinations and the Auto tab's list both send through TrainControlUI.sendATrainByHand, and dispatch nothing
-        // themselves
+        // One hand door: the diagram's destinations and the Auto tab's list both send through sendATrainByHand.
         for (String hand : new String[] {"final class LayoutRightclickAutonomyMenu extends JPopupMenu",
             "public final class AutoLocomotiveStatus extends javax.swing.JPanel"})
         {
@@ -437,14 +350,8 @@ public class testNonReversibleTrains
         {
             String source = SourceOf.declaration("void sendATrainByHand(").replaceAll("\\s+", " ");
 
-            // Either door may hand over the shared policy or call the prompt itself; what the census
-            // refuses is a door that hands over neither.
-            // Any of the three shapes counts as handing over a prompt.  `forJourney` is the one both
-            // doors use since Adam asked for the question to be put BEFORE dispatch rather than from
-            // inside the run: "make it be on departure itself, that way there is no dispatch prior to
-            // user input."
-            // IN THE ONE HAND DOOR, before its dispatch
-            // ITS DISPATCH, by the name it has had since round 61 or the one before
+            // Any of the three shapes counts as handing over a prompt, before the one hand door's dispatch (by either
+            // name it has had).
             int dispatch = source.indexOf("executePathByHand(");
 
             if (dispatch < 0) dispatch = source.indexOf("executePath(");
@@ -461,12 +368,8 @@ public class testNonReversibleTrains
                 + "prompt, so a may-reverse point on that route turns the train with nobody asked");
         }
 
-        // AND THE UNATTENDED ONES DO NOT, which is the other half: the timetable is what Return Home
-        // runs, and asking a dialog about a turn the planner chose would be asking about a decision
-        // the operator already made.
-        // The automation layer is its PACKAGE, every file of it (FR-136): read as the one file that declares
-        // executePath, a journey cluster split out of Layout could call the dialog and stay unseen.
-        //
+        // And the unattended ones do not: asking a dialog about a turn the planner chose would be asking about a
+        // decision the operator already made.  The automation layer is its package, every file of it (FR-136).
         // COMMENTS STRIPPED FIRST.  This read the whole file and failed on a javadoc that names
         // `ManualReversalPrompt` while explaining why the automation layer must not call it - a guard
         // that cannot tell an explanation from an instruction reports on prose rather than on the
@@ -710,27 +613,15 @@ public class testNonReversibleTrains
             + "shouldReverse; asksAbout is about the railway");
     }
     /**
-     * A square trains MAY turn at is asked about on every copy, not only the turning one
-     * (Adam, 2026-09-06).
+     * A square trains MAY turn at is asked about on every copy, not only the turning one.  Adam: **"May reverse should
+     * always prompt in manual mode."**
      *
-     * **"May reverse should always prompt in manual mode."**
+     * `reversing` is emitted for a MUST-reverse square and a turning COPY; a may-reverse square carries no flag (the
+     * build splits the square instead), so asking `isReversing()` asked nothing on the copy a path happened not to end
+     * at.  The question is about the place: the Points sharing its block.  Autonomy is deliberately not widened.
      *
-     * `reversing` is emitted for a MUST-reverse square and for a turning COPY. A may-reverse square
-     * carries no flag at all - the build expresses it by SPLITTING the square, and `AutonomyBuilder`
-     * explains why it must not do otherwise: putting the flag on a may-turn square "silently promoted
-     * the user's choice to the other one, and made a through station one no path could be routed
-     * through".
-     *
-     * So asking `isReversing()` asked nothing on exactly the squares Adam was testing: whether the
-     * question appeared depended on which copy a path happened to end at, which is not something
-     * anybody can see from the menu. The question is about the PLACE, and the copies of a place are
-     * the Points sharing its block.
-     *
-     * **Autonomy is deliberately not widened.** It turns where the flag says and nowhere else - the
-     * promotion of "may" to "must" is the thing the build refuses to emit.
-     *
-     * MUTATION: ask `isReversing()` instead of `mayReverseAt` and the second assertion fails; widen
-     * the autonomy branch too and the third does.
+     * MUTATION: ask `isReversing()` instead of `mayReverseAt` and the second assertion fails; widen the autonomy
+     * branch too and the third does.
      */
     @Test
     public void testEveryCopyOfAMayReverseSquareIsAskedAbout() throws Exception
@@ -755,8 +646,7 @@ public class testNonReversibleTrains
 
         Locomotive loc = model.getLocByName(model.getLocList().get(0));
 
-        // THE CONTROL: the plain copy carries no flag, which is the whole reason the old rule missed
-        // it.  If this ever becomes true the fixture has stopped modeling a split.
+        // The control: the plain copy carries no flag, which is why the old rule missed it.
         assertFalse(plain.isReversing(),
             "control: the plain copy of a split must NOT be marked reversing, or this test is about "
             + "a must-reverse square and says nothing about may-reverse");
@@ -793,24 +683,12 @@ public class testNonReversibleTrains
             + "manual send on the railway would raise a dialog");
     }
     /**
-     * A hand-driven send does not turn a train at a may-reverse point unless somebody says so
-     * (Adam, 2026-09-06).
+     * A hand-driven send does not turn a train at a may-reverse point unless somebody says so.  The intent lives in the
+     * leg that has not happened yet, so it is asked and `executePath` takes the answer as a policy.  A true terminus is
+     * never asked about: *"no unprompted reversals in manual mode unless going to a true terminus (must reverse)."*
      *
-     * **The intent lives in the leg that has not happened yet.** A reversing point turns whatever
-     * passes it, and the reason may be "back into that berth next time" or may be nothing at all.
-     * Adam: *"in manual mode, the system has no way of knowing that the intention is to reverse into a
-     * berth on the next turn.  So we can't possibly both allow that and disallow it based on train."*
-     * So it is asked, and `executePath` takes the answer as a policy.
-     *
-     * **A true terminus is never asked about** - the other half of the ruling: *"no unprompted
-     * reversals in manual mode unless going to a true terminus (must reverse)."* There the train has
-     * run out of track and the turn is not a choice.
-     *
-     * **Run as the rule rather than as a journey.** The first version of this drove a train along a
-     * path; it hung waiting for an arrival that the fixture cannot produce, which is a test that has
-     * to be killed rather than one that fails. The rule is what encodes the ruling, so the rule is
-     * what is run - and the call site is pinned by the test below, because naming a rule moves the
-     * defect to the call.
+     * Run as the rule rather than as a journey, which hangs waiting for an arrival the fixture cannot produce; the
+     * call site is pinned by the test below.
      */
     @Test
     public void testAManualSendDoesNotTurnATrainUnasked() throws Exception
@@ -821,10 +699,8 @@ public class testNonReversibleTrains
         Point terminus = layout.getPoint("BACK_end");
         Point plain = layout.getPoint("BACK_start");
 
-        // THE TWO FLAGS ARE MUTUALLY EXCLUSIVE, which is what the first version of this test got
-        // wrong: it set the terminus reversing and the model refused - "Terminus stations cannot be
-        // set as reversing".  So a rule asking whether THIS point is both could never fire, and the
-        // terminus that matters is the journey's DESTINATION.
+        // The two flags are mutually exclusive (the model refuses a reversing terminus), so the terminus that matters
+        // is the journey's DESTINATION.
         assertTrue(ordinary.isReversing() && !ordinary.isTerminus(),
             "precondition: the middle point must be one trains MAY turn at and not a terminus");
 
@@ -844,8 +720,8 @@ public class testNonReversibleTrains
         assertTrue(layout.shouldReverseAt(ordinary, plain, loc, (train, where) -> true),
             "yes did not turn the train either, so the rule is refusing rather than asking");
 
-        // A JOURNEY TO A TERMINUS IS NOT A QUESTION, whatever the answer: the turn on the way is how
-        // the train gets there at all, which is Adam's MT-245 ruling.
+        // A journey to a terminus is not a question, whatever the answer: the turn on the way is how the train gets
+        // there (MT-245).
         assertTrue(layout.shouldReverseAt(ordinary, terminus, loc, (train, where) -> false),
             "a train bound for a terminus was left unturned at the reversing point on the way, "
             + "because the policy said no.  That turn is not a choice - it is how a train backs into "
@@ -862,12 +738,7 @@ public class testNonReversibleTrains
             + "quietly changed behaviour");
     }
 
-    /**
-     * And `executePathInternal` actually asks it (Adam, 2026-09-06).
-     *
-     * The test above pins the rule. Naming a rule moves the defect to the call site, which is this
-     * repository's recurring shape - so the call is checked too.
-     */
+    /** And `executePathInternal` actually asks it: naming a rule moves the defect to the call site. */
     @Test
     public void testTheRunAsksThatRule() throws Exception
     {
@@ -879,30 +750,9 @@ public class testNonReversibleTrains
             "executePathInternal no longer decides an intermediate reversal through shouldReverseAt, "
             + "so the rule is tested here and something else decides what the railway does");
 
-        // AND THE ARRIVAL, which is a SECOND site and was asking nobody.
-        //
-        // The policy is consulted from inside `if (i != path.size() - 1)`; the last point is turned
-        // forty lines below the loop by a different statement. So a hand-driven send whose
-        // DESTINATION is a may-reverse point turned the train without a word - the literal case the
-        // feature was built for. A call-site check that knew about one site reported clean about that.
-        // **THIS USED TO PIN THE EXPRESSION VERBATIM, AND THAT IS HOW A BUG SURVIVED IT** (MT-368).
-        //
-        // It asserted that `Layout.java` contained
-        // `if (arrived.isTerminus() || shouldReverseAt(arrived, arrived, loc, reversals))` -
-        // the statement, `||` and all.  A guard that requires an expression cannot fail on what
-        // that expression DOES, and this one required the defect: `AutonomyBuilder` emits the
-        // turning copy of a MAY-turn square with `terminus: true`, so the left operand short
-        // circuited and the operator's answer was collected and discarded.  Adam met it as
-        // *"it is just always getting reversed"*.
-        //
-        // Worse than failing to catch it: correcting the line BROKE this test, so the guard
-        // argued for the bug - and the comment beside the code asked that the shape be left
-        // alone for this test's sake.  Code and guard each cited the other and neither read the
-        // railway.
-        //
-        // What is pinned now is only that the arrival asks ONE NAMED RULE.  What that rule does
-        // is `core.testTheArrivalHonoursTheAnswer`, which answers "keep direction" and checks the
-        // train is not turned - a claim a source guard cannot make and should not have implied.
+        // And the arrival, a second site that was asking nobody: the last point is turned by a different statement
+        // from the loop's.  Only "the arrival asks one named rule" is pinned (MT-368); what that rule does is
+        // `core.testTheArrivalHonoursTheAnswer`.
         assertTrue(flat.contains("if (turnsOnArrival(arrived, loc, reversals))"),
             "the arrival does not consult the policy through turnsOnArrival, so a journey that "
             + "ENDS at a may-reverse point may turn the train without reading the answer "
@@ -966,10 +816,8 @@ public class testNonReversibleTrains
         // its owner had set to run slow, and stayed there until the next point recalculated.  The stop
         // was added for the reversal question; handing back a speed limit was not part of it.
         //
-        // Written through `drive`, which leaves a stop ordered since dispatch standing - and then the
-        // wait for the speed is not made either.
-        //
-        // And its wait for the speed gives up on a stop or a retirement.
+        // Written through `drive`, which leaves a stop ordered since dispatch standing; its wait for the speed gives up
+        // on a stop or a retirement.
         assertTrue(flat.contains("if (drive(loc, resume, stopsAtDispatch)) {")
             && flat.contains("loc.waitForSpeedAtOrAbove(resume, () -> this.stopsOrdered.get() != stopsAtDispatch"
             + " || !this.isCurrentLayout());"),
@@ -981,26 +829,15 @@ public class testNonReversibleTrains
             + "uses is not the limit the operator set for this square");
     }
     /**
-     * ...but it may BACK INTO one, when the way there turns it round (Adam, 2026-08-31).
+     * ...but it may BACK INTO one, when the way there turns it round.  Adam on MT-245: "trains should be allowed to
+     * back into terminuses if they are not reversible (that's why we have the reversing point at feedback 2013)."
      *
-     * His words, on MT-245: "trains should be allowed to back into terminuses if they are not
-     * reversible (that's why we have the reversing point at feedback 2013)."
+     * The rule above is about a train that would have to reverse to LEAVE; one that passes a reversing point on the
+     * way arrives already turned and leaves forwards.  The escape is here and not in canRest: whether a train can be
+     * turned on the way is a property of the route, and only a route can answer it.
      *
-     * The rule above is about a train that would have to reverse to LEAVE. A train that passes a
-     * reversing point on the way arrives at the terminus already turned - it backs in - and leaves
-     * forwards, so it never runs backwards out of anywhere and the objection does not apply.
-     *
-     * Measured on his own layout before this was changed: TunnelLeftPark is a terminus, and EN57-203
-     * and EN57-947 are both non-reversible, so this one clause was refusing both the manual send and
-     * the home. `isAutoDestination` is asked only by pickPath, never by getPossiblePaths or
-     * isPathClear, so a non-automatic station was always manually selectable - this was the only thing
-     * standing in the way of either.
-     *
-     * The escape is deliberately here and not in canRest: whether a train can be TURNED on the way is
-     * a property of the route, and only a route can answer it.
-     *
-     * MUTATION: dropping the reversesAlongTheWay clause fails this; dropping the whole terminus rule
-     * fails the method above, whose fixture has no reversing point.
+     * MUTATION: dropping the reversesAlongTheWay clause fails this; dropping the whole terminus rule fails the method
+     * above, whose fixture has no reversing point.
      */
     @Test
     public void testATrainThatCannotReverseMayBackIntoATerminus() throws Exception
@@ -1033,42 +870,22 @@ public class testNonReversibleTrains
     }
 
     /**
-     * A train too long for the berth is not backed over the switch (Adam, 2026-09-01).
+     * A train too long for the berth is not backed over the switch.  Adam: "if there is a switch right next to the
+     * station and the train is longer than the length of the station track plus switch track, do we have guards
+     * against backing over it?"  `validateTrainLength` compares against a typed maximum, not the track that is there.
      *
-     * "if there is a switch right next to the station and the train is longer than the length of the
-     * station track plus switch track, do we have guards against backing over it?"  There were none.
-     * `validateTrainLength` is the only length rule in the model and it compares the train against a
-     * MAXIMUM SOMEBODY TYPED on the station, not against the track that is actually there - and it is
-     * skipped entirely when that maximum is zero, which is most squares on a real layout.
+     * The rule reads recorded lengths only: unmeasured track is unknown, not short, so a layout that records none is
+     * unaffected.
      *
-     * So a train reversing into a berth shorter than itself stood across the switch behind it, and
-     * nothing objected. This refuses the path instead.
+     * Two bounds, not one.  Adam: *"four-unit train in a three-unit berth with a two-unit approach: refused both
+     * because of the berth (3<4) and the track length that potentially couldn't fit the train while reversing.  if the
+     * train isn't reversing, then it should be accepted as long as the berth is long enough."*  Each is checked on its
+     * own with the other made long enough, and the refusal's SENTENCE is read, since two bounds that refuse everything
+     * would pass a pair of assertFalses.
      *
-     * **Only where the answer is knowable.** The rule reads the lengths that have been recorded, and
-     * unmeasured track is not a short berth - it is an unknown one. A layout that records no lengths
-     * at all is unaffected; a layout that records some gets a notice in the editor asking for the ones
-     * that matter, which is the other half of what he asked for.
-     *
-     * **TWO BOUNDS, NOT ONE** (Adam, 2026-09-11), and this fixture is the one he gave them on:
-     * *"four-unit train in a three-unit berth with a two-unit approach: refused both because of the
-     * berth (3<4) and the track length that potentially couldn't fit the train while reversing.  if
-     * the train isn't reversing, then it should be accepted as long as the berth is long enough."*
-     *
-     * So there are two stretches and the train has to fit in each: the berth, measured back to
-     * whichever of the last switch and the reversal is met first, and the track the train waits on
-     * while it changes direction.  Each is checked here on its own, with the other made long enough
-     * that it cannot be the one objecting, and the refusal's SENTENCE is read rather than its
-     * yes-or-no - two bounds that both refuse everything would pass a pair of assertFalses.
-     *
-     * **This test asserted the opposite of his ruling for ten days, and the assertion was a guess.**
-     * It said a four-unit train fits a three-unit berth with a two-unit approach, because 3 + 2 holds
-     * four units of train end to end - and on the strength of that assertion the first attempt at the
-     * berth bound was reverted as over-strict the same morning.  Nobody had ever ruled on it.  A test
-     * that encodes a reading of an unstated rule reads exactly like a test that encodes the rule.
-     *
-     * MUTATIONS: dropping the reversal test from `measuredRoomAtTheEndOf` admits the four-unit train
-     * at the berth; dropping `comesToRest` from `whyTooLongForThisRoute` admits it at the turn; and
-     * making either bound unconditional fails the last assertion, where both are long enough.
+     * MUTATIONS: dropping the reversal test from `measuredRoomAtTheEndOf` admits the four-unit train at the berth;
+     * dropping `comesToRest` from `whyTooLongForThisRoute` admits it at the turn; and making either bound
+     * unconditional fails the last assertion, where both are long enough.
      */
     @Test
     public void testATrainTooLongForTheBerthIsNotBackedOverTheSwitch() throws Exception
@@ -1094,9 +911,7 @@ public class testNonReversibleTrains
                 "a train ten long was sent to reverse into a berth of three with an approach of two, "
                 + "so it would stand across the switch behind it and nothing objected");
 
-            // HIS FIGURES AND HIS VERDICT (Adam, 2026-09-11): three-unit berth, two-unit approach,
-            // four-unit train, *"refused both because of the berth (3<4) and the track length that
-            // potentially couldn't fit the train while reversing."*
+            // His figures: three-unit berth, two-unit approach, four-unit train.
             loc.setTrainLength(4);
 
             assertFalse(layout.isPathClear(pathThrough(layout), loc, false),
@@ -1130,9 +945,7 @@ public class testNonReversibleTrains
                 "the track the train waits to turn on is the short stretch here, and the refusal "
                 + "should name that square rather than the berth: " + atTheTurn);
 
-            // AND WITH BOTH LONG ENOUGH IT RUNS.  Two bounds that refused everything would pass every
-            // assertion above and this is the one they fail - *"both need to be long enough"* is a
-            // rule about two stretches, not a reason to stop running trains into reversing stations.
+            // And with both long enough it runs: two bounds that refused everything would pass every assertion above.
             layout.getEdge("BACK_start", "BACK_mid").setLength(4);
             layout.getEdge("BACK_mid", "BACK_end").setLength(4);
 
@@ -1158,42 +971,17 @@ public class testNonReversibleTrains
     }
 
     /**
-     * A reversal on the route splits the run in, and the train has to fit in both halves.
+     * A reversal on the route splits the run in, and the train has to fit in both halves.  Adam: *"8 unit train on a
+     * 9-unit runin would just be refused because 3<8.  if the max train length at the berth was set to 8, we would be
+     * OK.  in short, your tests should consider both."*
      *
-     * **Adam, 2026-09-11, on this fixture's own figures:** *"8 unit train on a 9-unit runin would just
-     * be refused because 3<8.  if the max train length at the berth was set to 8, we would be OK.  in
-     * short, your tests should consider both."*  Nine units of run in, a reversing point in the middle
-     * of it, and an eight-unit train is refused - which is the opposite of what this test asserted
-     * until that ruling.
+     * His figure is neither of the two the rule produces: the berth beyond the turn measures 4 and the approach behind
+     * it 2 + 3 = 5.  Both refuse an eight-unit train; the refusal reported is the one met first walking forwards, the
+     * approach.  The whole-run-in rule is still tested in the last section, where nothing turns the train.
      *
-     * His figure is neither of the two the rule produces, and that is worth writing down rather than
-     * rounding off: the berth beyond the turn measures 4 and the approach behind it 2 + 3 = 5.  Both
-     * refuse an eight-unit train, so the verdict is his and the number is not; the refusal reported is
-     * the one met first walking forwards, which is the approach.
-     *
-     * **What this test used to say, and why it was wrong.**  Adam, 2026-09-01: *"do you sum the track
-     * segments leading up to it?  if they are long enough, then we are good"* - read as "the whole run
-     * in, always", which is true only where nothing on the route stops the count.  A switch stops it
-     * (2026-09-02) and so does a reversal (2026-09-11): a train that turns part way along comes to
-     * rest beyond the turn, and what it waits on before turning is the track behind it.  Neither half
-     * is the whole nine.
-     *
-     * The whole-run-in rule is still here and still tested - in the last section, where nothing on the
-     * route turns the train.  That is Adam's other sentence of 2026-09-11: *"if the train isn't
-     * reversing, then it should be accepted as long as the berth is long enough."*
-     *
-     * **Renamed** from `testTheRoomIsEverySegmentLeadingUpToTheReversal`, which the ruling made false
-     * in both halves of its name.
-     *
-     * MUTATIONS, run rather than reasoned about: dropping `comesToRest` from
-     * `whyTooLongForThisRoute` fails this; so does applying either bound where nothing turns round.
-     *
-     * **Dropping the reversal stop from `measuredRoomAtTheEndOf` does NOT fail this test**, and the
-     * first version of this paragraph said it did.  Every refusal here is reached at the TURN, which
-     * comes first walking forwards, so the berth bound is never the thing that objects.
-     * `testATrainTooLongForTheBerthIsNotBackedOverTheSwitch` is what holds that half - it makes the
-     * approach long so that only the berth can refuse, and reads the refusal's sentence to be sure it
-     * did.  Said here because a mutation list is only worth having if somebody ran it.
+     * MUTATIONS: dropping `comesToRest` from `whyTooLongForThisRoute` fails this, as does applying either bound where
+     * nothing turns round.  Dropping the reversal stop from `measuredRoomAtTheEndOf` does NOT, since every refusal here
+     * is reached at the turn; `testATrainTooLongForTheBerthIsNotBackedOverTheSwitch` holds that half.
      */
     @Test
     public void testTheRoomIsBoundedAtTheReversalAndAtTheBerth() throws Exception
@@ -1221,14 +1009,13 @@ public class testNonReversibleTrains
                 + "refused\" - it comes to rest on the 4 beyond the turn, having waited on the 5 "
                 + "behind it, and nine units is neither stretch");
 
-            // WHICH STRETCH OBJECTS FIRST - the approach, because the route reaches it first.
+            // Which stretch objects first: the approach, because the route reaches it first.
             String why = Layout.whyTooLongForThisRoute(longPath(layout), loc);
 
             assertTrue(why != null && why.contains("LONG_mid"),
                 "the refusal should name the square the train waits to turn on, whose approach is the "
                 + "first stretch too short for it: " + why);
 
-            // HIS OWN ESCAPE: *"if the max train length at the berth was set to 8, we would be OK."*
             // Both stretches made long enough for the train, and it runs.
             layout.getEdge("LONG_a", "LONG_b").setLength(4);
             layout.getEdge("LONG_b", "LONG_mid").setLength(4);
@@ -1248,18 +1035,10 @@ public class testNonReversibleTrains
                 + "berth beyond the turn is long enough. Both stretches have to hold it (Adam, "
                 + "2026-09-11: \"both need to be long enough\")");
 
-            // AND WHERE NOTHING TURNS THE TRAIN, THE WHOLE RUN IN COUNTS.
-            //
-            // Adam, 2026-09-01: *"do you sum the track segments leading up to it?  if they are long
-            // enough, then we are good"*, and on 2026-09-11: *"if the train isn't reversing, then it
-            // should be accepted as long as the berth is long enough."*  A train that does not turn
-            // comes to rest with its head at the destination and its tail lying back over the run in,
-            // which is one continuous stretch - so nothing splits it, and the count runs back to the
-            // last switch or to the start of the route.
-            //
-            // This is what the test asserted on the fixture above before the reversal stop existed,
-            // kept here on the railway where it is actually true.  A reversible locomotive, because
-            // the reversing point is what let a non-reversible one into a terminus.
+            // Where nothing turns the train, the whole run in counts.  Adam: *"if the train isn't reversing, then it
+            // should be accepted as long as the berth is long enough."*  The tail lies back over the run in, one
+            // continuous stretch, so the count runs back to the last switch or the start of the route.  A reversible
+            // locomotive, because the reversing point is what let a non-reversible one into a terminus.
             layout.getPoint("LONG_mid").setReversing(false);
 
             loc.setReversible(true);
@@ -1315,27 +1094,16 @@ public class testNonReversibleTrains
     }
 
     /**
-     * With a switch on the route, the room is only the track after it (Adam, 2026-09-02).
+     * With a switch on the route, the room is only the track after it.  Adam: *"between the switch and the station,
+     * the length must be >= length of the train"*, using any direction for simplicity.  So the binding constraint is
+     * the LAST switch before the destination: a train longer than what is left beyond it stands on the points while
+     * the model records it only at the berth.
      *
-     * He was asked whether a train longer than berth-plus-switch may still come to rest across the
-     * switch behind its berth when the run in as a whole is long enough, and answered: *"it depends on
-     * the direction.  if the train crosses the fork through the base, then the track after the switch
-     * has to be long enough to accommodate it.  in other words, between the switch and the station,
-     * the length must be >= length of the train."*  Asked which crossings that covers, since on a
-     * simple turnout every route touches the toe: *"for the switches, for simplicity, let's use any
-     * direction, that way we are guaranteed to be safe."*
+     * The same fixture as the test above: nine units of run in, four after the switch.  A train of eight passed the
+     * old rule and fails this one.
      *
-     * So the binding constraint is the LAST switch before the destination, whichever way the route
-     * crosses it.  A train longer than what is left beyond it stands on the points, blocking every
-     * route through them, while the model records it only at the berth.
-     *
-     * **The same fixture as the test above, and that is the point.**  Nine units of run in, four of
-     * them after the switch.  A train of eight passed the old rule and fails this one; nothing about
-     * the layout changed except that the last edge now says where its switch is.
-     *
-     * MUTATION this catches: summing the whole path again - the first assertion passes a train of
-     * eight into four units of room.  Also: counting the switch tile itself, which would make the
-     * third assertion accept a train that does not fit.
+     * MUTATION: summing the whole path again lets the first assertion pass a train of eight into four units; counting
+     * the switch tile itself makes the third accept a train that does not fit.
      */
     @Test
     public void testTheRoomIsMeasuredFromTheLastSwitch() throws Exception
@@ -1355,9 +1123,7 @@ public class testNonReversibleTrains
             layout.getEdge("LONG_b", "LONG_mid").setLength(3);
             layout.getEdge("LONG_mid", "LONG_end").setLength(4);
 
-            // The last edge crosses a switch, and four of its units lie beyond it.  This is what the
-            // reducer records from the diagram; here it is set by hand, because this test is about
-            // what the guard does with it.
+            // The last edge crosses a switch with four units beyond it; the reducer records this from the diagram.
             layout.getEdge("LONG_mid", "LONG_end").setRoomAtTheEnd(4);
 
             loc.setTrainLength(8);
@@ -1405,8 +1171,7 @@ public class testNonReversibleTrains
                 + "evidence at all there, and refusing on none would make every unmeasured layout "
                 + "unusable");
 
-            // AND AN EARLIER UNMEASURED EDGE NO LONGER MATTERS, which is a widening rather than a
-            // narrowing: the guard counts only the edges it actually uses.
+            // And an earlier unmeasured edge no longer matters: the guard counts only the edges it uses.
             layout.getEdge("LONG_mid", "LONG_end").setRoomAtTheEnd(4);
             layout.getEdge("LONG_a", "LONG_b").setLength(0);
 
@@ -1424,18 +1189,14 @@ public class testNonReversibleTrains
     }
 
     /**
-     * A train that cannot reverse is not OFFERED an ordinary terminus by hand (Adam, OB-205 claim 1).
+     * A train that cannot reverse is not OFFERED an ordinary terminus by hand (OB-205).  Adam: *"75 407 DB can go from
+     * Tunnel to BottomMainC manually, even though it is not reversible and this is not a parking berth (excluded from
+     * autonomy).  it should not be allowed to be chosen."*
      *
-     * *"75 407 DB can go from Tunnel to BottomMainC manually, even though it is not reversible and this
-     * is not a parking berth (excluded from autonomy).  it should not be allowed to be chosen."*
+     * This narrows his earlier ruling rather than reversing it: a berth, which autonomy never chooses, is still
+     * offered by hand.
      *
-     * **This narrows his ruling of 2026-09-01 rather than reversing it**, and the two halves are both
-     * asserted here because the earlier one is still live: the terminus rule was moved out of
-     * `isPathClear` so that *"the operator asking for that BERTH by hand is no longer refused"*.  A
-     * berth - a square autonomy never chooses - is still offered. An ordinary terminus is not.
-     *
-     * MUTATION: dropping `isAutoDestination` from the clause fails the third assertion, which is the
-     * half of his 2026-09-01 ruling that survives.
+     * MUTATION: dropping `isAutoDestination` from the clause fails the third assertion.
      */
     @Test
     public void testANonReversibleTrainIsNotOfferedAnOrdinaryTerminus() throws Exception
@@ -1469,7 +1230,7 @@ public class testNonReversibleTrains
                 "a train that CAN reverse was refused a terminus, so the rule refuses on the square"
                 + " alone and has stopped being about the locomotive");
 
-            // AND THE HALF OF HIS 2026-09-01 RULING THAT SURVIVES: a berth is still offered by hand.
+            // And a berth is still offered by hand.
             loc.setReversible(false);
 
             terminus.setAutoDestination(false);
@@ -1488,22 +1249,14 @@ public class testNonReversibleTrains
     }
 
     /**
-     * The operator is asked about a turn at a MAY-turn destination, and not at a real terminus.
+     * The operator is asked about a turn at a MAY-turn destination, and not at a real terminus.  Adam, OB-205:
+     * *"is reversed without a direction prompt, even though it is not reversible"*, and *"when I set it as reversible,
+     * there is still no 'should it change direction' prompt."*
      *
-     * Adam, OB-205 claims 2 and 3: *"is reversed without a direction prompt, even though it is not
-     * reversible"*, and *"when I set it as reversible, there is still no 'should it change direction'
-     * prompt."*
-     *
-     * **One cause.**  `AutonomyBuilder` emits the turning copy of a may-turn square with `terminus:
-     * true`, so `isTerminus()` cannot tell it from a compulsory terminus - and both doors that decide
-     * whether to ask read exactly that flag.  `shouldReverseAt` answered `current.isReversing()`, which
-     * is true at that copy, so the train turned; `ManualReversalPrompt.forJourney` read the same flag and
-     * returned KEEP_DIRECTION, so the prompt was not shown and its answer would have been the opposite
-     * of what happened.
-     *
-     * The distinction cannot be drawn from the graph - this method's own javadoc says so about `current`
-     * - so the DOOR is asked. This drives that directly: the same call, twice, with the only difference
-     * being what the policy says it asks about.
+     * `AutonomyBuilder` emits the turning copy of a may-turn square with `terminus: true`, so `isTerminus()` cannot
+     * tell it from a compulsory terminus and both doors read that flag.  The distinction cannot be drawn from the
+     * graph, so the DOOR is asked; this drives that directly, the same call twice with only what the policy says it
+     * asks about different.
      *
      * MUTATION: taking `!reversals.asksAbout(destination)` back out fails the second half.
      */
@@ -1579,9 +1332,7 @@ public class testNonReversibleTrains
             + " answers cannot reach the railway");
     }
 
-    /**
-     * Four points, so the run in to the terminus is three segments long.
-     */
+    /** Four points, so the run in to the terminus is three segments long. */
     private static Layout longerBackingInLayout() throws Exception
     {
         Layout layout = new Layout(model);
@@ -1601,9 +1352,7 @@ public class testNonReversibleTrains
         return layout;
     }
 
-    /**
-     * The one path such a layout has.
-     */
+    /** The one path such a layout has. */
     private static List<Edge> longPath(Layout layout)
     {
         List<Edge> path = new LinkedList<>();
@@ -1615,9 +1364,7 @@ public class testNonReversibleTrains
         return path;
     }
 
-    /**
-     * Start, a reversing point, and a terminus beyond it.
-     */
+    /** Start, a reversing point, and a terminus beyond it. */
     private static Layout backingInLayout() throws Exception
     {
         Layout layout = new Layout(model);
@@ -1635,9 +1382,7 @@ public class testNonReversibleTrains
         return layout;
     }
 
-    /**
-     * The one path such a layout has, through the reversing point.
-     */
+    /** The one path such a layout has, through the reversing point. */
     private static List<Edge> pathThrough(Layout layout)
     {
         List<Edge> path = new LinkedList<>();
@@ -1648,12 +1393,7 @@ public class testNonReversibleTrains
         return path;
     }
 
-    /**
-     * Two points and one edge between them, with the far end set up as asked.
-     *
-     * @param reversing whether arriving at the far end turns the train round
-     * @param auto whether autonomy may choose the far end as a destination
-     */
+    /** Two points and one edge between them, with the far end set up as asked. */
     private static Layout twoPointLayout(boolean reversing, boolean auto) throws Exception
     {
         Layout layout = new Layout(model);
@@ -1671,9 +1411,7 @@ public class testNonReversibleTrains
         return layout;
     }
 
-    /**
-     * The one path such a layout has.
-     */
+    /** The one path such a layout has. */
     private static List<Edge> pathAcross(Layout layout)
     {
         List<Edge> path = new LinkedList<>();
