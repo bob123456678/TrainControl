@@ -36,8 +36,8 @@ import support.Answering;
 import support.Components;
 
 /**
- * FR-109: the layout editor's Manage Pages menu adds, renames and deletes pages with the Layouts menu's own actions,
- * on the page being edited, in the same window.  The user opens the editor, picks the item and answers the real
+ * FR-109: the layout editor's Manage Pages menu adds, renames, duplicates, combines and deletes pages with the main
+ * window's own actions, on the page being edited, in the same window; FR-146: Layouts > Manage Pages... opens it.  The user opens the editor, picks the item and answers the real
  * dialogs; what comes of it is the layout's folder and the window: the same window throughout, never closed or
  * hidden, on the new page, the renamed one or another one, and on the same page with nothing changed when the action
  * is refused or canceled.  Unsaved work is asked about only once nothing can refuse the action, and every question
@@ -603,6 +603,445 @@ public class testTheLayoutEditorManagesPages
         assertFalse(model.getLayoutList().contains("P6 Blank"), "a Cancel at the unsaved work added the page");
     }
 
+    /**
+     * Duplicate Current Page, with a square turned and unsaved, asks only about the unsaved work; answered Save, it
+     * writes a copy of the saved page under the Layouts menu's name for it, and the same window shows the copy.
+     *
+     * MUTATION: the duplicate hands the layout actions no editor (`pageActionFrom` as null in
+     * `duplicateOrRenameCurrentLayout`), so the editor is refused as an open one, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testDuplicateShowsTheCopyInTheSameWindow() throws Exception
+    {
+        final String page = "3 - Top Parking";
+        final String copy = page + " copy";
+
+        Watched editor = editPage(page, false);
+
+        int[] turned = turnASquare(editor);
+
+        final String unsaved = I18n.t("layout.ui.confirmSwitchWithUnsavedWork");
+
+        try (Answering answering = Answering.start(message -> Answering.press(I18n.t("layout.ui.switchSave"))))
+        {
+            click(editor, "ui.main.toolbar.duplicateCurrentPage");
+
+            assertTrue(Components.waitFor(() -> model.getLayoutList().contains(copy), 15000), "Duplicate Current Page"
+                + " in the editor made no page called " + copy + ": " + model.getLayoutList() + ", asked "
+                + answering.asked());
+
+            assertTrue(Components.waitFor(() -> editor.shows(copy), 15000), "the editor does not show the copy "
+                + copy + ": " + titles());
+
+            assertEquals(answering.asked(), Collections.singletonList(unsaved), "Duplicate Current Page asked more"
+                + " than about the unsaved work");
+        }
+
+        editor.wasNeverClosed();
+
+        assertTrue(pageFile(copy).isFile(), "the copy has no file of its own: " + pageFile(copy));
+
+        assertEquals(tilesIn(pageFile(copy)), tilesIn(pageFile(page)), "the copy's squares are not the page's");
+
+        assertEquals(model.getLayout(copy).getComponent(turned[0], turned[1]).getOrientation(), turned[2], "the"
+            + " saved turn is not in the copy");
+
+        assertTrue(index().contains(".name=" + copy), "the layout's index does not list the copy");
+    }
+
+    /**
+     * Combine Linked Pages, from a page with links, answered with a name, writes the combined page, kept out of
+     * autonomy, and the same window shows the page the main window ends on, the combined one.
+     *
+     * MUTATION: the combine arrives on the page it left (`editor.arriveOn(null)` in `combineOnAWorker`), and this
+     * fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testCombineShowsTheCombinedPageInTheSameWindow() throws Exception
+    {
+        final String page = "1 - Main";
+        final String combined = "P6 Combined";
+
+        Watched editor = editPage(page, false);
+
+        try (Answering answering = Answering.start(message -> Answering.type(combined)))
+        {
+            click(editor, "layout.ui.menuCombineLinkedPages");
+
+            assertTrue(answering.awaitAsked(1, 10000), "Combine Linked Pages in the editor asked for no name");
+
+            assertEquals(answering.asked().get(0).split("\n")[0], I18n.t("layout.ui.promptCombinedPageName"),
+                "Combine Linked Pages did not ask what to call the page");
+
+            assertTrue(Components.waitFor(() -> model.getLayoutList().contains(combined), 15000), "Combine Linked"
+                + " Pages made no page called " + combined + ": " + model.getLayoutList());
+
+            assertTrue(Components.waitFor(() -> editor.shows(combined), 15000), "the editor does not show the"
+                + " combined page " + combined + ": " + titles());
+        }
+
+        editor.wasNeverClosed();
+
+        assertEquals(String.valueOf(Components.onTheEventThread(() -> pageList().getSelectedItem())), combined,
+            "the main window does not end on the combined page");
+
+        assertTrue(pageFile(combined).isFile(), "the combined page has no file: " + pageFile(combined));
+
+        assertTrue(tilesIn(pageFile(combined)).size() > tilesIn(pageFile(page)).size(), "the combined page holds no"
+            + " more than the page it was combined from");
+
+        assertTrue(Components.waitFor(() -> idInTheSetup(combined) != null && setup().optJSONArray("excludedPages")
+            != null && setup().getJSONArray("excludedPages").toList().stream().map(String::valueOf)
+            .anyMatch(idInTheSetup(combined)::equals), 10000), "the combined page is not kept out of autonomy: "
+            + setup());
+    }
+
+    /**
+     * While a route runs, Duplicate and Combine are each refused in one dialog, the run refusal, over the editor:
+     * nothing about unsaved work or a name is asked; the pages and the folder are as they were and the same window is
+     * on the same page.
+     *
+     * MUTATION: the editor's own run refusal dropped (`pageMenuItem`) and Combine's asked over the main window
+     * (`refuseWhileARunHoldsTheSetup(this.ui)` in `combineLinkedPages`), and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testDuplicateAndCombineRefuseWhileARouteRunsInOneDialog() throws Exception
+    {
+        final String page = "1 - Main";
+
+        Watched editor = editPage(page, false);
+
+        turnASquare(editor);
+
+        Map<String, String> before = fingerprint();
+
+        aRouteRuns();
+
+        String refusal = I18n.t("ui.main.errorNoEditsWhileRunning");
+
+        try (Owners owners = new Owners())
+        {
+            try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
+            {
+                int asked = 0;
+
+                for (String item : new String[] {"ui.main.toolbar.duplicateCurrentPage",
+                    "layout.ui.menuCombineLinkedPages"})
+                {
+                    click(editor, item);
+
+                    asked++;
+
+                    assertTrue(answering.awaitAsked(asked, 10000), I18n.t(item) + " asked nothing while a route runs");
+
+                    Components.settle();
+
+                    assertEquals(answering.asked().size(), asked, I18n.t(item) + " asked more than one question while"
+                        + " a route runs: " + answering.asked());
+
+                    assertEquals(answering.asked().get(asked - 1), refusal, I18n.t(item) + " was not refused while a"
+                        + " route runs");
+                }
+            }
+
+            owners.allAre(editor.window);
+        }
+
+        editor.isAsItWas(page);
+
+        assertEquals(model.getLayoutList().size(), 5, "a page action changed the pages while a route runs: "
+            + model.getLayoutList());
+
+        assertEquals(fingerprint(), before, "a page action changed the layout's folder while a route runs");
+    }
+
+    /**
+     * Combine's name and its refusal of a taken name, and Duplicate's unsaved-work question (answered Cancel), all hang
+     * off the editor, and leave the window as it was.
+     *
+     * MUTATION: Combine's name asked over the main window (`showInputDialog(this.ui, ...)`), and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testCombineAndDuplicateAskOverTheEditor() throws Exception
+    {
+        final String page = "1 - Main";
+        final String taken = "2 - Bottom";
+
+        Watched editor = editPage(page, false);
+
+        final String prompt = I18n.t("layout.ui.promptCombinedPageName");
+
+        try (Owners owners = new Owners())
+        {
+            try (Answering answering = Answering.start(message -> message.startsWith(prompt)
+                ? Answering.type(taken) : Answering.pressAt(0)))
+            {
+                click(editor, "layout.ui.menuCombineLinkedPages");
+
+                assertTrue(answering.awaitAsked(2, 10000), "a combine to a taken name asked: " + answering.asked());
+
+                Components.settle();
+
+                assertEquals(answering.asked().get(1), I18n.f("layout.ui.errorPageAlreadyExistsDeleteOrRenameFirst",
+                    taken), "a combine to a taken name was not refused");
+            }
+
+            turnASquare(editor);
+
+            final String unsaved = I18n.t("layout.ui.confirmSwitchWithUnsavedWork");
+
+            try (Answering answering = Answering.start(message -> Answering.press(I18n.t("layout.ui.switchCancel"))))
+            {
+                click(editor, "ui.main.toolbar.duplicateCurrentPage");
+
+                assertTrue(answering.awaitAsked(1, 10000), "Duplicate with unsaved work asked nothing");
+
+                Components.settle();
+
+                assertEquals(answering.asked(), Collections.singletonList(unsaved), "what Duplicate with unsaved work"
+                    + " asked");
+            }
+
+            assertEquals(owners.count(), 3, "not every question was seen");
+
+            owners.allAre(editor.window);
+        }
+
+        editor.isAsItWas(page);
+
+        assertEquals(model.getLayoutList().size(), 5, "a refused or canceled action changed the pages: "
+            + model.getLayoutList());
+    }
+
+    /**
+     * Combine on a page with no links says so over the editor, and leaves the same window on the same page.
+     *
+     * MUTATION: the "nothing linked" message shown over the main window (`showMessageDialog(this.ui, ...)` in
+     * `combineLinkedPages`), and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testCombineWithNoLinksSaysSoOverTheEditor() throws Exception
+    {
+        final String page = "5 - Test";
+
+        Watched editor = editPage(page, false);
+
+        Map<String, String> before = fingerprint();
+
+        try (Owners owners = new Owners())
+        {
+            try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
+            {
+                click(editor, "layout.ui.menuCombineLinkedPages");
+
+                assertTrue(answering.awaitAsked(1, 10000), "Combine on a page with no links said nothing");
+
+                Components.settle();
+
+                assertEquals(answering.asked(), Collections.singletonList(I18n.t("layout.ui.infoNothingLinkedFromHere")),
+                    "what Combine on a page with no links asked");
+            }
+
+            owners.allAre(editor.window);
+        }
+
+        editor.wasNeverClosed();
+
+        assertTrue(editor.shows(page), "the editor left its page: " + titles());
+
+        assertEquals(fingerprint(), before, "Combine with nothing linked changed the layout's folder");
+    }
+
+    /**
+     * Layouts > Manage Pages... stands where the Manage Pages menu was, which is hidden, and opens the layout editor
+     * on the main window's page with the editor's own Manage Pages menu open, its five items showing.
+     *
+     * MUTATION: the editor's menu left shut (`openPageMenu` does nothing), and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testManagePagesOpensTheEditorWithItsMenuOpen() throws Exception
+    {
+        final String page = "2 - Bottom";
+
+        showInTheMainWindow(page);
+
+        final javax.swing.JMenuItem item = managePages();
+
+        javax.swing.JMenu hidden = field("modifyLocalLayoutMenu", javax.swing.JMenu.class);
+
+        final javax.swing.JMenu layouts = field("layoutMenu", javax.swing.JMenu.class);
+
+        openTheLayoutsMenu();
+
+        assertFalse(hidden.isVisible(), "the Layouts menu still shows the Manage Pages menu");
+
+        List<java.awt.Component> shown = Components.onTheEventThread(() ->
+        {
+            List<java.awt.Component> visible = new ArrayList<>();
+
+            for (java.awt.Component c : layouts.getMenuComponents()) if (c.isVisible()) visible.add(c);
+
+            return visible;
+        });
+
+        int at = shown.indexOf(item);
+
+        assertTrue(at >= 0 && at + 1 < shown.size() && shown.get(at + 1) instanceof javax.swing.JMenu
+            && I18n.t("layout.ui.menuEditLayoutPage").equals(((javax.swing.JMenu) shown.get(at + 1)).getText()),
+            "Manage Pages... is not where the Manage Pages menu was, above Edit Layout Page");
+
+        assertTrue(item.isEnabled(), "precondition: Manage Pages... is grayed with a page loaded");
+
+        try (Answering answering = Answering.start(message -> null))
+        {
+            Components.press(item);
+
+            assertTrue(Components.waitFor(() -> editorOn(page) != null, 15000), "Manage Pages... opened no editor on "
+                + page + ": " + titles());
+
+            assertTrue(Components.waitFor(() -> pageMenuOpenIn(editorOn(page)), 10000), "the editor's Manage Pages"
+                + " menu is not open");
+
+            assertEquals(answering.asked(), Collections.emptyList(), "Manage Pages... asked something");
+        }
+
+        assertEquals(editors().size(), 1, "more than one editor is open: " + titles());
+
+        javax.swing.JPopupMenu popup = Components.popupShowing();
+
+        assertNotNull(popup, "no menu is showing");
+
+        for (String key : new String[] {"ui.main.toolbar.addBlackPage", "ui.main.toolbar.renameCurrentPage",
+            "ui.main.toolbar.duplicateCurrentPage", "layout.ui.menuCombineLinkedPages",
+            "ui.main.toolbar.deleteCurrentPage"})
+        {
+            assertNotNull(Components.withText(popup, I18n.t(key)), "the open menu has no " + I18n.t(key));
+        }
+
+        SwingUtilities.invokeAndWait(javax.swing.MenuSelectionManager.defaultManager()::clearSelectedPath);
+    }
+
+    /**
+     * With an editor already open on one page and the main window on another, Manage Pages... is lit, brings that
+     * editor forward with its Manage Pages menu open, and opens no second editor nor moves it off its page.
+     *
+     * MUTATION: Manage Pages... grayed with an editor open (`setEnabled(live)` in `applyLayoutEditingAvailability`),
+     * and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testManagePagesBringsTheOpenEditorForwardWithItsMenuOpen() throws Exception
+    {
+        final String page = "5 - Test";
+
+        Watched editor = editPage(page, false);
+
+        showInTheMainWindow("2 - Bottom");
+
+        javax.swing.JMenuItem item = managePages();
+
+        openTheLayoutsMenu();
+
+        assertTrue(item.isEnabled(), "Manage Pages... is grayed with an editor open");
+
+        try (Answering answering = Answering.start(message -> null))
+        {
+            Components.press(item);
+
+            assertTrue(Components.waitFor(() -> pageMenuOpenIn(editor.window), 10000), "the open editor's Manage"
+                + " Pages menu is not open");
+
+            assertEquals(answering.asked(), Collections.emptyList(), "Manage Pages... asked something");
+        }
+
+        SwingUtilities.invokeAndWait(javax.swing.MenuSelectionManager.defaultManager()::clearSelectedPath);
+
+        editor.wasNeverClosed();
+
+        assertTrue(editor.shows(page), "the editor left its page: " + titles());
+    }
+
+    /**
+     * Manage Pages... is grayed when the hidden menu is: during a run, saying why, and given back with its own tooltip
+     * after; and with no local layout.  Lit again at rest.
+     *
+     * MUTATION: Manage Pages... left out of the run's graying (`greyForTheRun(managePagesItem, ...)` in
+     * `guardLayoutMenu`), and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testManagePagesIsGrayedWhenTheHiddenMenuWouldBe() throws Exception
+    {
+        javax.swing.JMenuItem item = managePages();
+
+        javax.swing.JMenu hidden = field("modifyLocalLayoutMenu", javax.swing.JMenu.class);
+
+        openTheLayoutsMenu();
+
+        assertTrue(item.isEnabled() && hidden.isEnabled(), "precondition: grayed at rest");
+
+        final String tip = item.getToolTipText();
+
+        aRouteRuns();
+
+        openTheLayoutsMenu();
+
+        assertFalse(hidden.isEnabled(), "precondition: the hidden menu is lit while a route runs");
+
+        assertFalse(item.isEnabled(), "Manage Pages... is lit while a route runs");
+
+        assertTrue(String.valueOf(item.getToolTipText()).contains(I18n.t("ui.main.errorNoEditsWhileRunning")),
+            "Manage Pages... grayed for the run does not say why: " + item.getToolTipText());
+
+        model.getRoute(PROBE).stopExecuting();
+
+        assertTrue(Components.waitFor(() -> !ui.aRunHoldsTheSetup(), 10000), "precondition: the route still holds");
+
+        openTheLayoutsMenu();
+
+        assertTrue(item.isEnabled(), "Manage Pages... stayed grayed after the route stopped");
+
+        assertEquals(item.getToolTipText(), tip, "Manage Pages... did not get its own tooltip back");
+
+        java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
+
+        final String folder = prefs.get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
+
+        try
+        {
+            // A Central Station layout, as switching to one stores it
+            prefs.put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
+
+            openTheLayoutsMenu();
+
+            assertFalse(hidden.isEnabled(), "precondition: the hidden menu is lit with no local layout");
+
+            assertFalse(item.isEnabled(), "Manage Pages... is lit with no local layout");
+        }
+        finally
+        {
+            prefs.put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, folder);
+        }
+
+        openTheLayoutsMenu();
+
+        assertTrue(item.isEnabled(), "Manage Pages... stayed grayed with the local layout back");
+    }
+
     // ------------------------------------------------------------------------------------------------ the window
 
     /** An editor window, with what has been done to the window itself. */
@@ -738,6 +1177,19 @@ public class testTheLayoutEditorManagesPages
 
     private void showInTheMainWindow(final String page)
     {
+        javax.swing.JComboBox<?> box = pageList();
+
+        Components.select(box, page);
+
+        assertTrue(Components.waitFor(() -> page.equals(String.valueOf(box.getSelectedItem())), 5000),
+            "precondition: the page list would not show " + page);
+
+        Components.settle();
+    }
+
+    /** The main window's page list. */
+    private javax.swing.JComboBox<?> pageList()
+    {
         final String first = model.getLayoutList().get(0);
 
         javax.swing.JComboBox<?> box = Components.find(ui, javax.swing.JComboBox.class, b ->
@@ -752,12 +1204,52 @@ public class testTheLayoutEditorManagesPages
 
         assertNotNull(box, "the window has no page list");
 
-        Components.select(box, page);
+        return box;
+    }
 
-        assertTrue(Components.waitFor(() -> page.equals(String.valueOf(box.getSelectedItem())), 5000),
-            "precondition: the page list would not show " + page);
+    /** Layouts > Manage Pages... */
+    private javax.swing.JMenuItem managePages()
+    {
+        AbstractButton item = Components.withText(ui, I18n.t("ui.main.toolbar.managePages"));
+
+        assertTrue(item instanceof javax.swing.JMenuItem, "the Layouts menu has no "
+            + I18n.t("ui.main.toolbar.managePages"));
+
+        return (javax.swing.JMenuItem) item;
+    }
+
+    /** Opens and shuts the Layouts menu, so its guard runs as it does for the user. */
+    private void openTheLayoutsMenu() throws Exception
+    {
+        final javax.swing.JMenu layouts = field("layoutMenu", javax.swing.JMenu.class);
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            layouts.setSelected(true);
+            layouts.setSelected(false);
+        });
 
         Components.settle();
+    }
+
+    /** Whether this editor's Manage Pages menu is open. */
+    private static boolean pageMenuOpenIn(LayoutEditor editor)
+    {
+        if (editor == null) return false;
+
+        javax.swing.JMenu menu = Components.find(editor, javax.swing.JMenu.class,
+            m -> I18n.t("ui.main.toolbar.modifyLayout").equals(m.getText()));
+
+        return menu != null && Components.onTheEventThread(menu::isPopupMenuVisible);
+    }
+
+    private <T> T field(String name, Class<T> type) throws Exception
+    {
+        java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField(name);
+
+        field.setAccessible(true);
+
+        return type.cast(field.get(ui));
     }
 
     /** Presses the editor's own item for this action. */
