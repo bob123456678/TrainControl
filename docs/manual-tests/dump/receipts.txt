@@ -4050,3 +4050,11 @@ kind: bug
 what: Name Everything (asks again) and Rename... (refuses and closes, as it did for an unusable name) ask one shared check, AutonomyEditorPanel.whyNotNamed, as the new-station prompt does, so a taken name is refused, names given earlier in the walk included (`a9b3028d`, `dbd51236`). Claims in ui.testTheLengthPromptHasTheKeyboard, red first.
 state: -
 became: MT-824
+
+[receipt OB-377]
+seq: 506
+filed: 2026-10-25
+kind: bug
+what: Danish button renamed Kan toget køre? (Adam's wording); fits its 150 px; claim ui.testDiagramLooksRight.testTheRightColumnsButtonsReadInFull; commit c8714171
+state: -
+became: MT-825

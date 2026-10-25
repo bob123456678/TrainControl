@@ -32529,3 +32529,40 @@ body:
 tail:
 | ---
 |
+
+[test MT-825]
+ordinal: 824
+anchor: mt-825
+date: 2026-10-25
+title: In Danish, the autonomy editor's second tool button reads Kan toget køre? in full
+disposition: needs test
+from: OB-377
+written: 2026-10-25
+reopened: no
+body:
+| <a id="mt-825"></a>
+| ### MT-825 - 2026-10-25 - In Danish, the autonomy editor's second tool button reads Kan toget køre? in full
+|
+| **Disposition:** needs test
+| **From:** OB-377
+|
+| **Written:** 2026-10-25
+|
+| **Steps**
+|
+| 1. Set TrainControl's language to Dansk and open the autonomy editor.
+| 2. Look at the two buttons under Autonomiværktøjer at the top of the right column.
+| 3. Click the second button, then click a square a train is standing on.
+| 4. Close the editor with `Annuller`.
+|
+| **Expected**
+|
+| - Step 2: the buttons read "Test en tur" and "Kan toget køre?" in full, with no "..." at the end, and are as wide as the dropdowns below.
+| - Step 3: the button stays pressed and, as before, the editor says why that train is not being sent anywhere and draws the routes it could take.
+| - Step 4: the editor closes; nothing was changed.
+|
+| *What this is:* OB-377.  In Danish the second button read "Hvorfor kører det ik...", cut off because its text needs more room than the column has.  It is now "Kan toget køre?", which fits.
+|
+tail:
+| ---
+|

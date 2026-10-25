@@ -1013,7 +1013,7 @@ text:
 
 [issue OB-377]
 ordinal: 48
-inbox: yes
+inbox: no
 kind: bug
 title: In Danish, the autonomy editor's "Why not Moving?" button is cut off
 filed: 2026-10-25
