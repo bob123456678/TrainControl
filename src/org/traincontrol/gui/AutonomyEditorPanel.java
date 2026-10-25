@@ -1432,18 +1432,12 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Makes every placed train's current square its home, after confirming (FR-075).  Built like `clearAllHomes`: the
-     * emptiness check is kept though the item greys itself on the same question, because the greying is the AFFORDANCE
-     * and this the GUARD (a train can be moved between one refresh and the next).  The confirmation names what will be
-     * overwritten rather than what will be lost, as this is the one bulk tool that adds: a train homed here loses its
-     * home elsewhere and a square homed to another train is reassigned, both from `AutonomySession.setHome`, where the
-     * one-locomotive-one-station rule lives.
+     * Makes every placed train's square its home, after confirming (FR-075).  The emptiness check is the guard behind
+     * the greying; the confirmation names what will be overwritten (`AutonomySession.setHome` holds the rule).
      */
     private void homeEveryPlacedTrain()
     {
-        // COUNTED OFF THE SAME SET THE DOOR WALKS, where the railway has the trains: `tilesWithALocomotive()` reads
-        // every page while the bulk door skips excluded ones, so the operator would be told a number the gesture would
-        // not deliver.
+        // Counted off the set the door walks, excluded pages skipped
         java.util.List<TileKey> placed =
             new java.util.ArrayList<>(session.trainsWhereTheyStand().keySet());
 
@@ -1469,21 +1463,17 @@ public class AutonomyEditorPanel extends JPanel
 
         refresh();
 
-        // THE RUNNING LAYOUT TOO, for the reason `clearAllHomes` gives: otherwise Return Home goes on offering
-        // the arrangement the operator has just replaced.
+        // And the running layout, or Return Home offers the arrangement just replaced (as `clearAllHomes`).
         setupChanged();
     }
 
     /**
-     * Puts every train that has a home on it, facing the way it was homed, and takes every other train off the layout,
-     * after confirming; the setup only, nothing sent to the railway (FR-115).  Built like `homeEveryPlacedTrain`: the
-     * emptiness check is the guard to the item's affordance.  The rebuild that follows is told every train the session
-     * touched, or it would put the ones it missed back where the railway had them.
+     * Puts every homed train on its home and takes the rest off, after confirming, in the setup only (FR-115).  The
+     * rebuild is told every train touched, or it puts the missed ones back.
      */
     private void placeEveryTrainAtHome()
     {
-        // ON THE TRACK DIAGRAM AS FROM RETURN HOME (FR-129): there is no banner and no Cancel, so it asks as Return Home's
-        // item asks, re-checks the same question, and says the result in the log
+        // On the track diagram, as Return Home asks (FR-129): no banner, so said in the log
         final TrainControlUI window = menuOnly ? parentWindow() : null;
 
         if (window != null)
@@ -1498,10 +1488,8 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * The door behind Place All Trains at Their Homes, for the editor's menu and for the main window's Return Home
-     * button, which has no editor open (FR-129).  The caller's question is asked again once the confirmation has been
-     * answered, as the railway can change while it is on screen.
-     *
+     * The door behind Place All Trains at Their Homes, for this menu and for Return Home with no editor open (FR-129);
+     * the caller's question is asked again after the confirmation.
      * @param confirmKey the bundle key of the confirmation text, which takes the homed count and the homeless count
      * @param refusedBecause why the placement is not allowed now, or null; asked after the confirmation
      * @param saying where the outcome is said
@@ -1517,7 +1505,6 @@ public class AutonomyEditorPanel extends JPanel
             return;
         }
 
-        // the trains standing that have no home, which this takes off
         java.util.Set<String> homed = new java.util.HashSet<>(homes.values());
 
         int homeless = 0;
@@ -1552,10 +1539,8 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * For each home square, the way its locomotive faces on the copy the running layout made its home, for
-     * `placeEveryTrainAtHome` where a home was recorded without a facing (FR-115).  Read off `getPoints` and the Points
-     * themselves, which take none of the railway's monitor; empty where there is no running layout yet.
-     *
+     * For each home square, the facing of the copy the running layout made its home, for homes recorded without one
+     * (FR-115); off the Points, taking no monitor.
      * @return home square to facing
      */
     private java.util.Map<TileKey, org.traincontrol.automationui.TilePorts.Side> homeCopyFacings()
@@ -1584,21 +1569,15 @@ public class AutonomyEditorPanel extends JPanel
         return out;
     }
 
-    /**
-     * For tests: the Bulk Tools menu as the right-click menu builds it (OB-194).  A tooltip is a property the menu ITEM
-     * carries, so the only way to ask whether the warning reaches the menu is to build it, through `bulkTools()`
-     * itself, for `clickCommandMarkForTest`'s reason: a second construction could agree with itself while the real one
-     * is wrong.
-     */
+    /** For tests: the Bulk Tools menu as the right-click menu builds it, through `bulkTools()` itself (OB-194). */
     public javax.swing.JMenu buildBulkMenuForTest()
     {
         return bulkTools();
     }
 
-    // Which square the open right-click menu is acting on
     TileKey menuTarget;
 
-    /** What the menu calls this point: its name where it has one, and what it is where it does not. */
+    /** What the menu calls this point: its name, else what it is. */
     String pointTitle(TileKey tile)
     {
         String name = session.getStore().getPointName(tile);
@@ -1606,7 +1585,7 @@ public class AutonomyEditorPanel extends JPanel
         return name == null || name.trim().isEmpty() ? describeTile(tile) : name.trim();
     }
 
-    /** A bold, disabled heading at the top of a menu - the editor's own idiom. */
+    /** A bold, disabled heading at the top of a menu. */
     void title(javax.swing.JMenu menu, String text)
     {
         title(menu.getPopupMenu(), text);
@@ -1623,9 +1602,7 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Whether a submenu holds anything but its own heading (OB-032): title() adds a disabled item at the top, so an
-     * empty submenu has a count of one, and getItemCount() == 0 is always false.
-     *
+     * Whether a submenu holds anything but its own heading (OB-032), which title() adds.
      * @return true when there is something under the heading
      */
     boolean hasItemsBesidesTitle(javax.swing.JMenu menu)
@@ -1634,7 +1611,7 @@ public class AutonomyEditorPanel extends JPanel
         {
             javax.swing.JMenuItem child = menu.getItem(i);
 
-            // A separator comes back as null from getItem, and a separator is not content either
+            // A separator is null from getItem, and no content
             if (child != null && child.isEnabled()) return true;
         }
 
@@ -1643,17 +1620,14 @@ public class AutonomyEditorPanel extends JPanel
 
     /**
      * Whether a setup edit is refused because trains are running, having said so (Adam: *"There should be no setup edit
-     * possible during a run"*).  The diagram's Autonomy Setup menu is offered only at rest and the editor cannot be
-     * opened during a run (OB-047), but a menu opened at rest can be clicked after a run has begun, so this is asked at
-     * every item's click.
-     *
+     * possible during a run"*): a menu opened at rest can be clicked after a run begins (OB-047).
      * @return true where the edit is refused
      */
     private boolean refusedWhileRunning()
     {
         TrainControlUI window = parentWindow();
 
-        // A ROUTE TOO (`TrainControlUI.aRunHoldsTheSetup`)
+        // A route too
         if (window == null || !window.aRunHoldsTheSetup()) return false;
 
         JOptionPane.showMessageDialog(owner(), window.whyTheSetupIsHeld("autolayout.errorCannotEditWhileRunning"));
@@ -1662,10 +1636,8 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * The same refusal for a gesture on the diagram or a key, which has no menu item to ask first: said on the message
-     * strip rather than in a dialog the next click would raise again.  An editor opened at rest stays open when a route
-     * begins, so every write the diagram's clicks and the shortcuts make asks this first.
-     *
+     * The same refusal for a diagram gesture or key, said on the message strip: an editor opened at rest stays open
+     * when a route begins.
      * @return true where the gesture is refused
      */
     boolean heldByARun()
@@ -1679,18 +1651,14 @@ public class AutonomyEditorPanel extends JPanel
         return true;
     }
 
-    /**
-     * A menu item that runs something, redraws, and flashes the square it changed.  No font is set: the editor's own
-     * menus use the look and feel's.  The flash matters more here than on a click: the menu covers the tile while it is
-     * open, and on a run the square that changes is the head of the run rather than the one right-clicked.
-     */
+    /** A menu item that runs something, redraws, and flashes the square changed, which the menu was covering. */
     javax.swing.JMenuItem item(String text, final Runnable action)
     {
         javax.swing.JMenuItem menuItem = new javax.swing.JMenuItem(text);
 
         menuItem.addActionListener(e ->
         {
-            // NOT WHILE TRAINS RUN - see `refusedWhileRunning`
+            // Not while trains run
             if (refusedWhileRunning()) return;
 
             try
@@ -1699,14 +1667,13 @@ public class AutonomyEditorPanel extends JPanel
             }
             catch (RuntimeException ex)
             {
-                // The class as well as the message: a NullPointerException has no message, and a dialog whose whole
-                // content is the word "null" tells nobody anything.
+                // The class too: a NullPointerException has no message.
                 String said = ex.getMessage() == null || ex.getMessage().trim().isEmpty()
                     ? ex.getClass().getSimpleName() : ex.getMessage();
 
                 JOptionPane.showMessageDialog(owner(), I18n.f("error.generic", said));
 
-                // And into the log, with the stack, which is the only thing that says WHERE
+                // And into the log, with the stack
                 if (parentWindow() != null && parentWindow().getModel() != null)
                 {
                     parentWindow().getModel().log(ex);
@@ -1728,10 +1695,8 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * How wide to wrap text so the longest of these sentences takes two lines, and never narrower than `atLeast`
-     * (MT-479): half the longest sentence's width, and the longest word over, because a line breaks between words and
-     * the half rarely falls between two.
-     *
+     * How wide to wrap so the longest sentence takes two lines, at least `atLeast` (MT-479): half its width plus the
+     * longest word, as lines break between words.
      * @param metrics the font the text is drawn in
      * @param atLeast the narrowest the text may be - the width of what sits under it
      * @param sentences the sentences
@@ -1753,8 +1718,7 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Text wrapped at a width, as `wrapped` wraps a tooltip at its own.
-     *
+     * Text wrapped at a width, as `wrapped` wraps a tooltip.
      * @param text the text
      * @param width the width in pixels, or 0 or less to leave it on one line
      * @return the text, wrapped
@@ -1769,32 +1733,26 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * A tooltip that wraps instead of running off the screen: Swing lays a tooltip out on one line however long it is,
-     * and these explain what a setting MEANS rather than naming it.  The width is in pixels, the only unit the renderer
-     * here understands.
-     *
+     * A tooltip that wraps instead of running off the screen, which Swing does with a long one.
      * @return the same text, wrapped
      */
     static String wrapped(String text)
     {
         if (text == null || text.trim().isEmpty()) return text;
 
-        // Already somebody's own markup: left exactly as it is
+        // Already markup: left as it is
         if (text.trim().toLowerCase().startsWith("<html")) return text;
 
         String escaped = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
 
-        // ONE LINE WHERE IT FITS ON ONE (MT-613): the width is the body's, so a short reason would be set in a box as
-        // wide as a long one wraps at.  Still HTML, as every tooltip from here is.
+        // One line where it fits (MT-613), or a short reason sits in a wide box.
         if (fitsOnOneLine(text)) return "<html>" + escaped + "</html>";
 
         return "<html><body style='width: " + TOOLTIP_WIDTH + "px'>" + escaped + "</body></html>";
     }
 
     /**
-     * A tooltip wrapped where it is too wide for one line, and left exactly as it was where it is not - a shortcut such as
-     * "Control+A" stays plain text (FR-112).
-     *
+     * A tooltip wrapped only where too wide for one line; "Control+A" stays plain text (FR-112).
      * @param text the tooltip, or null
      * @return the tooltip, wrapped if it needs to be
      */
@@ -1806,10 +1764,7 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Every tooltip on a menu, its items and its submenus, wrapped where it is too wide for one line (FR-112): for the
-     * menus whose tooltips are set where nobody wraps them (the main window's menu bar, set in the generated block, and
-     * the right-click menus as they are shown).
-     *
+     * Wraps every too-wide tooltip on a menu and its submenus (FR-112), for menus set where nobody wraps them.
      * @param menu a menu bar, a menu or a popup menu
      */
     public static void wrapTheTooltips(java.awt.Container menu)
@@ -1836,10 +1791,8 @@ public class AutonomyEditorPanel extends JPanel
     private static final int TOOLTIP_WIDTH = 320;
 
     /**
-     * TOOLTIP_WIDTH in the pixels the text is measured in: Swing draws a CSS width at the screen's resolution, so on a
-     * 120-dpi screen the 320px body is 400 pixels, and testing one line against 320 wraps a tooltip that then sits in a
-     * box 400 wide (OB-358).
-     *
+     * TOOLTIP_WIDTH in measuring pixels: a CSS width is drawn at the screen's resolution, so 320 is 400 at 120 dpi
+     * (OB-358).
      * @return the wrapping width, in pixels
      */
     private static int wrappingWidth()
@@ -1850,7 +1803,7 @@ public class AutonomyEditorPanel extends JPanel
         return dpi > 0 ? (int) Math.round(TOOLTIP_WIDTH * dpi / 96.0) : TOOLTIP_WIDTH;
     }
 
-    /** Whether a tooltip's text is one line no wider than the wrapping width, in the font tooltips are drawn in. */
+    /** Whether a tooltip's text fits one line of the wrapping width, in the tooltip font. */
     private static boolean fitsOnOneLine(String text)
     {
         if (text.indexOf('\n') >= 0) return false;
@@ -1872,7 +1825,7 @@ public class AutonomyEditorPanel extends JPanel
         }
     }
 
-    /** @param tooltipKey the graph window's own tooltip for this setting, so the explanation travels with the option */
+    /** @param tooltipKey the graph window's own tooltip for this setting */
     javax.swing.JCheckBoxMenuItem toggle(String text, String tooltipKey, boolean on,
         final java.util.function.Consumer<Boolean> action)
     {
@@ -1882,21 +1835,18 @@ public class AutonomyEditorPanel extends JPanel
 
         menuItem.addActionListener(e ->
         {
-            // NOT WHILE TRAINS RUN - see `refusedWhileRunning`
+            // Not while trains run
             if (refusedWhileRunning()) return;
 
-            // Guarded, as `item` beside it is: a RuntimeException out of setBarredArrivals, setPortalDisabled or
-            // setAutoDestination would skip placementChanged, leaving the box showing the new state and the setup the
-            // old.  The redraw happens either way: a menu that has thrown is least likely to hold a true picture of the
-            // setup.
+            // Guarded, as `item` is, so a throw cannot skip placementChanged and leave box and setup apart; redrawn
+            // either way.
             try
             {
                 action.accept(menuItem.isSelected());
             }
             catch (RuntimeException ex)
             {
-                // SAID, the way item() says it, class included (a NullPointerException has no message): a guard that
-                // makes a failure quieter than it was is not a guard.
+                // Said as item() says it, class included.
                 String said = ex.getMessage() == null || ex.getMessage().trim().isEmpty()
                     ? ex.getClass().getSimpleName() : ex.getMessage();
 
@@ -1905,9 +1855,8 @@ public class AutonomyEditorPanel extends JPanel
                 say(hint, said);
             }
 
-            // placementChanged, not refresh: these write the SETUP, and four are reachable from the track diagram's own
-            // menu, where nothing else picks the change up.  Whether trains may arrive by a side decides how a square
-            // SPLITS (how many Points it becomes), the very case the rebuild exists for.
+            // placementChanged, not refresh: these write the setup, some from the track diagram's menu, and an arrival
+            // side decides how a square splits.
             placementChanged(null);
 
             flashMenuTarget();
@@ -1917,11 +1866,8 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Whether a station's name may be written on this square (OB-042, OB-044): any square except a switch or a signal,
-     * which ALREADY do something when clicked, so a caption would put text over a control.  A platform road is where a
-     * name usually belongs, and a bumper or the curve at the top of a loop is often the only other square near the
-     * station.
-     *
+     * Whether a station's name may be written on this square (OB-042, OB-044): anything but a switch or signal, whose
+     * click does something.
      * @param component what is drawn on the square
      * @return whether to offer the caption items
      */
@@ -1929,17 +1875,13 @@ public class AutonomyEditorPanel extends JPanel
     {
         if (component == null) return true;
 
-        // Switches and signals, and NOT everything isClickable() covers (feedback, uncouplers, links, lamps, routes):
-        // feedback is the platform road, the commonest place for a station name; a click on a switch or signal throws
-        // real ironwork, a sensor's only toggles a reading.
+        // Not everything isClickable() covers: a sensor is the platform road, the commonest place for a name.
         return !component.isSwitch() && !component.isSignal();
     }
 
     /**
-     * Whether a dragged station label may land here (FR-035): the predicate the drag mark asks WHILE dragging and
-     * `moveCaption` asks on release, so what is shown green is exactly what will be accepted (a highlight with a rule
-     * of its own is the fault behind OB-057 and OB-090).
-     *
+     * Whether a dragged station label may land here (FR-035): asked while dragging and on release, so green is what is
+     * accepted.
      * @param from the square the label is on now
      * @param to the square under the pointer
      * @param onTarget what is drawn there
@@ -1951,11 +1893,8 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Why a dragged label may not land here, as something to say, or null when it may: one method rather than a boolean
-     * and a separate message, as a refusal and its reason go out of step the moment they are written twice.  The EMPTY
-     * STRING is the one refusal with nothing to report: a label dropped back on the square it came from is not a
-     * mistake.
-     *
+     * Why a dragged label may not land here, or null when it may: one method, so refusal and reason cannot drift.  ""
+     * is a silent no, for a drop back where it came from.
      * @return the message, "" for a silent no, or null for yes
      */
     private String refuseCaptionDrop(TileKey from, TileKey to, LayoutDiagramComponent onTarget)
@@ -1964,7 +1903,7 @@ public class AutonomyEditorPanel extends JPanel
 
         if (session.getCaptionTarget(from) == null) return "";
 
-        // Dropped outside the diagram, which is a slip rather than an instruction.
+        // Dropped outside the diagram: a slip.
         if (to == null) return I18n.t("autosetup.ui.errorDropOffDiagram");
 
         if (to.equals(from)) return "";
@@ -1974,14 +1913,13 @@ public class AutonomyEditorPanel extends JPanel
             return I18n.t("autosetup.ui.errorDropOffDiagram");
         }
 
-        // Outside the part of the page the running diagram draws, where nobody would see it
+        // Outside what the running diagram draws
         if (!session.isInTheDrawnArea(to)) return I18n.t("autosetup.ui.captionOutsideTheDrawnArea");
 
-        // A control, where a click throws real ironwork and a name would sit in the way of it.
+        // On a control, in the way of its click.
         if (!mayCarryACaption(onTarget)) return I18n.t("autosetup.ui.errorDropOnControl");
 
-        // REFUSED rather than replaced: the name already there would disappear with nothing on the diagram to say it
-        // ever existed.
+        // Refused, not replaced: the name there would vanish without trace.
         if (session.getCaptionTarget(to) != null)
         {
             return I18n.f("autosetup.ui.errorDropOccupied", describeTile(to));
@@ -1991,13 +1929,9 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Moves a station label from one square to another (FR-035): the caption command run twice (cleared where it was,
-     * set where it landed), not a new stored position, so there is no extra field to carry through a page move, a
-     * rename, an insert or an undo (Adam: *"it is equivalent to just adding the label at the destination when the mouse
-     * is released, since the command is wired."*).  Every refusal is spoken: a drag that snapped back silently is
-     * indistinguishable from one the window failed to notice.  The landing rule is `mayCarryACaption`, the one the
-     * right-click menu asks before offering the item.
-     *
+     * Moves a station label (FR-035): the caption command run twice, so no stored position needs carrying (Adam: *"it
+     * is equivalent to just adding the label at the destination when the mouse is released, since the command is
+     * wired."*).  Every refusal is spoken.
      * @param from the square the label is on now
      * @param to the square it was dropped on
      * @param onTarget what is drawn on that square
@@ -2005,14 +1939,12 @@ public class AutonomyEditorPanel extends JPanel
      */
     public boolean moveCaption(TileKey from, TileKey to, LayoutDiagramComponent onTarget)
     {
-        // NOT WHILE A RUN HOLDS THE SETUP - see `heldByARun`
         if (heldByARun()) return false;
 
         String refused = refuseCaptionDrop(from, to, onTarget);
 
         if (refused != null)
         {
-            // The empty string is the silent refusal: dropped back where it started.
             if (!refused.isEmpty()) say(hint, refused);
 
             return false;
@@ -2020,8 +1952,7 @@ public class AutonomyEditorPanel extends JPanel
 
         TileKey station = session.getCaptionTarget(from);
 
-        // ONE move, through the session's own method: two calls would each end in `touched()` -> `rebuild()`, and an
-        // exception out of the first would leave the station with no caption anywhere, which a Save would commit.
+        // One move through the session: two calls could leave the station uncaptioned between them.
         if (!session.moveCaption(from, to)) return false;
 
         if (onDiagramChanged != null) onDiagramChanged.run();
@@ -2030,27 +1961,18 @@ public class AutonomyEditorPanel extends JPanel
 
         refresh();
 
-        // The running layout is what the captions are drawn from.
+        // The running layout draws the captions.
         setupChanged();
 
         return true;
     }
 
-    /**
-     * The station most recently clicked or right-clicked, so a label knows what it is probably for: naming a square is
-     * two steps (look at the station, then put its name on a square beside it), and by the second the editor would
-     * otherwise offer an alphabetical list of every station with the one they are standing next to buried in it.
-     */
+    /** The station last clicked or right-clicked, so a label offered next defaults to it. */
     private TileKey lastStationTouched;
 
     /**
-     * The station nearest this square, by tile distance (FR-034; Adam: *"prefill it with the label of the nearest
-     * station by tile distance."*): a label is put on a square near the station it names, so the nearest is the
-     * default, and unlike the last-clicked memory it is right without anybody having done anything first.  ON THIS PAGE
-     * ONLY, as a page is a separate drawing with its own coordinates; a page with no stations gets no default.  Squared
-     * straight-line distance, since only the ORDER matters and the label is placed by eye.  Ties go to whichever the
-     * store lists first, not by name: sorting a genuine toss-up would only make the answer look considered.
-     *
+     * The station nearest this square on this page (FR-034; Adam: *"prefill it with the label of the nearest station by
+     * tile distance."*); ties go to the store's order.
      * @param from the square the label would go on
      * @return the nearest station on the same page, or null when there is none
      */
@@ -2073,10 +1995,8 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * The nearest of a set of squares, by straight-line distance on the same page (FR-034).  Public and taking squares
-     * rather than a session so the rule can be checked without an autonomy graph, a window or a railway: a station on
-     * another page, a tie, and nothing on the page.
-     *
+     * The nearest of a set of squares on the same page (FR-034), public and session-free so the rule can be tested
+     * alone.
      * @return the nearest on the same page, or null when there is none
      */
     public static TileKey nearestOf(TileKey from, java.util.Collection<TileKey> stations)
@@ -2088,13 +2008,11 @@ public class AutonomyEditorPanel extends JPanel
 
         for (TileKey at : stations)
         {
-            // ANOTHER PAGE is not further away, it is not on the same drawing at all.
             if (at == null || !from.getPage().equals(at.getPage())) continue;
 
             long dx = at.getX() - from.getX();
             long dy = at.getY() - from.getY();
 
-            // Squared: only the ORDER matters, and the square root does not change it.
             long away = dx * dx + dy * dy;
 
             if (away < closest)
@@ -2107,7 +2025,7 @@ public class AutonomyEditorPanel extends JPanel
         return best;
     }
 
-    /** Notes a square if it is a station, so the next label offered defaults to it. */
+    /** Notes a square if it is a station, so the next label defaults to it. */
     void rememberIfStation(TileKey tile)
     {
         if (tile != null && session != null && session.getStore().isStation(tile))
@@ -2116,42 +2034,27 @@ public class AutonomyEditorPanel extends JPanel
         }
     }
 
-    /**
-     * The answer to the question about taking another station's only name off a station square, given without asking
-     * for a test not about the dialog; null to ask.
-     */
+    /** The answer to the take-another-station's-name question for tests, or null to ask. */
     private static volatile Boolean takeAnotherNameAnswerForTests;
 
-    /**
-     * @param answer true for Yes or false for No, answering the question about taking another station's only name
-     * without asking it; null to ask again
-     */
+    /** @param answer true for Yes, false for No, null to ask again */
     public static void answerTakeAnotherNameForTests(Boolean answer)
     {
         takeAnotherNameAnswerForTests = answer;
     }
 
-    /** The question last put about taking another station's only name, or answered for a test (OB-341). */
+    /** The question last put about taking another station's only name (OB-341). */
     private static volatile String takeAnotherNameQuestion;
 
-    /**
-     * @return the words of the last question about taking another station's only name, for a test of what it says
-     * (OB-341)
-     */
+    /** @return the words of the last such question, for a test (OB-341) */
     public static String takeAnotherNameQuestionForTests()
     {
         return takeAnotherNameQuestion;
     }
 
     /**
-     * Whether a station square may show its own name where it now shows the only caption of ANOTHER station ON THIS
-     * PAGE: asked of the operator, naming both, and true without a question where nothing would be lost.  A drag can
-     * leave a station square showing another station's caption, and captioning the square with itself takes that
-     * caption away, leaving the other station named nowhere (`AutonomyChecks.checkStationLabels` reports an error); the
-     * drop refuses the same loss outright (`refuseCaptionDrop`), but "Show a Station Name Here" is live on such a
-     * square on purpose, so this asks.  Per page, as the captions are (OB-341): the name on this square is the
-     * station's only one on this page when no other square of the page names it, whatever its captions on other pages.
-     *
+     * Whether a station square may show its own name where it shows ANOTHER station's only caption on this page
+     * (OB-341): asked, naming both, unless nothing is lost.  The drop refuses the same loss; this menu item asks.
      * @return whether to go on
      */
     private boolean mayTakeAnotherStationsOnlyName(TileKey tile)
@@ -2164,14 +2067,12 @@ public class AutonomyEditorPanel extends JPanel
 
         elsewhere.remove(tile);
 
-        // On another page too: Yes leaves it shown there, so the question says only this page (OB-341)
         boolean shownOnOtherPages = !elsewhere.isEmpty();
 
         elsewhere.removeIf(where -> !tile.getPage().equals(where.getPage()));
 
         if (!elsewhere.isEmpty()) return true;
 
-        // Its only caption anywhere: Yes leaves it shown nowhere, and the question says off the diagram
         String question = I18n.f(shownOnOtherPages ? "autosetup.ui.confirmTakeAnotherStationsName"
             : "autosetup.ui.confirmTakeAnotherStationsOnlyName", describeTile(other), describeTile(tile));
 
@@ -2181,25 +2082,22 @@ public class AutonomyEditorPanel extends JPanel
 
         if (given != null) return given;
 
-        // TrainControl's own buttons, as the question about replacing text asks, and No the default: Yes takes a name off
-        // the diagram.  An INDEX comes back, where 0 is Yes.
+        // No is the default: Yes takes a name off the diagram.  0 is Yes.
         return JOptionPane.showOptionDialog(owner(), question,
             I18n.t("autosetup.ui.titleStationLabel"), JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null,
             TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) == 0;
     }
 
-    /** Asks which station this square should show. */
     void promptStationLabel(TileKey tile, LayoutDiagramComponent component)
     {
-        // Text of the user's own on this square is replaced only if they say so, naming the text in the question: the
-        // person is doing this because they have lost track of the square's contents.
+        // The user's own text here is replaced only if they say so, named in the question.
         String standing = component == null || component.getLabel() == null
             ? "" : component.getLabel().trim();
 
         if (!standing.isEmpty() && session.getCaptionTarget(tile) == null)
         {
-            // showOptionDialog with TrainControl's own button text, not showConfirmDialog, whose buttons follow the
-            // JVM's locale rather than the language the user picked; it returns an INDEX, 0 the first option.
+            // showOptionDialog for TrainControl's button text (showConfirmDialog's follow the JVM locale); 0 is the
+            // first
             int answer = JOptionPane.showOptionDialog(owner(),
                 I18n.f("autosetup.ui.confirmReplaceText", standing),
                 I18n.t("autosetup.ui.titleStationLabel"),
@@ -2209,11 +2107,9 @@ public class AutonomyEditorPanel extends JPanel
             if (answer != 0) return;
         }
 
-        // A station labelling ITSELF has nothing to ask about: a list of every station with this one's name buried in it
-        // asks a question whose answer is known, and getting it wrong would put another platform's name on this one.
+        // A station labelling itself has nothing to ask.
         if (session.getStore().isStation(tile))
         {
-            // NOT ANOTHER STATION'S ONLY NAME WITHOUT ASKING - see `mayTakeAnotherStationsOnlyName`
             if (!mayTakeAnotherStationsOnlyName(tile)) return;
 
             applyCaption(tile, tile);
@@ -2242,12 +2138,10 @@ public class AutonomyEditorPanel extends JPanel
         javax.swing.JComboBox<String> choice =
             new javax.swing.JComboBox<>(names.toArray(new String[0]));
 
-        // What this square already shows, or failing that the station the user was last looking at; not the first name
-        // alphabetically, which opens a list to be searched rather than an answer to be confirmed.
+        // What the square shows, else the station last looked at, not the first name alphabetically.
         TileKey showing = session.getCaptionTarget(tile);
 
-        // The station just clicked, and ONLY for the next square (FR-034): taken, consumed here whether or not it is
-        // usable, so a click on a platform defaults the one label that follows it and nothing after.
+        // The station just clicked, for the next square only (FR-034): consumed here either way.
         if (showing == null)
         {
             showing = lastStationTouched;
@@ -2257,9 +2151,7 @@ public class AutonomyEditorPanel extends JPanel
 
         if (showing == null) showing = nearestStation(tile);
 
-        // Matched by SQUARE rather than by name: the list is built from the REDUCED points, whose names are generated
-        // per way into a station, while a square is stored under its authored name; for a station split by its arrival
-        // sides those differ.
+        // By square, not name: the list's reduced names differ per way in from the authored one.
         String named = nameInListFor(showing, names);
 
         if (named != null) choice.setSelectedItem(named);
@@ -2278,10 +2170,8 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Shows a station's name on a square, or stops showing it, and says so.  Nothing is written to the layout file: a
-     * caption belongs to the autonomy setup, saved by the button that says it saves autonomy and discarded by the
-     * Cancel that discards it.
-     *
+     * Shows a station's name on a square, or stops showing it, and says so; the caption is the setup's, not the layout
+     * file's.
      * @param tile the square the text goes on
      * @param station the sensor it is about, or null to clear the square
      */
@@ -2289,8 +2179,7 @@ public class AutonomyEditorPanel extends JPanel
     {
         session.setCaption(tile, station);
 
-        // The editor's own grid has to be REBUILT, not repainted: the caption is part of the tile art, and the
-        // annotation refresh does not touch it.
+        // Rebuilt, not repainted: the caption is part of the tile art.
         if (onDiagramChanged != null) onDiagramChanged.run();
 
         say(hint, station == null ? I18n.t("autosetup.ui.clearedStationLabel")
@@ -2300,14 +2189,12 @@ public class AutonomyEditorPanel extends JPanel
 
         flashMenuTarget();
 
-        // The running layout is what the captions are drawn from.
+        // The running layout draws the captions.
         setupChanged();
     }
 
     /**
-     * Which entry of a name list stands for a given square: a station square can appear under more than one name (one
-     * per way in, where its arrivals have been split) and any of them names the same place, so the first will do.
-     *
+     * Which entry of a name list stands for a square: a split station has a name per way in, any will do.
      * @param tile the square to find, or null
      * @param names what the dropdown is offering
      * @return the entry to select, or null where the square is not in the list
@@ -2316,7 +2203,7 @@ public class AutonomyEditorPanel extends JPanel
     {
         if (tile == null) return null;
 
-        // The stored name first, for a station that was never split: the exact answer where it is an answer at all.
+        // The stored name first, exact for an unsplit station.
         String authored = session.getStore().getPointName(tile);
 
         if (authored != null && names.contains(authored)) return authored;
@@ -2329,10 +2216,7 @@ public class AutonomyEditorPanel extends JPanel
         return null;
     }
 
-    /**
-     * The square of the station with this authored name, for turning a chooser's answer back into the thing a caption
-     * points at.
-     */
+    /** The square of the station with this authored name, turning a chooser's answer back into a square. */
     private TileKey stationTileNamed(String name)
     {
         if (name == null || session.getReducer() == null) return null;
@@ -2345,22 +2229,18 @@ public class AutonomyEditorPanel extends JPanel
         return null;
     }
 
-    /** What the Station heading says about a sensor without being opened. */
     String stationSummary(TileKey tile, boolean isStation)
     {
-        // Yes or no, and nothing else: the heading answers one question, may a train stop here, and the radio inside
-        // answers the rest.  A square that is out of service reads "no", because no train can stop on one.
+        // Yes or no: may a train stop here.  Out of service reads no.
         boolean stops = isStation
             && !Boolean.FALSE.equals(session.getPointProperty(tile, "active"));
 
-        // The one exception, because it changes what the square is FOR: a station autonomy will not choose is a berth,
-        // worth a mark you can see without opening anything.
+        // A berth (never chosen by autonomy) is marked with a star.
         String star = stops && !session.isAutoDestination(tile) ? " *" : "";
 
         if (!stops) return I18n.t("autosetup.ui.stationNo") + star;
 
-        // And which KIND of stop, where the square turns trains round: does every train reverse here, or may it.  They
-        // are the two settings people confuse.
+        // And which kind of turn, must or may: the two settings people confuse.
         if (session.isMustTurnAround(tile))
         {
             return I18n.t("autosetup.ui.stationYesTerminus") + star;
@@ -2375,16 +2255,14 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Writes a station's name onto the diagram, and rebuilds the grid if it went anywhere.  Quiet when there is nowhere
-     * to put it (the square is boxed in, or somebody's own caption is already there): the check that says a station is
-     * not shown anywhere still reports it, a better place for the news than a dialog interrupting the click that
-     * created the station.
+     * Writes a station's name onto the diagram, rebuilding the grid if it went anywhere.  Where there is no room the
+     * not-shown check reports it; a dialog would interrupt the click that made the station.
      */
     private void placeLabelFor(TileKey tile)
     {
         String why = session.placeCaption(tile);
 
-        // Says why nothing happened: a silent no-op leaves the user unable to tell a refusal from a bug.
+        // Says why nothing happened.
         if (why != null)
         {
             say(hint, I18n.f(why, describeTile(tile)));
@@ -2395,36 +2273,27 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * The window this panel's dialogs belong to (MT-182).  `owner()` already returns a Window whenever this panel is in
-     * one, and `SwingUtilities.getWindowAncestor(owner())` walks UP from what it is given: a top-level frame has no
-     * window ancestor, so it returns null, which centred the signal window's dialog instead of offsetting it.
-     *
+     * The window this panel's dialogs belong to (MT-182): `owner()` itself where it is one, as a top-level window has
+     * no ancestor.
      * @return the window, or null when this panel is in none
      */
     java.awt.Window ownerWindow()
     {
         java.awt.Component anchor = owner();
 
-        // Already a window: its ancestor would be what it is INSIDE, and a top-level window is inside nothing.
         if (anchor instanceof java.awt.Window) return (java.awt.Window) anchor;
 
         return javax.swing.SwingUtilities.getWindowAncestor(anchor);
     }
 
-    /**
-     * The window this panel lives in, for parenting dialogs: not the panel itself, as JOptionPane centres over the
-     * COMPONENT it is given and this one is a narrow strip down the side of the editor, so every prompt would sit
-     * against one edge.
-     */
+    /** The window this panel lives in, for parenting dialogs: JOptionPane centres over its component, a side strip. */
     java.awt.Component owner()
     {
         java.awt.Window window = javax.swing.SwingUtilities.getWindowAncestor(this);
 
         if (window != null) return window;
 
-        // A panel held only to build menus is in no window at all, and a dialog parented on it lands wherever the
-        // platform puts it - on Windows behind the main window, where a modal prompt that has to be answered is
-        // invisible and the application looks hung.
+        // A menu-only panel is in no window, and a dialog parented on it can land hidden behind the main window.
         return dialogOwner == null ? this : dialogOwner;
     }
 
@@ -2437,10 +2306,8 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Whether this panel exists only to build menus, with no diagram of its own behind it.  Two items on the tile menu
-     * ask for a SECOND click (one-way running wants the far end of the run, a protecting signal wants the signal),
-     * which the editor's own grid routes here; borrowed by the main window's diagram those clicks go elsewhere, so the
-     * prompt would sit in a banner nobody is looking at.  They open the editor at that square instead.
+     * Whether this panel only builds menus, with no diagram: items wanting a second click open the editor at that
+     * square instead.
      */
     boolean menuOnly;
 
@@ -2468,12 +2335,11 @@ public class AutonomyEditorPanel extends JPanel
      * Adam: **"expose this property in the right-click menu advanced settings, both for the autonomy editor and track
      * diagram viewer."**
      *
-     * **Built here rather than twice**: `TrainControlUI.buildAutonomyTileMenu` serves this panel's menu to the track
-     * diagram, so one implementation reaches both surfaces.
+     * Built once, here, for both surfaces (`TrainControlUI.buildAutonomyTileMenu`).
      *
-     * The sides offered are the ones the railway HAS (`ArrivalSidePrompt.sidesOf`, the list the placement prompt uses).
+     * The sides offered are the railway's (`ArrivalSidePrompt.sidesOf`).
      *
-     * Null when no train is standing here: a tail belongs to a train.
+     * Null when no train is standing here.
      *
      * @param target the square
      * @return the menu, or null when there is nothing to offer
@@ -2484,12 +2350,8 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * The "{loc} Is Facing..." submenu for a square, or null when there is nothing to ask: handed out on its own so the
-     * track diagram's right-click menu can carry it beside the other things it offers about the train standing there
-     * (Place, Facing, Remove and the locomotive's settings); the deep menu does not offer it.  Null unless a locomotive
-     * is standing there; where the square has no facing to choose (no track leads out of it) the submenu is there and
-     * greyed, with the reason in its tooltip (OB-347).
-     *
+     * The "{loc} Is Facing..." submenu, or null unless a locomotive stands there, for the track diagram's menu; greyed
+     * with the reason where no facing can be chosen (OB-347).
      * @param target the square
      * @return the submenu, or null
      */
@@ -2499,9 +2361,7 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Writes the road the tail lies along, to the setup and to the train on the running railway (as the side radio
-     * does): what blocks track is the Point.
-     *
+     * Writes the road the tail lies along, to the setup and to the train on the railway.
      * @param target the square the train stands on
      * @param road the road, or null for Not Known
      */
@@ -2524,11 +2384,9 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Hands the next click on the diagram to the tail of the train standing at `target`: the sensors it can have
-     * crossed are outlined, a click on one records its road, and a click anywhere else says so and stays armed (the
-     * blocker pick's rule, since missing a small square is the ordinary mistake).  Where two roads reach the same
-     * sensor the click is followed by the list, narrowed to those two.
-     *
+     * Hands the next click to the tail of the train at `target`: the sensors it can have crossed are outlined, a click
+     * on one records its road, elsewhere it says so and stays armed.  Two roads to one sensor are then offered as a
+     * list.
      * @param target the square the train stands on
      */
     void armTailPick(TileKey target)
@@ -2569,33 +2427,27 @@ public class AutonomyEditorPanel extends JPanel
         refresh();
     }
 
-    /** The square whose train's tail the next click answers for, or null. */
     private TileKey tailFor;
 
-    /** The sensors that click may land on, by square, with the road each one means. */
+    /** The sensors that click may land on, with the road each means. */
     private final java.util.Map<TileKey, java.util.List<TailCrossedPrompt.Choice>> tailPicks =
         new java.util.LinkedHashMap<>();
 
-    /**
-     * Whether a click on the diagram is being waited for to say where a tail lies, for tests; the square whose train it
-     * is about, or null.
-     */
+    /** For tests: the square whose tail a click is awaited for, or null. */
     public TileKey tailPickFor()
     {
         return tailFor;
     }
 
-    /** The squares outlined for that click, in the order they were found, for tests. */
+    /** For tests: the squares outlined for that click, in order found. */
     public java.util.Set<TileKey> tailPickSquares()
     {
         return java.util.Collections.unmodifiableSet(tailPicks.keySet());
     }
 
     /**
-     * Goes to a link's other end: on this page a scroll and a flash; anywhere else the window has to be reopened on
-     * that page, which is what the jump hook is for (the editor is built around one diagram).  The deep menu always
-     * jumps: it is opened from the track diagram, where this panel is a menu builder with no page of its own, so "is it
-     * on this page" has no answer here.
+     * Goes to a link's other end: on this page a scroll and flash, else the jump hook reopens the window there.  The
+     * deep menu always jumps, having no page.
      */
     void goToLink(TileKey partner)
     {
@@ -2612,7 +2464,6 @@ public class AutonomyEditorPanel extends JPanel
         else if (onJumpToPage != null) onJumpToPage.accept(partner);
     }
 
-    /** What to call a link in a menu: its name, or its square when it has none. */
     String linkLabel(TileKey tile)
     {
         if (tile == null) return "";
@@ -2623,9 +2474,7 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Leaving this page to look at a link's other end: separate from onJumpToPage, which a finding uses (the window
-     * taking the user somewhere as part of showing a result), as here the user chooses to leave and the editor asks
-     * before it closes on unsaved work.
+     * Leaving the page for a link's other end: the user's choice, so unsaved work is asked about (unlike onJumpToPage).
      */
     private java.util.function.Consumer<TileKey> onJumpToLink;
 
@@ -2640,8 +2489,7 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * How many things must be fixed, in words that agree with the number ("1 things" read wrong).
-     *
+     * How many things must be fixed, in words agreeing with the number.
      * @param errors how many
      * @return the line under the findings
      */
@@ -2650,9 +2498,7 @@ public class AutonomyEditorPanel extends JPanel
         return errors == 1 ? I18n.t("autosetup.ui.labelBlockingCountOne") : I18n.f("autosetup.ui.labelBlockingCount", errors);
     }
 
-    /**
-     * @return whether this had to be handed to the editor, and so must not be started here
-     */
+    /** @return whether this had to be handed to the editor, and so must not be started here */
     boolean needsTheGrid(TileKey tile)
     {
         if (!menuOnly) return false;
@@ -2662,10 +2508,7 @@ public class AutonomyEditorPanel extends JPanel
         return true;
     }
 
-    /**
-     * One of the three mutually exclusive answers to "what may a train do here", as a radio item: a square cannot be
-     * somewhere trains stop AND somewhere they may not go.
-     */
+    /** One of the three exclusive answers to "what may a train do here", as a radio item. */
     javax.swing.JMenuItem radio(javax.swing.ButtonGroup group, String text, String tooltipKey,
         boolean on, final Runnable action)
     {
@@ -2677,15 +2520,12 @@ public class AutonomyEditorPanel extends JPanel
 
         menuItem.addActionListener(e ->
         {
-            // NOT WHILE TRAINS RUN - see `refusedWhileRunning`
             if (refusedWhileRunning()) return;
 
             action.run();
 
-            // placementChanged, not refresh: these radios write the SETUP, and the captions and the running railway are
-            // built from the RUNNING layout; refresh() redraws this panel and tells the other surface nothing, so a
-            // change made from the track diagram's menu would be written and never appear.  The redraw belongs HERE,
-            // where every radio gets it.
+            // placementChanged, not refresh: the radios write the setup, and the track diagram's menu needs the
+            // rebuild.
             placementChanged(null);
 
             flashMenuTarget();
@@ -2694,23 +2534,17 @@ public class AutonomyEditorPanel extends JPanel
         return menuItem;
     }
 
-    /**
-     * Applies the turning answer, keeping the two stored flags in step: both are cleared and only what is meant is
-     * written, as "may" set underneath "must" would disagree the first time only one of them is updated.
-     */
+    /** Applies the turning answer, clearing both flags and writing only what is meant, so "may" and "must" agree. */
     void setTurning(TileKey tile, boolean may, boolean must)
     {
         session.setPointFlag(tile, AutonomyBuilder.CAN_REVERSE, may && !must);
         session.setPointProperty(tile, AutonomyBuilder.MUST_REVERSE, must ? Boolean.TRUE : null);
 
-        // Persisted, and the running layout told (MT-246).
         setupChanged();
     }
 
     /**
-     * Opens or shuts one side of a station to arriving trains.  Stored as the set of BARRED sides, so a station nobody
-     * has restricted carries nothing at all and a side added to the diagram later arrives open.
-     *
+     * Opens or shuts one side of a station to arriving trains, stored as barred sides so a new side arrives open.
      * @param tile the station
      * @param side which way in
      * @param allowed whether trains may arrive that way
@@ -2732,49 +2566,38 @@ public class AutonomyEditorPanel extends JPanel
 
         session.setBarredArrivals(tile, barred);
 
-        // Arrival restrictions are one-way edges in the running graph.
         setupChanged();
     }
 
     /**
      * Applies one of the three answers.
-     *
      * @param station whether trains may stop here
      * @param open whether they may come here at all
      */
     void setUsage(TileKey tile, boolean station, boolean open)
     {
-        // A SENSOR WITH NO NAME IS NAMED AS IT BECOMES A STATION (FR-120): a box asks for its name, with a duplication
-        // check.  Cancelled, or left blank, nothing changes; a square with a name is not asked again.  The station menu
-        // is the one door that makes a square a station, in the editor and on the track diagram's own menu.
+        // A nameless sensor is named as it becomes a station (FR-120); Cancel or blank changes nothing.
         if (station && !session.getStore().isStation(tile) && !hasAName(tile))
         {
             String name = askTheNewStationsName(tile);
 
             if (name == null) return;
 
-            // written here, with the rest of the answer, and announced below with it (MT-246)
             session.setPointName(tile, name);
         }
 
         setStation(tile, station);
 
-        // Stored only when it is off, like every other default, so a square nobody has closed carries
-        // nothing at all
+        // Stored only when off, like every default
         session.setPointProperty(tile, "active", open ? null : Boolean.FALSE);
 
-        // Persisted, and the running layout told (MT-246).
         setupChanged();
     }
 
-    /**
-     * Asks for a new station's name (FR-120): the message and the name as typed so far, to the answer, null for Cancel;
-     * a dialog over the editor, a claim answers it instead.
-     */
+    /** Asks for a new station's name (FR-120): message and text so far to the answer, null for Cancel. */
     private java.util.function.BiFunction<String, String, String> askForAName =
         (message, typed) -> JOptionPane.showInputDialog(owner(), wrapped(message), typed);
 
-    /** Whether the setup has a name for the square. */
     private boolean hasAName(TileKey tile)
     {
         String name = session.getStore().getPointName(tile);
@@ -2783,9 +2606,8 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Asks a sensor becoming a station for its name (FR-120): again, saying why, for a name that cannot be a square's
-     * (`AutonomySession.whyNotAPointName`) or that another square has, in any case.  Writes nothing.
-     *
+     * Asks a sensor becoming a station for its name (FR-120), again with the reason for an unusable or taken name.
+     * Writes nothing.
      * @return the name, or null for Cancel or a blank name, which change nothing
      */
     private String askTheNewStationsName(TileKey tile)
@@ -2800,7 +2622,7 @@ public class AutonomyEditorPanel extends JPanel
 
             if (answer == null) return null;
 
-            // no quotes in a name, as `promptName` takes them out
+            // No quotes, as `promptName` takes them out
             String name = answer.replace("\"", "").trim();
 
             if (name.isEmpty()) return null;
@@ -2823,19 +2645,11 @@ public class AutonomyEditorPanel extends JPanel
     {
         session.setStation(tile, on);
 
-        // A new station gets its name on the diagram straight away: the moment somebody says "this is a station" is the
-        // moment they know where its name should go.  A caption only where the station has none (OB-310, the MT-116
-        // rule): every answer under Station comes through here, and `placeCaption` MOVES a caption the station already
-        // has.
+        // A new station gets its name on the diagram at once, only where it has no caption (OB-310).
         if (on && !session.getLabelledStationTiles().contains(tile)) placeLabelFor(tile);
 
-        // A SENSOR DEMOTED TO A PLAIN POINT KEEPS ITS OLD "terminus" FLAG: `AutonomySession.isTurnAround` and the
-        // checks read it of a station only, so on a plain point it turns nothing round, and it is there again when the
-        // square is promoted.  Active is not cleared either: it applies to any point, and clearing it would silently
-        // re-enable a point somebody had switched off (what a square is and whether it is open are one three-way
-        // choice, set together by setUsage).
+        // A demoted sensor keeps its "terminus" flag, read only of stations, and its active state.
 
-        // Persisted, and the running layout told (MT-246).
         setupChanged();
     }
 
@@ -2843,19 +2657,14 @@ public class AutonomyEditorPanel extends JPanel
     {
         session.setDirection(new LinkedHashSet<>(java.util.Arrays.asList(tile)), direction);
 
-        // THE ARROWS, NOT THE DIAGRAM (MT-334): a restriction changes no tile art, so rebuilding every label to show it flashes
-        // (measured, 384 of 384).  annotationsChanged still rebuilds the running layout, as setupChanged does.
+        // The arrows, not the diagram (MT-334): rebuilding every label for a restriction flashes.
         annotationsChanged();
     }
 
     /**
-     * Why this number cannot be stored under this key, or null when it can.  **Only the maximum train length has a
-     * floor, and it is 0.**  `promptNumber` is shared with `priority`, where a negative is meaningful, so the refusal
-     * cannot live in the parse.  A negative maximum is refused a layer down by `Layout.fromJSON`, which does not clamp
-     * it as `Point.setMaxTrainLength` does but invalidates the whole configuration, taking the railway out of autonomy
-     * with only a log line to say so.  Public and static so the rule can be asked directly, `promptNumber` being modal
-     * (`core.testMassAssignLengths.testANegativeMaximumTrainLengthIsRefused`).
-     *
+     * Why this number cannot be stored under this key, or null.  Only maximum train length has a floor, 0:
+     * `Layout.fromJSON` invalidates the whole configuration on a negative one.  Public and static so it can be tested
+     * without the modal prompt.
      * @param key the point property being written
      * @param value the number typed
      * @return the sentence to show, already translated, or null when the number is fine
@@ -2891,7 +2700,7 @@ public class AutonomyEditorPanel extends JPanel
 
         return out;
     }
-    /** A stored number for a point, or the value that means "not set". */
+    /** A stored number for a point, or the value meaning "not set". */
     int number(TileKey tile, String key, int fallback)
     {
         Object value = session.getPointProperty(tile, key);
@@ -2899,11 +2708,7 @@ public class AutonomyEditorPanel extends JPanel
         return value instanceof Number ? ((Number) value).intValue() : fallback;
     }
 
-    /**
-     * The speed multiplier as a PERCENTAGE, which is what the user works in: the model stores a factor and refuses
-     * anything outside (0, 2], so writing the percentage straight through would make any real value (80, 120)
-     * invalidate the whole configuration on load.
-     */
+    /** The speed multiplier as a percentage; the model stores a factor in (0, 2] and refuses anything else. */
     int percent(TileKey tile)
     {
         Object stored = session.getPointProperty(tile, "speedMultiplier");
@@ -2931,20 +2736,17 @@ public class AutonomyEditorPanel extends JPanel
                 return;
             }
 
-            // 100% is the default and is stored as nothing, so a file records decisions only
+            // 100% is the default, stored as nothing
             session.setPointProperty(tile, "speedMultiplier",
                 value == 100 ? null : value / 100.0);
         }
         catch (NumberFormatException e)
         {
             JOptionPane.showMessageDialog(owner(), I18n.t("autolayout.ui.errorInvalidSpeedMultiplier"));
-            // NOTHING WAS WRITTEN, so there is nothing to announce: the call belongs after the last statement of the
-            // success path, and after the failure path it would save the setup and rebuild the railway having changed
-            // nothing.
+            // Nothing written, so nothing to announce.
             return;
         }
 
-        // Persisted, and the running layout told (MT-246).
         setupChanged();
     }
 
