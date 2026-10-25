@@ -160,7 +160,7 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
     public void testPastingOnASquareThatIsNoStationSaysSoAndAsksNothing() throws Exception
     {
         // The may-reverse square demoted: it keeps its turning copies and is no station, which is the square that
-        // used to be asked both questions and then refused.
+        // could be asked both questions and then refused.
         session.setStation(square, false);
 
         try
