@@ -115,12 +115,14 @@ public class testTestAPathStartsWhereTheFindingsDo extends AutonomySessionFixtur
     @Test
     public void testTestAPathAgreesWithTheFindingsOnTheFrozenRailway() throws Exception
     {
-        support.LayoutSandbox sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+        support.LayoutSandbox sandbox = null;
 
         org.traincontrol.marklin.MarklinControlStation model = null;
 
         try
         {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
             model = support.TestStation.simulated();
 
             String path = "file:///"
@@ -188,7 +190,7 @@ public class testTestAPathStartsWhereTheFindingsDo extends AutonomySessionFixtur
         {
             if (model != null) model.stop();
 
-            sandbox.close();
+            if (sandbox != null) sandbox.close();
         }
     }
 
