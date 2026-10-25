@@ -17,32 +17,24 @@ import org.traincontrol.automationui.TilePorts.Route;
 import org.traincontrol.automationui.TilePorts.Side;
 
 /**
- * Layer 1 of autonomy on the track diagram: every tile is a node, and adjacent tiles whose ports face
- * each other are connected.
+ * Layer 1 of autonomy on the track diagram: every tile is a node, and adjacent tiles whose ports face each other are
+ * connected.
  *
- * Geometry proposes, the user disposes.  TilePorts seeds the connections; the user confirms or corrects
- * them in the editor, which is why a misread tile is a visibly wrong line rather than a silently wrong
- * edge.  This class holds the seeding and the user's overrides together and answers one question for the
- * reducer: standing on this tile, having entered by this side, where can I go?
- *
- * Nothing here knows about Points, edges or the autonomy model.  It deals in tiles.
+ * Geometry proposes, the user disposes: TilePorts seeds the connections and the user's overrides correct them, so a
+ * misread tile is a visibly wrong line rather than a silently wrong edge.  Answers the reducer's one question: standing
+ * on this tile, having entered by this side, where can I go?  Nothing here knows about Points, edges or the autonomy
+ * model.
  *
  * @author Adam
  */
 public class TileGraph
 {
     /**
-     * Something a setup collection is keyed by, which is always a square and sometimes more.
+     * Something a setup collection is keyed by: always a square, sometimes a square plus more.
      *
-     * FR-013 stage two. Ten of the eleven store collections are keyed by a bare {@link TileKey};
-     * `tileDirections` is keyed by a square AND a route across it, because a square can carry several
-     * routes and each has its own direction.  Both are typed keys and never the string
-     * "page:x,y#state,index": erasure makes {@code Map<String, T>} and {@code Map<TileKey, T>}
-     * the same signature, and a suffix built or parsed by hand is easy to get wrong.
-     *
-     * The self type lets the bookkeeping helpers - move a square, rename a page, drop a key whose square
-     * is gone - be written once over both kinds of key and hand back the kind they were given. Each asks
-     * which square a key is on, and produces the same key on a different square.
+     * Keys are typed and never the string "page:x,y#state,index": erasure makes {@code Map<String, T>} and {@code
+     * Map<TileKey, T>} the same signature, and a suffix built by hand is easy to get wrong.  The self type lets the
+     * move-a-square, rename-a-page and drop-a-key helpers be written once over both kinds.
      *
      * @param <K> the implementing type itself
      */
@@ -167,13 +159,10 @@ public class TileGraph
     /**
      * Which side of one square faces another, or null when they are not neighbors.
      *
-     * Null is a real answer and not a failure: a path can step from one page to another through a link,
-     * and that jump has no side on the grid to draw it as.  A line through the square simply stops in
-     * the middle, which is what a train leaving the drawn track actually does.
-     *
-     * Here rather than in either caller because both the tested path in the editor and the running path
-     * on the diagram have to lay a line across the same grid, and two copies of this would be two
-     * chances to disagree about which way is north.
+     * Null is a real answer: a path can step from one page to another through a link, and that jump has no side on the
+     * grid.  A line through the square simply stops in the middle, as a train leaving the drawn track does.  Shared
+     * because the editor's tested path and the running diagram must lay a line across the same grid, and two copies
+     * could disagree about which way is north.
      *
      * @param from the square being left
      * @param to the next square
@@ -263,11 +252,8 @@ public class TileGraph
     }
 
     /**
-     * A square together with one route across it - what a recorded direction belongs to.
-     *
-     * FR-013 stage two. A square can carry several routes and each has its own direction, so the square
-     * alone is not enough to identify one; the string form "page:x,y#state,index" is what goes on disk,
-     * and is produced by {@link #toString()} at the boundary.
+     * A square together with one route across it: what a recorded direction belongs to.  The string form
+     * "page:x,y#state,index" goes on disk and is produced by {@link #toString()} at the boundary.
      *
      * @author Adam
      */
@@ -309,11 +295,8 @@ public class TileGraph
         /**
          * The key as stored in the autonomy files: "page:x,y#state,index".
          *
-         * Assembled here rather than at the call sites, so the suffix is built in one place.
-         *
-         * Note that RouteId's own toString puts a '#' between its two numbers, which is NOT the
-         * separator used here - the stored form is "#state,index" with a comma, and changing it would
-         * make every setup written before this build unreadable.
+         * RouteId's own toString puts a '#' between its two numbers, which is NOT the separator used here: the stored
+         * form uses a comma, and changing it would make every earlier setup unreadable.
          *
          * @return the stored form
          */
@@ -463,21 +446,14 @@ public class TileGraph
     public static final String WARN_PORTAL_UNREACHABLE = "autosetup.ui.warnLinkNeverPairedUnreachable";
 
     /**
-     * A link pointing at a page that is not part of autonomy (OB-150).
-     *
-     * Its own message rather than a quieter WARN_PORTAL_NEVER_PAIRED, because that one tells the reader
-     * to "right-click it to pair it" - the single thing that cannot work here. There is no tile on the
-     * far side to pair it with, the page having been left out, so the remedy is to include the page or
-     * switch the link off.
+     * A link pointing at a page left out of autonomy (OB-150).  Not WARN_PORTAL_NEVER_PAIRED, whose "pair it" remedy
+     * cannot work with no tile on the far side: include the page or switch the link off.
      */
     public static final String WARN_PORTAL_EXCLUDED_PAGE = "autosetup.ui.warnLinkToExcludedPage";
 
     /**
-     * Links the user has told autonomy to leave alone.
-     *
-     * A diagram can carry a link that belongs to the drawing rather than to the railway autonomy runs -
-     * a jump to a page that is only ever driven by hand, say - and refusing to build until it is paired
-     * would be autonomy insisting on something the user has already decided against.
+     * Links the user told autonomy to leave alone: a link that belongs to the drawing rather than the railway must not
+     * block the build.
      */
     private final Set<TileKey> disabledPortals = new LinkedHashSet<>();
 
@@ -495,15 +471,11 @@ public class TileGraph
     }
 
     /**
-     * Whether this doorway is shut - asked at EITHER end.
+     * Whether this doorway is shut, asked at EITHER end: a pair of links is one doorway, so one end shut and the other
+     * open would be a route that exists one way only.
      *
-     * A pair of links is one doorway with an end in two places, and autonomy walks through it in both
-     * directions, so a doorway shut at one end and open at the other is not half shut: it is a route
-     * that exists going one way and not the other.
-     *
-     * The writer makes both ends match (OB-041). This is the reading half, and it is not redundant:
-     * setups saved before 2026-08-23 can hold one-ended disables and there is no migration, so asking
-     * about both ends repairs those files at no cost.
+     * The writer makes both ends match (OB-041); asking both here is not redundant, because older setups can hold
+     * one-ended disables and there is no migration.
      *
      * @param tile either end
      * @return whether autonomy should ignore this link
@@ -523,59 +495,38 @@ public class TileGraph
     public static final String WARN_PERMANENT_TURNOUT = "autosetup.ui.warnPermanentTurnout";
 
     /**
-     * A switch or signal that must be commanded to be passed, drawn without an address behind it.
+     * A switch or signal that must be commanded to be passed, drawn without an address behind it.  Blocking by ruling:
+     * routing over one would mean trusting it to already lie the right way, which is what CUSTOM_PERM_* exists to
+     * declare.
      *
-     * Blocking, by ruling: a diagram used for autonomy should not contain unmapped switches.  Routing
-     * over one would mean trusting it to already be lying the right way, which is the danger
-     * CUSTOM_PERM_* exists to declare - and here nobody declared it.
-     *
-     * **This only ever fires when autonomy is being built.**  A track diagram may contain address-less
-     * tiles quite legitimately and go on working as a diagram: the application already tolerates them,
-     * skipping them when it wires accessories.  Nothing on the display or control path constructs a
-     * TileGraph, so drawing an unaddressed switch costs the user nothing until they ask autonomy to make
-     * a graph out of that diagram.  Keep it that way - this check must not migrate into layout parsing
-     * or into anything that runs on load.  A page that carries such tiles deliberately can be excluded
-     * from autonomy instead.
+     * Only fires when autonomy is being built: a diagram may contain address-less tiles and still work as one, so
+     * nothing on the display or control path constructs a TileGraph.  Keep this check out of layout parsing and
+     * anything that runs on load.  A page that carries such tiles deliberately can be excluded from autonomy instead.
      */
     public static final String ERROR_NO_ADDRESS = "autosetup.ui.errorTileHasNoAddress";
 
     /**
-     * Two route buttons side by side, with real track running into the pair (OB-160).
-     *
-     * A button carries no track; it conducts whatever is beside it.  Two of them beside each other
-     * each count the OTHER as a side worth conducting to, so the pair can splice two lines together
-     * through a length of diagram that has no rails on it at all.
-     *
-     * Only when the pair touches real track: two buttons alone in a corner of the page conduct
-     * nothing and are a control panel, which is what they are for.
+     * Two route buttons side by side, with real track running into the pair (OB-160).  A button carries no track and
+     * conducts whatever is beside it, so each counts the other as a side worth conducting to and the pair can splice
+     * two lines through diagram with no rails.  Two buttons alone on a page are a control panel and are not reported.
      */
     public static final String ERROR_ADJACENT_ROUTE_TILES = "autosetup.ui.errorAdjacentRouteTiles";
 
     /**
-     * Track running into a route button from three sides, one of which is silently dropped (OB-160).
-     *
-     * transparentRoutes joins N to S and E to W where both face; with three sides facing, the pair
-     * wins and the odd arm is discarded - so a line drawn into the side of a button on a running line
-     * is severed with nothing said about it.
-     *
-     * Ambiguous rather than wrong: a crossing carries two routes, so three arms cannot be one, and
-     * there is no honest guess for this to make.  Four IS a crossing and is not reported.
+     * Track running into a route button from three sides, one of which is silently dropped (OB-160).  transparentRoutes
+     * joins N to S and E to W where both face, so with three sides the pair wins and the odd arm is severed
+     * unannounced.  Ambiguous rather than wrong: three arms cannot be a crossing, so there is no honest guess to make.
+     * Four is a crossing and is not reported.
      */
     public static final String ERROR_ROUTE_TILE_THREE_WAY = "autosetup.ui.errorRouteTileThreeWay";
 
     /**
-     * The route id a link is traversed under, which is deliberately not one getRoutes will ever return.
+     * The route id a link is traversed under, deliberately not one getRoutes will return: a link's own route is a stub
+     * (the same side twice), listed as (0,0), and this is (0,-1) so the two never collide.
      *
-     * A link's own route is a STUB - the same side twice - because the tile conducts track on one face
-     * and a jump on the other, and a jump is not a side.  getRoutes lists that stub as (0,0); this is
-     * (0,-1), so the two never collide and nothing can correlate them by accident.
-     *
-     * A link cannot carry a direction. Direction here means "toward side A or side B", and a stub has
-     * one side, so directionAllows would compare it with itself and answer true whichever way was
-     * asked. AutonomyEditorPanel therefore does not offer the four direction answers on a link tile,
-     * and testALinkIsNotOfferedADirection pins that: the guard is the only thing standing between a
-     * user and a setting that silently does nothing.  A one-way link would need the JUMP to carry the
-     * direction rather than a side of the tile.
+     * A link cannot carry a direction: a stub has one side, so directionAllows would compare it with itself and answer
+     * true either way.  AutonomyEditorPanel therefore offers no direction answers on a link tile
+     * (testALinkIsNotOfferedADirection pins that).
      */
     private static final RouteId PORTAL_ROUTE = new RouteId(0, -1);
 
@@ -589,16 +540,9 @@ public class TileGraph
     private final List<Problem> problems = new ArrayList<>();
 
     /**
-     * Every page in the layout IN THE ORDER THE WINDOW LISTS THEM, excluded ones included.
-     *
-     * Which is sorted by NAME, not file order.  TrainControl builds this list from
-     * getLayoutList(), which sorts - and the distinction is the whole reason the list exists, because a
-     * link tile indexes into it.
-     *
-     * A link tile records where it goes as a raw address counting from zero, so the page it means is
-     * this list's nth entry - the same arithmetic the tooltip does when it prints a destination. It has
-     * to hold the excluded pages too, because the whole question this answers is whether an arrow
-     * points at a page autonomy was told to leave out, and `pages` above has already dropped those.
+     * Every page in the layout in the order the window lists them (sorted by name, as getLayoutList sorts), excluded
+     * pages included.  A link tile records its destination as a zero-based index into this list, and the question it
+     * answers is whether an arrow points at an excluded page, which `pages` has already dropped.
      */
     private final List<String> allPages = new ArrayList<>();
 
@@ -613,9 +557,8 @@ public class TileGraph
     {
         for (LayoutDiagram diagram : diagrams)
         {
-            // BEFORE the exclusion, because a link's destination is an index into every page rather
-            // than into the kept ones, and skipping here would shift every address after the first
-            // excluded page.
+            // Before the exclusion: a link's destination indexes every page, so skipping would shift every address
+            // after the first excluded page.
             allPages.add(diagram.getName());
 
             if (excludedPages != null && excludedPages.contains(diagram.getName()))
@@ -633,9 +576,9 @@ public class TileGraph
 
                 componentType type = component.getType();
 
-                // Scissors are a drawing convention - two tiles depicting one double slip - so their
-                // topology cannot be expressed per tile.  Refuse the diagram rather than ignore the tile:
-                // ignoring it leaves a hole that walks quietly route around.
+                // Scissors are a drawing convention (two tiles depicting one double slip) whose topology cannot be
+                // expressed per tile: refuse the diagram, since ignoring the tile leaves a hole that walks quietly
+                // route around.
                 if (TilePorts.isDisqualified(type))
                 {
                     problems.add(new Problem(key, ERROR_SCISSORS, true));
@@ -650,9 +593,8 @@ public class TileGraph
                 }
                 else if (missesAnAddress(component))
                 {
-                    // Scanned here rather than while walking, so an unaddressed switch on a siding no
-                    // route happens to reach is still reported.  A blocking error that depends on being
-                    // stumbled across is not a guarantee.
+                    // Scanned here, not while walking, so an unaddressed switch on a siding no route reaches is still
+                    // reported.
                     problems.add(new Problem(key, ERROR_NO_ADDRESS, true));
                 }
             }
@@ -666,11 +608,9 @@ public class TileGraph
     }
 
     /**
-     * Pairs two portal tiles - tunnels, or page links.  Pairing is authored, never inferred: an unpaired
-     * portal simply does not connect, which is the safe default when autonomy is added to a diagram
-     * somebody drew years ago.
-     *
-     * Pairing is mutual and exclusive.  A half-pairing is reported rather than treated as a one-way jump.
+     * Pairs two portal tiles (tunnels or page links).  Pairing is authored, never inferred: an unpaired portal does not
+     * connect, the safe default for a diagram drawn years ago.  It is mutual and exclusive; a half-pairing is reported
+     * rather than treated as a one-way jump.
      *
      * @param a
      * @param b
@@ -726,11 +666,9 @@ public class TileGraph
     }
 
     /**
-     * The direction a route has before anyone touches it.
-     *
-     * Plain track runs both ways.  A switch runs base to forks - out of the toe only - so every switch on
-     * the diagram has a deterministic reading without the user setting anything, and opening the trailing
-     * direction is a deliberate act.  A double slip has no single toe, so it defaults to bidirectional.
+     * The direction a route has before anyone touches it.  Plain track runs both ways; a switch runs base to forks (out
+     * of the toe only), so every switch reads deterministically and opening the trailing direction is deliberate; a
+     * double slip has no single toe and defaults to bidirectional.
      *
      * @param tile
      * @param routeId
@@ -749,10 +687,8 @@ public class TileGraph
 
         if (route == null) return Direction.BOTH;
 
-        // A route the hardware already restricts sets no default of its own.  A defective turnout is the
-        // case: base to forks would say "out of the toe only" while the blades say "into the toe only",
-        // and ANDing those leaves the tile impassable in both directions.  Being unable to choose a fork
-        // is exactly why driving out of the base is not a sensible default there.
+        // A route the hardware already restricts sets no default: for a defective turnout, base-to-forks ANDed with the
+        // blades' into-the-toe-only would leave the tile impassable both ways.
         if (route.getDirectedToward() != null) return Direction.BOTH;
 
         Side toe = TilePorts.deriveToe(component.getType(), component.getOrientation());
@@ -767,11 +703,9 @@ public class TileGraph
     }
 
     /**
-     * The moves available from a tile, having entered it by the given side.
-     *
-     * Two constraints apply and both must allow the move: the hardware's own - a defective turnout can
-     * only be trailed through - and the user's direction for that route.  They AND, so no user setting
-     * can re-open a facing move through a switch that cannot be thrown.
+     * The moves available from a tile, having entered it by the given side.  The hardware's constraint (a defective
+     * turnout can only be trailed through) and the user's direction for that route must both allow the move, so no user
+     * setting can re-open a facing move through a switch that cannot be thrown.
      *
      * @param tile
      * @param entrySide
@@ -791,13 +725,10 @@ public class TileGraph
 
         int orientation = component.getOrientation();
 
-        // A portal tile has two ports and only one of them is a side: the visible one, where it meets
-        // ordinary track, and the pairing, which leads to its partner.  The pairing has no direction on
-        // the grid, so it is addressed as a null side - arriving by null means arriving through the
-        // portal, and leaving by null means taking it.
-        //
-        // Without this a link is a hole: track can reach it and nothing can leave, because its only
-        // route is a stub and the loop below skips stubs.
+        // A portal tile has two ports but only one is a side; the pairing leads to its partner and has no direction on
+        // the grid, so it is addressed as a null side: arriving by null means arriving through the portal, leaving by
+        // null means taking it.  Without this a link is a hole, since its only route is a stub and the loop below skips
+        // stubs.
         if (TilePorts.hasPortal(type))
         {
             Side stub = stubSide(component);
@@ -863,12 +794,10 @@ public class TileGraph
     }
 
     /**
-     * The moves out of a square on the track a train arrived along (OB-320).
-     *
-     * The same as `exits(tile, entrySide)` everywhere but one place: a square of a two-square crossing, entered by the
-     * side its two squares meet at.  Both of the crossing's tracks pass that side, so the side alone cannot say which one
-     * the train is on, and the answer offers the other track's leg as well - a reverse curve no train can run.  The square
-     * the train was on before, and its road over it, say which.
+     * The moves out of a square on the track a train arrived along (OB-320).  As `exits(tile, entrySide)` except on a
+     * square of a two-square crossing entered by the side its two squares meet at: both tracks pass that side, so the
+     * side alone would also offer the other track's leg, a reverse curve no train can run.  The previous square and its
+     * road say which track.
      *
      * @param tile the square
      * @param entrySide the side it was entered by
@@ -895,9 +824,9 @@ public class TileGraph
     }
 
     /**
-     * The leg a two-square crossing's track leaves a square by, for a train that came onto it from the other square
-     * (OB-320): the side opposite the leg it came onto the other square by, since each track runs corner to corner.  Null
-     * anywhere else - the square is not half of a crossing, or the train did not come from its other half.
+     * The leg a two-square crossing's track leaves a square by, for a train that came from the other square (OB-320):
+     * the side opposite the leg it came onto the other square by, since each track runs corner to corner.  Null where
+     * the square is not half of a crossing or the train did not come from its other half.
      *
      * @param tile the square
      * @param entrySide the side it was entered by
@@ -925,17 +854,12 @@ public class TileGraph
     /**
      * The other square of a two-square crossing, or null where this square is not half of one (OB-320).
      *
-     * Two permanent turnouts drawn toe to toe.  The diagram has no diagonal crossing, so one is drawn as the
-     * two halves of an X: the two turnouts' four legs are its four ends, and each track runs from a leg of
-     * one square, over the toes, to the opposite leg of the other.  As turnouts they could only be trailed
-     * into their toes, so nothing passed them: a train trailing into one toe met the other head on.
-     *
-     * Two Ys, or two lefts or two rights turned half round from each other - where every leg faces the
-     * opposite leg of the other, so that a left's or a right's straight legs make a straight track through
-     * both toes and its diverging legs the diagonal.  Only toe to toe, and only beside each other on one
-     * page.  A permanent turnout without such a partner - alone, toe to a leg, a left with a right, a
-     * three-way - is the turnout with no address it always was (Adam: *"those without another adjacent to
-     * form a crossing are treated as switches only crossable in one direction by autonomy"*).
+     * Two permanent turnouts drawn toe to toe: the diagram's way of drawing a diagonal crossing as the two halves of an
+     * X, each track running from a leg of one square, over the toes, to the opposite leg of the other.  Qualifying
+     * pairs are two Ys, or two lefts or two rights turned half round, where every leg faces the opposite leg of the
+     * other; only toe to toe and beside each other on one page.  A permanent turnout without such a partner stays the
+     * turnout it always was (Adam: *"those without another adjacent to form a crossing are treated as switches only
+     * crossable in one direction by autonomy"*).
      *
      * @param tile a square
      * @return the other half, or null
@@ -976,17 +900,15 @@ public class TileGraph
     }
 
     /**
-     * Makes the two halves of each two-square crossing's tracks agree where the directions applied to them do not.
+     * Makes the two halves of each two-square crossing's track agree where the directions applied to them do not
+     * (OB-320).
      *
-     * Every door sets a crossing's track on both its squares (OB-320), so halves that disagree hold answers set while the
-     * squares were permanent turnouts: in a setup saved before the change, or on a turnout given its partner since.  Each
-     * was read in the crossing's terms on its own square, so the blades' own way became a one-way track, and a turnout's
-     * closure a one-way track the other way.  They are read as a turnout's instead, the same on both halves: towards the
-     * toe is the way the blades run, which restricted nothing, so the track runs both ways; towards a leg is how a
-     * permanent turnout was closed, and closed is closed, so the track is closed if either half was.
+     * Halves can disagree when answers were set while the squares were permanent turnouts, as in an older setup.  They
+     * are then read as a turnout's, the same on both halves: towards the toe is the way the blades run and restricted
+     * nothing, so the track runs both ways; towards a leg is how a permanent turnout was closed, so the track is closed
+     * if either half was.
      *
-     * The graph's directions only - the setup keeps what was set, which means the same again should the squares ever be
-     * turnouts again, and the first edit of the track sets both halves anew.
+     * The graph's directions only: the setup keeps what was set, and the first edit of the track sets both halves anew.
      */
     public void settleCrossingHalves()
     {
@@ -1152,11 +1074,9 @@ public class TileGraph
     }
 
     /**
-     * Where leaving a tile by the given side lands.
-     *
-     * Ordinarily that is the adjacent tile, entered by the facing side, and only if that tile has a port
-     * there - track that stops at a blank square stops.  A portal tile's stub side instead lands on its
-     * paired partner, which may be on another page.
+     * Where leaving a tile by the given side lands: the adjacent tile entered by the facing side if it has a port there
+     * (track that stops at a blank square stops), or for a portal's stub side its paired partner, possibly on another
+     * page.
      *
      * @param tile
      * @param exitSide
@@ -1208,9 +1128,8 @@ public class TileGraph
 
             if (!tiles.containsKey(from)) continue;
 
-            // A link the user has switched off is not autonomy's business, and every problem this loop
-            // raises is BLOCKING (see disabledPortals).  exits() and the never-paired loop below honor
-            // the switch-off too: a link switched off must neither carry trains nor fail the build.
+            // A link switched off is not autonomy's business and every problem here is blocking (see disabledPortals);
+            // exits() and the never-paired loop below honor the switch-off too.
             if (portalClosed(from)) continue;
 
             if (!tiles.containsKey(to))
@@ -1221,10 +1140,8 @@ public class TileGraph
                 continue;
             }
 
-            // Both ends still have to BE links.  A pairing is stored by coordinate and replayed without
-            // asking what is there now, so a far end redrawn as plain track leaves a pairing that is mutual
-            // with both ends present, while the walk jumps into a square that offers no way out and the
-            // cross-page route silently disappears.
+            // Both ends still have to BE links: a pairing is stored by coordinate, so a far end redrawn as plain track
+            // leaves a mutual pairing whose walk jumps into a square with no way out.
             if (!TilePorts.hasPortal(tiles.get(from).getType())
                 || !TilePorts.hasPortal(tiles.get(to).getType()))
             {
@@ -1238,9 +1155,8 @@ public class TileGraph
             }
         }
 
-        // A link nobody has paired at ALL never reaches the loop above, which walks the pairings rather
-        // than the links.  It is a hole in the track: trains reach it and stop, and the page it was meant
-        // to continue onto is unreachable.
+        // A link nobody has paired at all never reaches the loop above, which walks pairings: trains reach it and stop,
+        // and the page beyond is unreachable.
         for (Map.Entry<TileKey, LayoutDiagramComponent> entry : tiles.entrySet())
         {
             if (!TilePorts.hasPortal(entry.getValue().getType())) continue;
@@ -1249,36 +1165,24 @@ public class TileGraph
 
             if (portalClosed(entry.getKey())) continue;
 
-            // An unpaired link leads nowhere, and exits() declines to offer a way through one, so the
-            // track running into it simply ends, as it would at a blank square.
-            //
-            // Whether that blocks depends on whether a train could ever arrive.  A link with track
-            // running into it costs the railway that stretch of track; a link drawn on its own, with
-            // nothing joined to it, is somebody's unfinished intention and costs nothing at all.
+            // An unpaired link leads nowhere and exits() offers no way through, so track into it simply ends.  Whether
+            // that blocks depends on whether a train could ever arrive: a link with no track joined to it is an
+            // unfinished intention and costs nothing.
             Side stub = stubSide(entry.getValue());
 
             boolean reachable = stub != null && landing(entry.getKey(), stub) != null;
 
-            // AN ARROW TO A PAGE AUTONOMY WAS TOLD TO LEAVE OUT CANNOT BE PAIRED: that page is not in this
-            // graph, so there is no tile to pair it to and the only remedy is to disable the arrow.
-            // Excluding the page was already the deliberate act saying autonomy does not go there, and
-            // it should not have to be said twice.
+            // An arrow to a page autonomy was told to leave out cannot be paired (no tile on that page is in this
+            // graph); the only remedy is to disable the arrow.
             boolean unpairable = leadsOutsideAutonomy(entry.getValue());
 
-            // A LINK TRACK RUNS INTO IS BLOCKING (OB-150).
+            // A link track runs into is blocking (OB-150).  Adam: "there should also be an error if there exist ANY
+            // active (not excluded/disabled) links not linked to anything."
             //
-            // Adam: "there should also be an error if there exist ANY active (not excluded/disabled)
-            // links not linked to anything."
-            //
-            // The UNREACHABLE case, an arrow drawn on its own with no track joined to it, costs nothing
-            // and stays a warning: a diagram imported from a Central Station carries page-jump arrows
-            // nobody has paired.  The reachable one is a hole in the railway rather than an unfinished
-            // intention: trains reach it and have nowhere to go, and the page it was drawn to continue
-            // onto cannot be got to at all.
-            //
-            // Three outcomes, and each says a different thing to do.  The unreachable case keeps its
-            // own message even when its destination is excluded: nothing runs into it, which is both
-            // the more useful fact and the reason it costs nothing either way.
+            // The unreachable case, an arrow drawn on its own with no track joined, stays a warning: a diagram imported
+            // from a Central Station carries page-jump arrows nobody has paired.  Three outcomes, each with its own
+            // remedy; the unreachable case keeps its own message even when its destination is excluded, since nothing
+            // runs into it.
             String key;
 
             if (!reachable) key = WARN_PORTAL_UNREACHABLE;
@@ -1288,9 +1192,8 @@ public class TileGraph
             found.add(new Problem(entry.getKey(), key, reachable && !unpairable));
         }
 
-        // Added once each.  Two ends of one bad pairing legitimately produce two problems, but the
-        // same tile and the same message twice is one problem reported twice - which reads as two
-        // things to fix and cannot be, since fixing it makes both disappear.
+        // Added once each: two ends of one bad pairing legitimately raise two problems, but the same tile and message
+        // twice reads as two things to fix.
         for (Problem problem : found)
         {
             boolean already = false;
@@ -1345,12 +1248,9 @@ public class TileGraph
 
 
     /**
-     * Whether a link points at a page that is not part of autonomy (OB-150).
-     *
-     * A link records its destination as a raw address counting from zero over EVERY page, so the page
-     * it means is `allPages.get(address)`. If that page was excluded - or the address does not name a
-     * page at all, which a hand-edited file can manage - then nothing on the far side exists to pair
-     * this to, and no amount of work by the user would produce a pairing.
+     * Whether a link points at a page that is not part of autonomy (OB-150).  A link records its destination as a
+     * zero-based address over every page, so the page it means is `allPages.get(address)`; if that page was excluded,
+     * or the address names no page (a hand-edited file), nothing exists on the far side to pair to.
      *
      * @param link the link tile
      * @return true when the destination page is outside autonomy, so pairing is impossible
@@ -1451,19 +1351,14 @@ public class TileGraph
     }
 
     /**
-     * What a transparent tile conducts, read off its neighbors.
+     * What a transparent tile conducts, read off its neighbors.  A route button says nothing about track, so the track
+     * beneath it is what the tiles around it imply:
      *
-     * A route button is a control someone put on the diagram; it says nothing about track.  So the track
-     * beneath it is whatever the tiles around it imply:
+     *   - opposite sides that both face track become a through route (a button dropped into a straight run carries it);
+     *   - failing that, exactly two adjacent sides facing track become a corner;
+     *   - anything else (nothing beside it, one neighbor, an ambiguous three-way) carries nothing.
      *
-     *   - opposite sides that both face track become a through route.  A button dropped into a straight
-     *     run carries that run, which is how layouts actually use them;
-     *   - failing that, exactly two adjacent sides facing track become a corner, so a button on a curve
-     *     works rather than silently breaking the curve;
-     *   - anything else - nothing beside it, one neighbor only, or an ambiguous three-way - carries
-     *     nothing, which is the honest answer for a button placed beside the rails.
-     *
-     * The user can still author a connection the inference declines to make; this only decides the seed.
+     * The user can still author a connection the inference declines; this only decides the seed.
      */
     public List<Route> transparentRoutes(TileKey tile)
     {
@@ -1512,11 +1407,8 @@ public class TileGraph
     }
 
     /**
-     * The sides of a transparent tile that something conducts to (OB-160).
-     *
-     * Extracted so that transparentRoutes and the checks below cannot disagree about what "facing"
-     * means.  Written out twice they drift, and a check that disagrees with the thing it is checking
-     * is worse than no check at all.
+     * The sides of a transparent tile that something conducts to (OB-160).  Shared so transparentRoutes and the checks
+     * below cannot disagree about what "facing" means.
      *
      * @param tile the transparent square
      * @return the sides, in N E S W order
@@ -1559,15 +1451,10 @@ public class TileGraph
     }
 
     /**
-     * Whether the run of buttons this one belongs to meets real track on two different sides (OB-160).
-     *
-     * A single button conducts what is beside it, which is ordinary and correct.  A RUN of them - two
-     * or more touching - conducts across squares that have no rails at all, and that only matters when
-     * there is something to conduct at each end.  One end is a siding stub or a panel beside the
-     * track; two is a splice.
-     *
-     * The whole run is walked rather than this tile's neighbors, so that three buttons in a row with
-     * track at each end is caught as readily as two.
+     * Whether the run of buttons this one belongs to meets real track on two different sides (OB-160).  A single button
+     * conducts what is beside it; a run of two or more conducts across squares with no rails, which matters only with
+     * something to conduct at each end: one end is a siding stub or a panel, two is a splice.  The whole run is walked,
+     * so three buttons in a row are caught as readily as two.
      *
      * @param from any button in the run
      * @return true when the run has real track against it on at least two sides
@@ -1611,11 +1498,8 @@ public class TileGraph
     }
 
     /**
-     * Route buttons placed where what they conduct is not what was drawn (OB-160).
-     *
-     * A SECOND PASS, after every page is in `tiles`.  The per-tile scan that raises the other problems
-     * runs while the map is still being filled, so a tile there cannot see its neighbors - and every
-     * question here is about neighbors.
+     * Route buttons placed where what they conduct is not what was drawn (OB-160).  A second pass, after every page is
+     * in `tiles`, because every question here is about neighbors and the per-tile scan cannot see them.
      */
     private void checkTransparentTiles()
     {
@@ -1627,15 +1511,10 @@ public class TileGraph
 
             List<Side> facing = facingSides(tile);
 
-            // ADJACENT BUTTONS THAT REACH TRACK AT BOTH ENDS (Adam).
-            //
-            // "Only if they are connected to something else on the graph" - and a run of buttons
-            // touching track at ONE end connects nothing to anything: a route through them needs two
-            // ends.  Counted over the whole RUN rather than this tile, because three in a row with
-            // track at each end is the same fault as two.
-            //
-            // A straight lying north-south beyond the far button presents no face, so a run that reaches
-            // track only there is not a splice.
+            // Adjacent buttons that reach track at both ends.  Adam: "Only if they are connected to something else on
+            // the graph"; a run touching track at one end connects nothing.  Counted over the whole run, since three in
+            // a row is the same fault as two.  A straight north-south beyond the far button presents no face, so it is
+            // not a splice.
             if (runReachesTrackOnBothSides(tile))
             {
                 problems.add(new Problem(tile, ERROR_ADJACENT_ROUTE_TILES, true));
@@ -1643,11 +1522,8 @@ public class TileGraph
                 continue;
             }
 
-            // AND AN ARM THAT WOULD BE DROPPED.
-            //
-            // Asked of the routes this tile actually produces rather than of the count, so it reports
-            // the case that loses something and stays quiet about the one that does not: four sides
-            // are emitted as two routes, which is a crossing and is what a crossing should be.
+            // And an arm that would be dropped: asked of the routes this tile produces, not the count, so four sides
+            // (emitted as two routes, a crossing) stay quiet.
             Set<Side> carried = new LinkedHashSet<>();
 
             for (Route route : transparentRoutes(tile))
@@ -1656,12 +1532,8 @@ public class TileGraph
                 carried.add(route.getB());
             }
 
-            // AND ONLY WHERE SOMETHING WAS ACTUALLY CARRIED.
-            //
-            // An empty result is not a dropped arm - it is a button that conducts nothing, which is
-            // what a button beside the rails or at the end of a line IS.  A single arm with no face
-            // opposite it (the neighbor there is rotated so it presents none) makes no pair, so nothing
-            // is carried and nothing is dropped.
+            // Only where something was carried: an empty result is a button that conducts nothing, as one beside the
+            // rails does.  A single arm with no opposite face makes no pair, so nothing is dropped.
             if (carried.isEmpty()) continue;
 
             for (Side side : facing)
@@ -1679,12 +1551,9 @@ public class TileGraph
     }
 
     /**
-     * The road a route tile's identifier names, as the sides it joins - or null when the identifier is not one
-     * (OB-279).
-     *
-     * The inverse of `transparentRouteId`, kept beside it so the two cannot come to disagree.  A route tile's roads
-     * are not in the port map - they are whatever the track beside it carries - so a reader that turns a `RouteId`
-     * into a line by indexing the port map finds nothing there.
+     * The road a route tile's identifier names, as the sides it joins, or null when the identifier is not one (OB-279).
+     * The inverse of `transparentRouteId`, kept beside it so they cannot disagree.  A route tile's roads are not in the
+     * port map, so indexing it finds nothing.
      *
      * @param id a route identifier
      * @return the road it names, or null for an identifier of an ordinary tile
@@ -1712,10 +1581,9 @@ public class TileGraph
     }
 
     /**
-     * A turnout the operator has declared permanently set: no address, so it cannot be thrown.
-     *
-     * Package-visible because `GraphReducer`'s berth-room walks have to ask the same question (OB-233):
-     * `LayoutDiagramComponent.isSwitch()` names the six throwable types and none of these five.
+     * A turnout the operator has declared permanently set: no address, so it cannot be thrown.  Package-visible because
+     * `GraphReducer`'s berth-room walks ask the same question (OB-233); `LayoutDiagramComponent.isSwitch()` names the
+     * six throwable types and none of these five.
      *
      * @param type the tile's type
      * @return true for the five CUSTOM_PERM_* types
@@ -1743,17 +1611,12 @@ public class TileGraph
     }
 
     /**
-     * Whether a direction can be CHOSEN for this route at all, given what the hardware allows.
+     * Whether a direction can be chosen for this route at all, given what the hardware allows.  The walk's half is
+     * `directionAllows`: an authored direction ANDs with the hardware's restriction, so one the hardware refuses
+     * restricts nothing, and offering it is a control for an action the guard will not honor (OB-057, OB-090).
      *
-     * The walk's half of this question is `directionAllows` below: an authored direction ANDs with the
-     * hardware's own restriction, so a direction the hardware refuses restricts nothing - choosing it
-     * changes no train's road.  Offering it anyway is a control that offers an action the guard will
-     * not honor, which is the shape OB-057 and OB-090 are about.
-     *
-     * A permanent turnout is the case that matters: its routes are all directed at the toe, so "toward
-     * the fork" and "both ways" are not answers, and the menu should not draw a green arrow for a road
-     * no train can take.  `NONE` is always a real answer - shutting a route is
-     * meaningful whichever way it could be traveled.
+     * On a permanent turnout every route is directed at the toe, so "toward the fork" and "both ways" are not answers.
+     * `NONE` is always a real answer.
      *
      * @param direction the answer being considered
      * @param route the route it would be set on
@@ -1772,16 +1635,12 @@ public class TileGraph
     }
 
     /**
-     * Whether any train can use this route at all, given the authored direction AND the hardware.
+     * Whether any train can use this route at all, given the authored direction and the hardware.
      *
-     * **AN ANSWER THE HARDWARE REFUSES IS A CLOSURE, NOT A NOTHING.**  On a permanent
-     * turnout every route is directed at the toe, so `TOWARD_A` - toward the fork - permits only an
-     * entry the blades refuse: nothing can pass, which is precisely what an operator who shuts that
-     * arm means.  Reading the answer as "the hardware refuses it, so it restricts nothing" would rewrite
-     * it into the one way that IS open, turning a shut road into an open one.
-     *
-     * `directionIsPossible` above answers a different question - what the editor should OFFER - and
-     * only this one says whether a train moves.
+     * An answer the hardware refuses is a closure, not a nothing: on a permanent turnout every route is directed at the
+     * toe, so `TOWARD_A` (toward the fork) permits only an entry the blades refuse, which is what an operator shutting
+     * that arm means.  Reading it as "restricts nothing" would turn a shut road into an open one.
+     * `directionIsPossible` answers what the editor should offer; only this says whether a train moves.
      *
      * @param direction what is authored, or the default
      * @param route the route
@@ -1812,12 +1671,10 @@ public class TileGraph
     // arms (OB-351)
 
     /**
-     * The answer in force on a road: what is stored, narrowed by the hardware.
-     *
-     * A stored answer the editor does not offer on this road (`directionIsPossible`) is either the default `BOTH` on a
-     * permanent turnout - whose roads are all directed at the toe, so the blades narrow it to the one way there is - or an
-     * answer that permits only an entry the blades refuse, which is a closure.  Every answer an ordinary switch or plain
-     * track stores is possible there, so this changes nothing on them.
+     * The answer in force on a road: what is stored, narrowed by the hardware.  A stored answer the editor does not
+     * offer on this road (`directionIsPossible`) is either the default `BOTH` on a permanent turnout, which the blades
+     * narrow to the one way there is, or one that permits only an entry the blades refuse, a closure.  Everything an
+     * ordinary switch or plain track stores is possible there, so it changes nothing on them.
      *
      * @param stored what `getDirection` answers
      * @param route the road
@@ -1873,11 +1730,9 @@ public class TileGraph
     }
 
     /**
-     * Whether a square's arrows can hide a road's direction from the reader (OB-351): two of its roads end at one side, so
-     * that side's arrow is the answer of both.  Switches, three-ways, double slips and permanent turnouts.
-     *
-     * Not half of a two-square crossing: its two tracks meet at the side the squares share, which draws no arrow, and each
-     * track's direction is drawn by its two outer ends, one on each square (OB-320, OB-322).
+     * Whether a square's arrows can hide a road's direction from the reader (OB-351): two of its roads end at one side,
+     * so that side's arrow is the answer of both (switches, three-ways, double slips, permanent turnouts).  Not half of
+     * a two-square crossing, whose tracks meet at the shared side that draws no arrow (OB-320, OB-322).
      *
      * @param tile the square
      * @return true where the square's directions are its arms'
@@ -1985,15 +1840,13 @@ public class TileGraph
     }
 
     /**
-     * Every road of a square given the directions wanted on some of them, as its arms can hold them (OB-351; Adam: *"into
-     * spur should simply require S to be green, and out of spur should require W to be green.  Align it so that the arrows
-     * tell the full story."*).
+     * Every road of a square given the directions wanted on some of them, as its arms can hold them (OB-351; Adam:
+     * *"into spur should simply require S to be green, and out of spur should require W to be green.  Align it so that
+     * the arrows tell the full story."*).
      *
-     * Each road wanted opens the arms it lets a train leave by and shuts the others it ends at; an arm one road opens and
-     * another shuts stays open, and the arms no wanted road ends at are left as they are.  So making a road one way
-     * shuts the arm it may no longer leave by for every road through that arm, and opening a road opens its arms for all
-     * of them.  Each road then takes the answer of its two arms, in force - an answer the hardware leaves no meaning is
-     * stored as the one it means.  A square whose arms are not shared (`sharesAnArm`) takes what was wanted as it is.
+     * Each road wanted opens the arms it lets a train leave by and shuts the others it ends at; an arm one road opens
+     * and another shuts stays open; arms no wanted road ends at are left as they are.  Each road then takes the answer
+     * of its two arms, in force.  A square whose arms are not shared (`sharesAnArm`) takes what was wanted as it is.
      *
      * @param tile the square
      * @param wanted road to the direction wanted on it
@@ -2043,10 +1896,9 @@ public class TileGraph
     private final Map<TileKey, Map<RouteId, Direction>> normalizedToArms = new LinkedHashMap<>();
 
     /**
-     * Brings every square whose arms are shared to what its arrows show (OB-351): each road the answer of its two arms,
-     * the arms open where a road lets a train out.  A road closed a way its arrow showed open - a switch's spur shut while
-     * its main line ran both ways - is opened that way, which is what the diagram drew; nothing is shut.  A square left
-     * at its defaults is never touched: each kind's default is an answer of its arms.
+     * Brings every square whose arms are shared to what its arrows show (OB-351): each road takes the answer of its two
+     * arms.  A road closed a way its arrow showed open is opened that way; nothing is shut.  A square left at its
+     * defaults is never touched.
      *
      * @return each square changed, to the roads changed and their new directions; also kept for `getNormalizedToArms`
      */
@@ -2145,20 +1997,14 @@ public class TileGraph
     private Map<TileKey, Run> runs;
 
     /**
-     * Every run of plain track, keyed by the tile that speaks for it.
+     * Every run of plain track, keyed by the tile that speaks for it.  A run has one direction, not eleven: setting it
+     * tile by tile is busywork and a run that disagrees with itself is a silent trap (the arrows look set and no train
+     * can pass), so one tile in each run is set and the rest follow.
      *
-     * A run of straight track has one direction, not eleven: setting it tile by tile is busywork, and
-     * a run that disagrees with itself is a silent trap - the arrows look set and no train can pass.
-     * So one tile in each run is the one to set, and the rest follow it.
-     *
-     * Computed from the DIAGRAM ALONE - tile types and which sides face which - and never from the
-     * reduction.  That is the whole point: edges come and go as directions are set, so a run derived
-     * from them would regroup itself every time somebody closed a route, and the graying would move
-     * around under the user.  What is gray is a property of the track, not of the settings on it.
-     *
-     * A run tile is a piece of plain track: exactly one route through it, not a sensor, and not
-     * something autonomy ignores.  Anything else - a switch, a crossing, a sensor - ends the run,
-     * because each of those is a decision in its own right.
+     * Computed from the diagram alone (tile types and which sides face which), never from the reduction: edges come and
+     * go as directions are set, so a derived run would regroup every time a route closed and the graying would move
+     * under the user.  A run tile is plain track: exactly one route through it, not a sensor, not something autonomy
+     * ignores; a switch, crossing or sensor ends the run.
      *
      * @return leader tile to the run it leads
      */
@@ -2222,9 +2068,8 @@ public class TileGraph
 
         if (getRoutes(tile).size() != 1) return false;
 
-        // A stub - an END, a tunnel mouth, a link - has one route whose two sides are the same, so
-        // walking "through" it comes straight back out the way it went in.  It is not a run tile: a
-        // run that disagreed with itself is the trap runs exist to prevent.
+        // A stub (an END, a tunnel mouth, a link) has one route whose two sides are the same, so walking through it
+        // comes straight back out: not a run tile.
         Route route = firstRoad(tile);
 
         return route != null && route.getA() != route.getB();
@@ -2432,11 +2277,11 @@ public class TileGraph
     private final Map<TileKey, Map<TileKey, Map<RouteId, Direction>>> normalizedRuns = new LinkedHashMap<>();
 
     /**
-     * Brings every run of two or more squares to one direction, its narrowest (OB-361; Adam, on OB-321: *"Any
-     * disagreement should be corrected so that the viewer displays the source of truth, and the editor flags issues,
-     * rather than surprising the user."*): a square that lets trains along it more ways than the run as a whole does is
-     * given the run's way.  A train passes every square of a run, so nothing any train does changes; what changes is that
-     * every square says it.  A run whose squares point opposite ways is left as it is (`runsPointingOppositeWays`).
+     * Brings every run of two or more squares to one direction, its narrowest (OB-361; Adam: *"Any disagreement should
+     * be corrected so that the viewer displays the source of truth, and the editor flags issues, rather than surprising
+     * the user."*): a square that lets trains along it more ways than the run as a whole is given the run's way.  A
+     * train passes every square of a run, so no train's behavior changes; every square just says it.  A run whose
+     * squares point opposite ways is left as it is (`runsPointingOppositeWays`).
      *
      * @return each run changed, by its leader, to the squares changed; also kept for `getNormalizedRuns`
      */
@@ -2542,17 +2387,9 @@ public class TileGraph
     }
 
     /**
-     * Which side of a tile faces one of its neighbors.
-     *
-     * Geometric, not routing: it answers "which way is that square from this one".
-     *
-     * It walks the private `neighbour` helper, the same grid arithmetic as the static `gridSideTowards` (two
-     * squares whose coordinates differ by one), so the two answer identically for any pair of squares on one
-     * page.  They are named apart to end the collision between `sideTowards` and `sideToward`, one
-     * letter apart.
-     *
-     * A portal's partner is not reachable here: the two squares are neighbors in the graph without
-     * touching, so there is no side to name, and callers that care use landing() instead.
+     * Which side of a tile faces one of its neighbors.  Geometric, not routing: the same grid arithmetic as the static
+     * `gridSideTowards`, named apart to end the collision between `sideTowards` and `sideToward`.  A portal's partner
+     * is a neighbor reached through no side, so callers that care use landing() instead.
      *
      * @param tile
      * @param other
@@ -2567,16 +2404,12 @@ public class TileGraph
             if (other.equals(tile.beside(side))) return side;
         }
 
-        // A portal's partner is a neighbor reached through no side at all, so there is no side to
-        // name for it; callers that care about portals use landing() instead.
         return null;
     }
 
     /**
-     * A route from one square to another over the track as DRAWN, ignoring which way trains may run.
-     *
-     * Deliberately blind to direction: this exists to change directions, so consulting them would mean
-     * a run that has already been set one way could only ever be re-drawn the same way round.
+     * A route from one square to another over the track as DRAWN, ignoring which way trains may run: this exists to
+     * change directions, so consulting them would let a run already set one way only be re-drawn the same way round.
      *
      * @param from
      * @param to
@@ -2591,18 +2424,15 @@ public class TileGraph
 
         if (from.equals(to)) return new ArrayList<>(Collections.singletonList(from));
 
-        // Walked as (square, side it was entered by), not as squares.
-        //
-        // A square can carry more than one piece of track - a crossing, a double curve - and asking
-        // only "which squares does this one touch" unions the sides of every route on it, so the walk
-        // could arrive along one track and leave along the other.  Carrying the entry side means a route
-        // is only usable if it touches that side, which is the definition of continuous track and the
-        // same rule the reducer follows when it derives edges.
+        // Walked as (square, side it was entered by), not as squares: a square can carry more than one piece of track
+        // (a crossing, a double curve), so a walk over squares alone could arrive along one track and leave along the
+        // other.  A route is usable only if it touches the entry side, the same rule the reducer follows when it
+        // derives edges.
         Map<String, Step> cameFrom = new LinkedHashMap<>();
         java.util.ArrayDeque<Step> frontier = new java.util.ArrayDeque<>();
 
-        // The first square has no entry side, so every route on it is open - which is right: the user
-        // picked that square and has not said which of its tracks they meant.
+        // The first square has no entry side, so every route on it is open: the user picked the square without saying
+        // which track they meant.
         Step first = new Step(from, null);
 
         frontier.add(first);
@@ -2635,12 +2465,10 @@ public class TileGraph
     }
 
     /**
-     * The first of some squares reached by leaving a square through one side, over the track as DRAWN - whichever way
-     * trains may run on it - and never past one of them.
-     *
-     * An old autonomy.json joins each of its points to the next ones along the track, so this is where one of its edges
-     * could lead from a square by that side.  A shortest walk to the edge's end cannot answer that: round a loop the far
-     * end is reached both ways, and the shorter may be the way the train never went.
+     * The first of some squares reached by leaving a square through one side, over the track as DRAWN and never past
+     * one of them.  An old autonomy.json joins each point to the next ones along the track, so this is where one of its
+     * edges could lead from a square by that side; a shortest walk to the edge's end cannot answer that, since round a
+     * loop the far end is reached both ways.
      *
      * @param from the square
      * @param side the side to leave it by
@@ -2919,15 +2747,13 @@ public class TileGraph
             }
         }
 
-        // A portal's partner is a neighbor reached through no side at all, so the loop above cannot
-        // find it; the reducer walks straight through one and derives edges over it, and so must this.
-        // It is entered by no side either, so every route on the far square is open, exactly as at the
-        // square the walk started from.
+        // A portal's partner is reached through no side, so the loop above cannot find it; the reducer walks through
+        // one and derives edges over it, and so must this.  It is entered by no side, so every route on the far square
+        // is open, as at the start square.
         TileKey partner = portals.get(here.tile);
 
-        // Not through a link that is switched off.  exits() declines to offer a way through one, and a
-        // path search that answers "reachable" for somewhere no train can get to has something plan a
-        // move on it.
+        // Not through a link that is switched off: exits() declines to offer a way through one, and a path search that
+        // says "reachable" for somewhere no train can get to has something plan a move on it.
         if (partner != null && !portalClosed(here.tile) && tiles.containsKey(partner))
         {
             out.add(new Step(partner, null));
