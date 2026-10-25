@@ -24,19 +24,17 @@ import org.traincontrol.automationui.TilePorts.Route;
 import org.traincontrol.automationui.TilePorts.Side;
 
 /**
- * The tile graph: which tiles connect to which, and which way a train may move through them.
- *
- * Built from pages assembled in memory rather than from files, so these tests describe track rather than
- * fixtures - a horizontal run of straights, a switch, a tunnel pair - and none of them need hardware, a
- * Central Station, or the locomotive database.
+ * The tile graph: which tiles connect to which, and which way a train may move through them. Built from pages assembled
+ * in memory, so these tests describe track rather than fixtures and need no hardware, Central Station or locomotive
+ * database.
  *
  * @author Adam
  */
 public class testAutonomyDiagramTiles
 {
     /**
-     * A run of straights connects end to end, and stops where the track stops.  Nothing connects to a
-     * blank square, which is what keeps a diagram's white space out of the graph.
+     * A run of straights connects end to end and stops where the track stops; nothing connects to a blank square, which
+     * keeps a diagram's white space out of the graph.
      */
     @Test
     public void testAStraightRunConnectsAndStopsAtBlankSquares() throws IOException
@@ -48,7 +46,6 @@ public class testAutonomyDiagramTiles
 
         TileGraph graph = graph(page);
 
-        // entering the middle tile from the west, we leave east and land on its neighbor
         List<Exit> exits = graph.exits(key("main", 2, 1), Side.W);
         assertEquals(exits.size(), 1);
         assertEquals(exits.get(0).getSide(), Side.E);
@@ -58,35 +55,29 @@ public class testAutonomyDiagramTiles
         assertEquals(landing.getTile(), key("main", 3, 1));
         assertEquals(landing.getEntrySide(), Side.W);
 
-        // the run ends: east of the last tile is empty
         assertNull(graph.landing(key("main", 3, 1), Side.E));
 
-        // and no straight ever offers a way out to the north
         assertTrue(graph.exits(key("main", 2, 1), Side.N).isEmpty());
     }
 
     /**
-     * Rotation breaks adjacency exactly as the art says.  A vertical straight beside a horizontal one has
-     * no port facing it, so the two do not connect however close they are drawn.
+     * Rotation breaks adjacency as the art says: a vertical straight beside a horizontal one has no port facing it.
      */
     @Test
     public void testRotationBreaksAdjacency() throws IOException
     {
         LayoutDiagram page = page("main", 4, 3);
         straight(page, 1, 1);
-        // orientation 1 turns a straight vertical
         add(page, componentType.STRAIGHT, 2, 1, 1);
 
         TileGraph graph = graph(page);
 
-        // the horizontal tile still wants to leave east, but its neighbor has no west port
         assertNull(graph.landing(key("main", 1, 1), Side.E));
     }
 
     /**
-     * A switch runs base to forks until the user says otherwise: entering at the toe fans out, entering
-     * at a fork does not go anywhere.  This is the default that makes every switch on an untouched
-     * diagram deterministic without anybody clicking.
+     * A switch runs base to forks until the user says otherwise: entering at the toe fans out, entering at a fork goes
+     * nowhere, so every switch on an untouched diagram is deterministic.
      */
     @Test
     public void testSwitchesDefaultToBaseToForks() throws IOException
@@ -102,15 +93,11 @@ public class testAutonomyDiagramTiles
         assertEquals(fromToe.size(), 2, "both branches should be reachable from the toe");
         assertEquals(exitSides(fromToe), new HashSet<>(Arrays.asList(Side.N, Side.W)));
 
-        // trailing moves are closed until enabled
         assertTrue(graph.exits(sw, Side.N).isEmpty(), "trailing from the straight leg should be closed");
         assertTrue(graph.exits(sw, Side.W).isEmpty(), "trailing from the branch should be closed");
     }
 
-    /**
-     * Opening the trailing direction is per branch, not per switch.  Enabling one leg must not quietly
-     * open the other.
-     */
+    /** Opening the trailing direction is per branch, not per switch. */
     @Test
     public void testTrailingIsEnabledPerBranch() throws IOException
     {
@@ -120,19 +107,16 @@ public class testAutonomyDiagramTiles
         TileGraph graph = graph(page);
         TileKey sw = key("main", 1, 1);
 
-        // find the straight route (state 0) and open it both ways
         graph.setDirection(sw, new RouteId(0, 0), Direction.BOTH);
 
         assertEquals(graph.exits(sw, Side.N).size(), 1, "the straight leg should now trail");
         assertTrue(graph.exits(sw, Side.W).isEmpty(), "the diverging leg should still be closed");
 
-        // the toe still fans out both ways
         assertEquals(graph.exits(sw, Side.S).size(), 2);
     }
 
     /**
-     * A branch set to none is not traversable either way - this is how a physically present but unused
-     * route is taken out of the graph.
+     * A branch set to none is not traversable either way: how a present but unused route is taken out of the graph.
      */
     @Test
     public void testABranchSetToNoneIsNotTraversable() throws IOException
@@ -143,7 +127,6 @@ public class testAutonomyDiagramTiles
         TileGraph graph = graph(page);
         TileKey sw = key("main", 1, 1);
 
-        // close the diverging route (state 1)
         graph.setDirection(sw, new RouteId(1, 0), Direction.NONE);
 
         List<Exit> fromToe = graph.exits(sw, Side.S);
@@ -151,9 +134,7 @@ public class testAutonomyDiagramTiles
         assertEquals(fromToe.get(0).getSide(), Side.N);
     }
 
-    /**
-     * Each exit carries the switch position it needs, which is where the edge's config commands come from.
-     */
+    /** Each exit carries the switch position it needs, where the edge's config commands come from. */
     @Test
     public void testExitsCarryTheSwitchPositionTheyRequire() throws IOException
     {
@@ -182,8 +163,8 @@ public class testAutonomyDiagramTiles
     }
 
     /**
-     * A defective switch cannot be thrown, so it may only be trailed through - and no user setting can
-     * re-open the facing direction, because that is the hardware talking, not a preference.
+     * A defective switch cannot be thrown, so it may only be trailed through, and no user setting re-opens the facing
+     * direction (the hardware speaking).
      */
     @Test
     public void testDefectiveSwitchesRefuseFacingMovesEvenIfTheUserAsks() throws IOException
@@ -194,24 +175,20 @@ public class testAutonomyDiagramTiles
         TileGraph graph = graph(page);
         TileKey sw = key("main", 1, 1);
 
-        // The base-to-forks default must not apply here.  It would say "out of the toe only" while the
-        // blades say "into the toe only", and the two together would leave the tile impassable both ways -
-        // silently deleting a piece of track that is perfectly usable in the trailing direction.
+        // The base-to-forks default must not apply here: it would say "out of the toe only" while the blades say "into
+        // the toe only", silently deleting usable track.
         for (Map.Entry<RouteId, Route> entry : graph.getRoutes(sw).entrySet())
         {
             assertEquals(graph.defaultDirection(sw, entry.getKey()), Direction.BOTH,
                 "a route the hardware already restricts should add no default of its own");
         }
 
-        // trailing works: entering at a fork leaves at the toe
         List<Exit> fromStraight = graph.exits(sw, Side.N);
         assertEquals(fromStraight.size(), 1);
         assertEquals(fromStraight.get(0).getSide(), Side.S);
 
-        // facing is refused
         assertTrue(graph.exits(sw, Side.S).isEmpty());
 
-        // and asking for it changes nothing
         for (Map.Entry<RouteId, Route> entry : graph.getRoutes(sw).entrySet())
         {
             graph.setDirection(sw, entry.getKey(), Direction.BOTH);
@@ -220,14 +197,10 @@ public class testAutonomyDiagramTiles
         assertTrue(graph.exits(sw, Side.S).isEmpty(),
             "a switch that cannot be thrown must not become facing-traversable on request");
 
-        // it is reported, so the user knows autonomy is treating it as broken
         assertTrue(hasProblem(graph, TileGraph.WARN_PERMANENT_TURNOUT, false));
     }
 
-    /**
-     * A crossing offers two independent through routes.  Entering from the north leaves south and nowhere
-     * else - the two routes share the tile without meeting.
-     */
+    /** A crossing offers two independent through routes: entering from the north leaves south and nowhere else. */
     @Test
     public void testCrossingRoutesDoNotMeet() throws IOException
     {
@@ -246,28 +219,20 @@ public class testAutonomyDiagramTiles
     }
 
     /**
-     * A walk over the track as drawn cannot change tracks at a crossing.
-     *
-     * Two independent lines meeting on one square: north-south, and east-west.  Asking for a route from
-     * a square on one to a square on the other must answer "no continuous track", because there is
-     * none - the two lines cross without joining.
-     *
-     * The walk used to union the sides of every route on a square, so it arrived along one line and
-     * left along the other.  setOneWayRun then reported success and restricted stretches of both, and
-     * applyOneWay could not catch it: at the crossing no single route touches both the side it came
-     * from and the side it left by, so that square was skipped in silence.
+     * A walk over the track as drawn cannot change tracks at a crossing: a route from a square on the north-south line
+     * to one on the east-west line must answer "no continuous track". Taking the union of every route's sides on a
+     * square would let the walk arrive along one line and leave along the other, and `applyOneWay` would skip that
+     * square in silence.
      */
     @Test
     public void testAWalkCannotChangeTracksAtACrossing() throws IOException
     {
         LayoutDiagram page = page("main", 5, 5);
 
-        // the east-west line, straights at orientation 0
         straight(page, 1, 2);
         add(page, componentType.CROSSING, 2, 2, 0);
         straight(page, 3, 2);
 
-        // and the north-south one, across it - a straight is east-west until it is turned
         add(page, componentType.STRAIGHT, 2, 1, 1);
         add(page, componentType.STRAIGHT, 2, 3, 1);
 
@@ -286,15 +251,12 @@ public class testAutonomyDiagramTiles
             "nor the other way round");
     }
 
-    /**
-     * A switch is the opposite case, and must keep working: its forks DO meet, at the toe.
-     */
+    /** A switch is the opposite case: its forks DO meet, at the toe. */
     @Test
     public void testAWalkStillTakesEitherForkOfASwitch() throws IOException
     {
         LayoutDiagram page = page("main", 5, 5);
 
-        // a SWITCH_LEFT at orientation 0 has its toe S and its legs N and W
         add(page, componentType.SWITCH_LEFT, 2, 2, 0);
         add(page, componentType.STRAIGHT, 2, 3, 1);
         add(page, componentType.STRAIGHT, 2, 1, 1);
@@ -309,10 +271,7 @@ public class testAutonomyDiagramTiles
             "and out by the diverging fork - both routes touch the toe, so both are continuous track");
     }
 
-    /**
-     * An overpass behaves identically here - what separates it from a crossing is lock derivation, not
-     * connectivity.
-     */
+    /** An overpass behaves as a crossing here; what separates them is lock derivation, not connectivity. */
     @Test
     public void testOverpassRoutesDoNotMeetEither() throws IOException
     {
@@ -326,15 +285,14 @@ public class testAutonomyDiagramTiles
     }
 
     /**
-     * An unpaired tunnel stops the track.  Pairing it continues onto the partner tile, which may be on
-     * another page - that is the only way a walk crosses pages.
+     * An unpaired tunnel stops the track; pairing it continues onto the partner tile, which may be on another page, the
+     * only way a walk crosses pages.
      */
     @Test
     public void testTunnelsOnlyContinueOncePaired() throws IOException
     {
         LayoutDiagram one = page("one", 4, 4);
         straight(one, 1, 1);
-        // a tunnel at orientation 0 opens to the south
         add(one, componentType.TUNNEL, 1, 2, 0);
 
         LayoutDiagram two = page("two", 4, 4);
@@ -346,12 +304,9 @@ public class testAutonomyDiagramTiles
         TileKey tunnelOne = key("one", 1, 2);
         TileKey tunnelTwo = key("two", 2, 2);
 
-        // A portal has two ports and only one of them is a side.  S is the visible one, where the tunnel
-        // meets ordinary track; the pairing is the other, and it has no direction on the grid, so it is
-        // addressed as a null side.  (This test used to ask for the partner at S, which conflated the
-        // two - and passed while portals were in fact impassable.)
+        // A portal has two ports and only one of them is a side: S is the visible one, where the tunnel meets ordinary
+        // track, and the pairing has no direction on the grid, so it is addressed as a null side.
 
-        // unpaired, the tunnel goes nowhere
         assertTrue(graph.exits(tunnelOne, Side.S).isEmpty(), "an unpaired tunnel offers no way through");
 
         graph.pairPortals(tunnelOne, tunnelTwo);
@@ -365,7 +320,6 @@ public class testAutonomyDiagramTiles
         assertEquals(landing.getTile(), tunnelTwo);
         assertNull(landing.getEntrySide(), "arriving through a portal is not arriving at a side");
 
-        // and it is mutual
         List<Exit> backAgain = graph.exits(tunnelTwo, Side.S);
         assertEquals(backAgain.size(), 1);
 
@@ -377,15 +331,9 @@ public class testAutonomyDiagramTiles
     }
 
     /**
-     * A train must actually be able to cross a paired portal, in both directions.
-     *
-     * The test above checks that landing() knows where the partner is, which is not the same thing and
-     * passed happily while portals were unusable: exits() skipped stub routes, so a link offered no way
-     * out at all and nothing ever asked landing() the question.  Track could reach a portal and stop
-     * dead there, and every cross-page route silently vanished.
-     *
-     * So this walks the whole way through - approach track, portal tile, the jump, the partner, and out
-     * onto the track beyond - which is the only version of the question that would have failed.
+     * A train must actually be able to cross a paired portal, in both directions. The test above only checks that
+     * landing() knows the partner, which passed while exits() skipped stub routes and portals were unusable; this walks
+     * the whole way through (approach track, portal, jump, partner, out onto the track beyond).
      */
     @Test
     public void testATrainCanWalkThroughAPairedPortalBothWays() throws IOException
@@ -421,7 +369,6 @@ public class testAutonomyDiagramTiles
         assertEquals(atPartner.getTile(), tunnelTwo);
         assertNull(atPartner.getEntrySide(), "arriving through a portal is not arriving at a side");
 
-        // and from there back out onto the track beyond
         List<Exit> outOfPartner = graph.exits(tunnelTwo, atPartner.getEntrySide());
         assertEquals(outOfPartner.size(), 1, "the partner should put the train back on the track");
         assertEquals(outOfPartner.get(0).getSide(), Side.S);
@@ -445,16 +392,13 @@ public class testAutonomyDiagramTiles
     }
 
     /**
-     * A route button carries whatever line it is sitting on, and nothing when it sits beside the rails.
-     *
-     * It is a control someone put on the diagram, not track: its art touches no border and its
-     * orientation is the same in horizontal and vertical runs alike.  So what it conducts cannot come
-     * from the tile - it comes from the neighbors.
+     * A route button carries whatever line it is sitting on, and nothing beside the rails: it is a control, not track
+     * (no border art, the same orientation in horizontal and vertical runs), so what it conducts comes from the
+     * neighbors.
      */
     @Test
     public void testARouteButtonCarriesWhateverLineItSitsOn() throws IOException
     {
-        // dropped into a horizontal run
         LayoutDiagram page = page("main", 8, 8);
         straight(page, 1, 1);
         add(page, componentType.ROUTE, 2, 1, 0);
@@ -466,15 +410,14 @@ public class testAutonomyDiagramTiles
         assertEquals(through.size(), 1, "a button in a straight run should carry it");
         assertEquals(through.get(0).getSide(), Side.E);
 
-        // and the run is walkable end to end
         Landing beyond = graph.landing(key("main", 2, 1), Side.E);
         assertNotNull(beyond);
         assertEquals(beyond.getTile(), key("main", 3, 1));
     }
 
     /**
-     * The same button dropped into a vertical run carries that instead - which a fixed north-south or
-     * east-west reading could only ever get right half the time, since the orientation does not say.
+     * The same button in a vertical run carries that instead, which a fixed north-south or east-west reading could only
+     * get right half the time.
      */
     @Test
     public void testARouteButtonCarriesAVerticalRunToo() throws IOException
@@ -491,16 +434,12 @@ public class testAutonomyDiagramTiles
         assertEquals(through.get(0).getSide(), Side.S);
     }
 
-    /**
-     * A button on a curve follows the curve.  This is what the fixed-crossing reading could not do: it
-     * would have offered a straight through the corner and broken the curve entirely.
-     */
+    /** A button on a curve follows the curve, which a fixed-crossing reading could not do. */
     @Test
     public void testARouteButtonOnACurveFollowsTheCurve() throws IOException
     {
         LayoutDiagram page = page("main", 8, 8);
 
-        // track arriving from the west, and leaving to the south
         straight(page, 1, 2);
         add(page, componentType.ROUTE, 2, 2, 0);
         add(page, componentType.STRAIGHT, 2, 3, 1);
@@ -513,8 +452,8 @@ public class testAutonomyDiagramTiles
     }
 
     /**
-     * A button placed beside the rails carries nothing - which is the honest reading of a control that
-     * has no track meaning, and the case a fixed crossing would have invented track for.
+     * A button beside the rails carries nothing: a control with no track meaning, where a fixed crossing would have
+     * invented track.
      */
     @Test
     public void testARouteButtonBesideTheRailsCarriesNothing() throws IOException
@@ -523,7 +462,6 @@ public class testAutonomyDiagramTiles
         straight(page, 1, 1);
         straight(page, 2, 1);
 
-        // sitting below the run, touched by it on one side only
         add(page, componentType.ROUTE, 2, 2, 0);
 
         TileGraph graph = graph(page);
@@ -536,8 +474,8 @@ public class testAutonomyDiagramTiles
     }
 
     /**
-     * A half pairing is an error rather than a one-way jump: a train that can get in but never out is a
-     * worse outcome than being told the pairing is wrong.
+     * A half pairing is an error rather than a one-way jump: a train that can get in but never out is worse than being
+     * told the pairing is wrong.
      */
     @Test
     public void testHalfPairedPortalsAreReported() throws IOException
@@ -559,8 +497,8 @@ public class testAutonomyDiagramTiles
     }
 
     /**
-     * Direction is stored per tile, so a one-way run is set by marking its tiles, and the opposing
-     * direction disappears from the tiles themselves rather than from some connection between them.
+     * Direction is stored per tile, so a one-way run is set by marking its tiles; the opposing direction disappears
+     * from the tiles themselves.
      */
     @Test
     public void testPerTileDirectionClosesOneWay() throws IOException
@@ -573,7 +511,6 @@ public class testAutonomyDiagramTiles
         TileGraph graph = graph(page);
         TileKey middle = key("main", 2, 1);
 
-        // by default the middle tile is traversable both ways
         assertFalse(graph.exits(middle, Side.W).isEmpty());
         assertFalse(graph.exits(middle, Side.E).isEmpty());
 
@@ -587,15 +524,14 @@ public class testAutonomyDiagramTiles
         assertFalse(graph.exits(middle, Side.E).isEmpty(), "entering from the east still leaves west");
         assertTrue(graph.exits(middle, Side.W).isEmpty(), "entering from the west is now closed");
 
-        // and closing it entirely stops the run at that tile
         graph.setDirection(middle, only, Direction.NONE);
         assertTrue(graph.exits(middle, Side.E).isEmpty());
         assertTrue(graph.exits(middle, Side.W).isEmpty());
     }
 
     /**
-     * An excluded page contributes nothing at all - no tiles, no feedback, no problems.  This is what
-     * keeps a page duplicated for display from minting a second Point for every sensor it redraws.
+     * An excluded page contributes nothing at all, which keeps a page duplicated for display from minting a second
+     * Point for every sensor it redraws.
      */
     @Test
     public void testExcludedPagesContributeNothing() throws IOException
@@ -618,8 +554,8 @@ public class testAutonomyDiagramTiles
     }
 
     /**
-     * Scissors are a drawing convention rather than a routing element, so a diagram carrying one is
-     * refused outright.  Ignoring the tile would leave a hole that walks quietly route around.
+     * Scissors are a drawing convention, not a routing element, so a diagram carrying one is refused outright: ignoring
+     * the tile would leave a hole walks quietly route around.
      */
     @Test
     public void testScissorsBlockTheBuild() throws IOException
@@ -632,13 +568,11 @@ public class testAutonomyDiagramTiles
         assertTrue(hasProblem(graph, TileGraph.ERROR_SCISSORS, true));
         assertTrue(graph.hasBlockingProblems());
 
-        // and it carries no track, so nothing routes through it either
         assertTrue(graph.exits(key("main", 1, 1), Side.S).isEmpty());
     }
 
     /**
-     * A turntable is legitimate track that simply is not routable: autonomy stops there rather than the
-     * diagram being refused.
+     * A turntable is legitimate track that is not routable: autonomy stops there rather than the diagram being refused.
      */
     @Test
     public void testTurntablesStopWithoutBlocking() throws IOException
@@ -653,10 +587,7 @@ public class testAutonomyDiagramTiles
         assertTrue(graph.exits(key("main", 1, 1), Side.N).isEmpty());
     }
 
-    /**
-     * Every feedback tile is a Point, and nothing else is.  Plain track carries no sensor and so cannot
-     * be a Point however it is drawn.
-     */
+    /** Every feedback tile is a Point, and nothing else is. */
     @Test
     public void testEveryFeedbackTileIsFoundAndNothingElseIs() throws IOException
     {
@@ -674,11 +605,8 @@ public class testAutonomyDiagramTiles
     }
 
     /**
-     * A link with track running into it, pointing at a page autonomy uses, refuses the diagram (OB-150).
-     *
-     * Adam: "there should also be an error if there exist ANY active (not excluded/disabled) links not
-     * linked to anything."  Track runs into this one and stops - trains reach it and have nowhere to go
-     * - and the page it was drawn to continue onto is real and never joined up. That is a hole.
+     * A link with track running into it, pointing at a page autonomy uses, refuses the diagram (OB-150): trains reach
+     * it and have nowhere to go, and the page it was drawn to continue onto is real and never joined up.
      */
     @Test
     public void testAnUnpairedLinkToAnIncludedPageBlocks() throws Exception
@@ -702,16 +630,10 @@ public class testAutonomyDiagramTiles
     }
 
     /**
-     * The same link, once its destination page is left out of autonomy, is a warning (OB-150).
-     *
-     * THE CASE THE SAMPLE LAYOUT FOUND. An arrow to an excluded page cannot be paired - there is no
-     * tile on the far side to pair it to - so an error here names a fault whose only remedy is to
-     * switch the arrow off one at a time, and excluding the page was already the deliberate act saying
-     * autonomy does not go there.
-     *
-     * Written beside the test above rather than on its own, because what matters is that these two
-     * disagree. Either one by itself is satisfied by a rule that always answers the same way, and a
-     * rule that always answers "outside autonomy" turns OB-150 off without failing anything.
+     * The same link, once its destination page is left out of autonomy, is a warning (OB-150): an arrow to an excluded
+     * page cannot be paired, so an error would name a fault whose only remedy is switching the arrow off. Written
+     * beside the test above because the two must disagree; a rule that always answers "outside autonomy" would turn
+     * OB-150 off without failing anything.
      */
     @Test
     public void testAnUnpairedLinkToAnExcludedPageDoesNotBlock() throws Exception
@@ -737,9 +659,8 @@ public class testAutonomyDiagramTiles
         assertTrue(hasProblem(graph, TileGraph.WARN_PORTAL_EXCLUDED_PAGE, false),
             "it is still worth saying - it stopped blocking, it did not stop being reported");
 
-        // ITS OWN MESSAGE, not a quieter copy of the other one.  warnLinkNeverPaired tells the reader
-        // to right-click and pair it, which is the one thing that cannot work when the page on the far
-        // side was left out of autonomy.
+        // Its own message, not a quieter copy: warnLinkNeverPaired says to right-click and pair it, which cannot work
+        // when the far page is left out of autonomy.
         assertFalse(hasProblem(graph, TileGraph.WARN_PORTAL_NEVER_PAIRED, false),
             "this case has its own message and should not also be reported as an ordinary "
             + "never-paired link");
@@ -769,13 +690,8 @@ public class testAutonomyDiagramTiles
             accessoryDecoderType.MM2, null);
     }
     /**
-     * A link tile pointing at the nth page of the layout.
-     *
-     * A link records where it goes as a raw address counting from zero over every page, which is the
-     * one field {@link #add} leaves at zero - and zero is a real page, so a link added by that helper
-     * points at the first one whether or not anybody meant it to.
-     *
-     * @param destination the destination page's index in the layout
+     * A link tile pointing at the nth page of the layout. {@link #add} leaves the raw destination address at zero,
+     * which is a real page, so a link added by that helper points at the first one whether or not anybody meant it to.
      */
     private void linkTo(LayoutDiagram page, int x, int y, int destination) throws IOException
     {
@@ -816,12 +732,9 @@ public class testAutonomyDiagramTiles
     }
 
     /**
-     * A pairing whose far end is no longer a link is reported.
-     *
-     * Pairings are stored by coordinate and replayed without asking what is there now, so redrawing the
-     * far end as plain track left a pairing that is mutual, whose both ends exist, and that every check
-     * was happy with - while the walk jumped into a square with no way out and the cross-page route
-     * simply disappeared.  Of every way a link can be misconfigured, this was the only silent one.
+     * A pairing whose far end is no longer a link is reported: pairings are stored by coordinate and replayed without
+     * asking what is there now, so redrawing the far end as plain track left a mutual pairing every check was happy
+     * with while cross-page routes silently disappeared.
      */
     @Test
     public void testAPairingWhoseFarEndIsNoLongerALinkIsReported() throws Exception
@@ -830,7 +743,6 @@ public class testAutonomyDiagramTiles
 
         add(page, componentType.LINK, 1, 1, 0);
 
-        // what used to be the partner, redrawn as ordinary track
         straight(page, 4, 4);
 
         TileGraph graph = graph(page);
