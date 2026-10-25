@@ -13,36 +13,24 @@ import javax.swing.border.Border;
 /**
  * Column and row numbers along the top and the left of a track diagram (FR-057).
  *
- * Adam: **"coordinates are referenced in issues but not visible to the user.  add a grid around the
- * diagram"**, and **"axis labels can be printed in both autonomy editor and track diagram editor,
- * with an optional toggle"**.
+ * Adam: **"coordinates are referenced in issues but not visible to the user.  add a grid around the diagram"**, and
+ * **"axis labels can be printed in both autonomy editor and track diagram editor, with an optional toggle"**.
  *
- * Every warning the autonomy editor raises, every finding in a review and every square named in a
- * manual test is written as `page:x,y` - and until now the only way to work out which square that was
- * was to count cells from the corner. The numbers are on the diagram now.
+ * Every warning, finding and manual test names a square as `page:x,y`, and the numbers let a reader find it without
+ * counting cells from the corner.
  *
- * **A Border rather than two more rows of components.** The diagram is a `GridBagLayout` whose cells
- * are addressed by their own coordinates, with a spacer row and column at the far edge and a
- * `gridwidth = 0` rule for squares whose text overflows. Putting a ruler INTO that grid means shifting
- * every cell by one and re-deriving four other things from the new origin - and `LayoutGrid` hands out
- * `getValueAt(x, y)` and `getCoordinates(label)` to callers all over the application, so the shift
- * would have to be undone again at every one of them. A border paints in the margin the layout manager
- * already reserves for it, and the grid inside is untouched.
+ * **A Border rather than two more rows of components.** The diagram is a `GridBagLayout` whose cells are addressed by
+ * their own coordinates; putting a ruler INTO that grid would shift every cell by one, and `LayoutGrid` hands out
+ * `getValueAt(x, y)` and `getCoordinates(label)` to callers all over the application, each of which would have to undo
+ * the shift.  A border paints in the margin the layout manager already reserves, and the grid inside is untouched.
  *
- * **It asks the grid where the cells ARE.  It does not work them out from the tile size.**
+ * **It asks the grid where the cells ARE; it does not work them out from the tile size.**  Multiplying the tile size by
+ * the column index is right only while every cell is exactly a tile wide, and with the gray grid on each square wears a
+ * line border that reserves room, so the error is cumulative: the first numbers sit over their squares and the
+ * twentieth is a whole square out.  A ruler that measures cannot drift.
  *
- * That is the second version of this class and the reason is Adam's: *"the axis numbers drift and are
- * out of alignment.  The first few are centered, but the rest aren't.  That's why it looks off by
- * one."*  The first version multiplied the tile size by the column index, which is right only while
- * every cell is exactly a tile wide - and with the gray grid switched on each square wears a line
- * border that reserves room, so the real pitch is a pixel or two more. The error is cumulative: the
- * first few numbers sit over their squares and the twentieth is a whole square out.
- *
- * A ruler that measures cannot drift, whatever a square turns out to be made of.
- *
- * **It draws the diagram's own numbers, not the cell indices.** A diagram whose left-most track is at
- * x = 4 is rendered from x = 4, and the offsets are what make the printed number the one an issue
- * would quote.
+ * **It draws the diagram's own numbers, not the cell indices**: a diagram whose left-most track is at x = 4 is rendered
+ * from x = 4, so the printed number is the one an issue would quote.
  *
  * @author Adam
  */
@@ -101,17 +89,11 @@ public class AxisRuler implements Border
     /**
      * The first usable rectangle among several places one might be found (OB-172).
      *
-     * Adam: *"some axis labels vanish when switching between track diagram editor and autonomy
-     * editor - 1 and 3 in my case.  they reappear if the grid setting is cycled."*
-     *
-     * A column's number was positioned from exactly one cell - the one in the top row - and a row's
-     * from the one in the left-hand column. `paintBorder` skips on `cell == null || cell.width <= 0`,
-     * so any reason that single square is absent, or has not been given its bounds yet, deletes the
-     * label for the whole column. One square decided a number about twenty-three others.
-     *
-     * This lets the caller offer a few places to look and takes the first that answers. It does not
-     * make the ruler cleverer about WHERE a column is - every candidate is the same column, so any of
-     * them gives the same x - it just stops one missing square being fatal.
+     * A column's number was positioned from the one cell in the top row (a row's from the left-hand column), and
+     * `paintBorder` skips on `cell == null || cell.width <= 0`, so one absent or not-yet-sized square deleted the label
+     * for the whole column (Adam: *"some axis labels vanish when switching between track diagram editor and autonomy
+     * editor"*).  The caller offers a few places to look, all the same column, so any gives the same x; this just stops
+     * one missing square being fatal.
      *
      * @param at the places to look, in order of preference
      * @param index the column or row being asked about
@@ -133,19 +115,10 @@ public class AxisRuler implements Border
             // than being handed on as an answer.
             if (found == null || found.width <= 0 || found.height <= 0) continue;
 
-            // THE BIGGEST, NOT THE FIRST - which is what this method got wrong (OB-172).
-            //
-            // Measured on Adam's own page, captured off the SCREEN rather than painted into an image:
-            // rows 0, 1, 3 and 11 were skipped by `paintBorder` because the cell handed to it was
-            // **two pixels tall**, against a fourteen-pixel font.  Those rows have a full 30-pixel
-            // cell in another column; the first candidate simply happened to be a spacer.
-            //
-            // "First non-empty" was the wrong rule.  A spacer is not empty - it is a real component
-            // with a real, tiny size - so the zero-check let it through, and this method confidently
-            // answered with the one candidate that could not carry a number.
-            //
-            // Every candidate describes the SAME row or column, so any of them gives the right
-            // position and only the size differs.  Taking the largest is therefore free.
+            // The biggest, not the first (OB-172): a spacer is not empty, it is a real component with a tiny size (two
+            // pixels tall against a fourteen-pixel font), so a zero-check lets it through and the method answered with
+            // the one candidate that could not carry a number.  Every candidate describes the same row or column, so
+            // only the size differs and taking the largest is free.
             if (best == null || (long) found.width * found.height
                 > (long) best.width * best.height)
             {
@@ -178,9 +151,9 @@ public class AxisRuler implements Border
     /**
      * A ruler over cells that really are exactly one tile apart.
      *
-     * For tests, and for any caller that knows its grid has no borders on it. The real diagram does
-     * not use this: whether a square is a tile wide depends on whether the gray grid is switched on,
-     * which is a setting, which is exactly the assumption that put the numbers out of alignment.
+     * For tests, and for any caller that knows its grid has no borders on it.  The real diagram does not use this:
+     * whether a square is a tile wide depends on whether the gray grid is switched on, the assumption that put the
+     * numbers out of alignment.
      *
      * @param size the width and height of one square, in pixels
      * @param offsetX the x the left-most column actually is
@@ -221,11 +194,8 @@ public class AxisRuler implements Border
 
         FontMetrics metrics = g.getFontMetrics();
 
-        // ACROSS THE TOP.
-        //
-        // Centered over the square as it actually is, and skipped when the number is wider than that
-        // square - a number that overhangs its neighbor points at the wrong square, which is worse
-        // than a gap.
+        // Across the top, centered over the square as it actually is, and skipped when the number is wider than that
+        // square: a number that overhangs its neighbor points at the wrong square, which is worse than a gap.
         for (int column = 0; column < columns; column++)
         {
             Rectangle cell = columnAt == null ? null : columnAt.apply(column);
