@@ -92,8 +92,7 @@ public class testTheDiagramIsNotRebuiltForAnArrow
         // every class over it say something different every week.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, true));
+        model = support.TestStation.simulatedInDebug();
 
         javax.swing.SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
 

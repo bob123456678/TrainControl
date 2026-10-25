@@ -82,8 +82,7 @@ public class testASetupMovesToAOnePageLayout
             // STEP 1: HIS EXPORT, as Autonomy > Export writes it - the configuration in use, bundled, as indented JSON.
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-            MarklinControlStation his = support.TestStationAddress.withNoStation(
-                () -> MarklinControlStation.init(null, true, false, false, false));
+            MarklinControlStation his = support.TestStation.simulated();
 
             try
             {
@@ -277,8 +276,7 @@ public class testASetupMovesToAOnePageLayout
 
     private static TrainControlUI openTheWindow() throws Exception
     {
-        MarklinControlStation model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, true));
+        MarklinControlStation model = support.TestStation.simulatedInDebug();
 
         final TrainControlUI[] made = new TrainControlUI[1];
 

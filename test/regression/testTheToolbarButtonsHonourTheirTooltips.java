@@ -444,8 +444,7 @@ public class testTheToolbarButtonsHonourTheirTooltips
         {
             up.sandbox = support.LayoutSandbox.open();
 
-            up.model = support.TestStationAddress.withNoStation(
-                () -> MarklinControlStation.init(null, true, false, false, false));
+            up.model = support.TestStation.simulated();
 
             final MarklinControlStation model = up.model;
             final TrainControlUI[] made = new TrainControlUI[1];

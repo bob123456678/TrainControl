@@ -56,8 +56,7 @@ public class testTheDebugMenuSwitchesTheEcho
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("single-switch"));
 
         // Simulating, with a window, in debug.
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, true, false, true));
+        model = support.TestStation.simulatedWithWindowInDebug();
 
         ui = (TrainControlUI) model.getGUI();
 

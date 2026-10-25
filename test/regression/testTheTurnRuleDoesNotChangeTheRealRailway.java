@@ -64,8 +64,7 @@ public class testTheTurnRuleDoesNotChangeTheRealRailway
         // the railway - which is the reason `live-snapshot` exists.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, false));
+        model = support.TestStation.simulated();
         model.stop();
 
         String path = "file:///"

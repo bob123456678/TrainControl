@@ -46,8 +46,7 @@ public class testApplyIsGreyedWithNothingToApply
             // layout preference pointing at a folder under %TEMP%.
             sandbox = support.LayoutSandbox.open();
 
-            model = support.TestStationAddress.withNoStation(
-                () -> MarklinControlStation.init(null, true, false, false, false));
+            model = support.TestStation.simulated();
 
             final MarklinControlStation m = model;
             final TrainControlUI[] made = new TrainControlUI[1];

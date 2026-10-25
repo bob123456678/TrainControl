@@ -64,8 +64,7 @@ public class testTheOrangeIsDrawnWhereTheTailStopsAtTheSwitch
     {
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, false));
+        model = support.TestStation.simulated();
 
         train = model.newMM2Locomotive(OUR_TRAIN, 2395);
 

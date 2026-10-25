@@ -55,8 +55,7 @@ public class testBothProtectingSignalsAreThrown
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, true));
+        model = support.TestStation.simulatedInDebug();
 
         near = model.getAccessoryByAddress(NEAR, Accessory.accessoryDecoderType.MM2);
         far = model.getAccessoryByAddress(FAR, Accessory.accessoryDecoderType.MM2);

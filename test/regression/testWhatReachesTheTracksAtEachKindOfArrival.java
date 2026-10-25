@@ -98,8 +98,7 @@ public class testWhatReachesTheTracksAtEachKindOfArrival
         // DEBUG, and it is not optional: `setSimulate` refuses outside it, and the not-connected branch
         // of `exec` only logs the message it would have sent while debugging - which is the whole of
         // how this class can see the wire.
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, true));
+        model = support.TestStation.simulatedInDebug();
         model.stop();
 
         assertNotNull(model.newMM2Locomotive(DRIVER, ADDRESS),

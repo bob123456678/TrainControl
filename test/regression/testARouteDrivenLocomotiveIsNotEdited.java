@@ -64,8 +64,7 @@ public class testARouteDrivenLocomotiveIsNotEdited
             // layout preference pointing at a folder under %TEMP%.
             sandbox = support.LayoutSandbox.open();
 
-            model = support.TestStationAddress.withNoStation(
-                () -> MarklinControlStation.init(null, true, false, false, false));
+            model = support.TestStation.simulated();
 
             final MarklinControlStation m = model;
             final TrainControlUI[] made = new TrainControlUI[1];
@@ -338,8 +337,7 @@ public class testARouteDrivenLocomotiveIsNotEdited
             // OPENED INSIDE THE TRY, as the claims above open theirs (OB-111).
             sandbox = support.LayoutSandbox.open();
 
-            model = support.TestStationAddress.withNoStation(
-                () -> MarklinControlStation.init(null, true, false, false, false));
+            model = support.TestStation.simulated();
 
             model.newMM2Locomotive(SYNCED, 66);
 
@@ -617,8 +615,7 @@ public class testARouteDrivenLocomotiveIsNotEdited
         {
             sandbox = support.LayoutSandbox.open();
 
-            model = support.TestStationAddress.withNoStation(
-                () -> MarklinControlStation.init(null, true, false, false, false));
+            model = support.TestStation.simulated();
 
             final MarklinControlStation m = model;
             final TrainControlUI[] made = new TrainControlUI[1];

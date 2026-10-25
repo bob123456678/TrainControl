@@ -84,8 +84,7 @@ public class testTheAutonomyEditorKnowsWhichSquare
         {
             open.sandbox = support.LayoutSandbox.open();
 
-            open.model = support.TestStationAddress.withNoStation(
-                () -> org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, true));
+            open.model = support.TestStation.simulatedInDebug();
 
             final org.traincontrol.marklin.MarklinControlStation model = open.model;
             final org.traincontrol.gui.TrainControlUI[] made = new org.traincontrol.gui.TrainControlUI[1];

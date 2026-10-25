@@ -36,7 +36,7 @@ public class testLayoutReloadFence
     private static MarklinControlStation model;
 
     /**
-     * Debug mode - the last argument - is required, not incidental: setSimulate refuses unless
+     * Debug mode is required, not incidental: setSimulate refuses unless
      * control.isDebug() is set and the power is off (getNetworkCommState reports the power state, not
      * a connection).  init leaves the power off because autoPowerOn is false, and stop() keeps it that
      * way.
@@ -44,8 +44,7 @@ public class testLayoutReloadFence
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, true));
+        model = support.TestStation.simulatedInDebug();
         model.stop();
     }
 

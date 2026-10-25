@@ -69,8 +69,7 @@ public class testTheReversalReachesTheTracks
 
         // Debug, because setSimulate refuses outside it and the not-connected branch of `exec` only
         // logs the message when debugging.
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, true));
+        model = support.TestStation.simulatedInDebug();
         model.stop();
 
         model.newMM2Locomotive(DRIVER, ADDRESS);

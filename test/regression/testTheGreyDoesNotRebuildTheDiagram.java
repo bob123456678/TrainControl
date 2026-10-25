@@ -144,8 +144,7 @@ public class testTheGreyDoesNotRebuildTheDiagram
         // what it names before anything reads it.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, true, false, true));
+        model = support.TestStation.simulatedWithWindowInDebug();
         model.setNetworkCommState(false);
 
         ui = (TrainControlUI) model.getGUI();

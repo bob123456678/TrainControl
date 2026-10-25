@@ -67,8 +67,7 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
 
         TrainControlUI.getPrefs().putBoolean(org.traincontrol.gui.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION, false);
 
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, true));
+        model = support.TestStation.simulatedInDebug();
 
         SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
 

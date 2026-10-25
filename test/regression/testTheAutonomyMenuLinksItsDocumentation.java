@@ -48,8 +48,7 @@ public class testTheAutonomyMenuLinksItsDocumentation
         // BEFORE init, which opens whatever the layout preference names (OB-111).
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("single-switch"));
 
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, true));
+        model = support.TestStation.simulatedInDebug();
 
         SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
 

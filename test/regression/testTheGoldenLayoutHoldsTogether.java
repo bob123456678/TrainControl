@@ -112,8 +112,7 @@ public class testTheGoldenLayoutHoldsTogether
         assertFalse(fingerprint(working).isEmpty(),
             "the copy is empty, so every test below would read nothing and pass");
 
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, true));
+        model = support.TestStation.simulatedInDebug();
 
         String path = "file:///" + working.getAbsolutePath().replace('\\', '/') + "/";
 

@@ -89,8 +89,7 @@ public class testAConflictSkipsOnlyTheSwitchUnderTheTrain
     {
         sandbox = support.LayoutSandbox.open();
 
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, true));
+        model = support.TestStation.simulatedInDebug();
 
         // So that a command comes back as an echo and the model's own power state follows it.
         //

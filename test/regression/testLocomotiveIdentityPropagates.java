@@ -50,8 +50,7 @@ public class testLocomotiveIdentityPropagates
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, true));
+        model = support.TestStation.simulatedInDebug();
 
         for (int address : new int[]{47451, 47452, 47453})
         {

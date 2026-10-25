@@ -55,10 +55,9 @@ public class testAReversalCommandIsEmitted
         sandbox = support.LayoutSandbox.open();
 
         // DEBUG ON, because setSimulate refuses outside it - and simulation is the only way the
-        // train ever arrives here.  The last argument is debug; testAutonomySimulationSanity does the
+        // train ever arrives here.  testAutonomySimulationSanity does the
         // same for the same reason.
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, true));
+        model = support.TestStation.simulatedInDebug();
         model.stop();
 
         model.newMM2Locomotive(DRIVER, ADDRESS);

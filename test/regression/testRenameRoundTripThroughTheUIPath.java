@@ -52,8 +52,7 @@ public class testRenameRoundTripThroughTheUIPath
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, false));
+        model = support.TestStation.simulated();
     }
 
     /**

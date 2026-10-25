@@ -508,8 +508,7 @@ public class testTheRoutesImportDoorAsksByName
 
     private static TrainControlUI openTheWindow() throws Exception
     {
-        MarklinControlStation model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, true));
+        MarklinControlStation model = support.TestStation.simulatedInDebug();
 
         final TrainControlUI[] made = new TrainControlUI[1];
 

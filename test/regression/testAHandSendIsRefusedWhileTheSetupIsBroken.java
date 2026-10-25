@@ -160,8 +160,7 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
             org.traincontrol.marklin.MarklinControlStation model =
-                support.TestStationAddress.withNoStation(
-                    () -> org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, true));
+                support.TestStation.simulatedInDebug();
 
             javax.swing.SwingUtilities.invokeAndWait(() -> ui[0] = new TrainControlUI());
 
@@ -353,8 +352,7 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
 
             Files.write(setup.toPath(), broken);
 
-            model = support.TestStationAddress.withNoStation(
-                () -> org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, true));
+            model = support.TestStation.simulatedInDebug();
 
             javax.swing.SwingUtilities.invokeAndWait(() -> ui[0] = new TrainControlUI());
 
@@ -565,8 +563,7 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
             final org.traincontrol.marklin.MarklinControlStation model =
-                support.TestStationAddress.withNoStation(
-                    () -> org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, true));
+                support.TestStation.simulatedInDebug();
 
             javax.swing.SwingUtilities.invokeAndWait(() -> ui[0] = new TrainControlUI());
 
