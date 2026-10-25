@@ -19,18 +19,13 @@ import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.util.I18n;
 
 /**
- * A square answered 0 on purpose is not called unmeasured when a berth is refused (Adam, 2026-09-23).
+ * A square answered 0 on purpose is not called unmeasured when a berth is refused.
  *
- * *"stop listing answered zeros as missing."*  A berth refused because its approach is partly unmeasured says how
- * many squares of it *"still have no length ... Measuring them may clear this"* - and a square the operator answered
- * 0 on purpose (OB-274) was counted among them, pointing him at a square he has already answered.  The rule itself is
- * unchanged: an answered 0 is still read as nothing, the walk still claims it, and the berth is still refused.
- *
- * The berth rule runs on the running layout, which knew only each place's length, so the build now marks a place
- * answered and the runtime keeps the mark.
- *
- * On Adam's measured TunnelLongPark: its approach from BottomMainA crosses squares he left at 0, and a four-unit train
- * lies back over them onto the road to BottomMainAPre.
+ * A berth refused because its approach is partly unmeasured says how many squares "still have no length", and a square
+ * the operator answered 0 on purpose (OB-274) was counted among them.  The rule itself is unchanged: an answered 0 is
+ * still read as nothing, the walk still claims it, and the berth is still refused.  The build now marks a place
+ * answered and the runtime keeps the mark.  Run on Adam's measured TunnelLongPark: its approach from BottomMainA
+ * crosses squares he left at 0, and a four-unit train lies back over them onto the road to BottomMainAPre.
  *
  * @author Adam
  */
@@ -38,7 +33,7 @@ public class testAnAnsweredZeroIsNotMissing
 {
     private static final String OUR_TRAIN = "answered zero probe";
 
-    /** Every square of BottomMainA (westbound) -> TunnelLongPark on page 1 - Main, x, y and length, as of 2026-09-23. */
+    /** Every square of BottomMainA (westbound) -> TunnelLongPark on page 1 - Main, x, y and length. */
     private static final int[][] APPROACH = {
         {19, 12, 0}, {18, 12, 0}, {17, 12, 2}, {16, 12, 0}, {15, 12, 1}, {14, 12, 0}, {13, 12, 0}, {12, 12, 1}, {11, 12, 0},
         {11, 11, 0}, {10, 11, 0}, {10, 10, 1}, {10, 9, 2},
@@ -97,14 +92,12 @@ public class testAnAnsweredZeroIsNotMissing
      *
      * MUTATION: the build not marking an answered place, the runtime not reading the mark, or the berth rule not
      * asking it - each leaves the count where it was.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testTheRefusalNoLongerCountsAnAnsweredSquare() throws Exception
     {
-        // HIS APPROACH AS IT WAS MEASURED ON 2026-09-23, nothing on it answered (FR-136): he has answered its zeros since,
-        // and a refusal with nothing left unmeasured has no note for this claim to watch go.
+        // His approach as it was measured, nothing on it answered (FR-136): a refusal with nothing left unmeasured has
+        // no note for this claim to watch go.
         session.setTileLengths(squares(APPROACH));
 
         String before = whyTheBerthRefuses();
@@ -115,7 +108,7 @@ public class testAnAnsweredZeroIsNotMissing
             "CONTROL: nothing on the approach is answered and the refusal does not say any square has no length, so"
             + " the claim below would pass by the note never being there: " + before);
 
-        // EVERY SQUARE OF THE APPROACH HE LEFT AT 0, answered 0 on purpose.
+        // Every square of the approach he left at 0, answered 0 on purpose.
         Set<TileKey> unmeasured = new LinkedHashSet<>();
 
         Edge approach = approach(layoutNow());
@@ -155,8 +148,6 @@ public class testAnAnsweredZeroIsNotMissing
      * On his railway the build marks exactly the places Mass Assign Lengths would ask a length for (OB-297).
      *
      * MUTATION: mark nothing, mark every place, or mark from another list, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testTheBuildMarksWhatMassAssignAsksFor() throws Exception
@@ -186,20 +177,13 @@ public class testAnAnsweredZeroIsNotMissing
     }
 
     /**
-     * The refusing figures on his frozen railway are the railway's own refusals: MT-583's
-     * five, each asked.
+     * The refusing figures on his frozen railway are the railway's own refusals, each asked (MT-583).  TopMainR1Inter
+     * gives 3 and LowerFront 4: a train that long is admitted on a route in and one a unit longer refused
+     * (`Layout.whyTooLongForThisRoute`), over every route rather than the one a shuffled search returns first.  The
+     * other three platforms have the notice and no figure.
      *
-     * - TopMainR1Inter gives 3, and LowerFront 4: on a route in from TopR1ParkShort, and from ParkingTrack12, measuring
-     *   that figure, a train that long is admitted and one a unit longer is refused - `Layout.whyTooLongForThisRoute`.
-     * - Tunnel, BottomMainA and BottomInnerOtherside have the notice and no figure: every way in measures at least the
-     *   maximum.
-     *
-     * The notice reads the figure off the built railway; the refusal is the railway's.  Two rules stated apart, so asked
-     * of each other.  Every route between the two squares is asked, not the one a shuffled search returns first.
-     *
-     * MUTATION: give the figure a unit high, or give it at a platform where it is not under the maximum, and this fails.
-     *
-     * @throws Exception from the railway
+     * MUTATION: give the figure a unit high, or give it at a platform where it is not under the maximum, and this
+     * fails.
      */
     @Test
     public void testTheRefusingFigureIsTheRailwaysOwn() throws Exception
@@ -222,20 +206,13 @@ public class testAnAnsweredZeroIsNotMissing
     }
 
     /**
-     * The editor's Worth tidying list, as the autonomy editor builds it over his frozen railway, says what MT-559 and
-     * MT-583 ask Adam to read (Adam, 2026-09-25: automated tests supersede the MTs they answer).
-     *
-     * - MT-559: BottomMainA, Tunnel, BottomInnerOtherside, LowerFront and TopMainR1Inter each say that a longer train
-     *   stands across the switch and may block other parts of the layout; none says it is refused but for the next line.
-     * - MT-583: after that sentence, TopMainR1Inter says a train longer than 3 coming in the shortest way is refused
-     *   instead, and LowerFront the same with 4; the other three give no such figure.
-     *
-     * Read off the list model the panel fills (`refresh`), under the Worth tidying heading - the lines on screen.
+     * The editor's Worth tidying list, as the panel builds it over his frozen railway, says what MT-559 and MT-583 ask
+     * Adam to read: five platforms each say a longer train stands across the switch (MT-559), and TopMainR1Inter and
+     * LowerFront add the figure above which a train coming in the shortest way is refused (MT-583).  Read off the list
+     * model the panel fills (`refresh`), under the Worth tidying heading.
      *
      * MUTATION: drop the refusing figure from the sentence, put a platform's notice under another heading, or give a
      * platform the berth's "is refused" notice, and this fails.
-     *
-     * @throws Exception from the panel or the reflection
      */
     @Test
     public void testTheWorthTidyingListSaysWhatEachPlatformDoes() throws Exception
@@ -259,7 +236,7 @@ public class testAnAnsweredZeroIsNotMissing
 
         javax.swing.ListModel<?> model = (javax.swing.ListModel<?>) field.get(panel);
 
-        // THE WORTH TIDYING SECTION: its heading, and the rows under it up to the next heading.
+        // The Worth tidying section: its heading, and the rows under it up to the next heading.
         java.util.List<String> notices = new java.util.ArrayList<>();
         java.util.List<String> everything = new java.util.ArrayList<>();
 
@@ -284,7 +261,7 @@ public class testAnAnsweredZeroIsNotMissing
         assertFalse(notices.isEmpty(), "precondition: the editor lists nothing under Worth tidying on his railway: "
             + everything);
 
-        // The wording of 2026-09-29's message pass (Adam: "lighter touch"), and of the refusing notice's shorter one
+        // The wording of the message pass, and of the refusing notice's shorter one
         String stands = "stands across that switch here and may block other trains until it leaves";
         String blocks = "longer trains block the switch";
 
@@ -325,7 +302,7 @@ public class testAnAnsweredZeroIsNotMissing
                     + " coming in the shortest way is refused (MT-583): " + line);
             }
 
-            // AND NOT THE BERTH'S NOTICE ANYWHERE (MT-559): a platform autonomy may choose admits the train.
+            // And not the berth's notice anywhere (MT-559): a platform autonomy may choose admits the train.
             for (String row : everything)
             {
                 assertFalse((row.contains(" " + platform.getKey() + " ") || row.contains(platform.getKey() + " is"))
@@ -356,8 +333,8 @@ public class testAnAnsweredZeroIsNotMissing
     }
 
     /**
-     * On some route the railway runs from one station into another whose route in measures the figure, a train that long
-     * is admitted and one a unit longer refused.  Every route between each pair of copies, up to forty.
+     * On some route the railway runs from one station into another whose route in measures the figure, a train that
+     * long is admitted and one a unit longer refused.  Every route between each pair of copies, up to forty.
      */
     private void assertRefusedAbove(String from, String into, int figure) throws Exception
     {
@@ -422,27 +399,20 @@ public class testAnAnsweredZeroIsNotMissing
     }
 
     /**
-     * A stretch answered 0 is measured track of no length (Adam, 2026-09-25: *"we can't possibly have positive lengths everywhere because the tracks just aren't that long.  We need to find a way to allow trains in atomic mode in as well if the total track lengths allow"*, and *"Build it"*), shown on his railway's Tunnel.
+     * A stretch answered 0 is measured track of no length, shown on his railway's Tunnel.
      *
-     * RampDown -4-> BottomSecondary -2-> TunnelPre -4-> Tunnel, which takes a train of 5 with 2 measured past its switch.
-     * With the hop BottomSecondary -> TunnelPre answered 0 - every square of it, its switch and crossing too, which is
-     * what Mass Assign Lengths' piece, switch and crossing questions answer between them - 8 is measured end to end, and:
-     *
-     * - a train of 5 from RampDown is admitted - the route in counts on past the 0, where it stopped and refused it
-     *   quoting 4;
-     * - standing there, its tail is claimed over the 0 and onto the leg behind it, as far as its length reaches - what the
-     *   route in admits, the railway claims;
-     * - and the tail question walks on over the 0: a train of 6 there has crossed BottomSecondary.
+     * RampDown -4-> BottomSecondary -2-> TunnelPre -4-> Tunnel takes a train of 5 with 2 measured past its switch.
+     * With the hop BottomSecondary -> TunnelPre answered 0 (every square of it, switch and crossing too), 8 is measured
+     * end to end, and a train of 5 from RampDown is admitted (the route in counts on past the 0); standing there, its
+     * tail is claimed over the 0 and onto the leg behind it; and the tail question walks on over the 0 (a train of 6
+     * has crossed BottomSecondary).
      *
      * MUTATION: stop the route in, the tail walk or the tail question at an answered 0, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testAStretchAnsweredZeroIsMeasuredTrackOfNoLength() throws Exception
     {
-        // THE ROAD AS IT WAS MEASURED ON 2026-09-23, nothing on it answered (FR-136), and put back after: RampDown -4->
-        // BottomSecondary -2-> TunnelPre -4-> Tunnel.  He has re-measured RampDown's leg since.
+        // The road as it was measured, nothing on it answered (FR-136), and put back after.
         java.util.Map<TileKey, Integer> road = squares(ROAD);
 
         java.util.Map<TileKey, Integer> roadWas = new java.util.LinkedHashMap<>();
@@ -510,7 +480,7 @@ public class testAnAnsweredZeroIsNotMissing
             assertTrue(road.get(1).getLength() == 0 && road.get(1).isMeasured(), "precondition: the hop is not answered 0"
                 + " end to end");
 
-            // THE ROUTE IN, over the 0.
+            // The route in, over the 0.
             assertEquals(Layout.measuredRouteIn(road), 8, "the route in into Tunnel stops at the hop answered 0");
 
             train.setTrainLength(5);
@@ -518,7 +488,7 @@ public class testAnAnsweredZeroIsNotMissing
             org.testng.Assert.assertNull(Layout.whyTooLongForThisRoute(road, train), "a train of 5 from RampDown is refused"
                 + " at Tunnel, where 8 is measured end to end and the platform takes 5");
 
-            // THE TAIL, claimed over the 0 and onto the leg behind it.
+            // The tail, claimed over the 0 and onto the leg behind it.
             java.util.Map<String, org.traincontrol.base.Locomotive> claimed =
                 layout.placesATailWouldCover(road.get(2).getEnd(), train, road);
 
@@ -534,7 +504,7 @@ public class testAnAnsweredZeroIsNotMissing
                     + " claimed: " + place);
             }
 
-            // THE TAIL QUESTION, walked on over the 0.
+            // The tail question, walked on over the 0.
             boolean crossed = false;
             StringBuilder offered = new StringBuilder();
 
@@ -564,14 +534,12 @@ public class testAnAnsweredZeroIsNotMissing
     }
 
     /**
-     * An approach answered 0 throughout is measured, and holds no train (Adam, 2026-09-25: *"we can't possibly have positive lengths everywhere because the tracks just aren't that long.  We need to find a way to allow trains in atomic mode in as well if the total track lengths allow"*, and *"Build it"*): the berth rule judges it,
-     * where it used to decline as though nothing was known.  TunnelLongPark, a parking berth, with every square of its
-     * approach from BottomMainA answered 0 - its own 2 included - refuses a train of 1, whose tail reaches the road the
-     * approach shares.
+     * An approach answered 0 throughout is measured, and holds no train: the berth rule judges it, where it used to
+     * decline as though nothing was known.  TunnelLongPark, a parking berth, with every square of its approach from
+     * BottomMainA answered 0 - its own 2 included - refuses a train of 1, whose tail reaches the road the approach
+     * shares.
      *
      * MUTATION: let the berth rule decline an approach answered 0 throughout, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testAnApproachAnsweredZeroThroughoutHoldsNoTrain() throws Exception
