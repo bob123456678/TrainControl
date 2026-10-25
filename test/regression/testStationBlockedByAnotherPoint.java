@@ -259,8 +259,6 @@ public class testStationBlockedByAnotherPoint
      * notice on restrictions (in the list for any type of station or non station) would be better.").
      *
      * MUTATION: leave the notice out of `AutonomyChecks.run`, or list it for stations only, and this fails.
-     *
-     * @throws IOException from the fixture
      */
     @Test
     public void testEveryRestrictionIsListedAsANotice() throws IOException
@@ -710,8 +708,6 @@ public class testStationBlockedByAnotherPoint
      * is.
      *
      * MUTATION: ask the standing half of the destination only, and this fails.
-     *
-     * @throws Exception from the fixture
      */
     @Test
     public void testATrainStandingOnTheWatchedPointClosesASquareTrainsPass() throws Exception
@@ -877,8 +873,6 @@ public class testStationBlockedByAnotherPoint
      * it, for every door that sends a train, not "Autonomy will not send a train to" it (OB-295).
      *
      * MUTATION: put back the old sentence in any of the eight languages, and this fails.
-     *
-     * @throws IOException from the bundles
      */
     @Test
     public void testTheDialogSaysWhatTheRestrictionShuts() throws IOException
