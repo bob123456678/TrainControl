@@ -26,22 +26,13 @@ final class SessionImport
 {
     private final AutonomySession owner;
 
-    /**
-     * @param owner the session whose setup the imports fill
-     */
+    /** The session whose setup the imports fill. */
     SessionImport(AutonomySession owner)
     {
         this.owner = owner;
     }
 
-    /**
-     * The active configuration's run-wide settings object, created if it is not there yet.
-     *
-     * The sibling of `configurationExtras`, which does the same for one square. Both answer null when
-     * no configuration is active, because there is then nowhere for the setting to live.
-     *
-     * @return the globals object, or null when nothing is active
-     */
+    /** The active configuration's run-wide settings object, created on demand; null when none is active. */
     private org.json.JSONObject configurationGlobals()
     {
         String active = owner.store.getActiveConfiguration();
@@ -58,14 +49,8 @@ final class SessionImport
     }
 
     /**
-     * The active configuration's own data for one square, created if this is the first thing on it.
-     *
-     * A placement is not a decision about the track - it is where a train happens to be standing - so
-     * it belongs to a configuration and not to the shared half.  Keyed by tile, the way the rest of
-     * the configuration is, so a Point renamed later keeps whatever is standing on it.
-     *
-     * @param tile
-     * @return null when no configuration is loaded to put anything in
+     * The active configuration's data for one square, created on demand; null when none is active.  A placement belongs
+     * to a configuration, not the shared half, and is keyed by tile so a Point renamed later keeps what stands on it.
      */
     private org.json.JSONObject configurationExtras(TileKey tile)
     {
@@ -87,29 +72,12 @@ final class SessionImport
     }
 
     /**
-     * Which way each imported train faces: the way the file ran it, and a guess only where the file cannot say.
+     * Gives each imported train the facing the file ran it, and a guess only where the file cannot say.
      *
-     * READ FROM THE FILE FIRST: 2.8.1 sent a train only along the edges that start at its point, so where every
-     * one leaves the square by one side, the train drives out that way.  AFTER THE LOOP: a legacy terminus or
-     * reversing point is marked "must turn round" later in the same point's import, and a square trains must turn at has
-     * only turning copies, so a facing is checked against the copies the build will make.
-     *
-     * THE GUESS, where the file cannot say - no edge, edges both ways, or an end this diagram does not draw: a way trains
-     * may arrive in first, since the copy IS the direction; else the first copy.  Deterministic, and
-     * counted so the log can say how many were guessed.  A facing the square already records stays, if the guess itself
-     * could make it (OB-304).
-     *
-     * A facing the file states and no copy holds is not saved (Adam, OB-270: *"we shouldn't allow an impossible facing to
-     * be saved"*): the train is stood the way the square allows, and named in `facingsNotHeld` rather than counted as a
-     * guess, since it is known to be the other way round from how the train drives.
-     *
-     * WHERE THE FILE CANNOT SAY, A FACING THE SQUARE RECORDS STAYS: the last occupant's is a guess as good as
-     * the first copy's.  Only one the guess itself could make, and counted with the guesses (OB-304).
-     *
-     * @param facingToFind the placed trains, by square and legacy point name
-     * @param edgesLeadTo each legacy point's edges, by the square each ends on (null: not on this diagram)
-     * @param pointSquares the squares the old graph had points on
-     * @param result where the guesses are counted
+     * The file's edges decide first (2.8.1 sent a train only along the edges starting at its point); a facing the file
+     * states that no copy holds is not saved (OB-270) and is named in `facingsNotHeld`.  Otherwise the guess is the
+     * first way trains may arrive in, since the copy IS the direction, else the first copy; guesses are counted for the
+     * log.
      */
     private void findTheImportedFacings(Map<TileKey, String> facingToFind, Map<String, List<TileKey>> edgesLeadTo,
         Set<TileKey> pointSquares, LegacyImport result)
@@ -131,10 +99,8 @@ final class SessionImport
 
             java.util.Set<Side> mayArrive = owner.homeFacingsFor(tile);
 
-            // A FACING THE SQUARE RECORDS STAYS where the file cannot say - only one the guess below could make,
-            // and counted with the guesses (OB-304).  Kept unasked, a facing trains may not arrive in would stand the
-            // imported train where autonomy will not start it.  Where no copy is one trains may arrive at, the
-            // guess takes the first copy, and the recorded one is as good.
+            // Where the file cannot say, a facing the square records stays if the guess below could make it (OB-304):
+            // kept unasked, a facing trains may not arrive in would stand the train where autonomy will not start it.
             Side recorded = ran == null ? owner.getFacing(tile) : null;
 
             boolean keepIt = recorded != null && ways.contains(recorded)
@@ -172,24 +138,11 @@ final class SessionImport
     }
 
     /**
-     * Sets the track each of the old file's edges ran over running the way it ran, to the extent possible.
-     *
-     * A 2.8.1 graph is one-way edges: a train on a point went only along the edges starting there.  The diagram's
-     * defaults - plain track both ways, a switch out of its toe only - can forbid the very way the old graph ran a
-     * train.  So each edge is followed as its facing is (`sideTheEdgesLeaveBy`) and the track between is set as the
-     * editor's one-way run sets it.
-     *
-     * To the extent possible:
-     *  - track the file ran both ways is left both ways, and so is a square two edges run over opposite ways;
-     *  - an edge whose end is next by more than one side, or none, or across a link, is skipped for what it cannot say;
-     *  - and ONLY ONTO A DIAGRAM NOBODY HAS SET A DIRECTION ON.  A default is stored as nothing, so filling the gaps of a
-     *    tuned diagram cannot tell track left running both ways on purpose from track nobody has looked at.  There the
-     *    pieces are only counted, for the log.
-     * The facings are found afterwards, over the copies these directions make.
-     *
-     * @param oldEdges each edge as the squares of its two points (null for one this diagram does not draw)
-     * @param pointSquares the squares the old graph had points on
-     * @param result where the directions set are recorded
+     * Sets the track between the old file's edges to run the way the file ran it, where it can.  A 2.8.1 graph is
+     * one-way edges, so each edge is followed as its facing is (`sideTheEdgesLeaveBy`).  Track run both ways, and an
+     * edge whose end is next by more than one side, none, or across a link, is skipped.  Only a diagram nobody has set
+     * a direction on is filled: a default is stored as nothing, so tuned track cannot be told from untouched, and there
+     * the pieces are only counted.
      */
     private void carryTheOldDirections(List<TileKey[]> oldEdges, Set<TileKey> pointSquares, LegacyImport result)
     {
@@ -249,7 +202,7 @@ final class SessionImport
             }
         }
 
-        // A DIAGRAM WHOSE DIRECTIONS HAVE BEEN SET is left as it is, and what the file ran differently is counted.
+        // A tuned diagram is left as it is; what the file ran differently is counted.
         boolean tuned = owner.store.hasTileDirections();
 
         Map<TileKey, Map<RouteId, Direction>> bySquare = new LinkedHashMap<>();
@@ -259,7 +212,7 @@ final class SessionImport
             TileKey tile = each.getKey().square();
             RouteId id = each.getKey().getRouteId();
 
-            // THE OPERATOR'S OWN IS KEPT: only a route the store holds no direction for is a gap.
+            // Only a route the store holds no direction for is a gap.
             if (owner.store.getTileDirection(tile, id) != null) continue;
 
             if (each.getValue() == owner.graph.getDirection(tile, id)) continue;
@@ -274,7 +227,7 @@ final class SessionImport
             bySquare.computeIfAbsent(tile, k -> new LinkedHashMap<RouteId, Direction>()).put(id, each.getValue());
         }
 
-        // A SQUARE AT A TIME, BY ITS ARMS (OB-351): a switch's roads run as its arrows will show them
+        // A square at a time, by its arms, so a switch's roads run as its arrows will show them (OB-351).
         for (Map.Entry<TileKey, Map<RouteId, Direction>> square : bySquare.entrySet())
         {
             TileKey tile = square.getKey();
@@ -300,20 +253,10 @@ final class SessionImport
     }
 
     /**
-     * The one side of a square that every edge from a legacy point leaves by, or null where they leave by more than
-     * one, where there is none, or where one cannot be followed on this diagram.
-     *
-     * An old edge joins a point to the next ones along the track, so the side it leaves by is the side from which its
-     * end is the next square the old graph had a point on - asked of each side, not of the shortest walk, which round
-     * a loop can reach the end the other way.  Followed over the track as drawn, whichever way trains may run on it
-     * now: the question is where the file sent the train, not whether the diagram still lets it.  An edge that ends on
-     * the same square - a station and its approach guard share a sensor - says nothing about a side; one whose end is
-     * next by both sides, or by neither, cannot say.
-     *
-     * @param tile the square the train stands on
-     * @param ends the squares the point's edges end on, null for one this diagram does not draw
-     * @param pointSquares the squares the old graph had points on
-     * @return the side, or null
+     * The one side of a square that every edge from a legacy point leaves by; null when they leave by more than one, by
+     * none, or when one cannot be followed on this diagram.  Asked of each side, not of the shortest walk (which round
+     * a loop can reach the end the other way), over the track as drawn.  An edge ending on the same square (a station
+     * and its approach guard share a sensor) says nothing.
      */
     private Side sideTheEdgesLeaveBy(TileKey tile, List<TileKey> ends, Set<TileKey> pointSquares)
     {
@@ -350,29 +293,23 @@ final class SessionImport
         return only;
     }
 
-    /**
-     * The body of `AutonomySession.importLegacy(JSONObject, Set, boolean)`, whose javadoc says what it does.
-     */
+    /** The body of `AutonomySession.importLegacy(JSONObject, Set, boolean)`. */
     LegacyImport importLegacy(org.json.JSONObject legacy, Set<String> knownLocomotives, boolean placeTrains)
     {
         LegacyImport result = new LegacyImport();
 
-        // One locomotive stands in one place.  Tracked across the whole file rather than per point: two points naming the
-        // same locomotive invalidate the layout, whichever pages they are on.
+        // One locomotive stands in one place, whichever pages name it: two points naming one invalidate the layout.
         Set<String> placedAlready = new LinkedHashSet<>();
 
-        // And one locomotive has one HOME, for the same reason (OB-075).  `setHome` sweeps duplicates; this is the
-        // second door, as the import writes "home" straight into the configuration.  A file written before the rule can
-        // name two; the first one wins, which is the file's own order and so reproducible, and the rest are counted so
-        // the choice can be reported rather than made silently.
+        // And has one HOME (OB-075).  `setHome` sweeps duplicates, but the import writes "home" straight into the
+        // configuration: the first one named wins (the file's order) and the rest are counted.
         Set<String> homedAlready = new LinkedHashSet<>();
 
-        // AND ACROSS WHAT THE CONFIGURATION ALREADY SAYS: where a train already stands, and which train already has
-        // a home, are facts about the configuration, and gap-filling does not overrule them.  A second import could
-        // otherwise put a train that has since moved on two squares, which refuses the whole configuration.
+        // And across what the configuration already says: a second import must not put a train that has since moved on
+        // two squares.
         Set<String> standingAlready = new LinkedHashSet<>();
 
-        // And the homes it already has, told apart from a home the file names twice so the message can say which
+        // The homes it already has, told apart from a home the file names twice.
         Set<String> homedInConfiguration = new LinkedHashSet<>();
 
         String into = owner.store.getActiveConfiguration();
@@ -406,10 +343,8 @@ final class SessionImport
 
         Map<Integer, TileKey> bySensor = new LinkedHashMap<>();
 
-        // Sensors carried by more than one square, which no amount of reading the file can resolve: two squares on the same
-        // s88 is ordinary (a station and its approach guard), and the old graph names ONE point per sensor, so putting it
-        // on whichever came last would land a station on the wrong page silently.  Refused and reported; excluding the
-        // duplicating pages first makes the rest of the import unambiguous.
+        // Sensors on more than one square (a station and its approach guard) cannot be resolved: the old graph names
+        // ONE point per sensor, so picking one could land a station on the wrong page silently.  Refused and reported.
         Set<Integer> ambiguous = new LinkedHashSet<>();
 
         for (GraphReducer.ReducedPoint point : owner.reducer.getPoints().values())
@@ -423,9 +358,8 @@ final class SessionImport
 
         for (Integer sensor : ambiguous) bySensor.remove(sensor);
 
-        // WHERE EACH POINT'S EDGES LEAD.  A 2.8.1 graph states direction as one-way edges - a train on a
-        // point goes only along the edges that start there - so they say which way a train standing there drives.
-        // The squares they end on, by the same sensor match as the points; null for an end this diagram does not draw.
+        // Where each point's edges lead: a 2.8.1 graph states direction as one-way edges, which say which way a train
+        // standing there drives.  null for an end this diagram does not draw.
         Map<String, TileKey> squareOfPoint = new java.util.HashMap<>();
 
         for (int i = 0; i < points.length(); i++)
@@ -441,7 +375,6 @@ final class SessionImport
 
         Map<String, List<TileKey>> edgesLeadTo = new java.util.HashMap<>();
 
-        // And each edge as the two squares it joins, for the directions it ran.
         List<TileKey[]> oldEdges = new ArrayList<>();
 
         org.json.JSONArray edges = legacy.optJSONArray("edges");
@@ -459,17 +392,15 @@ final class SessionImport
                 squareOfPoint.get(edge.optString("end", ""))});
         }
 
-        // Where the walks from a square stop: the squares the old graph had points on.
+        // Where the walks stop: the squares the old graph had points on.
         Set<TileKey> pointSquares = new LinkedHashSet<>(squareOfPoint.values());
 
         pointSquares.remove(null);
 
-        // The trains this import placed and whose facing it has still to find, by square and point name.  Decided
-        // after the loop, over the finished setup.
+        // Trains this import placed, whose facing is found after the loop over the finished setup.
         Map<TileKey, String> facingToFind = new LinkedHashMap<>();
 
-        // The squares this import has met - named here, or found named and counted once in `skipped` - so a further old point
-        // on one is said rather than counted again
+        // Squares this import has met, so a further old point on one is said rather than counted again.
         Set<TileKey> metHere = new java.util.HashSet<>();
 
         for (int i = 0; i < points.length(); i++)
@@ -486,16 +417,15 @@ final class SessionImport
 
             TileKey tile = sensor > 0 ? bySensor.get(sensor) : null;
 
-            // A point with no sensor, or one watching a sensor this diagram does not draw.  Reported
-            // rather than dropped: it is how somebody finds out that a page is missing or excluded.
+            // Reported rather than dropped, so somebody can find out a page is missing or excluded.
             if (tile == null)
             {
                 result.unmatched.add(name);
                 continue;
             }
 
-            // Before the name, and regardless of it.  A placement is about the SQUARE, so a square
-            // somebody has already named should still get its locomotive back.
+            // Before the name: a placement is about the SQUARE, so an already named square still gets its locomotive
+            // back.
             org.json.JSONObject standing = point.optJSONObject("loc");
 
             String home = point.optString("home", "");
@@ -517,9 +447,7 @@ final class SessionImport
                     {
                         String locName = standing.optString("name", "").trim();
 
-                        // Checked here, not left to the load: the model answers an unknown locomotive by invalidating the
-                        // whole layout, which would leave a setup that refuses to open with nothing saying the import
-                        // put it there.
+                        // Checked here: the model answers an unknown locomotive by invalidating the whole layout.
                         if (locName.isEmpty())
                         {
                             // a placement with no name: nothing to place, nothing worth reporting
@@ -549,17 +477,16 @@ final class SessionImport
                             extras.put(AutonomyBuilder.LOCOMOTIVE,
                                 new org.json.JSONObject(standing.toString()));
 
-                            // And which way it is pointing - found after the loop, over the finished setup: see
-                            // `findTheImportedFacings`.  ASKED OF THE FILE WHATEVER THE SQUARE RECORDS: a facing
-                            // on an empty square is its last occupant's, no evidence about the train the file puts there.
+                            // Facing is found after the loop, from the file whatever the square records: a facing on an
+                            // empty square is its last occupant's (`findTheImportedFacings`).
                             facingToFind.put(tile, name);
 
                             result.placed++;
                         }
                     }
 
-                    // A SQUARE ANOTHER TRAIN STANDS ON keeps it, and the file's train is named (OB-304): one square holds one
-                    // train.  The same train already there - a file imported a second time - is nothing to say.
+                    // A square another train stands on keeps it and the file's train is named (OB-304); the same train
+                    // again says nothing.
                     if (standing != null && extras.has(AutonomyBuilder.LOCOMOTIVE))
                     {
                         String locName = standing.optString("name", "").trim();
@@ -600,24 +527,20 @@ final class SessionImport
 
                     for (String key : AutonomySession.CARRIED_SETTINGS)
                     {
-                        // Gap-filled like everything else here, so re-running cannot undo an edit
-                        // somebody made after the first import.
+                        // Gap-filled, so re-running cannot undo a later edit.
                         if (!point.has(key) || extras.has(key)) continue;
 
                         Object value = point.get(key);
 
-                        // A ZERO CAPACITY IS NOT A CAPACITY.  This loop is first-present-wins and a legacy file puts several
-                        // points on one sensor (a station and its approach guard), many with an explicit
-                        // `maxTrainLength: 0`, so a guard's zero would erase the station's real limit.  Zero already means
-                        // "no limit", so skipping it lets the real value through whatever the file's order.
+                        // A zero capacity is not a capacity: the loop is first-present-wins and a guard on a station's
+                        // sensor often says `maxTrainLength: 0` (no limit), which would erase the station's real limit.
                         if ("maxTrainLength".equals(key) && value instanceof Number
                             && ((Number) value).intValue() <= 0)
                         {
                             continue;
                         }
 
-                        // A SQUARE THAT ALLOWS ONLY THE CHOSEN LOCOMOTIVES KEEPS ITS LIST: an old file's list names
-                        // the locomotives kept OUT, so filling an allow-only square from it would let in exactly those.
+                        // An allow-only square keeps its list: an old file's list names the locomotives kept OUT.
                         if ("excludedLocs".equals(key)
                             && org.traincontrol.automation.Point.ALLOW_ONLY_LISTED.equals(
                                 extras.optString(org.traincontrol.automation.Point.EXCLUDED_LOCS_MODE, null)))
@@ -625,8 +548,8 @@ final class SessionImport
                             continue;
                         }
 
-                        // A SWITCHED-OFF STATION ARRIVES ON, AND NOT ONE AUTONOMY CHOOSES: carried as `active: false`
-                        // it would be a square nothing may pass through or end on, which v2.8.1 did not mean.  Gap-filled.
+                        // A switched-off station arrives on and is not one autonomy chooses: carried as `active: false`
+                        // it would block the square entirely, which v2.8.1 did not mean.
                         if ("active".equals(key) && Boolean.FALSE.equals(value) && point.optBoolean("station", false))
                         {
                             if (!extras.has(AutonomyBuilder.AUTO_DESTINATION))
@@ -639,8 +562,7 @@ final class SessionImport
                             continue;
                         }
 
-                        // Copied rather than shared: a JSONArray handed over would be the caller's parsed object, and a later
-                        // edit here would edit their copy.
+                        // Copied, not shared: a handed-over array would be the caller's parsed object.
                         if (value instanceof org.json.JSONArray)
                         {
                             value = new org.json.JSONArray(value.toString());
@@ -657,13 +579,9 @@ final class SessionImport
                 }
             }
 
-            // Terminus and reversing are DERIVED now, so neither can be written down.  What the old graph was recording is
-            // that every train arriving here turns round, which is authored as mustReverse; whether the build then emits
-            // terminus or reversing follows from the square being a station, imported above.
-            //
-            //   reversing, station  the old "reversing station" said two things at once: it reverses, AND autonomy never
-            //                       chooses it.  Those are separate now - a terminus and a berth - so it takes the
-            //                       parking flag as well, or a shunting neck would become a destination trains are sent to.
+            // Terminus and reversing are derived, so neither can be written down: what the old graph recorded is that
+            // every train arriving here turns round (mustReverse).  An old "reversing station" also meant autonomy
+            // never chooses it, so it takes the parking flag as well, or a shunting neck would become a destination.
             boolean turnsTrains = point.optBoolean("terminus", false)
                 || point.optBoolean("reversing", false);
 
@@ -688,11 +606,8 @@ final class SessionImport
 
             if (existing != null && !existing.trim().isEmpty())
             {
-                // A SQUARE ALREADY MET, from another old point on the same sensor: named by this import a point
-                // ago, or found named before it and counted then - this point's name is said rather than dropped, and the
-                // square is not counted again.  A square named before the import counts once in {4}, however many old
-                // points stand on it: names are shared by every configuration, so a second import, or an old
-                // file brought into a named railway, meets every square this way.
+                // A square already met, from another old point on the same sensor or named before the import: the name
+                // is said, not dropped, and the square is counted once however many old points stand on it.
                 if (!metHere.add(tile))
                 {
                     result.namesNotKept.add(I18n.f("autosetup.ui.importSharedSquareLine", name, existing));
@@ -709,9 +624,7 @@ final class SessionImport
 
             metHere.add(tile);
 
-            // Labeled on the station square itself, where the station has no caption on its page already (OB-341): every
-            // station has to be shown on the diagram, and its own square is the one place that always exists, is on the
-            // page the reader is looking at, and cannot land on somebody else's track.
+            // Labeled on the station's own square when its page has no caption yet (OB-341): every station must show.
             if (point.optBoolean("station", false) && !owner.isCaptionedOnPage(tile, tile.getPage()))
             {
                 owner.store.setCaption(tile, tile);
@@ -719,24 +632,20 @@ final class SessionImport
 
             if (point.optBoolean("station", false)) owner.store.setStation(tile, true);
 
-            // maxTrainLength is CARRIED, not converted: a station's capacity is not a track's length, and a
-            // legacy file holds both (capacity on the points, length on the edges).  It goes through CARRIED_SETTINGS.
+            // maxTrainLength goes through CARRIED_SETTINGS, not converted: a station's capacity is not a track's
+            // length.
 
             result.matched++;
         }
 
-        // THE OLD FILE'S DIRECTIONS FIRST, so the facings below are read over the copies they make.
+        // The old directions first, so the facings below are read over the copies they make.
         carryTheOldDirections(oldEdges, pointSquares, result);
 
         findTheImportedFacings(facingToFind, edgesLeadTo, pointSquares, result);
 
-        // AND THE SETTINGS ABOVE THE POINTS: a 2.7.4c autonomy.json is one object, the points and edges and above
-        // them the whole settings panel (pace, default speed, how many trains may run, whether routes are fired) and the
-        // timetable.  Everything that is not the setup itself comes across, as `captureFromLayout` does, gap-filled so
-        // running it twice cannot undo a setting somebody changed.
-        //
-        // NOT the edges' lengths: a legacy file records length per EDGE and the diagram per SQUARE, and which square a
-        // length belongs to when an edge spans several cannot be answered without guessing.
+        // And the settings above the points (pace, default speed, trains allowed, timetable): all that is not the setup
+        // comes across gap-filled, as `captureFromLayout` does.  Not the edges' lengths: the file records length per
+        // EDGE and the diagram per SQUARE, which cannot be resolved without guessing.
         org.json.JSONObject settings = configurationGlobals();
 
         if (settings != null)
@@ -745,27 +654,22 @@ final class SessionImport
             {
                 if ("points".equals(key) || "edges".equals(key)) continue;
 
-                // NOT THE ROUTE ACTIVATIONS, and this is the important exclusion: parseAuto ends in
-                // applyAutonomyRouteActivations, which walks the LIVE Central Station route database, disabling every route
-                // whose id is not in activateRouteIDs and executing the rest - accessories thrown on the real railway.  A
-                // legacy file can carry `activateRoutes: true` with an EMPTY id list, so carrying these across would
-                // disable every route, again on every parseAuto.  They are REPORTED instead: see
-                // `whatALegacyImportLeaves` and `autosetup.ui.leftRouteActivations`.
+                // NOT THE ROUTE ACTIVATIONS: parseAuto ends in applyAutonomyRouteActivations, which walks the LIVE
+                // Central Station route database, disabling every route not in activateRouteIDs and executing the rest,
+                // and a legacy file can carry `activateRoutes: true` with an empty id list.  Reported instead
+                // (`whatALegacyImportLeaves`).
                 if ("activateRoutes".equals(key) || "activateRouteIDs".equals(key)) continue;
 
-                // NOT THE TIMETABLE EITHER, for the reason the edge lengths are left out: translating it is a decision.  Its
-                // entries name points with no s88 or on sensors shared by several legacy points, and TimetablePath.fromJSON
-                // drops an entry on the first edge it cannot resolve, so what would arrive is a heap of log lines and a
-                // nearly empty timetable, which the next captureFromLayout writes back over these globals for good.  Left
-                // in autonomy.json it loses less.
+                // Nor the timetable: translating it is a decision.  TimetablePath.fromJSON drops an entry on the first
+                // edge it cannot resolve, so a nearly empty one would arrive and be written back over these globals for
+                // good.
                 if ("timetable".equals(key)) continue;
 
                 if (settings.has(key)) continue;
 
                 Object value = legacy.get(key);
 
-                // Copied rather than shared, for the reason the point extras above are: a JSONArray
-                // handed straight over stays the caller's, and the timetable is an array.
+                // Copied, not shared, as above.
                 if (value instanceof org.json.JSONArray)
                 {
                     value = new org.json.JSONArray(value.toString());
@@ -783,17 +687,14 @@ final class SessionImport
             owner.dirty = true;
         }
 
-        // Derived again, once, now that the authored data has changed: the reduction is what the diagram draws from, and
-        // it is built from a snapshot of the authored data taken when the session opened.  After the loop rather than
-        // inside it, because the tile-by-sensor map above comes from the reduction.
+        // Derived again once the authored data has changed; after the loop because the tile-by-sensor map comes from
+        // the reduction.
         owner.rebuild();
 
         return result;
     }
 
-    /**
-     * The body of `AutonomySession.importBundle`, whose javadoc says what it does.
-     */
+    /** The body of `AutonomySession.importBundle`. */
     int importBundle(String name, org.json.JSONObject file) throws java.io.IOException
     {
         int filled = owner.store.importBundle(name, file);
@@ -803,9 +704,7 @@ final class SessionImport
         return filled;
     }
 
-    /**
-     * The body of `AutonomySession.detectImportFormat`, whose javadoc says what it does.
-     */
+    /** The body of `AutonomySession.detectImportFormat`. */
     static ImportFormat detectImportFormat(org.json.JSONObject file)
     {
         if (file == null) return ImportFormat.UNKNOWN;
@@ -821,13 +720,10 @@ final class SessionImport
         // Keyed by square, which is a configuration
         if (file.optJSONObject("points") != null) return ImportFormat.CONFIGURATION;
 
-        // A configuration whose points have all been removed is still a configuration, and its globals
-        // are the only thing left to say so.
+        // A configuration with all its points removed is still one; its globals are all that say so.
         if (file.optJSONObject("globals") != null) return ImportFormat.CONFIGURATION;
 
-        // Deliberately NOT recognized: a configuration created and never used, which carries nothing
-        // but its own name.  A name is not evidence - half the JSON in the world has one - and there
-        // would be nothing in such a file to import anyway.
+        // Deliberately NOT recognized: a configuration with nothing but a name, which is not evidence.
 
         return ImportFormat.UNKNOWN;
     }
