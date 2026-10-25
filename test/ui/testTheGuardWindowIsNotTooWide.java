@@ -21,15 +21,13 @@ import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.util.I18n;
 
 /**
- * The Exit and Entry Guard Signal windows put their sentence on two lines rather than one wide one (MT-479).
+ * The Exit and Entry Guard Signal windows put their sentence on two lines rather than one wide one (MT-479): "the
+ * editor window for entry/exit guards is much too wide.  make the sentence split over 2 lines so the window isn't too
+ * wide."  The heading was a plain label, so the window was as wide as its sentence.
  *
- * Adam, 2026-09-23, on MT-479: *"works, but the editor window for entry/exit guards is much too wide.  make the sentence
- * split over 2 lines so the window isn't too wide."*  The heading was a plain label, so the window was as wide as its
- * sentence - the entry guard's runs to a hundred and fifty characters before a signal is paired, and more after.
- *
- * **The real window**, opened through the method the menu item calls, on a panel with a station of its own.  Two
- * claims: the entry window is narrower than its sentence on one line, which is the width he reported; and neither
- * window's first sentence - the one before a signal is paired - takes more than the two lines he asked for.
+ * The real window, opened through the method the menu item calls, on a panel with a station of its own.  Two claims:
+ * the entry window is narrower than its sentence on one line; and neither window's first sentence (the one before a
+ * signal is paired) takes more than two lines.
  *
  * MUTATION: wrap it at no width, as it was, and the first claim fails; wrap it at a tooltip's 320 pixels and the second
  * does.
@@ -81,11 +79,7 @@ public class testTheGuardWindowIsNotTooWide
         }
     }
 
-    /**
-     * The entry guard's window is narrower than its sentence on one line - which is what he reported.
-     *
-     * @throws Exception from the event thread or reflection
-     */
+    /** The entry guard's window is narrower than its sentence on one line. */
     @Test
     public void testTheEntryGuardWindowSplitsItsSentence() throws Exception
     {
@@ -96,11 +90,7 @@ public class testTheGuardWindowIsNotTooWide
             + " sentence.  Adam, MT-479: \"make the sentence split over 2 lines so the window isn't too wide\"");
     }
 
-    /**
-     * Neither window's first sentence takes more than two lines.
-     *
-     * @throws Exception from the event thread or reflection
-     */
+    /** Neither window's first sentence takes more than two lines. */
     @Test
     public void testNeitherFirstSentenceTakesMoreThanTwoLines() throws Exception
     {
@@ -126,9 +116,7 @@ public class testTheGuardWindowIsNotTooWide
         int lineHeight;
     }
 
-    /**
-     * Opens one guard's window through `askAboutSignals`, which the menu item calls, and measures it.
-     */
+    /** Opens one guard's window through `askAboutSignals`, which the menu item calls, and measures it. */
     private Measured open(String guard, String titleKey) throws Exception
     {
         final AutonomyEditorPanel[] panel = new AutonomyEditorPanel[1];
