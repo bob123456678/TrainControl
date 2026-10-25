@@ -29,24 +29,14 @@ import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 
 /**
- * Two permanent Y turnouts drawn toe to toe are one crossing (OB-320; Adam, 2026-10-04: *"Lets support two permanent Ys
- * as a crossing, if possible, same as the current crossing by effectively rotated 45 degrees, just connecting differently
- * and spread across 2 tiles."*).
+ * Two permanent Y turnouts drawn toe to toe are one crossing (OB-320), as are two permanent lefts or two rights toe
+ * to toe turned half round from each other (the straight legs a straight track through both toes, the diverging legs
+ * the diagonal).
  *
  * Each claim builds a small railway round the Ys and reads what the reduction makes of it: the edges a train may run
- * between the sensors, which is what autonomy plans with.  The vertical pair is the shape on Adam's TC3Sandbox layout at
- * 12,9 and 12,10 (*"this should connect 11,8 with 13,10, and 13,9 with 11,10"*), the horizontal pair the shape at 14,12
- * and 15,12.  A sensor stands at each end, so an edge is a track and a missing one a track no train can run.
- *
- * And a permanent Y that is not half of such a pair is the turnout with no address it always was (Adam: *"there won't
- * always be two adjacent Y to form a logical crossing.  sometimes it could just be one perma Y, so account for this.  Be
- * careful with edge cases."*).
- *
- * Two permanent lefts or two permanent rights toe to toe, turned half round from each other, are a crossing too - the
- * straight legs a straight track through both toes, the diverging legs the diagonal (Adam, of the two rights at 15,13
- * and 16,13 on TC3Sandbox_layout: *"Treat those two adjacent perma switches at 15,13 and 16,13 as one logical crossing.
- * Keep the existing rules for perma switches, i.e. those without another adjacent to form a crossing are treated as
- * switches only crossable in one direction by autonomy."*).
+ * between the sensors, which is what autonomy plans with.  A sensor stands at each end, so an edge is a track and a
+ * missing one a track no train can run.  A permanent Y that is not half of such a pair is the turnout with no address
+ * it always was: "Be careful with edge cases."
  *
  * @author Adam
  */
@@ -69,13 +59,10 @@ public class testTwoYsMakeACrossing
     }
 
     /**
-     * The vertical pair carries the crossing's two tracks, each corner to corner and both ways, and nothing else: no
-     * reverse curve from one track onto the other.
+     * The vertical pair carries the crossing's two tracks, each corner to corner and both ways, and no reverse curve
+     * from one track onto the other.
      *
-     * MUTATION: leave the Ys trailable only, or let a train that came along one track leave along the other, and this
-     * fails.
-     *
-     * @throws Exception from the session
+     * MUTATION: leave the Ys trailable only, or let a train that came along one track leave along the other.
      */
     @Test
     public void testTheVerticalPairCarriesBothTracksBothWays() throws Exception
@@ -89,13 +76,7 @@ public class testTwoYsMakeACrossing
             + " the crossing's two tracks, corner to corner both ways, and only them (OB-320)");
     }
 
-    /**
-     * The horizontal pair does the same, on its own sides.
-     *
-     * MUTATION: as above.
-     *
-     * @throws Exception from the session
-     */
+    /** The horizontal pair does the same, on its own sides.  MUTATION: as above. */
     @Test
     public void testTheHorizontalPairCarriesBothTracksBothWays() throws Exception
     {
@@ -120,9 +101,7 @@ public class testTwoYsMakeACrossing
     /**
      * A permanent Y on its own is still trailed only, into its toe, keeps its warning, and is not a crossing.
      *
-     * MUTATION: open every permanent Y both ways, or drop the warning for all of them, and this fails.
-     *
-     * @throws Exception from the session
+     * MUTATION: open every permanent Y both ways, or drop the warning for all of them.
      */
     @Test
     public void testAPermanentYAloneIsStillOnlyTrailed() throws Exception
@@ -152,11 +131,9 @@ public class testTwoYsMakeACrossing
     }
 
     /**
-     * A pair's squares are not reported as turnouts with no address, which may only be trailed: they are a crossing.
+     * A pair's squares are not reported as turnouts with no address that may only be trailed: they are a crossing.
      *
-     * MUTATION: keep the warning for a pair, and this fails.
-     *
-     * @throws Exception from the session
+     * MUTATION: keep the warning for a pair.
      */
     @Test
     public void testAPairIsNotWarnedAboutAsTurnouts() throws Exception
@@ -168,12 +145,9 @@ public class testTwoYsMakeACrossing
     }
 
     /**
-     * A Y whose toe meets another Y's leg is no crossing: both are turnouts with no address, and a train trails through
-     * one into the other's leg and on into its toe, as before.
+     * A Y whose toe meets another Y's leg is no crossing: a train trails through one into the other's leg and on.
      *
-     * MUTATION: pair a toe with a leg, and this fails.
-     *
-     * @throws Exception from the session
+     * MUTATION: pair a toe with a leg.
      */
     @Test
     public void testAYWhoseToeMeetsALegIsNoCrossing() throws Exception
@@ -200,9 +174,7 @@ public class testTwoYsMakeACrossing
     /**
      * Ys side by side, back to back, or toe to toe with an addressed Y switch, are no crossing.
      *
-     * MUTATION: pair any two Ys that are neighbors, or a permanent Y with a switch, and this fails.
-     *
-     * @throws Exception from the session
+     * MUTATION: pair any two Ys that are neighbors, or a permanent Y with a switch.
      */
     @Test
     public void testOnlyTwoPermanentYsToeToToeAreACrossing() throws Exception
@@ -230,13 +202,10 @@ public class testTwoYsMakeACrossing
     }
 
     /**
-     * A run that crosses on one track and comes back over the other is not going in circles (OB-320).  The two tracks
-     * share the side the squares meet at, so a walk remembered by the square and side alone stopped there the second time
-     * - or, told nothing of the track, took the short reverse curve instead.
+     * A run that crosses on one track and comes back over the other is not going in circles (OB-320): the two tracks
+     * share the side the squares meet at, so a walk remembered by square and side alone stopped there the second time.
      *
-     * MUTATION: remember the walk without the track, or let it change track at the toes, and this fails.
-     *
-     * @throws Exception from the session
+     * MUTATION: remember the walk without the track, or let it change track at the toes.
      */
     @Test
     public void testACrossingCrossedTwiceInOneRunIsNotACircle() throws Exception
@@ -275,9 +244,7 @@ public class testTwoYsMakeACrossing
      * A direction set on one square's half of a track is set on the other's, the same way along the track; the other
      * track is left as it was.
      *
-     * MUTATION: set only the square it was set on, or the other square the other way, and this fails.
-     *
-     * @throws Exception from the session
+     * MUTATION: set only the square it was set on, or the other square the other way.
      */
     @Test
     public void testADirectionIsOneTrackOnBothSquares() throws Exception
@@ -312,16 +279,12 @@ public class testTwoYsMakeACrossing
     }
 
     /**
-     * Directions set on the squares of a crossing while they were permanent turnouts are read as a turnout's, the same on
-     * both halves of the track: towards the toe, the way the blades ran, restricted nothing, so the track runs
-     * both ways; towards a leg was how a permanent turnout was closed, so the track is closed.  Read in the crossing's
-     * terms on the one square that held them, the blades' way ran the track one way, and the closure one way the other.
-     * A track set one way through a door is set on both squares already, and stays one way.
+     * Directions set on the squares while they were permanent turnouts are read as a turnout's, the same on both
+     * halves of the track: towards the toe (the blades' way, restricting nothing) runs the track both ways; towards a
+     * leg (how a permanent turnout was closed) closes it.  A track set one way through a door is set on both squares
+     * already, and stays one way.
      *
-     * MUTATION: leave the halves as applied, read towards the toe as a closure, or settle halves that agree, and this
-     * fails.
-     *
-     * @throws Exception from the session
+     * MUTATION: leave the halves as applied, read towards the toe as a closure, or settle halves that agree.
      */
     @Test
     public void testATurnoutsDirectionIsReadAsATurnoutsOnBothHalves() throws Exception
@@ -385,15 +348,11 @@ public class testTwoYsMakeACrossing
     }
 
     /**
-     * A click on either square steps both tracks through both ways, each track one way with the other both ways, the four
-     * ways they can each run one way, and closed, then round again, carrying on from the same place whichever square is
-     * clicked (OB-320; Adam, 2026-10-04: *"Pretend these are two curved tracks on one tile, so we need to cycle through
-     * both possible directions on both (4 combos)"*, and both ways first; MT-688, 2026-10-05: *"when cycling, there is no
-     * option for red in one direction and green in the other 3"*).
+     * A click on either square steps both tracks through both ways, each track one way with the other both ways, the
+     * four ways they can each run one way, and closed, then round again, carrying on from the same place whichever
+     * square is clicked (OB-320, MT-688).
      *
-     * MUTATION: count from the clicked square, step the arms, or leave out a combination, and this fails.
-     *
-     * @throws Exception from the panel
+     * MUTATION: count from the clicked square, step the arms, or leave out a combination.
      */
     @Test
     public void testAClickStepsThroughEveryWayTheTwoTracksCanRun() throws Exception
@@ -448,12 +407,10 @@ public class testTwoYsMakeACrossing
     }
 
     /**
-     * Allow Every Path opens a closed crossing both ways - its tracks are a crossing's, not a turnout's that only the
-     * blades can run (FR-108 with OB-320).
+     * Allow Every Path opens a closed crossing both ways: its tracks are a crossing's, not a turnout's that only the
+     * blades can run (FR-108).
      *
-     * MUTATION: leave a pair's roads directed into the toe, and this fails.
-     *
-     * @throws Exception from the session
+     * MUTATION: leave a pair's roads directed into the toe.
      */
     @Test
     public void testAllowEveryPathOpensAClosedCrossing() throws Exception
@@ -477,12 +434,10 @@ public class testTwoYsMakeACrossing
     }
 
     /**
-     * A two-square crossing does not end a berth's room, as a crossing does not (OB-320, behaviour.md 5a and 5e): the room
-     * before a station past it runs back over it to the turnout behind.
+     * A two-square crossing does not end a berth's room, as a crossing does not (OB-320): the room before a station
+     * past it runs back over it to the turnout behind.
      *
-     * MUTATION: let the room walk stop at the crossing's squares as at a permanent turnout, and this fails.
-     *
-     * @throws Exception from the session
+     * MUTATION: let the room walk stop at the crossing's squares as at a permanent turnout.
      */
     @Test
     public void testTheRoomRunsOverTheCrossing() throws Exception
@@ -530,11 +485,9 @@ public class testTwoYsMakeACrossing
 
     /**
      * The One-Way tool follows a track across the crossing, corner to corner, and finds no way round the reverse curve
-     * from one leg to the leg beside it (OB-320): its walk, like the reduction's, is told which track it crossed on.
+     * from one leg to the leg beside it: its walk, like the reduction's, is told which track it crossed on.
      *
-     * MUTATION: let the walk change track at the toes, or carry the wrong leg across, and this fails.
-     *
-     * @throws Exception from the session
+     * MUTATION: let the walk change track at the toes, or carry the wrong leg across.
      */
     @Test
     public void testTheOneWayToolFollowsATrackAcross() throws Exception
@@ -553,12 +506,9 @@ public class testTwoYsMakeACrossing
 
     /**
      * Two permanent rights toe to toe, each turned half round from the other, are one crossing: the straight legs a
-     * straight track through both toes, the diverging legs the diagonal - the shape at 15,13 and 16,13 on Adam's
-     * TC3Sandbox_layout.
+     * straight track through both toes, the diverging legs the diagonal.
      *
-     * MUTATION: pair only Ys, or compare the legs without turning one square's round, and this fails.
-     *
-     * @throws Exception from the session
+     * MUTATION: pair only Ys, or compare the legs without turning one square's round.
      */
     @Test
     public void testTwoRightTurnoutsToeToToeAreACrossing() throws Exception
@@ -586,9 +536,7 @@ public class testTwoYsMakeACrossing
     /**
      * Two permanent lefts toe to toe, each turned half round from the other, are one crossing the same way.
      *
-     * MUTATION: pair only Ys, and this fails.
-     *
-     * @throws Exception from the session
+     * MUTATION: pair only Ys.
      */
     @Test
     public void testTwoLeftTurnoutsToeToToeAreACrossing() throws Exception
@@ -614,12 +562,10 @@ public class testTwoYsMakeACrossing
     }
 
     /**
-     * A permanent left and a permanent right toe to toe have both diverging legs on one side, so no track could go on from
-     * one of them: they stay two turnouts, trailed only - and with both toes facing, nothing passes them.
+     * A permanent left and a permanent right toe to toe have both diverging legs on one side, so no track could go on
+     * from one of them: they stay two turnouts, trailed only.
      *
-     * MUTATION: pair any two permanent turnouts toe to toe, and this fails.
-     *
-     * @throws Exception from the session
+     * MUTATION: pair any two permanent turnouts toe to toe.
      */
     @Test
     public void testALeftAndARightToeToToeStayTurnouts() throws Exception
@@ -653,12 +599,10 @@ public class testTwoYsMakeACrossing
     }
 
     /**
-     * A permanent Y toe to toe with a permanent right, and two permanent three-ways toe to toe, stay turnouts: the Y's legs
-     * do not face the right's, and a three-way is not half of a crossing.
+     * A permanent Y toe to toe with a permanent right, and two permanent three-ways toe to toe, stay turnouts: the Y's
+     * legs do not face the right's, and a three-way is not half of a crossing.
      *
-     * MUTATION: pair any two permanent turnouts whose legs face, three-ways too, or any toe to toe, and this fails.
-     *
-     * @throws Exception from the session
+     * MUTATION: pair any two permanent turnouts whose legs face, three-ways too, or any toe to toe.
      */
     @Test
     public void testAYWithARightAndTwoThreeWaysStayTurnouts() throws Exception
@@ -684,8 +628,6 @@ public class testTwoYsMakeACrossing
      * rights toe to toe, "W-E" and "NW-SE" (OB-320).
      *
      * MUTATION: name every end by a corner, and this fails with "WW".
-     *
-     * @throws Exception from the panel
      */
     @Test
     public void testTheClickNamesAStraightTrackByItsSides() throws Exception
@@ -732,14 +674,10 @@ public class testTwoYsMakeACrossing
     }
 
     /**
-     * A crossing draws no arrows where its two squares meet, on the track diagram or in the autonomy editor: the arrows at
-     * each track's outer ends say which way it runs (OB-322; Adam, 2026-10-05: *"the crossings consisting of 2 fixed Y's or
-     * 2 sets of static switches have a redundant set of (red/green) arrows in the middle.  let's hide them in that
-     * configuration for simplicity."*).  A permanent Y on its own keeps the arrow at its toe.
+     * A crossing draws no arrows where its two squares meet, on the track diagram or in the autonomy editor: the arrows
+     * at each track's outer ends say which way it runs (OB-322).  A permanent Y on its own keeps the arrow at its toe.
      *
-     * MUTATION: draw the arrows at the toes again, on either surface, and this fails.
-     *
-     * @throws Exception from the session
+     * MUTATION: draw the arrows at the toes again, on either surface.
      */
     @Test
     public void testACrossingDrawsNoArrowsWhereItsSquaresMeet() throws Exception
@@ -888,12 +826,9 @@ public class testTwoYsMakeACrossing
      * one way there is.
      *
      * Every road of a permanent turnout is directed at its toe, and its default is `BOTH`, which the blades narrow to
-     * that one way - a train may leave by the toe and by no other arm.  The submenus learned to tick what is in force;
-     * the boxes went on reading the stored `BOTH` and ticked every arm.
+     * that one way; the boxes once read the stored `BOTH` and ticked every arm.
      *
-     * MUTATION: read the stored direction in `TileGraph.armMask`, which the editor's asks, and this fails.
-     *
-     * @throws Exception from the panel
+     * MUTATION: read the stored direction in `TileGraph.armMask`, which the editor's asks.
      */
     @Test
     public void testAPermanentTurnoutsArmBoxesTickOnlyItsToe() throws Exception
@@ -939,15 +874,11 @@ public class testTwoYsMakeACrossing
     /**
      * A click on a permanent turnout never leaves a road an answer its blades refuse, and still opens and shuts it.
      *
-     * The click steps through combinations of open arms, and on a permanent turnout every combination that opens an arm
-     * other than the toe stores `BOTH` or the way toward the fork - answers `TileGraph.directionIsPossible` says the
-     * editor must not offer, and which the arrows and the boxes read back as the toe-ward way or as closed.  Ten
-     * clicks, each road asked after every one; and the clicks must open the turnout and shut it, or a click that did
-     * nothing would pass.
+     * Opening an arm other than the toe would store `BOTH` or the way toward the fork, answers
+     * `TileGraph.directionIsPossible` says the editor must not offer.  Ten clicks, each road asked after every one;
+     * the clicks must open the turnout and shut it, or a click that did nothing would pass.
      *
      * MUTATION: step through every combination of arms again, and this fails on the first click.
-     *
-     * @throws Exception from the panel
      */
     @Test
     public void testAClickNeverStoresAWayAPermanentTurnoutCannotRun() throws Exception
@@ -1016,12 +947,7 @@ public class testTwoYsMakeACrossing
         return page;
     }
 
-    /**
-     * The side every road of a turnout with no address is directed toward - its toe.
-     *
-     * @param turnout the square
-     * @return the toe
-     */
+    /** The side every road of a turnout with no address is directed toward: its toe. */
     private Side toeOf(TileKey turnout)
     {
         Side toe = null;
@@ -1042,12 +968,7 @@ public class testTwoYsMakeACrossing
         return toe;
     }
 
-    /**
-     * Every checkbox on a menu and its submenus, by its text, and whether it is ticked.
-     *
-     * @param in the menu, or anything on it
-     * @return the boxes
-     */
+    /** Every checkbox on a menu and its submenus, by its text, and whether it is ticked. */
     private static java.util.Map<String, Boolean> ticks(java.awt.Component in)
     {
         java.util.Map<String, Boolean> out = new java.util.LinkedHashMap<>();
