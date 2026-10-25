@@ -2236,61 +2236,12 @@ public class AutonomyViewerPanel extends JPanel
         findingRelatedRows.clear();
         findingSeverity.clear();
 
-        List<Object[]> errors = new java.util.ArrayList<>();
-        List<Object[]> warnings = new java.util.ArrayList<>();
+        // The graph's own problems are among the findings.  Notices are dropped: this panel says whether anything is
+        // wrong, and the editor lists the rest.
+        Map<AutonomyChecks.Severity, List<Object[]>> sorted = findingRows(session().check(), this::describeTile);
 
-        // A graph problem is what stops the build, so it is always an error.
-        for (org.traincontrol.automationui.TileGraph.Problem problem : session().getGraph() == null
-            ? java.util.Collections.<org.traincontrol.automationui.TileGraph.Problem>emptyList()
-            : session().getGraph().getProblems())
-        {
-            (problem.isBlocking() ? errors : warnings).add(new Object[]
-            {
-                problem.getTile(),
-                describe(problem.getMessageKey(), problem.getTile() == null
-                    ? "" : describeTile(problem.getTile()))
-            });
-        }
-
-        for (AutonomyChecks.Finding finding : session().check())
-        {
-            // The subject is usually a Point name, and an unnamed Point's name is its coordinate - so
-            // where there is a tile, say what the tile is instead.
-            String subject = finding.getTile() == null
-                ? finding.getSubject() : describeTile(finding.getAbout());
-
-            // Errors and warnings only, and a notice is neither.
-            //
-            // This read "not an error, therefore a warning", which made an INFO finding a warning here
-            // while the editor called it a notice and the diagram strip - which counts errors and
-            // warnings - ignored it.  Close one tile's routes both ways and the same setup reported a
-            // warning, a notice, and nothing at all, depending which window was open.
-            //
-            // Dropped rather than given a section of its own: this panel exists to say whether anything
-            // is WRONG, which is what the hint below it is shown for.  A notice is tidiness, and the
-            // editor is where the full list lives.
-            if (finding.getSeverity() != AutonomyChecks.Severity.ERROR
-                && finding.getSeverity() != AutonomyChecks.Severity.WARNING)
-            {
-                continue;
-            }
-
-            (finding.getSeverity() == AutonomyChecks.Severity.ERROR ? errors : warnings).add(
-            // BOTH, because {0} alone cannot say which train (OB-153).
-            //
-            // The line above deliberately prefers the tile's description to the finding's own subject,
-            // and is right to for every finding whose subject IS the point - an unnamed Point's name is
-            // its coordinate, which tells the reader nothing. FR-046's train-length warning is the
-            // first whose subject is a LOCOMOTIVE, and that preference swallowed it, so the warning
-            // named the station the train was standing at instead of the train.
-            //
-            // Passing both keeps {0} meaning exactly what it has always meant, so no other message in
-            // this list changes, and lets the two that need a name use {1}.
-                new Object[] {finding.getTile(),
-                    describe(finding.getMessageKey(), subject, finding.getSubject(),
-                        finding.getCount(), finding.getDetail(), finding.getThird()),
-                    finding.getRelated()});
-        }
+        List<Object[]> errors = sorted.get(AutonomyChecks.Severity.ERROR);
+        List<Object[]> warnings = sorted.get(AutonomyChecks.Severity.WARNING);
 
         // a page renumbered under the setup would silently reattach settings to the wrong track, so it
         // is said out loud rather than left in a getter nobody calls
@@ -2397,7 +2348,7 @@ public class AutonomyViewerPanel extends JPanel
         }
     }
 
-    private String describe(String key, Object... args)
+    private static String describe(String key, Object... args)
     {
         try
         {
@@ -2405,8 +2356,46 @@ public class AutonomyViewerPanel extends JPanel
         }
         catch (RuntimeException e)
         {
+            // a key that has not reached the bundles yet should not blank the whole list
             return key + " " + (args.length > 0 ? args[0] : "");
         }
+    }
+
+    /**
+     * The findings as rows {tile, text, related} by severity, in their order: the walk both finding lists make.
+     *
+     * A finding about a square says what the square is in {0}, as an unnamed Point's name is its coordinate, and keeps
+     * its own subject in {1}, as {0} alone cannot say which train (OB-153).
+     *
+     * @param findings what the check found
+     * @param describeTile what a square is
+     * @return the ERROR, WARNING and NOTICE rows, every other severity among the notices
+     */
+    static Map<AutonomyChecks.Severity, List<Object[]>> findingRows(List<AutonomyChecks.Finding> findings,
+        java.util.function.Function<org.traincontrol.automationui.TileGraph.TileKey, String> describeTile)
+    {
+        Map<AutonomyChecks.Severity, List<Object[]>> sorted = new java.util.EnumMap<>(AutonomyChecks.Severity.class);
+
+        sorted.put(AutonomyChecks.Severity.ERROR, new java.util.ArrayList<>());
+        sorted.put(AutonomyChecks.Severity.WARNING, new java.util.ArrayList<>());
+        sorted.put(AutonomyChecks.Severity.NOTICE, new java.util.ArrayList<>());
+
+        for (AutonomyChecks.Finding finding : findings)
+        {
+            String subject = finding.getTile() == null
+                ? finding.getSubject() : describeTile.apply(finding.getAbout());
+
+            String text = describe(finding.getMessageKey(), subject, finding.getSubject(),
+                finding.getCount(), finding.getDetail(), finding.getThird());
+
+            AutonomyChecks.Severity severity = finding.getSeverity();
+
+            sorted.get(severity == AutonomyChecks.Severity.ERROR || severity == AutonomyChecks.Severity.WARNING
+                ? severity : AutonomyChecks.Severity.NOTICE)
+                .add(new Object[] {finding.getTile(), text, finding.getRelated()});
+        }
+
+        return sorted;
     }
 
 }

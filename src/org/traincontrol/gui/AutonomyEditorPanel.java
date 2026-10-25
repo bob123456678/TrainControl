@@ -5771,51 +5771,35 @@ public class AutonomyEditorPanel extends JPanel
         findingRelated.clear();
         findingSeverity.clear();
 
-        // What must be fixed and what is worth checking, over the whole layout, as a load refuses on any problem; rows
-        // elsewhere say where.
-        List<Object[]> errorRows = new java.util.ArrayList<>();
-        List<Object[]> warningRows = new java.util.ArrayList<>();
-        List<Object[]> noticeRows = new java.util.ArrayList<>();
+        // What must be fixed and what is worth checking, over the whole layout, as a load refuses on any problem; the
+        // graph's own problems are among the findings.  Warnings and notices apart: the diagram's count adds errors and
+        // warnings only.
+        java.util.Map<AutonomyChecks.Severity, List<Object[]>> sorted =
+            AutonomyViewerPanel.findingRows(session.check(), this::describeTile);
 
-        // The same, for elsewhere: here or not is the first thing a reader needs.
-        List<Object[]> elsewhereErrors = new java.util.ArrayList<>();
-        List<Object[]> elsewhereWarnings = new java.util.ArrayList<>();
-        List<Object[]> elsewhereNotices = new java.util.ArrayList<>();
-
-        // The graph's own problems are already among the findings.
-        for (AutonomyChecks.Finding finding : session.check())
+        // Severity first everywhere, this page first within each, to agree with the count; rows elsewhere say where.
+        for (List<Object[]> rows : sorted.values())
         {
-            String subject = finding.getTile() == null
-                ? finding.getSubject() : describeTile(finding.getAbout());
+            List<Object[]> elsewhere = new java.util.ArrayList<>();
 
-            // Both, as {0} cannot say which train (OB-153).
-            String text = describe(finding.getMessageKey(), subject, finding.getSubject(),
-                finding.getCount(), finding.getDetail(), finding.getThird());
-
-            boolean here = onThisPage(finding.getTile());
-
-            if (!here)
+            for (java.util.Iterator<Object[]> each = rows.iterator(); each.hasNext(); )
             {
-                text = I18n.f("autosetup.ui.findingOnPage", finding.getTile().getPage(), text);
+                Object[] row = each.next();
+                TileKey tile = (TileKey) row[0];
+
+                if (onThisPage(tile)) continue;
+
+                row[1] = I18n.f("autosetup.ui.findingOnPage", tile.getPage(), row[1]);
+                elsewhere.add(row);
+                each.remove();
             }
 
-            AutonomyChecks.Severity severity = finding.getSeverity();
-
-            // Warnings and notices apart: the diagram's count adds errors and warnings only.
-            List<Object[]> into = here
-                ? (severity == AutonomyChecks.Severity.ERROR ? errorRows
-                    : severity == AutonomyChecks.Severity.WARNING ? warningRows : noticeRows)
-                : (severity == AutonomyChecks.Severity.ERROR ? elsewhereErrors
-                    : severity == AutonomyChecks.Severity.WARNING ? elsewhereWarnings
-                    : elsewhereNotices);
-
-            into.add(new Object[] {finding.getTile(), text, finding.getRelated()});
+            rows.addAll(elsewhere);
         }
 
-        // Severity first everywhere, this page first within each, to agree with the count.
-        errorRows.addAll(elsewhereErrors);
-        warningRows.addAll(elsewhereWarnings);
-        noticeRows.addAll(elsewhereNotices);
+        List<Object[]> errorRows = sorted.get(AutonomyChecks.Severity.ERROR);
+        List<Object[]> warningRows = sorted.get(AutonomyChecks.Severity.WARNING);
+        List<Object[]> noticeRows = sorted.get(AutonomyChecks.Severity.NOTICE);
 
         int errors = errorRows.size();
 
@@ -6575,19 +6559,6 @@ public class AutonomyEditorPanel extends JPanel
     public void setLocomotiveNames(java.util.function.Supplier<List<String>> locomotiveNames)
     {
         this.locomotiveNames = locomotiveNames;
-    }
-
-    private String describe(String key, Object... args)
-    {
-        try
-        {
-            return I18n.f(key, args);
-        }
-        catch (RuntimeException e)
-        {
-            // a key that has not reached the bundles yet should not blank the whole list
-            return key + " " + (args.length > 0 ? args[0] : "");
-        }
     }
 
     /**
