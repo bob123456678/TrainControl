@@ -25,14 +25,11 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * Mass Assign Locomotive Train Lengths' prompt has the keyboard in the real editor window - on the first train, after a
  * length is refused, and on the next train (MT-474).
  *
- * Adam, 2026-09-23, on MT-474: *"Works, make sure the text field is focused by default."*
- *
- * **In the real window, from the real menu item.**  `core.testMassAssignLengths` asks the same of a panel with no
- * window round it, which is not where he met it: here the autonomy editor is on screen with the main window behind
- * it, and the walk is started from its own Bulk Tools item.
- *
- * A desktop that will not give the editor the keyboard at all cannot show where it goes inside a prompt, and says
- * so as a skip.
+ * Adam: "Works, make sure the text field is focused by default."  In the real window, from the real menu item:
+ * `core.testMassAssignLengths` asks the same of a panel with no window round it, which is not where he met it; here the
+ * autonomy editor is on screen with the main window behind it and the walk is started from its own Bulk Tools item.  A
+ * desktop that will not give the editor the keyboard at all cannot show where it goes inside a prompt, and says so as a
+ * skip.
  *
  * On the frozen railway (OB-111).  The two trains measured here are given back their lengths afterwards.
  *
@@ -158,8 +155,6 @@ public class testTheLengthPromptHasTheKeyboard
     /**
      * The first prompt, the prompt after a refused length, and the next train's prompt each have the number field
      * focused.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testEveryPromptOfTheWalkHasTheFieldFocused() throws Exception
@@ -173,7 +168,6 @@ public class testTheLengthPromptHasTheKeyboard
 
         SwingUtilities.invokeLater(item::doClick);
 
-        // THE FIRST TRAIN.
         javax.swing.JDialog first = awaitPrompt(null);
 
         javax.swing.JTextField field = focusedField(first, "the first train's prompt");
@@ -189,7 +183,6 @@ public class testTheLengthPromptHasTheKeyboard
 
         field = focusedField(again, "the prompt asked again after 0 was refused");
 
-        // THE NEXT TRAIN.
         type(field, "3");
 
         javax.swing.JDialog second = awaitPrompt(again);
@@ -203,11 +196,9 @@ public class testTheLengthPromptHasTheKeyboard
      * And started the way a person starts it: the real right-click menu, Bulk Tools open, and the item released on.
      *
      * A release on a menu item is handled by Swing's own menu code, which takes the whole menu down and only then runs
-     * the item's action - `doClick`, above, runs the action with nothing taken down, and that is the one step between
-     * the claim above and what Adam did.  The release is given to the item as an event rather than made with the
-     * mouse, because a locked desktop - where these tests run unattended - drops synthetic mouse input.
-     *
-     * @throws Exception from the event thread
+     * the item's action; `doClick` runs it with nothing taken down.  The release is given to the item as an event
+     * rather than made with the mouse, because a locked desktop, where these tests run unattended, drops synthetic
+     * mouse input.
      */
     @Test(dependsOnMethods = "testEveryPromptOfTheWalkHasTheFieldFocused")
     public void testThePromptOpenedFromTheRightClickMenuHasTheFieldFocused() throws Exception
@@ -304,8 +295,6 @@ public class testTheLengthPromptHasTheKeyboard
      * Name Everything asks in the same prompt: its field has the keyboard, and its long question wraps (OB-371).
      *
      * MUTATION: give `askForName` its own prompt again, labeled `new JLabel(question)`: red on the wrapping.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testTheNamePromptHasTheFieldFocusedAndWrapsItsQuestion() throws Exception
@@ -378,8 +367,6 @@ public class testTheLengthPromptHasTheKeyboard
      * stored and the taken one is not (OB-376; Adam, MT-815: "shouldn't a name that's already taken be refused?").
      *
      * MUTATION: drop the `isPointNameTaken` test from `whyNotNamed`: red, as no refusal appears.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testNameEverythingRefusesATakenName() throws Exception
@@ -503,8 +490,6 @@ public class testTheLengthPromptHasTheKeyboard
      *
      * MUTATION: `promptName` asking `AutonomySession.whyNotAPointName(name)` instead of `whyNotNamed`: red, as no
      * refusal appears and the square takes the other's name.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testRenameRefusesATakenName() throws Exception
