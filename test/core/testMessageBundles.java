@@ -832,23 +832,20 @@ public class testMessageBundles
                 + "names the sensor and both pages - " + duplicate);
         }
 
-        // and something has to supply the {1} they now ask for
-        for (String source : new String[] {"public class AutonomyViewerPanel extends JPanel",
-            "public class AutonomyEditorPanel extends JPanel"})
-        {
-            // Each panel's file, found by its class
-            String text = SourceOf.fileDeclaring(source);
+        // and something has to supply the {1} they now ask for: the viewer's findingRows, which both panels' lists use
+        String source = "public class AutonomyViewerPanel extends JPanel";
+        String text = SourceOf.fileDeclaring(source);
 
-            // The FIRST TWO arguments, and no claim about what follows them (OB-171).
-            //
-            // This asked for the call including its closing bracket, which pinned the argument COUNT
-            // as well as the order - so adding a third, for the message that says how many squares
-            // still need a length, failed a rule that is about {1} being the subject.
-            assertTrue(text.contains("describe(finding.getMessageKey(), subject, finding.getSubject()"),
-                source + " no longer passes the finding's own subject alongside the tile description, "
-                + "so {1} in the length warning has nothing to fill it and renders as the literal "
-                + "text \"{1}\" (OB-153)");
-        }
+        // The FIRST TWO arguments, and no claim about what follows them (OB-171).
+        assertTrue(text.contains("describe(finding.getMessageKey(), subject, finding.getSubject()"),
+            source + " no longer passes the finding's own subject alongside the tile description, "
+            + "so {1} in the length warning has nothing to fill it and renders as the literal "
+            + "text \"{1}\" (OB-153)");
+
+        assertTrue(SourceOf.fileDeclaring("public class AutonomyEditorPanel extends JPanel")
+            .contains("AutonomyViewerPanel.findingRows("),
+            "the editor's findings list no longer comes from AutonomyViewerPanel.findingRows, so the check above no "
+            + "longer covers its {1} (OB-153)");
     }
     /**
      * Nothing asks for a key the bundle does not have.
