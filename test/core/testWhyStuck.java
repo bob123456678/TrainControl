@@ -38,7 +38,7 @@ public class testWhyStuck
     /**
      * By hand, a station beyond a headshunt is somewhere to go, as the right-click menu says it is.
      *
-     * Adam, on MT-434 (2026-09-15), asked which tool: Why Not Moving? should follow Path Type, and on Manual answer for
+     * Adam, on MT-434, asked which tool: Why Not Moving? should follow Path Type, and on Manual answer for
      * a hand-driven send.  `reversesAlongTheWay` is autonomy's rule - its own javadoc: *"NOT asked by isPathClear, so a
      * hand-driven move ... can still use a headshunt"* - and `firstClearOrWhyNot` still asked it by hand, so a station
      * the menu offers read as "cannot be sent" through a reversing station.
@@ -181,7 +181,7 @@ public class testWhyStuck
      *
      * On Manual, Why Not Moving? skips autonomy's standing bars (MT-434) and decides each station the way the menu's
      * route search does.  The menu itself asks one more question first - `isOfferableToOperator` - and leaves out two
-     * kinds of station: one that excludes this train (Adam, 2026-09-04: *"if it excludes the loc, don't even include it
+     * kinds of station: one that excludes this train (Adam: *"if it excludes the loc, don't even include it
      * in the list"*), and a compulsory turn autonomy may choose for a train that cannot reverse (OB-205, MT-367).  The
      * Manual answer asked neither, so it said "may go" of stations the menu never offers - the button and the
      * explanation answering one question two ways (OB-057).
@@ -246,7 +246,7 @@ public class testWhyStuck
     }
 
     /**
-     * By hand, the menu's own reason outranks being too short (Adam, 2026-09-15).
+     * By hand, the menu's own reason outranks being too short.
      *
      * A physical refusal outranks a preference (MT-262), so a standing bar is replaced by "too long for the berth"
      * where the train would not fit.  That is right for autonomy's bars and wrong for the menu's: a station the menu
@@ -483,7 +483,7 @@ public class testWhyStuck
         layout.moveLocomotive(loc.getName(), "WS9_A", false);
         layout.moveLocomotive(other.getName(), "WS9_B", false);
 
-        // Barred AND busy, which is the combination that used to answer the wrong one.
+        // Barred AND busy: the two reasons compete here.
         layout.getPoint("WS9_B").setAutoDestination(false);
 
         assertTrue(layout.destinationsBarredFromAutonomy(loc).contains("WS9_B"),
@@ -909,7 +909,7 @@ public class testWhyStuck
      *
      * The index maps every emitted Point back to its square and that is the answer whenever it has
      * one - but it does not always: a configuration built by a different run of the builder is not in
-     * the map, and the fallback used to be the internal name. "BottomMainA (northbound)" is not a place
+     * the map, and the fallback must not be the internal name. "BottomMainA (northbound)" is not a place
      * on anybody's railway. Adam met it in the hover that explains why a train is not moving, which is
      * the worst place for it: somebody reading that is already confused.
      *
