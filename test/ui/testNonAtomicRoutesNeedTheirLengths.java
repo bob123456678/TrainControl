@@ -551,7 +551,7 @@ public class testNonAtomicRoutesNeedTheirLengths
         String handler = SourceOf.declaration("private void executeTimetableActionPerformed(");
 
         int asks = handler.indexOf("keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack()");
-        int busy = handler.indexOf("autolayout.ui.errorWaitForActiveLocomotivesToStop");
+        int busy = handler.indexOf("RunGates.WAIT_FOR_THE_TRAINS");
         int empty = handler.indexOf("timetable.ui.errorNoEntriesCaptureCommandsFirst");
 
         assertTrue(busy > 0 && empty > 0, "precondition: the handler no longer refuses a busy railway or an empty"

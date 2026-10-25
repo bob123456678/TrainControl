@@ -970,3 +970,43 @@ text:
 |
 | layout -> screenshot doesn't offer the medium size.  Also, we don't need to be verbose on the pixels, since the users can tell based on what they normally use. 3.0.4 fix.
 |
+
+[issue OB-375]
+ordinal: 46
+inbox: yes
+kind: bug
+title: The autonomy editor's right column leaves a gap beside the dropdowns, and its buttons got wider (OB-368's fix)
+filed: 2026-10-25
+filed_at: 2026-10-25 00:22
+raised_from: MT-805
+build: commit 76d7c9f1
+text:
+| ### OB-375 - 2026-10-25 - The autonomy editor's right column leaves a gap beside the dropdowns, and its buttons got wider (OB-368's fix)
+|
+| **Kind:** bug  
+| **Raised from:** MT-805  
+| **Filed:** 2026-10-25 00:22  
+| **Build:** commit 76d7c9f1
+|
+| MT-805 failed (Adam, 2026-10-25): "there is now always a gap to the right of the dropdown, with the submit buttons being wider than before.  The gap between the buttons and the dropdown and the edge should be the same, and the overall width should be the width of the dropdown."  OB-368 (d84b9ea5) fixed the Track Directions dropdown at the Station Labels dropdown's width; the column around them did not follow.  For 3.0.3, with a claim on the column's geometry shown red first.
+|
+
+[issue OB-376]
+ordinal: 47
+inbox: yes
+kind: bug
+title: Name Everything accepts a name another station or sensor already has
+filed: 2026-10-25
+filed_at: 2026-10-25 00:22
+raised_from: MT-815
+build: commit 76d7c9f1
+text:
+| ### OB-376 - 2026-10-25 - Name Everything accepts a name another station or sensor already has
+|
+| **Kind:** bug  
+| **Raised from:** MT-815  
+| **Filed:** 2026-10-25 00:22  
+| **Build:** commit 76d7c9f1
+|
+| MT-815 (Adam, 2026-10-25): "This test works, but shouldn't a name that's already taken be refused?"  The single rename refuses a taken name (AutonomyEditorPanel, isPointNameTaken), but Name Everything's walk asks only whyNotAPointName, so a taken name is accepted.  The MT's step 4 assumed the refusal.  For 3.0.3, with a claim shown red first.
+|
