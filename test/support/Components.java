@@ -17,18 +17,12 @@ import javax.swing.MenuSelectionManager;
 import javax.swing.SwingUtilities;
 
 /**
- * Finds a component in a window the way a reader of the window would, and drives it.
- *
- * Find by type with a test, by the text the user reads, or by `setName`.  The search goes into a frame's menu bar
- * and into every menu's items, which a plain walk of the children misses.  It runs on the event thread, and
- * returns null when nothing matches, so the test says what was missing.  Find by text, through I18n, wherever the text
- * says what the component is: a field name moves when the code is split, and the words do not.
- *
- * Then drive it as the user would: {@link #press} a button or menu item, {@link #select} a list's item or the tab
- * holding a component.  A press is posted, not waited for, so a dialog it opens can be answered with
- * {@link Answering}.
- *
- * Gathered from the private `find`, `itemCalled` and `buttonIn` of many test classes (FR-136 Phase 6).
+ * Finds a component in a window the way a reader of the window would, and drives it.  Find by type with a test, by the
+ * text the user reads (through I18n, since a field name moves when the code is split and the words do not), or by
+ * `setName`; the search goes into a frame's menu bar and every menu's items, runs on the event thread, and returns null
+ * when nothing matches.  Then drive it as the user would: {@link #press} a button or menu item, {@link #select} a
+ * list's item or the tab holding a component.  A press is posted, not waited for, so a dialog it opens can be answered
+ * with {@link Answering}.
  */
 public final class Components
 {
@@ -37,13 +31,8 @@ public final class Components
     }
 
     /**
-     * The first component of this type, depth first, that passes the test.
-     *
-     * @param <T> the type
-     * @param root where to look: a window, a panel, a menu
-     * @param type the type wanted
-     * @param which the test, or null for the first of the type
-     * @return the component, or null
+     * The first component of this type, depth first, that passes the test (null test: the first of the type); null when
+     * none.
      */
     public static <T extends Component> T find(final Component root, final Class<T> type, final Predicate<? super T> which)
     {
@@ -52,15 +41,7 @@ public final class Components
         return found.isEmpty() ? null : found.get(0);
     }
 
-    /**
-     * Every component of this type, depth first, that passes the test.
-     *
-     * @param <T> the type
-     * @param root where to look
-     * @param type the type wanted
-     * @param which the test, or null for every one of the type
-     * @return the components, in order
-     */
+    /** Every component of this type, depth first, that passes the test (null test: every one of the type). */
     public static <T extends Component> List<T> all(final Component root, final Class<T> type,
         final Predicate<? super T> which)
     {
@@ -75,47 +56,27 @@ public final class Components
     }
 
     /**
-     * The button, menu item, check box or radio button that says exactly this.
-     *
-     * @param root where to look
-     * @param text its text, as the program writes it (I18n.t, never English typed into a test)
-     * @return the component, or null
+     * The button, menu item, check box or radio button that says exactly this (I18n.t, never English typed into a
+     * test).
      */
     public static AbstractButton withText(Component root, final String text)
     {
         return find(root, AbstractButton.class, b -> text.equals(b.getText()));
     }
 
-    /**
-     * The component given this name with `setName`.
-     *
-     * @param <T> the type
-     * @param root where to look
-     * @param name its name
-     * @param type the type wanted
-     * @return the component, or null
-     */
+    /** The component given this name with `setName`, or null. */
     public static <T extends Component> T named(Component root, final String name, Class<T> type)
     {
         return find(root, type, c -> name.equals(c.getName()));
     }
 
-    /**
-     * Presses a button or menu item, as a click does: posted to the event thread, and returning at once.
-     *
-     * @param button what to press
-     */
+    /** Presses a button or menu item, as a click does: posted to the event thread, and returning at once. */
     public static void press(final AbstractButton button)
     {
         SwingUtilities.invokeLater(button::doClick);
     }
 
-    /**
-     * Selects an item of a combo box, as picking it from the list does, and waits for the selection's own work.
-     *
-     * @param box the combo box
-     * @param item the item
-     */
+    /** Selects an item of a combo box, as picking it from the list does, and waits for the selection's own work. */
     public static void select(final JComboBox<?> box, final Object item)
     {
         onTheEventThread(() ->
@@ -126,11 +87,7 @@ public final class Components
         });
     }
 
-    /**
-     * Brings forward every tab holding this component, as clicking those tabs does.
-     *
-     * @param inside the component to show
-     */
+    /** Brings forward every tab holding this component, as clicking those tabs does. */
     public static void select(final Component inside)
     {
         onTheEventThread(() ->
@@ -144,11 +101,7 @@ public final class Components
         });
     }
 
-    /**
-     * The pop-up menu on screen now, as a right-click left it.
-     *
-     * @return the menu, or null when none is open
-     */
+    /** The pop-up menu on screen now, as a right-click left it; null when none is open. */
     public static JPopupMenu popupShowing()
     {
         return onTheEventThread(() ->
@@ -162,21 +115,13 @@ public final class Components
         });
     }
 
-    /**
-     * Lets the event thread finish what is queued on it, and what that queues in turn.
-     */
+    /** Lets the event thread finish what is queued on it, and what that queues in turn. */
     public static void settle()
     {
         for (int turn = 0; turn < 6; turn++) onTheEventThread(() -> null);
     }
 
-    /**
-     * Waits for a condition, asking it every 25 ms.
-     *
-     * @param condition what to wait for
-     * @param millis how long at most
-     * @return whether it came true in time
-     */
+    /** Waits for a condition, asking it every 25 ms; whether it came true in time. */
     public static boolean waitFor(BooleanSupplier condition, long millis)
     {
         long until = System.currentTimeMillis() + millis;
@@ -201,12 +146,8 @@ public final class Components
     }
 
     /**
-     * Runs this on the event thread, waiting for it, and gives back what it returned.  A failure inside comes out as an
+     * Runs this on the event thread, waiting for it, and gives back what it returned; a failure inside comes out as an
      * unchecked exception.
-     *
-     * @param <T> what it returns
-     * @param work the work
-     * @return its result
      */
     public static <T> T onTheEventThread(final Callable<T> work)
     {
