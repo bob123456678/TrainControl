@@ -1,6 +1,6 @@
 """Clone scan over src/: runs of code that are identical or the same up to names and literals.
 
-Usage: py -3 dupscan.py <repo> <out.json> [--min 60]
+Usage: py -3 dupscan.py <repo> <out.json> [--min 60] [--no-old]
 Comments and NetBeans GEN regions are skipped.  Each cluster says how alike its copies are (raw-token
 identity) and how much of each copy's lines already stood in v2_7_0.
 """
@@ -120,6 +120,7 @@ for fa, ia, fb, ib, k, same in pairs:
 
 old_lines = set()
 try:
+    if '--no-old' in sys.argv: raise StopIteration
     listing = subprocess.run(['git', '-C', repo, 'ls-tree', '-r', '--name-only', 'v2_7_0', 'src'],
                              capture_output=True, text=True, stdin=subprocess.DEVNULL).stdout.split()
     for p in listing:
@@ -127,6 +128,8 @@ try:
             body = subprocess.run(['git', '-C', repo, 'show', 'v2_7_0:' + p], capture_output=True,
                                   text=True, encoding='utf-8', errors='replace', stdin=subprocess.DEVNULL).stdout
             old_lines.update(l.strip() for l in body.splitlines() if len(l.strip()) > 3)
+except StopIteration:
+    pass
 except Exception as e:
     print('v2_7_0 lookup failed:', e)
 

@@ -15,7 +15,7 @@ scratch = sys.argv[sys.argv.index('--scratch') + 1] if '--scratch' in sys.argv e
 here = os.path.dirname(os.path.abspath(__file__))
 out = os.path.join(scratch, 'dupcheck-clusters.json')
 
-subprocess.run([sys.executable, '-I', os.path.join(here, 'dupscan.py'), wt, out], check=True,
+subprocess.run([sys.executable, '-I', os.path.join(here, 'dupscan.py'), wt, out, '--no-old'], check=True,
                stdout=subprocess.DEVNULL, stdin=subprocess.DEVNULL)
 clusters = json.load(open(out))
 
