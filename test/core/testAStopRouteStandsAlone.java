@@ -24,10 +24,10 @@ import support.SourceOf;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * A route with an emergency stop has no other commands - Adam, 2026-09-25: *"if a route has emergency stop, it cannot
- * have any other types of commands.  Reject it from being created or imported as such.  This will keep a clean
- * separation."*  Asked what should become of his own route that has both, *"Auto Emergency Stop Bottom Secondary"*,
- * which throws switch 39 and then cuts the power: *"Split it automatically."*
+ * A route with an emergency stop has no other commands - Adam: *"if a route has emergency stop, it cannot have any
+ * other types of commands.  Reject it from being created or imported as such.  This will keep a clean separation."*
+ * Asked what should become of his own route that has both, *"Auto Emergency Stop Bottom Secondary"*, which throws
+ * switch 39 and then cuts the power: *"Split it automatically."*
  *
  * So a route that mixes them - loaded from the database, or read from a file - is split: it keeps its name, its sensor,
  * its conditions and whether it is armed, and fires a new stop-only route in its stop's place.  No door creates one:
@@ -70,10 +70,8 @@ public class testAStopRouteStandsAlone
     }
 
     /**
-     * His own routes file, from the frozen copy of his railway, read back through Routes > Import's door: his mixed route
-     * is split, armed as the file saved it, and the import names what it split.
-     *
-     * @throws Exception from the file or the model
+     * His own routes file, from the frozen copy of his railway, read back through Routes > Import's door: his mixed
+     * route is split, armed as the file saved it, and the import names what it split.
      */
     @Test
     public void testAnImportSplitsARouteThatMixesAStop() throws Exception
@@ -116,8 +114,6 @@ public class testAStopRouteStandsAlone
     /**
      * A route saved before the rule, loaded from the database - as the model's start-up restores each route - is split
      * by the step the start-up takes after its restore, and keeps the order of its commands.
-     *
-     * @throws Exception from the model or the source
      */
     @Test
     public void testALoadSplitsARouteThatMixesAStop() throws Exception
@@ -205,10 +201,8 @@ public class testAStopRouteStandsAlone
 
     /**
      * The stop route a split makes is numbered as a route made in the editor is - from 1000 up - so a Central Station
-     * sync, which numbers its own routes below, cannot replace it and take the power cut out of the route that fires it.
-     * Read from a file whose one route is numbered below 1000.
-     *
-     * @throws Exception from the file or the model
+     * sync, which numbers its own routes below, cannot replace it and take the power cut out of the route that fires
+     * it.  Read from a file whose one route is numbered below 1000.
      */
     @Test
     public void testTheStopRouteIsNumberedAsAUsersRouteIs() throws Exception
@@ -250,8 +244,6 @@ public class testAStopRouteStandsAlone
      * called off the power cut.
      *
      * MUTATION: remember every route asked rather than the path walked, and this fails.
-     *
-     * @throws Exception from the model
      */
     @Test
     public void testAStopReachedByTwoPathsIsCounted() throws Exception
@@ -298,11 +290,7 @@ public class testAStopRouteStandsAlone
         }
     }
 
-    /**
-     * Neither creating nor editing a route puts an emergency stop among other commands; a stop on its own is made.
-     *
-     * @throws Exception from the model
-     */
+    /** Neither creating nor editing a route puts an emergency stop among other commands; a stop on its own is made. */
     @Test
     public void testNoDoorCreatesARouteThatMixesAStop() throws Exception
     {
@@ -393,14 +381,12 @@ public class testAStopRouteStandsAlone
     }
 
     /**
-     * A route's emergency stop is sent whatever the model believes about the power.  It was skipped while the
-     * power flag read off - and that flag is only the last GO or STOP echo the Central Station sent, so one lost GO left
-     * a stop route that fired with nobody present cutting nothing.  behaviour.md 7a: an emergency stop is obeyed whatever
-     * else is true.  The flag now decides only whether the notice is shown.
+     * A route's emergency stop is sent whatever the model believes about the power: the flag is only the last GO or
+     * STOP echo the Central Station sent, so one lost GO would leave a stop route that fired with nobody present
+     * cutting nothing.  behaviour.md 7a: an emergency stop is obeyed whatever else is true; the flag decides only
+     * whether the notice is shown.
      *
      * MUTATION: send the stop only while the power flag reads on, and this fails.
-     *
-     * @throws Exception from the model
      */
     @Test
     public void testARoutesStopIsSentWhenThePowerAlreadyReadsOff() throws Exception
@@ -459,12 +445,10 @@ public class testAStopRouteStandsAlone
     }
 
     /**
-     * The latency cut-off cuts the power whatever the model believes about it, as a route's stop does:
-     * it asked only while the power flag read on, and that flag is only the last echo heard.
+     * The latency cut-off cuts the power whatever the model believes about it, as a route's stop does: the flag is only
+     * the last echo heard.
      *
      * MUTATION: send the latency cut-off's stop only while the power flag reads on, and this fails.
-     *
-     * @throws Exception on a failure to read the source
      */
     @Test
     public void testTheLatencyCutOffIsSentWhateverThePowerFlagSays() throws Exception
