@@ -756,7 +756,7 @@ public class testNoSelfRecursiveWrappers
         {
             if ("AutonomyEditorPanel".equals(name)) continue;
 
-            File helper = new File("src/org/traincontrol/gui/" + name + ".java");
+            File helper = new File("src/org/traincontrol/gui/autonomyeditor/" + name + ".java");
 
             assertTrue(helper.isFile(), "cannot find " + helper.getAbsolutePath());
 

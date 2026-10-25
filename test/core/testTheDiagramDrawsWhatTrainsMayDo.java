@@ -667,7 +667,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
 
         // A test may read the user's settings; it may not decide them: put back as found, unset included
         java.util.prefs.Preferences prefs =
-            org.traincontrol.util.Util.preferencesFor(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class);
+            org.traincontrol.util.Util.preferencesFor(org.traincontrol.gui.TrainControlUI.class);
 
         final String key = "autonomyEditorDirections";
 

@@ -3299,7 +3299,7 @@ public class testTheImportDoorReadsAnOldFile
 
         // Set, not toggled: the box is remembered in the preferences and a run's copy starts as Adam's own.
         final java.util.prefs.Preferences viewPrefs =
-            org.traincontrol.util.Util.preferencesFor(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class);
+            org.traincontrol.util.Util.preferencesFor(org.traincontrol.gui.TrainControlUI.class);
 
         final String trainsWas = viewPrefs.get("autonomyEditorTrains", null);
 
