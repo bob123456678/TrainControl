@@ -19,10 +19,11 @@ TOK = re.compile(r'''//[^\n]*|/\*.*?\*/|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|[A-Z
 
 def tokens(path):
     text = open(path, encoding='utf-8', errors='replace').read()
-    out, skip = [], False
+    out, skip, line, at = [], False, 1, 0
     for m in TOK.finditer(text):
         t = m.group(0)
-        line = text.count('\n', 0, m.start()) + 1
+        line += text.count('\n', at, m.start())
+        at = m.start()
         if t.startswith('//'):
             if 'GEN-BEGIN' in t: skip = True
             elif 'GEN-END' in t: skip = False
@@ -47,7 +48,37 @@ def tokens(path):
             while i < len(out) and out[i][1] != ';': i += 1
             i += 1; continue
         res.append(out[i]); i += 1
-    return res
+    return without_type_noise(res)
+
+
+TYPE_ARG = {'I', '.', ',', '?', 'extends', 'super', '[', ']', '<', '>', '&'}
+
+
+def without_type_noise(ts):
+    """A qualified name (a.b.C) is one name, and a generic argument list (<...> of names only) is dropped, so two
+    methods that share only long type spellings do not read as a copy."""
+    out, i = [], 0
+    while i < len(ts):
+        n = ts[i][0]
+        if n == 'I' and out and out[-1][0] == 'I' and i > 0 and ts[i - 1][0] == '.':
+            i += 1
+            continue
+        if n == '.' and out and out[-1][0] == 'I' and i + 1 < len(ts) and ts[i + 1][0] == 'I':
+            i += 1
+            continue
+        if n == '<' and out and out[-1][0] == 'I':
+            depth, j = 0, i
+            while j < len(ts) and ts[j][0] in TYPE_ARG:
+                depth += {'<': 1, '>': -1}.get(ts[j][0], 0)
+                j += 1
+                if depth == 0:
+                    break
+            if depth == 0 and j > i + 1:
+                i = j
+                continue
+        out.append(ts[i])
+        i += 1
+    return out
 
 
 files = []
@@ -103,13 +134,17 @@ def find(x):
 frags = []
 
 
+frags_in = defaultdict(list)
+
+
 def frag(f, i, k):
-    for idx, (ff, fi, fk) in enumerate(frags):
-        if ff == f and fi < i + k and i < fi + fk and min(fi + fk, i + k) - max(fi, i) >= 0.7 * min(fk, k):
+    for idx in frags_in[f]:
+        ff, fi, fk = frags[idx]
+        if fi < i + k and i < fi + fk and min(fi + fk, i + k) - max(fi, i) >= 0.7 * min(fk, k):
             if i + k > fi + fk or i < fi:
                 frags[idx] = (f, min(fi, i), max(fi + fk, i + k) - min(fi, i))
             return idx
-    frags.append((f, i, k)); parent.append(len(parent)); return len(frags) - 1
+    frags.append((f, i, k)); parent.append(len(parent)); frags_in[f].append(len(frags) - 1); return len(frags) - 1
 
 
 edges = []
