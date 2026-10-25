@@ -109,8 +109,8 @@ public class testRecentLayouts
      * Opening a recent layout switches to it and loads it; the menu then lists the layout left, not the one open, and
      * the record has the opened folder first, each folder once.
      *
-     * MUTATION: drop the `layoutFolderIs` record of Recent Layouts (keep only the two preferences it wrote before), and
-     * the layout left is not listed.
+     * MUTATION: return from `layoutFolderIs` before it writes Recent Layouts, and the record keeps the order it was
+     * given rather than the folders opened.
      *
      * @throws Exception from the window
      */
