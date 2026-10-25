@@ -9,30 +9,21 @@ import support.SourceOf;
 /**
  * The play button on a route cell is drawn where it can be pressed (FR-043).
  *
- * Adam: "update the route table view so that there is a green play button (execute) icon on the right
- * side of each cell... wire it so that no confirmation is needed prior to execution when this is
- * pressed... make all other left or clicks on the table cells open the right-click menu."
+ * Adam: "update the route table view so that there is a green play button (execute) icon on the right side of each
+ * cell... wire it so that no confirmation is needed prior to execution when this is pressed... make all other left or
+ * clicks on the table cells open the right-click menu."  Whether the triangle reads as a play button is for MT-213;
+ * what CAN be pinned is the part that would fail silently, a control drawn in one place and pressed in another.
  *
- * **Most of that cannot be asserted from here**, and saying so is more useful than a test that pretends
- * otherwise: whether the triangle reads as a play button, whether it is the right size beside the text,
- * and whether the spinner turns are all questions for MT-213. What CAN be pinned is the part that has
- * no appearance at all and would fail silently - a control drawn in one place and pressed in another.
- *
- * A table cell is a stamp rather than a component, so there is no JButton whose bounds answer both
- * questions. The renderer works out where to paint from the cell's rectangle, and the click works out
- * what it hit from the same rectangle; if those two ever disagree the button is simply dead, and it
- * looks perfectly normal while being dead. So they go through one method, and this is the test that
- * says so.
+ * A table cell is a stamp, not a component, so no JButton's bounds answer both questions: the renderer paints from the
+ * cell's rectangle and the click works out what it hit from the same rectangle, so they go through one method, and
+ * this is the test that says so.
  */
 public class testTheRoutePlayButton
 {
     /**
-     * The button sits inside its cell, against the right edge, and is about the height of the text.
-     *
-     * The numbers are not asserted exactly - "about the same height as the text" is a judgment, and a
-     * test that pins 13 pixels would fail the next time somebody nudges it for good reason. What is
-     * asserted is what would make it unusable: falling outside the cell, drifting away from the right
-     * edge, or growing to fill the row.
+     * The button sits inside its cell, against the right edge, and is about the height of the text.  The numbers are
+     * not pinned exactly (a judgment a nudge would break); what is asserted is what would make it unusable: falling
+     * outside the cell, drifting away from the right edge, or growing to fill the row.
      */
     @Test
     public void testTheButtonIsInsideTheCellAndAgainstItsRightEdge()
@@ -51,12 +42,8 @@ public class testTheRoutePlayButton
             "the play button is not on the RIGHT side of the cell, which is where Adam asked for it "
             + "and where the route's name is not: " + button + " in " + cell);
 
-        // BIG ENOUGH TO HIT, which is the whole of MT-217.
-        //
-        // The first version made the pressable box the same thirteen pixels square as the glyph, eight
-        // in from the right edge of a thirty-pixel row - about one and a half percent of the cell,
-        // against its border. The geometry was correct and Adam still could not press it. So what is
-        // asserted here is not where the target is but how much of it there is.
+        // BIG ENOUGH TO HIT (MT-217): the first version made the pressable box the same thirteen pixels square as the
+        // glyph and Adam still could not press it, so what is asserted is how much of the target there is.
         assertTrue(button.height >= cell.height - 2,
             "the pressable strip is " + button.height + " pixels tall in a " + cell.height
             + "-pixel row, so there is a band above or below the button where a click misses - which "
@@ -72,11 +59,9 @@ public class testTheRoutePlayButton
     }
 
     /**
-     * The glyph is inside the strip that presses it, and smaller than it.
-     *
-     * Two rectangles on purpose: the mark is the size Adam asked for - "about the same height as the
-     * text" - and the target is the size a target has to be. Collapsing them into one number is
-     * exactly what made the button unhittable, so this is the pair being kept apart.
+     * The glyph is inside the strip that presses it, and smaller than it: the mark is the size Adam asked for ("about
+     * the same height as the text") and the target is the size a target has to be; one number for both made the button
+     * unhittable.
      */
     @Test
     public void testTheGlyphSitsInsideTheStrip()
@@ -103,11 +88,9 @@ public class testTheRoutePlayButton
     }
 
     /**
-     * It follows the cell rather than being drawn at a fixed place.
-     *
-     * The route table is three columns of whatever width the panel happens to be, so a button worked
-     * out from anything but the cell it belongs to would be right in one column and wrong in the other
-     * two. This is the specific way that fails, and it fails invisibly.
+     * It follows the cell rather than being drawn at a fixed place: the route table is three columns of whatever width
+     * the panel happens to be, so a button worked out from anything but its own cell is wrong in two of them,
+     * invisibly.
      */
     @Test
     public void testTheButtonMovesWithItsCell()
@@ -131,11 +114,9 @@ public class testTheRoutePlayButton
     }
 
     /**
-     * The renderer and the click ask the same method where the button is.
-     *
-     * The two tests above prove the RULE. This proves it is the only rule in play: a second copy of the
-     * arithmetic in either place would pass everything above and still put the button somewhere the
-     * click cannot reach.
+     * The renderer and the click ask the same method where the button is: the tests above prove the RULE, this proves
+     * it is the only one in play, since a second copy of the arithmetic would pass them and still put the button
+     * somewhere the click cannot reach.
      *
      * MUTATION: inline the rectangle into either `isOverTheRoutePlayButton` or the renderer's
      * `paintComponent` and this fails.
@@ -159,10 +140,8 @@ public class testTheRoutePlayButton
             + "them has grown its own copy of the arithmetic, and a button drawn where it cannot be "
             + "pressed looks entirely normal");
 
-        // The third reader of that geometry is the border, and it takes the WIDTH rather than the
-        // rectangle - so it cannot go through the same method, and this is what holds it to the same
-        // number instead. Without it the strip and the space reserved from the text could drift, and
-        // a long route name would creep back under the icon, which is OB-146 returning.
+        // The third reader of that geometry is the border, which takes the WIDTH and so cannot go through the same
+        // method; this holds it to the same number, or a long route name creeps back under the icon (OB-146).
         assertTrue(code.contains("createEmptyBorder(0, 0, 0, ROUTE_PLAY_STRIP)"),
             "the renderer no longer reserves ROUTE_PLAY_STRIP from the text. Either the reservation "
             + "has gone - and route names will run under the play icon again (OB-146) - or it has "
@@ -170,15 +149,10 @@ public class testTheRoutePlayButton
     }
 
     /**
-     * The hand cursor asks the same question the click asks (OB-147).
-     *
-     * Adam: "the play button in routes should show a finger/pointer icon when hovered to indicate
-     * clickability."
-     *
-     * The cursor is how a surface says "this part is a control", so it has to be true of exactly the
-     * pixels that ARE one. Working it out separately is how a hand appears over something that does
-     * nothing - the affordance and the guard answering differently, which OB-057 and OB-090 were both
-     * about. So the hover asks isOverTheRoutePlayButton, the same method the click asks.
+     * The hand cursor asks the same question the click asks (OB-147).  Adam: "the play button in routes should show a
+     * finger/pointer icon when hovered to indicate clickability."  The cursor says "this part is a control", so it has
+     * to be true of exactly the pixels that ARE one; working it out separately puts a hand over something that does
+     * nothing (the affordance and the guard answering differently, as in OB-057 and OB-090).
      *
      * MUTATION: give the hover its own test - a bare x-coordinate comparison, say - and this fails.
      */
@@ -209,16 +183,12 @@ public class testTheRoutePlayButton
     }
 
     /**
-     * A running route's button is grayed, refuses the click, and shows no hand (MT-217).
+     * A running route's button is grayed, refuses the click, and shows no hand (MT-217).  Adam: "there is no animation
+     * / change in state while it is running.  It should gray out and then become reenabled once the route finishes."
      *
-     * Adam: "there is no animation / change in state while it is running.  It should gray out and then
-     * become reenabled once the route finishes."
-     *
-     * Three surfaces have to agree about one fact, and they are the three that made OB-057 and OB-090:
-     * what the button LOOKS like, what the click DOES, and what the cursor PROMISES. A grayed button
-     * that still fires is a lie; a hand over it is the same lie in a different form; and either would
-     * also let the same route be started twice, which is the thing the graying exists to say cannot
-     * happen.
+     * Three surfaces have to agree about one fact: what the button LOOKS like, what the click DOES, and what the cursor
+     * PROMISES.  A grayed button that still fires is a lie, a hand over it the same lie, and either would let the same
+     * route be started twice.
      *
      * MUTATION: delete any one of the three `routesExecuting.contains(...)` guards and this fails.
      */
@@ -275,10 +245,7 @@ public class testTheRoutePlayButton
     }
 
     /**
-     * Whether code draws an arc, either way this program does it.
-     *
-     * @param code program code, comments blanked
-     * @return true when it calls `drawArc(` or builds an `Arc2D`
+     * Whether code draws an arc, either way this program does it: `drawArc(` or an `Arc2D`.
      */
     private static boolean drawsAnArc(String code)
     {
