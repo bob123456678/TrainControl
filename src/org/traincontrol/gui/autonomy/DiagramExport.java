@@ -65,9 +65,7 @@ public final class DiagramExport
     {
     }
 
-    /**
-     * Set by a test to make a render fail after its grid is built; null everywhere else.
-     */
+    /** Set by a test to make a render fail after its grid is built; null everywhere else. */
     public static Runnable stumbleForTest;
 
     /**
@@ -107,21 +105,9 @@ public final class DiagramExport
 
         final BufferedImage[] image = new BufferedImage[1];
 
-        // EVERY PATH OUT OF HERE RETIRES THE GRID.
-        //
-        // The discard below used to sit after the paint with no `finally`, so an export that was
-        // interrupted, or whose paint threw, left the grid registered: the leak the comment on
-        // the discard describes, back again for that one export, and with no second chance at it -
-        // the host panel is a local, so nothing else will ever match its owner and prune its labels.
-        //
-        // THE BUILD IS INSIDE THE BRACKET TOO.  `LayoutGrid`'s constructor is what registers the
-        // captions, so a constructor that threw part-way - after registering some and before
-        // returning - left the `finally` unentered: the same leak by the one door the first version of
-        // this fix did not cover.
-        //
-        // Moving the build in was not enough on its own: a constructor that throws never
-        // assigns `grid[0]`, so a `finally` discarding `grid[0]` still discarded nothing.  It retires by
-        // the PANEL now, which is the key the constructor registers under before it builds anything.
+        // Every path out retires the grid, and the build is inside the bracket too: LayoutGrid's constructor registers
+        // the captions, so one that threw part-way would otherwise leak.  Retired by the PANEL (the key the constructor
+        // registers under first), not grid[0], which a throwing constructor never assigns.
         try
         {
             javax.swing.SwingUtilities.invokeAndWait(() ->
@@ -133,22 +119,16 @@ public final class DiagramExport
                 grid[0] = new LayoutGrid(layout, size, host, null, true, ui);
             });
 
-            // A WAY TO MAKE THIS FAIL ON PURPOSE.
-            //
-            // Null in the application.  Nothing between here and the discard throws on any input a
-            // test can hand in - the wait answers to an interrupt, and an interrupt lands at whichever
-            // statement it happens to reach, which is not a failure a test can repeat - so the seam is
-            // the only way to say "the render threw" and mean it.  Same shape as the route editor's
-            // `discardAnswerForTest`.
+            // A way to make this fail on purpose, null in the application: nothing here throws on input a test can hand
+            // in, so this seam is the only way to say "the render threw" (as the route editor's discardAnswerForTest).
             if (stumbleForTest != null) stumbleForTest.run();
 
             awaitTiles(ui);
 
             javax.swing.SwingUtilities.invokeAndWait(() ->
             {
-                // A component that has never been shown has no size, and painting one paints nothing.
-                // Giving it its preferred size and laying it out by hand is what makes an offscreen render
-                // work at all.
+                // A component never shown has no size and paints nothing: give it its preferred size and lay it out by
+                // hand.
                 Dimension preferred = host.getPreferredSize();
 
                 int width = Math.max(preferred.width, grid[0].maxWidth);
@@ -170,9 +150,7 @@ public final class DiagramExport
                     g.setColor(Color.WHITE);
                     g.fillRect(0, 0, width, height);
 
-                    // paint, NOT printAll or paintAll.  Both of those begin with an isShowing() check and
-                    // do nothing at all for a component that is not on screen - which is every component
-                    // in an offscreen render, and the second reason the first version came out blank.
+                    // paint, not printAll or paintAll: both begin with an isShowing() check and do nothing offscreen.
                     host.paint(g);
                 }
                 finally
@@ -184,31 +162,17 @@ public final class DiagramExport
         }
         finally
         {
-            // Finished with, and said so.
-            //
-            // This grid is built for one render into a panel nobody will ever show, and then dropped -
-            // so nothing ever retired it, and every caption it registered stayed in the window's label
-            // table for the session, keeping the whole grid and its tiles reachable through them.  One
-            // page retained per export.
-            //
-            // Its panel is a local, so it is never in the page cache and the window will always agree
-            // it is finished with.
-            // AND THE RETIRING DOES NOT REPLACE WHAT WENT WRONG.
-            //
-            // `invokeAndWait` throws `InterruptedException` when the calling thread's interrupt flag is
-            // set, which is exactly one of the failures this bracket exists for - so the interrupt came
-            // out of here in place of the paint's own exception, and the caller was told the wrong
-            // thing about why its export failed.  The discard still happens either way: the event is
-            // posted before the wait.  Nothing else is swallowed.
+            // Finished with, and said so: the grid is built for one render into a panel nobody shows, and an unretired
+            // one would keep its whole grid reachable through the window's label table, one page per export.
+            // And the retiring does not replace what went wrong: invokeAndWait throws InterruptedException when the
+            // interrupt flag is set, which would come out in place of the paint's own exception.  The discard still
+            // happens: the event is posted before the wait.
             try
             {
                 javax.swing.SwingUtilities.invokeAndWait(() ->
                 {
-                    // BY THE PANEL, not by the reference.  `grid[0]` is assigned only if the
-                    // constructor returned, and a constructor that threw part-way has already
-                    // registered itself and may already have registered captions - so discarding what
-                    // this call holds covered every door but that one.  `LayoutGrid.retire` asks the
-                    // registry the constructor writes first.
+                    // By the panel, not the reference: grid[0] is assigned only if the constructor returned, and
+                    // LayoutGrid.retire asks the registry the constructor writes first.
                     LayoutGrid.retire(host);
                 });
             }
@@ -218,17 +182,9 @@ public final class DiagramExport
             }
             catch (java.lang.reflect.InvocationTargetException fromTheRetirement)
             {
-                // THE RETIREMENT'S OWN FAILURE MUST NOT REPLACE THE RENDER'S.
-                //
-                // This `finally` runs while a render failure may already be on its way out, and
-                // `invokeAndWait` wraps anything the task throws - `forgetLayoutStations`, say -
-                // in an InvocationTargetException.  `render` declares `throws Exception`, so that
-                // one would propagate from here and discard the cause the caller needs, which is
-                // the wrong-cause reporting that is fixed only for the interrupt.
-                //
-                // Logged rather than thrown: a grid that could not be retired leaves a stale
-                // registration, which is a leak; losing the reason an export failed leaves nobody
-                // anywhere to start.
+                // The retirement's own failure must not replace the render's: invokeAndWait wraps what the task throws,
+                // which would discard the cause the caller needs.  Logged rather than thrown: a stale registration is a
+                // leak, while losing the reason an export failed leaves nobody anywhere to start.
                 if (ui != null) ui.log(I18n.f("layout.errorExportGridNotRetired",
                     String.valueOf(fromTheRetirement.getCause())));
             }
