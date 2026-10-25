@@ -6,7 +6,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 /**
- * A routing rule chosen before 3.0.0 has to reach the configuration, or wait until it can.  The rule used to be a
+ * A routing rule chosen before 3.0.0 has to reach the configuration, or wait until it can.  The rule was a
  * java Preference pushed into a static on Layout and is now a per-configuration setting, so an upgrading user's
  * choice has to be carried across; if there is no configuration to carry it into, the old key must survive so that
  * it can be carried tomorrow, or RANDOM takes its place silently, for ever.
