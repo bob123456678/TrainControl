@@ -25,11 +25,8 @@ public class RightClickFunctionMenu extends MouseAdapter
         this.fNumber = fNumber;
     }
 
-    // mousePressed/mouseReleased overrides used to live here, extending MouseAdapter as
-    // though this were registered as a mouse listener on the function button. It never is - the only
-    // caller, TrainControlUI.EditFunction, constructs this and calls showPopup(evt) directly - so
-    // those two overrides never ran. Removed rather than left behind, since dead listener methods on
-    // a class that keeps a live isPopupTrigger() branch look like the real wiring at a glance.
+    // No mousePressed/mouseReleased overrides: the only caller (TrainControlUI.EditFunction) constructs this and calls
+    // showPopup(evt) directly, so they never ran.
 
     public void showPopup(MouseEvent e)
     {
@@ -72,28 +69,11 @@ public class RightClickFunctionMenu extends MouseAdapter
             menuItem.setToolTipText("Alt-O");
             add(menuItem);
 
-            // WHICH FUNCTION AUTONOMY USES, said on the function itself (FR-045).
-            //
-            // Adam: "add a checkbox right click entry to designate the function as the autonomy
-            // departure function, and another as the autonomy arrival function... Only show these
-            // controls if autonomy is loaded."
-            //
-            // The two slots already existed on the Locomotive and could only be filled from a pair of
-            // dropdowns in the autonomy editor's Edit Locomotive view. That is a long way to go to say
-            // "this horn is the one that sounds when it leaves", and it is a statement about this
-            // function, which is where the tick belongs.
-            //
-            // ONE PER SLOT is the model's rule rather than one enforced here: each slot is a single
-            // Integer, so ticking F3 does not add it, it replaces whatever held the slot. That makes
-            // these read as a radio choice spread across the functions - ticking one unticks another.
-            //
-            // When a DIFFERENT function holds the slot the item stays clickable, shows unticked, and
-            // says which function has it; choosing it moves the slot here, because that is what the
-            // user just asked for.  See autonomySlot, which is where that is done.  This said the item
-            // was DISABLED in that case, which the method has never done.
-            //
-            // Both may be the same function, which Adam asked for explicitly and which the model
-            // allows: two Integers, nothing stopping them being equal.
+            // Which function autonomy uses, said on the function itself (FR-045): "add a checkbox right click entry to
+            // designate the function as the autonomy departure function, and another as the autonomy arrival
+            // function...  Only show these controls if autonomy is loaded."  One per slot is the model's rule (each
+            // slot is one Integer, so ticking replaces the holder).  When a different function holds the slot the item
+            // stays clickable, unticked, and names the holder (see autonomySlot).  Both may be the same function.
             if (tcui.isAutonomyLoaded())
             {
                 addSeparator();
@@ -121,14 +101,9 @@ public class RightClickFunctionMenu extends MouseAdapter
 
 
         /**
-         * A tick for one of the two autonomy slots (FR-045).
-         *
-         * Ticked when THIS function holds the slot. Unticking clears it, which is the one thing the
-         * dropdowns in the autonomy editor cannot say without a blank entry.
-         *
-         * When ANOTHER function holds the slot the item still shows, ticked off, and says which one -
-         * so the answer to "why can I not tick this" is on the item rather than discovered by trying.
-         * Choosing it moves the slot here, because that is what the user just asked for.
+         * A tick for one of the two autonomy slots (FR-045): ticked when this function holds the slot, and unticking
+         * clears it.  When another function holds it the item shows unticked and names which; choosing it moves the
+         * slot here.
          *
          * @param departure true for the departure slot, false for arrival
          * @return the item
@@ -142,8 +117,8 @@ public class RightClickFunctionMenu extends MouseAdapter
             String label = I18n.t(departure
                 ? "loc.ui.menuAutonomyDepartureFunction" : "loc.ui.menuAutonomyArrivalFunction");
 
-            // Which function has it, when it is not this one.  A slot pointing somewhere else is the
-            // commonest reason a tick is not where somebody expects it.
+            // Which function has it, when it is not this one: the commonest reason a tick is not where somebody
+            // expects.
             if (held != null && held != fNumber) label = label + "  (F" + held + ")";
 
             javax.swing.JCheckBoxMenuItem item = new javax.swing.JCheckBoxMenuItem(label, mine);
@@ -155,11 +130,8 @@ public class RightClickFunctionMenu extends MouseAdapter
                 if (departure) activeLoc.setDepartureFunc(now);
                 else activeLoc.setArrivalFunc(now);
 
-                // Not logged, deliberately. Every other slot change in this application says so in the
-                // log, and this one would need two more strings in eight bundles to say something the
-                // menu already shows: reopen it and the tick is where it now belongs, with the other
-                // slot naming whichever function holds it. Worth adding if the silence is ever
-                // confusing; not worth sixteen translations before anybody has been confused.
+                // Not logged, deliberately: it would need two more strings in eight bundles to say what the reopened
+                // menu already shows.
             });
 
             return item;
@@ -193,26 +165,14 @@ public class RightClickFunctionMenu extends MouseAdapter
                 }
             });
 
-            // THE SAME TWO TICKS, ON THE DIALOG (FR-045).
-            //
-            // Adam: "Add checkboxes to the full edit function popup, remembering that no 2 functions
-            // should ever be selectable."  They are the same two slots the menu offers, and the same
-            // rule: a slot is one Integer, so ticking here takes it from wherever it was.
-            //
-            // On the dialog rather than in the panel because the panel is a form - anything added
-            // inside it has to go through the designer, and a component declared by hand in a
-            // GEN-BEGIN block is deleted the next time somebody opens the form. Wrapping is the same
-            // answer OB-148 reached for the autonomy strip.
-            //
-            // They follow the panel's own function dropdown, because switching function inside it
-            // changes what a tick would be about.
+            // The same two ticks, on the dialog (FR-045): "Add checkboxes to the full edit function popup, remembering
+            // that no 2 functions should ever be selectable."  On the dialog, not in the panel: the panel is a form,
+            // and a component declared by hand in a GEN-BEGIN block is deleted the next time the form is opened (as
+            // OB-148's autonomy strip).  They follow the panel's own function dropdown.
             javax.swing.JComponent shown = edit;
 
-            // What Cancel puts back - see the else branch at the bottom of this method.
-            //
-            // Taken before the autonomy block rather than inside it, because the restore is outside
-            // it: with no autonomy loaded the two ticks are never built and these are unchanged, so
-            // putting them back is a no-op rather than a special case.
+            // What Cancel puts back (see the else branch below).  Taken before the autonomy block: with no autonomy
+            // loaded the ticks are never built, so restoring is a no-op.
             final Integer departureWas = activeLoc.getDepartureFunc();
             final Integer arrivalWas = activeLoc.getArrivalFunc();
 
@@ -291,37 +251,19 @@ public class RightClickFunctionMenu extends MouseAdapter
             }
             else
             {
-                // CANCEL PUTS THE TWO SLOTS BACK.
-                //
-                // Their tick boxes write straight to the locomotive, because the label beside each one
-                // names whichever function currently holds the slot and it has to follow the tick as
-                // it moves.  Everything else in this dialog waits for OK, so Cancel used to discard
-                // the icon and the trigger and keep the slot move - and which function fires on
-                // departure is a thing somebody opens this dialog to LOOK at.
-                //
-                // Restored rather than deferred, so the preview stays honest and Cancel still means
-                // cancel.  Its sibling door applies at commit time instead (GraphLocAssign.commitChanges).
+                // Cancel puts the two slots back: their tick boxes write straight to the locomotive (the label names
+                // the holder and must follow), so Cancel would otherwise keep the slot move.  Restored rather than
+                // deferred, so the preview stays honest; GraphLocAssign.commitChanges applies at commit time instead.
                 activeLoc.setDepartureFunc(departureWas);
                 activeLoc.setArrivalFunc(arrivalWas);
 
-                // AND THE COPIED FUNCTIONS.  Copy Customizations is the third door that
-                // writes straight through, for the same reason the slots do - the panel shows the
-                // other locomotive's functions the moment it is pressed - and it was the one the
-                // comment above was wrong about.
+                // And the copied functions: Copy Customizations also writes straight through.
                 edit.undoCopiedCustomizations();
 
-                // AND THE WINDOW IS TOLD (Adam, 2026-09-22, on MT-466): *"they are correctly undone
-                // by cancel in the single function editor, but you must trigger a repaint on the
-                // target locomotive.  Add this."*
-                //
-                // The undo above puts the icons back on the LOCOMOTIVE, which is where Copy
-                // Customizations wrote them - and nothing in this window reads a locomotive again
-                // until the model sends it a message.  So Cancel restored the data and left the
-                // button faces showing the other locomotive's icons until something unrelated
-                // happened to repaint them, which reads as Cancel not having worked.
-                //
-                // FORCED, because the ordinary repaint is a no-op when nothing the window watches
-                // has changed - and what changed here is exactly what it does not watch.
+                // And the window is told (MT-466: "they are correctly undone by cancel in the single function editor,
+                // but you must trigger a repaint on the target locomotive."): the undo restores the data, but nothing
+                // reads a locomotive again until the model sends a message.  Forced, because the ordinary repaint is a
+                // no-op when nothing the window watches has changed.
                 tcui.repaintLoc(true, java.util.Arrays.asList(activeLoc));
             }
         }
