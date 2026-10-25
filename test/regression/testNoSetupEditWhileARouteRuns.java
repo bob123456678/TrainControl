@@ -839,7 +839,8 @@ public class testNoSetupEditWhileARouteRuns
      * saying why before anything is asked, and none of them changes the setup or the pages; at rest they ask their own
      * questions instead.
      *
-     * Each says "Edits are not allowed while autonomy or routes are running." (OB-370).
+     * Each says "Edits are not allowed while autonomy or routes are running." (OB-370).  Five of the Layouts menu's
+     * items are clicked; Rename and Switch to the Central Station's Layout are called at their doors.
      *
      * MUTATION: let any of them ask autonomy alone again, and this fails naming it; so does
      * `RunGates.refuseWhileARunHoldsTheSetup` giving a door another sentence.
@@ -897,25 +898,36 @@ public class testNoSetupEditWhileARouteRuns
             doors.put("Autonomy: Delete Everything", new Object[] {refusal, (Runnable) () -> invoke(deleteEverything,
                 autonomyMenu, session)});
             doors.put("Autonomy: a page's tick", new Object[] {refusal, (Runnable) tick::doClick});
-            doors.put("Layout: Delete Page", new Object[] {noEdits, (Runnable) () -> callUi(window,
-                "deleteLayoutMenuItemActionPerformed", new Class<?>[] {java.awt.event.ActionEvent.class}, (Object) null)});
+            // The Layouts menu's items, clicked in the menu as it was opened at rest: opened during the run it grays
+            // them, so a click reaches their doors only when the run began with the menu open.
+            final javax.swing.JMenu layouts = layoutsMenu(ui);
+
+            for (String item : LAYOUT_ITEMS)
+            {
+                final JMenuItem door = itemCalled(layouts, I18n.t(item));
+
+                assertNotNull(door, "precondition: the Layouts menu has no " + I18n.t(item));
+
+                doors.put("Layout: " + I18n.t(item), new Object[] {noEdits, (Runnable) () ->
+                {
+                    javax.swing.MenuSelectionManager.defaultManager().clearSelectedPath();
+
+                    door.doClick(0);
+                }});
+            }
+
+            // Rename by its door: its item, like Add Blank Page's, asks the new name before it refuses.
             doors.put("Layout: Rename Page", new Object[] {noEdits, (Runnable) () -> callUi(window,
                 "duplicateOrRenameCurrentLayout", new Class<?>[] {String.class, boolean.class, boolean.class, boolean.class},
                 "renamed while a route runs", true, false, false)});
-            doors.put("Layout: Duplicate Page", new Object[] {noEdits, (Runnable) () -> callUi(window,
-                "duplicateOrRenameCurrentLayout", new Class<?>[] {String.class, boolean.class, boolean.class, boolean.class},
-                "copied while a route runs", false, true, false)});
-            doors.put("Layout: Combine Linked Pages", new Object[] {noEdits, (Runnable) () -> callUi(window,
-                "combineLinkedPages", new Class<?>[0])});
+
+            // By its door: the item is live only while a Central Station is connected, and no test connects one.
             doors.put("Layout: Switch to the Central Station's Layout", new Object[] {noEdits, (Runnable) () -> callUi(
                 window, "switchCSLayoutMenuItemActionPerformed", new Class<?>[] {java.awt.event.ActionEvent.class},
                 (Object) null)});
-            doors.put("Layout: Choose Local Data Folder", new Object[] {noEdits, (Runnable) () -> callUi(window,
-                "chooseLocalDataFolderMenuItemActionPerformed", new Class<?>[] {java.awt.event.ActionEvent.class},
-                (Object) null)});
-            doors.put("Layout: Initialize Local Layout", new Object[] {noEdits, (Runnable) () -> callUi(window,
-                "initializeLocalLayoutMenuItemActionPerformed", new Class<?>[] {java.awt.event.ActionEvent.class},
-                (Object) null)});
+
+            support.Mouse.click(layouts);
+            support.Mouse.closeMenus();
 
             final String configurations = String.valueOf(session.getStore().getConfigurationNames()) + " "
                 + session.getStore().getActiveConfiguration() + " " + session.getStore().getExcludedPages();
@@ -956,7 +968,8 @@ public class testNoSetupEditWhileARouteRuns
             }
 
             // AT REST, the doors that only ask first ask - answered No or Cancel by the answering thread
-            for (String name : new String[] {"Autonomy: duplicate", "Autonomy: rename", "Layout: Delete Page"})
+            for (String name : new String[] {"Autonomy: duplicate", "Autonomy: rename", "Layout: "
+                + I18n.t("ui.main.toolbar.deleteCurrentPage")})
             {
                 int from = answering.count();
 
@@ -2597,6 +2610,33 @@ public class testNoSetupEditWhileARouteRuns
         {
             throw new IllegalStateException(failed);
         }
+    }
+
+    /** The Layouts menu items whose doors refuse a run with the edit sentence before they ask anything (OB-370). */
+    private static final String[] LAYOUT_ITEMS =
+    {
+        "ui.main.toolbar.openLayout", "ui.main.toolbar.createLayout", "ui.main.toolbar.duplicateCurrentPage",
+        "layout.ui.menuCombineLinkedPages", "ui.main.toolbar.deleteCurrentPage"
+    };
+
+    /** The window's Layouts menu, from its menu bar. */
+    private static javax.swing.JMenu layoutsMenu(final TrainControlUI ui)
+    {
+        javax.swing.JMenu found = support.Components.onTheEventThread(() ->
+        {
+            for (int i = 0; i < ui.getJMenuBar().getMenuCount(); i++)
+            {
+                javax.swing.JMenu menu = ui.getJMenuBar().getMenu(i);
+
+                if (menu != null && I18n.t("ui.main.toolbar.layouts").equals(menu.getText())) return menu;
+            }
+
+            return null;
+        });
+
+        assertNotNull(found, "the window has no Layouts menu");
+
+        return found;
     }
 
     private static void settle() throws Exception
