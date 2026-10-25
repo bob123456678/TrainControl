@@ -10,16 +10,9 @@ import org.traincontrol.base.RouteCommand;
 import support.SourceOf;
 
 /**
- * Every kind of route command survives being written out and read back.
- *
- * This is the parity the new route editor rests on.  That editor works in RouteCommand objects rather
- * than in the text the old one edits, and hands them to the same save path - which is only safe if the
- * two descriptions of a command are interchangeable.  If some kind of command loses a field on the way
- * through the text form, then a route edited in the new interface and saved would come back different,
- * and the difference would be invisible until a train took the wrong turning.
- *
- * Every constructor RouteCommand offers is exercised, so a kind added later without a matching parse is
- * caught here rather than in somebody's timetable.
+ * Every kind of route command survives being written out and read back: the new route editor works in RouteCommand
+ * objects and hands them to the same save path, which is only safe if the text form loses no field.  Every constructor
+ * RouteCommand offers is exercised, so a kind added without a matching parse is caught here.
  */
 public class testRouteCommandParity
 {
@@ -31,9 +24,7 @@ public class testRouteCommandParity
     // "Address already in use" out of its own setup, which TestNG then renders as a clean skip.  A
     // pure round-trip test should not be able to do that to the rest of the battery.
 
-    /**
-     * Every command kind, written and read back, must describe the same thing.
-     */
+    /** Every command kind, written and read back, must describe the same thing. */
     @Test
     public void testEveryCommandKindSurvivesTheTextForm() throws Exception
     {
@@ -57,9 +48,8 @@ public class testRouteCommandParity
 
         for (RouteCommand original : corpus)
         {
-            // toLine, not toString.  toString is a debug rendering - "Accessory: {ADDRESS=12, ...}" -
-            // and toLine is what a route's CSV is built from and what fromLine reads back.  Finding
-            // that out is half of why this test exists.
+            // toLine, not toString: toString is a debug rendering, toLine is what a route's CSV is built from and
+            // fromLine reads back.
             String line = original.toLine(null);
 
             RouteCommand parsed = RouteCommand.fromLine(line, false);
@@ -74,16 +64,14 @@ public class testRouteCommandParity
     }
 
     /**
-     * A line the parser does not understand is refused rather than half-read.
-     *
-     * The editor will offer only kinds it can build, but a route file may hold anything - and a command
-     * that parses into something plausible but wrong is worse than one that fails.
+     * A line the parser does not understand is refused rather than half-read: a route file may hold anything, and a
+     * plausible but wrong command is worse than a failure.
      */
     @Test
     public void testRubbishIsRefused() throws Exception
     {
-        // Refused by throwing, which is what the callers expect - RouteEditorFrame wraps its parse in a
-        // try and reports the message.  What matters is that it does not come back as a command.
+        // Refused by throwing, which RouteEditorFrame's parse expects; what matters is that it does not come back as a
+        // command.
         try
         {
             RouteCommand parsed = RouteCommand.fromLine("this is not a command", false);
@@ -96,50 +84,19 @@ public class testRouteCommandParity
     }
 
     /**
-     * The command list offers no kind that route execution would silently ignore (OB-141).
-     *
-     * Adam: "a route command should not be able to contain s88 sensors. these should only be in the
-     * conditions only. remove s88 from the 'Kind' dropdown. advise what happens in the model when this
-     * is selected (if anything)."
-     *
-     * **What happened in the model was nothing at all**, and that is the finding rather than the
-     * dropdown. `MarklinRoute.execRoute` dispatches on a chain of `rc.isAccessory()` / `isStop()` /
-     * `isFunctionsOff()` / `isAutonomyLightsOn()` / `isLightsOn()` / `isLocomotiveSpeed()` /
-     * `isLocomotiveDirection()` / `isFunction()` / `isRoute()`, and the chain has no `isFeedback()`
-     * branch and no final `else`. So a feedback row fell through every branch, sent nothing, and
-     * logged nothing. Its one observable effect was the sleep the loop takes per row, which made an
-     * s88 command a pure delay wearing the name of an instruction. It was still saved, re-read and
-     * exported, so the route kept a sentence in it that could never be obeyed.
-     *
-     * The model already agreed with Adam: `RouteCommand.isConditionCommand()` has always answered true
-     * for feedback. Only the dropdown disagreed.
-     *
-     * **The general rule, rather than the one case.** Offering a kind as a command is a promise that
-     * executing it does something, so this checks the promise against the dispatch itself: every kind
-     * `canBeACommand` allows must have a branch in `execRoute`. That is what would have caught this,
-     * and it is what will catch the next one - including the reverse mistake of adding an `isFeedback`
-     * branch later without re-enabling the dropdown, which fails this test with the opposite message.
+     * The command list offers no kind that route execution would silently ignore (OB-141; Adam: "a route command should
+     * not be able to contain s88 sensors. these should only be in the conditions only.").  `MarklinRoute.execRoute` has
+     * no `isFeedback()` branch and no final `else`, so a feedback row sent nothing, logged nothing and was a pure
+     * delay.  The general rule: every kind `canBeACommand` allows must have a branch in `execRoute`, which also catches
+     * adding an `isFeedback` branch without re-enabling the dropdown.
      *
      * MUTATION: make `canBeACommand` return true for FEEDBACK again and this fails, naming it.
      */
     @Test
     public void testEveryKindOfferedAsACommandIsOneExecutionActsOn() throws Exception
     {
-        // The dispatch only, so a mention in a comment or in the s88 TRIGGER machinery - which is a
-        // different thing entirely and does use feedback - cannot be read as a branch.
-        // TO THE END OF THE METHOD, not to the end of the file.
-        //
-        // `substring(from)` took `execRoute` and the 363 lines after it, and one of the predicates the
-        // table below asks about already lives out there - `if (r.isAccessory())`, inside `toCSV`.
-        // Nothing was vacuous, because ACCESSORY is both offered and dispatched; what was wrong is
-        // that the bound the comment claims was not the bound the code took, and the two kinds that
-        // are NOT offered were protected by nothing but their predicate happening to be absent from
-        // unrelated methods.
-        //
-        // Walked on braces, which is what the method's own extent is: SourceOf cuts the declaration to its closing brace.
-        //
-        // Comments stripped, for the reason three findings this round were about: prose that describes
-        // a branch reads exactly like the branch.
+        // The dispatch only, to the end of the method (walked on braces: SourceOf cuts the declaration at its closing
+        // brace), and comments stripped, so a mention in prose or in the s88 TRIGGER machinery cannot read as a branch.
         String dispatch = SourceOf.withoutComments(SourceOf.declaration(
             "private void execRoute(boolean auto, int recursionLimit,"));
 
