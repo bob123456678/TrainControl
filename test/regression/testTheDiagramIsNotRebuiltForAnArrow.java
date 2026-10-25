@@ -22,28 +22,23 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * MT-334 - changing one pathing arrow repaints the arrows, not every tile on the page.
  *
- * Adam, 2026-09-08, on the fix that was meant to settle this: *"it still flickers, but less"*, and he
- * confirmed that the whole diagram redraws when a pathing arrow is changed.
+ * Adam, on the fix that was meant to settle this: "it still flickers, but less"; he confirmed the whole diagram redraws
+ * when a pathing arrow is changed.  Less, because only one of five doors had been moved: OB-185 gave the panel a light
+ * redraw door, `annotationsChanged`, which re-sets the annotations on the labels already there, and wired exactly one
+ * caller to it, the One-Way Run tool.  The four doors that change a direction the ordinary way still ended at
+ * `setupChanged`, which runs `LayoutEditor.refreshGrid` and builds every label again:
  *
- * **Less, because only one of five doors had been moved.** OB-185 gave the panel a light redraw door -
- * `annotationsChanged`, which re-sets the annotations on the labels that are already there - and wired
- * exactly one caller to it: the **One-Way Run** tool. The four doors that change a direction the
- * ordinary way still ended at `setupChanged`, which runs `LayoutEditor.refreshGrid` and builds every
- * label on the page again:
- *
- * - `cycle` - LEFT-CLICKING A PIECE OF TRACK, which is the gesture Adam's report names;
+ * - `cycle` - LEFT-CLICKING A PIECE OF TRACK, the gesture Adam's report names;
  * - `applyArmMask` - clicking a switch, a crossing or a double curve, and the Open/Shut arm items;
  * - `setAllBranches` - "All branches: both ways / closed";
  * - `directionItem` - the per-route radio on the right-click menu.
  *
- * Each carries a comment saying why it announces - "directions are edges in the running graph" - and
- * that half is right and is kept: `annotationsChanged` rebuilds the running layout exactly as
- * `setupChanged` does. What it does not do is throw the tiles away and make them again.
+ * Each announces because "directions are edges in the running graph", and `annotationsChanged` rebuilds the running
+ * layout exactly as `setupChanged` does; what it does not do is throw the tiles away and make them again.
  *
- * **Asserted by identity, which is what "the whole diagram redraws" means.** A rebuild replaces every
- * `LayoutLabel` in the grid with a new object; an annotation refresh leaves them where they are and
- * repaints only the ones whose annotation actually differs. So the tiles are collected before the
- * click and after it, and compared as objects.
+ * Asserted by identity: a rebuild replaces every `LayoutLabel` in the grid, an annotation refresh leaves them and
+ * repaints only those whose annotation differs, so the tiles are collected before and after the click and compared as
+ * objects.
  *
  * MUTATION: point any of the four doors back at `setupChanged()` and
  * `testClickingATrackTileKeepsTheTilesItDidNotChange` fails with every label replaced. Make
@@ -82,14 +77,9 @@ public class testTheDiagramIsNotRebuiltForAnArrow
             throw new SkipException("the editor's grid needs a display");
         }
 
-        // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111, and `test/layouts/live-snapshot`).
-        //
-        // The SHAPE is what this class is about, and the shape is the same in both.  Where his trains
-        // are standing, how long they are and which side they came in by are not, and reading those
-        // off the live folder is how `testTheLengthGuardsOnTheRealLayout` came to assert that the
-        // 2-8-4 stood at BottomMainB - it is at BottomMainA now, and that class was red for a reason
-        // that had nothing to do with any guard.  A fixture that moves while nobody is looking makes
-        // every class over it say something different every week.
+        // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111, `test/layouts/live-snapshot`): the SHAPE is what
+        // this class is about; where his trains stand, how long they are and which side they came in by are not, and
+        // reading those off the live folder made a fixture that says something different every week.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
         model = support.TestStation.simulatedInDebug();
@@ -132,9 +122,8 @@ public class testTheDiagramIsNotRebuiltForAnArrow
 
         before = session.getGraph().getDirection(track, route);
 
-        // THE PRODUCTION DOOR: this is what LayoutEditor.receiveClickEvent calls when a square is
-        // left-clicked in autonomy mode, with no tool selected - which is the gesture Adam's report is
-        // about.
+        // THE PRODUCTION DOOR: what LayoutEditor.receiveClickEvent calls when a square is left-clicked in autonomy
+        // mode, with no tool selected.
         javax.swing.SwingUtilities.invokeAndWait(() ->
             editor.getAutonomyPanel().tileClicked(track, page.getComponent(track.getX(),
                 track.getY()), false));
@@ -206,11 +195,8 @@ public class testTheDiagramIsNotRebuiltForAnArrow
     }
 
     /**
-     * CONTROL - a change that really does alter the tile art still rebuilds the grid.
-     *
-     * The wrong fix is "never rebuild", which would leave a caption drawn on a square it had been
-     * moved off. A caption is part of the tile art, so its door is the heavy one and has to stay
-     * heavy.
+     * CONTROL - a change that really does alter the tile art still rebuilds the grid: the wrong fix is "never rebuild",
+     * which would leave a caption drawn on a square it had been moved off, so its door has to stay heavy.
      */
     @Test(dependsOnMethods = {"testClickingATrackTileKeepsTheTilesItDidNotChange", "testTheClickStillChangesTheArrow"})
     public void testMovingACaptionStillRebuildsTheGrid() throws Exception
@@ -270,9 +256,6 @@ public class testTheDiagramIsNotRebuiltForAnArrow
 
     /**
      * A square carrying one run of track and nothing autonomy ignores - what a left-click cycles.
-     *
-     * @param page the diagram
-     * @return the square, or null when the page has none
      */
     private static TileKey plainTrackOn(LayoutDiagram page)
     {
@@ -325,15 +308,9 @@ public class testTheDiagramIsNotRebuiltForAnArrow
     }
 
     /**
-     * Every tile the editor is drawing, in the order the container holds them.
-     *
-     * The spacers are left out: LayoutGrid puts an empty label along its last row and column, they are
-     * on no square, and a rebuild replaces them like everything else - so they would answer the
-     * question without being part of it.
-     *
-     * @param window the editor
-     * @return the labels
-     * @throws Exception on an event-thread failure
+     * Every tile the editor is drawing, in the order the container holds them.  The spacers are left out: LayoutGrid
+     * puts an empty label along its last row and column, on no square, and a rebuild replaces them like everything
+     * else.
      */
     private static List<LayoutLabel> tilesOf(final LayoutEditor window) throws Exception
     {
