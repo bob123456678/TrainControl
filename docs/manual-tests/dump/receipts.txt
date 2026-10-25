@@ -3994,3 +3994,11 @@ kind: bug
 what: The Track Directions dropdown keeps the Station Labels dropdown's width in every language, and its list shows long phrases in full (`d84b9ea5`).
 state: -
 became: MT-805
+
+[receipt OB-369]
+seq: 499
+filed: 2026-10-24
+kind: bug
+what: Fixed in 4b013b52 on Adam's choice (a), docs only: AutomationAPI.md's sample and FullAutonomyExample set each train's preferred speed and call setLocomotivesToRun and runLocomotives(), as test/examples/RunTrainsOnAGraph does; core.testTheApiExamplesRun runs that pattern.
+state: fixed validated
+became: -

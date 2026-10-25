@@ -838,7 +838,7 @@ text:
 
 [issue OB-369]
 ordinal: 39
-inbox: yes
+inbox: no
 kind: bug
 title: for 3.0.3: the Java API sample in AutomationAPI.md (and FullAutonomyExample) starts no trains
 filed: 2026-10-24
