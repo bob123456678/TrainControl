@@ -3138,8 +3138,8 @@ public class AutonomyCompanionStore
 
         // Keyed by the collection's file name, which is what restorePage asks for.  A collection with nothing to snapshot
         // (`excludedPages`, whose exclusion is not part of the page's contents) simply puts null, and restorePage does
-        // nothing with it.  The lists are COPIED, not shared: forgetSquares writes into the two that hold LISTS in place,
-        // so a shared list would be emptied in the snapshot too and undo would restore the deletion.
+        // nothing with it.  The lists are COPIED, not shared: a list edited in place would change the snapshot too, and
+        // undo would restore the deletion.
         for (Kept k : kept()) out.put(k.json, k.snapshotOf(page));
 
         // The configurations key by tile too, and that is where the facings, the placements, the homes and the maximum
@@ -3815,61 +3815,17 @@ public class AutonomyCompanionStore
         // THE ENTRY GUARD'S SIGNAL SQUARES TOO (FR-096), on the protecting list's rule below and for its reason: a
         // pairing to a square that has gone would be inherited by whatever is drawn there next, and this list
         // commands real hardware as well.
-        for (java.util.Iterator<Map.Entry<TileKey, List<TileKey>>> pairs
-            = entrySignals.entrySet().iterator(); pairs.hasNext();)
-        {
-            Map.Entry<TileKey, List<TileKey>> pair = pairs.next();
+        dropPointers(entrySignals, signal -> !keys.contains(signal),
+            signal -> report.droppedTileProperties.add("entry guard signal at " + signal));
 
-            List<TileKey> kept = new ArrayList<>();
-
-            for (TileKey signal : pair.getValue())
-            {
-                if (keys.contains(signal)) kept.add(signal);
-                else report.droppedTileProperties.add("entry guard signal at " + signal);
-            }
-
-            if (kept.isEmpty()) pairs.remove();
-            else pair.setValue(kept);
-        }
-
-        for (java.util.Iterator<Map.Entry<TileKey, List<TileKey>>> pairs
-            = stationSignals.entrySet().iterator(); pairs.hasNext();)
-        {
-            Map.Entry<TileKey, List<TileKey>> pair = pairs.next();
-
-            // A NEW list rather than removing from the one held: a page snapshot may be holding it for
-            // the editor's undo, and editing it in place is how undo came to restore the deletion.
-            List<TileKey> kept = new ArrayList<>();
-
-            for (TileKey signal : pair.getValue())
-            {
-                if (keys.contains(signal)) kept.add(signal);
-                else report.droppedTileProperties.add("protecting signal at " + signal);
-            }
-
-            if (kept.isEmpty()) pairs.remove();
-            else pair.setValue(kept);
-        }
+        dropPointers(stationSignals, signal -> !keys.contains(signal),
+            signal -> report.droppedTileProperties.add("protecting signal at " + signal));
 
         // And the squares a station is held back by, on the same rule and for the same reason: a
         // restriction watching a square that no longer exists cannot be satisfied, and would be
         // INHERITED by whatever is drawn there next.
-        for (java.util.Iterator<Map.Entry<TileKey, List<TileKey>>> pairs
-            = blockedPoints.entrySet().iterator(); pairs.hasNext();)
-        {
-            Map.Entry<TileKey, List<TileKey>> pair = pairs.next();
-
-            List<TileKey> kept = new ArrayList<>();
-
-            for (TileKey blocker : pair.getValue())
-            {
-                if (keys.contains(blocker)) kept.add(blocker);
-                else report.droppedTileProperties.add("restriction watching " + blocker);
-            }
-
-            if (kept.isEmpty()) pairs.remove();
-            else pair.setValue(kept);
-        }
+        dropPointers(blockedPoints, blocker -> !keys.contains(blocker),
+            blocker -> report.droppedTileProperties.add("restriction watching " + blocker));
 
         // linkNames and disabledPortals.  Both are remembered BY SQUARE, so a name and a switched-off flag for
         // track that no longer exists would sit in the file indefinitely and be INHERITED by the next link drawn on that
@@ -4696,10 +4652,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * A square to a list of squares: the signals protecting a station, the squares holding it back.
-     *
-     * The value is a live list, which makes the snapshot different from every other one: `forgetSquares` calls removeAll on
-     * those lists in place, so a shared snapshot would be emptied by the very deletion it was taken to undo.
+     * A square to a list of squares: the signals protecting a station, the squares holding it back.  The snapshot copies
+     * the lists, so nothing that edits one in place can reach an undo.
      */
     private class ListMapKept extends Kept
     {
@@ -4739,21 +4693,7 @@ public class AutonomyCompanionStore
             for (TileKey key : squares) any |= map.remove(key) != null;
 
             // A pointer at track that has been built over is one nothing can satisfy or clear.
-            for (java.util.Iterator<Map.Entry<TileKey, List<TileKey>>> pairs
-                = map.entrySet().iterator(); pairs.hasNext();)
-            {
-                Map.Entry<TileKey, List<TileKey>> pair = pairs.next();
-
-                any |= pair.getValue().removeAll(squares);
-
-                if (pair.getValue().isEmpty())
-                {
-                    pairs.remove();
-                    any = true;
-                }
-            }
-
-            return any;
+            return dropPointers(map, squares::contains, gone -> { }) | any;
         }
 
         // BOTH ends (B5).  A station's protecting signal, and a point that holds a station back,
@@ -5872,6 +5812,43 @@ public class AutonomyCompanionStore
         }
 
         return gone;
+    }
+
+    /**
+     * Drops the pointers at squares that are gone from each list of a square-to-squares collection, and the entries left
+     * with none, telling `dropped` each; true if anything went.  A NEW list each time, never an edit of the one held.
+     */
+    private static boolean dropPointers(Map<TileKey, List<TileKey>> map,
+        java.util.function.Predicate<TileKey> gone, java.util.function.Consumer<TileKey> dropped)
+    {
+        boolean any = false;
+
+        for (java.util.Iterator<Map.Entry<TileKey, List<TileKey>>> pairs
+            = map.entrySet().iterator(); pairs.hasNext();)
+        {
+            Map.Entry<TileKey, List<TileKey>> pair = pairs.next();
+
+            List<TileKey> kept = new ArrayList<>();
+
+            for (TileKey pointer : pair.getValue())
+            {
+                if (!gone.test(pointer)) kept.add(pointer);
+                else
+                {
+                    dropped.accept(pointer);
+                    any = true;
+                }
+            }
+
+            if (kept.isEmpty())
+            {
+                pairs.remove();
+                any = true;
+            }
+            else pair.setValue(kept);
+        }
+
+        return any;
     }
 
     /**
