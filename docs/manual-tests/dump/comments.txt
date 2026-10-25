@@ -3,6 +3,28 @@
 # store (py -3 docs/manual-tests/triagedb.py show MT-123).  Only the Java tests read it, having no SQLite.
 # A record is a [header] line and one field per line; every line of a text field is written behind "| ".
 
+[comment FR-109 0]
+who: Claude
+date: 2026-10-25
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-25.**
+|
+| Moved to 3.0.4 on Adam's word of 2026-10-24 ("will we fold this into the 3.0.4 release?") and 2026-10-25 (the 3.0.4 plan: "the rest of the plan sounds good"); built from exp-post-sonnet with the window kept open.
+|
+
+[comment FR-124 0]
+who: Claude
+date: 2026-10-25
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-25.**
+|
+| Moved to 3.0.4 on Adam's word of 2026-10-25: "Put FR-124 into 3.0.4."
+|
+
 [comment MT-001 0]
 who: Adam
 date: 2026-08-22

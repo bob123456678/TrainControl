@@ -329,7 +329,7 @@ text:
 ordinal: 16
 inbox: yes
 kind: feature request
-title: for 3.1.0: rename, delete and add pages from the layout editor
+title: for 3.0.4: rename, delete and add pages from the layout editor
 filed: 2026-10-04
 filed_at: 2026-10-04
 raised_from: Adam, 2026-10-04 - a request for 3.1.0
@@ -417,7 +417,7 @@ text:
 ordinal: 23
 inbox: yes
 kind: feature request
-title: for 3.1.0: Restore from Backup in the File menu
+title: for 3.0.4: Restore from Backup in the File menu
 filed: 2026-10-11
 filed_at: 2026-10-11
 raised_from: Adam, 2026-10-11
