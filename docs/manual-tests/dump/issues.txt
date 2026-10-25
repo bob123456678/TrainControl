@@ -335,7 +335,7 @@ filed_at: 2026-10-04
 raised_from: Adam, 2026-10-04 - a request for 3.1.0
 build: -
 text:
-| ### FR-109 - 2026-10-04 - for 3.1.0: rename, delete and add pages from the layout editor
+| ### FR-109 - 2026-10-04 - for 3.0.4: rename, delete and add pages from the layout editor
 |
 | **Kind:** feature request  
 | **Raised from:** Adam, 2026-10-04 - a request for 3.1.0  
@@ -423,7 +423,7 @@ filed_at: 2026-10-11
 raised_from: Adam, 2026-10-11
 build: -
 text:
-| ### FR-124 - 2026-10-11 - for 3.1.0: Restore from Backup in the File menu
+| ### FR-124 - 2026-10-11 - for 3.0.4: Restore from Backup in the File menu
 |
 | **Kind:** feature request  
 | **Raised from:** Adam, 2026-10-11  
@@ -585,7 +585,7 @@ filed_at: 2026-10-25 00:09
 raised_from: noticed while testing - not from a particular test
 build: commit 76d7c9f1, in Dansk - build\classes, compiled 24 Oct 23:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
 text:
-| ### FR-145 - 2026-10-25 - easy switching between layouts
+| ### FR-145 - 2026-10-25 - for 3.0.4: easy switching between layouts
 |
 | **Kind:** feature request  
 | **Raised from:** noticed while testing - not from a particular test  
