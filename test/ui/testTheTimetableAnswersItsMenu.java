@@ -117,8 +117,6 @@ public class testTheTimetableAnswersItsMenu
      * Change Delay on an entry, answered with a number of seconds, sets that entry's delay and no other.
      *
      * MUTATION: in `TimetableTab.updateTimetableDelay`, `Long.parseLong(input) * 1000` to `Long.parseLong(input) * 100`.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testChangeDelaySetsTheTypedDelayOnThatEntry() throws Exception
@@ -146,8 +144,6 @@ public class testTheTimetableAnswersItsMenu
      * Delete Entry, answered Yes, takes that entry out of the timetable and off the tab, and leaves the other.
      *
      * MUTATION: in `TimetableTab.deleteTimetableEntry`, take out `layout.removeTimetableEntry(row, (TimetablePath) shown);`.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testDeleteEntryAnsweredYesRemovesThatEntry() throws Exception
@@ -177,8 +173,6 @@ public class testTheTimetableAnswersItsMenu
      *
      * MUTATION: in `TimetableTab.deleteTimetableEntry`, the `if (dialogResult != JOptionPane.YES_OPTION) return;`
      * after the question to `if (false) return;`.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testDeleteEntryAnsweredNoRemovesNothing() throws Exception
@@ -204,8 +198,6 @@ public class testTheTimetableAnswersItsMenu
      * Restart Timetable, answered Yes, marks every entry as not yet run, so the next run starts from the top.
      *
      * MUTATION: in `TimetableTab.restartTimetable`, take out `this.ui.getModel().getAutoLayout().resetTimetable();`.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testRestartTimetableMarksEveryEntryUnrun() throws Exception
@@ -231,8 +223,6 @@ public class testTheTimetableAnswersItsMenu
      * Restart Timetable over a timetable nothing has run yet says it is already reset, and asks nothing.
      *
      * MUTATION: in `TimetableTab.restartTimetable`, `getUnfinishedTimetablePathIndex() == 0` to `== 1`.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testRestartOfAnUnrunTimetableSaysItIsAlreadyReset() throws Exception
@@ -255,11 +245,9 @@ public class testTheTimetableAnswersItsMenu
     /**
      * Clear Timetable, answered Yes, empties the timetable, the tab, and the timetable saved in the layout's setup.
      *
-     * MUTATION: in `TimetableTab.clearTimetable`, `keeping.clearTheTimetable();` to `if (false) keeping.clearTheTimetable();` (taking
-     * the call out altogether does not compile: the `catch` after it names an exception nothing then throws).  The saved-setup assertion
-     * fails; verified red on 2026-10-19.
-     *
-     * @throws Exception from the event thread
+     * MUTATION: in `TimetableTab.clearTimetable`, `keeping.clearTheTimetable();` to `if (false)
+     * keeping.clearTheTimetable();` (taking the call out altogether does not compile: the `catch` after it names an
+     * exception nothing then throws).
      */
     @Test
     public void testClearTimetableAnsweredYesEmptiesItAndTheSavedSetup() throws Exception
@@ -291,8 +279,6 @@ public class testTheTimetableAnswersItsMenu
      *
      * MUTATION: in `TimetableTab.clearTimetable`, the `if (dialogResult != JOptionPane.YES_OPTION) return;` after the
      * question to `if (false) return;`.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testClearTimetableAnsweredNoChangesNothing() throws Exception
@@ -319,8 +305,6 @@ public class testTheTimetableAnswersItsMenu
      *
      * MUTATION: in `TrainControlUI.executeTimetableActionPerformed`, take out the `this.executeTimetable.setEnabled(true);`
      * after the no-entries message.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testExecuteTimetableWithNoEntriesSaysSo() throws Exception
@@ -351,8 +335,6 @@ public class testTheTimetableAnswersItsMenu
      * put it, and starts nothing.
      *
      * MUTATION: in `TrainControlUI.executeTimetableActionPerformed`, `if (notThere != null)` to `if (false)`.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testExecuteTimetableWithATrainAwayFromItsStartSaysWhereItMustGo() throws Exception
@@ -405,8 +387,6 @@ public class testTheTimetableAnswersItsMenu
      *
      * MUTATION: in `Layout`, where an edge's accessories are configured, `commanded = acc.setState(state);` to
      * `commanded = true;`.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testExecuteTimetableSetsTheSwitchesOnItsWay() throws Exception
@@ -430,8 +410,6 @@ public class testTheTimetableAnswersItsMenu
      * it ended.
      *
      * MUTATION: in `Layout.executePath`, take out `loc.incrementNumPaths();`.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testExecuteTimetableCountsTheJourneyInTheStatistics() throws Exception
@@ -449,11 +427,8 @@ public class testTheTimetableAnswersItsMenu
     }
 
     /**
-     * Puts the train on the platform, makes its timetable one journey from there to the far station, sets every
-     * accessory on the way the other way round, and presses Execute Timetable; waits for the run to end.
-     *
-     * @return the journey's path
-     * @throws Exception from the event thread
+     * Puts the train on the platform, makes its timetable one journey to the far station, sets every accessory on the
+     * way the other way round, and presses Execute Timetable.
      */
     private static List<Edge> runFromThePlatform() throws Exception
     {
@@ -527,14 +502,8 @@ public class testTheTimetableAnswersItsMenu
     }
 
     /**
-     * Gives the railway a timetable of two journeys of this class's train, and waits for the tab to show them.
-     *
-     * The tab redraws when the railway says a journey started or ended, which a timetable set from here does not;
-     * so its redraw is asked for directly, as setup and not as anything under test.
-     *
-     * @param run whether the entries are marked as already run
-     * @return the entries, in order
-     * @throws Exception from the redraw
+     * Gives the railway a timetable of two journeys of this class's train and waits for the tab to show them; the tab's
+     * redraw is asked for directly, as setup.
      */
     private static List<TimetablePath> twoEntries(boolean run) throws Exception
     {
@@ -589,9 +558,7 @@ public class testTheTimetableAnswersItsMenu
         return Components.onTheEventThread(() -> timetableTable().getRowCount());
     }
 
-    /**
-     * Right-clicks a row of the timetable, with its tab in front, and gives back the menu that opened.
-     */
+    /** Right-clicks a row of the timetable, with its tab in front, and gives back the menu that opened. */
     private static JPopupMenu onRow(int row) throws Exception
     {
         final JTable table = timetableTable();
