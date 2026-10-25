@@ -112,8 +112,6 @@ public class testTheGraphIsToldWhenARunEnds
      *
      * MUTATION: remove `announceRunFinished()` from the end of `executeTimetableInternal` and this fails, reporting
      * that nothing was announced with the railway idle. Moving it above the completion wait fails it too.
-     *
-     * @throws Exception on a failure to build the fixture
      */
     @Test(timeOut = 120000)
     public void testATimetableRunAnnouncesOnceTheRailwayIsIdle() throws Exception
@@ -206,8 +204,6 @@ public class testTheGraphIsToldWhenARunEnds
      * MUTATION: removing `announceRunFinished()` from `executePath`'s `finally` leaves announcements from the path's
      * own start, milestone and end, all made while the dispatching thread is still counted, and none with the railway
      * idle.
-     *
-     * @throws Exception on a failure to run the fixture
      */
     @Test(timeOut = 120000)
     public void testAHandDispatchTellsTheGraphWhenItsJourneyEnds() throws Exception
@@ -321,8 +317,6 @@ public class testTheGraphIsToldWhenARunEnds
      * satisfies is not one.
      *
      * MUTATION: delete `updateVisiblePoints()` from the runnable and this fails.
-     *
-     * @throws Exception on a failure to read the source
      */
     @Test
     public void testTheWindowsOneRefreshTellsTheGraph() throws Exception
