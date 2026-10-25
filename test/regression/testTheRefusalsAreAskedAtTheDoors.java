@@ -10,48 +10,26 @@ import org.testng.annotations.Test;
 import support.SourceOf;
 
 /**
- * Every door that changes the railway asks whether it may.
+ * Every door that changes the railway asks whether it may (`behaviour.md` section 6a: *"The refusal has to be in the
+ * method."*): Execute Timetable and Return Home must not start trains under an open editor, and switching layouts or
+ * swapping the layout folder must not replace the diagram during a run.
  *
- * `refuseWhileEditorOpen` and `refuseWhileAutonomyRunning` had no test of any kind. Both were
- * made to permit everything and fourteen classes stayed green - including `testEditorSurfaceRules`,
- * the 56-test class that exists for this surface and which asserts about `isLayoutEditorOpen()`'s
- * implementation and about nothing that calls it.
+ * This pins the half that goes wrong: a door that forgets to ask. It does NOT pin the two guards' own bodies, which are
+ * a dialog over a predicate: `refuseWhileAutonomyRunning` is `model.isAutonomyRunning()`, asserted behaviorally by
+ * `core.testHomeStaging` and `regression.testARouteDoesNotThrowSwitchesUnderATrain`; `refuseWhileEditorOpen` is
+ * `isLayoutEditorOpen()`, pinned by shape in `testEditorSurfaceRules`. A behavioral test of the refusals would have to
+ * raise the modal dialog each one shows, and a modal dialog inside a battery strands a runner.
  *
- * **What they stand in front of.** `behaviour.md` section 6a: *"Nothing that changes the shape of the
- * graph may run while trains are moving or a plan is being made ... The greying on the menu is not this
- * guard. Menu items are greyed when the popup OPENS and the action fires when it is CLICKED ... The
- * refusal has to be in the method."* The commit that added them (`38ccbfc8`) names what happened
- * without them: Execute Timetable and Return Home started trains under an open editor; switching to the
- * CS layout and swapping the layout folder replace the whole diagram, and during a run the diagram
- * goes, `resetAutonomySession` skips its capture BECAUSE trains are running, the stop controls are
- * removed from the window, and `Layout.runLocomotives` keeps driving.
- *
- * **What this pins, and what it does not.** It pins the half that actually goes wrong: a door that
- * forgets to ask. That is how two of these doors came to have no check at all, and it is what the
- * collecting of the longhand checks into two methods was meant to make hard.
- *
- * It does NOT pin the two guards' own bodies, which are a dialog over a predicate:
- * `refuseWhileAutonomyRunning` is `model.isAutonomyRunning()`, asserted behaviorally by
- * `core.testHomeStaging` (both halves, including staging) and `regression.testARouteDoesNotThrowSwitchesUnderATrain`;
- * `refuseWhileEditorOpen` is `isLayoutEditorOpen()`, which `testEditorSurfaceRules:3246` pins by shape.
- * A behavioral test of the refusals themselves would have to raise the modal dialog each one shows,
- * and a modal dialog inside a battery is how `testTheCeilingIsAskedAboutTheAmount` stranded a runner
- * for ten minutes on 2026-09-09. Said here rather than implied, so nobody reads this class as more
- * than it is.
- *
- * MUTATION: delete the `refusedToSendATrain(` call from `requestReturnToHome` - the door
- * `38ccbfc8` was filed for - and the first test fails, naming it.
+ * MUTATION: delete the `refusedToSendATrain(` call from `requestReturnToHome` and the first test fails, naming it.
  *
  * @author Adam
  */
 public class testTheRefusalsAreAskedAtTheDoors
 {
     /**
-     * A page name cannot take another page's file.
-     *
-     * A page lives in its sanitized name plus `.cs2`, so a name differing from another's only in case - which Windows does
-     * not tell apart - or only in a character a file name cannot hold is that page's file, and writing it replaced the
-     * other page.  Asked of `LayoutPageEdit.pageUsingTheFileOf`, the one question every page door asks.
+     * A page name cannot take another page's file: a page lives in its sanitized name plus `.cs2`, so a name differing
+     * from another's only in case (which Windows does not tell apart) or in a character a file name cannot hold is that
+     * page's file. Asked of `LayoutPageEdit.pageUsingTheFileOf`, the one question every page door asks.
      *
      * MUTATION: compare the names in their case again, or unsanitized, and this fails.
      */
@@ -81,8 +59,6 @@ public class testTheRefusalsAreAskedAtTheDoors
      * method, Duplicate's own choice of name, and Combine Linked Pages.
      *
      * MUTATION: take the question out of any of the three, and this fails, naming it.
-     *
-     * @throws Exception on a failure to read the source
      */
     @Test
     public void testEveryPageDoorAsksWhoseFileTheNameIs() throws Exception
@@ -99,12 +75,10 @@ public class testTheRefusalsAreAskedAtTheDoors
     }
 
     /**
-     * The hand door sends its train as a hand send: `sendATrainByHand` - the track diagram's and the Auto tab's -
-     * through `executePathByHand`, which the cap on trains out does not count or refuse.
+     * The hand door (`sendATrainByHand`, the track diagram's and the Auto tab's) sends through `executePathByHand`,
+     * which the cap on trains out does not count or refuse.
      *
      * MUTATION: send through plain executePath again, and this fails.
-     *
-     * @throws Exception on a failure to read the source
      */
     @Test
     public void testTheHandDoorSendsAsAHandSend() throws Exception
@@ -125,22 +99,18 @@ public class testTheRefusalsAreAskedAtTheDoors
     private static final String SETUP = "refuseWhileARunHoldsTheSetup(";
 
     /**
-     * The one gate every door that sends a train asks since 2026-09-29 (Adam: *"can all the checks go through a single
-     * door?"*) - the editor, the setup and the power, in `whyNoTrainMayBeSent`.
+     * The one gate every door that sends a train asks: the editor, the setup and the power, in `whyNoTrainMayBeSent`.
      */
     private static final String GATE = "refusedToSendATrain(";
 
     /**
-     * Every door, the refusal it must ask for, and why that door needs it.  A door is named by the start of its
-     * declaration, found wherever the program keeps it.
-     *
-     * A named list rather than a count, following this suite's convention: a count says something is
-     * wrong and a list says what. Adding a door means adding a line here with its reason, which is the
-     * moment to notice that a door needs a guard at all.
+     * Every door, the refusal it must ask for, and why. A door is named by the start of its declaration, found wherever
+     * the program keeps it. A named list rather than a count: adding a door means adding a line with its reason, the
+     * moment to notice that it needs a guard.
      */
     private static final String[][] DOORS =
     {
-        // THE FOUR 38ccbfc8 WAS FILED FOR.
+        // The four doors `38ccbfc8` was filed for.
         {"private void executeTimetableActionPerformed(", GATE,
             "a timetable starts trains, and an editor holds the diagram they would run on"},
         {"    void requestReturnToHome(", GATE,
@@ -157,7 +127,7 @@ public class testTheRefusalsAreAskedAtTheDoors
         {"    void initializeLocalLayoutMenuItemActionPerformed(", SETUP,
             "Create New Layout switches the layout folder, syncs with the Central Station and resets autonomy (RSA13-B2)"},
 
-        // AND THE REST, which were longhand at four doors before the two methods collected them.
+        // And the rest, which were longhand at four doors before the two methods collected them.
         {"private void startAutonomyActionPerformed(", GATE,
             "starting autonomy against a diagram somebody is still editing"},
         {"void sendATrainByHand(", GATE,
@@ -185,10 +155,9 @@ public class testTheRefusalsAreAskedAtTheDoors
             + "refusal posts its dialog rather than showing it"},
         {"public void doSync(", AUTONOMY,
             "a Central Station sync replaces the databases underneath a running railway"},
-        // NOT the excluded-page label (`openAutonomyEditorIfItCan`): it opens the editor, and opening
-        // with an editor already open is not refused anywhere - `openLayoutEditor` brings that window forward, which
-        // is what the Edit item it stands for does (`whyAutonomyEditorCannotOpen` returns null for an open editor).
-        // Asking the refusal first showed "Close the editor first" in exactly the state the Edit item handles.
+        // Not the excluded-page label (`openAutonomyEditorIfItCan`): opening with an editor already open is not refused
+        // anywhere, `openLayoutEditor` brings that window forward as the Edit item does, and asking the refusal first
+        // would show "Close the editor first" in exactly the state that item handles.
         {"public void refreshAutonomyPrompt(", EDITOR,
             "the banner is a single button drawn before the state it guards against is entered, so it "
             + "cannot grey itself the way the menu does - its Load button asks (loading saves the setup "
@@ -199,8 +168,8 @@ public class testTheRefusalsAreAskedAtTheDoors
     /**
      * Each door still asks.
      *
-     * MUTATION: make the window's `initializeLocalLayoutMenuItemActionPerformed` do the work itself instead of handing to
-     * `layoutFileActions`, and this fails.
+     * MUTATION: make the window's `initializeLocalLayoutMenuItemActionPerformed` do the work itself instead of handing
+     * to `layoutFileActions`, and this fails.
      */
     @Test
     public void testEveryDoorStillAsksBeforeItActs() throws Exception
@@ -209,8 +178,8 @@ public class testTheRefusalsAreAskedAtTheDoors
 
         for (String[] door : DOORS)
         {
-            // A door this list cannot find fails by itself, naming it: renamed, rename it here too; removed, remove
-            // its line.
+            // A door this list cannot find fails by itself, naming it: renamed, rename it here too; removed, remove its
+            // line.
             String body = code(door[0]);
 
             for (String needed : door[1].split("\\|"))
@@ -222,8 +191,8 @@ public class testTheRefusalsAreAskedAtTheDoors
             }
         }
 
-        // The window's own one-line handler for Create New Layout hands to the door above (FR-136).  A handler that
-        // does the work itself would act without the refusal, and the list above would still read the clean copy.
+        // The window's one-line handler for Create New Layout hands to the door above (FR-136); a handler that did the
+        // work itself would act without the refusal while the list read the clean copy.
         String handler = code("private void initializeLocalLayoutMenuItemActionPerformed(");
 
         if (!handler.contains("layoutFileActions.initializeLocalLayoutMenuItemActionPerformed()"))
@@ -240,15 +209,13 @@ public class testTheRefusalsAreAskedAtTheDoors
     }
 
     /**
-     * The one gate asks what every door that sends a train used to ask for itself: the editor, the setup and the power
-     * (Adam, 2026-09-29) - and the hand doors in the other two files send through the one door that asks it.  The
-     * editor is asked as one open OR on its way: Edit Layout posts the editor's build, and a send queued ahead
-     * of that build would otherwise find no editor and run under it.
+     * The one gate asks what every door that sends a train used to ask for itself: the editor, the setup and the power,
+     * and the hand doors in the other two files send through the one door that asks it. The editor is asked as one open
+     * OR on its way: Edit Layout posts the editor's build, and a send queued ahead of it would otherwise find no editor
+     * and run under it.
      *
-     * MUTATION: take any of the three out of `whyNoTrainMayBeSent`, or send from a hand door past the one door, and this
-     * fails.
-     *
-     * @throws Exception on a failure to read the source
+     * MUTATION: take any of the three out of `whyNoTrainMayBeSent`, or send from a hand door past the one door, and
+     * this fails.
      */
     @Test
     public void testTheOneGateAsksTheEditorTheSetupAndThePower() throws Exception
@@ -281,17 +248,12 @@ public class testTheRefusalsAreAskedAtTheDoors
     }
 
     /**
-     * The two locomotive doors that ask a modal question ask again after it, before they write.
-     *
-     * `refuseWhileARouteDrivesIt` is asked as each door opens, and the edit dialog and the delete confirmation then wait
-     * for as long as somebody takes - long enough for an s88 trigger to start a route that drives the locomotive.  The
-     * Central Station's name proposal and the multi-unit dialog already ask again after theirs; renaming or
-     * re-addressing, and deleting, asked only first and then wrote.  Read from the source, as this class reads its other
-     * doors: a behavioral test would have to hold a modal dialog open while a route starts.
+     * The two locomotive doors that ask a modal question ask again after it, before they write:
+     * `refuseWhileARouteDrivesIt` is asked as each door opens, and the edit dialog and delete confirmation then wait
+     * long enough for an s88 trigger to start a route that drives the locomotive. Read from the source, as the other
+     * doors are: a behavioral test would have to hold a modal dialog open while a route starts.
      *
      * MUTATION: take the second `refuseWhileARouteDrivesIt` out of either door, and this fails naming it.
-     *
-     * @throws Exception on a failure to read the source
      */
     @Test
     public void testTheRouteRefusalIsAskedAgainAfterTheDialog() throws Exception
@@ -327,7 +289,7 @@ public class testTheRefusalsAreAskedAtTheDoors
 
             assertTrue(dialog >= 0, "precondition: " + door[0] + " no longer asks its question before it writes");
 
-            // THE LAST TIME IT ASKS BEFORE IT WRITES, which has to be after the question
+            // The last time it asks before it writes, which has to be after the question
             int asked = body.lastIndexOf("refuseWhileARouteDrivesIt(", firstWrite);
 
             if (asked < dialog) wrong.add(door[1] + " (" + door[0] + ")");
@@ -341,9 +303,6 @@ public class testTheRefusalsAreAskedAtTheDoors
     /**
      * A declaration's code, found wherever the program keeps it, with its comments blanked: a comment mentioning a
      * refusal is not a door asking for it.
-     *
-     * @param signature enough of the declaration to name it once
-     * @return the declaration, braces included
      */
     private static String code(String signature)
     {
@@ -351,15 +310,9 @@ public class testTheRefusalsAreAskedAtTheDoors
     }
 
     /**
-     * And no door has quietly appeared that asks nothing.
-     *
-     * **A ratchet, and it runs LAST on purpose**: a staleness detector that pre-empts a
-     * safety check is worse than no ratchet, and this file's sibling
-     * `testSwitchingToACentralStationLayout` spent a day proving it - a stale count there kept the
-     * assertion protecting Adam's railway from executing at all. So the claim above is a separate test
-     * method, and this one only counts.
-     *
-     * The count is of CALL SITES, not doors: several doors ask both refusals.
+     * And no door has quietly appeared that asks nothing. A ratchet that runs LAST on purpose: a stale count that
+     * pre-empts a safety check is worse than no ratchet, so the claim above is a separate test method and this one only
+     * counts CALL SITES, not doors (several doors ask both refusals).
      */
     @Test
     public void testTheListOfDoorsIsStillComplete() throws Exception
@@ -367,18 +320,13 @@ public class testTheRefusalsAreAskedAtTheDoors
         // Over the whole program's code.
         String source = SourceOf.allCode();
 
-        // One of each occurrence is the declaration of the method itself; `refuseWhileAutonomyRunning` has two more, the
-        // window's delegator handing to `RunGates`' declaration.
+        // One of each occurrence is the declaration of the method itself; `refuseWhileAutonomyRunning` has two more,
+        // the window's delegator handing to `RunGates`' declaration.
         int asked = occurrences(source, EDITOR) - 1 + occurrences(source, AUTONOMY) - 3 + occurrences(source, GATE) - 1;
 
-        // COUNTED INSIDE THE DECLARED DOORS, not from the list's own arithmetic.
-        //
-        // The first version added up the list instead, and two errors then canceled: a door was
-        // declared that never asked at all - `putThePendingTurnsBack`, where the name appears in a
-        // COMMENT explaining why another door's guard makes something safe - while
-        // `refreshAutonomyPrompt` asked twice and was counted once. The totals matched and the check
-        // passed. Reading the bodies cannot cancel that way: a door that does not ask contributes
-        // nothing and the test above names it, and a door that asks twice contributes two.
+        // Counted inside the declared doors, not from the list's own arithmetic: two errors can cancel in a total (a
+        // door that never asked, one that asked twice), while reading the bodies names a door that does not ask and
+        // counts a door that asks twice as two.
         int inDeclaredDoors = 0;
 
         for (String[] door : DOORS)
@@ -396,35 +344,24 @@ public class testTheRefusalsAreAskedAtTheDoors
     }
 
     /**
-     * Every door that puts a train down uses the railway's answer.
+     * Every door that puts a train down uses the railway's answer (`behaviour.md` section 4: *"nothing about a
+     * placement is recorded until the railway has accepted it"*). `Layout.moveLocomotive` returns false rather than
+     * throwing when it refuses, and a door that discarded that answer wrote the placement into the setup AND SAVED it,
+     * so the next build emitted the train on a square it was never put on.
      *
-     * `behaviour.md` section 4 states this as a rule - *"nothing about a placement is recorded until
-     * the railway has accepted it"* - and the coverage pass of 2026-09-11 found nothing holding it.
-     *
-     * **What it was.** `Layout.moveLocomotive` refuses in four cases - autonomy is running, the
-     * locomotive is unknown, the point is unknown, the target is not a destination - and returns false
-     * rather than throwing. The diagram's menu discarded that answer, so the placement and the facing
-     * were written into the setup AND SAVED for a move the railway had just declined. The setup is the
-     * half that survives a restart, so the next build emitted the train on a square it was never put
-     * on.
-     *
-     * **A named list, and every door on it guards** - which is the point of writing them down rather
-     * than counting.  `GraphLocAssign.commitChanges` used to be allowed to discard the answer, because
-     * `commitAndRecord` asks the POINT what is standing there afterwards and so records no placement
-     * for a refused move.  That kept the setup honest and not the locomotive: the dialog's length,
-     * speed and functions were written to a train the railway had just refused to place.
+     * A named list, and every door on it guards: `GraphLocAssign.commitChanges` was once allowed to discard the answer
+     * because `commitAndRecord` records no placement for a refused move, but that kept the setup honest and not the
+     * locomotive: the dialog's length, speed and functions were written to a train the railway had refused to place.
      *
      * MUTATION: drop the `if (!` from any of the three doors, and this names it.
      */
     @Test
     public void testEveryPlacementDoorUsesTheRailwaysAnswer() throws Exception
     {
-        // The doors, for the report: the diagram menu's Place and Remove items, the
-        // diagram's paste door (which discarded the refusal AND cleared the clipboard, so a train cut with
-        // Control+X was on no square and on no clipboard), and the assign dialog (where a refused placement
-        // still wrote the train's length, speed and functions).  Asked of the whole program, so a door that moves to
-        // another file is still counted: outside the model's own calls, five answers are tested today - two in the
-        // menu, one in the dialog, and the paste and the rebuild's put-back in the window.
+        // The doors, for the report: the diagram menu's Place and Remove items, the diagram's paste door (a refusal
+        // that also cleared the clipboard left a train cut with Control+X on no square and on no clipboard), and the
+        // assign dialog. Asked of the whole program, so a door that moves to another file is still counted: five
+        // answers are tested today.
         List<String> wrong = new ArrayList<>();
 
         String source = SourceOf.allCode();
@@ -445,8 +382,8 @@ public class testTheRefusalsAreAskedAtTheDoors
                 + " dialog's one and the window's paste and put-back made five");
         }
 
-        // AND EACH OF THE FIVE STILL DOES, door by door (FR-136): a total holds when one door drops its guard and a
-        // guarded call is added somewhere else in the same change.
+        // And each of the five still does, door by door (FR-136): a total holds when one door drops its guard and a
+        // guarded call is added elsewhere in the same change.
         final String[][] doors =
         {
             {"private void placeFacing(String locName, String pointName,", "the diagram menu's Place"},
@@ -474,29 +411,24 @@ public class testTheRefusalsAreAskedAtTheDoors
     }
 
     /**
-     * Every placement door asks which headings a train can LEAVE by, not which it may arrive in (OB-284).
-     *
-     * Adam, 2026-09-24: *"this should check for barred departure directions, not arrival ones."*  The rule is claimed in
-     * `core.testATrainIsPutOnlyWhereItCanStart`; this is its four call sites - the extracted rule moves the bug to the
-     * call.
+     * Every placement door asks which headings a train can LEAVE by, not which it may arrive in (OB-284). The rule is
+     * claimed in `core.testATrainIsPutOnlyWhereItCanStart`; this is its four call sites.
      *
      * MUTATION: have any door filter by `placeableFacingsFor` again, and this fails.
-     *
-     * @throws Exception reading the sources
      */
     @Test
     public void testThePlacementDoorsKeepAHeadingATrainCanLeaveBy() throws Exception
     {
         // Asked of the whole program, so a door that moves is still counted: `placeableFacingsFor` is named by its
-        // declaration and by the one use inside the session, and by no door; `departableFacingsFor` is named by its
-        // declaration and by the six places the four doors ask it.
+        // declaration and the one use inside the session, and by no door; `departableFacingsFor` by its declaration and
+        // the six places the four doors ask it.
         assertEquals(SourceOf.occurrences("placeableFacingsFor("), 2, "a door chooses a placed train's heading among"
             + " the ways trains may arrive in, which turns round a train that can leave the way it faces (OB-284)");
         assertTrue(SourceOf.occurrences("departableFacingsFor(") >= 7, "a door no longer asks which headings a train can"
             + " leave by (OB-284)");
 
-        // AND EACH PLACE STILL ASKS IT (FR-136): a total of seven holds when one door stops asking and another call
-        // is added somewhere else, so the places are named with the calls each makes - six, beside the declaration.
+        // And each place still asks it (FR-136): a total of seven holds when one door stops asking and another call is
+        // added elsewhere, so the places are named with the calls each makes.
         final Object[][] places =
         {
             {"    void placeLocomotive(TileKey tile)", 1},
@@ -516,18 +448,12 @@ public class testTheRefusalsAreAskedAtTheDoors
     }
 
     /**
-     * Only the rebuild's put-back and the three doors that keep a heading a train can leave by stand a train on a copy of
-     * a station trains may not arrive at (OB-284, OB-296).
-     *
-     * `moveLocomotive`'s four-argument form accepts such a copy when its last argument is true, and the guard above
-     * counts calls without reading their arguments - a door passing `true` would still read as refusing.  A placement
-     * the put-back is the railway saying where a train already is; the paste, the Place Locomotive dialog and the
-     * diagram's right-click Place keep a train's heading where it can leave by it (OB-284, OB-296).  Any other
-     * door passing `true` is a new decision.
+     * Only the rebuild's put-back and the three doors that keep a heading a train can leave by stand a train on a copy
+     * of a station trains may not arrive at (OB-284, OB-296). `moveLocomotive`'s four-argument form accepts such a copy
+     * when its last argument is true, and the guard above counts calls without reading their arguments, so a door
+     * passing `true` would still read as refusing. Any other door passing `true` is a new decision.
      *
      * MUTATION: pass true from any door but these four - the editor's Place, say - and this fails.
-     *
-     * @throws Exception reading the sources
      */
     @Test
     public void testOnlyThePutBackAcceptsABarredCopy() throws Exception
@@ -558,8 +484,8 @@ public class testTheRefusalsAreAskedAtTheDoors
                     }
                 }
 
-                // THE FIVE-ARGUMENT FORM TOO (round 35): its fourth argument is the barred copy's, as here, and a guard that
-                // counted four arguments alone read every call of it as refusing
+                // The five-argument form too: its fourth argument is the barred copy's, and a guard that counted four
+                // arguments alone read every call of it as refusing.
                 if (commas != 3 && commas != 4) continue;
 
                 String[] args = source.substring(at + "moveLocomotive(".length(), end).split(",");
@@ -587,10 +513,8 @@ public class testTheRefusalsAreAskedAtTheDoors
     }
 
     /**
-     * How many `moveLocomotive` calls in this source have their answer tested.
-     *
-     * Counted rather than pattern-matched on the whole call, because the call spans lines in two of
-     * the three doors and a regex over it would be a second spelling of the shape it is checking.
+     * How many `moveLocomotive` calls in this source have their answer tested; counted rather than pattern-matched on
+     * the whole call, which spans lines in two of the doors.
      */
     private static int countGuarded(String source)
     {
@@ -599,7 +523,7 @@ public class testTheRefusalsAreAskedAtTheDoors
         for (int at = source.indexOf("moveLocomotive("); at >= 0;
              at = source.indexOf("moveLocomotive(", at + 1))
         {
-            // Back to the start of the statement, which is as far as the last brace or semicolon.
+            // Back to the start of the statement: the last brace or semicolon.
             int from = Math.max(Math.max(source.lastIndexOf(';', at), source.lastIndexOf('{', at)),
                 source.lastIndexOf('}', at));
 
@@ -621,13 +545,11 @@ public class testTheRefusalsAreAskedAtTheDoors
     }
 
     /**
-     * The diagram's destination sends on the railway its paths were found on, as the Auto tab's does - so a
-     * railway replaced between the gather and the click would refuse the send at its own fence, rather than the new
-     * railway locking the old one's track and driving the train over rails it does not hold.
+     * The diagram's destination sends on the railway its paths were found on, as the Auto tab's does, so a railway
+     * replaced between the gather and the click refuses the send at its own fence instead of the new railway locking
+     * the old one's track.
      *
      * MUTATION: dispatch the destination on the railway current at the click, and this fails.
-     *
-     * @throws Exception on a failure to read the source
      */
     @Test
     public void testTheDiagramsDestinationSendsOnTheRailwayItsPathsCameFrom() throws Exception
@@ -651,13 +573,11 @@ public class testTheRefusalsAreAskedAtTheDoors
     }
 
     /**
-     * The doors that choose a journey carry the stops counted where it was chosen: Return Home runs
-     * its plan with the count read at the press and refreshes the Auto tab as it starts, a hand send carries the count
-     * read at the click, and autonomy reads it before it chooses.
+     * The doors that choose a journey carry the stops counted where it was chosen: Return Home runs its plan with the
+     * count read at the press and refreshes the Auto tab as it starts, a hand send carries the count read at the click,
+     * and autonomy reads it before it chooses.
      *
      * MUTATION: let any of the three read the count later, or Return Home leave the Auto tab as it was, and this fails.
-     *
-     * @throws Exception on a failure to read the source
      */
     @Test
     public void testTheDoorsCarryTheStopsCountedWhereTheyChose() throws Exception
@@ -692,8 +612,6 @@ public class testTheRefusalsAreAskedAtTheDoors
      * put a train where autonomy cannot start it.
      *
      * MUTATION: pass true from any other door, and this fails.
-     *
-     * @throws Exception reading the sources
      */
     @Test
     public void testOnlyThePutBackStandsATrainOnANonStation() throws Exception
