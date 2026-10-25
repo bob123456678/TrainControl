@@ -119,6 +119,24 @@ public class TileGraph
         }
 
         /**
+         * The square beside this one across a side, on the same page; north is the smaller y.
+         * @param side the side
+         * @return the square beside, or null for no side
+         */
+        public TileKey beside(Side side)
+        {
+            if (side == null) return null;
+
+            switch (side)
+            {
+                case N: return new TileKey(page, x, y - 1);
+                case S: return new TileKey(page, x, y + 1);
+                case E: return new TileKey(page, x + 1, y);
+                default: return new TileKey(page, x - 1, y);
+            }
+        }
+
+        /**
          * The key as stored in the autonomy files: "page:x,y".
          * @return
          */
@@ -1066,7 +1084,7 @@ public class TileGraph
 
             if (toe == null) continue;
 
-            TileKey other = neighbour(entry.getKey(), toe);
+            TileKey other = entry.getKey().beside(toe);
 
             LayoutDiagramComponent there = tiles.get(other);
 
@@ -1161,7 +1179,7 @@ public class TileGraph
             return new Landing(partner, null);
         }
 
-        TileKey neighbourKey = neighbour(tile, exitSide);
+        TileKey neighbourKey = tile.beside(exitSide);
         LayoutDiagramComponent neighbourComponent = tiles.get(neighbourKey);
 
         if (neighbourComponent == null) return null;
@@ -1486,7 +1504,7 @@ public class TileGraph
         {
             for (Side side : new Side[] {route.getA(), route.getB()})
             {
-                if (realTrackOn(tile, side) && !out.contains(neighbour(tile, side))) out.add(neighbour(tile, side));
+                if (realTrackOn(tile, side) && !out.contains(tile.beside(side))) out.add(tile.beside(side));
             }
         }
 
@@ -1509,7 +1527,7 @@ public class TileGraph
 
         for (Side side : Side.values())
         {
-            TileKey neighbourKey = neighbour(tile, side);
+            TileKey neighbourKey = tile.beside(side);
             LayoutDiagramComponent neighbourComponent = tiles.get(neighbourKey);
 
             if (neighbourComponent == null) continue;
@@ -1535,7 +1553,7 @@ public class TileGraph
      */
     private boolean realTrackOn(TileKey tile, Side side)
     {
-        LayoutDiagramComponent neighbourComponent = tiles.get(neighbour(tile, side));
+        LayoutDiagramComponent neighbourComponent = tiles.get(tile.beside(side));
 
         return neighbourComponent != null && !TilePorts.isTransparent(neighbourComponent.getType());
     }
@@ -1574,7 +1592,7 @@ public class TileGraph
 
             for (Side side : facingSides(tile))
             {
-                TileKey neighbourKey = neighbour(tile, side);
+                TileKey neighbourKey = tile.beside(side);
 
                 if (realTrackOn(tile, side))
                 {
@@ -2516,7 +2534,7 @@ public class TileGraph
 
         for (Side side : Side.values())
         {
-            if (other.equals(neighbour(tile, side))) return side;
+            if (other.equals(tile.beside(side))) return side;
         }
 
         // A portal's partner is a neighbour reached through no side at all, so there is no side to
@@ -2886,17 +2904,5 @@ public class TileGraph
         }
 
         return out;
-    }
-
-    private static TileKey neighbour(TileKey tile, Side side)
-    {
-        switch (side)
-        {
-            case N: return new TileKey(tile.getPage(), tile.getX(), tile.getY() - 1);
-            case S: return new TileKey(tile.getPage(), tile.getX(), tile.getY() + 1);
-            case E: return new TileKey(tile.getPage(), tile.getX() + 1, tile.getY());
-            case W: return new TileKey(tile.getPage(), tile.getX() - 1, tile.getY());
-            default: return null;
-        }
     }
 }

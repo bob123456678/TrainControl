@@ -1933,16 +1933,7 @@ public final class LayoutLabel extends JLabel
     public static org.traincontrol.automationui.TileGraph.TileKey besideOn(org.traincontrol.automationui.TileGraph.TileKey square,
         org.traincontrol.automationui.TilePorts.Side side)
     {
-        if (square == null || side == null) return null;
-
-        switch (side)
-        {
-            case N: return new org.traincontrol.automationui.TileGraph.TileKey(square.getPage(), square.getX(), square.getY() - 1);
-            case S: return new org.traincontrol.automationui.TileGraph.TileKey(square.getPage(), square.getX(), square.getY() + 1);
-            case E: return new org.traincontrol.automationui.TileGraph.TileKey(square.getPage(), square.getX() + 1, square.getY());
-            case W: return new org.traincontrol.automationui.TileGraph.TileKey(square.getPage(), square.getX() - 1, square.getY());
-            default: return null;
-        }
+        return square == null ? null : square.beside(side);
     }
 
     /**

@@ -2553,7 +2553,7 @@ public class AutonomySession
 
         for (Side side : sides)
         {
-            TileKey at = neighbour(tile, side);
+            TileKey at = tile.beside(side);
 
             if (!connects(tile, side, at)) continue;
 
@@ -2574,7 +2574,7 @@ public class AutonomySession
         // Then an empty square beside it; nothing is added to the diagram.
         for (Side side : sides)
         {
-            TileKey at = neighbour(tile, side);
+            TileKey at = tile.beside(side);
 
             // Inside what the running diagram draws: getComponent is null off the edge as on a blank square.
             if (!page.isDrawnWhenRunning(at.getX(), at.getY())) continue;
@@ -2661,18 +2661,6 @@ public class AutonomySession
         return vertical
             ? java.util.Arrays.asList(Side.S, Side.N, Side.W, Side.E)
             : java.util.Arrays.asList(Side.W, Side.E, Side.S, Side.N);
-    }
-
-    /** The square on the given side of this one; north is the smaller y. */
-    private TileKey neighbour(TileKey tile, Side side)
-    {
-        switch (side)
-        {
-            case N: return new TileKey(tile.getPage(), tile.getX(), tile.getY() - 1);
-            case S: return new TileKey(tile.getPage(), tile.getX(), tile.getY() + 1);
-            case E: return new TileKey(tile.getPage(), tile.getX() + 1, tile.getY());
-            default: return new TileKey(tile.getPage(), tile.getX() - 1, tile.getY());
-        }
     }
 
     /**
