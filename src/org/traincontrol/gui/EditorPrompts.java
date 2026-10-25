@@ -25,9 +25,7 @@ final class EditorPrompts
         this.editor = editor;
     }
 
-    /**
-     * Asks for a number, storing nothing when it is left at the value that means "no setting".
-     */
+    /** Asks for a number, storing nothing when it is left at the value that means "no setting". */
     void promptNumber(TileKey tile, String key, String promptKey, int unset)
     {
         Object current = editor.session.getPointProperty(tile, key);
@@ -43,8 +41,8 @@ final class EditorPrompts
         {
             int value = Integer.parseInt(entered.trim());
 
-            // REFUSED BEFORE IT IS WRITTEN, rather than by the layer that loads it.  Nothing is stored,
-            // which is what the NumberFormatException arm below does and for the same reason.
+            // Refused before it is written, rather than by the layer that loads it; nothing is stored, as in the
+            // NumberFormatException arm below.
             String refused = AutonomyEditorPanel.whyNotThisNumber(key, value);
 
             if (refused != null)
@@ -61,9 +59,8 @@ final class EditorPrompts
             // About numbers, not about lengths: this prompt is also used for a station's priority, where negatives are
             // valid.
             JOptionPane.showMessageDialog(editor.owner(), I18n.f("autosetup.ui.errorNotANumber", entered));
-            // NOTHING WAS WRITTEN, so there is nothing to announce: the call belongs after the last statement
-            // of the success path, and after the failure path it would save the setup and rebuild the railway having
-            // changed nothing.
+            // Nothing was written, so nothing to announce: the call below would save the setup and rebuild the railway
+            // having changed nothing.
             return;
         }
 
@@ -72,12 +69,9 @@ final class EditorPrompts
     }
 
     /**
-     * Asks which squares hold this station back (FR-001).
-     *
-     * A checklist of the other stations, rather than a picker of one: a station may be held back by more than one place.
-     *
-     * Only NAMED points are offered: the restriction is written into the built configuration as lock edges pointing at
-     * the watched square, and a square with no name is one the operator cannot recognize in a list.
+     * Asks which squares hold this station back (FR-001), as a checklist of the other stations since more than one
+     * place may hold it back.  Only NAMED points are offered: the restriction is written as lock edges pointing at the
+     * watched square, and an unnamed square cannot be recognized in a list.
      */
     void promptBlockingPoints(TileKey station)
     {
@@ -88,23 +82,21 @@ final class EditorPrompts
 
         for (TileKey tile : editor.session.getStore().getNamedTiles())
         {
-            // STATIONS ONLY (MT-376: *"works, but exclude non-station points from the list entirely."*): a name is not a station (a
-            // caption square, an approach guard or a labeled piece of track all carry one), and this setting watches whether a place
-            // trains stop is OCCUPIED.  ...unless it is ALREADY STORED: this dialog is the only way to edit `blockedPoints`,
-            // and `chosen` is built from what the list offers, so hiding a stored entry would delete it when somebody pressed OK.
+            // Stations only (MT-376: "works, but exclude non-station points from the list entirely."): a caption
+            // square, an approach guard or labeled track all carry a name, and this setting watches whether a place
+            // trains stop is OCCUPIED.  Unless already stored: this dialog is the only way to edit `blockedPoints`, so
+            // hiding a stored entry would delete it when somebody pressed OK.
             if (!editor.session.getStore().isStation(tile) && !already.contains(tile)) continue;
 
             // Not the station itself: standing there already decides whether it is free, so watching
             // itself would make it a station nothing can be sent to.
             if (tile.equals(station)) continue;
 
-            // And not a square that IS this station by another name (OB-083): a caption points AT the station and carries a name, so
-            // choosing it would hold the station back with itself.  THIS station's captions only: widening to every caption square was
-            // tried and withdrawn, because a caption square is often real track (`mayCarryACaption` allows one on a feedback
-            // square, and importLegacy captions every imported station WITH ITSELF).
-            // ... unless it is ALREADY stored: the filters are about what may be CHOSEN, and hiding an
-            // entry chosen earlier makes it permanent.  It appears ticked, it can be unticked, and the filters still decide what may
-            // be added.
+            // And not a square that IS this station by another name (OB-083): a caption points AT the station and
+            // carries a name, so choosing it would hold the station back with itself.  This station's captions only: a
+            // caption square is often real track (`mayCarryACaption` allows one on a feedback square, and importLegacy
+            // captions every imported station WITH ITSELF).  Unless already stored: the filters are about what may be
+            // CHOSEN, and hiding an earlier choice makes it permanent.
             if (station.equals(editor.session.getCaptionTarget(tile)) && !already.contains(tile)) continue;
 
             choices.add(tile);
@@ -117,8 +109,8 @@ final class EditorPrompts
             if (held != null && !choices.contains(held)) choices.add(held);
         }
 
-        // ALPHABETICAL, BY WHAT IS ACTUALLY SHOWN (FR-074: *"sort unavailable while occupied list alphabetically."*), on
-        // `describeTile`, the text on the check box: an entry that has lost its name renders as its sensor or its coordinates.
+        // Alphabetical, by what is actually shown (FR-074: "sort unavailable while occupied list alphabetically."), on
+        // `describeTile`: an entry that has lost its name renders as its sensor or its coordinates.
         java.util.Collections.sort(choices, new java.util.Comparator<TileKey>()
         {
             @Override
@@ -132,9 +124,9 @@ final class EditorPrompts
         // entry on the list. So returning here cannot hide anything.
         if (choices.isEmpty())
         {
-            // GRAYED, because there is nothing a click could find (MT-376: *"if there are no stations on the diagram yet, the 'choose
-            // on diagram' button should be greyed out to match the message"*): `whyNotABlocker` refuses a square that is not a
-            // station.  Shown grayed rather than left out, so the operator learns the way in exists.
+            // Grayed, because there is nothing a click could find (MT-376: "if there are no stations on the diagram
+            // yet, the 'choose on diagram' button should be greyed out to match the message"); shown rather than left
+            // out, so the way in is learnt.
             javax.swing.JButton pickNow = AutonomyEditorPanel.nothingToPickButton();
 
             final javax.swing.JButton close = new javax.swing.JButton(
@@ -169,24 +161,23 @@ final class EditorPrompts
 
         java.util.List<javax.swing.JCheckBox> boxes = new java.util.ArrayList<>();
 
-        // WHICH OF THESE AUTONOMY WOULD NEVER CHOOSE (FR-074: *"lightly grey out stations that can't be chosen in full
-        // autonomy."*).  Read once, outside the loop, because the rule walks the reduction; `stationsAutonomyWillNotChoose` is the
-        // runtime's own rule (manual-only, or switched out of service), the same the diagram's captions ask.
+        // Which of these autonomy would never choose (FR-074: "lightly grey out stations that can't be chosen in full
+        // autonomy.").  Read once, outside the loop, because the rule walks the reduction;
+        // `stationsAutonomyWillNotChoose` is the runtime's own rule, the same the diagram's captions ask.
         java.util.Set<TileKey> notChosen = editor.session.stationsAutonomyWillNotChoose();
 
         for (TileKey tile : choices)
         {
-            // describeTile, not getPointName: a carried entry that has lost its name would render with NO TEXT AT ALL.
-            // describeTile falls back to the s88 where the square is a sensor, its coordinates otherwise; testEditorSurfaceRules pins
-            // the caption rule here as there.
+            // describeTile, not getPointName: an entry that lost its name would render with no text at all;
+            // testEditorSurfaceRules pins the caption rule here as there.
             javax.swing.JCheckBox box = new javax.swing.JCheckBox(
                 editor.describeTile(tile), already.contains(tile));
 
             box.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
 
-            // LIGHTLY (FR-074), so a foreground color rather than a disabled box: these squares are valid to block with (a
-            // parking berth holding a platform back is the case FR-001 exists for), so the mark says what KIND of square it
-            // is, not that it cannot be picked.
+            // Lightly (FR-074), so a foreground color rather than a disabled box: these squares are valid to block with
+            // (a parking berth holding a platform back is what FR-001 exists for); the mark says what kind of square it
+            // is.
             if (notChosen.contains(tile))
             {
                 box.setForeground(AutonomyEditorPanel.NOT_CHOSEN_BY_AUTONOMY);
@@ -198,8 +189,7 @@ final class EditorPrompts
             panel.add(box);
         }
 
-        // White behind the list rather than the panel's default gray: this reads as a list of things
-        // to pick from, and every other list in the application is white (OB-083).
+        // White behind the list, as every other list in the application is (OB-083).
         panel.setBackground(java.awt.Color.WHITE);
         panel.setOpaque(true);
 
@@ -222,10 +212,9 @@ final class EditorPrompts
         scroll.setPreferredSize(new java.awt.Dimension(460,
             Math.min(360, 80 + choices.size() * AutonomyEditorPanel.BLOCKED_ROW_HEIGHT)));
 
-        // Three answers, not two (FR-025: *"the 'unavailable when occupied' dialog should allow users to select a s88 tile by
-        // clicking, similar to the signal guard popup."*): a checklist is the faster way to answer "which of these" and stays the
-        // default button, and picking on the diagram is faster for "that one, there".  OK and Cancel take their words from the
-        // look and feel.
+        // Three answers, not two (FR-025: "the 'unavailable when occupied' dialog should allow users to select a s88
+        // tile by clicking, similar to the signal guard popup."): the checklist stays the default button, and picking
+        // on the diagram is faster for "that one, there".  OK and Cancel take their words from the look and feel.
         final String ok = javax.swing.UIManager.getString("OptionPane.okButtonText");
         final String cancel = javax.swing.UIManager.getString("OptionPane.cancelButtonText");
         final String pick = I18n.t("autosetup.ui.optionPickBlockerOnDiagram");
@@ -254,17 +243,16 @@ final class EditorPrompts
         // be regenerated for it to mean anything - the same seam every other setup edit uses.
         editor.placementChanged(null);
 
-        // Pick on the diagram: the ticks above are applied FIRST and then the next click is waited
-        // for.  Arming without applying would throw away whatever had just been ticked, which is a
-        // button that quietly undoes the work the operator did in the same dialog.
+        // Pick on the diagram: the ticks above are applied FIRST, then the next click is waited for; arming without
+        // applying would quietly undo the operator's work in this dialog.
         if (chose == 1) editor.armBlockerPick(station);
     }
 
     /**
-     * Asks which locomotives, as a multi-select list rather than typed names - a name that does not
-     * match the roster exactly would silently do nothing.
+     * Asks which locomotives, as a multi-select list rather than typed names: a name that does not match the roster
+     * exactly would silently do nothing.
      *
-     * @param tile
+     * @param tile the square
      * @param key the point property to store the choice under
      * @param names the locomotives worth offering, which is not always the whole roster
      */
@@ -300,9 +288,9 @@ final class EditorPrompts
 
         list.setSelectedIndices(selection);
 
-        // AND THE LIST'S MODE, above it (FR-121): keep the chosen locomotives out (the default, a blacklist), or let only
-        // them in (a whitelist: every other one, a locomotive added later included, is kept out).  Adam: *"we don't want
-        // to allow new locomotives that get added later when that mode is on."*
+        // And the list's mode, above it (FR-121): keep the chosen locomotives out (the default, a blacklist), or let
+        // only them in (a whitelist). Adam: "we don't want to allow new locomotives that get added later when that mode
+        // is on."
         boolean exclusions = "excludedLocs".equals(key);
 
         javax.swing.JRadioButton keepOut = new javax.swing.JRadioButton(I18n.t("autosetup.ui.optionExcludeChosenLocs"));
@@ -378,16 +366,12 @@ final class EditorPrompts
     }
 
     /**
-     * Sets the length of the square under the pointer, from outside this panel (FR-066).
-     *
-     * Control+E (Adam: *"a keyboard shortcut for setting a square's length"*, and *"let's do E"*, Control+D being taken
-     * twice over).  Like Control+S for Rename, `applyLength` is package-private, for the editor's own helpers only, and
-     * the key handler lives in `LayoutEditor`; this decides only who may ask.
-     *
-     * **It asks `offersALength`, the menu's own question, and writes where the menu writes**: the menu acts on
-     * `leaderOf(tile)`, the square that speaks for a run of plain track, so a key acting on the hovered square would
-     * measure a run through both doors and count it twice.  A key that acts where the menu offers nothing is the shape
-     * of MT-313 (Control+S named plain track), and it says a sentence rather than doing nothing quietly.
+     * Sets the length of the square under the pointer, from outside this panel (FR-066): Control+E, the key handler
+     * living in `LayoutEditor`; `applyLength` is package-private, for the editor's own helpers only, and this decides
+     * who may ask.  It asks `offersALength`, the menu's own question, and writes where the menu writes
+     * (`leaderOf(tile)`, the square that speaks for a run of plain track): a key acting on the hovered square would
+     * measure a run through both doors and count it twice, and one acting where the menu offers nothing is the shape of
+     * MT-313, so it says a sentence.
      *
      * @param tile the square to measure, ignored when null
      */
