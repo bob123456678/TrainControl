@@ -23,35 +23,20 @@ import support.SourceOf;
 /**
  * What a run did is folded into the setup BEFORE a page is renamed, not after.
  *
- * The rename fix itself introduced a defect. The rename
- * fix marked the session's pages stale and had `captureFromLayout` refuse while that held, on the
- * reasoning that "a rename is refused while autonomy is running, so there is nothing in that gap the
- * running layout knows that the store does not".
+ * Stopping autonomy captures nothing (`captureFromLayout` has three callers and none is the stop button), so between
+ * the end of a run and the next configuration load, exit, or diagram edit, where the trains ended up lives only in the
+ * running Layout. A rename triggers the diagram-edit capture, and the session refuses a capture while its pages are
+ * stale: run, stop, rename a page, and every placement the run produced is discarded on every page. That is worse than
+ * losing settings: occupancy is derived from placements (`Point.isOccupied` is `currentLoc != null`, and `isPathClear`
+ * never consults the s88), so the rebuilt configuration puts the trains back where they were before the run and Start
+ * can route one into a block that is physically occupied.
  *
- * The gap is not DURING a run. It is after one. Stopping autonomy captures nothing - there are exactly
- * three callers of `captureFromLayout` and none of them is the stop button - so between the end of a
- * run and the next configuration load, exit, or diagram edit, where the trains ended up lives only in
- * the running Layout. A rename triggers the diagram-edit one, which is the capture I had just taught
- * the session to refuse. So: run, stop, rename a page, and every placement the run produced is
- * discarded, on every page rather than only the renamed one.
- *
- * **Why that is worse than losing settings.** Occupancy is derived from placements - `Point.isOccupied`
- * is `currentLoc != null`, and `isPathClear` never consults the s88 - so the rebuilt configuration puts
- * the trains back where they were before the run, and pressing Start can route one into a block that
- * is physically occupied.
- *
- * The fix is an ORDER, so that is what this test is about: capture while the naming and the store still
- * agree, and let `renamePage` carry the captured entries across with everything else. The stale flag
- * stays, as a backstop for the capture that follows.
- *
- * **What this test can and cannot do.** It cannot press the menu item - the sequence lives in a window.
- * So it does what the window now does, in the same order, and shows that the ORDER is what decides the
- * outcome: capture-then-rename keeps the run, rename-then-capture loses it. That the WINDOW does it in
- * that order used to be claimed as held separately, by `testTheWindowAttachesItsRefreshCallback` - which
- * checks `AutonomyRefreshCallback.attach` and nothing about capture versus rename, so the claim pointed
- * at a test that could not have caught this ordering being lost. `testTheWindowCallsThemInThatOrder`
- * below checks it directly, against `TrainControlUI.duplicateOrRenameCurrentLayout` - because a test
- * that mirrors the sequence proves the sequence works, not that anybody follows it.
+ * The fix is an ORDER: capture while the naming and the store still agree, and let `renamePage` carry the captured
+ * entries across. The stale flag stays as a backstop for the capture that follows. This test cannot press the menu
+ * item, so it does what the window does in the same order and shows the ORDER decides the outcome (capture-then-rename
+ * keeps the run, rename-then-capture loses it); `testTheWindowCallsThemInThatOrder` checks that the window follows it,
+ * against `TrainControlUI.duplicateOrRenameCurrentLayout`, because a test that mirrors the sequence proves the sequence
+ * works, not that anybody follows it.
  */
 public class testARunSurvivesAPageRename
 {
@@ -64,10 +49,8 @@ public class testARunSurvivesAPageRename
     }
 
     /**
-     * Capturing first keeps what the run did; capturing afterwards loses it.
-     *
-     * Both orders in one test on purpose. Either alone is a statement about one arrangement; together
-     * they say the difference is the order and nothing else, which is the whole claim.
+     * Capturing first keeps what the run did; capturing afterwards loses it. Both orders in one test on purpose:
+     * together they say the difference is the order and nothing else.
      */
     @Test
     public void testTheOrderOfTheCaptureDecidesWhetherTheRunSurvives() throws Exception
@@ -83,24 +66,15 @@ public class testARunSurvivesAPageRename
     }
 
     /**
-     * The window itself calls `captureRunningLayout()` before it renames the page.
+     * The window itself calls `captureRunningLayout()` before it renames the page. The test above drives both orders
+     * itself, so it says nothing about which order `TrainControlUI` asks for; this reads
+     * `duplicateOrRenameCurrentLayout`, bounded to the method's own body, and checks the one line whose position is the
+     * whole fix. Both terms are proved present before they are compared, since an absent term's index is -1, less than
+     * every real one.
      *
-     * The test above proves the RULE - capture first keeps the run - but it drives both orders itself,
-     * so it says nothing about which order `TrainControlUI` actually asks for. This reads the method
-     * that does, `duplicateOrRenameCurrentLayout`, and checks the one line whose position is the whole
-     * fix.
-     *
-     * Bounded to the method's own body, not the whole file: `captureRunningLayout()` and
-     * `renameOrDuplicate(` are declared once each and could not disagree by a stray earlier or later
-     * occurrence, but every other ordering scan in this suite that skipped the presence check first
-     * turned out to be vacuous, so both are proved present before they are compared - an
-     * absent term's index is -1, which is less than every real one and would make a reversed call
-     * pass silently.
-     *
-     * MUTATION this catches: move `captureRunningLayout();` (`TrainControlUI.java:20671`) below the
-     * `renameOrDuplicate(...)` call (`:20686-20689`). Both substrings are still present, so the
-     * presence asserts still pass, and only the ordering assertion goes red - which is the control:
-     * delete either line instead and the presence asserts are what catch it.
+     * MUTATION this catches: move `captureRunningLayout();` below the `renameOrDuplicate(...)` call. Both substrings
+     * are still present, so only the ordering assertion goes red; delete either line instead and the presence asserts
+     * catch it.
      */
     @Test
     public void testTheWindowCallsThemInThatOrder() throws Exception
@@ -126,10 +100,8 @@ public class testARunSurvivesAPageRename
     }
 
     /**
-     * A run, a stop, and a rename - with the capture on whichever side of the rename is asked for.
-     *
-     * @param captureFirst true to fold the run in before renaming, as the window now does
-     * @return "kept" if the run's placement survived into the reloaded setup, "lost" otherwise
+     * A run, a stop, and a rename, with the capture on whichever side of the rename is asked for; "kept" if the run's
+     * placement survived into the reloaded setup, "lost" otherwise.
      */
     private String runThenRename(boolean captureFirst) throws Exception
     {
@@ -151,8 +123,8 @@ public class testARunSurvivesAPageRename
 
         assertNotNull(layout, "the configuration did not build");
 
-        // THE RUN, in the only part of it that matters here: a train ends up somewhere it did not
-        // start.  Moving the locomotive between two Points is what a completed path leaves behind.
+        // The run, in the only part of it that matters here: a train ends up somewhere it did not start. Moving the
+        // locomotive between two Points is what a completed path leaves behind.
         org.traincontrol.automation.Point from = occupiedPoint(layout);
 
         assertNotNull(from, "no locomotive is placed in this configuration, so no run can be modelled");
