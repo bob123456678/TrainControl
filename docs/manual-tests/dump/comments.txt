@@ -29276,6 +29276,17 @@ text:
 | Validated on your *Works* of 2026-10-21.
 |
 
+[comment MT-820 0]
+who: Claude
+date: 2026-10-24
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-24.**
+|
+| Replaced by MT-822: these steps click items that are grayed out while a run holds the setup, so the expected messages never appear (RSA77-C1). Run MT-822 instead.
+|
+
 [comment OB-331 0]
 who: Claude
 date: 2026-10-24

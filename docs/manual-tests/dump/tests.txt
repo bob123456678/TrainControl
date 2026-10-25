@@ -32409,3 +32409,43 @@ body:
 tail:
 | ---
 |
+
+[test MT-822]
+ordinal: 821
+anchor: mt-822
+date: 2026-10-24
+title: While a run holds the setup, grayed items and refusals give one of two sentences (replaces MT-820)
+disposition: needs test
+from: RSA77-C1
+written: 2026-10-24
+reopened: no
+body:
+| <a id="mt-822"></a>
+| ### MT-822 - 2026-10-24 - While a run holds the setup, grayed items and refusals give one of two sentences (replaces MT-820)
+|
+| **Disposition:** needs test
+| **From:** RSA77-C1
+|
+| **Written:** 2026-10-24
+|
+| **Steps**
+|
+| 1. Before you start, File > Backup TrainControl Data.  Open your railway's layout with autonomy loaded and at least one timetable entry, and start autonomy.
+| 2. While it runs, rest the pointer on each of these grayed items and read its tooltip: the Autonomy menu's `Manage Configurations...`; the Layouts menu's `Create New Layout`; in the timetable, right-click an entry and point at `Clear Timetable`; on the Auto tab, the `Maximum Active Trains` slider and `Execute Timetable`.
+| 3. Stop autonomy and wait for the trains to stand.  Run a long route by hand.
+| 4. While the route runs, on the Auto tab drag the `Maximum Active Trains` slider and let go, then click `Simulate`.
+| 5. Still while it runs, rest the pointer on the Autonomy menu's `Manage Configurations...` and on the timetable entry's `Clear Timetable`, as in step 2.
+| 6. Let the route finish.
+|
+| **Expected**
+|
+| - Step 2: every tooltip says "Edits are not allowed while autonomy or routes are running.", except `Execute Timetable`'s, which says "Wait for the active locomotives to stop."
+| - Step 4: each gives a message saying "Edits are not allowed while autonomy or routes are running.", and the slider and the box go back to where they were.
+| - Step 5: both tooltips say "Edits are not allowed while autonomy or routes are running."
+| - Nothing is changed by any of these.
+|
+| *What this is:* the 3.0.3 duplication work (cluster 45) and its tooltips.  It replaces MT-820, whose steps clicked items that are grayed out while a run holds the setup (RSA77-C1).  A grayed item's tooltip now says the same sentence its refusal gives when it is clickable.
+|
+tail:
+| ---
+|

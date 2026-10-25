@@ -3558,7 +3558,7 @@ RSA76-D6	RSA76.md	Closed	Not a defect	The Phase 5 extractions are delegations wi
 RSA76-D7	RSA76.md	Closed	Not a defect	SettledQuestion keeps each of the three waits' own rule
 RSA76-D8	RSA76.md	Closed	Not a defect	No synchronized member or event-thread hand-off was lost in gui/ or automationui/
 RSA76-D9	RSA76.md	Closed	Not a defect	The public API of 3.0.2 is all there, with the same signatures
-RSA77-C1	RSA77.md	-	Open: a new MT replaces MT-820 once the grayed items' tooltips match their doors (Adam, 20	MT-820 asks Adam to try doors that are grayed while a run holds the setup, so its expected messages cannot appear
+RSA77-C1	RSA77.md	Closed	Fixed - `7f7e8b5e` (grayed items' tooltips say their door's sentence) and MT-822, which re	MT-820 asks Adam to try doors that are grayed while a run holds the setup, so its expected messages cannot appear
 RSA77-C2	RSA77.md	Closed	Fixed - `ccadfbd5`: the Readme line says loads and Unload wait only while a route runs.	The Readme's cluster 45 line says a load or Unload waits while autonomy runs, but there they still offer to stop the trains
 RSA77-C3	RSA77.md	Closed	Fixed - `ccadfbd5`: the dump rewritten; `triagedb.py verify` green. A finding write needs 	The committed dump disagrees with findings.tsv on six RSA76 rows
 RSA77-C4	RSA77.md	Closed	Fixed - `ccadfbd5`: the three comments to the rule and the wrap (comment-only, 840 classes	Three comments in the range tell history or break the wrap

@@ -38991,12 +38991,12 @@ status_note: A D finding: checked and clean (3.0.3 validation round 1, RSA76 (b6
 line: 17
 severity: C
 title: MT-820 asks Adam to try doors that are grayed while a run holds the setup, so its expected messages cannot appear
-disposition: Open: a new MT replaces MT-820 once the grayed items' tooltips match their doors (Adam, 2026-10-24: "make tooltips match").
+disposition: Fixed - `7f7e8b5e` (grayed items' tooltips say their door's sentence) and MT-822, which replaces MT-820: hover the grayed items during autonomy, click the Auto tab's controls during a route.
 evidence: AutonomyMenu.java:50
 commit_id: 063a3ed6
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: Fixed in 7f7e8b5e and MT-822 - 3.0.3 validation round 2, RSA77 (ab54c48b..063a3ed6; 0 A, 0 B, 4 C; converged) (2026-10-24)
 
 [finding RSA77-C2 in RSA77.md]
 line: 31
