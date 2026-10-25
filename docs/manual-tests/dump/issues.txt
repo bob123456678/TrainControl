@@ -835,3 +835,22 @@ text:
 |
 | in some languages, wide phrases in the directions dropdown (bottom one) make the window wider.  match the width of the two dropdown so that the width of the bottom one doesn't stretch past what it starts at.
 |
+
+[issue OB-369]
+ordinal: 39
+inbox: yes
+kind: bug
+title: for 3.0.3: the Java API sample in AutomationAPI.md (and FullAutonomyExample) starts no trains
+filed: 2026-10-24
+filed_at: 2026-10-24 17:41
+raised_from: FR-138 worker
+build: -
+text:
+| ### OB-369 - 2026-10-24 - for 3.0.3: the Java API sample in AutomationAPI.md (and FullAutonomyExample) starts no trains
+|
+| **Kind:** bug  
+| **Raised from:** FR-138 worker  
+| **Filed:** 2026-10-24 17:41
+|
+| Found while writing FR-138's examples.  AutomationAPI.md's full example, and src/org/traincontrol/examples/FullAutonomyExample.java, end with layout.runLocomotive(loc, speed) for each train.  runLocomotive starts a thread that loops while the layout's running flag is set, and only runLocomotives() sets it, so the sample places the trains and then nothing moves.  It has been so since at least v2.7.0.  The new examples (test/examples/RunTrainsOnAGraph) use setLocomotivesToRun plus runLocomotives and do run.  Two ways to fix: (a) the sample and FullAutonomyExample call runLocomotives() as the new example does (docs only, no behavior change); (b) runLocomotive starts the run itself when none is going (changes Adam's pre-2.7.0 API code, so needs his word).  Recommended: (a).
+|
