@@ -10,26 +10,13 @@ import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import support.SourceOf;
 
 /**
- * In autonomy mode the editor knows which square the pointer is over, and the naming shortcut asks it.
+ * In autonomy mode the editor knows which square the pointer is over, and the naming shortcut asks it (MT-258).
  *
- * Adam, MT-258 item 4: **"control+s is not firing in the autonomy editor"**.
- *
- * It was firing. `formKeyPressed` reaches it - Control+G and Control+L sit two branches above it and
- * both work - and it did exactly what it was written to do, which was the wrong thing:
- * `getLastHoveredLabel()` reads `lastHoveredX/Y`, and `receiveMoveEvent` deliberately does not set
- * those in autonomy mode. Its own comment says why, and the comment is right:
- *
- *     `lastHoveredX/Y` are deliberately NOT set. They are where a paste would land, and nothing is
- *     pasted here - leaving them alone keeps this from teaching the placement code a position it
- *     has no business acting on.
- *
- * So in the one mode where Control+S means anything, it asked for the square at -1,-1, got null, and
- * returned. A rule lifted from where it works, without the precondition that made it work there.
- *
- * The fix keeps that comment true: autonomy mode records the square in a field of its own, and the
- * placement variables are left exactly as untouched as they were. **Which makes the third test below
- * the important one** - a fix that repaired the shortcut by feeding the placement variables would
- * pass the first two and break dragging.
+ * `getLastHoveredLabel()` reads `lastHoveredX/Y`, which `receiveMoveEvent` deliberately does not set in autonomy mode:
+ * they are where a paste would land, and nothing is pasted there.  So Control+S asked for the square at -1,-1 and
+ * returned.  Autonomy mode now records the square in a field of its own and leaves the placement variables untouched,
+ * which makes the third test the important one: a fix that fed the placement variables would pass the first two and
+ * break dragging.
  */
 public class testTheAutonomyEditorKnowsWhichSquare
 {
@@ -69,12 +56,8 @@ public class testTheAutonomyEditorKnowsWhichSquare
     }
 
     /**
-     * A layout editor over a small diagram, in autonomy mode or in track mode.
-     *
-     * BEFORE the model, not just before the window (OB-111): constructing a TrainControlUI reads the
-     * layout-path preference, and without the sandbox that is Adam's own railway.
-     *
-     * @param autonomy true to put the editor into autonomy mode, false to leave it editing track
+     * A layout editor over a small diagram, in autonomy mode or in track mode.  The sandbox is opened before the model:
+     * constructing a TrainControlUI reads the layout-path preference (OB-111).
      */
     private static Editor open(boolean autonomy) throws Exception
     {
@@ -164,13 +147,8 @@ public class testTheAutonomyEditorKnowsWhichSquare
         }
         catch (Exception | Error failed)
         {
-            // WHATEVER FAILED, THE PREFERENCE GOES BACK.
-            //
-            // Every caller wraps the RETURNED holder in a try/finally, and the holder is
-            // what does not exist when this throws.  `init` binds a UDP port and a window
-            // constructor can fail; either left the machine-global layout preference
-            // pointing at a folder under %TEMP%, which is what TrainControl opens next
-            // time.  `close()` is already null-guarded for a partial build.
+            // Whatever failed, the preference goes back: `init` binds a UDP port and a window constructor can fail, and
+            // the caller's holder does not exist when this throws.
             open.close();
 
             throw failed;
@@ -196,17 +174,9 @@ public class testTheAutonomyEditorKnowsWhichSquare
     }
 
     /**
-     * Moves the pointer over a square and hands back the label it moved over.
-     *
-     * **The grid is read at the moment of the move, not before it.** The editor redraws its grid after
-     * the constructor returns, and `LayoutGrid.getCoordinates` compares labels by identity - so a
-     * label captured earlier is simply not in the grid the handler consults, and `getX` answers -1 for
-     * it. The track-mode test below failed against correct code for exactly that reason.
-     *
-     * @param on the editor to move the pointer in
-     * @param x which square
-     * @param y which square
-     * @return the label the pointer was moved over
+     * Moves the pointer over a square and hands back the label it moved over.  The grid is read at the moment of the
+     * move: the editor redraws it after the constructor returns, and `LayoutGrid.getCoordinates` compares labels by
+     * identity, so an earlier label is not in the grid the handler consults.
      */
     private static org.traincontrol.gui.LayoutLabel hover(org.traincontrol.gui.layouteditor.LayoutEditor on,
         int x, int y) throws Exception
@@ -238,14 +208,9 @@ public class testTheAutonomyEditorKnowsWhichSquare
     }
 
     /**
-     * Moving the pointer over a square in autonomy mode is remembered.
+     * Moving the pointer over a square in autonomy mode is remembered: the state Control+S was missing.
      *
-     * This is the state Control+S was missing, and it was missing entirely: before the fix nothing at
-     * all recorded the square in this mode, so the shortcut asked the placement variables and found
-     * -1,-1.
-     *
-     * MUTATION this catches: delete `autonomyHover = label;` from `receiveMoveEvent`'s autonomy
-     * branch. That is the shipped defect, restored.
+     * MUTATION this catches: delete `autonomyHover = label;` from `receiveMoveEvent`'s autonomy branch.
      */
     @Test(timeOut = 300000)
     public void testTheEditorRemembersTheSquareUnderThePointer() throws Exception
@@ -283,25 +248,18 @@ public class testTheAutonomyEditorKnowsWhichSquare
     }
 
     /**
-     * And the naming shortcut asks THAT, not the placement variables.
+     * And the naming shortcut asks that, not the placement variables.
      *
-     * Read out of the source, and the reason is the same one `testTheWindowAttachesItsRefreshCallback`
-     * gives for its own reading: the value is right and the CALLER asked the wrong question, which is
-     * a thing a behavioral test cannot see when it can only reach the caller through a modal dialog.
-     * `promptName` opens one, so driving Control+S here would hang the battery rather than test it.
+     * Read out of the source because the caller asked the wrong question, which a behavioral test cannot see when it
+     * can only reach the caller through a modal dialog (`promptName` would hang the battery).
      *
-     * MUTATION this catches: put `getLastHoveredLabel()` back in the Control+S branch. The test above
-     * still passes - the field is still being set - and the shortcut is broken again.
+     * MUTATION this catches: put `getLastHoveredLabel()` back in the Control+S branch.  The test above still passes
+     * - the field is still being set - and the shortcut is broken again.
      */
     @Test
     public void testTheNamingShortcutAsksTheSquareAutonomyModeTracks() throws Exception
     {
-        // WITHOUT ITS COMMENTS, and this is not a precaution.
-        //
-        // The branch's own comment names both the field and the method it asks, which are sentences
-        // about the fix and were read as the defect - the first run of this test failed against
-        // correct code because of it.  `testTheWindowAttachesItsRefreshCallback` strips comments for
-        // the same reason and says so at more length.
+        // Without its comments: the branch's own comment names the field and the method, and was read as the defect.
         // formKeyPressed is every window's key handler, so it is cut out of the editor's own file.
         String body = SourceOf.withoutComments(SourceOf.declarationIn(
             SourceOf.fileDeclaring("public class LayoutEditor extends"),
@@ -311,22 +269,16 @@ public class testTheAutonomyEditorKnowsWhichSquare
 
         assertTrue(at > 0, "the Control+S branch is gone from the editor altogether");
 
-        // The branch's own body: from the test down to the closing of the block, which on this
-        // handler is the next `return;`.
+        // The branch's own body: from the test down to the next `return;`.
         int ends = body.indexOf("return;", at);
 
         assertTrue(ends > at, "the Control+S branch never returns, so its body cannot be read");
 
         String branch = body.substring(at, ends);
 
-        // `hoveredSquare()` SINCE OB-198, and it is the same claim one door further out.
-        //
-        // The branch read `autonomyHover` directly until 2026-09-10, and so did Control+H and
-        // Control+E - three readers of a field nothing ever cleared, so a page change left all three
-        // naming a square on the page before.  There is one question now, and it forgets a label that
-        // is not on the grid it is asked about.  `regression.testTheHoveredSquareIsForgotten` is what
-        // asserts the behavior; this stays a source check because what it is about is which door the
-        // KEY goes through.
+        // `hoveredSquare()` since OB-198: one question that forgets a label not on the grid it is asked about.
+        // `regression.testTheHoveredSquareIsForgotten` asserts the behavior; this checks which door the key goes
+        // through.
         assertTrue(branch.contains("hoveredSquare()"),
             "the Control+S branch does not ask the square autonomy mode tracks.  What it does ask:\n"
             + branch);
@@ -343,15 +295,9 @@ public class testTheAutonomyEditorKnowsWhichSquare
     }
 
     /**
-     * And track mode still feeds the placement variables, which are not this fix's to touch.
-     *
-     * The wrong fix for this bug is one line long and passes both tests above: set `lastHoveredX/Y`
-     * in the autonomy branch too. `receiveMoveEvent`'s own comment is the argument against it - those
-     * two are where a paste would land, and autonomy mode pastes nothing - and the cost of ignoring
-     * it is not visible from the shortcut at all.
-     *
-     * So this is the other half of the rule: in TRACK mode the placement variables are still set, and
-     * in AUTONOMY mode they are still left alone.
+     * And track mode still feeds the placement variables, which are not this fix's to touch.  The wrong fix is one line
+     * and passes both tests above: set `lastHoveredX/Y` in the autonomy branch too.  In track mode they are still set,
+     * in autonomy mode still left alone.
      *
      * MUTATION this catches: adding `lastHoveredX = getX(label);` to the autonomy branch.
      */
@@ -404,18 +350,11 @@ public class testTheAutonomyEditorKnowsWhichSquare
     /**
      * A square a click changes shows a hand and says so, and one it does not shows neither (FR-112).
      *
-     * Adam, 2026-10-05: *"in the autonomy editor, it is not clear to the user that tiles with arrows can be clicked.  Except
-     * where we already show the drag icon (station labels), show a pointer mouse icon over tiles that can have their arrows
-     * changed (i.e., most of them), and a brief hover tooltip "Click to change allowed directions".  Make sure that tooltip
-     * is very short."*
-     *
-     * Three cases: track in the run, which a click turns; a blank square, which it does not; and that track again once the
-     * Test tool is armed, when a click tests a path instead.  The last with the pointer held still - the panel's refresh
-     * reaches the diagram, so the hand goes when the button is pressed rather than at the next move.
+     * Three cases: track in the run, which a click turns; a blank square, which it does not; and that track again once
+     * the Test tool is armed, with the pointer held still - the panel's refresh reaches the diagram, so the hand goes
+     * when the button is pressed rather than at the next move.
      *
      * MUTATION: leave the hand or the line off, or stop the refresh asking again, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test(timeOut = 300000)
     public void testAClickableSquareShowsAHandAndSaysSo() throws Exception
@@ -451,7 +390,7 @@ public class testTheAutonomyEditorKnowsWhichSquare
             assertFalse(String.valueOf(blank.getToolTipText()).contains(says), "a blank square says a click changes its"
                 + " directions: " + blank.getToolTipText());
 
-            // THE TEST TOOL ARMED, with the pointer back on the track and held still
+            // The test tool armed, with the pointer back on the track and held still
             final org.traincontrol.gui.LayoutLabel again = hover(open.editor, 3, 2);
 
             final javax.swing.JToggleButton test = (javax.swing.JToggleButton) panelField(open.editor, "testButton");
@@ -476,19 +415,12 @@ public class testTheAutonomyEditorKnowsWhichSquare
     }
 
     /**
-     * The click's line goes once a square has been clicked, and comes back with the next opening; the hand stays (MT-697's
-     * note).
+     * The click's line goes once a square has been clicked, and comes back with the next opening; the hand stays
+     * (MT-697).  The editor window remembers: closed and opened again, the line is back.  Any square counts; a blank
+     * one is clicked here, which changes nothing.
      *
-     * Adam, 2026-10-05, on MT-697: *"Works, but the long term presence of the "click to change" tooltip is annoying.  Stop
-     * showing it after the user has clicked any square."*, and then *"have that tooltip tracking state reset after the
-     * editor is closed"*.  So it is the editor window that remembers: closed and opened again, the line is back.
-     *
-     * Any square: a blank one is clicked here, which changes nothing.
-     *
-     * MUTATION: let a click leave the line to be said, say it whatever was clicked, or remember the click past the window,
-     * and this fails.
-     *
-     * @throws Exception from the window
+     * MUTATION: let a click leave the line to be said, say it whatever was clicked, or remember the click past the
+     * window, and this fails.
      */
     @Test(timeOut = 300000)
     public void testTheClickLineGoesOnceASquareIsClicked() throws Exception
@@ -509,7 +441,7 @@ public class testTheAutonomyEditorKnowsWhichSquare
             assertTrue(String.valueOf(hover(open.editor, 3, 2).getToolTipText()).contains(says), "precondition: the track"
                 + " does not say a click changes its directions, so there is no line to go");
 
-            // ANY SQUARE CLICKED - a blank one
+            // Any square clicked - a blank one
             final org.traincontrol.gui.LayoutLabel blank = hover(open.editor, 3, 5);
 
             javax.swing.SwingUtilities.invokeAndWait(() -> open.editor.receiveClickEvent(new java.awt.event.MouseEvent(blank,
@@ -526,7 +458,7 @@ public class testTheAutonomyEditorKnowsWhichSquare
             assertEquals(cursorOf(track), java.awt.Cursor.HAND_CURSOR, "the hand went with the line - it is the line that"
                 + " was asked to go");
 
-            // CLOSED, AND OPENED AGAIN: the line is back
+            // Closed, and opened again: the line is back
             open.close();
             closed = true;
 
