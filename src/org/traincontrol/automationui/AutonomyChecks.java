@@ -659,6 +659,14 @@ public class AutonomyChecks
         });
     }
 
+    /** What a finding calls a square: its point's name, or the square itself where it has no point. */
+    private static String nameOf(GraphReducer reducer, TileKey tile)
+    {
+        ReducedPoint point = reducer == null ? null : reducer.getPoints().get(tile);
+
+        return point == null ? String.valueOf(tile) : point.getName();
+    }
+
     /**
      * A WARNING per square where a standing train faces track that runs only towards it: it cannot
      * leave that way - smaller than a refusal, and judged near the train.
@@ -673,10 +681,8 @@ public class AutonomyChecks
 
         for (TileKey tile : squares)
         {
-            ReducedPoint point = reducer.getPoints().get(tile);
-
             findings.add(new Finding(Severity.WARNING, TRAIN_FACES_TRACK_TOWARDS_IT,
-                point == null ? String.valueOf(tile) : point.getName(), tile));
+                nameOf(reducer, tile), tile));
         }
 
         return findings;
@@ -718,10 +724,8 @@ public class AutonomyChecks
 
         for (TileKey tile : squares)
         {
-            ReducedPoint point = reducer.getPoints().get(tile);
-
             findings.add(new Finding(Severity.ERROR, STATION_AT_THE_END_OF_A_LINE,
-                point == null ? String.valueOf(tile) : point.getName(), tile));
+                nameOf(reducer, tile), tile));
         }
 
         return findings;
@@ -853,10 +857,8 @@ public class AutonomyChecks
 
         for (TileKey tile : mayTurnOnDeadEnd)
         {
-            ReducedPoint point = reducer.getPoints().get(tile);
-
             findings.add(new Finding(Severity.NOTICE, MAY_TURN_ON_DEAD_END,
-                point == null ? String.valueOf(tile) : point.getName(), tile));
+                nameOf(reducer, tile), tile));
         }
 
         return findings;
@@ -1008,10 +1010,8 @@ public class AutonomyChecks
 
         for (TileKey tile : stationsWithoutSignal)
         {
-            ReducedPoint point = reducer.getPoints().get(tile);
-
             findings.add(new Finding(Severity.NOTICE, NO_SIGNAL_PAIRED,
-                point == null ? String.valueOf(tile) : point.getName(), tile));
+                nameOf(reducer, tile), tile));
         }
 
         return findings;
@@ -1032,12 +1032,10 @@ public class AutonomyChecks
 
         for (TileKey tile : facingsImpossible)
         {
-            ReducedPoint point = reducer.getPoints().get(tile);
-
             // AN ERROR, where a direction or a link used to be refused (Adam, 2026-10-01: "Make refusals that make sense
             // be errors"): the train cannot be stood on a copy facing another way, so nothing is sent until it is put right
             findings.add(new Finding(Severity.ERROR, FACING_IMPOSSIBLE,
-                point == null ? String.valueOf(tile) : point.getName(), tile));
+                nameOf(reducer, tile), tile));
         }
 
         return findings;
@@ -1077,10 +1075,8 @@ public class AutonomyChecks
 
         for (TileKey tile : signalsGone)
         {
-            ReducedPoint point = reducer.getPoints().get(tile);
-
             findings.add(new Finding(Severity.WARNING, SIGNAL_GONE,
-                point == null ? String.valueOf(tile) : point.getName(), tile));
+                nameOf(reducer, tile), tile));
         }
 
         return findings;
@@ -1119,9 +1115,7 @@ public class AutonomyChecks
         {
             TileKey tile = reversal.getKey();
 
-            ReducedPoint point = reducer.getPoints().get(tile);
-
-            String name = point == null ? String.valueOf(tile) : point.getName();
+            String name = nameOf(reducer, tile);
 
             // ONE SQUARE, OR A RUN OF THEM (OB-171).
             //
@@ -1337,10 +1331,8 @@ public class AutonomyChecks
 
         for (Map.Entry<TileKey, TileKey> entry : covered.entrySet())
         {
-            ReducedPoint station = reducer.getPoints().get(entry.getValue());
-
             findings.add(new Finding(Severity.WARNING, CAPTION_COVERED,
-                station == null ? String.valueOf(entry.getValue()) : station.getName(),
+                nameOf(reducer, entry.getValue()),
                 entry.getKey()));
         }
 
@@ -1400,10 +1392,8 @@ public class AutonomyChecks
         {
             for (TileKey berth : berthsGivenNoRoom)
             {
-                GraphReducer.ReducedPoint point = reducer == null ? null : reducer.getPoints().get(berth);
-
                 findings.add(new Finding(Severity.WARNING, BERTH_TRACK_GIVEN_NO_LENGTH,
-                    point == null ? String.valueOf(berth) : point.getName(), berth));
+                    nameOf(reducer, berth), berth));
             }
         }
 
@@ -1412,11 +1402,8 @@ public class AutonomyChecks
         {
             for (Map.Entry<TileKey, Integer> station : halfMeasured.entrySet())
             {
-                GraphReducer.ReducedPoint point =
-                    reducer == null ? null : reducer.getPoints().get(station.getKey());
-
                 findings.add(new Finding(Severity.WARNING, HALF_MEASURED_APPROACH,
-                    point == null ? String.valueOf(station.getKey()) : point.getName(),
+                    nameOf(reducer, station.getKey()),
                     station.getKey(), station.getValue()));
             }
         }
@@ -1438,10 +1425,8 @@ public class AutonomyChecks
         {
             // The station's name as the subject, the way every other finding about a station does it -
             // the editor jumps to the square, and the sentence needs something to be about.
-            GraphReducer.ReducedPoint point = reducer == null ? null : reducer.getPoints().get(square);
-
             findings.add(new Finding(Severity.WARNING, NO_MAX_TRAIN_LENGTH,
-                point == null ? String.valueOf(square) : point.getName(), square));
+                nameOf(reducer, square), square));
         }
 
         // AND THE TWO OF THEM DISAGREEING, which is the case where both are filled in.  The stated
@@ -1451,9 +1436,6 @@ public class AutonomyChecks
         {
             for (Map.Entry<TileKey, int[]> station : shortRunIns.entrySet())
             {
-                GraphReducer.ReducedPoint point =
-                    reducer == null ? null : reducer.getPoints().get(station.getKey());
-
                 // REFUSED AT A BERTH, STANDING ACROSS THE SWITCH AT A PLATFORM (MT-555): the sentence says which.
                 boolean berth = notAutoDestinations != null && notAutoDestinations.contains(station.getKey());
 
@@ -1463,7 +1445,7 @@ public class AutonomyChecks
                 findings.add(new Finding(Severity.NOTICE,
                     berth ? RUN_IN_SHORTER_THAN_THE_BERTH
                         : refused > 0 ? RUN_IN_SHORTER_THAN_THE_PLATFORM_REFUSED : RUN_IN_SHORTER_THAN_THE_PLATFORM,
-                    point == null ? String.valueOf(station.getKey()) : point.getName(),
+                    nameOf(reducer, station.getKey()),
                     station.getKey(), station.getValue()[0], station.getValue()[1], refused));
             }
         }
@@ -1490,10 +1472,8 @@ public class AutonomyChecks
 
         for (Map.Entry<TileKey, Integer> each : termini.entrySet())
         {
-            ReducedPoint point = reducer == null ? null : reducer.getPoints().get(each.getKey());
-
             findings.add(new Finding(Severity.ERROR, TERMINUS_WITH_TWO_WAYS_IN,
-                point == null ? String.valueOf(each.getKey()) : point.getName(), each.getKey(),
+                nameOf(reducer, each.getKey()), each.getKey(),
                 each.getValue()));
         }
 
