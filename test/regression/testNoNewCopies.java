@@ -27,11 +27,10 @@ import support.CopyScan;
 public class testNoNewCopies
 {
     /** The groups as they stand.  Never raise it. */
-    private static final int GROUPS_ALLOWED = 142;
+    private static final int GROUPS_ALLOWED = 137;
 
     /** Each group: the classes holding its copies with how many each, and the tokens of its longest copy. */
     private static final String[] GROUPS = {
-        "AddLocomotive:2 (87)",
         "ArrivalSidePrompt:1,FacingPrompt:1 (69)",
         "ArrivalSidePrompt:1,FacingPrompt:1 (60)",
         "AutonomyBuilder:1,AutonomyChecks:1 (75)",
@@ -78,7 +77,6 @@ public class testNoNewCopies
         "CS2File:2 (98)",
         "CS2File:2 (79)",
         "CS2File:2 (76)",
-        "CS2File:2 (61)",
         "CS2Message:1,LayoutDiagramComponent:2 (101)",
         "CS2Message:1,RouteCommand:1 (91)",
         "CS2Message:2 (242)",
@@ -114,7 +112,6 @@ public class testNoNewCopies
         "LocomotiveKeyboardMapping:1,MarklinAccessory:1,TimetablePath:1 (105)",
         "MarklinControlStation:1,TrainControlUI:1 (72)",
         "MarklinControlStation:1,TrainControlUI:1 (72)",
-        "MarklinControlStation:2 (91)",
         "MarklinControlStation:3 (64)",
         "MarklinLocomotive:2 (75)",
         "MarklinRoute:2 (85)",
@@ -123,7 +120,6 @@ public class testNoNewCopies
         "NodeAnd:1,NodeOr:1,NodeRouteCommand:1 (207)",
         "NodeExpression:2 (71)",
         "NodeExpression:2 (66)",
-        "RightClickMenuListener:1,RightClickPageMenu:1,RightClickRouteMenu:1,RightClickTimetableMenu:1 (83)",
         "RightClickMenuListener:2 (64)",
         "RouteCommand:1,TrainControlUI:1 (138)",
         "RouteCommand:2 (109)",
@@ -159,7 +155,6 @@ public class testNoNewCopies
         "TrainControlUI:2 (69)",
         "TrainControlUI:2 (67)",
         "TrainControlUI:2 (65)",
-        "TrainControlUI:2 (64)",
         "TrainControlUI:2 (62)",
         "TrainControlUI:2 (61)",
         "TrainControlUI:2 (60)",
