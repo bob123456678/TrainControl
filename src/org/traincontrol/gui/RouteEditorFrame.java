@@ -1326,32 +1326,6 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * For tests (FR-144): select these lines, as a Shift-click does, and press the indent or outdent mark on the
-     * first of them, through the same method the mouse uses.
-     *
-     * @param first the first line selected
-     * @param last the last line selected
-     * @param by 1 to indent, -1 to outdent
-     */
-    public void indentConditionsForTest(int first, int last, int by)
-    {
-        conditions.setRowSelectionInterval(first, last);
-        conditions.changeSelection(first, by > 0 ? INDENT : OUTDENT, false, false);
-        pressIndentMark(conditions, first, by > 0 ? INDENT : OUTDENT);
-    }
-
-    /**
-     * For tests (FR-144): press a condition's up or down arrow.
-     *
-     * @param line the condition
-     * @param by -1 for up, 1 for down
-     */
-    public void moveConditionForTest(int line, int by)
-    {
-        moveRow(conditions, line, by);
-    }
-
-    /**
      * The "Reads as" line exactly as the label holds it, markup included - for tests.
      *
      * @return the label's text
