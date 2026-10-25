@@ -296,8 +296,6 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
      * nothing kept it.
      *
      * MUTATION: put the trains back whatever the load did, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testALoadDeclinedForAProblemPutsNothingBack() throws Exception
@@ -396,8 +394,6 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
      * diagram once learned which trains stand on no Point inside the load, before the record.
      *
      * MUTATION: leave the diagram untold after the record, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testATrainRecordedByTheRebuildIsDrawnWhereItStands() throws Exception
@@ -482,8 +478,6 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
      * Configuration and the exit wrote that railway's settings back over the edit.
      *
      * MUTATION: leave the setup unmarked when the load is declined, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testAnEditWhileTheLoadIsDeclinedSurvivesTheFold() throws Exception
@@ -649,8 +643,6 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
      *
      * MUTATION: rebuild without folding the railway's settings first, or fold them without the timetable, and this
      * fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testARebuildKeepsTheRailwaysSettings() throws Exception
@@ -723,8 +715,6 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
      * written only while on, so comparing with the railway as built found no key.
      *
      * MUTATION: fold only the keys the railway writes now, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testARebuildKeepsASettingTheRailwayTurnedOff() throws Exception
@@ -792,8 +782,6 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
      * operator had chosen them (MT-470).
      *
      * MUTATION: leave the railway's settings as built without the value the load forced, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheLoadsOwnAtomicRoutesAreNotFolded() throws Exception
@@ -953,8 +941,6 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
      * change.
      *
      * MUTATION: set the flag without telling the strip, or leave the strip's line hidden, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheDiagramSaysWhenTheSetupIsNotApplied() throws Exception
@@ -1018,8 +1004,6 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
      * and the refusal is said.  Busy is the staging flag, as everywhere in this class.
      *
      * MUTATION: take the second question out of any of the four doors, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheTimetableDoorsAskAgainAfterTheirQuestion() throws Exception
@@ -1283,8 +1267,6 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
      * window, modal, so the window looked frozen.
      *
      * MUTATION: say the refusal over the item again, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testARefusalFromAClosedMenuIsOwnedByTheMainWindow() throws Exception
@@ -1329,8 +1311,6 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
      * top.
      *
      * MUTATION: let the windows copy the setting once again, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testAWindowTheMainWindowOpensFollowsItsAlwaysOnTop() throws Exception
@@ -1414,8 +1394,6 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
      * error.
      *
      * MUTATION: say the error over the clicked tile again, and this fails.
-     *
-     * @throws Exception reading the source
      */
     @Test
     public void testAnAddressEditsErrorIsOwnedByTheWindowItWasClickedIn() throws Exception
