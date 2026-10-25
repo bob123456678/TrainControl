@@ -31,37 +31,21 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * MT-309, second half - the wash is as long as the train, not as long as the edge.
+ * MT-309, second half: the wash is as long as the train, not as long as the edge.  Adam, after a Return Home run:
+ * *"after the parking completed, all of bottommaina stayed shaded, which it shouldn't as I set the length of EN57-203
+ * to 1."*
  *
- * Adam, 2026-09-08, after a Return Home run: *"after the parking completed, all of bottommaina stayed
- * shaded, which it shouldn't as I set the length of EN57-203 to 1."*
+ * Coverage is recorded per EDGE (Adam: "because the points are technically unoccupied. But the blocked edges should
+ * prevent routing to the covered points"), and the tail walk stops when the train's length is used up, so a train of
+ * length 1 claims one edge; the DRAWING then painted every tile of it, and an edge can be a dozen squares long.  The
+ * railway still blocks the whole edge (nothing here touches `Layout.edgesCoveredByStandingTrains`); the diagram says
+ * WHERE THE TRAIN IS, so the wash is a subset of what is blocked, the safe direction.
  *
- * **The covered set was recomputed, and it was recomputed to the wrong answer.** Measured on his own
- * railway on 2026-09-08: with every tile measured at 10 and the train's length set to 1, the window
- * shaded SEVENTEEN squares, and `tilesCoveredByStandingTrains` agreed with it - so nothing was stale
- * and nothing had failed to repaint.
- *
- * Coverage is recorded per EDGE, which is Adam's own ruling for the RAILWAY - "because the points are
- * technically unoccupied. But the blocked edges should prevent routing to the covered points" - and
- * the tail walk stops as soon as the train's length is used up, so a train of length 1 claims exactly
- * one edge. What the DRAWING then did was paint every tile of that edge. An edge is one hop between
- * two sensors and can be a dozen squares long; its `length` is the sum of the lengths assigned to
- * those squares, and on a railway where one square in the run carries a 1 the whole run was washed for
- * a train one square long.
- *
- * **So the picture and the railway are answering different questions, and only now do they say so.**
- * The railway blocks the whole edge, and still does - nothing here touches
- * `Layout.edgesCoveredByStandingTrains` or any guard that reads it. The diagram says WHERE THE TRAIN
- * IS, which is what Adam asked the indicator to mean: *"we need to draw a line ... to show that the
- * train is there."* The wash is a subset of what is blocked by construction, which is the direction
- * that costs nothing - a picture that claimed MORE than the railway is the dangerous way round.
- *
- * Every tile is measured at ONE here, so a length is a number of squares and the assertion is the
- * sentence Adam wrote: a train of length 1 covers one square.
+ * Every tile is measured at ONE here, so a length is a number of squares: a train of length 1 covers one square.
  *
  * MUTATION: put the whole-edge loop back in `AutonomySession.tilesCoveredByStandingTrains` and
- * `testATrainOfLengthOneCoversOneSquare` fails with the number of squares in the edge behind the
- * train. Stop the walk one tile early and `testALongerTrainCoversMoreOfIt` fails.
+ * `testATrainOfLengthOneCoversOneSquare` fails with the number of squares in the edge behind the train.  Stop the walk
+ * one tile early and `testALongerTrainCoversMoreOfIt` fails.
  *
  * @author Adam
  */
@@ -74,17 +58,12 @@ public class testTheWashIsNoLongerThanTheTrain
     private static Layout layout;
     private static ExecutorService watchdog;
 
-    /**
-     * The parent of the labels this test registers, so the window's own tiles and these can never
-     * evict each other - see DiagramTileRegistry.register.
-     */
+    /** The parent of the labels this test registers, so the window's own tiles and these never evict each other. */
     private static final JPanel OURS = new JPanel();
 
     /**
-     * One unit per square, so "length" is a count of squares and the assertions below are Adam's own
-     * sentence rather than an arithmetic about units.  Almost nothing on the real railway carries a
-     * length, and the tail walk stops at the first unmeasured segment - so without this every set
-     * here would be empty and every assertion would be about nothing.
+     * One unit per square, so "length" is a count of squares; almost nothing on the real railway carries a length and
+     * the tail walk stops at the first unmeasured segment.
      */
     private static final int TILE_LENGTH = 1;
 
@@ -102,19 +81,10 @@ public class testTheWashIsNoLongerThanTheTrain
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        // The operator's own railway, COPIED (OB-111): the wash is a product of the diagram, so a
-        // hand-built graph has no tiles for it to be drawn on.
-        // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111, and `test/layouts/live-snapshot`).
-        //
-        // This opened `cs2_sample_layout`, whose placements and lengths move as Adam runs trains on it
-        // - so on 2026-09-09 this class reported "no standing train covers any track here" against a
-        // working tree where every train had been driven away, and a class that skips everything reads
-        // as a green one.  `live-snapshot` is the same railway with the clock stopped at `e6f4649c`,
-        // which is the state these assertions were written against.
-        //
-        // `Scenario.folderFor` rather than a path: it is the only naming of a fixture folder that
-        // cannot spell its way out to the operator's own railway, and `LayoutSandbox` still copies
-        // what it names before anything reads it.
+        // The frozen copy, not the railway he is operating (OB-111, `test/layouts/live-snapshot`):
+        // `cs2_sample_layout`'s placements and lengths move as Adam runs trains, and a class that skips everything
+        // reads as green.  `Scenario.folderFor` cannot spell its way out to the operator's own railway, and
+        // `LayoutSandbox` copies what it names.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
         // showUI, because the subject is what is drawn.  debug on, so the simulated Central Station
@@ -129,8 +99,7 @@ public class testTheWashIsNoLongerThanTheTrain
 
         assertNotNull(ui, "there is no window, so nothing here can reach the drawing path");
 
-        // init returns with display() still queued - see testTheShadingFollowsTheTrain, which died of
-        // two AutonomySession rebuilds at once the first time it was run.
+        // init returns with display() still queued.
         pump();
         pump();
 
@@ -152,15 +121,9 @@ public class testTheWashIsNoLongerThanTheTrain
 
         assertNotNull(train, "no locomotive is standing on this railway");
 
-        // SHORT ENOUGH TO GO SOMEWHERE, on a railway measured at one unit a tile.
-        //
-        // The length was whatever Adam's database says, and the room rule is asked wherever a train
-        // comes to rest - its destination and any square it turns at (behaviour.md 5a) - so a long train
-        // on a railway this tightly measured is refused everywhere, the one real run below never starts,
-        // and every claim after it fails.
-        //
-        // This is the class's to set: each claim sets its own length, and `tearDownClass` puts the
-        // real one back.
+        // Short enough to go somewhere, on a railway measured at one unit a tile: the room rule is asked wherever a
+        // train comes to rest, so a long train is refused everywhere and the run below never starts.  Each claim sets
+        // its own length and `tearDownClass` puts the real one back.
         train.setTrainLength(1);
 
         home = layout.getLocomotiveLocation(train);
@@ -195,9 +158,7 @@ public class testTheWashIsNoLongerThanTheTrain
     {
         try
         {
-            // THE GLOBAL FIRST.  It was restored third, after two statements that can throw -
-            // and a throw there leaves mock packets echoing for every later class in the JVM, which is
-            // the leak this restore exists to prevent.
+            // The global first: a throw in a later statement would leave mock packets echoing for every later class.
             MarklinControlStation.DEBUG_SIMULATE_PACKETS = simulatingWas;
 
             if (layout != null) layout.stopLocomotives();
@@ -215,12 +176,9 @@ public class testTheWashIsNoLongerThanTheTrain
     }
 
     /**
-     * The defect, in Adam's own words: a train one square long shades one square - the one it stands on.
-     *
-     * Every tile measures one, so a one-unit train fits on its own square and nothing behind it is washed.
-     * Until OB-278 (2026-09-23) the square a train stands on was not spent, and this asserted one square
-     * BEHIND it; Adam: *"the 2 length tile with the s88 consumes 2 units of the train"*.  The whole-edge
-     * wash this was written against still fails it, with the whole edge behind the train.
+     * The defect, in Adam's own words: a train one square long shades one square, the one it stands on.  Every tile
+     * measures one, so a one-unit train fits on its own square and nothing behind it is washed.  Adam (OB-278):
+     * *"the 2 length tile with the s88 consumes 2 units of the train"*.
      */
     @Test
     public void testATrainOfLengthOneCoversOneSquare() throws Exception
@@ -247,12 +205,7 @@ public class testTheWashIsNoLongerThanTheTrain
             + " would pass equally well with the wash switched off altogether");
     }
 
-    /**
-     * CONTROL - and a longer train shades more of it.
-     *
-     * Without this the fix could be "shade one square, whatever is standing there", which satisfies
-     * the test above and is not what the wash is for.
-     */
+    /** CONTROL: a longer train shades more of it; otherwise the fix could be "shade one square, whatever is there". */
     @Test(dependsOnMethods = "testATrainOfLengthOneCoversOneSquare")
     public void testALongerTrainCoversMoreOfIt() throws Exception
     {
@@ -273,11 +226,7 @@ public class testTheWashIsNoLongerThanTheTrain
     }
 
     /**
-     * CONTROL - the picture never claims track the railway has not blocked.
-     *
-     * The wash is now a SUBSET of the covered edges rather than all of them, and a subset is the safe
-     * direction: a diagram showing more blocked track than the railway holds is the failure mode
-     * `Layout.edgesCoveredByStandingTrains` was widened for in the first place.
+     * CONTROL: the picture never claims track the railway has not blocked; the wash is a subset of the covered edges.
      */
     @Test(dependsOnMethods = "testALongerTrainCoversMoreOfIt")
     public void testTheWashNeverClaimsMoreThanTheRailwayBlocks() throws Exception
@@ -294,13 +243,8 @@ public class testTheWashIsNoLongerThanTheTrain
     }
 
     /**
-     * The square the train stands on is drawn with the orange line (Adam, OB-277).
-     *
-     * *"when we draw orange lines, they don't overlap with sensors"* - on every sensor, occupied or not.  The
-     * walk left the standing square out on purpose, on the reasoning that the locomotive icon already says a
-     * train is there; his ruling is that the orange shows where the train is, and the train is on this square.
-     *
-     * @throws Exception from the event thread
+     * The square the train stands on is drawn with the orange line (OB-277).  Adam: *"when we draw orange lines, they
+     * don't overlap with sensors"*, on every sensor, occupied or not.
      */
     @Test
     public void testTheSquareTheTrainStandsOnIsOrange() throws Exception
@@ -323,14 +267,10 @@ public class testTheWashIsNoLongerThanTheTrain
     }
 
     /**
-     * A sensor the train's tail lies across is drawn with the orange line, from the length that reaches it and
-     * not before (Adam, OB-277).
-     *
-     * The length is found rather than worked out: the shortest train whose line reaches a sensor square behind
-     * the one it stands on.  The CONTROL is the same train one unit shorter, which must leave that sensor clear -
-     * without it, a walk that marked every sensor of every covered edge whatever the length would pass.
-     *
-     * @throws Exception from the event thread
+     * A sensor the train's tail lies across is drawn with the orange line, from the length that reaches it and not
+     * before (OB-277).  The length is found: the shortest train whose line reaches a sensor square behind the one it
+     * stands on.  The CONTROL is the same train one unit shorter, without which a walk marking every sensor of every
+     * covered edge would pass.
      */
     @Test
     public void testASensorTheTailLiesAcrossIsOrange() throws Exception
@@ -378,43 +318,20 @@ public class testTheWashIsNoLongerThanTheTrain
     }
 
     /**
-     * A PATH LOCKED AHEAD OF THE TRAIN DOES NOT MOVE THE WASH.
+     * A path locked ahead of the train does not move the wash (MT-438).  `AutonomySession.walkBackFrom` anchored at
+     * `Layout.getLocomotiveLocation`, the FIRST Point in `HashMap` order that holds the locomotive, while a locked path
+     * reserves every Point on it, so the anchor could be the destination the train has not reached.  Adam: *"why is the
+     * tail from bottommainapre to bottommaina not orange.  it's almost as if you are shifting the location of the
+     * train"*.  `Layout.whereTheTrainIs` is now the one rule for this walk, `DiagramMonitor` and
+     * `AutoLocomotiveStatus`.
      *
-     * **The half of MT-438 that the guard's fix did not reach.**  `Layout.walkStandingTrains` now walks
-     * one tail per train, anchored at the last milestone of a run.  This picture is computed separately,
-     * by `AutonomySession.walkBackFrom`, and it anchored at `Layout.getLocomotiveLocation` - the FIRST
-     * Point in `HashMap` iteration order that holds the locomotive.  A locked path reserves every Point
-     * on it (`Point.reserve` deliberately does not sweep, because that reservation is what holds a
-     * junction behind the train), so during a run the locomotive holds several Points and that anchor is
-     * an arbitrary one of them: it can be the destination the train has not reached.  The walk then
-     * spends the train's length from there - which is Adam's *"why is the tail from bottommainapre to
-     * bottommaina not orange.  it's almost as if you are shifting the location of the train"*, said of a
-     * picture, about a walk that had indeed shifted the train.
+     * The arrangement is sought, not hoped for: the test tries candidate destinations until the anchor moves off the
+     * square the train stands on, and fails if none can.  A LOCK rather than a run, because a lock returns with the
+     * train still standing.  `unlockPath` keeps the ARRIVAL of the path it is given, so the placement AND the arrival
+     * record are captured before the lock and written back, and the last thing this does is prove the wash is back.
      *
-     * **Two other doors already knew this** and say so in the same words: `DiagramMonitor` places the
-     * train marker at the last milestone *"because getLocomotiveLocation returns an ARBITRARY one of the
-     * several points a running train reserves at once"*, and `AutoLocomotiveStatus` reads the same
-     * milestone for its @-station line.  This walk was the third site of one rule, and
-     * `Layout.whereTheTrainIs` is now that rule, asked by all three.
-     *
-     * **THE ARRANGEMENT IS SOUGHT, NOT HOPED FOR.**  Whether the old anchor picked a wrong Point
-     * depended on `HashMap` order, so this tries candidate destinations until the anchor actually moves
-     * off the square the train stands on, and only then makes its claim; if no path can move it, it says
-     * so and fails rather than passing on a fixture that cannot show it.  A LOCK rather than a run,
-     * because a lock reserves the whole road and returns with the train still standing - the state under
-     * test, and deterministic.
-     *
-     * **WHAT IT PUTS BACK.**  Lock-then-unlock is not a gesture a person can make: `unlockPath` keeps
-     * the ARRIVAL of the path it is given, so calling it without ever running leaves the model thinking
-     * the train is at the far end.  The first draft of this test did exactly that and the next claim in
-     * this class found nothing shaded at all - so the placement AND the arrival record are captured
-     * before the lock and written back afterwards, and the last thing this does is prove the wash is
-     * back.
-     *
-     * MUTATION: anchor `walkBackFrom` at `getLocomotiveLocation` again and this goes red - the wash
-     * moves onto the locked path ahead, which `edgesCoveredByStandingTrains` does not hold covered.
-     *
-     * @throws Exception from the lock or the event thread
+     * MUTATION: anchor `walkBackFrom` at `getLocomotiveLocation` again and this goes red: the wash moves onto the
+     * locked path ahead, which `edgesCoveredByStandingTrains` does not hold covered.
      */
     @Test(dependsOnMethods = "testALongerTrainCoversMoreOfIt")
     public void testAPathLockedAheadDoesNotMoveTheWash() throws Exception
@@ -434,18 +351,10 @@ public class testTheWashIsNoLongerThanTheTrain
         String sideWas = standing.getArrivedFrom();
         List<Edge> roadWas = standing.getArrivedAlong();
 
-        // WHICH PATH WOULD HAVE MOVED THE OLD ANCHOR, WORKED OUT RATHER THAN TRIED.
-        //
-        // The second draft of this test locked a candidate, asked where the anchor had landed, and
-        // unlocked again if it had not moved - and that is what made it fail for a reason of its own:
-        // `unlockPath` sweeps the locomotive off every Point but the path's arrival, so the retry took
-        // the train off the square it was standing on, `setLocomotive` cleared the arrival record with
-        // it, and the covered set went empty.  Measured, not guessed: `covered=[] side=null road=null`.
-        //
-        // Nothing needs locking to know the answer.  The old anchor was the first Point in the graph's
-        // own iteration order that holds the locomotive, so a path moves it exactly when one of its
-        // edges ends at a Point earlier in that order than the square the train stands on.  That is a
-        // question about the graph, asked without touching it, and the lock below happens once.
+        // Which path would have moved the old anchor, worked out rather than tried: locking a candidate and unlocking
+        // again took the train off its square (`unlockPath` sweeps the locomotive off every Point but the path's
+        // arrival).  The old anchor was the first Point in the graph's iteration order that holds the locomotive, so a
+        // path moves it exactly when one of its edges ends at an earlier Point; the lock below happens once.
         List<Point> inOrder = new ArrayList<>(layout.getPoints());
 
         int standingAt = inOrder.indexOf(standing);
@@ -502,22 +411,11 @@ public class testTheWashIsNoLongerThanTheTrain
 
         try
         {
-            // MEASURED, NOT DERIVED, AND INSIDE THE BLOCK THAT PUTS THE RAILWAY BACK.
-            //
-            // The loop above predicts which path moves the old anchor by comparing positions in the
-            // graph's own point order, and that prediction is sound only while `getPoints()` and
-            // `getLocomotiveLocation` walk the same collection the same way - which was not true for a
-            // few hours on 2026-08-24, when `getPoints()` returned a copy.  So it is observed.
-            //
-            // BY PLACE, not by object: a square is several Points here, and a path whose first leg
-            // turns onto the other copy of the square the train stands on would reserve a DIFFERENT
-            // Point on the SAME piece of track - which is not the anchor moving at all.
-            //
-            // And inside the `try`, because the first draft of this line sat above it: a throw there
-            // left the path locked and the train's record swept, for every claim after it.
-            // NULL-SAFE, BECAUSE EVERYTHING BELOW IS READ WHEN SOMETHING HAS GONE WRONG.
-            // The anchor is exactly what a defect here makes null, and a NullPointerException thrown
-            // while building the sentence would replace the diagnosis with a stack trace.
+            // Measured, not derived, and inside the block that puts the railway back: the loop above predicts by the
+            // graph's point order, sound only while `getPoints()` and `getLocomotiveLocation` walk the same collection
+            // the same way.  By place, not by object: a square is several Points, and a first leg onto the other copy
+            // of the train's square reserves a different Point on the same track, which is not the anchor moving.
+            // Null-safe, because this is read when something has gone wrong and an NPE would replace the diagnosis.
             Point held = layout.getLocomotiveLocation(train);
 
             assertNotNull(held, "the lock left no Point holding the train at all, which is a worse"
@@ -559,13 +457,9 @@ public class testTheWashIsNoLongerThanTheTrain
         {
             if (locked != null) layout.unlockPath(locked, train);
 
-            // BACK WHERE IT WAS, and with the record the wash is computed from.  `unlockPath` keeps the
-            // path's arrival, and `setLocomotive` clears the arrival side on a change of occupant, so
-            // both halves have to be written back in this order.
-            //
-            // NOTHING IS ASSERTED IN HERE.  An assertion in a `finally` replaces the body's
-            // own failure with its own, so a real defect arrives as "this claim left no wash" instead
-            // of the diagnosis.  What the restore achieved is recorded and judged after the block.
+            // Back where it was, with the record the wash is computed from: `unlockPath` keeps the path's arrival and
+            // `setLocomotive` clears the arrival side on a change of occupant, so both halves are written back in this
+            // order.  Nothing is asserted in here, which would replace the body's failure with its own.
             boolean back = layout.moveLocomotive(train.getName(), standing.getName(), false);
 
             standing.setArrivedFrom(sideWas);
@@ -593,38 +487,23 @@ public class testTheWashIsNoLongerThanTheTrain
     // ---------------------------------------------------------------- the railway
 
     /**
-     * Sets the train's length and lets the window catch up with it, the way a run does.
-     *
-     * The monitor is what drives the recompute on a running layout and it only looks when something
-     * has moved, so the layout is told - through the same callback a train movement fires.
-     *
-     * @param squares how long the train is
-     * @throws Exception on an event-thread failure
+     * Sets the train's length and lets the window catch up with it: the layout is told through the callback a train
+     * movement fires.
      */
     private static void washWith(int squares) throws Exception
     {
         train.setTrainLength(squares);
 
-        // The recompute the window does on every refresh of a running layout.  Asked for directly:
-        // a length is not a movement, so nothing fires the monitor's callback, and what this test
-        // is about is the ANSWER rather than which door asks for it.
-        //
-        // AND WAITED FOR (OB-192).  The window works the marks out on a worker now, because asking
-        // for them on the event thread meant waiting on the `Layout` monitor a dispatch holds - so
-        // asking and reading are two moments, and `support.CoveredMarks` is the one place that knows
-        // it.
+        // The recompute the window does on every refresh, asked directly: a length is not a movement, so nothing fires
+        // the monitor's callback.  And waited for (OB-192): the window works the marks out on a worker, so asking and
+        // reading are two moments, and `support.CoveredMarks` knows it.
         support.CoveredMarks.refresh(ui);
 
         pump();
     }
 
     /**
-     * Every square the window draws the train on BEHIND it, which on this railway is all of them but the one it
-     * stands on.
-     *
-     * The standing square is left out since OB-277 put the orange on it (Adam, 2026-09-23: *"when we draw orange
-     * lines, they don't overlap with sensors"*): the claims here count how far back the train reaches, and the
-     * square it is on is not "back".  `testTheSquareTheTrainStandsOnIsOrange` is about that square.
+     * Every square the window draws the train on BEHIND it: all but the one it stands on (OB-277 put the orange there).
      */
     private static Set<TileKey> washedBehindTheTrain()
     {
@@ -643,9 +522,8 @@ public class testTheWashIsNoLongerThanTheTrain
     }
 
     /**
-     * Every square the train can be lying on while the railway holds these edges covered: their tiles, and the
-     * sensor squares at their ends - which the orange line has covered since OB-277, because a train lies across
-     * the sensors between two edges as much as the track between them.
+     * Every square the train can lie on while the railway holds these edges covered: their tiles and the sensor squares
+     * at their ends.
      */
     private static Set<TileKey> everySquareTheRailwayHoldsCovered()
     {
@@ -700,14 +578,7 @@ public class testTheWashIsNoLongerThanTheTrain
         return out;
     }
 
-    /**
-     * How many squares the edge the train arrived along actually has.
-     *
-     * Taken with the train long enough to claim the whole of it, so it is the number the old rule
-     * washed - the figure the assertions above are told apart from.
-     *
-     * @return the count
-     */
+    /** How many squares the edge the train arrived along has, taken with the train long enough to claim all of it. */
     private static int squaresOfTheEdgeBehindTheTrain() throws Exception
     {
         train.setTrainLength(500);
@@ -783,9 +654,7 @@ public class testTheWashIsNoLongerThanTheTrain
         return out;
     }
 
-    /**
-     * Puts a real tile on every square of the railway, so there is something for the redraw to reach.
-     */
+    /** Puts a real tile on every square of the railway, so there is something for the redraw to reach. */
     private static void registerLabels() throws Exception
     {
         for (TileKey square : everyTile())
@@ -809,9 +678,7 @@ public class testTheWashIsNoLongerThanTheTrain
         pump();
     }
 
-    /**
-     * The tiles this test registered for these squares, drawn and ready to be asked what they show.
-     */
+    /** The tiles this test registered for these squares, drawn and ready to be asked what they show. */
     private static List<LayoutLabel> labelsFor(Set<TileKey> squares) throws Exception
     {
         List<LayoutLabel> out = new ArrayList<>();
@@ -845,16 +712,8 @@ public class testTheWashIsNoLongerThanTheTrain
     }
 
     /**
-     * Whether this tile is drawing the mark that says a train is lying across it.
-     *
-     * PAINTED AND LOOKED AT since MT-309.  The mark used to be the tile's ICON - a grayed copy of it -
-     * so this could be an identity comparison against `lastIcon`.  It is a line drawn over the icon
-     * now, which is nowhere in the object, and the only honest question left is what the square looks
-     * like.  `support.Rendered.showsTheTrainMark` paints it and looks for the orange.
-     *
-     * @param label the tile
-     * @return true when the mark is on it
-     * @throws Exception on an event-thread failure
+     * Whether this tile is drawing the mark that says a train is lying across it: painted and looked at, as the mark is
+     * a line over the icon.
      */
     private static boolean isWashed(LayoutLabel label) throws Exception
     {
@@ -890,10 +749,7 @@ public class testTheWashIsNoLongerThanTheTrain
 
     // ---------------------------------------------------------------- the fixture
 
-    /**
-     * Leaves one train on the railway, so a square that stops being shaded stopped for a reason this
-     * test caused.
-     */
+    /** Leaves one train on the railway, so a square that stops being shaded stopped for a reason this test caused. */
     private static void oneTrainOnly()
     {
         Point keep = null;
@@ -920,11 +776,8 @@ public class testTheWashIsNoLongerThanTheTrain
     }
 
     /**
-     * Measures every tile, because almost nothing on this railway carries a length and the tail walk
-     * stops at the first unmeasured segment.
-     *
-     * Collected first and written afterwards: setTileLength rebuilds the reducer, so walking its own
-     * collections while writing to them re-derives the graph under the iterator.
+     * Measures every tile, because the tail walk stops at the first unmeasured segment; written after collecting, as
+     * setTileLength rebuilds the reducer.
      */
     private static void measureEveryTileAs(int units)
     {
