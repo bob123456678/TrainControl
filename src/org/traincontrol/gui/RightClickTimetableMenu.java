@@ -69,8 +69,7 @@ public class RightClickTimetableMenu extends MouseAdapter
             // question the handler asks, with the same sentence as the tooltip, rather than found out
             // by pressing.
             boolean busy = ui.aRunHoldsTheSetup();
-            String busyTooltip = busy
-                ? ui.whyTheSetupIsHeld("autolayout.ui.errorWaitForActiveLocomotivesToStop") : null;
+            String busyTooltip = busy ? I18n.t(RunGates.NO_EDITS_WHILE_RUNNING) : null;
 
             menuItem = new JMenuItem(
                 I18n.t("timetable.ui.menuChangeDelay")

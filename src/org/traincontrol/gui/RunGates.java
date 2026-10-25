@@ -193,8 +193,8 @@ final class RunGates
     }
 
     /**
-     * What a grayed control's tooltip or a log line says while a run holds the setup: its own sentence (`autonomyKey`)
-     * where autonomy is busy, and one naming a route too otherwise.  A refusal says one of the two sentences above.
+     * What a log line says while a run holds the setup: its own sentence (`autonomyKey`) where autonomy is busy, and one
+     * naming a route too otherwise.  A grayed control's tooltip is the sentence its door refuses with, not this.
      */
     static String whyTheSetupIsHeld(TrainControlUI ui, String autonomyKey)
     {

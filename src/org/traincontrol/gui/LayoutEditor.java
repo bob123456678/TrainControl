@@ -4192,7 +4192,7 @@ public class LayoutEditor extends PositionAwareJFrame
         {
             autonomyModeButton.setEnabled(false);
             autonomyModeButton.setToolTipText(
-                AutonomyEditorPanel.wrapped(parent.whyTheSetupIsHeld("autolayout.errorCannotEditWhileRunning")));
+                AutonomyEditorPanel.wrapped(I18n.t(RunGates.NO_EDITS_WHILE_RUNNING)));
         }
 
         return column;

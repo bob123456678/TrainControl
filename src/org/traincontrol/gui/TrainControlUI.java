@@ -2445,7 +2445,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         boolean running = isAutonomyBusy() || (this.model != null && this.model.isAutonomyRunning())
             || aRunHoldsTheSetup();
 
-        String why = running ? whyTheSetupIsHeld("autosetup.ui.tooltipNotWhileRunning") : null;
+        String why = running ? I18n.t(RunGates.NO_EDITS_WHILE_RUNNING) : null;
 
         greyForTheRun(chooseLocalDataFolderMenuItem, running, false, why);
         greyForTheRun(modifyLocalLayoutMenu, running, false, why);
@@ -18550,7 +18550,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         boolean busy = theAutoTabWaits();
 
-        String why = I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop");
+        String why = I18n.t(RunGates.NO_EDITS_WHILE_RUNNING);
 
         greyWhileTheTrainsRun(this.toggleSpecifiedRoutes, busy, why);
 
@@ -18585,15 +18585,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // The diagram's arrows follow the same gate as the spinner (MT-686).
         arrowsFollowTheRun();
 
-        String why = I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop");
+        // Each setting refuses as an edit; Execute Timetable sends trains, so it says to wait
+        String why = I18n.t(RunGates.NO_EDITS_WHILE_RUNNING);
 
         for (javax.swing.JComponent waits : new javax.swing.JComponent[] {
             this.minDelay, this.maxDelay, this.maxLocInactiveSeconds, this.defaultLocSpeed, this.preArrivalSpeedReduction,
             this.maxActiveTrains, this.maximumLatency, this.atomicRoutes, this.turnOffFunctionsOnArrival,
-            this.turnOnFunctionsOnDeparture, this.simulate, this.algorithmType, this.executeTimetable, this.timetableCapture})
+            this.turnOnFunctionsOnDeparture, this.simulate, this.algorithmType, this.timetableCapture})
         {
             greyWhileTheTrainsRun(waits, busy, why);
         }
+
+        greyWhileTheTrainsRun(this.executeTimetable, busy, I18n.t(RunGates.WAIT_FOR_THE_TRAINS));
     }
 
     /**
@@ -20298,7 +20301,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 if (this.isAutonomyBusy())
                 {
-                    JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
+                    JOptionPane.showMessageDialog(this, I18n.t(RunGates.WAIT_FOR_THE_TRAINS));
                     this.executeTimetable.setEnabled(true);
                     return;
                 }

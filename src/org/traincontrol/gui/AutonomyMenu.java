@@ -223,10 +223,10 @@ public class AutonomyMenu extends JMenu
      */
     private void guardWhileRunning(JMenuItem documentation)
     {
-        // A ROUTE TOO, saying so (`TrainControlUI.aRunHoldsTheSetup`)
+        // A ROUTE TOO (`TrainControlUI.aRunHoldsTheSetup`); the sentence every item's door refuses with
         if (!ui.aRunHoldsTheSetup()) return;
 
-        String why = AutonomyEditorPanel.wrapped(ui.whyTheSetupIsHeld("autosetup.ui.tooltipNotWhileRunning"));
+        String why = AutonomyEditorPanel.wrapped(I18n.t(RunGates.NO_EDITS_WHILE_RUNNING));
 
         for (int i = 0; i < getMenuComponentCount(); i++)
         {

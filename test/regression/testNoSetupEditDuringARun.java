@@ -3667,7 +3667,7 @@ public class testNoSetupEditDuringARun
                 assertFalse(item.getValue().isEnabled(), item.getKey() + " is live in the Autonomy menu while autonomy"
                     + " runs (MT-613, MT-626)");
 
-                String why = I18n.t("autosetup.ui.tooltipNotWhileRunning");
+                String why = I18n.t("ui.main.errorNoEditsWhileRunning");
 
                 String tip = String.valueOf(item.getValue().getToolTipText());
 
@@ -3739,7 +3739,7 @@ public class testNoSetupEditDuringARun
 
             ui[0] = openTheWindow();
 
-            String why = I18n.t("autosetup.ui.tooltipNotWhileRunning");
+            String why = I18n.t("ui.main.errorNoEditsWhileRunning");
 
             // AT REST, as the operator finds it
             java.util.Map<String, Object[]> rest = layoutMenuAsOpened(ui[0], greyed, kept);
@@ -5288,7 +5288,8 @@ public class testNoSetupEditDuringARun
 
             assertFalse(railway.isRunning(), "precondition: the railway runs");
 
-            final String why = I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop");
+            final String wait = I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop");
+            final String edits = I18n.t("ui.main.errorNoEditsWhileRunning");
 
             final java.util.Map<String, String> atRest = new java.util.LinkedHashMap<>();
 
@@ -5312,7 +5313,8 @@ public class testNoSetupEditDuringARun
 
                 assertFalse(c.isEnabled(), name + " is offered while autonomy is busy");
 
-                assertEquals(c.getToolTipText(), why, name + " does not say why it is greyed");
+                assertEquals(c.getToolTipText(), "executeTimetable".equals(name) ? wait : edits,
+                    name + " does not say what its door says");
             }
 
             // AND START TURNS (OB-309)
@@ -5336,7 +5338,7 @@ public class testNoSetupEditDuringARun
                 }
             });
 
-            assertEquals(control(ui[0], "algorithmType").getToolTipText(), why, "the routing rule's tooltip, set again"
+            assertEquals(control(ui[0], "algorithmType").getToolTipText(), edits, "the routing rule's tooltip, set again"
                 + " while it is greyed, stopped saying why");
 
             // A CLICK ON A GREYED SETTING, through its own listeners: nothing said, nothing written
@@ -5424,7 +5426,7 @@ public class testNoSetupEditDuringARun
 
             refreshWhatWaits(ui[0]);
 
-            assertEquals(timetable.getToolTipText(), why, "Execute Timetable, greyed by its owner while autonomy is busy, does"
+            assertEquals(timetable.getToolTipText(), wait, "Execute Timetable, greyed by its owner while autonomy is busy, does"
                 + " not say why (RSA27-C3)");
 
             staging.set(ui[0], false);
@@ -5498,7 +5500,8 @@ public class testNoSetupEditDuringARun
 
             assertTrue(ui[0].getModel().getPowerState(), "precondition: the power is not on");
 
-            final String why = I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop");
+            final String wait = I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop");
+            final String edits = I18n.t("ui.main.errorNoEditsWhileRunning");
 
             final java.util.Map<String, String> atRest = new java.util.LinkedHashMap<>();
 
@@ -5538,7 +5541,8 @@ public class testNoSetupEditDuringARun
 
                 assertFalse(c.isEnabled(), name + " is offered while autonomy runs");
 
-                assertEquals(c.getToolTipText(), why, name + " does not say why it is greyed while autonomy runs");
+                assertEquals(c.getToolTipText(), "executeTimetable".equals(name) ? wait : edits,
+                    name + " does not say what its door says while autonomy runs");
             }
 
             assertTrue(ui[0].isShowingSomethingRuns(), "Start does not show that autonomy runs (OB-309)");
