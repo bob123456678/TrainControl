@@ -348,7 +348,7 @@ public class testTheTailIsPickedOnTheDiagram
     {
         String body = SourceOf.withoutComments(SourceOf.declaration(PASTE_DOOR));
 
-        int asked = body.indexOf("askAfterPlacement(");
+        int asked = body.indexOf(RECORDS);
 
         assertTrue(asked > 0, "precondition: the paste door no longer asks the tail question");
 
@@ -371,6 +371,24 @@ public class testTheTailIsPickedOnTheDiagram
      */
     private static final String[] PLACEMENT_DOORS = {PASTE_DOOR, "private void placeFacing(",
         "public static void commitAndRecord(GraphLocAssign edit)"};
+
+    /** What each door does once its train is down: the tail's side, the save, the question and its answer. */
+    private static final String RECORD_TAIL = "static boolean recordTheTail(";
+
+    /** A door's call of it. */
+    private static final String RECORDS = "TailCrossedPrompt.recordTheTail(";
+
+    /** Asserts that every placement door goes through `recordTheTail`, and answers its source. */
+    private static String recordTheTail()
+    {
+        for (String door : PLACEMENT_DOORS)
+        {
+            assertTrue(SourceOf.declaration(door).contains(RECORDS), door + " no longer records the tail through"
+                + " TailCrossedPrompt.recordTheTail, so it keeps its own copy of the late-answer rules");
+        }
+
+        return SourceOf.declaration(RECORD_TAIL);
+    }
 
     /**
      * Asked on the event thread, as every placement door asks it, the question waits in a secondary loop and a click
@@ -629,9 +647,10 @@ public class testTheTailIsPickedOnTheDiagram
     @Test
     public void testEveryPlacementDoorAsksWhetherItStillStands() throws Exception
     {
-        for (String file : PLACEMENT_DOORS)
+        // The three doors do this through the one helper, which recordTheTail() asserts.
+        for (String file : new String[] {RECORD_TAIL})
         {
-            String source = SourceOf.declaration(file);
+            String source = recordTheTail();
 
             int asked = source.indexOf("askAfterPlacement(");
 
@@ -661,9 +680,10 @@ public class testTheTailIsPickedOnTheDiagram
     {
         final String newline = String.valueOf((char) 10);
 
-        for (String file : PLACEMENT_DOORS)
+        // The three doors do this through the one helper, which recordTheTail() asserts.
+        for (String file : new String[] {RECORD_TAIL})
         {
-            String source = SourceOf.declaration(file);
+            String source = recordTheTail();
 
             int asked = source.indexOf("askAfterPlacement(");
 
@@ -1178,9 +1198,10 @@ public class testTheTailIsPickedOnTheDiagram
     @Test
     public void testEveryDoorAsksTheRailwayRunningAtTheAnswer() throws Exception
     {
-        for (String file : PLACEMENT_DOORS)
+        // The three doors do this through the one helper, which recordTheTail() asserts.
+        for (String file : new String[] {RECORD_TAIL})
         {
-            String source = SourceOf.declaration(file);
+            String source = recordTheTail();
 
             int asked = source.indexOf("whereTheAnswerGoes(");
 
@@ -1264,11 +1285,12 @@ public class testTheTailIsPickedOnTheDiagram
                 "if (facing != null && session != null && setupStands)"},
             {PLACEMENT_DOORS[2], "session.setFacing(tile,", "if (!setupStands) return;"}};
 
+        // At each door: the facing before the question, and the door's own save guarded.
         for (String[] door : doors)
         {
             String source = SourceOf.declaration(door[0]);
 
-            int asked = source.indexOf("askAfterPlacement(");
+            int asked = source.indexOf(RECORDS);
 
             assertTrue(asked > 0, "precondition: " + door[0] + " no longer asks the tail question");
 
@@ -1277,38 +1299,45 @@ public class testTheTailIsPickedOnTheDiagram
             assertTrue(facing > 0 && facing < asked, door[0] + " writes the facing after the tail question, where a"
                 + " dropped answer takes it with it (TDU3-C1)");
 
-            // THE WRITE WAITS ON WHERE THE ANSWER GOES: nothing is written where it goes nowhere.
-            int where = source.indexOf("whereTheAnswerGoes(", asked);
-            int write = source.indexOf("setArrivedAlong(", where);
-
-            String between = where > 0 && write > where ? source.substring(where, write) : "";
-
-            assertTrue(between.contains("landing != null)") || between.contains("answersTo != null)"), door[0]
-                + " writes the tail question's answer without asking where it goes (TDU2-A1)");
-
-            int noted = source.indexOf("noteADroppedAnswer(", asked);
-            int answered = source.lastIndexOf("wasAnswered()", noted);
-
-            assertTrue(noted > 0 && answered > asked, door[0] + " logs a dropped reply that carried no answer (TDU4-C3)");
-
-            String call = source.substring(noted, source.indexOf(";", noted));
-
-            assertTrue(call.contains("baseNameOf("), door[0] + " names the copy, not the square, when it logs a dropped"
-                + " answer (TDU4-C3): " + call);
-
             int save = source.indexOf("session.save()", asked);
             int guard = source.lastIndexOf(door[2], save);
 
             assertTrue(save > 0 && guard > asked, door[0] + " saves a setup the window let go in the wait (TDU4-C2)");
-
-            // AND AN EDITOR OPENED IN THE WAIT LETS THE SETUP GO TOO: the paste door is claimed above.
-            int stands = source.indexOf("setupStands =", asked);
-
-            String rule = stands > 0 ? source.substring(stands, source.indexOf(";", stands)) : "";
-
-            assertTrue(rule.contains("anEditorOpenedInTheWait()"), door[0] + " writes a late answer into a setup that an"
-                + " editor opened in the wait holds a copy of (RLU-C9): " + rule);
         }
+
+        // And in the helper both go through, the rest.
+        String source = recordTheTail();
+
+        int asked = source.indexOf("askAfterPlacement(");
+
+        assertTrue(asked > 0, "precondition: " + RECORD_TAIL + " no longer asks the tail question");
+
+        // THE WRITE WAITS ON WHERE THE ANSWER GOES: nothing is written where it goes nowhere.
+        int where = source.indexOf("whereTheAnswerGoes(", asked);
+        int write = source.indexOf("setArrivedAlong(", where);
+
+        String between = where > 0 && write > where ? source.substring(where, write) : "";
+
+        assertTrue(between.contains("landing != null)") || between.contains("answersTo != null)"), RECORD_TAIL
+            + " writes the tail question's answer without asking where it goes (TDU2-A1)");
+
+        int noted = source.indexOf("noteADroppedAnswer(", asked);
+        int answered = source.lastIndexOf("wasAnswered()", noted);
+
+        assertTrue(noted > 0 && answered > asked, RECORD_TAIL + " logs a dropped reply that carried no answer (TDU4-C3)");
+
+        String call = source.substring(noted, source.indexOf(";", noted));
+
+        assertTrue(call.contains("baseNameOf("), RECORD_TAIL + " names the copy, not the square, when it logs a dropped"
+            + " answer (TDU4-C3): " + call);
+
+        // AND AN EDITOR OPENED IN THE WAIT LETS THE SETUP GO TOO.
+        int stands = source.indexOf("setupStands =", asked);
+
+        String rule = stands > 0 ? source.substring(stands, source.indexOf(";", stands)) : "";
+
+        assertTrue(rule.contains("anEditorOpenedInTheWait()"), RECORD_TAIL + " writes a late answer into a setup that an"
+            + " editor opened in the wait holds a copy of (RLU-C9): " + rule);
     }
 
     /** Cancel on the small window a waiting tail question leaves up. */

@@ -281,55 +281,11 @@ public class GraphLocAssign extends javax.swing.JPanel
                 org.traincontrol.automationui.AutonomySession.facingAfterAPaste(
                     session.departableFacingsFor(tile, layout), heading, point.getName()));
 
-            // AND WHERE ITS TAIL IS (closed 2026-09-11).  See the note above: answered in the
-            // dialog, written here, and into both stores because the walk that blocks track reads the
-            // live Point while the setup is the half that survives a restart.
-            String tail = edit.getArrivedFrom();
-
-            // (What the train had before is read from the railway above, before the commit.)
-
-            session.setArrivedFrom(tile, tail);
-
-            point.setArrivedFrom(tail);
-
-            // AND HOW FAR BACK ITS TAIL REACHES, asked after this dialog rather than on top of it (Adam, 2026-09-14).
-            // OWNED BY THE MAIN WINDOW: the dialog's own panel has gone with the dialog.
-            final org.traincontrol.base.Locomotive placed = point.getCurrentLocomotive();
-            final java.util.List<org.traincontrol.automation.Edge> roadAtTheQuestion = point.getArrivedAlong();
-
-            // SAVED BEFORE THE QUESTION WAITS (OB-305): the train, its facing and its side are written above, and the
-            // question below can wait as long as the operator likes - a crash in that wait lost them.  See
-            // `TailCrossedPrompt.saveBeforeAsking`; what it reconciled goes unsaid, as this door's own save leaves it.
-            TailCrossedPrompt.saveBeforeAsking(session, layout, point, tail,
-                point.getCurrentLocomotive().getTrainLength(), edit.parent);
-
-            TailCrossedPrompt.Answer answer = TailCrossedPrompt.askAfterPlacement(layout, point, tail,
-                point.getCurrentLocomotive().getTrainLength(), point.getCurrentLocomotive().getName(), edit.parent,
-                session::baseNameOf, roadBefore);
-
-            // THE ANSWER, OR THE ROAD IT HAD ON THE RAILWAY, as the paste does: OK pressed on a train's own
-            // dialog right after a run, with nothing asked, keeps the road it drove in on - in both stores.
-            // ONLY WHERE THE PLACEMENT STILL STANDS: the question waited with the window live, and the
-            // copy may hold another train now, or have been replaced by a rebuild.
-            setupStands = TailCrossedPrompt.sameSetup(session, edit.parent.getAutonomySession())
-                && !answer.anEditorOpenedInTheWait();
-
-            final org.traincontrol.automation.Point landing = TailCrossedPrompt.whereTheAnswerGoes(
-                TailCrossedPrompt.runningNow(edit.parent.getModel()), point, placed, tail, roadAtTheQuestion, setupStands);
-
-            if (landing != null)
-            {
-                java.util.List<org.traincontrol.automation.Edge> road = answer.roadToRecord(roadBefore,
-                    tile.equals(squareBefore), sideBefore, tail);
-
-                session.setArrivedAlong(tile, org.traincontrol.automation.Layout.namesOfRoad(road));
-                TailCrossedPrompt.writeRoad(landing, point, TailCrossedPrompt.runningNow(edit.parent.getModel()), road);
-            }
-            else if (answer.wasAnswered())
-            {
-                TailCrossedPrompt.noteADroppedAnswer(edit.parent.getModel(), placed.getName(),
-                    session.baseNameOf(point.getName()), answer);
-            }
+            // AND WHERE ITS TAIL IS: answered in the dialog, written here, and asked how far back it reaches after
+            // this dialog rather than on top of it, owned by the main window since the dialog's panel has gone.
+            setupStands = TailCrossedPrompt.recordTheTail(session, tile, layout, point, edit.getArrivedFrom(),
+                point.getCurrentLocomotive().getName(), roadBefore, tile.equals(squareBefore), sideBefore, edit.parent,
+                null);
         }
 
         // AND WRITTEN TO DISK.  The two writes above change the setup in memory only, and

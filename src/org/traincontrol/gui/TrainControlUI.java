@@ -7049,57 +7049,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 : org.traincontrol.automationui.AutonomySession.facingAfterAPaste(
                     placeableFacings(tile), facingFound, point.getName()));
 
-            session.setArrivedFrom(tile, tail);
-
-            // And the railway, not only the setup: the walk that blocks track reads the live Point, and the setup value
-            // only reaches it at the next rebuild, so the operator answered the question and watched nothing become blocked.  Like the facing menu
-            // (which wrote the setup and left the railway alone): one door, both stores, every time.
-            point.setArrivedFrom(tail);
-
-            // And how far back its tail reaches, asked where the answer matters
-            final org.traincontrol.base.Locomotive placed = point.getCurrentLocomotive();
-            final java.util.List<org.traincontrol.automation.Edge> roadAtTheQuestion = point.getArrivedAlong();
-
-            // SAVED BEFORE THE QUESTION WAITS (OB-305): the train, its facing and its side are written above, and the
-            // question below can wait as long as the operator likes - a crash in that wait lost them.  See
-            // `TailCrossedPrompt.saveBeforeAsking`; what it reconciled is logged as this door's own save is, since that
-            // save then finds nothing left to reconcile.
-            noteIfTheSetupWasNotTidied(org.traincontrol.gui.TailCrossedPrompt.saveBeforeAsking(session,
-                this.model.getAutoLayout(), point, tail, point.getCurrentLocomotive().getTrainLength(), this));
-
-            org.traincontrol.gui.TailCrossedPrompt.Answer answer = org.traincontrol.gui.TailCrossedPrompt.askAfterPlacement(
-                this.model.getAutoLayout(), point, tail, point.getCurrentLocomotive().getTrainLength(),
-                point.getCurrentLocomotive().getName(), this, session::baseNameOf, roadBefore);
-
-            // ONLY WHERE THE PLACEMENT STILL STANDS: the question waited with the window live, and what
-            // stands on this copy now may be another train, with the road a run brought it by - or the railway may have
-            // been rebuilt, and the copy that holds the train is a new one.
-            setupStands = org.traincontrol.gui.TailCrossedPrompt.sameSetup(session, getAutonomySession())
-                && !answer.anEditorOpenedInTheWait();
-
-            final org.traincontrol.automation.Point landing = org.traincontrol.gui.TailCrossedPrompt.whereTheAnswerGoes(
-                org.traincontrol.gui.TailCrossedPrompt.runningNow(this.model), point, placed, tail, roadAtTheQuestion,
-                setupStands);
-
-            // THE ANSWER, OR THE ROAD IT HAD ON THE RAILWAY.  Not Known forgets a road; no
-            // question, or a closed one, keeps the road the train had where it is still on the same square with the same
-            // side - read from the running layout, which a run has told and the setup has not - and both stores are
-            // written so they agree, including on another copy of the square the paste moved it onto.
-            if (landing != null)
-            {
-                java.util.List<org.traincontrol.automation.Edge> road = answer.roadToRecord(roadBefore,
-                    sameSquareAsBefore, sideBefore, tail);
-
-                session.setArrivedAlong(tile, org.traincontrol.automation.Layout.namesOfRoad(road));
-                org.traincontrol.gui.TailCrossedPrompt.writeRoad(landing, point,
-                    org.traincontrol.gui.TailCrossedPrompt.runningNow(this.model), road);
-            }
-            else if (answer.wasAnswered())
-            {
-                org.traincontrol.gui.TailCrossedPrompt.noteADroppedAnswer(this.model, placed.getName(),
-                    session.baseNameOf(point.getName()), answer);
-            }
-
+            setupStands = org.traincontrol.gui.TailCrossedPrompt.recordTheTail(session, tile, this.model.getAutoLayout(),
+                point, tail, point.getCurrentLocomotive().getName(), roadBefore, sameSquareAsBefore, sideBefore, this,
+                this::noteIfTheSetupWasNotTidied);
         }
 
         // NOT A SETUP THE WINDOW HAS LET GO: replaced in the wait, it was captured and written by the reset

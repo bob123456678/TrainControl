@@ -1122,7 +1122,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         boolean setupStands = true;
 
         // What the save before the tail question reconciled, shown with this door's own save (OB-305).
-        org.traincontrol.automationui.AutonomyCompanionStore.Reconciliation savedEarly = null;
+        final org.traincontrol.automationui.AutonomyCompanionStore.Reconciliation[] savedEarly = {null};
 
         if (session != null)
         {
@@ -1136,68 +1136,19 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
             // no copy can say, as the editor's Place records none (OB-350).
             session.setFacing(station, facing);
 
-            // AND THE TAIL, into BOTH stores.  The walk
-            // that blocks track reads the live Point; the setup value only reaches it at the next
-            // rebuild, so written to one only the operator answers the question and watches nothing
-            // become blocked.  After `placeLocomotive`, because a change of occupant clears it.
+            // AND THE TAIL, after `placeLocomotive`, because a change of occupant clears it.  Only for an arrival.
             if (arriving)
             {
-                session.setArrivedFrom(station, tail);
-
-                if (landing != null) landing.setArrivedFrom(tail);
-
-                // AND HOW FAR BACK ITS TAIL REACHES, asked where the answer matters.  After the move, because moving the
-                // train clears any road the square held.
-                final org.traincontrol.base.Locomotive placed = landing == null ? null : landing.getCurrentLocomotive();
-                final java.util.List<org.traincontrol.automation.Edge> roadAtTheQuestion =
-                    landing == null ? null : landing.getArrivedAlong();
-
-                // SAVED BEFORE THE QUESTION WAITS (OB-305): the train, its facing and its side are written above, and
-                // the question below can wait as long as the operator likes - a crash in that wait lost them.  See
-                // `TailCrossedPrompt.saveBeforeAsking`; what it reconciled is shown with this door's own save, below.
-                savedEarly = org.traincontrol.gui.TailCrossedPrompt.saveBeforeAsking(session, running, landing, tail,
-                    landing == null || landing.getCurrentLocomotive() == null
-                        ? null : landing.getCurrentLocomotive().getTrainLength(), ui);
-
-                org.traincontrol.gui.TailCrossedPrompt.Answer answer =
-                    org.traincontrol.gui.TailCrossedPrompt.askAfterPlacement(running, landing, tail,
-                        landing == null || landing.getCurrentLocomotive() == null
-                            ? null : landing.getCurrentLocomotive().getTrainLength(),
-                        locName, ui, session::baseNameOf, roadBefore);
-
-                // THE ANSWER, OR THE ROAD IT HAD ON THE RAILWAY, as the paste does - ONLY WHERE THE PLACEMENT
-                // STILL STANDS: the question waited with the window live, and the copy may hold another
-                // train now, or have been replaced by a rebuild.
-                setupStands = org.traincontrol.gui.TailCrossedPrompt.sameSetup(session, ui.getAutonomySession())
-                    && !answer.anEditorOpenedInTheWait();
-
-                final org.traincontrol.automation.Point answersTo = landing == null ? null
-                    : org.traincontrol.gui.TailCrossedPrompt.whereTheAnswerGoes(
-                        org.traincontrol.gui.TailCrossedPrompt.runningNow(ui.getModel()), landing, placed, tail,
-                        roadAtTheQuestion, setupStands);
-
-                if (setupStands && (landing == null || answersTo != null))
-                {
-                    java.util.List<org.traincontrol.automation.Edge> road = answer.roadToRecord(roadBefore,
-                        station != null && station.equals(squareBefore), sideBefore, tail);
-
-                    session.setArrivedAlong(station, org.traincontrol.automation.Layout.namesOfRoad(road));
-
-                    org.traincontrol.gui.TailCrossedPrompt.writeRoad(answersTo, landing,
-                        org.traincontrol.gui.TailCrossedPrompt.runningNow(ui.getModel()), road);
-                }
-                else if (answer.wasAnswered() && landing != null)
-                {
-                    org.traincontrol.gui.TailCrossedPrompt.noteADroppedAnswer(ui.getModel(), locName,
-                        session.baseNameOf(landing.getName()), answer);
-                }
+                setupStands = org.traincontrol.gui.TailCrossedPrompt.recordTheTail(session, station, running, landing,
+                    tail, locName, roadBefore, station != null && station.equals(squareBefore), sideBefore, ui,
+                    saved -> savedEarly[0] = saved);
             }
         }
 
         // WHAT THE SAVE BEFORE THE TAIL QUESTION RECONCILED (OB-305), shown here rather than in front of the
         // question, and once: the save below then finds nothing more, and a refusal over missing pages is said once for
         // each set of them (MT-380).
-        AutonomyReport.show(ui, savedEarly);
+        AutonomyReport.show(ui, savedEarly[0]);
 
         // Not a setup the window has let go in the wait, which the reset that replaced it already wrote.
         if (facing != null && session != null && setupStands)

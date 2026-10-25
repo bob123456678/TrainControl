@@ -265,6 +265,69 @@ public class TailCrossedPrompt
     }
 
     /**
+     * What every placement door does once the train is down and its facing written: the tail's side into both stores
+     * (the walk that blocks track reads the live Point; the setup is what survives a restart), the save before the
+     * question waits, the question, and its road written only where the placement still stands, else a dropped answer
+     * logged.
+     *
+     * @param point the copy the train was put on, holding it
+     * @param train the train's name
+     * @param roadBefore the road the train had before the door moved it, or null
+     * @param sameSquareAsBefore whether it was put back on the square it stood on
+     * @param sideBefore the side it had there, or null
+     * @param savedEarly given what the save before the question reconciled (null when it did not save), or null
+     * @return whether the setup written to is still the window's, so the door may save it
+     */
+    static boolean recordTheTail(org.traincontrol.automationui.AutonomySession session,
+        org.traincontrol.automationui.TileGraph.TileKey tile, Layout layout, Point point, String tail, String train,
+        List<Edge> roadBefore, boolean sameSquareAsBefore, String sideBefore, TrainControlUI ui,
+        java.util.function.Consumer<org.traincontrol.automationui.AutonomyCompanionStore.Reconciliation> savedEarly)
+    {
+        session.setArrivedFrom(tile, tail);
+
+        point.setArrivedFrom(tail);
+
+        // Read before the question: it waits with the window live, and what stands on this copy may change meanwhile
+        final org.traincontrol.base.Locomotive placed = point.getCurrentLocomotive();
+        final List<Edge> roadAtTheQuestion = point.getArrivedAlong();
+
+        org.traincontrol.automationui.AutonomyCompanionStore.Reconciliation saved =
+            TailCrossedPrompt.saveBeforeAsking(session, layout, point, tail, lengthOf(point), ui);
+
+        if (savedEarly != null) savedEarly.accept(saved);
+
+        Answer answer = askAfterPlacement(layout, point, tail, lengthOf(point), train, ui, session::baseNameOf,
+            roadBefore);
+
+        boolean setupStands = sameSetup(session, ui.getAutonomySession()) && !answer.anEditorOpenedInTheWait();
+
+        final Point landing = whereTheAnswerGoes(runningNow(ui.getModel()), point, placed, tail, roadAtTheQuestion,
+            setupStands);
+
+        // THE ANSWER, OR THE ROAD IT HAD ON THE RAILWAY: no question, or a closed one, keeps the road the train had
+        // where it is still on the same square with the same side.
+        if (landing != null)
+        {
+            List<Edge> road = answer.roadToRecord(roadBefore, sameSquareAsBefore, sideBefore, tail);
+
+            session.setArrivedAlong(tile, Layout.namesOfRoad(road));
+            writeRoad(landing, point, runningNow(ui.getModel()), road);
+        }
+        else if (answer.wasAnswered())
+        {
+            noteADroppedAnswer(ui.getModel(), train, session.baseNameOf(point.getName()), answer);
+        }
+
+        return setupStands;
+    }
+
+    /** The length of the train standing on a copy, or null. */
+    private static Integer lengthOf(Point point)
+    {
+        return point.getCurrentLocomotive() == null ? null : point.getCurrentLocomotive().getTrainLength();
+    }
+
+    /**
      * Puts the question: a list of the sensors, and Not Known.
      *
      * A closed dialog is no answer and a choice of nothing.  Unlike the side question it does not refuse the
