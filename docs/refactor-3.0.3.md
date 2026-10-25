@@ -555,9 +555,30 @@ AutonomyEditorPanel 99, LayoutEditor 47): a member used across a new package lin
 
 **Next release: FR-109, the layout editor's page items** (Adam, 2026-10-24: "will we fold this into the 3.0.4
 release?").  The pre/post-compaction experiment built FR-109 four times (branches `exp-pre-haiku`, `exp-post-haiku`,
-`exp-pre-sonnet`, `exp-post-sonnet`; none merged).  Take the build the Opus grader ranks best, preferring a post build,
-as those sit on 3.0.3's code; rebase it onto dev after 3.0.3 ships, fix what the grader found (untested autonomy-mode
-path, the run refusal through the editor, the unsaved-work wording), then the usual review, Readme line and MT.
+`exp-pre-sonnet`, `exp-post-sonnet`; none merged).  The Opus grader ranked `exp-post-sonnet` (`b950dcb0`) first; take
+it forward, rebased onto dev after 3.0.3 ships.  Before it ships:
+- ask a run's refusal (`RunGates`) and the name prompt before the Save/Discard question, so a Discard then Cancel cannot
+  lose edits, and a refusal during a route is one dialog with the editor left open;
+- settle the `pageActionSettled` callback on a throw too;
+- claims for a route running, the main window showing another page, and Save then Rename; the setup-editor claim shown
+  red; run `ui.testTheEditorNamesItsShortcuts` and `ui.testTheTrackEditorByHand`;
+- Adam's call: it closes and reopens the editor around each action, so the window flashes even on Cancel.  The other way
+  (`exp-pre-sonnet`'s) keeps the window open and skips the editor-open refusal for the editor that asked.
+
+**Next release: lessons from the FR-109 experiment** (`docs/reviews/fr109-experiment/`: the brief, the four results and the grades).
+Compaction helped most where the model was weakest: Haiku did not finish on the 3.0.2 tree (stopped at ~360k tokens,
+three classes red, one test JVM hung on an unanswered dialog) and finished in 22 minutes on the 3.0.3 tree; Sonnet used
+35% fewer tokens and 43% fewer tool calls for half the production change at similar quality.  The test helpers
+(`support.Answering`, `Components`, `TestStation`) may matter as much as the compaction: both post builds wrote tests in
+their shape, both pre builds hand-wrote dialog answerers.  One run per cell, different bases, a loaded machine.
+- Briefs state acceptance criteria every build missed one of: act on the page being edited even when the main window
+  shows another; a refused or canceled action leaves the window as it was; dialogs hang off the window that asked;
+  unsaved work is asked about only once the action will go ahead.
+- CLAUDE.md: a change to LayoutEditor runs the shortcut and track-editor classes, and a new control is
+  `setFocusable(false)`; never edit an existing guard test to make it pass, report it; a test that sets a preference
+  puts it back.
+- Tooling: a watchdog in `Answering` or a per-class timeout in `one.sh` that names a modal dialog nobody answers; an
+  "affected classes" helper so the run set is not left to judgment.
 
 **Next release: shorter messages and tooltips** (Adam, 2026-10-24: "shorten error messages and tooltips across the
 app to be more concise?  I've seen some massive popups in tests").  The English bundle has 2,069 keys; 52 values shown
