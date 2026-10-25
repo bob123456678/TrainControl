@@ -20,11 +20,7 @@ public class DriveALocomotive
     /** The locomotive the example uses, made if the station does not have it. */
     public static final String NAME = "Example locomotive";
 
-    /**
-     * @param station the Central Station to drive
-     * @return a line of text for each thing read back from the locomotive
-     * @throws Exception when a command fails
-     */
+    /** Drives the station's example locomotive and returns a line of text for each thing read back from it. */
     public static List<String> run(MarklinControlStation station) throws Exception
     {
         List<String> found = new ArrayList<>();
