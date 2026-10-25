@@ -344,7 +344,7 @@ def ids(rev):
     for i in gone:
         hits = subprocess.run(['git', '-C', ROOT, 'grep', '-l', '-w', i, '--', 'src', 'test'], stdout=subprocess.PIPE).stdout.decode().split()
         hits = [h for h in hits if h != REL]
-        print('%s gone from ' + os.path.basename(REL) + '; elsewhere in src/test: %s' % (i, ', '.join(hits) if hits else 'NOWHERE'))
+        print('%s gone from %s; elsewhere in src/test: %s' % (i, os.path.basename(REL), ', '.join(hits) if hits else 'NOWHERE'))
     print('%d tracker ids gone, %d remain' % (len(gone), len(after)))
 
 
