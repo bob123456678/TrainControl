@@ -144,8 +144,6 @@ public class testRouteEditorValidation
      * asserted by `core.testAccessory.testTheTopLogicalAddressOfEachProtocolIsValid`.
      *
      * MUTATION: put `Accessory.isValidAddress(address, speaks)` back in `addressProblem` and this fails.
-     *
-     * @throws Exception on a failure to read the source
      */
     @Test
     public void testTheAddressCheckAsksTheLogicalRule() throws Exception
@@ -228,8 +226,6 @@ public class testRouteEditorValidation
      * (Adam: "bracketed loc names should just be allowed").  Read from the English bundle.
      *
      * MUTATION: put "or a bracket" back in either and this fails.
-     *
-     * @throws Exception from reading the bundle
      */
     @Test
     public void testTheNameRulesSayOnlyWhatIsRefused() throws Exception
@@ -263,8 +259,6 @@ public class testRouteEditorValidation
      * on; ticking it takes the warning away, and a route with no conditions has none.
      *
      * MUTATION: show the reading alone whatever the tick, or leave the warning up once it is ticked, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testConditionsSayTheyAreUncheckedWithoutAutomaticFire() throws Exception
