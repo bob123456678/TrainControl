@@ -33,12 +33,11 @@ import org.traincontrol.util.Util;
 
 /**
  * Routes > Import, driven as Adam drives it: the file chooser answered with an export of his routes, the question about
- * automatic firing answered No (MT-496) or Yes (MT-497), and what the door then says and leaves armed read (Adam,
- * 2026-09-25: automated tests supersede the MTs they answer).
+ * automatic firing answered No (MT-496) or Yes (MT-497), and what the door then says and leaves armed read.
  *
- * The file is `exportRoutes()`, which is the text Routes > Export shows and saves; the Export door itself is not pressed
- * because it also copies the text to the clipboard, which is the machine's and not the run's.  An import deletes every
- * route in the data it runs on, so this runs only where the run has its own copy of the data (one.sh, battery.sh), as
+ * The file is `exportRoutes()`, the text Routes > Export shows and saves; the Export door itself is not pressed because
+ * it also copies the text to the clipboard, which is the machine's and not the run's.  An import deletes every route in
+ * the data it runs on, so this runs only where the run has its own copy of the data (one.sh, battery.sh), as
  * `core.testAnImportSaysItsRoutesAreOff` does.
  *
  * @author Adam
@@ -49,12 +48,10 @@ public class testTheRoutesImportDoorAsksByName
     private static final String YES = String.valueOf(TrainControlUI.YES_NO_OPTS[0]);
 
     /**
-     * Answered No: the question named the routes saved with automatic firing on and started on No, the message says every
-     * route came in with it off, and none has it on (MT-496).
+     * Answered No: the question named the routes saved with automatic firing on and started on No, the message says
+     * every route came in with it off, and none has it on (MT-496).
      *
      * MUTATION: leave the names out of the question's Details list, start it on Yes, or arm on No, and this fails.
-     *
-     * @throws Exception from the window or the import
      */
     @Test
     public void testAnsweredNoEveryRouteArrivesOff() throws Exception
@@ -87,12 +84,10 @@ public class testTheRoutesImportDoorAsksByName
     }
 
     /**
-     * Answered Yes: the message says automatic firing is on again for the routes saved with it on, and exactly those have
-     * it (MT-497).
+     * Answered Yes: the message says automatic firing is on again for the routes saved with it on, and exactly those
+     * have it (MT-497).
      *
      * MUTATION: arm none, arm every route, or say another count, and this fails.
-     *
-     * @throws Exception from the window or the import
      */
     @Test
     public void testAnsweredYesTheSavedArmedRoutesAreArmedAgain() throws Exception
@@ -110,18 +105,12 @@ public class testTheRoutesImportDoorAsksByName
     }
 
     /**
-     * A route saved armed that has no sensor to watch is not armed by Yes - the model arms only a route with one, as the
-     * right-click item does - and the door neither counts it as armed again (found automating MT-497, 2026-09-25) nor
-     * names it in the question as one Yes will arm.
-     *
-     * The door said "on again for the N that were saved with it on", N counted from the file, while the model counted
-     * the routes it armed; so a file whose saved-armed route had lost its sensor told the operator a route was armed
-     * again that was not, and the log said the opposite.  Such a file is what an export gives of a route whose sensor was
-     * removed while its automatic firing was on.
+     * A route saved armed that has no sensor to watch is not armed by Yes (the model arms only a route with one, as the
+     * right-click item does), and the door neither counts it as armed again nor names it in the question.  The door
+     * counted N from the file while the model counted the routes it armed, so the operator was told a route was armed
+     * again that was not.
      *
      * MUTATION: count from the file again, or name every route saved armed, and this fails.
-     *
-     * @throws Exception from the window or the import
      */
     @Test
     public void testASavedArmedRouteWithNoSensorIsNotCountedAsArmed() throws Exception
@@ -172,16 +161,13 @@ public class testTheRoutesImportDoorAsksByName
     }
 
     /**
-     * A route whose name has a letter outside ASCII comes back by the name it was exported with.
-     *
-     * Export writes the file as UTF-8; the door read it in the machine's own character set, which on Java 8 under
-     * Windows is a code page - so "Ausfahrt Süd" came back as "Ausfahrt SÃ¼d", and a route's locomotive command naming
-     * "Köf II" named no locomotive, and was skipped when the route fired.  On a JVM whose own character set is UTF-8 the
-     * two readings agree and this can see nothing, so there it is skipped rather than passed.
+     * A route whose name has a letter outside ASCII comes back by the name it was exported with.  Export writes UTF-8;
+     * the door read it in the machine's own character set, which on Java 8 under Windows is a code page, so a route's
+     * locomotive command naming a non-ASCII locomotive named none and was skipped when the route fired.  On a JVM whose
+     * own character set is UTF-8 the two readings agree and this can see nothing, so there it is skipped rather than
+     * passed.
      *
      * MUTATION: read the file without a character set, and this fails.
-     *
-     * @throws Exception from the window or the import
      */
     @Test
     public void testARouteNamedOutsideAsciiComesBackByItsName() throws Exception
@@ -237,8 +223,6 @@ public class testTheRoutesImportDoorAsksByName
      * commands, which the import splits.
      *
      * MUTATION: put the split routes back into the notice's text, and this fails.
-     *
-     * @throws Exception from the window or the import
      */
     @Test
     public void testTheLineNamingTheRoutesItSplitFitsTheScreen() throws Exception
@@ -304,8 +288,6 @@ public class testTheRoutesImportDoorAsksByName
      * armed, which made a question of over 200 words.
      *
      * MUTATION: put the names back into the question's text, and this fails.
-     *
-     * @throws Exception from the window or the import
      */
     @Test
     public void testAQuestionNamingManyRoutesFitsTheScreen() throws Exception
@@ -375,8 +357,8 @@ public class testTheRoutesImportDoorAsksByName
     }
 
     /**
-     * Arms a route with a sensor where none is armed (MT-496 and MT-497 step 1, through Enable Auto Execution's own call),
-     * exports, and imports the file through Routes > Import, answering the question.
+     * Arms a route with a sensor where none is armed (MT-496 and MT-497 step 1), exports, and imports the file through
+     * Routes > Import, answering the question.
      */
     private static Imported importHisRoutes(boolean yes, Edit edit) throws Exception
     {
@@ -425,8 +407,8 @@ public class testTheRoutesImportDoorAsksByName
 
                 SwingUtilities.invokeAndWait(() -> ui[0].enableOrDisableRoute(arming, true));
 
-                // THE EDIT DELETES AND RE-ADDS THE ROUTE, so for a moment it is in the list under no name at all: asked
-                // then, getRoute answered null and this threw (the battery of 2026-09-26, another run's JVMs up)
+                // THE EDIT DELETES AND RE-ADDS THE ROUTE, so for a moment it is in the list under no name at all, and
+                // getRoute answered null.
                 for (long end = System.currentTimeMillis() + 10000; (model.getRoute(arming) == null
                     || !model.getRoute(arming).isEnabled()) && System.currentTimeMillis() < end; ) Thread.sleep(50);
             }
