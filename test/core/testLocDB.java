@@ -61,7 +61,7 @@ public class testLocDB
                 Math.min(80, csv.length())));
 
         // AND A NAMED LOCOMOTIVE IN IT, so the row loop is actually reached - a header-only CSV
-        // would pass the assertion above without ever touching the line that used to throw.
+        // would pass the assertion above without ever touching the line that threw.
         //
         // By name rather than by counting lines: `escapeCsv` quotes a notes field that contains a
         // newline, and a quoted newline is a legal CSV row that spans two lines.  Counting them said
