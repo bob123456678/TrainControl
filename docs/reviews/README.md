@@ -34,7 +34,7 @@ What survives a round:
 | every finding | the `finding` table in `docs/manual-tests/triage.db` - ref, severity, what it was about, the evidence, the commit, which source files cite it, and a `status` set deliberately |
 | the same, greppable | `docs/manual-tests/findings.tsv`, rendered from the store: `grep "^MKR-B1" docs/manual-tests/findings.tsv` |
 | the rules it settled | [../reference/behaviour.md](../reference/behaviour.md) |
-| the questions it left | [../reference/open-questions.md](../reference/open-questions.md) |
+| the questions it left | the findings whose status is "Open - Adam's decision", in the same store |
 | the work it left | the Inbox, in the same store: `py -3 docs/manual-tests/triagedb.py issues` |
 | the tests it asked for | the manual tests, in the same store, tagged `MT-###`: `triagedb.py show MT-###` |
 

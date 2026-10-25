@@ -64,7 +64,7 @@ round finds nothing new above C.
    dispositions (commit hashes, claim hashes, "red first"), catalogue with
    `python docs/tools/catalog-findings.py --add <the working folder>`, set each new
    row's status in the store (Closed / Open / "Open - Adam's decision"), render the mirror, update the counts in
-   behaviour.md and open-questions.md. Tracker entries for anything Adam has to see on the railway: written with
+   behaviour.md (`triagedb.py counts`). Tracker entries for anything Adam has to see on the railway: written with
    `triagedb.py add-test`, proved with `triagedb.py show MT-###`, which prints the entry as the store holds it.
 6. **The next round's validators** each get their lane's documents so far and the round's fix commits, and are asked
    two things: is each disposition true (verify, don't trust), and what did the fixes break or leave behind. Same rules

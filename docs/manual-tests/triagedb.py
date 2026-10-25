@@ -82,10 +82,9 @@ DUMP_DIR = os.path.join(HERE, DUMP_NAME)
 
 FINDINGS_MIRROR = os.path.join(HERE, "findings.tsv")
 
-# The reference documents that quote the record's counts (see render_counts)
+# The reference document that quotes the record's counts (see render_counts)
 REFERENCE_DIR = os.path.join(os.path.dirname(HERE), "reference")
 BEHAVIOUR_FILE = os.path.join(REFERENCE_DIR, "behaviour.md")
-QUESTIONS_FILE = os.path.join(REFERENCE_DIR, "open-questions.md")
 
 # The markdown `migrate` reads, once, and nothing else ever does.
 TESTS_MD = "tests.md"
@@ -837,13 +836,9 @@ def findings(conn, ref=None, disposition=None, severity=None, cited=None):
 # the counts the reference documents quote
 # --------------------------------------------------------------------------------------------
 
-# Three sentences quote what the record holds, and `testTheRecordsCountTheStore` reads them as these do.  One group
-# per value.  A space inside a phrase may be a line break in the file: behaviour.md wraps its sentence.
+# The sentence that quotes what the record holds, read by `testTheRecordsCountTheStore` as this does.  One group per
+# value.  A space inside the phrase may be a line break in the file: behaviour.md wraps its sentence.
 ROWS_QUOTE_RE = re.compile(r"(?<![\d,])(\d[\d,]*)\s+rows\s+for\s+(\d[\d,]*)\s+findings")
-ROWS_NOW_RE = re.compile(r"(?<![\d,])(\d[\d,]*) finding rows in the store now")
-INBOX_QUOTE_RE = re.compile(
-    r"Today it holds (\d+) entries - (\d+) OB and (\d+) FR,\s+recounted\s+from\s+the\s+store\s+on\s+"
-    r"(\d{4}-\d{2}-\d{2})\s+\(((?:OB|FR)-\d+)\s+the\s+newest\)")
 
 
 def _requote(path, pattern, form, choose):
@@ -882,15 +877,14 @@ def _requote(path, pattern, form, choose):
     return True
 
 
-def render_finding_counts(conn, behaviour_path=BEHAVIOUR_FILE, questions_path=QUESTIONS_FILE):
-    """Rewrites the finding counts the reference documents quote, from the store.
+def render_finding_counts(conn, behaviour_path=BEHAVIOUR_FILE):
+    """Rewrites the finding counts behaviour.md quotes, from the store.
 
     A finding written up in two documents has a row for each, so rows and findings differ (VD15-T5).
 
     :param conn: an open connection to the store the findings live in
     :param behaviour_path: behaviour.md
-    :param questions_path: open-questions.md
-    :return: the documents it rewrote, none when both were right
+    :return: the documents it rewrote, none when the counts were right
     """
 
     rows, findings_ = conn.execute("SELECT COUNT(*), COUNT(DISTINCT ref) FROM finding").fetchone()
@@ -905,87 +899,18 @@ def render_finding_counts(conn, behaviour_path=BEHAVIOUR_FILE, questions_path=QU
                 lambda now: [format(rows, ","), format(findings_, ",")]):
         changed.append(behaviour_path)
 
-    if _requote(questions_path, ROWS_NOW_RE, '"N finding rows in the store now"',
-                lambda now: [format(rows, ",")]):
-        changed.append(questions_path)
-
     return changed
 
 
-def inbox_counts(conn):
-    """What the Inbox holds, counted as `testTheRecordsCountTheStore` counts it from the dump.
-
-    :param conn: an open connection
-    :return: (OB entries, FR entries, the newest entry's reference)
-    """
-
-    refs = [r[0] for r in conn.execute("SELECT ref FROM issue WHERE inbox = 1 ORDER BY ordinal")]
-
-    if not refs:
-        raise IOError("the Inbox holds no entries, so there is no newest one to name")
-
-    return (sum(1 for ref in refs if ref.startswith("OB-")),
-            sum(1 for ref in refs if ref.startswith("FR-")),
-            refs[-1])
-
-
-def render_inbox_count(conn, questions_path=QUESTIONS_FILE):
-    """Rewrites the Inbox count `open-questions.md` quotes, from the store.
-
-    The sentence carries the day it was recounted, so it gets today's date when a number or the newest entry changes
-    and keeps its date when they are all right.
-
-    :param conn: an open connection
-    :param questions_path: open-questions.md
-    :return: the documents it rewrote, none when the count was right
-    """
-
-    obs, frs, newest = inbox_counts(conn)
-
-    def choose(now):
-        want = [str(obs + frs), str(obs), str(frs), now[3], newest]
-
-        if want != now:
-            want[3] = datetime.date.today().isoformat()
-
-        return want
-
-    if _requote(questions_path, INBOX_QUOTE_RE,
-                '"Today it holds T entries - X OB and Y FR, recounted from the store on YYYY-MM-DD'
-                ' (REF the newest)"', choose):
-        return [questions_path]
-
-    return []
-
-
-def render_counts(conn, behaviour_path=BEHAVIOUR_FILE, questions_path=QUESTIONS_FILE):
+def render_counts(conn, behaviour_path=BEHAVIOUR_FILE):
     """Rewrites every count the reference documents quote, so none is written by hand.
 
     :param conn: an open connection to the repository's store
     :param behaviour_path: behaviour.md
-    :param questions_path: open-questions.md
     :return: the documents it rewrote
     """
 
-    changed = render_finding_counts(conn, behaviour_path, questions_path)
-
-    for path in render_inbox_count(conn, questions_path):
-        if path not in changed:
-            changed.append(path)
-
-    return changed
-
-
-def _is_the_repositorys(conn):
-    """Whether a connection is to the repository's own store, whose counts the reference documents quote.
-
-    :param conn: an open connection
-    :return: true for docs/manual-tests/triage.db
-    """
-
-    path = db_path(conn)
-
-    return bool(path) and os.path.normcase(os.path.abspath(path)) == os.path.normcase(os.path.abspath(DB_FILE))
+    return render_finding_counts(conn, behaviour_path)
 
 
 # --------------------------------------------------------------------------------------------
@@ -1716,32 +1641,20 @@ def clear_from_inbox(conn, ref):
 
 
 def _after_inbox_write(conn, ref, result):
-    """What follows a write to the Inbox: its dump file, and the count open-questions.md quotes of it - for the
-    repository's own store, not a copy.
+    """What follows a write to the Inbox: its dump file.
 
-    Either failing raises DumpNotWritten, whose `result` is the write's: the item IS filed, or cleared, and an error
-    that said only what failed would invite doing it again.
+    A failure raises DumpNotWritten, whose `result` is the write's: the item IS filed, or cleared, and an error that
+    said only what failed would invite doing it again.
 
     :param conn: the connection that wrote
     :param ref: the item written
     :param result: what the write returns
     """
 
-    problems = []
-
     try:
         _after_write(conn, result)
     except DumpNotWritten as bad:
-        problems.append(str(bad))
-
-    if _is_the_repositorys(conn):
-        try:
-            render_inbox_count(conn)
-        except Exception as bad:
-            problems.append("its count in open-questions.md was not updated: %s" % bad)
-
-    if problems:
-        raise DumpNotWritten("%s is written to the store, but %s" % (ref, "; and ".join(problems)), result)
+        raise DumpNotWritten("%s is written to the store, but %s" % (ref, bad), result)
 
 
 # --------------------------------------------------------------------------------------------
@@ -3156,7 +3069,7 @@ def main(argv=None):
     p.add_argument("--store", default=DB_FILE, help="the store whose status notes are checked - a copy, to see the"
                                                      " check fail")
 
-    sub.add_parser("counts", help="rewrite the counts behaviour.md and open-questions.md quote, from the store")
+    sub.add_parser("counts", help="rewrite the counts behaviour.md quotes, from the store")
     sub.add_parser("selftest", help="exercise the store on copies")
 
     args = parser.parse_args(argv)

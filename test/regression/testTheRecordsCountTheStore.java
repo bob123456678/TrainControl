@@ -67,7 +67,7 @@ public class testTheRecordsCountTheStore
     private static final String MIRROR = "docs/manual-tests/findings.tsv";
 
     /**
-     * The finding counts quoted in the two reference documents are the store's own, rows and findings.
+     * The finding counts behaviour.md quotes are the store's own, rows and findings.
      *
      * @throws Exception on a failure to read
      */
@@ -101,56 +101,6 @@ public class testTheRecordsCountTheStore
         assertEquals(number(both.group(2)), findings,
             "behaviour.md quotes " + both.group(2) + " findings; the store holds " + count(findings)
             + " distinct refs in " + count(rows) + " rows");
-
-        assertEquals(numberBefore("docs/reference/open-questions.md", "finding rows in the store now"),
-            rows,
-            "open-questions.md quotes a row count the store does not hold.  The store has "
-            + count(rows) + " rows, for " + count(findings) + " findings");
-    }
-
-    /**
-     * The Inbox count quoted in `open-questions.md` is the number of entries the Inbox holds.
-     *
-     * Counted from the store's text dump, `issues.txt`: one record per item ever filed, `inbox: yes`
-     * while it is in the Inbox (FR-136 Phase 1c - the Inbox was a section of `issues.md` before).
-     *
-     * @throws Exception on a failure to read
-     */
-    @Test
-    public void testTheInboxCountIsTheInboxsOwn() throws Exception
-    {
-        List<String> refs = inTheInbox();
-
-        int obs = 0;
-        int frs = 0;
-
-        for (String ref : refs)
-        {
-            if (ref.startsWith("OB-")) obs++;
-
-            if (ref.startsWith("FR-")) frs++;
-        }
-
-        assertTrue(obs > 0 && frs > 0, "the Inbox holds no entries at all, so nothing below is a check");
-
-        String said = read("docs/reference/open-questions.md");
-
-        Matcher held = Pattern.compile("it holds (\\d+) entries - (\\d+) OB and (\\d+) FR").matcher(said);
-
-        assertTrue(held.find(),
-            "open-questions.md no longer states the Inbox count in the form this reads, so the number"
-            + " it does state is unchecked again - it should say \"it holds " + (obs + frs)
-            + " entries - " + obs + " OB and " + frs + " FR\"");
-
-        assertEquals(Integer.parseInt(held.group(2)), obs,
-            "open-questions.md quotes " + held.group(2) + " OB entries; the Inbox holds " + obs);
-
-        assertEquals(Integer.parseInt(held.group(3)), frs,
-            "open-questions.md quotes " + held.group(3) + " FR entries; the Inbox holds " + frs);
-
-        assertEquals(Integer.parseInt(held.group(1)), obs + frs,
-            "open-questions.md quotes a total of " + held.group(1) + " Inbox entries against its own "
-            + obs + " OB and " + frs + " FR, which add to " + (obs + frs));
     }
 
     /**
@@ -249,28 +199,6 @@ public class testTheRecordsCountTheStore
             "the README says " + reviews + " review documents were deleted on 2026-09-08 and " + second
             + " on 2026-09-21, which is " + (reviews + second) + " - so its spelled-out total has to"
             + " read \"" + words + " review documents\"");
-    }
-
-    /**
-     * The refs `issues.txt` says are in the Inbox: the records whose `inbox` field is `yes`.
-     *
-     * @return the refs, in the dump's order
-     * @throws Exception on a failure to read
-     */
-    private static List<String> inTheInbox() throws Exception
-    {
-        List<String> refs = new ArrayList<>();
-
-        String ref = null;
-
-        for (String line : read(DUMP + "issues.txt").split("\n"))
-        {
-            if (line.startsWith("[issue ")) ref = line.substring("[issue ".length(), line.length() - 1);
-
-            if (line.equals("inbox: yes") && ref != null) refs.add(ref);
-        }
-
-        return refs;
     }
 
     /** The store's text dump, which `triagedb.py` writes beside `triage.db` on every write. */
@@ -912,45 +840,6 @@ public class testTheRecordsCountTheStore
         }
 
         return false;
-    }
-
-    /**
-     * The number immediately before a phrase, wherever it appears in a document.
-     *
-     * @param path the document
-     * @param phrase what follows the number
-     * @return the number
-     * @throws Exception on a failure to read
-     */
-    private static int numberBefore(String path, String phrase) throws Exception
-    {
-        String said = read(path);
-
-        int at = said.indexOf(phrase);
-
-        assertTrue(at > 0, path + " no longer says \"" + phrase + "\", so the number beside it - which"
-            + " this guard exists to keep true - is no longer checked.  Restore the phrase or move the"
-            + " check");
-
-        // BACKWARDS OVER THE DIGITS, BUT NOT FAR.  Unbounded, this walked past the phrase's
-        // own words to whatever number came earlier in the document and then compared THAT, so a
-        // sentence that lost its count would be checked against a number somewhere else entirely.
-        int end = at;
-
-        while (end > 0 && end > at - 3 && !Character.isDigit(said.charAt(end - 1))) end--;
-
-        assertTrue(end > 0 && Character.isDigit(said.charAt(end - 1)),
-            path + " says \"" + phrase + "\" with no number in front of it, so the count it is there"
-            + " to carry has gone.  Write the number immediately before the phrase");
-
-        int start = end;
-
-        while (start > 0 && (Character.isDigit(said.charAt(start - 1)) || said.charAt(start - 1) == ','))
-        {
-            start--;
-        }
-
-        return Integer.parseInt(said.substring(start, end).replace(",", ""));
     }
 
     /**
