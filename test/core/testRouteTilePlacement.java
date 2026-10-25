@@ -20,28 +20,18 @@ import org.traincontrol.marklin.file.CS2File;
 /**
  * Route buttons placed where what they conduct is not what was drawn (OB-160).
  *
- * A route button carries no track of its own.  What it conducts is decided entirely by what is beside
- * it: `transparentRoutes` collects the sides where a neighbor presents a real port OR is itself
- * transparent, then joins N to S and E to W where both face, or the only two faces where there are
- * exactly two.
+ * A route button carries no track of its own: `transparentRoutes` collects the sides where a neighbor presents a real
+ * port OR is itself transparent, then joins N to S and E to W where both face, or the only two faces where there are
+ * exactly two.  Adam: "make it be an error if two route tiles are next to each other (only if they are connected to
+ * something else on the graph)... I am inclined to treat it as a static crossing under the hood."  Three shapes, only
+ * two are errors:
  *
- * Adam: "make it be an error if two route tiles are next to each other (only if they are connected to
- * something else on the graph)... I am inclined to treat it as a static crossing under the hood."
+ *   two buttons side by side, with track running into the pair - the pair conducts a route across diagram with no rails
+ *   three real arms - the through-pair wins and the third is DROPPED, silently
+ *   four real arms - both pairs are emitted, a fixed crossing, left alone
  *
- * THREE SHAPES, AND ONLY TWO ARE ERRORS:
- *
- *   two buttons side by side, with track running into the pair - each counts the other as a face, so
- *   the pair conducts a route across diagram with no rails on it
- *
- *   three real arms - the through-pair wins and the third is DROPPED, silently, where every other drop
- *   in this pipeline warns
- *
- *   four real arms - both pairs are emitted, which IS a fixed crossing, and is left alone
- *
- * THE LAST TEST IS THE ONE THAT MATTERS TO THE OPERATOR.  These are BLOCKING errors, so a shape that
- * exists on his railway would stop autonomy from starting.  testTheOperatorsOwnRailwayIsNotRefused
- * runs the checks over the frozen snapshot and names every square that trips them, so a rule that is
- * too strict is found here rather than by a railway that will not start.
+ * These are BLOCKING errors, so `testTheOperatorsOwnRailwayIsNotRefused` runs the checks over the frozen snapshot and
+ * names every square that trips them: a rule too strict is found here rather than by a railway that will not start.
  */
 public class testRouteTilePlacement
 {
@@ -52,8 +42,8 @@ public class testRouteTilePlacement
     @BeforeClass
     public void connect() throws Exception
     {
-        // Before the model: init reads the saved layout path, which on the operator's machine is his
-        // own railway (OB-111).
+        // Before the model: init reads the saved layout path, which on the operator's machine is his own railway
+        // (OB-111).
         sandbox = support.LayoutSandbox.open();
 
         model = support.TestStation.simulatedInDebug();
@@ -68,11 +58,9 @@ public class testRouteTilePlacement
     }
 
     /**
-     * The road a route tile carries can be turned back into the sides it joins, which is what drawing it needs (OB-279).
-     *
-     * Found on Adam's measured railway on 2026-09-23: a train's tail lay across the route tile at 1 - Main:15,10, and the
-     * orange line stopped there.  A route tile's roads are named by the sides they join - it has no port map of its own
-     * - and the tile was looking its road up in the port map by index, where there is nothing.
+     * The road a route tile carries can be turned back into the sides it joins, which drawing it needs (OB-279): a
+     * route tile has no port map of its own, and looking its road up in the port map by index found nothing, so a
+     * train's tail across one stopped the orange line.
      *
      * MUTATION: `transparentRouteOf` answering null fails this; and dropping its use from `LayoutLabel.routesOf` fails
      * `core.testTheShadingFollowsTheTrain`, whose train lies across that route tile.
@@ -114,9 +102,7 @@ public class testRouteTilePlacement
             + " axis");
     }
 
-    /**
-     * Two buttons side by side, with track into the pair, is refused (Adam's rule).
-     */
+    /** Two buttons side by side, with track into the pair, is refused (Adam's rule). */
     @Test
     public void testTwoAdjacentRouteTilesWithTrackAreRefused() throws Exception
     {
@@ -134,10 +120,8 @@ public class testRouteTilePlacement
     }
 
     /**
-     * Two buttons side by side with nothing running into them are a control panel, not a fault.
-     *
-     * The half of Adam's rule that keeps it from firing on every panel: "only if they are connected to
-     * something else on the graph".
+     * Two buttons side by side with nothing running into them are a control panel, not a fault ("only if they are
+     * connected to something else on the graph").
      */
     @Test
     public void testTwoAdjacentRouteTilesAloneAreFine() throws Exception
@@ -153,16 +137,10 @@ public class testRouteTilePlacement
     }
 
     /**
-     * Buttons reaching track at ONE end splice nothing, and are not a fault (OB-160).
-     *
-     * Adam, on the square this first fired on: "since the two route icons are next to each other but
-     * there is no connect to the link nor the straight track, it should not emit an error.  There is no
-     * ambiguity there, I believe."  He is right - a route through a run of buttons needs two ends, and
-     * with one it conducts nothing.
-     *
-     * The fixture is his: a sensor against the western end, and past the far button a straight lying
-     * NORTH-SOUTH, which presents no face to it.  Turn that straight a quarter turn and it becomes the
-     * test above, which is refused - the difference between a panel beside the track and a splice.
+     * Buttons reaching track at ONE end splice nothing, and are not a fault (OB-160; Adam: "since the two route icons
+     * are next to each other but there is no connect to the link nor the straight track, it should not emit an
+     * error.").  The far straight lies NORTH-SOUTH and presents no face; turned a quarter it becomes the refused test
+     * above.
      */
     @Test
     public void testAdjacentRouteTilesReachingTrackAtOneEndAreFine() throws Exception
@@ -182,10 +160,8 @@ public class testRouteTilePlacement
     }
 
     /**
-     * Track into a button from three sides is refused, because one arm is dropped.
-     *
-     * The case Adam asked me to look for.  N and S win as a through-pair and E is discarded, so a line
-     * drawn into the side of a button on a running line is severed with nothing said.
+     * Track into a button from three sides is refused, because one arm is dropped: N and S win as a through-pair and E
+     * is discarded.
      */
     @Test
     public void testThreeWaysIntoARouteTileAreRefused() throws Exception
@@ -205,11 +181,8 @@ public class testRouteTilePlacement
     }
 
     /**
-     * Four ways in is a crossing, and a crossing is not a fault.
-     *
-     * Adam: "I am inclined to treat it as a static crossing under the hood."  Both pairs are emitted,
-     * which is exactly that - so this must NOT be reported, and the test exists to keep the
-     * three-arm rule from growing into "any busy button".
+     * Four ways in is a crossing, not a fault (Adam: "I am inclined to treat it as a static crossing under the hood.");
+     * this keeps the three-arm rule from growing into "any busy button".
      */
     @Test
     public void testFourWaysIntoARouteTileIsACrossing() throws Exception
@@ -231,9 +204,7 @@ public class testRouteTilePlacement
             "a crossing was reported as adjacent buttons, which it is not");
     }
 
-    /**
-     * A button on a plain through line, which is the ordinary case, is silent.
-     */
+    /** A button on a plain through line, the ordinary case, is silent. */
     @Test
     public void testAButtonOnAPlainLineIsFine() throws Exception
     {
@@ -248,15 +219,8 @@ public class testRouteTilePlacement
     }
 
     /**
-     * A button at the end of a line conducts nothing, and that is not a dropped arm (OB-160).
-     *
-     * The narrowing this rule needed, found by running it over the operator's railway before it
-     * shipped: at `1 - Main:3,5` a feedback to the east is rotated a quarter turn, so it presents no
-     * face, and only the western arm faces at all.  With one arm there is no through-pair to win and
-     * nothing is discarded - the button simply carries nothing, which is what a button beside the
-     * rails or at the end of a line is for.
-     *
-     * Reported, that was a blocking error on a correctly drawn square.
+     * A button at the end of a line conducts nothing, and that is not a dropped arm (OB-160): with one facing arm there
+     * is no through-pair to win and nothing is discarded.
      */
     @Test
     public void testAButtonWithOneArmIsNotADroppedArm() throws Exception
@@ -275,16 +239,8 @@ public class testRouteTilePlacement
     }
 
     /**
-     * AND THE OPERATOR'S OWN RAILWAY STILL STARTS.
-     *
-     * These are blocking errors, so a shape that exists on his layout would stop autonomy dead.  The
-     * frozen snapshot is his railway; if this fails, the rule is too strict and the failure names
-     * every square it objected to, which is the information needed to decide whether to narrow the
-     * rule or redraw the tile.
-     *
-     * Deliberately not a warning-shaped assertion.  He asked for an error, and an error that fires on
-     * a working railway is the kind of guard he has said he would rather not have - so it is measured
-     * here rather than discovered there.
+     * AND THE OPERATOR'S OWN RAILWAY STILL STARTS: these are blocking errors, so the failure names every square the
+     * rule objected to, to decide whether to narrow the rule or redraw the tile.
      */
     @Test
     public void testTheOperatorsOwnRailwayIsNotRefused() throws Exception
@@ -319,15 +275,8 @@ public class testRouteTilePlacement
             }
         }
 
-        // A RATCHET, AND CURRENTLY EMPTY.
-        //
-        // It was not: the first version of these rules refused four squares of his railway, three of
-        // them because a single arm was read as a dropped one and the fourth because "connected to
-        // something else" was implemented as "touches track anywhere" rather than "reaches track at
-        // both ends".  Both were rules of mine, not faults of his - which is what this test is for.
-        //
-        // Exact equality rather than isEmpty, so it cannot go stale in either direction: a new
-        // offending square fails, and so does a square being added here without being explained.
+        // A RATCHET, AND CURRENTLY EMPTY.  Exact equality rather than isEmpty, so it cannot go stale in either
+        // direction: a new offending square fails, and so does a square added here without being explained.
         java.util.List<String> known = java.util.Collections.<String>emptyList();
 
         java.util.List<String> bare = new ArrayList<>();
@@ -344,12 +293,7 @@ public class testRouteTilePlacement
     }
 
 
-    /**
-     * What is drawn around a square, so a refusal says what to look at.
-     *
-     * A coordinate on its own tells the reader which page to open and nothing about why the check
-     * objected - and these two checks are entirely about what the neighbors are.
-     */
+    /** What is drawn around a square, so a refusal says what to look at. */
     private static String neighbourhood(List<LayoutDiagram> pages, TileGraph.TileKey tile)
     {
         LayoutDiagram page = null;
@@ -361,9 +305,7 @@ public class testRouteTilePlacement
 
         if (page == null) return "(page not found)";
 
-        // INDEXED THE WAY THE GRAPH INDEXES, by each component's own getX/getY rather than by the
-        // page's grid.  checkBounds can move the grid's origin, so the two disagree - and a report
-        // that disagrees with the check it is explaining is worse than no report.
+        // INDEXED THE WAY THE GRAPH INDEXES, by each component's own getX/getY: checkBounds can move the grid's origin.
         java.util.Map<String, org.traincontrol.base.LayoutDiagramComponent> byPosition =
             new java.util.HashMap<>();
 
@@ -403,23 +345,15 @@ public class testRouteTilePlacement
         return page;
     }
 
-    /**
-     * A straight lying east-west, which presents a real port to its east and west neighbors.
-     */
+    /** A straight lying east-west, which presents a real port to its east and west neighbors. */
     private static void track(LayoutDiagram page, int x, int y) throws Exception
     {
         track(page, x, y, 0);
     }
 
     /**
-     * A straight at a given orientation.
-     *
-     * THE ORIENTATION IS THE WHOLE FIXTURE for the three- and four-arm shapes.  A straight left at 0
-     * lies east-west and presents nothing to a tile above or below it, so a "track to the north" drawn
-     * without turning it faces nowhere and the button sees one arm, not three.  My first version of
-     * these tests made exactly that mistake and passed for the wrong reason on the four-arm case.
-     *
-     * @param orientation 0 for east-west, 1 for north-south
+     * A straight at a given orientation (0 for east-west, 1 for north-south).  The orientation is the whole fixture for
+     * the three- and four-arm shapes: a straight left at 0 presents nothing to a tile above or below it.
      */
     private static void track(LayoutDiagram page, int x, int y, int orientation) throws Exception
     {
