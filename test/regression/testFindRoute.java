@@ -11,22 +11,18 @@ import support.SourceOf;
 /**
  * Find Route lands on the route the user meant, or says it cannot (FR-044).
  *
- * Adam: "addition to the route jmenu: 'Find Route' popup that asks the user for the route name.  system
- * jumps to the route page and highlights the matched cell (scrolling to it if needed), otherwise shows
- * a notice that it doesn't exist."
- *
- * The jumping, the scrolling and the highlight are for MT-218 - they need a window and an eye. What is
- * here is the half that decides WHICH route, which has no appearance at all: get it wrong and the
- * feature confidently highlights the wrong route, or refuses one whose name was typed in full.
+ * Adam: "addition to the route jmenu: 'Find Route' popup that asks the user for the route name.  system jumps to the
+ * route page and highlights the matched cell (scrolling to it if needed), otherwise shows a notice that it doesn't
+ * exist."  The jumping, scrolling and highlight are for MT-218 (they need a window and an eye); what is here is the
+ * half that decides WHICH route, which has no appearance at all: get it wrong and the feature confidently highlights
+ * the wrong route, or refuses one whose name was typed in full.
  */
 public class testFindRoute
 {
     private static final List<String> ROUTES = Arrays.asList(
         "Yard", "Yard Bypass", "Main Line", "Depot Entry", "depot exit");
 
-    /**
-     * A name typed in full finds that route, whatever the case.
-     */
+    /** A name typed in full finds that route, whatever the case. */
     @Test
     public void testAnExactNameIsFound()
     {
@@ -42,12 +38,9 @@ public class testFindRoute
     }
 
     /**
-     * An exact name wins even when it is also part of another route's name.
-     *
-     * **This is the case the order of the two loops exists for.** "Yard" is both a route and a
-     * substring of "Yard Bypass". A rule that looked for substrings first would find two matches, call
-     * it ambiguous, and refuse to find a route whose name the user had typed in full - which is the
-     * most confident thing a user can do and the worst thing to refuse.
+     * An exact name wins even when it is also part of another route's name: the case the order of the two loops exists
+     * for.  "Yard" is both a route and a substring of "Yard Bypass"; substrings first would find two matches, call it
+     * ambiguous, and refuse a route whose name the user had typed in full.
      *
      * MUTATION: move the exact-match loop below the contains loop in `routeNamedIn` and this fails.
      */
@@ -60,11 +53,8 @@ public class testFindRoute
     }
 
     /**
-     * A fragment that fits one route finds it; one that fits several finds none.
-     *
-     * Ambiguity is not resolved by guessing. Landing silently on one of two candidates is worse than
-     * saying no, because the user is then looking at a route they did not ask for and nothing on
-     * screen says so.
+     * A fragment that fits one route finds it; one that fits several finds none: landing silently on one of two
+     * candidates is worse than saying no, because nothing on screen says it is not the route they asked for.
      */
     @Test
     public void testAFragmentIsFoundOnlyWhenItIsUnique()
@@ -81,9 +71,7 @@ public class testFindRoute
             + "front of a route they did not ask for");
     }
 
-    /**
-     * Nothing matching, and nothing to match against, both answer null rather than throwing.
-     */
+    /** Nothing matching, and nothing to match against, both answer null rather than throwing. */
     @Test
     public void testNothingMatchingIsNotAnError()
     {
@@ -104,10 +92,9 @@ public class testFindRoute
     /**
      * Several candidates come back as several, so the user can be asked (MT-218).
      *
-     * Adam: "let's support partial matching if there is no exact match as entered." Partial matching
-     * was already there; what it did when a fragment fitted more than one route was give up. Refusing
-     * is not the only alternative to guessing - the third option is to put the list in front of the
-     * user, and that needs the list.
+     * Adam: "let's support partial matching if there is no exact match as entered."  A fragment that fitted more than
+     * one route used to give up; the third option besides refusing and guessing is to put the list in front of the
+     * user.
      */
     @Test
     public void testEveryCandidateComesBackWhenThereIsMoreThanOne()
@@ -123,11 +110,8 @@ public class testFindRoute
     }
 
     /**
-     * An exact name comes back ALONE, so nobody is asked to confirm what they typed in full.
-     *
-     * This is the same ordering as before seen from the other side: "Yard" fits "Yard" and "Yard
-     * Bypass", and offering both would be asking somebody to pick the name they had just typed
-     * completely.
+     * An exact name comes back ALONE, so nobody is asked to confirm what they typed in full: "Yard" fits "Yard" and
+     * "Yard Bypass".
      *
      * MUTATION: drop the early return from the exact-match loop in routesMatchingIn and this fails.
      */
@@ -147,17 +131,13 @@ public class testFindRoute
     }
 
     /**
-     * The menu item exists, is mounted by hand, and is not declared inside a generated block.
-     *
-     * The NetBeans rule, and it has already cost this project twice: a field declared inside a
-     * GEN-BEGIN block is deleted the next time the designer regenerates from the form, which is how
-     * cropOverlay vanished on 2026-08-28. A menu item that disappears on somebody else's form edit
-     * would take the whole feature with it and nothing would fail until a person went looking.
+     * The menu item exists, is mounted by hand, and is not declared inside a generated block: a field declared inside a
+     * GEN-BEGIN block is deleted the next time the designer regenerates from the form (as cropOverlay was), and the
+     * whole feature would go with it unnoticed.
      */
     @Test
     public void testTheMenuItemIsMountedByHand() throws Exception
     {
-        // mountFindRoute is declared once or this fails by itself, naming it
         SourceOf.declaration("private void mountFindRoute()");
 
         assertTrue(SourceOf.allCode().contains("mountFindRoute();"),
