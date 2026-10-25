@@ -67,8 +67,6 @@ public class testTheUpdateIsWiredEndToEnd
      * reads, and that version's report is what `waitForTheStart` hears.
      *
      * MUTATION: `prepareEnvironment` not setting the variable, or `reportStarted` reading another, and this fails.
-     *
-     * @throws Exception from the process
      */
     @Test
     public void testTheRealLauncherHandsTheMarkerToTheVersionItStarts() throws Exception
@@ -88,8 +86,6 @@ public class testTheUpdateIsWiredEndToEnd
      *
      * MUTATION: `startDetached` not removing the variable, and the relayed probe sees it; `stop` not ending the
      * process, and the second half fails.
-     *
-     * @throws Exception from the processes
      */
     @Test
     public void testTheRealStarterStartsTheUpdaterCleanAndCanStopIt() throws Exception
@@ -182,8 +178,6 @@ public class testTheUpdateIsWiredEndToEnd
      *
      * MUTATION: put `SelfUpdate.reportStarted()` back at the top of `TrainControl.main`, or drop any of the three
      * calls, and this fails.
-     *
-     * @throws Exception from the files
      */
     @Test
     public void testTheMarkerIsWrittenWhereTheVersionIsUp() throws Exception
@@ -226,8 +220,6 @@ public class testTheUpdateIsWiredEndToEnd
      *
      * MUTATION: move `writeMarker(request.running)` after `update(...)`, and this fails - as every real update would,
      * refused after fifteen seconds.
-     *
-     * @throws Exception from the files
      */
     @Test
     public void testTheUpdaterSaysItRunsFirst() throws Exception
@@ -247,8 +239,6 @@ public class testTheUpdateIsWiredEndToEnd
      *
      * MUTATION: move the `take()` above `everyOpenWindowMaySettle`, or drop the `return` after the updater fails to
      * start, and this fails.
-     *
-     * @throws Exception from the files
      */
     @Test
     public void testTheExitStartsTheUpdaterLastOfAll() throws Exception
@@ -274,8 +264,6 @@ public class testTheUpdateIsWiredEndToEnd
      *
      * MUTATION: ask `isAutonomyBusy` in `whyThisUpdateMustWait` instead of `theAutoTabWaits`, or call
      * `closeNowForTheUpdate` without `whenNoModalDialog`, and this fails.
-     *
-     * @throws Exception from the files
      */
     @Test
     public void testTheUpdateLeavesThroughTheExitAsTheAutoTabAsks() throws Exception
@@ -306,8 +294,6 @@ public class testTheUpdateIsWiredEndToEnd
      * writes.  Pinned by reading.
      *
      * MUTATION: call `writeTheBackup` from the update, or drop the `synchronized`, and this fails.
-     *
-     * @throws Exception from the files
      */
     @Test
     public void testOneBackupAtATime() throws Exception
