@@ -562,8 +562,10 @@ it forward, rebased onto dev after 3.0.3 ships.  Before it ships:
 - settle the `pageActionSettled` callback on a throw too;
 - claims for a route running, the main window showing another page, and Save then Rename; the setup-editor claim shown
   red; run `ui.testTheEditorNamesItsShortcuts` and `ui.testTheTrackEditorByHand`;
-- Adam's call: it closes and reopens the editor around each action, so the window flashes even on Cancel.  The other way
-  (`exp-pre-sonnet`'s) keeps the window open and skips the editor-open refusal for the editor that asked.
+- Keep the window open (Adam, 2026-10-24: "Keep the window open, no flash"): instead of closing and reopening the editor
+  around each action, take `exp-pre-sonnet`'s approach, where the handlers skip the editor-open refusal only for the
+  editor that asked and hang their dialogs off it, but act on the page being edited, not the main window's selected
+  page (the grader's bug in that build).  A claim that a Cancel leaves the same window open on the same page.
 
 **Next release: lessons from the FR-109 experiment** (`docs/reviews/fr109-experiment/`: the brief, the four results and the grades).
 Compaction helped most where the model was weakest: Haiku did not finish on the 3.0.2 tree (stopped at ~360k tokens,
