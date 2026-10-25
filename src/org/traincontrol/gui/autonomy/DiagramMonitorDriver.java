@@ -14,28 +14,21 @@ import org.traincontrol.automationui.TileOverlay;
 import org.traincontrol.gui.TrainControlUI;
 
 /**
- * Keeps the diagram showing what the trains are doing.
+ * Keeps the diagram showing what the trains are doing: the piece between DiagramMonitor (what each tile should show)
+ * and DiagramTileRegistry (the screen) that makes it happen repeatedly, on the right threads.
  *
- * DiagramMonitor works out what each tile should show and DiagramTileRegistry gets it onto the screen;
- * this is the piece between them that makes it happen repeatedly, on the right threads.
+ * A poll rather than painting from the layout's callback, which fires from whichever thread moved a train, sometimes
+ * holding the layout's own monitor: a slow paint there would delay the next movement.  So the callback only sets a
+ * flag and this ticks over and does the work somewhere harmless; a burst of movement collapses into one repaint.
  *
- * Why a poll rather than painting straight from the layout's callback: the callback fires from whichever
- * thread moved a train, sometimes while holding the layout's own monitor.  Repainting there would put the
- * drawing in front of the railway - a slow paint would delay the next movement.  So the callback only
- * sets a flag, and this ticks over, notices, and does the work somewhere harmless.  A burst of movement
- * collapses into one repaint, which is what makes a busy layout cheap rather than expensive.
- *
- * Threading: computing reads the layout, so it happens on the timer thread.  Publishing touches Swing, so
- * it happens on the event thread.  Neither ever happens on the other.
+ * Threading: computing reads the layout, so it happens on the timer thread; publishing touches Swing, so it happens on
+ * the event thread.  Neither ever happens on the other.
  *
  * @author Adam
  */
 public class DiagramMonitorDriver
 {
-    /**
-     * How often to look.  Fast enough that a train arriving somewhere lights up without a wait anybody
-     * would notice, and cheap when nothing has moved: a tick with a clean flag reads one boolean.
-     */
+    /** How often to look: cheap when nothing has moved, since a tick with a clean flag reads one boolean. */
     public static final int TICK_MS = 200;
 
     private final TrainControlUI ui;
@@ -58,12 +51,9 @@ public class DiagramMonitorDriver
     private volatile boolean enabled = true;
 
     /**
-     * Which wipe the overlays on screen belong to.
-     *
-     * A tick computes its picture on the timer thread and paints it on the event thread, so a wipe
-     * asked for in between arrives with a picture of the world as it was before it already in flight.
-     * Comparing this on both sides is what lets the wipe win: a picture computed before it is simply
-     * dropped rather than painted over a diagram that was deliberately emptied.
+     * Which wipe the overlays on screen belong to.  A tick computes on the timer thread and paints on the event thread,
+     * so a wipe asked for in between would be painted over by a picture computed before it; comparing this on both
+     * sides lets the wipe win.
      */
     private final java.util.concurrent.atomic.AtomicLong generation =
         new java.util.concurrent.atomic.AtomicLong();
@@ -75,11 +65,9 @@ public class DiagramMonitorDriver
     }
 
     /**
-     * Points the monitor at a reduction, and at the layout currently built from it.
-     *
-     * Called after every rebuild and after every configuration load, because both replace the thing being
-     * watched.  Rebinding rather than making a new driver so that the timer keeps running across the
-     * change and there is no window where movement goes unnoticed.
+     * Points the monitor at a reduction, and at the layout currently built from it.  Called after every rebuild and
+     * configuration load; rebinding rather than making a new driver keeps the timer running with no window where
+     * movement goes unnoticed.
      *
      * @param session the setup the running layout was generated from
      */
@@ -94,17 +82,9 @@ public class DiagramMonitorDriver
             return;
         }
 
-        // The same names the builder wrote into the generated file - recomputed rather than remembered,
-        // because the naming depends only on the reduction and the split, so a fresh builder given both
-        // cannot disagree with the one that produced the configuration.
-        //
-        // The split has to be passed: without it every extra Point a split tile produced is a name the
-        // monitor has never heard of, and the overlay stops drawing at exactly the squares that matter.
-        // Through the session, which is the one place that says how a builder is configured.  This
-        // was a fifth hand-assembled copy, and it was already missing two of the settings - harmless
-        // only because neither affects the naming today.  The next setting that DOES would have made
-        // the overlay quietly stop matching the running Points, which is the failure the comment above
-        // warns about.
+        // The same names the builder wrote into the generated file, recomputed because the naming depends only on the
+        // reduction and the split.  The split has to be passed, or every extra Point a split tile produced is unknown
+        // to the monitor.  Through the session, the one place that says how a builder is configured.
         AutonomyBuilder builder = session.builder(null);
 
         Map<String, TileKey> names = builder.tilesByName();
@@ -161,8 +141,8 @@ public class DiagramMonitorDriver
     }
 
     /**
-     * Tells the diagram again which trains the setup records where the railway stands them on no Point: a record
-     * written after the load - the put-back's - was drawn nowhere.
+     * Tells the diagram again which trains the setup records where the railway stands them on no Point (a record
+     * written after the load was drawn nowhere).
      *
      * @param session the setup
      */
@@ -190,7 +170,7 @@ public class DiagramMonitorDriver
 
     /**
      * Which way a train standing on each Point faces, from the builder that named them: a split copy's own facing, and
-     * a single copy's only way out where it has one (Adam, 2026-10-01 - the icon of a parked train turns to it).
+     * a single copy's only way out where it has one (the icon of a parked train turns to it).
      *
      * @param builder the builder the names came from
      * @param names every Point name and its square
@@ -214,18 +194,11 @@ public class DiagramMonitorDriver
     }
 
     /**
-     * The facings of the Points whose copy says nothing, asked of the setup again, and the diagram redrawn where one changed
-     * (OB-348).
-     *
-     * A square no track leads out of has no copy facing and no single way out, and an icon given no facing is drawn east;
-     * Adam, 2026-10-14: *"on tunnelleftpark, if there is no way out (both arrows at 8,7 red), the icon is rotated to the
-     * east, even though the only allowed directions are n/s."*  It is given `AutonomySession.facingWhereNoCopySays`: the
-     * setup's facing where the track runs that way, as the caption shows, or else a way along its track.
-     *
-     * WHENEVER THE CAPTIONS ARE ASKED, not only at a bind: every door that writes a facing or places a train ends by
-     * redrawing the captions (`TrainControlUI.updateVisiblePoints`), and none rebinds - so a facing read at the bind kept
-     * the last one recorded until an unrelated rebuild turned the icon round.  On the event thread, where the captions
-     * read the setup.
+     * The facings of the Points whose copy says nothing, asked of the setup again, and the diagram redrawn where one
+     * changed (OB-348).  A square no track leads out of has no copy facing and no single way out, and an icon given no
+     * facing is drawn east; it is given `AutonomySession.facingWhereNoCopySays`.  Asked whenever the captions are, not
+     * only at a bind: every door that writes a facing ends by redrawing the captions
+     * (`TrainControlUI.updateVisiblePoints`) and none rebinds.  On the event thread, where the captions read the setup.
      */
     public void recordedFacingsChanged()
     {
@@ -253,10 +226,8 @@ public class DiagramMonitorDriver
     }
 
     /**
-     * Registers the callback on whatever layout is running now.
-     *
-     * Separate from bind() because loading a configuration replaces the Layout object wholesale, and a
-     * callback registered on the old one would be watching a railway nobody is running.
+     * Registers the callback on whatever layout is running now.  Separate from bind() because loading a configuration
+     * replaces the Layout object wholesale.
      */
     public void attach()
     {
@@ -264,8 +235,7 @@ public class DiagramMonitorDriver
 
         monitor.attach(currentLayout());
 
-        // The new layout has never fired, so nothing would be shown until the first train moved - which
-        // on a layout that is already running could be a long time.
+        // The new layout has never fired, so nothing would be shown until the first train moved.
         monitor.markDirty();
     }
 
@@ -290,10 +260,7 @@ public class DiagramMonitorDriver
     }
 
     /**
-     * Stops looking and clears what is on screen.
-     *
-     * Clearing matters as much as stopping: tiles left lit after monitoring ends read as trains that are
-     * still there.
+     * Stops looking and clears what is on screen: tiles left lit after monitoring ends read as trains still there.
      */
     public void stop()
     {
@@ -324,9 +291,7 @@ public class DiagramMonitorDriver
 
         if (enabled)
         {
-            // Catch up with whatever happened while it was off - but on the TIMER thread.  This used to
-            // call refresh() directly, which walks every edge and point of the live layout, on the event
-            // thread, in flat contradiction of this class's own rule.
+            // Catch up with whatever happened while it was off, on the TIMER thread: refresh() walks the live layout.
             if (monitor != null) monitor.markDirty();
         }
         else
@@ -340,17 +305,15 @@ public class DiagramMonitorDriver
         return enabled;
     }
 
-    // Nothing here redraws a rebuilt grid on purpose: DiagramTileRegistry.register() hands a new label
-    // whatever its square was last told to show, so a page switched mid-run catches up tile by tile as it
-    // is built.  A whole-layout republish would be the same picture arriving later.
+    // Nothing here redraws a rebuilt grid on purpose: DiagramTileRegistry.register() hands a new label whatever its
+    // square was last told to show, so a page switched mid-run catches up tile by tile as it is built.
 
     // the loop
 
     private void tick()
     {
-        // An exception here would kill the timer thread and stop monitoring silently, which looks exactly
-        // like trains that have stopped moving.  So none is allowed out.  An Error still is: a timer that
-        // kept ticking through an OutOfMemoryError would only make it harder to see what went wrong.
+        // An exception here would kill the timer thread and stop monitoring silently, which looks like trains that have
+        // stopped moving, so none is allowed out.  An Error still is.
         try
         {
             DiagramMonitor current = monitor;
@@ -380,22 +343,19 @@ public class DiagramMonitorDriver
             @Override
             public void run()
             {
-                // Re-checked HERE, on the event thread: timer.cancel does not wait for a tick already
-                // running, so that tick's publish can arrive after stop()'s clear - and painting it
-                // would put stale trains back on a diagram that was just wiped.
+                // Re-checked HERE, on the event thread: timer.cancel does not wait for a tick already running, so its
+                // publish can arrive after stop()'s clear.
                 if (timer == null || !enabled) return;
 
-                // And the same for a wipe that is not a stop.  Without this the two orderings gave two
-                // different wrong answers: the wipe landing first left stale trains painted over an
-                // emptied diagram, and the wipe landing second left the screen blank while the monitor
-                // believed that picture already published - so nothing redrew until a train moved.
+                // And the same for a wipe that is not a stop; otherwise a wipe landing first left stale trains painted
+                // over an emptied diagram, and landing second left the screen blank with the monitor believing it
+                // published.
                 if (generation.get() != computedAt) return;
 
                 registry.publish(overlays);
 
-                // The station labels are the other half of showing where a train is - the tile overlay
-                // says which track is claimed, the label says which locomotive and where it is heading.
-                // Nothing else drives them on this path; they used to be written by the graph window.
+                // The station labels show which locomotive is where it is heading; nothing else drives them on this
+                // path.
                 if (ui != null) ui.updateVisiblePoints();
             }
         });
@@ -405,8 +365,8 @@ public class DiagramMonitorDriver
     {
         if (registry == null) return;
 
-        // Claimed before anything is queued, so every picture already computed is now out of date and
-        // will be dropped rather than painted after the wipe.
+        // Claimed before anything is queued, so every picture already computed is dropped rather than painted after the
+        // wipe.
         generation.incrementAndGet();
 
         SwingUtilities.invokeLater(new Runnable()
@@ -416,13 +376,9 @@ public class DiagramMonitorDriver
             {
                 registry.clearOverlays();
 
-                // AFTER the wipe, and on the thread that does it.
-                //
-                // The monitor suppresses publishing an unchanged picture, which is right for movement
-                // and wrong for a screen that was just emptied - to it, the same picture is news.
-                // Forgetting what was published is what makes the next refresh actually arrive, and
-                // doing it here rather than on the caller's thread is what stops a tick already in
-                // flight from writing its picture into that memory afterwards and going quiet.
+                // AFTER the wipe, on the thread that does it: the monitor suppresses an unchanged picture, which is
+                // wrong for a screen just emptied.  Forgetting what was published makes the next refresh arrive, and
+                // doing it here stops a tick already in flight from writing its picture into that memory afterwards.
                 DiagramMonitor current = monitor;
 
                 if (current != null) current.invalidate();
@@ -432,9 +388,8 @@ public class DiagramMonitorDriver
 
     private Layout currentLayout()
     {
-        // ASKED, NOT BUILT.  `getAutoLayout` makes a Layout where there is none, so after Unload the
-        // monitor's next look built an empty one, and `hasAutoLayout` then answered yes about nothing.  The monitor
-        // reads no layout as nothing to show.
+        // ASKED, NOT BUILT: `getAutoLayout` makes a Layout where there is none, so after Unload the monitor built an
+        // empty one and `hasAutoLayout` answered yes about nothing.
         return ui == null || ui.getModel() == null ? null : ui.getModel().getAutoLayoutIfLoaded();
     }
 }
