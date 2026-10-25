@@ -470,11 +470,42 @@ learnings.  Also, we should use US English.")
   fixed.
 - **US English** everywhere: the English bundle, Readme.md, Automation.md and UI-standards.md now; comments and
   AutomationAPI.md after the workers on those files merge; behaviour.md with its compaction below.
+- **Duplicated code** (Adam, 2026-10-24: "Do the split: same-rule copies and both bugs in 3.0.3.  File the rest as part
+  of a plan to review for a future release.").  `docs/tools/dupscan.py` finds runs of 60 tokens or more that are the
+  same up to names and literals (268 clusters on `c4509be7`, about 7% of `src/`); 116 were read and sorted into the
+  same rule written twice (A, 31), repetition a helper would shorten (B, 25) and alike in shape only (C, 60).  Cluster
+  numbers are the scan's ranks on that commit.  In 3.0.3, refactor-only, one place per rule:
+  - OB-371 (cluster 114): the name prompt and the whole-length prompt become one, with MT-474's focus fix.
+  - OB-372 (cluster 50): which copy of a square holds the train, written three times, one with OB-314's adjustment.
+  - Autonomy: a square's name in a finding (4), dropping pointers to squares that are gone (15), the trains' squares
+    (29), the square beside a side (102), a direction along a run's own tiles (120), the editor's arm mask (262).
+  - Editors: the digits-only field (14), the tile menu's early returns (63), the findings row color (101), sorting
+    findings into sections (248; the viewer, built but never shown, adds the graph's problems twice), the gray wash
+    (113).
+  - Elsewhere: shifting tiles in the layout editor (7), squares whose roads changed (27), building an export off the
+    event thread (57), recording a placement in both stores (96), keeping an unreadable file aside (99), a string or
+    an array field (35), the arrival suffix (81), a station choosable by any copy (138), `fileOf` (152), starting a
+    detached process (192).
 
 **For the next release, on Adam's word of 2026-10-24** ("Move JaCoCo to the next release, along with the
 behavior.md split, and tooling."): the behaviour.md split below, the JaCoCo rerun under Measurement, and the builder
 tooling the study suggested (`newtest.py` for a new test class's bookkeeping, `redgreen.sh` for a claim's red and
 green in one run, `env.sh` for a worker's environment).
+
+**Next release: duplicated code to review** (from the 3.0.3 scan; rerun `dupscan.py` first, as the numbers move):
+- Same rule, in code from before v2.7.0, so each needs Adam's word: the "a run holds the setup" refusal at 11 sites,
+  which belongs in `RunGates` (45); the ordered JSON object built by reflection in 7 places (18); the CS2 function
+  list parse (38); the switch key's colors (43); the image chooser (224).
+- The coalesced worker of CoveredTrackView, CaptionVisibility and ReturnHomeController (61, 80): the `SettledQuestion`
+  worker kept it per class (Return Home's re-ask writes the subject again, and caption visibility settles unlocked);
+  the scan reads it as one `CoalescedAsk` of about 70 lines.  Decide with both readings.
+- Repetition a helper would shorten: the settings tab's 12 slider handlers (1), walking the built JSON (3, 47), the
+  bulk-clear items and actions (6, 20, 28), the builder's emitted names (13), the icon marks (26, 37), a station's
+  list replaced (46), a selection highlighted (51), reduced squares matching a test (59), a Ctrl key on the hovered
+  square (36), a text place (70), a heading label (79), one side of N asked (156, 171), a bold menu heading (255).
+  Before v2.7.0: point keys typed and checked (8), the popup listeners (30), the right-click items (69), the text
+  canvas (71), the system command bytes (74), the focus-timer field (131), the tile refresh registry (209).
+- The 152 clusters below rank 80 with all their copies in one file were not read.
 
 **Next release: behaviour.md** (239 KB, 2,884 lines; about 60k tokens to read whole).  Split by functional area into
 one file per area with `behaviour.md` (to be `behavior.md`) as a short index (area, section, main classes, main tests);

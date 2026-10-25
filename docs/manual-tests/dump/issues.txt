@@ -873,3 +873,41 @@ text:
 |
 | Found while drafting MT-806.  The six layout doors behind RunGates.refuseWhileARunHoldsTheSetup (Create New Layout, Combine Linked Pages, Duplicate and Rename Current Layout, Switch to the Central Station layout, Choose Local Data Folder, Delete Layout) show the locomotive sentence while autonomy runs, and "Not while autonomy, a timetable, Return Home or a route is running.  Stop it first." while a route runs.  Adam, 2026-10-24: "The wording is wrong for layout actions. -> Edits are not allowed while autonomy or routes are running."
 |
+
+[issue OB-371]
+ordinal: 41
+inbox: yes
+kind: bug
+title: The autonomy editor's name prompt may open without the keyboard focus in its field
+filed: 2026-10-24
+filed_at: 2026-10-24 19:17
+raised_from: 3.0.3 duplication scan
+build: -
+text:
+| ### OB-371 - 2026-10-24 - The autonomy editor's name prompt may open without the keyboard focus in its field
+|
+| **Kind:** bug  
+| **Raised from:** 3.0.3 duplication scan  
+| **Filed:** 2026-10-24 19:17
+|
+| Found by the 3.0.3 duplication scan (cluster 114).  The OK / Skip One / Cancel prompt is written twice: EditorMassAssign.askForWholeLength and AutonomyEditorPanel.askForName.  MT-474's focus fix (windowOpened and windowGainedFocus calling field.requestFocusInWindow()) is only in the first; askForName only asks in addNotify, which can run before the dialog has the focus.  The two also differ in the label: new JLabel(question) against new JLabel(AutonomyEditorPanel.wrapped(question)), so a long question is not wrapped in the name prompt.  What should happen: one prompt, the EditorMassAssign version, used by both, so the field has the focus and the question wraps.
+|
+
+[issue OB-372]
+ordinal: 42
+inbox: yes
+kind: bug
+title: Flipping a train's facing during a turning journey may read the facing of the wrong copy of its square
+filed: 2026-10-24
+filed_at: 2026-10-24 19:17
+raised_from: 3.0.3 duplication scan
+build: -
+text:
+| ### OB-372 - 2026-10-24 - Flipping a train's facing during a turning journey may read the facing of the wrong copy of its square
+|
+| **Kind:** bug  
+| **Raised from:** 3.0.3 duplication scan  
+| **Filed:** 2026-10-24 19:17
+|
+| Found by the 3.0.3 duplication scan (cluster 50).  'Which copy of a square holds the train' is written three times in AutonomySession (about lines 1702, 7681, 7745).  facingOnTheRailway applies running.copyItWillStandOn(...) (OB-314); facingOfTrainOnTheRailway, which flipFacing uses, returns facingsAt(tile).get(name) without it.  So a flip while a train is on a journey that turns it may start from the copy it stood on, not the one it will stand on.  To do: show whether a flip during a turning journey goes wrong (a test through the flip, red first); if it does, both readers ask one method; if it does not, the copies still become one and this is closed as not a bug.
+|
