@@ -312,9 +312,9 @@ final class ReturnHomeController extends SettledQuestion
     }
 
     /**
-     * Puts one worker on "is there anything to send home", unless one is already on it: COALESCED, AND THE LAST ASK
-     * ALWAYS LANDS, for the reason `askForCoveredTrack` gives (the refresh runs on every arrival and departure, and
-     * dropping the extra asks leaves a stale answer on screen).  `railway` is captured on the caller's thread.
+     * Puts one worker on "is there anything to send home", unless one is already on it, COALESCED (`CoalescedAsk`): the
+     * refresh runs on every arrival and departure.  `railway` is captured on the caller's thread; the gap's re-ask
+     * sends the subject again.
      */
     private void askForReturnHomeTriage(final Layout railway)
     {
@@ -322,74 +322,47 @@ final class ReturnHomeController extends SettledQuestion
 
         this.ui.returnHomeTriageDirty.set(true);
 
-        if (!this.ui.returnHomeTriageInFlight.compareAndSet(false, true)) return;
-
-        try
-        {
-            this.ui.ReturnHomeTriageRenderer.submit(this::workOutReturnHomeTriage);
-        }
-        catch (Exception refused)
-        {
-            // Submitting can be refused - the pool is shut down when the window closes - and the flag
-            // is set by then.  Clearing it here keeps the latch from coming back at one remove.
-            settle();
-        }
+        CoalescedAsk.ask(this.ui.returnHomeTriageInFlight, this.ui.returnHomeTriageDirty, this.ui.ReturnHomeTriageRenderer,
+            this::workOutReturnHomeTriage, this::settle, () ->
+            {
+                if (this.ui.returnHomeTriageSubject != null) askForReturnHomeTriage(this.ui.returnHomeTriageSubject);
+            });
     }
 
     /**
-     * Asks the railway, off the event thread, and sends the answer back to be painted (see `refreshReturnHomeButton`).
+     * One pass: asks the railway, off the event thread, and sends the answer back to be painted (see
+     * `refreshReturnHomeButton`).
      */
     private void workOutReturnHomeTriage()
     {
+        Layout asked = this.ui.returnHomeTriageSubject;
+
+        if (asked == null) return;
+
+        HomeStaging.Outcome answer;
+        List<Locomotive> pausedAway = new ArrayList<>();
+
         try
         {
-            // UNTIL THE ANSWER IS NOT OUT OF DATE.  Cleared BEFORE the pass that answers it, so an ask
-            // that arrives while this one is computing sets it again and is served by the next turn of
-            // this loop rather than being lost to it.
-            while (this.ui.returnHomeTriageDirty.compareAndSet(true, false))
-            {
-                Layout asked = this.ui.returnHomeTriageSubject;
-
-                if (asked == null) continue;
-
-                HomeStaging.Outcome answer;
-                List<Locomotive> pausedAway = new ArrayList<>();
-
-                try
-                {
-                    answer = asked.triageReturnToHome(pausedAway);
-                }
-                catch (RuntimeException replaced)
-                {
-                    // The layout is being rebuilt underneath this pass; the next ask catches up.  Not
-                    // logged: this runs on every arrival, and a burst would fill the log with one
-                    // moment.
-                    continue;
-                }
-
-                // DISCARDED IF THE RAILWAY MOVED ON.  `parseAuto` replaces the Layout wholesale, and an
-                // answer about the graph that has just been thrown away must not paint the button for
-                // the one that replaced it.
-                if (asked != this.ui.returnHomeTriageSubject) continue;
-
-                this.ui.returnHomeTriagePausedAway = pausedAway;
-                this.ui.returnHomeTriage = answer;
-
-                javax.swing.SwingUtilities.invokeLater(() -> paintReturnHomeFromTheAnswer(asked));
-            }
+            answer = asked.triageReturnToHome(pausedAway);
         }
-        finally
+        catch (RuntimeException replaced)
         {
-            settle();
-
-            // AN ASK THAT ARRIVED IN THE GAP - between the loop reading the flag for the last time and
-            // the line above giving the job up.  `workOutCoveredTrack` says why this matters: on the
-            // last refresh of a run there is nothing else coming to pick it up.
-            if (this.ui.returnHomeTriageDirty.get() && this.ui.returnHomeTriageSubject != null)
-            {
-                askForReturnHomeTriage(this.ui.returnHomeTriageSubject);
-            }
+            // The layout is being rebuilt underneath this pass; the next ask catches up.  Not
+            // logged: this runs on every arrival, and a burst would fill the log with one
+            // moment.
+            return;
         }
+
+        // DISCARDED IF THE RAILWAY MOVED ON.  `parseAuto` replaces the Layout wholesale, and an
+        // answer about the graph that has just been thrown away must not paint the button for
+        // the one that replaced it.
+        if (asked != this.ui.returnHomeTriageSubject) return;
+
+        this.ui.returnHomeTriagePausedAway = pausedAway;
+        this.ui.returnHomeTriage = answer;
+
+        javax.swing.SwingUtilities.invokeLater(() -> paintReturnHomeFromTheAnswer(asked));
     }
 
     /**

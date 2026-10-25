@@ -39,25 +39,15 @@ final class CaptionVisibility
     }
 
     /**
-     * Puts one worker on "which squares can autonomy choose", unless one is already on it: COALESCED, AND THE LAST ASK ALWAYS LANDS,
-     * for the reason `askForCoveredTrack` gives.  On `CoveredTrackRenderer` rather than a pool of its own, deliberately: this answer
-     * changes when the SETUP changes (a handful of times a session, not once a tick), and a fourth pool would be a fourth thing to
-     * shut down and a fourth place to get the coalescing wrong.
+     * Puts one worker on "which squares can autonomy choose", unless one is already on it, COALESCED (`CoalescedAsk`).
+     * On `CoveredTrackRenderer` rather than a pool of its own, deliberately: this answer changes when the SETUP changes (a
+     * handful of times a session, not once a tick), and a fourth pool would be a fourth thing to shut down.  It has no
+     * await, so it settles with no lock.
      */
     void askForCaptionVisibility()
     {
-        if (!this.ui.captionVisibilityInFlight.compareAndSet(false, true)) return;
-
-        try
-        {
-            this.ui.CoveredTrackRenderer.submit(this::workOutCaptionVisibility);
-        }
-        catch (Exception refused)
-        {
-            // Submitting can be refused - the pool is shut down when the window closes - and the flag
-            // is set by then.  Clearing it here keeps the latch from coming back at one remove.
-            settleCaptionVisibility();
-        }
+        CoalescedAsk.ask(this.ui.captionVisibilityInFlight, this.ui.captionVisibilityDirty, this.ui.CoveredTrackRenderer,
+            this::workOutCaptionVisibility, () -> this.ui.captionVisibilityInFlight.set(false), this::askForCaptionVisibility);
     }
 
     /**
@@ -72,75 +62,52 @@ final class CaptionVisibility
      */
     void workOutCaptionVisibility()
     {
-        try
+        TrainControlUI.CoveredTrackAsk ask = this.ui.captionVisibilitySubject;
+
+        java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> cannot = null;
+
+        if (ask != null && ask.railway != null && ask.setup != null)
         {
-            // UNTIL THE ANSWER IS NOT OUT OF DATE.  Cleared BEFORE the pass that answers it, so an ask
-            // that arrives while this one is computing sets it again and is served by the next turn of
-            // this loop rather than being lost to it.
-            while (this.ui.captionVisibilityDirty.compareAndSet(true, false))
+            java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> found =
+                new java.util.HashSet<>();
+
+            try
             {
-                TrainControlUI.CoveredTrackAsk ask = this.ui.captionVisibilitySubject;
-
-                java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> cannot = null;
-
-                if (ask != null && ask.railway != null && ask.setup != null)
+                for (org.traincontrol.automationui.TileGraph.TileKey square
+                    : ask.setup.getStationIndex().squares())
                 {
-                    java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> found =
-                        new java.util.HashSet<>();
+                    boolean choosable = false;
 
-                    try
+                    for (org.traincontrol.automation.Point point
+                        : TrainControlUI.autonomyPointsForTile(ask.railway, ask.setup, square))
                     {
-                        for (org.traincontrol.automationui.TileGraph.TileKey square
-                            : ask.setup.getStationIndex().squares())
+                        if (ask.railway.isChoosableByAutonomy(point))
                         {
-                            boolean choosable = false;
-
-                            for (org.traincontrol.automation.Point point
-                                : TrainControlUI.autonomyPointsForTile(ask.railway, ask.setup, square))
-                            {
-                                if (ask.railway.isChoosableByAutonomy(point))
-                                {
-                                    choosable = true;
-                                    break;
-                                }
-                            }
-
-                            if (!choosable) found.add(square);
+                            choosable = true;
+                            break;
                         }
                     }
-                    catch (RuntimeException replaced)
-                    {
-                        // The layout or the setup is being rebuilt underneath this pass; the next ask
-                        // catches up.  Not logged: a burst would fill the log with one moment.
-                        continue;
-                    }
 
-                    cannot = java.util.Collections.unmodifiableSet(found);
+                    if (!choosable) found.add(square);
                 }
-
-                // DISCARDED IF THE SETUP MOVED ON.  `parseAuto` replaces the Layout wholesale, and an
-                // answer about the graph that has just been thrown away must not hide captions on the
-                // one that replaced it.
-                if (ask != this.ui.captionVisibilitySubject) continue;
-
-                this.ui.captionsAutonomyCannotChoose = cannot;
-
-                javax.swing.SwingUtilities.invokeLater(this.ui::paintCaptionsFromTheAnswer);
             }
-        }
-        finally
-        {
-            settleCaptionVisibility();
+            catch (RuntimeException replaced)
+            {
+                // The layout or the setup is being rebuilt underneath this pass; the next ask
+                // catches up.  Not logged: a burst would fill the log with one moment.
+                return;
+            }
 
-            // AN ASK THAT ARRIVED IN THE GAP - between the loop reading the flag for the last time and
-            // the line above giving the job up.  `workOutCoveredTrack` says why this matters.
-            if (this.ui.captionVisibilityDirty.get()) askForCaptionVisibility();
+            cannot = java.util.Collections.unmodifiableSet(found);
         }
-    }
 
-    /** Gives the caption job up, from wherever it ended. */
-    void settleCaptionVisibility()
-    {
-        this.ui.captionVisibilityInFlight.set(false);
+        // DISCARDED IF THE SETUP MOVED ON.  `parseAuto` replaces the Layout wholesale, and an
+        // answer about the graph that has just been thrown away must not hide captions on the
+        // one that replaced it.
+        if (ask != this.ui.captionVisibilitySubject) return;
+
+        this.ui.captionsAutonomyCannotChoose = cannot;
+
+        javax.swing.SwingUtilities.invokeLater(this.ui::paintCaptionsFromTheAnswer);
     }
 }

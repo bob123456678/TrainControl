@@ -54,101 +54,70 @@ final class CoveredTrackView extends SettledQuestion
     }
 
     /**
-     * Puts one worker on the job, unless one is already on it.  COALESCED, AND THE LAST ASK ALWAYS LANDS: the refresh runs on every
-     * monitor tick of a run and at both ends of every path, and the answer can take as long as a dispatch holds the railway's
-     * monitor, so asks arrive faster than they can be served.  Dropping the extra ones leaves a stale mark (OB-180); instead the flag
-     * says "the answer is out of date" and the worker keeps going until it is not.  A flag rather than a queue, cleared in a
-     * `finally` (`repaintAutoLocList` says why).
+     * Puts one worker on the job, unless one is already on it, COALESCED (`CoalescedAsk`): the refresh runs on every
+     * monitor tick of a run and at both ends of every path, and the answer can take as long as a dispatch holds the
+     * railway's monitor.
      */
     void askForCoveredTrack()
     {
-        if (!this.ui.coveredTrackInFlight.compareAndSet(false, true)) return;
-
-        try
-        {
-            this.ui.CoveredTrackRenderer.submit(this::workOutCoveredTrack);
-        }
-        catch (Exception refused)
-        {
-            // Submitting can be refused - the pool is shut down when the window closes - and the flag
-            // is set by then.  Clearing it here keeps the latch from coming back at one remove.
-            settle();
-        }
+        CoalescedAsk.ask(this.ui.coveredTrackInFlight, this.ui.coveredTrackDirty, this.ui.CoveredTrackRenderer,
+            this::workOutCoveredTrack, this::settle, this::askForCoveredTrack);
     }
 
     /**
-     * The old body of `refreshCoveredTrack`, on a worker thread.
+     * One pass of the old body of `refreshCoveredTrack`, on a worker thread.
      *
      * @see #refreshCoveredTrack()
      */
     void workOutCoveredTrack()
     {
+        TrainControlUI.CoveredTrackAsk ask = this.ui.coveredTrackSubject;
+
+        java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
+            java.util.Set<org.traincontrol.automationui.TileGraph.RouteId>> found =
+            java.util.Collections.emptyMap();
+
+        java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
+            java.util.Set<org.traincontrol.automationui.TileGraph.RouteId>> greyed = java.util.Collections.emptyMap();
+
+        java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
+            java.util.Set<org.traincontrol.automationui.TileGraph.RouteId>> was = this.ui.coveredTrack;
+
+        java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
+            java.util.Set<org.traincontrol.automationui.TileGraph.RouteId>> wasBlocked = this.ui.blockedTrack;
+
         try
         {
-            // UNTIL THE ANSWER IS NOT OUT OF DATE.  Cleared BEFORE the pass that answers it, so an ask
-            // that arrives while this one is computing sets it again and is served by the next turn of
-            // this loop rather than being lost to it.
-            while (this.ui.coveredTrackDirty.compareAndSet(true, false))
+            if (ask != null && ask.railway != null && ask.setup != null)
             {
-                TrainControlUI.CoveredTrackAsk ask = this.ui.coveredTrackSubject;
+                found = ask.setup.routesCoveredByStandingTrains(ask.railway);
 
-                java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
-                    java.util.Set<org.traincontrol.automationui.TileGraph.RouteId>> found =
-                    java.util.Collections.emptyMap();
-
-                java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
-                    java.util.Set<org.traincontrol.automationui.TileGraph.RouteId>> greyed = java.util.Collections.emptyMap();
-
-                java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
-                    java.util.Set<org.traincontrol.automationui.TileGraph.RouteId>> was = this.ui.coveredTrack;
-
-                java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
-                    java.util.Set<org.traincontrol.automationui.TileGraph.RouteId>> wasBlocked = this.ui.blockedTrack;
-
-                try
-                {
-                    if (ask != null && ask.railway != null && ask.setup != null)
-                    {
-                        found = ask.setup.routesCoveredByStandingTrains(ask.railway);
-
-                        // The grey is not bounded to a running railway, and this is the one place that decides it (Adam: "yes, this greyout
-                        // should appear at idle and be regenerated if a placement or train/track length is changed."): `Layout.isPathClear` sweeps the
-                        // covered edges in every tier at every time, because a tail lying across the rail is a physical fact, so at idle a manual send
-                        // across a parked train's tail was refused over track this drew as free.  The guard and the affordance ask one question
-                        // (OB-057/OB-090).  The extent is the squares the railway claims (OB-280), and `repaintTheWashWhereItChanged` still redraws only
-                        // the squares that changed.
-                        greyed = ask.setup.routesBlockedByStandingTrains(ask.railway);
-                    }
-                }
-                catch (Exception cannotWorkItOut)
-                {
-                    // NOTHING MARKED rather than a broken diagram.  A picture nobody can read is worse
-                    // than a protection nobody can see.
-                    found = java.util.Collections.emptyMap();
-                    greyed = java.util.Collections.emptyMap();
-                }
-
-                this.ui.coveredTrack = found;
-                this.ui.blockedTrack = greyed;
-
-                // And the tiles that changed are redrawn (OB-180): the wash is decided when a tile is DRAWN, and a tile is only drawn when its
-                // own accessory, feedback or route changes, so moving a train left the old squares grey (Adam: "when a train is manually moved to
-                // a new station in the track diagram viewer using control+X and V, its former shaded icons are not reset.").  Reached on every
-                // path out of the computation above, including the failed one, since ungreying is where the old tiles most need repainting.
-                // Only what CHANGED, because the refresh runs whenever anything about a train changes.
-                this.ui.repaintTheWashWhereItChanged(was, this.ui.coveredTrack, wasBlocked, this.ui.blockedTrack);
+                // The grey is not bounded to a running railway, and this is the one place that decides it (Adam: "yes, this greyout
+                // should appear at idle and be regenerated if a placement or train/track length is changed."): `Layout.isPathClear` sweeps the
+                // covered edges in every tier at every time, because a tail lying across the rail is a physical fact, so at idle a manual send
+                // across a parked train's tail was refused over track this drew as free.  The guard and the affordance ask one question
+                // (OB-057/OB-090).  The extent is the squares the railway claims (OB-280), and `repaintTheWashWhereItChanged` still redraws only
+                // the squares that changed.
+                greyed = ask.setup.routesBlockedByStandingTrains(ask.railway);
             }
         }
-        finally
+        catch (Exception cannotWorkItOut)
         {
-            settle();
-
-            // AN ASK THAT ARRIVED IN THE GAP.  Between the loop reading the flag for the last time and
-            // the line above giving the job up, an ask can set the flag and find a worker still in
-            // flight - so it neither runs now nor is picked up, and the marks stay as they were until
-            // something else asks.  On the last refresh of a run there is nothing else.
-            if (this.ui.coveredTrackDirty.get()) askForCoveredTrack();
+            // NOTHING MARKED rather than a broken diagram.  A picture nobody can read is worse
+            // than a protection nobody can see.
+            found = java.util.Collections.emptyMap();
+            greyed = java.util.Collections.emptyMap();
         }
+
+        this.ui.coveredTrack = found;
+        this.ui.blockedTrack = greyed;
+
+        // And the tiles that changed are redrawn (OB-180): the wash is decided when a tile is DRAWN, and a tile is only drawn when its
+        // own accessory, feedback or route changes, so moving a train left the old squares grey (Adam: "when a train is manually moved to
+        // a new station in the track diagram viewer using control+X and V, its former shaded icons are not reset.").  Reached on every
+        // path out of the computation above, including the failed one, since ungreying is where the old tiles most need repainting.
+        // Only what CHANGED, because the refresh runs whenever anything about a train changes.
+        this.ui.repaintTheWashWhereItChanged(was, this.ui.coveredTrack, wasBlocked, this.ui.blockedTrack);
     }
 
     @Override
