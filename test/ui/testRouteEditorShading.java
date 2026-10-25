@@ -11,24 +11,13 @@ import org.traincontrol.base.RouteCommand;
 import org.traincontrol.marklin.MarklinRoute;
 
 /**
- * OB-121: the + row at the bottom of the conditions list is white.
+ * OB-121: the + row at the bottom of the conditions list is white (Adam: "make all its cells white, not gray").
  *
- * Adam, 2026-08-27: "in the route editor, remove the shading in the condition row with the +... make
- * all its cells white, not gray."
- *
- * **Reading the code said this could not happen**, which is why it is worth a test rather than a
- * glance. `greyWhatCannotBeEdited` has always exempted the last row, and the last row IS the + row,
- * with a comment explaining that shading it "reads as a row that has been switched off rather than as
- * the way to add another".
- *
- * What the reading missed is that a table cell renderer hands back ONE recycled component for every
- * cell in the table. The cell drawn immediately before the + row is the previous row's un-editable
- * column, which paints that shared label gray. The exemption then handed the same label straight back
- * for each cell of the + row, still gray. It was not failing to run - it ran, and returned somebody
- * else's paint.
- *
- * So the order below is the test. Ask for a grayed cell FIRST and the + row's cells after it, which is
- * the order the table paints them in; asking the other way round passes with the defect present.
+ * Reading the code said this could not happen: `greyWhatCannotBeEdited` exempts the last row, which IS the + row.  What
+ * the reading missed is that a table cell renderer hands back ONE recycled component for every cell, so the cell drawn
+ * before the + row paints that shared label gray, and the exemption handed the same label back for each cell of the
+ * + row.  So the order below is the test: ask for a grayed cell FIRST and the + row's cells after it, as the table
+ * paints them; the other way round passes with the defect present.
  *
  * @author Adam
  */
@@ -37,8 +26,8 @@ public class testRouteEditorShading
     /**
      * Every cell of the + row is the table's own color, even straight after a grayed one.
      *
-     * MUTATION: either exemption going back to a bare `return out` fails this - and it fails only
-     * because the grayed cell is rendered first, which is the whole point of the ordering.
+     * MUTATION: either exemption going back to a bare `return out` fails this, and only because the grayed cell is
+     * rendered first.
      */
     @Test
     public void testThePlusRowIsNotLeftHoldingTheLastCellsGrey() throws Exception
@@ -101,9 +90,7 @@ public class testRouteEditorShading
         }
     }
 
-    /**
-     * One cell, asked of the table exactly as painting asks for it.
-     */
+    /** One cell, asked of the table exactly as painting asks for it. */
     private Component render(JTable table, int row, int column)
     {
         return table.getCellRenderer(row, column).getTableCellRendererComponent(
@@ -111,10 +98,7 @@ public class testRouteEditorShading
     }
 
     /**
-     * The conditions table, told apart from the commands table by its class.
-     *
-     * Both are JTables in the same window and the two have different renderers, so picking the wrong
-     * one would test the half that was never broken.
+     * The conditions table, told apart from the commands table by its class: both are JTables with different renderers.
      */
     private JTable conditionsTableOf(java.awt.Container from)
     {
@@ -138,22 +122,11 @@ public class testRouteEditorShading
     }
 
     /**
-     * The editor, open on a route carrying a single S88 condition.
-     *
-     * The three-argument constructor takes the route rather than a name to look up, which is what
-     * lets this run without a control station - and is why it exists.
-     */
-    /**
-     * Highlight on Diagram survives a route that drives a locomotive.
-     *
-     * The button gathers the addresses a route touches so it can flash them on the diagram, and it
-     * asked every command for its address.  `RouteCommand.getAddress()` is an `Integer.parseInt` over a
-     * key only accessory and feedback commands carry - its own javadoc says it throws for the others -
-     * so a route holding a locomotive speed, direction or function command threw out of a button a
-     * person presses to see what that route does.  `hasAddress()` exists for this and was not asked.
-     *
-     * Driven through the button rather than through the gathering method, because what was reported is
-     * that the button does not work.
+     * Highlight on Diagram survives a route that drives a locomotive.  The button gathers the addresses a route touches
+     * so it can flash them, and asked every command for its address; `RouteCommand.getAddress()` is an
+     * `Integer.parseInt` over a key only accessory and feedback commands carry, so a locomotive speed, direction or
+     * function command threw out of the button.  `hasAddress()` exists for this.  Driven through the button, because
+     * that is what was reported.
      *
      * MUTATION this catches: taking `hasAddress()` back out of either loop.
      */
@@ -199,8 +172,8 @@ public class testRouteEditorShading
 
             try
             {
-                // THE ROUTE'S COMMANDS HAVE TO REACH THE TABLE, or the loop under test sees nothing and
-                // this passes without going near the defect.
+                // THE ROUTE'S COMMANDS HAVE TO REACH THE TABLE, or the loop under test sees nothing and this passes
+                // vacuously.
                 java.lang.reflect.Field rows = org.traincontrol.gui.RouteEditorFrame.class
                     .getDeclaredField("commands");
 
