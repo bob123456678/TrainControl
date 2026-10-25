@@ -17,19 +17,14 @@ import org.traincontrol.marklin.file.CS2File;
 /**
  * Control+S names a sensor, and does nothing on plain track.
  *
- * Adam, 2026-09-08, MT-313: *"it works on any tile in the autonomy editor, not just sensors. fix that.
- * correctly does not fire outside of the autonomy editor."*
+ * Adam (MT-313): "it works on any tile in the autonomy editor, not just sensors. fix that.  correctly does not fire
+ * outside of the autonomy editor."  The right-click menu offers Rename only inside `if (isPoint)` (a square the reducer
+ * knows as a Point, one with a sensor), while Control+S reached `promptNameFor`, which asked only whether the tile was
+ * null, so the key put a naming dialog on plain track where a name is held by nothing.  The repair is the usual one:
+ * the panel owns the predicate and both doors ask it.
  *
- * **One question with two answers.** The right-click menu offers Rename only inside `if (isPoint)` -
- * a square the reducer knows as a Point, which is to say one with a sensor. Control+S reaches
- * `promptNameFor`, which asked whether the tile was null and nothing else, so the key put a naming
- * dialog on plain track: a name written there is held by nothing and read by nobody.
- *
- * That is `guard-and-affordance-same-question` again, and the repair is the same one: the panel owns
- * the predicate and both doors ask it.
- *
- * Measured against the real sample layout rather than a fixture, because "which squares are Points"
- * is exactly what a hand-built graph cannot tell you - every point in one is a Point by construction.
+ * Measured against the real sample layout rather than a fixture, because a hand-built graph cannot tell "which squares
+ * are Points": every point in one is a Point by construction.
  *
  * @author Adam
  */
@@ -46,15 +41,10 @@ public class testControlSNamesOnlyASensor
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        // A COPY of the real layout, opened before the model (OB-111).
-        // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111, and `test/layouts/live-snapshot`).
-        //
-        // The SHAPE is what this class is about, and the shape is the same in both.  Where his trains
-        // are standing, how long they are and which side they came in by are not, and reading those
-        // off the live folder is how `testTheLengthGuardsOnTheRealLayout` came to assert that the
-        // 2-8-4 stood at BottomMainB - it is at BottomMainA now, and that class was red for a reason
-        // that had nothing to do with any guard.  A fixture that moves while nobody is looking makes
-        // every class over it say something different every week.
+        // A COPY of the real layout, opened before the model (OB-111): THE FROZEN COPY, NOT THE RAILWAY HE IS
+        // OPERATING.  The SHAPE is what this class is about; where his trains stand and how long they are is not, and
+        // reading those off the live folder is how `testTheLengthGuardsOnTheRealLayout` came to assert the 2-8-4 at
+        // BottomMainB when it is at BottomMainA now.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
         model = support.TestStation.simulated();
@@ -80,12 +70,8 @@ public class testControlSNamesOnlyASensor
     }
 
     /**
-     * A square the reducer knows as a Point can be named.
-     *
-     * The control on the test below: if `canBeNamed` simply answered false, that one would pass and
-     * this would fail, and the key would have stopped working on the squares it is for.
-     *
-     * @throws Exception on a failure to read the layout
+     * A square the reducer knows as a Point can be named: the control on the test below, which would pass if
+     * `canBeNamed` simply answered false while the key stopped working on the squares it is for.
      */
     @Test
     public void testASensorSquareCanBeNamed() throws Exception
@@ -115,8 +101,6 @@ public class testControlSNamesOnlyASensor
      *
      * MUTATION: this is MT-313. With `canBeNamed` answering `tile != null` - what `promptNameFor`
      * asked before - it fails, naming a square the menu would never have offered.
-     *
-     * @throws Exception on a failure to read the layout
      */
     @Test
     public void testPlainTrackCannotBeNamed() throws Exception
