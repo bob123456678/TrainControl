@@ -54,12 +54,8 @@ public class RightClickTimetableMenu extends PopupListener
 
         public RightClickMenu(TrainControlUI ui, MouseEvent e)
         {
-            // All four handlers below open with the identical
-            // `if (ui.isAutonomyBusy()) { showMessageDialog(...); return; }` guard, so right-clicking
-            // the timetable during a run - exactly when an operator is likely to be looking at it -
-            // offered four items and refused all four with the same dialog. Grayed here on the same
-            // question the handler asks, with the same sentence as the tooltip, rather than found out
-            // by pressing.
+            // All four handlers open with the same `ui.isAutonomyBusy()` refusal, so during a run they would offer four
+            // items and refuse all four.  Grayed here on the same question, with the same sentence as the tooltip.
             boolean busy = ui.aRunHoldsTheSetup();
             String busyTooltip = busy ? I18n.t(RunGates.NO_EDITS_WHILE_RUNNING) : null;
 
