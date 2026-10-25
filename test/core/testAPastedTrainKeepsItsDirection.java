@@ -95,13 +95,11 @@ public class testAPastedTrainKeepsItsDirection
 
         // THE MODEL'S OWN PAGES, not a second parse of the same files.
         //
-        // This used to build a fresh `CS2File` and call `parseLayout(new LinkedList<>())`, which reads
-        // the same bytes and produces a railway that is not connected: attaching a tile to its
-        // accessory happens in `MarklinControlStation.syncLayouts`, AFTER the parse, and a second
-        // parser never reaches it. 222 switches and signals came back with a null accessory, TileGraph
-        // refused to trace through every one of them, and this class was asserting against a graph of
-        // FIVE EDGES with 51 of its 59 points isolated. See `LayoutSandbox.wiredPages` for the
-        // measurement either way.
+        // A fresh `CS2File` parsed with `parseLayout(new LinkedList<>())` reads the same bytes but gives a railway that
+        // is not connected: attaching a tile to its accessory happens in `MarklinControlStation.syncLayouts`, AFTER the
+        // parse, and a second parser never reaches it.  222 switches and signals would have a null accessory, TileGraph
+        // would refuse to trace through every one of them, and this class would assert against a graph of FIVE EDGES
+        // with 51 of its 59 points isolated.  See `LayoutSandbox.wiredPages`.
         List<LayoutDiagram> pages = support.LayoutSandbox.wiredPages(model);
 
         session = new AutonomySession(sandbox.getFolder());
@@ -184,16 +182,12 @@ public class testAPastedTrainKeepsItsDirection
 
             if (held.isEmpty()) continue;
 
-            // A TERMINUS IS NOT ALWAYS ONE COPY, which is what this used to assert (2026-09-08).
+            // A TERMINUS IS NOT ALWAYS ONE COPY.
             //
             // The builder emits a node per (arrival side x reverse), and "terminus" here means a
             // square where trains must turn - authored `mustReverse` - not necessarily a dead end. A
             // turning station reachable from two directions therefore builds to FOUR:
             // `BottomMainPost {southbound=S, southbound reverse=N, northbound=N, northbound reverse=S}`.
-            //
-            // The old expectation of one copy was true of a fixture that was missing most of its
-            // railway - the suite parsed its pages without wiring their accessories, so nothing was
-            // reachable from more than one direction and no square ever split.
             //
             // The property worth pinning is the one Adam asked for and it does not depend on the
             // count: **a train put down here takes a heading the square can hold, whatever it arrived
@@ -313,19 +307,18 @@ public class testAPastedTrainKeepsItsDirection
      * A review read `AutonomyBuilder:994` - `json.put(stops ? "terminus" : "reversing", true)` - and observed that the
      * choice is made by whether anything ARRIVES at the copy, not by whether turning is compulsory.  So a square marked
      * compulsory-turn AND station emits `terminus`, which is a destination.  That branch is reached on his railway, and
-     * it is right: Adam, 2026-09-09 -
+     * it is right (Adam):
      *
      * > *Marking a square as a compulsory turn says what happens when a train ARRIVES, not who may send one there.*
      *
      * `AutonomyBuilder` writes `autoDestination:false` for the PARKING marking and for nothing else, and the editor's
      * set `stationsAutonomyWillNotChoose` asks the same question since OB-195.
      *
-     * **Until 2026-09-23 this pinned a fact about his railway rather than the rule**: every compulsory turn on it was
-     * also marked parking, so "never an autonomy destination" and "exactly when not parking" gave the same answer, and
-     * `behaviour.md` section 3 said the two could not disagree there.  That day he made BottomMainC a compulsory turn
-     * and left autonomy free to choose it - the first square where the two markings differ, so the railway can now
-     * tell the rule from the coincidence.  Both kinds are asserted present, so this cannot pass by the railway losing
-     * one of them.
+     * **This pins the rule, not a fact about his railway**: BottomMainC is a compulsory turn that autonomy is left free
+     * to choose, the one square where the two markings differ, so the railway can tell the rule from the coincidence
+     * (every other compulsory turn on it is also marked parking, where "never an autonomy destination" and "exactly
+     * when not parking" give the same answer).  Both kinds are asserted present, so this cannot pass by the railway
+     * losing one of them.
      *
      * MUTATION: `AutonomyBuilder` writing `autoDestination:false` for a compulsory turn as well fails this at
      * BottomMainC; `stationsAutonomyWillNotChoose` counting `isMustTurnAround` again fails the editor half there.
@@ -478,12 +471,8 @@ public class testAPastedTrainKeepsItsDirection
     /**
      * SQUARES DO SPLIT ON THIS RAILWAY, and that retires a caveat four review findings were argued from.
      *
-     * This method used to assert the opposite - every named square builds to exactly ONE copy - and it
-     * said in its own words what to do on the day it went red: *"that is the day the controls those
-     * findings wanted become writable."* That day is 2026-09-08, and nothing about the railway changed.
-     * The suite had been parsing its pages without wiring their accessories, so `TileGraph` refused to
-     * trace through 222 switches and signals and the railway reduced to eighteen edges. Nothing was
-     * reachable from two directions, so nothing ever split.
+     * Parsing the pages without wiring their accessories leaves `TileGraph` unable to trace through 222 switches and
+     * signals: the railway reduces to eighteen edges, nothing is reachable from two directions, and nothing splits.
      *
      * With the pages wired, `BottomMainPost` builds to four copies -
      * `{southbound=S, southbound reverse=N, northbound=N, northbound reverse=S}` - and so does
@@ -1145,10 +1134,8 @@ public class testAPastedTrainKeepsItsDirection
      * then finds either a copy that is empty or nothing at all, and a test asserting on it reads "the
      * train did not survive the build" when the train is standing perfectly happily on a sibling.
      *
-     * That is not a hypothetical: these assertions were written against a fixture in which no square
-     * ever split - the suite parsed its pages without wiring their accessories, so most of the railway
-     * was missing and every station reduced to a single copy (2026-09-08). Asking the station index
-     * which copies exist and which one has the locomotive is the question that survives both.
+     * Asking the station index which copies exist and which one has the locomotive is the question that survives
+     * either railway.
      *
      * @param square the diagram square
      * @return the occupied copy, or null when no copy of it holds a train
