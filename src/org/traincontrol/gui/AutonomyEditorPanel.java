@@ -6502,62 +6502,14 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Asks for one name with OK, Skip and Cancel, by hand so Enter means OK.
+     * Asks for one name in the walks' prompt.
      * @param question which square this is, and how far along the walk
      * @return the name, "" to skip this one, or null to stop
      */
     private String askForName(String question)
     {
-        final javax.swing.JTextField field = new javax.swing.JTextField(18)
-        {
-            @Override
-            public void addNotify()
-            {
-                super.addNotify();
-
-                requestFocusInWindow();
-            }
-        };
-
-        JPanel panel = new JPanel(new java.awt.BorderLayout(0, 6));
-
-        panel.add(new JLabel(question), java.awt.BorderLayout.NORTH);
-        panel.add(field, java.awt.BorderLayout.CENTER);
-
-        final Object[] answers = { I18n.t("ui.ok"), I18n.t("autosetup.ui.btnSkipOne"),
-            I18n.t("ui.cancel") };
-
-        final JOptionPane pane = new JOptionPane(panel, JOptionPane.PLAIN_MESSAGE,
-            // No initial value, so the field keeps the focus (MT-454).
-            JOptionPane.YES_NO_CANCEL_OPTION, null, answers, null);
-
-        final javax.swing.JDialog dialog = pane.createDialog(owner(),
-            I18n.t("autosetup.ui.btnNameEverything"));
-
-        placeWalkPrompt(dialog);
-
-        // Enter in the box is OK.
-        field.addActionListener(e ->
-        {
-            pane.setValue(answers[0]);
-
-            dialog.dispose();
-        });
-
-        dialog.setVisible(true);
-
-        walkPromptAt = dialog.getLocation();
-
-        dialog.dispose();
-
-        // Closed or Escape stops the walk.
-        int answer = dialogAnswer(pane.getValue(), answers);
-
-        if (answer == ANSWER_STOP) return null;
-
-        if (answer == ANSWER_SKIP) return "";
-
-        return field.getText();
+        return massAssignment.askInWalkPrompt(new javax.swing.JTextField(18), question,
+            "autosetup.ui.btnNameEverything");
     }
 
     /** @param onDiagramChanged run after a track diagram page is written, so the grid can be rebuilt */

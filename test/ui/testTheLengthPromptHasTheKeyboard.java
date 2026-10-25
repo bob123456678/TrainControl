@@ -299,6 +299,79 @@ public class testTheLengthPromptHasTheKeyboard
         answer(first, I18n.t("ui.cancel"));
     }
 
+    /**
+     * Name Everything asks in the same prompt: its field has the keyboard, and its long question wraps (OB-371).
+     *
+     * MUTATION: give `askForName` its own prompt again, labeled `new JLabel(question)`: red on the wrapping.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testTheNamePromptHasTheFieldFocusedAndWrapsItsQuestion() throws Exception
+    {
+        awaitTheEditorFocused();
+
+        // A SENSOR ON THE PAGE MADE UNNAMED, so the walk has one to ask about; its name is given back afterwards.
+        final org.traincontrol.automationui.TileGraph.TileKey[] sensor = new org.traincontrol.automationui.TileGraph.TileKey[1];
+        final String[] itsName = new String[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            for (org.traincontrol.automationui.GraphReducer.ReducedPoint point : session.getReducer().getPoints().values())
+            {
+                if (sensor[0] == null && PAGE.equals(point.getTile().getPage())) sensor[0] = point.getTile();
+            }
+
+            if (sensor[0] == null) return;
+
+            itsName[0] = session.getStore().getPointName(sensor[0]);
+            session.setPointName(sensor[0], "");
+            editor.getAutonomyPanel().refresh();
+        });
+
+        assertNotNull(sensor[0], "precondition: " + PAGE + " has no sensor to name");
+
+        try
+        {
+            final String title = I18n.t("autosetup.ui.btnNameEverything");
+            final javax.swing.JMenuItem item = bulkItem("autosetup.ui.btnNameEverything");
+
+            assertNotNull(item, "precondition: Bulk Tools has no Name Everything item");
+            assertTrue(item.isEnabled(), "precondition: Name Everything is grayed with a sensor made unnamed");
+
+            SwingUtilities.invokeLater(item::doClick);
+
+            javax.swing.JDialog prompt = awaitPrompt(null, title);
+
+            final String[] question = new String[1];
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                Object message = findPane(prompt.getContentPane()).getMessage();
+
+                for (java.awt.Component c : ((java.awt.Container) message).getComponents())
+                {
+                    if (c instanceof javax.swing.JLabel) question[0] = ((javax.swing.JLabel) c).getText();
+                }
+            });
+
+            focusedField(prompt, "Name Everything's prompt");
+
+            answer(prompt, I18n.t("ui.cancel"));
+
+            assertTrue(question[0] != null && question[0].startsWith("<html><body style='width"),
+                "Name Everything's question runs on one line instead of wrapping: " + question[0]);
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() ->
+            {
+                session.setPointName(sensor[0], itsName[0] == null ? "" : itsName[0]);
+                editor.getAutonomyPanel().refresh();
+            });
+        }
+    }
+
     private static void awaitTheEditorFocused() throws Exception
     {
         long giveUp = System.currentTimeMillis() + 5000;
@@ -393,7 +466,11 @@ public class testTheLengthPromptHasTheKeyboard
 
     private static javax.swing.JDialog awaitPrompt(javax.swing.JDialog notThisOne) throws Exception
     {
-        String title = I18n.t(TRAINS);
+        return awaitPrompt(notThisOne, I18n.t(TRAINS));
+    }
+
+    private static javax.swing.JDialog awaitPrompt(javax.swing.JDialog notThisOne, String title) throws Exception
+    {
         long giveUp = System.currentTimeMillis() + 10000;
 
         while (System.currentTimeMillis() < giveUp)

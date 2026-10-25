@@ -375,6 +375,35 @@ final class EditorMassAssign
             });
         }
 
+        String entered = askInWalkPrompt(field, question, titleKey);
+
+        if (entered == null) return null;
+
+        entered = entered.trim();
+
+        if (entered.isEmpty()) return -1;
+
+        try
+        {
+            return Integer.parseInt(entered);
+        }
+        catch (NumberFormatException cannotHappen)
+        {
+            // digitsOnly admits three digits and nothing else, so this is unreachable; a whole piece is at most 999.
+            return -1;
+        }
+    }
+
+    /**
+     * The walks' prompt, Name Everything's too (OB-371): the question wrapped over the field, OK, Skip One and Cancel.
+     *
+     * @param field what the answer is typed into
+     * @param question what to say above the field
+     * @param titleKey the bundle key of the walk's name, which is the prompt's title
+     * @return the field's text; "" for Skip; null for Stop (Cancel, Escape or closing)
+     */
+    String askInWalkPrompt(final javax.swing.JTextField field, String question, String titleKey)
+    {
         JPanel panel = new JPanel(new java.awt.BorderLayout(0, 6));
 
         panel.add(new JLabel(AutonomyEditorPanel.wrapped(question)), java.awt.BorderLayout.NORTH);
@@ -428,20 +457,8 @@ final class EditorMassAssign
         int answer = AutonomyEditorPanel.dialogAnswer(pane.getValue(), answers);
 
         if (answer == AutonomyEditorPanel.ANSWER_STOP) return null;
-        if (answer == AutonomyEditorPanel.ANSWER_SKIP) return -1;
+        if (answer == AutonomyEditorPanel.ANSWER_SKIP) return "";
 
-        String entered = field.getText().trim();
-
-        if (entered.isEmpty()) return -1;
-
-        try
-        {
-            return Integer.parseInt(entered);
-        }
-        catch (NumberFormatException cannotHappen)
-        {
-            // digitsOnly admits three digits and nothing else, so this is unreachable; a whole piece is at most 999.
-            return -1;
-        }
+        return field.getText();
     }
 }
