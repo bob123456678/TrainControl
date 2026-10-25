@@ -2926,7 +2926,7 @@ public class testEditorSurfaceRules
         // ABOVE the guard, identified by the guard's OWN sentence rather than by a method name that
         // appears a dozen times in this file.
         int guard = editor.indexOf(
-            "// Every shortcut below places, cuts, rotates or retextures a tile.");
+            "// Every shortcut below places, cuts, rotates or retextures a tile");
 
         assertTrue(guard > 0, "cannot find the autonomy guard, so this check cannot see what it is "
             + "about");
