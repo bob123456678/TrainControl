@@ -506,6 +506,10 @@ green in one run, `env.sh` for a worker's environment).
   Before v2.7.0: point keys typed and checked (8), the popup listeners (30), the right-click items (69), the text
   canvas (71), the system command bytes (74), the focus-timer field (131), the tile refresh registry (209).
 - The 152 clusters below rank 80 with all their copies in one file were not read.
+- Left by `open-questions.md` (retired in 3.0.3): Adam asked to keep an eye on route choice not being reproducible
+  between runs (behaviour.md §5a states the fact; nothing watches it); its §2b's "one fixture with a curve and a
+  switch" and "the two menus NAME a square alike" were not confirmed done.  DD-A1, DD-C6, DD-C7 and DD-C8 stay in
+  OB-331 for 3.1.0.
 
 **Next release: behaviour.md** (239 KB, 2,884 lines; about 60k tokens to read whole).  Split by functional area into
 one file per area with `behaviour.md` (to be `behavior.md`) as a short index (area, section, main classes, main tests);

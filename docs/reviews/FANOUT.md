@@ -41,7 +41,9 @@ new lane).  The finding store owns the numbers; the folder is empty by design, s
   reads it as a finding.
 - **Every finding that needs execution says so**, with a verification request: the fixture, what result proves it,
   what refutes it. Reading finds about half of what running finds, and the request is what lets the fixer run it.
-- **Grade by consequence on the railway**, and say what mitigates it.
+- **Grade by consequence on the railway**, and say what mitigates it.  Two of Adam's rulings fix grades: a lost
+  timetable entry is B, not A (*"B IS OK."*); and runs come first, so a corner case at rest while the setup is
+  mid-edit (a link left unpaired, then a door of the Layouts menu) is C at most.
 - **Comments are reviewed too, against the comment rule in `CLAUDE.md`:** a new or changed comment that tells history
   (what the code used to do, a review round, a date), runs past 15 lines outside a javadoc contract, or repeats what
   the code says is a C finding.
