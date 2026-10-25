@@ -109,8 +109,10 @@ public class AutonomyEditorPanel extends JPanel
 
     private Tool tool = Tool.NONE;
 
-    /** The column width: LayoutEditor.SIDEBAR_WIDTH, the window's other fixed strip (OB-019). */
-    private static final int WIDTH = 150;
+    /** The column width: its own widest text, until the window widens it with its own (`setColumnWidth`). */
+    private int width;
+
+    private final java.util.List<javax.swing.AbstractButton> stretched = new java.util.ArrayList<>();
 
     // The editor window's conventions: headings Semibold 13 in rgb(0,0,155), buttons bold 11.
     static final java.awt.Font FONT_HEADING =
@@ -155,15 +157,23 @@ public class AutonomyEditorPanel extends JPanel
     private final JList<String> findings = new JList<>(findingsModel);
 
     /** How much direction information is drawn: one control, as the answers are exclusive. */
-    private final javax.swing.JComboBox<String> directions = new javax.swing.JComboBox<String>(new String[]
+    private final javax.swing.JComboBox<String> directions = new WideListBox(new String[]
     {
         I18n.t("autosetup.ui.directionsAll"),
         I18n.t("autosetup.ui.directionsRestrictions"),
         I18n.t("autosetup.ui.directionsAllowed"),
         I18n.t("autosetup.ui.directionsNone"),
         I18n.t("autosetup.ui.directionsArrivals")
-    })
+    });
+
+    /** A dropdown whose open list is wide enough for every phrase, while the box keeps the column's width. */
+    private static class WideListBox extends javax.swing.JComboBox<String>
     {
+        WideListBox(String[] items)
+        {
+            super(items);
+        }
+
         private boolean laidOut;
 
         @Override
@@ -201,7 +211,7 @@ public class AutonomyEditorPanel extends JPanel
 
             return size;
         }
-    };
+    }
 
     /** Room beyond the widest phrase for the list's border, cell insets and a scroll bar. */
     private static final int POPUP_PADDING = 32;
@@ -292,7 +302,7 @@ public class AutonomyEditorPanel extends JPanel
      * The one control that decides what a caption says (FR-061); the two boxes above, unmounted, are what drawing asks.
      * The index is the mode, which is remembered.
      */
-    private final javax.swing.JComboBox<String> captions = new javax.swing.JComboBox<>(new String[]
+    private final javax.swing.JComboBox<String> captions = new WideListBox(new String[]
     {
         I18n.t("autosetup.ui.captionsStations"),
         I18n.t("autosetup.ui.captionsParked"),
@@ -446,18 +456,17 @@ public class AutonomyEditorPanel extends JPanel
         // No inset either side, to stay in step with the heading and buttons that run edge to edge.
         setBorder(BorderFactory.createEmptyBorder(6, 0, 6, 0));
 
-        add(buildTools(), BorderLayout.NORTH);
+        JPanel tools = buildTools();
+
+        add(tools, BorderLayout.NORTH);
+
+        setColumnWidth(widestText(tools));
 
         // Escape is not bound here (FR-065): it would disarm the tool first and the frame's handler would then close
         // the window.  `LayoutEditor.letGoOfWhateverIsHeld` calls `putToolsDown`.
 
         // Built here, mounted by the window across the bottom.
         findingsPanel = buildFindings();
-
-        // Pinned, so a long sentence cannot widen the column.
-        setPreferredSize(new Dimension(WIDTH, 640));
-        setMinimumSize(new Dimension(WIDTH, 240));
-        setMaximumSize(new Dimension(WIDTH, Integer.MAX_VALUE));
 
         // Nothing here is worked by keyboard, and a focusable control swallows the window's keys.
         AutonomyViewerPanel.unfocusable(this);
@@ -475,7 +484,7 @@ public class AutonomyEditorPanel extends JPanel
             return;
         }
 
-        label.setText("<html><body style='width:" + (WIDTH - 30) + "px'>"
+        label.setText("<html><body style='width:" + (width - 30) + "px'>"
             + text.replace("&", "&amp;").replace("<", "&lt;") + "</body></html>");
     }
 
@@ -504,7 +513,7 @@ public class AutonomyEditorPanel extends JPanel
             return;
         }
 
-        label.setText("<html><body style='width:" + (WIDTH - 30) + "px'>" + html + "</body></html>");
+        label.setText("<html><body style='width:" + (width - 30) + "px'>" + html + "</body></html>");
     }
 
     /** The tools column, a BoxLayout: a GridLayout gives every row the tallest one's height. */
@@ -564,9 +573,7 @@ public class AutonomyEditorPanel extends JPanel
         excludePage.setFont(FONT_CONTROL);
         excludePage.addActionListener(e -> setPageExcluded(excludePage.isSelected()));
 
-        fillWidth(testButton, nameAll);
-        fillWidth(whyButton, nameAll);
-        fillWidth(oneWayButton, nameAll);
+        fillWidth(testButton, whyButton, oneWayButton, nameAll);
 
         panel.add(row(testButton));
 
@@ -710,13 +717,62 @@ public class AutonomyEditorPanel extends JPanel
         return banner;
     }
 
-    /** Stretches buttons to the column's width, as the window's Save and Cancel are. */
+    /** Stretches buttons to the column's width, as the window's Save and Cancel are (`setColumnWidth`). */
     private void fillWidth(javax.swing.AbstractButton... buttons)
     {
         for (javax.swing.AbstractButton button : buttons)
         {
-            button.setPreferredSize(new Dimension(WIDTH, button.getPreferredSize().height));
+            stretched.add(button);
         }
+    }
+
+    /**
+     * Pins the column, and the buttons stretched across it, to a width: a long sentence cannot widen it.
+     * @param width from {@link #widestText}, so it ends where its words end (MT-825)
+     */
+    void setColumnWidth(int width)
+    {
+        this.width = width;
+
+        for (javax.swing.AbstractButton button : stretched)
+        {
+            button.setPreferredSize(new Dimension(width, button.getPreferredSize().height));
+        }
+
+        setPreferredSize(new Dimension(width, 640));
+        setMinimumSize(new Dimension(width, 240));
+        setMaximumSize(new Dimension(width, Integer.MAX_VALUE));
+
+        revalidate();
+    }
+
+    /**
+     * The width the widest heading, check box, radio or button under these needs, shown or hidden, so the column does
+     * not jump when one appears.  A dropdown's phrases and a wrapped sentence take the column's width; they do not set
+     * it.
+     */
+    static int widestText(java.awt.Component... roots)
+    {
+        int widest = 0;
+
+        for (java.awt.Component c : roots)
+        {
+            if (c == null || c instanceof javax.swing.JComboBox) continue;
+
+            String text = c instanceof javax.swing.AbstractButton ? ((javax.swing.AbstractButton) c).getText()
+                : c instanceof JLabel ? ((JLabel) c).getText() : null;
+
+            if (text != null)
+            {
+                if (!text.startsWith("<html>")) widest = Math.max(widest, c.getMinimumSize().width);
+            }
+            else if (c instanceof java.awt.Container)
+            {
+                widest = Math.max(widest, widestText(((java.awt.Container) c).getComponents()));
+            }
+        }
+
+        return widest;
     }
 
     /** One control on its own line, flush left and no taller than it needs to be. */
@@ -725,7 +781,7 @@ public class AutonomyEditorPanel extends JPanel
         JPanel holder = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 1));
         holder.setOpaque(false);
         holder.setAlignmentX(LEFT_ALIGNMENT);
-        holder.setMaximumSize(new Dimension(WIDTH, 30));
+        holder.setMaximumSize(new Dimension(Short.MAX_VALUE, 30));
         holder.add(component);
 
         return holder;
@@ -921,7 +977,7 @@ public class AutonomyEditorPanel extends JPanel
         titled.setTitleColor(new java.awt.Color(0, 0, 155));
 
         scroll.setBorder(titled);
-        scroll.setPreferredSize(new Dimension(WIDTH - 20, 160));
+        scroll.setPreferredSize(new Dimension(width - 20, 160));
 
         return scroll;
     }

@@ -1465,6 +1465,10 @@ public class LayoutEditor extends PositionAwareJFrame
 
             autonomyPanel.setBanner(autonomyBanner);
 
+            // The column heading is the window's, and "New Components" would be wrong here; set first, as the column's
+            // width is measured from it.
+            this.jLabel1.setText(I18n.t("autosetup.ui.titleCap"));
+
             // The lengths toggle under Addresses: GroupLayout can replace a component, so Addresses is swapped for a
             // column holding both.
             if (formPane.getLayout() instanceof javax.swing.GroupLayout)
@@ -1519,12 +1523,6 @@ public class LayoutEditor extends PositionAwareJFrame
                 javax.swing.JComboBox<String> captionChoice = autonomyPanel.getCaptionChoice();
                 captionChoice.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
 
-                // Preferred too: the column takes its child's preferred width.  "Locs" fits 150 (Adam: "use Locs if
-                // shorter text is needed in the dropdown").
-                captionChoice.setPreferredSize(new java.awt.Dimension(150, 24));
-                captionChoice.setMinimumSize(new java.awt.Dimension(150, captionChoice.getMinimumSize().height));
-                captionChoice.setMaximumSize(new java.awt.Dimension(150, 24));
-
                 visibility.add(captionChoice);
                 javax.swing.JLabel directionsLabel =
                     new javax.swing.JLabel(I18n.t("autosetup.ui.labelDirections"));
@@ -1540,6 +1538,19 @@ public class LayoutEditor extends PositionAwareJFrame
                 javax.swing.JComboBox<String> choice = autonomyPanel.getShowDirections();
                 choice.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
 
+                visibility.add(choice);
+
+                // The column ends where its widest text ends (MT-825), the window's and the panel's alike; the boxes
+                // take that width, preferred too, as the column takes its children's preferred width.
+                int column = AutonomyEditorPanel.widestText(autonomyPanel, visibility, this.jLabel1,
+                    this.toggleVisibility, this.showGridCheckbox, this.saveButton, this.cancelButton);
+
+                autonomyPanel.setColumnWidth(column);
+
+                captionChoice.setPreferredSize(new java.awt.Dimension(column, 24));
+                captionChoice.setMinimumSize(new java.awt.Dimension(column, captionChoice.getMinimumSize().height));
+                captionChoice.setMaximumSize(new java.awt.Dimension(column, 24));
+
                 // The Station Labels box's width in every language (OB-368): a long phrase clips, the popup shows it.
                 // Minimum width too: GroupLayout never lays the column narrower than a child's minimum, which a combo
                 // takes from its widest phrase, and Save and Cancel would stretch past the boxes (OB-375).  The
@@ -1548,8 +1559,6 @@ public class LayoutEditor extends PositionAwareJFrame
                 choice.setMinimumSize(new java.awt.Dimension(captionChoice.getPreferredSize().width,
                     choice.getMinimumSize().height));
                 choice.setMaximumSize(captionChoice.getMaximumSize());
-
-                visibility.add(choice);
 
                 autonomyVisibility = visibility;
             }
@@ -1609,9 +1618,6 @@ public class LayoutEditor extends PositionAwareJFrame
 
                 autonomyFindings = stack;
             }
-
-            // The column heading is the window's, and "New Components" would be wrong here.
-            this.jLabel1.setText(I18n.t("autosetup.ui.titleCap"));
 
             // Said in the title; posted, as render()'s own invokeLater would overwrite it.
             javax.swing.SwingUtilities.invokeLater(() -> setTitle(titleFor(true)));

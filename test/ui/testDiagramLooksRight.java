@@ -1634,12 +1634,79 @@ public class testDiagramLooksRight
     }
 
     /**
+     * The right column ends where its widest text ends, in English and in Danish: no wider than its widest heading,
+     * check box, radio button or button needs, plus {@code TEXT_ALLOWANCE} (MT-825; Adam: "The sidebar should end about
+     * where I drew the red line").  The dropdowns' phrases do not count: a long one is cut in the box and read in its
+     * list.
+     *
+     * MUTATION: pin the column in `LayoutEditor.setAutonomyMode` to 150 pixels again: red, as English's widest text
+     * needs 144.
+     *
+     * @throws Exception from the editor
+     */
+    @Test
+    public void testTheRightColumnEndsWhereItsTextEnds() throws Exception
+    {
+        final org.traincontrol.automationui.AutonomySession session = ui.getAutonomySession();
+
+        assertNotNull(session, "precondition: no autonomy setup in the fixture layout");
+
+        String pageName = null;
+
+        for (org.traincontrol.automationui.TileGraph.TileKey station : session.getLabelledStationTiles())
+        {
+            if (pageName == null) pageName = station.getPage();
+        }
+
+        assertNotNull(pageName, "precondition: no station in the fixture layout");
+
+        final LayoutDiagram page = model.getLayout(pageName);
+
+        final java.util.Locale was = java.util.Locale.getDefault();
+
+        try
+        {
+            for (String language : new String[] {"en", "da"})
+            {
+                java.util.Map<String, Integer> texts = new java.util.LinkedHashMap<>();
+                java.util.Map<String, java.awt.Rectangle> column = rightColumn(page, new java.util.Locale(language),
+                    new java.util.HashMap<String, Integer>(), texts);
+
+                assertTrue(texts.size() >= 12, "precondition: the column's headings, check boxes, radio buttons and"
+                    + " buttons were not found in " + language + ": " + texts.keySet());
+
+                int widest = java.util.Collections.max(texts.values());
+
+                int width = column.get("Station Labels").width;
+
+                assertTrue(width <= widest + TEXT_ALLOWANCE, "the right column is " + width + " pixels wide in "
+                    + language + " and its widest text needs " + widest + ", so it runs past its words: " + texts);
+            }
+        }
+        finally
+        {
+            java.util.Locale.setDefault(was);
+            org.traincontrol.util.I18n.setLocale(was);
+        }
+    }
+
+    /** How far past its widest text the right column may run: a border's rounding, not a gap anyone sees. */
+    private static final int TEXT_ALLOWANCE = 4;
+
+    /**
      * Opens the autonomy editor in a language, packed, and returns the bounds in the content pane of the right
      * column's dropdowns and buttons: the two boxes, the window's visible push buttons, and the panel's tool buttons.
      * Each button's minimum width, what its text needs, goes into {@code needs}.
      */
     private java.util.Map<String, java.awt.Rectangle> rightColumn(LayoutDiagram page, java.util.Locale locale,
         final java.util.Map<String, Integer> needs) throws Exception
+    {
+        return rightColumn(page, locale, needs, new java.util.HashMap<String, Integer>());
+    }
+
+    /** The same, and what each visible label, check box, radio and button in the column needs into {@code texts}. */
+    private java.util.Map<String, java.awt.Rectangle> rightColumn(LayoutDiagram page, java.util.Locale locale,
+        final java.util.Map<String, Integer> needs, final java.util.Map<String, Integer> texts) throws Exception
     {
         java.util.Locale.setDefault(locale);
         org.traincontrol.util.I18n.setLocale(locale);
@@ -1685,6 +1752,13 @@ public class testDiagramLooksRight
                 }
 
                 collectToolButtons(panel, pane, column, needs);
+
+                int columnX = panel.getCaptionChoice().getParent().getX();
+
+                for (java.awt.Component c : form.getComponents())
+                {
+                    if (c.getX() >= columnX - 2) collectTexts(c, texts);
+                }
             });
 
             return column;
@@ -1717,6 +1791,21 @@ public class testDiagramLooksRight
             {
                 collectToolButtons((java.awt.Container) c, pane, out, needs);
             }
+        }
+    }
+
+    /** Each visible label's and button's text and the width it needs, dropdowns left out. */
+    private static void collectTexts(java.awt.Component c, java.util.Map<String, Integer> out)
+    {
+        if (!c.isVisible() || c instanceof javax.swing.JComboBox) return;
+
+        String text = c instanceof javax.swing.AbstractButton ? ((javax.swing.AbstractButton) c).getText()
+            : c instanceof javax.swing.JLabel ? ((javax.swing.JLabel) c).getText() : null;
+
+        if (text != null && !text.isEmpty()) out.put(text, c.getMinimumSize().width);
+        else if (c instanceof java.awt.Container && !(c instanceof javax.swing.JScrollPane))
+        {
+            for (java.awt.Component child : ((java.awt.Container) c).getComponents()) collectTexts(child, out);
         }
     }
 
