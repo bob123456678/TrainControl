@@ -5,39 +5,28 @@ import org.testng.annotations.Test;
 import support.SourceOf;
 
 /**
- * The track-diagram editor must tell the autonomy setup what it did to the track.
+ * The track-diagram editor must tell the autonomy setup what it did to the track: five findings from the LayoutEditor
+ * review, one test class because they are one question asked of five gestures (when the diagram changes, does anything
+ * carry the setup that was keyed to it?).
  *
- * Five findings from the 2026-08-30 LayoutEditor review, and they are one
- * test class because they are one question asked of five gestures: when the diagram changes, does
- * anything carry the setup that was keyed to it?
+ * READ FROM THE SOURCE, not by driving the editor: LayoutEditor is a Swing component wired to a live window, so this
+ * follows the bounded source scan `testARunSurvivesADiagramEdit` uses. These assert that the CALL is in the right
+ * place, not that it does the right thing; that is covered by `testAStationsTimetableFollowsItThroughRenamesAndEdits`
+ * (moveTiles, forgetTiles) and `testACaptionStaysWithItsSquare` (forgetCaptionsAt).
  *
- * READ FROM THE SOURCE, not by driving the editor. LayoutEditor is a Swing component wired to a live
- * window, and nothing in this suite constructs one - the established shape for its behavior is the
- * bounded source scan testARunSurvivesADiagramEdit uses, and this follows it. That has a real limit
- * worth stating: these assert that the CALL is in the right place, not that the call does the right
- * thing. What the calls do is covered where it can be exercised - AutonomySession.moveTiles,
- * forgetTiles and forgetCaptionsAt are tested directly in testAStationsTimetableFollowsItThroughRenamesAndEdits (moveTiles, forgetTiles)
- * and testACaptionStaysWithItsSquare (forgetCaptionsAt).
- *
- * Each scan is bounded to one method body. An unbounded search would find the term anywhere in a
- * six-thousand-line file and pass while the method it names does nothing - which is the vacuous-scan
- * failure this suite has already been bitten by once. Both terms of every ordering assertion
- * are proved present before they are compared, because an absent term's index is -1, which is less
- * than every real index and would make a reversed call pass in silence.
+ * Each scan is bounded to one method body, or it would find the term anywhere in a six-thousand-line file and pass
+ * while the method does nothing. Both terms of every ordering assertion are proved present before they are compared,
+ * because an absent term's index is -1, less than every real index, which makes a reversed call pass in silence.
  */
 public class testTheEditorTellsAutonomy
 {
     /**
-     * A group cut and paste has to carry the setup, the way every other move does.
+     * A group cut and paste has to carry the setup, the way every other move does: a cut that did not left the station,
+     * name, length, facings, barred arrivals, protecting signal, portal partner and placed locomotive keyed to the
+     * emptied squares, and the next reconciling save pruned them.
      *
-     * deleteSelection told autonomy about captions and nothing else, and pasteSelection only cleared
-     * what it built over - so a cut left the station, name, length, facings, barred arrivals,
-     * protecting signal, portal partner and placed locomotive keyed to the emptied squares, and the
-     * next reconciling save pruned them as squares that no longer exist. The single-tile cut, the
-     * selection drag and the bulk row move all called moveTile or moveTiles; this one did not.
-     *
-     * MUTATION this catches: delete the moveTiles call from pasteSelection, or stop cutSelection
-     * setting clipboardWasCut - either leaves the paste with nothing to carry.
+     * MUTATION this catches: delete the moveTiles call from pasteSelection, or stop cutSelection setting
+     * clipboardWasCut - either leaves the paste with nothing to carry.
      */
     @Test
     public void testAGroupCutCarriesItsSetupToWhereItIsPasted() throws Exception
@@ -50,10 +39,8 @@ public class testTheEditorTellsAutonomy
 
         String cut = bodyOf("    boolean cutSelection()");
 
-        // The ASSIGNMENT, not a mention of the name.  This asked only that the identifier appeared,
-        // so setting the flag to false here - which is precisely "the paste cannot tell a move from a
-        // copy" - left the test green.  A test that cannot fail for the reason it names is worse than
-        // no test, because it reads as protection.
+        // The ASSIGNMENT, not a mention of the name: setting the flag to false here ("the paste cannot tell a move from
+        // a copy") must fail the test.
         assertTrue(cut.contains("clipboardWasCut = cut"),
             "cutSelection no longer sets the cut flag FROM the delete's result, so the paste cannot "
             + "tell a move from a copy and will not carry the setup (LE-A1)");
@@ -62,17 +49,13 @@ public class testTheEditorTellsAutonomy
             "cutSelection no longer records WHICH squares it emptied, so a non-rectangular cut moves "
             + "the setup off squares that still hold their track (LE-A5)");
 
-        // The ORDER, which is what the fix turns on: the picked squares have to be collected
-        // before deleteSelection, because deleting clears the selection.  Collected after, the set is
-        // empty, every origin is skipped and the paste carries nothing - and an assertion that only
-        // asked for the assignment could not see it.
+        // The ORDER: the picked squares have to be collected before deleteSelection, because deleting clears the
+        // selection; collected after, the set is empty, every origin is skipped and the paste carries nothing.
         int collected = cut.indexOf("this.editor.selection.all()");
         int deleted = cut.indexOf("this.editor.deleteSelection(");
 
-        // Both proved present before they are compared, which this class's own header promises and
-        // this one assertion was not doing: an absent term's index is -1, which is less than every
-        // real one, so a rename would have made it pass whatever the order.  It went red
-        // for exactly that reason when deleteSelection gained an argument.
+        // Both proved present before they are compared, as this class's header promises: an absent term's index is -1,
+        // which is less than every real one.
         assertTrue(collected >= 0, "cutSelection no longer collects the picked squares (LE-A5)");
         assertTrue(deleted >= 0, "cutSelection no longer calls deleteSelection - scan needs updating");
 
@@ -80,36 +63,27 @@ public class testTheEditorTellsAutonomy
             "cutSelection collects the emptied squares AFTER deleting them, and deleting clears the "
             + "selection - so it collects nothing and the paste carries nothing (LE-A5)");
 
-        // The cut must NOT let the per-square delete forget the captions, or the paste has
-        // none left to carry - the four bulk movers pass false for the same reason.
+        // The cut must NOT let the per-square delete forget the captions, or the paste has none left to carry - the
+        // four bulk movers pass false for the same reason.
         assertTrue(cut.contains("deleteSelection(false)"),
             "cutSelection lets the delete forget the captions, so a cut and paste carries the station, "
             + "its length and its locomotive but loses the name drawn on the diagram (LE2-B7)");
 
-        // The whole of A1, A4 and A5 was unreachable because cutMoves re-read the field that
-        // snapshotLayout had just cleared.  Every other assertion here asks whether a call is present;
-        // this one asks that the decision is taken from the ARGUMENT, which is the only part of
-        // reachability a source scan can actually see.
+        // Every other assertion here asks whether a call is present; this one asks that the decision is taken from the
+        // ARGUMENT, the only part of reachability a source scan can see (cutMoves once re-read the field that
+        // snapshotLayout had just cleared).
         String moves = bodyOf("> cutMoves(int atX, int atY, boolean wasCut,");
 
-        // Unqualified, because "clipboardWasCut" and "this.clipboardWasCut" are the same read and
-        // Java requires neither spelling - pinning one let the other through.  The method
-        // has no legitimate mention of the field: its whole point is that the caller decides.
+        // Unqualified, because "clipboardWasCut" and "this.clipboardWasCut" are the same read; the method has no
+        // legitimate mention of the field, since the caller decides.
         assertFalse(moves.contains("clipboardWasCut"),
             "cutMoves reads the cut flag from the field again instead of the argument it was handed. "
             + "The decision belongs to the gesture, and a field re-read is how LE-A7 turned the whole "
             + "group-cut fix into dead code while every one of these tests stayed green");
 
-        // AND IT USES THE ANSWER IT WAS HANDED.
-        //
-        // The per-square test replaced standing the flag down inside snapshotLayout - and
-        // since every edit snapshots, any edit between the cut and the paste turned the move into a
-        // copy and abandoned the setup on the emptied squares.
-        //
-        // The question was then moved OUT of this method, because asking it here was asking it too
-        // late: pasteSelection places its tiles first, so an origin that is also a landing had been
-        // refilled by the paste itself.  So what this method must do now is exactly what it must do
-        // with the flag - use what the caller worked out, and not go and look again.
+        // And it uses the answer it was handed. The question is taken OUT of this method because asking it here is too
+        // late: pasteSelection places its tiles first, so an origin that is also a landing has been refilled by the
+        // paste itself. So the method uses what the caller worked out and does not look again.
         assertTrue(moves.contains("!vacated.contains(origin)"),
             "cutMoves does not consult the set of squares the caller found empty, so either it is "
             + "carrying setup off squares that are full or it is asking the diagram itself - and "
@@ -120,7 +94,7 @@ public class testTheEditorTellsAutonomy
             + "has placed its tiles, so an origin that is also a landing reads as full and its setup "
             + "is skipped and then forgotten as built over (RC-A6)");
 
-        // WHERE THE QUESTION LIVES NOW.  Both halves of it, asked before anything is placed.
+        // Where the question lives now. Both halves of it, asked before anything is placed.
         String vacated = bodyOf("> emptyCutOrigins()");
 
         assertTrue(vacated.contains("getComponent(square.getX(), square.getY()) == null"),
@@ -133,35 +107,25 @@ public class testTheEditorTellsAutonomy
             + "cut on one page and a paste on another would move the setup across pages - which "
             + "cannot be undone, because arriveAt has thrown the source page's history away (RC-A1)");
 
-        // A copy must NOT carry it: the original keeps everything, and moving its setup onto the copy
-        // would take the station and its placed locomotive away from the squares still holding track.
+        // A copy must NOT carry it: the original keeps everything, and moving its setup onto the copy would take the
+        // station and its placed locomotive away from squares still holding track.
         String copy = bodyOf("    boolean copySelection()");
 
         assertTrue(copy.contains("clipboardWasCut = false"),
             "copySelection must clear the cut flag, or pasting a COPY would move the original's setup "
             + "onto the copy and leave the original squares bare (LE-A1)");
 
-        // UNDO MAKING THE CUT UNTRUE IS NOT PINNED HERE ANY MORE, and deliberately.
-        //
-        // It used to be, as `undo` and `redo` each containing "clipboardWasCut = false".  They were taken
-        // out: the rule is now the per-square emptiness test above, which undo satisfies by
-        // refilling the squares rather than by being told about them.
-        //
-        // The rule itself is tested by RUNNING it, in
-        // regression.testLayoutEditorBulkEdits.testUndoingTheCutBeforeThePasteLeavesTheSetupWhereItIs,
-        // which cuts, undoes, pastes and asserts the setup stayed where the track came back - and its
-        // sibling asserts an unrelated edit does NOT cost the move.  A scan for a line of text could
-        // never have told those two cases apart; a source scan cannot see reachability, which is the
-        // whole lesson.
+        // Undo making the cut untrue is not pinned here, deliberately: the rule is the per-square emptiness test above,
+        // which undo satisfies by refilling the squares. It is tested by RUNNING it, in
+        // `regression.testLayoutEditorBulkEdits.testUndoingTheCutBeforeThePasteLeavesTheSetupWhereItIs`, and its
+        // sibling asserts an unrelated edit does NOT cost the move; a scan for a line of text could not tell those
+        // apart.
     }
 
     /**
-     * Shrinking the page must not leave a station's name outside it.
-     *
-     * edgesAreEmpty asks whether the edge holds TRACK. A caption is placed on a blank square by
-     * preference, so the edge could hold a name and still read as empty; trimming left the caption
-     * with coordinates off the page - not drawn, still present, so the "station is not shown anywhere"
-     * check stayed quiet and no square remained to click to move or remove it.
+     * Shrinking the page must not leave a station's name outside it: edgesAreEmpty asks whether the edge holds TRACK,
+     * but a caption is placed on a blank square by preference, so trimming left the caption with coordinates off the
+     * page, not drawn and still present.
      */
     @Test
     public void testShrinkingThePageDropsCaptionsOnTheEdgeItRemoves() throws Exception
@@ -183,11 +147,8 @@ public class testTheEditorTellsAutonomy
     }
 
     /**
-     * Clearing a page tells the setup that the page has gone.
-     *
-     * Deleting one square says so; emptying the whole page said nothing, so the setup outlived the
-     * diagram it described until somebody opened the autonomy editor and pressed Save - and the
-     * non-reconciling writes on the way out committed that state to disk first.
+     * Clearing a page tells the setup that the page has gone: emptying the whole page said nothing, so the setup
+     * outlived the diagram until somebody opened the autonomy editor and pressed Save.
      */
     @Test
     public void testClearingThePageTellsTheSetup() throws Exception
@@ -208,12 +169,9 @@ public class testTheEditorTellsAutonomy
     }
 
     /**
-     * Shift down and shift right must not record an undo step for an edit they refuse.
-     *
-     * They snapshotted first and checked for a hovered square afterwards, so invoking them with none
-     * pushed an undo entry for an edit that never happened - which also clears the redo stack and
-     * makes the editor ask about saving work nobody did. Shift up and shift left already checked
-     * first, which is what made this a drift between siblings rather than a design.
+     * Shift down and shift right must not record an undo step for an edit they refuse: they snapshotted first and
+     * checked for a hovered square afterwards, which also clears the redo stack and makes the editor ask about saving
+     * work nobody did. Shift up and shift left already checked first.
      */
     @Test
     public void testTheShiftsCheckBeforeTheyRecordAnUndoStep() throws Exception
@@ -222,9 +180,8 @@ public class testTheEditorTellsAutonomy
         {
             String body = bodyOf(method);
 
-            // Any refusal, not one spelling of it: the inline comparison was replaced with a named
-            // predicate, and a scan pinned to the old wording would have gone red for a change that
-            // improved the thing it was guarding.
+            // Any refusal, not one spelling of it: a scan pinned to the old wording would go red for a change that
+            // improved what it guards.
             int guarded = body.indexOf(") return;");
             int snapshot = body.indexOf("snapshotLayout()");
 
@@ -242,15 +199,9 @@ public class testTheEditorTellsAutonomy
     }
 
     /**
-     * The menu offers a shift only where the method would perform one.
-     *
-     * Shift Up returns in silence on the last row and Shift Left on the last column, and the menu
-     * offered them anyway - so right-clicking the bottom row, the natural gesture for taking an empty
-     * row away, chose an item that did nothing and said nothing.
-     *
-     * Asserted as the MENU ASKING THE EDITOR'S OWN PREDICATE, not merely as the item being grayed by
-     * some condition. A menu that restates the rule is a menu that can drift from it, and that drift
-     * is this finding: two copies of one question, one of which was never updated.
+     * The menu offers a shift only where the method would perform one: Shift Up returns in silence on the last row and
+     * Shift Left on the last column. Asserted as the MENU ASKING THE EDITOR'S OWN PREDICATE, not merely as the item
+     * being grayed by some condition, since a menu that restates the rule can drift from it.
      */
     @Test
     public void testTheMenuAsksTheSamePredicateTheShiftUses() throws Exception
@@ -259,12 +210,8 @@ public class testTheEditorTellsAutonomy
         String menu = bodyOf("public LayoutEditorRightclickMenu(LayoutEditor edit, TrainControlUI ui, LayoutLabel label,"
             + " LayoutDiagramComponent component)");
 
-        // EACH ITEM AGAINST ITS OWN PREDICATE.
-        //
-        // This asked whether the four strings appeared anywhere in the file, so swapping which
-        // predicate grays which item - Shift Up enabled by canShiftDown - passed, and the menu was
-        // back to offering Shift Up on the bottom row where it refuses in silence. That is the old fault
-        // restored with the test watching. Bounded to the one addShift call each.
+        // Each item against its own predicate: swapping which predicate grays which item (Shift Up enabled by
+        // canShiftDown) must fail. Bounded to the one addShift call each.
         for (String pair : new String[] {"shiftUp|canShiftUp", "shiftLeft|canShiftLeft",
             "shiftDown|canShiftDown", "shiftRight|canShiftRight"})
         {
@@ -304,8 +251,8 @@ public class testTheEditorTellsAutonomy
     }
 
     /**
-     * One declaration's text, braces included, so a scan cannot wander into its neighbors: found wherever the
-     * program keeps it, and a miss is a failure that names it.
+     * One declaration's text, braces included, so a scan cannot wander into its neighbors; a miss is a failure that
+     * names it.
      */
     private static String bodyOf(String declaration) throws Exception
     {
