@@ -362,7 +362,7 @@ public class testSwitchingToACentralStationLayout
             + "the diagram rebuild, and the clear a Central Station switch performs. A flag that is "
             + "not refreshed where the truth moves is staler than the inference it replaced");
 
-        // And the properties that used to have two writers have one.
+        // And each of those properties has a single writer.
         assertEquals(SourceOf.occurrences("popUpAllMenuItem.setEnabled("), 1,
             "All Layouts is set from more than one place again. repaintPathLabel used to set it TRUE "
             + "unconditionally for a local layout and re-enable it moments after the menu guard had "
