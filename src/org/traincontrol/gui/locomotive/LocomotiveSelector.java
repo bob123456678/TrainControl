@@ -19,20 +19,10 @@ import org.traincontrol.model.ViewListener;
  */
 public final class LocomotiveSelector extends javax.swing.JFrame
 {
-    // THE APPLICATION'S LOOK AND FEEL, BEFORE THIS CLASS CAN BE INSTANTIATED (Adam, 2026-09-11).
-    //
-    // **A static block rather than the first line of the constructor, and the difference was measured.**
-    // `JFrame`'s own constructor runs before any constructor body here, and it creates the ROOT PANE -
-    // whose UI comes from whatever look and feel is installed at that instant. So installing inside the
-    // constructor is too late for the window's own chrome. Built cold, which is what a test does, this
-    // window came out with a `MetalRootPaneUI` and an operating-system title bar while the same window in
-    // the running program gets `FlatRootPaneUI`, FlatLaf's own title bar and the menu bar drawn inside it:
-    // 166x77 against 166x49 for the identical window, measured 2026-09-11.
-    //
-    // Class initialization always finishes before the first instance is created, so this is early enough.
-    //
-    // Headless-guarded because a static initializer that throws leaves the class unusable for the rest of
-    // the process, which is a worse failure than a window in the wrong font.
+    // The application's look and feel, before this class can be instantiated.  A static block, not the constructor:
+    // JFrame's constructor creates the root pane before any constructor body here, so a look and feel installed later
+    // leaves a cold-built window (a test's) with Metal's title bar instead of FlatLaf's.  Headless-guarded: a static
+    // initializer that throws leaves the class unusable.
     static
     {
         if (!java.awt.GraphicsEnvironment.isHeadless()) TrainControlUI.installLookAndFeel();
@@ -130,16 +120,8 @@ public final class LocomotiveSelector extends javax.swing.JFrame
     
     synchronized private void filterLocList()
     {
-        // singlePass, not invokeLater - the other half of the refresh.
-        //
-        // `refreshLocSelectorList` was converted and this, its last statement, was not.  So every
-        // refresh was still two events: one that adds every locomotive, and one that hides the ones
-        // the filter excludes.  The filter box is deliberately not cleared on refresh, so with a
-        // filter typed the intermediate pass showed the whole roster and the next took most of it
-        // away - a flicker introduced BY the refresh, in the window the conversion was meant to make
-        // arrive in one piece.
-        //
-        // Its two other callers are event handlers already on the event thread, so they collapse too.
+        // singlePass, not invokeLater, the other half of the refresh: otherwise a refresh was two events, and with a
+        // filter typed (the box is not cleared) the intermediate pass flashed the whole roster.
         TrainControlUI.singlePass(() ->
         {
             String filter = this.LocFilterBox.getText().toLowerCase();
