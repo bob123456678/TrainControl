@@ -27,7 +27,7 @@ import static regression.testTheImportDoorReadsAnOldFile.putTheFolderBack;
  * `testARunGreysTheAutoTabAndItsStopGivesItBack`), whose helpers these share.
  *
  * Its own class because each of these drives a real run in its window, and that class already holds thirty-nine windows:
- * every window a test opens keeps its threads, and a class of many runs out of heap (2026-09-29).
+ * every window a test opens keeps its threads, and a class of many runs out of heap.
  *
  * @author Adam
  */
@@ -40,7 +40,7 @@ public class testTheAutoTabWaitsForTheTrains
      * stayed grayed and Graceful Stop offered over nothing, and the Auto tab, which counts Graceful Stop offered as a run,
      * stayed grayed saying to wait for trains that were not moving.
      *
-     * And it says so (Adam, 2026-10-02: "the start says nothing"): the log alone said why.
+     * And it says so (Adam: "the start says nothing"): the log alone said why.
      *
      * MUTATION: leave Start's buttons as they are when nothing started, or say nothing, and this fails.
      *
@@ -359,8 +359,8 @@ public class testTheAutoTabWaitsForTheTrains
     }
 
     /**
-     * The Auto tab's Edit Autonomy Paths in Track Diagram opens the autonomy editor, whichever editor was used last (Adam,
-     * 2026-10-02): it ran the Edit button's code, which opens the editor used last - the track diagram's, after it.
+     * The Auto tab's Edit Autonomy Paths in Track Diagram opens the autonomy editor, whichever editor was used last:
+     * the Edit button's code opens the editor used last, the track diagram's after it.
      *
      * MUTATION: send the button to the Edit button's code, and this fails.
      *
@@ -1107,7 +1107,7 @@ public class testTheAutoTabWaitsForTheTrains
                 && control(ui[0], "editAutonomyFromSettings").isEnabled(), "Edit or Edit Autonomy Paths is greyed after an"
                 + " editor's drawing raised an Error (RSA31-C3)");
 
-            // AND THE MAIN WINDOW BACK ON TOP (round 80): opening took the setting off, and the window that failed to
+            // AND THE MAIN WINDOW BACK ON TOP: opening took the setting off, and the window that failed to
             // draw is the only one that can put it back as it goes
             assertTrue(ui[0].isAlwaysOnTop(), "after an editor failed to draw, the main window is not put back on top as"
                 + " the operator's setting asks");
@@ -1449,7 +1449,7 @@ public class testTheAutoTabWaitsForTheTrains
      * The strip above the track diagram holds its buttons to the page's own button height, at every display scaling
      * (OB-313).
      *
-     * Adam, 2026-10-03: *"The issue was on lower display scaling monitors, where the button looked too narrow
+     * Adam: *"The issue was on lower display scaling monitors, where the button looked too narrow
      * vertically."*  The strip's Start (and the banner's Load) were held to its checkbox's height less three pixels, with
      * no padding above or below.  The checkbox's font is the one that follows the display's scaling; the page's own
      * buttons - Edit, Small, Large - are a fixed 24.  At 125% the two agreed; at 100% the checkbox is shorter and the
@@ -1546,7 +1546,7 @@ public class testTheAutoTabWaitsForTheTrains
     /**
      * The turning mark turns about its own center (MT-650).
      *
-     * Adam, 2026-10-02: *"the spinner isn't perfectly centered around itself- looks a little unsmooth (1-2 px off)."*
+     * Adam: *"the spinner isn't perfectly centered around itself- looks a little unsmooth (1-2 px off)."*
      * Start's mark is Return Home's (FR-077), and it was drawn on whole pixels with Java's default stroke normalization,
      * which moves an outline onto the pixel grid differently at each angle - so the ring's center stepped about as it
      * turned, the more so on a scaled display.  Every frame, at the sizes the two buttons use and at 100% to 200%
@@ -1656,7 +1656,7 @@ public class testTheAutoTabWaitsForTheTrains
     /**
      * Closing the editor while it switches to Track Diagram gives Edit and Edit Autonomy Paths back (MT-649).
      *
-     * Adam, 2026-10-02: *"The edit autonomy paths button is greyed out, so this test is moot".*  The switch's own work is
+     * Adam: *"The edit autonomy paths button is greyed out, so this test is moot".*  The switch's own work is
      * posted, and arrives after a close that lands in between - at a closed window, which it put back together out of
      * sight, graying both buttons for the session.  The close wins now: a closed window is not arrived at.
      *
