@@ -72,7 +72,8 @@ public class testPageIdsAreDurable
     {
         write("Alpha", "Bravo");
 
-        // Renamed to sort FIRST: the page list arrives sorted, so this used to change every page's id (MT-135).
+        // Renamed to sort FIRST: the page list arrives sorted, so every page's id would change if ids followed position
+        // (MT-135).
         Map<String, String> renamed = new LinkedHashMap<>();
         renamed.put("Bravo", "Aardvark");
 
@@ -490,7 +491,7 @@ public class testPageIdsAreDurable
             + "that number. This is the failure the fallback exists for, and asserting Alpha alone "
             + "could not see it (TA-A1).  Got: " + ids);
 
-        // And the write must go through: a retry cannot clear what it used to refuse on.
+        // And the write must go through: a retry cannot clear what it refuses on.
         LayoutDiagram.writeLayoutIndex(layout.getAbsolutePath(),
             new ArrayList<>(Arrays.asList("Alpha", "Bahnhof S\u00fcd", "Zulu")), null, 0);
 
