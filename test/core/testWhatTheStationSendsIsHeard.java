@@ -29,10 +29,8 @@ import support.RouteMonitor;
  * another controller, and the power.
  *
  * Every claim here acts as the railway does, through `receiveMessage` with a raw frame built by `support.Packets`, and
- * reads what the program made of it: the sensor's state, a route the sensor arms firing (its turnout thrown and the
- * command it sent), a locomotive's speed, direction and functions, the power, and the running time the statistics
- * keep.  `setFeedbackState` is never called: it is a different door, the one the diagram's click and the simulation
- * use.
+ * reads what the program made of it.  `setFeedbackState` is never called: it is a different door, the one the
+ * diagram's click and the simulation use.
  *
  * MUTATION: each claim names the line it rests on; see its javadoc.
  *
@@ -147,8 +145,6 @@ public class testWhatTheStationSendsIsHeard
      * and the command for it goes to the railway.
      *
      * MUTATION: in `MarklinRoute.executeAutoRoute`, take out `this.execRoute(true);`.
-     *
-     * @throws Exception from the route
      */
     @Test
     public void testAnArmedRouteFiresWhenItsSensorIsMade() throws Exception
@@ -176,8 +172,6 @@ public class testWhatTheStationSendsIsHeard
      *
      * MUTATION: in `MarklinRoute.executeAutoRoute`, `this.hasConditions() && !this.conditions.evaluate(network)` to
      * `false`.
-     *
-     * @throws Exception from the route
      */
     @Test
     public void testAnArmedRouteWaitsForItsCondition() throws Exception
@@ -217,8 +211,6 @@ public class testWhatTheStationSendsIsHeard
      * A route that has been switched off does not fire when its sensor is made; armed again, it does.
      *
      * MUTATION: in `MarklinRoute.executeAutoRoute`, take out `if (!this.enabled) return;` after the wait.
-     *
-     * @throws Exception from the route
      */
     @Test
     public void testADisarmedRouteIgnoresItsSensor() throws Exception
@@ -256,8 +248,6 @@ public class testWhatTheStationSendsIsHeard
      * A route triggered "occupied then clear" fires when the sensor breaks, not when it is made.
      *
      * MUTATION: in `MarklinRoute.executeAutoRoute`, `this.triggerType == s88Triggers.CLEAR_THEN_OCCUPIED` to `true`.
-     *
-     * @throws Exception from the route
      */
     @Test
     public void testAnOccupiedThenClearRouteFiresWhenTheSensorBreaks() throws Exception
@@ -286,8 +276,6 @@ public class testWhatTheStationSendsIsHeard
      * where it already is counts nothing.
      *
      * MUTATION: in `MarklinAccessory.parseMessage`, `if (this.switched != stateAtLastActuation)` to `if (true)`.
-     *
-     * @throws Exception from the wait
      */
     @Test
     public void testAnAccessoryEchoMovesTheTurnoutAndCountsTheMove() throws Exception
@@ -406,8 +394,6 @@ public class testWhatTheStationSendsIsHeard
      * The power cut at the station reads off in the model, and restored reads on.
      *
      * MUTATION: in `MarklinControlStation.receiveMessage`, the STOP branch's `this.setPowerState(false)` to `true`.
-     *
-     * @throws Exception from the wait
      */
     @Test
     public void testAStopPacketCutsThePowerAndAGoRestoresIt() throws Exception
@@ -437,8 +423,6 @@ public class testWhatTheStationSendsIsHeard
      * is off.
      *
      * MUTATION: in `MarklinControlStation.receiveMessage`, take out the STOP branch's `l.notifyOfPowerStateChange(false)`.
-     *
-     * @throws Exception from the wait
      */
     @Test
     public void testAPowerCutFromTheStationBanksTheRunningTime() throws Exception
