@@ -23,10 +23,9 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * A straight dropped between two pieces of track is turned to join them (OB-292).
  *
- * Adam, 2026-09-24: *"when new straight tracks are placed in the autonomy editor and they would connect two other
- * tracks, they are automatically oriented to connect rather than not."*  A straight came off the palette the way the
- * palette held it, so dropping one into a gap in a north-south line left it lying east-west, joining neither side,
- * until it was turned by hand.
+ * Adam: *"when new straight tracks are placed in the autonomy editor and they would connect two other tracks, they are
+ * automatically oriented to connect rather than not."*  A straight came off the palette the way the palette held it, so
+ * dropping one into a gap in a north-south line left it lying east-west, joining neither side.
  *
  * OB-360: the same for every other straight-shaped tile - the s88 feedback tile, the signal and the uncoupler, which
  * run through the square like a straight, and the bumper, the tunnel and the link, which end the track at one side.  The
@@ -88,8 +87,6 @@ public class testANewStraightJoinsTheTrackBesideIt
     /**
      * Into a gap in an east-west line it lies east-west, and into a gap in a north-south line north-south, whichever
      * way the palette held it.
-     *
-     * @throws Exception from the editor
      */
     @Test
     public void testAStraightDroppedIntoAGapJoinsTheLine() throws Exception
@@ -102,11 +99,7 @@ public class testANewStraightJoinsTheTrackBesideIt
             + " lies east-west, joining neither");
     }
 
-    /**
-     * With nothing to join, it lies the way it was held - the control, so a rule that turns every straight fails.
-     *
-     * @throws Exception from the editor
-     */
+    /** With nothing to join, it lies the way it was held - the control, so a rule that turns every straight fails. */
     @Test
     public void testAStraightWithNothingToJoinLiesAsItWasHeld() throws Exception
     {
@@ -120,8 +113,6 @@ public class testANewStraightJoinsTheTrackBesideIt
     /**
      * An s88 tile, a signal or an uncoupler dropped into a gap lies along the line, whichever way the palette held it,
      * and one already lying along it keeps its way round (a signal's four ways differ in which end it faces).
-     *
-     * @throws Exception from the editor
      */
     @Test
     public void testAThroughTileDroppedIntoAGapJoinsTheLine() throws Exception
@@ -162,8 +153,6 @@ public class testANewStraightJoinsTheTrackBesideIt
     /**
      * A through tile with track on one side only is turned to meet it (Adam, OB-360: *"meet the single neighbor"*); one
      * already meeting it is left as it was; and where one way round meets track at both ends, that wins over one end.
-     *
-     * @throws Exception from the editor
      */
     @Test
     public void testAThroughTileMeetsASingleNeighbour() throws Exception
@@ -211,10 +200,8 @@ public class testANewStraightJoinsTheTrackBesideIt
 
     /**
      * Only a tile newly placed from the palette is turned (Adam, OB-360: *"only turn the first time the user places it,
-     * if it's already placed, don't change it."*): a tile that was copied and pasted, or dragged, keeps the way round it
-     * had, wherever it lands.
-     *
-     * @throws Exception from the editor
+     * if it's already placed, don't change it."*): a tile that was copied and pasted, or dragged, keeps the way round
+     * it had, wherever it lands.
      */
     @Test
     public void testACopiedOrMovedTileIsNotTurned() throws Exception
@@ -247,11 +234,9 @@ public class testANewStraightJoinsTheTrackBesideIt
     }
 
     /**
-     * The rule is every track tile's, not the straight's (Adam, OB-360: *"we should extend it to basically all tiles, so
-     * that a curve connects if it can"*): a curve, plain or with an s88 on it, is turned so that its road joins the
+     * The rule is every track tile's, not the straight's (Adam, OB-360: *"we should extend it to basically all tiles,
+     * so that a curve connects if it can"*): a curve, plain or with an s88 on it, is turned so that its road joins the
      * track on both of two sides if it can, and so that an end joins the one side if only one has track.
-     *
-     * @throws Exception from the editor
      */
     @Test
     public void testACurveConnectsIfItCan() throws Exception
@@ -303,8 +288,6 @@ public class testANewStraightJoinsTheTrackBesideIt
      * straight track would, so that at least something is aligned (for switches, there's always some guessing
      * involved, which is ok)"*): the nearest turn from the way it was held.  One already based on the track stays as it
      * was.
-     *
-     * @throws Exception from the editor
      */
     @Test
     public void testASwitchLiesWithItsBaseOnTheTrack() throws Exception
@@ -348,11 +331,7 @@ public class testANewStraightJoinsTheTrackBesideIt
         }
     }
 
-    /**
-     * A lamp, a text label and a route button are not track and are never turned, whatever is beside them.
-     *
-     * @throws Exception from the editor
-     */
+    /** A lamp, a text label and a route button are not track and are never turned, whatever is beside them. */
     @Test
     public void testNonTrackTilesAreNotTurned() throws Exception
     {
@@ -377,8 +356,6 @@ public class testANewStraightJoinsTheTrackBesideIt
     /**
      * A bumper, a tunnel or a link ends the track at one side: dropped beside a piece of track it is turned so that its
      * end is on that side, from whichever way the palette held it.
-     *
-     * @throws Exception from the editor
      */
     @Test
     public void testAOneEndedTileFacesTheTrackBesideIt() throws Exception
@@ -398,8 +375,6 @@ public class testANewStraightJoinsTheTrackBesideIt
     /**
      * With nothing to join, every one of them lies the way it was held - the control, so a rule that turns every tile
      * fails.
-     *
-     * @throws Exception from the editor
      */
     @Test
     public void testATileWithNothingToJoinLiesAsItWasHeld() throws Exception
