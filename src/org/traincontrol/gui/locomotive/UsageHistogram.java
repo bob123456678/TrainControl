@@ -17,20 +17,11 @@ import org.traincontrol.util.I18n;
  */
 public class UsageHistogram extends javax.swing.JFrame
 {
-    // THE APPLICATION'S LOOK AND FEEL, BEFORE THIS CLASS CAN BE INSTANTIATED (Adam, 2026-09-11).
-    //
-    // **A static block rather than the first line of the constructor, and the difference was measured.**
-    // `JFrame`'s own constructor runs before any constructor body here, and it creates the ROOT PANE -
-    // whose UI comes from whatever look and feel is installed at that instant. So installing inside the
-    // constructor is too late for the window's own chrome. Built cold, which is what a test does, this
-    // window came out with a `MetalRootPaneUI` and an operating-system title bar while the same window in
-    // the running program gets `FlatRootPaneUI`, FlatLaf's own title bar and the menu bar drawn inside it:
-    // 166x77 against 166x49 for the identical window, measured 2026-09-11.
-    //
-    // Class initialization always finishes before the first instance is created, so this is early enough.
-    //
-    // Headless-guarded because a static initializer that throws leaves the class unusable for the rest of
-    // the process, which is a worse failure than a window in the wrong font.
+    // THE APPLICATION'S LOOK AND FEEL, BEFORE THIS CLASS CAN BE INSTANTIATED.  A static block, not the constructor's
+    // first line: `JFrame`'s own constructor creates the ROOT PANE before any constructor body here, with whatever look
+    // and feel is installed then, so a cold build (a test) got `MetalRootPaneUI` and an OS title bar instead of
+    // `FlatRootPaneUI`.  Headless-guarded because a static initializer that throws leaves the class unusable for the
+    // rest of the process.
     static
     {
         if (!java.awt.GraphicsEnvironment.isHeadless()) TrainControlUI.installLookAndFeel();
