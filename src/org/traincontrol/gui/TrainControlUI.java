@@ -4582,7 +4582,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Writes the safe setting instead of refusing when the railway could release track under a train: a FILE has
      * nobody at it to read a refusal, and refusing would make an existing configuration unopenable, so the log says
      * why.  Called by the editor's apply and the four dispatch doors (Start, Execute Timetable, Return Home,
-     * `sendATrainByHand`), as a train length is written on the live layout long after a parse (OB-090).
+     * `sendATrainByHand`), as a train length is written on the live layout long after a parse.  The control is put
+     * back in step with the railway afterwards (OB-090).
      */
     public void keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack()
     {
@@ -21504,6 +21505,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Repaints the timetable once a route completes
      */
+    // Deliberately not synchronized: the snapshot takes the Layout monitor, which a path configuration holds for long.
     /**
      * What to call a Point in a list a person reads: the station, not its per-side copy "Platform 3 (northbound)"
      * (OB-102).  Reads the session FIELD, never `getAutonomySession()`, a lazy builder that parses pages, writes to
