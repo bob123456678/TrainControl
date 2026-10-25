@@ -15,29 +15,18 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * One ceiling, asked by everything that grows the page, about the right dimension.
+ * One ceiling, asked by everything that grows the page, about the right dimension. The limit on a page's size lived in
+ * `growEdges`, in `addRowsAndColumns` and in the right-click menu that grays Increase Size, while Shift Down and Shift
+ * Right grew the page and asked nothing. The one predicate that replaced them took both dimensions as one conjunction,
+ * so `roomToGrow(0, 1)` still asked whether the page was too TALL and refused a column shift; that shape is real (a
+ * page's size comes from its largest element coordinate, and three fixture pages parse at 17 x 129). It is a pure
+ * function of two ints and the page's size, about the cheapest thing in this window to pin.
  *
- * **Three copies became one, and the one was wrong in a new way.** The limit on a page's size lived in
- * `growEdges`, again in `addRowsAndColumns`, and a third time in the right-click menu that grays
- * Increase Size - while Shift Down and Shift Right, two items away on the same submenu, grow the page by
- * a row or a column and asked nothing. At the ceiling the menu grayed one item with a tooltip explaining
- * why and offered another that did the same thing and worked.
+ * ON THE FROZEN RAILWAY, never `cs2_sample_layout` (OB-111), though nothing here reads the fixture's contents, only its
+ * size.
  *
- * The predicate that replaced them took both dimensions and was written as one conjunction, so
- * `roomToGrow(0, 1)` still asked whether the page was too TALL - and refused a column shift, which adds
- * nothing to a page's height. That shape is real here: a page's size comes from its largest
- * element coordinate with nothing clamping it, and three fixture pages in this repository parse at
- * 17 x 129.
- *
- * **Nothing pinned any of it**, which is why this class exists: a ceiling change altered behavior and
- * `grep -rn "roomToGrow" test/` found nothing. It is a pure function of two ints and the page's size,
- * which is about the cheapest thing in this window to pin.
- *
- * ON THE FROZEN RAILWAY, never `cs2_sample_layout` (OB-111) - though nothing here reads the fixture's
- * contents, only its size, and the pages below are built in memory.
- *
- * MUTATION: charge each increment against the other dimension and `testATallPageMayStillGrowSideways`
- * fails; drop the ceiling out of `canShiftDown` and `testTheShiftGesturesAskTheCeiling` does.
+ * MUTATION: charge each increment against the other dimension and `testATallPageMayStillGrowSideways` fails; drop the
+ * ceiling out of `canShiftDown` and `testTheShiftGesturesAskTheCeiling` does.
  *
  * @author Adam
  */
@@ -83,10 +72,8 @@ public class testTheDiagramCeiling
     }
 
     /**
-     * A page too tall to grow downwards may still grow sideways, and the other way round.
-     *
-     * The question a shift has to ask is about the dimension it ADDS to. Asking about the other one is
-     * asking whether the page is already too big, which a shift cannot make worse.
+     * A page too tall to grow downwards may still grow sideways, and the other way round: a shift has to ask about the
+     * dimension it ADDS to, since the other one is already as big as a shift can make it.
      */
     @Test
     public void testATallPageMayStillGrowSideways() throws Exception
@@ -110,7 +97,7 @@ public class testTheDiagramCeiling
             dispose(tall);
         }
 
-        // And the mirror, which is the half a single-dimension fix is most likely to leave out.
+        // And the mirror, the half a single-dimension fix is most likely to leave out.
         LayoutEditor wide = editorOver(LayoutEditor.MAX_SIZE + 5, 10);
 
         try
@@ -127,9 +114,7 @@ public class testTheDiagramCeiling
         }
     }
 
-    /**
-     * A page at the ceiling refuses both, which is the claim.
-     */
+    /** A page at the ceiling refuses both, which is the claim. */
     @Test
     public void testAPageAtTheCeilingRefusesToGrow() throws Exception
     {
@@ -151,10 +136,8 @@ public class testTheDiagramCeiling
     }
 
     /**
-     * And the shift gestures ask it, which is what makes the predicate more than a graying rule.
-     *
-     * `shiftDown` and `shiftRight` each open with `if (!canShift...()) return;`, so the answer decides
-     * the gesture and not only whether the menu item is enabled.
+     * And the shift gestures ask it, which makes the predicate more than a graying rule: `shiftDown` and `shiftRight`
+     * each open with `if (!canShift...()) return;`.
      */
     @Test
     public void testTheShiftGesturesAskTheCeiling() throws Exception
@@ -174,8 +157,8 @@ public class testTheDiagramCeiling
                 "Shift Right was offered on a page at the ceiling, and it grows the page by a column "
                 + "(X8-C5)");
 
-            // THE CONTROL: the same gestures on a page with room are offered, so the assertions above
-            // are not about a predicate that refuses everything.
+            // The control: the same gestures on a page with room are offered, so the assertions above are not about a
+            // predicate that refuses everything.
             LayoutEditor small = editorOver(10, 10);
 
             try
@@ -199,23 +182,16 @@ public class testTheDiagramCeiling
     }
 
     /**
-     * A page at the ceiling in ONE dimension can still grow in the other (at the call site).
+     * A page at the ceiling in ONE dimension can still grow in the other (at the call site). The test below pins the
+     * predicate, which was not what changed: `addRowsAndColumns` asked it about `(1, 1)` and then added `rows` and
+     * `cols`, so that test passes with the defect put back.
      *
-     * **The test below this one pins the predicate, and the predicate was not what changed.** An earlier change
-     * had already made `roomToGrow` per-dimension; what was fixed is that `addRowsAndColumns`
-     * asked it about `(1, 1)` and then added `rows` and `cols`. So that test passes with the defect put
-     * back - measured: 4 tests, 0 failures - and this one is the one that does not (FV3).
+     * Asserted in the SUCCESS direction, on purpose: the refusal branch is the modal `JOptionPane.showMessageDialog`,
+     * which parks the event thread until somebody clicks OK. A page at the row ceiling growing sideways is refused by
+     * `roomToGrow(1, 1)` and allowed by `roomToGrow(0, 5)`, so this separates the two without reaching the dialog.
      *
-     * **Asserted in the SUCCESS direction, on purpose.** The refusal branch is
-     * `JOptionPane.showMessageDialog`, which is modal: a test that drives a refusal parks the event
-     * thread until somebody clicks OK, and that stranded the runner twice in one day. A page at the row
-     * ceiling growing sideways is refused by `roomToGrow(1, 1)` - rows are full - and allowed by
-     * `roomToGrow(0, 5)`, so it separates the two without ever reaching the dialog.
-     *
-     * MUTATION: ask `roomToGrow(1, 1)` again and this does not fail, it HANGS - the refusal opens the
-     * modal dialog. The harness reports a class that prints no summary, so the regression is still
-     * caught; it is caught noisily rather than cleanly, and that is a property of the dialog rather
-     * than of this test.
+     * MUTATION: ask `roomToGrow(1, 1)` again and this does not fail, it HANGS (the refusal opens the modal dialog); the
+     * harness reports a class that prints no summary, so the regression is caught noisily rather than cleanly.
      */
     @Test
     public void testAPageAtTheRowCeilingStillGrowsSideways() throws Exception
@@ -238,18 +214,11 @@ public class testTheDiagramCeiling
                 "precondition: the question the guard used to ask - room for one more of EACH - is no "
                 + "on this page, which is what makes this test able to tell the two apart");
 
-            // MEASURED EITHER SIDE OF THE CALL, IN ONE TASK (2026-09-11).
-            //
-            // The claim is about what `addRowsAndColumns` did, and nothing else: building an editor
-            // also grows the page to fit its viewport - `growEdges` - and how much depends on the
-            // window's geometry, which is not the same in a battery as it is in a class run on its
-            // own.  Reading the width before the call and comparing after it therefore measured that
-            // growth as well, and this failed "expected [15] but found [21]" in two consecutive
-            // batteries while passing alone: 10 + 5 against 16 + 5.
-            //
-            // Taken inside the same invokeAndWait, so nothing can grow the page between the two
-            // readings, and the assertion is about the difference rather than about an absolute
-            // width this test does not control.
+            // Measured either side of the call, in one task: building an editor also grows the page to fit its viewport
+            // (`growEdges`) by an amount that depends on the window's geometry, which differs in a battery from a class
+            // run alone, so reading the width before the call and comparing after it measured that growth as well.
+            // Taken inside the same invokeAndWait, the assertion is about the difference rather than an absolute width
+            // this test does not control.
             final int[] wide = new int[2];
             final int[] tall = new int[2];
 
@@ -283,20 +252,14 @@ public class testTheDiagramCeiling
     }
 
     /**
-     * The ceiling is asked about the amount being added, not about one.
+     * The ceiling is asked about the amount being added, not about one: `LayoutEditor.addRowsAndColumns(rows, cols)`
+     * asked `roomToGrow(1, 1)` and then added `rows` and `cols`. It cannot overflow today because its only caller pads
+     * a blank page to 16 x 21, so this is a trap rather than a defect.
      *
-     * `LayoutEditor.addRowsAndColumns(rows, cols)` asked `roomToGrow(1, 1)` - "is there room for one
-     * more of each" - and then added `rows` and `cols`. It is the one-predicate rule asked
-     * about the wrong amount. It cannot overflow today because
-     * its only caller pads a blank page to 16 x 21, which is why this is a trap rather than a defect.
-     *
-     * **Asserted at the predicate, because the refusal cannot be driven from a test.** The guard's
-     * failure branch is `JOptionPane.showMessageDialog`, which is modal: calling `addRowsAndColumns`
-     * with an amount it refuses blocks the event thread until somebody clicks OK, so a test that drives
-     * it hangs rather than fails. That is not hypothetical - it hung this class for ten minutes and left
-     * a JVM holding the runner's lock. What is pinned here is that the predicate DISCRIMINATES BY
-     * AMOUNT on the page the caller would be asking about; that the caller passes its own arguments is
-     * one line above it and is not covered.
+     * Asserted at the predicate, because the refusal cannot be driven from a test: its failure branch is the modal
+     * `JOptionPane.showMessageDialog`, so driving it hangs rather than fails. What is pinned is that the predicate
+     * DISCRIMINATES BY AMOUNT on the page the caller would be asking about; that the caller passes its own arguments is
+     * not covered.
      *
      * MUTATION: make `roomToGrow` ignore its arguments and use 1 and this fails.
      */
@@ -325,9 +288,7 @@ public class testTheDiagramCeiling
         }
     }
 
-    /**
-     * An editor over a page of exactly this size, built in memory.
-     */
+    /** An editor over a page of exactly this size, built in memory. */
     private static LayoutEditor editorOver(int columns, int rows) throws Exception
     {
         final LayoutDiagram page = new LayoutDiagram("Ceiling " + columns + "x" + rows,
@@ -344,15 +305,7 @@ public class testTheDiagramCeiling
     }
 
     /**
-     * Puts the editor's idea of where the pointer is onto a real square.
-     *
-     * The hover fields are private and are normally set by a mouse event; the shift predicates ask them
-     * before they ask the ceiling, so a test of the ceiling has to get past that first.
-     */
-    /**
-     * Lets everything the editor posted for itself finish.
-     *
-     * Several passes, because a posted task may post another - the same helper the window tests use.
+     * Lets everything the editor posted for itself finish: several passes, because a posted task may post another.
      */
     private static void settle() throws Exception
     {
@@ -362,6 +315,7 @@ public class testTheDiagramCeiling
         }
     }
 
+    /** Puts the editor's idea of where the pointer is onto a real square (private fields a mouse event sets). */
     private static void hoverAt(LayoutEditor editor, int x, int y) throws Exception
     {
         java.lang.reflect.Field fx = LayoutEditor.class.getDeclaredField("lastHoveredX");
