@@ -151,7 +151,8 @@ public class testTheRecordsCountTheStore
             "the README's for-Adam sentence quotes " + notes.group(2) + " reviews against the "
             + reviews + " it states above");
 
-        // ONE NEEDLE, NOT TWO: "2026-09-03-questions-for-adam.md" also ends with "-for-adam.md", so counting both names
+        // ONE NEEDLE, NOT TWO: a file named "<date>-questions-for-adam.md" also ends with "-for-adam.md", so counting
+        // both names
         // counted that file twice.
         assertEquals(occurrences(said, "-for-adam.md"),
             files - reviews,
@@ -370,7 +371,10 @@ public class testTheRecordsCountTheStore
         }
     }
 
-    /** The refs in the mirror whose prefix is this one, with the round each belongs to (no number is round 1). */
+    /**
+     * The refs in the mirror whose prefix is this one, with the round each belongs to (a ref with no number is in the
+     * first).
+     */
     private static java.util.Map<String, Integer> roundsInTheMirror(String prefix) throws Exception
     {
         java.util.Map<String, Integer> out = new java.util.TreeMap<>();
