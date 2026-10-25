@@ -19,39 +19,24 @@ import org.traincontrol.base.Locomotive;
 /**
  * A tail lying across one road of a switch closes the other road, which is a different Edge.
  *
- * **THE ANTI-COLLISION RULE AT A SWITCH, AND IT HAD NO TEST THAT WENT RED WITHOUT IT**.
+ * `Layout.isPathClear` refuses a path over an edge a standing train's tail covers, and then over any edge that SHARES
+ * METAL with a covered one.  Adam: EN57-203 *"is allowed to traverse a blocked/shaded switch (60) to get from
+ * TunnelLeftPark to BottomMainC, even though it should not be possible."*  Coverage is recorded per EDGE, so the other
+ * pair of a switch's arms was never in the covered set.  `testATrainCoversTheTrackBehindIt` exercises only the DIRECT
+ * hit and `testTwoRoutesShareOneSwitch` a route HOLD (`Edge.isOccupied`), a reservation a standing train does not take
+ * out; nothing went red when the shared-metal branch was removed.
  *
- * `Layout.isPathClear` refuses a path over an edge a standing train's tail covers, and then - the part
- * this class is about - over any edge that SHARES METAL with a covered one.  Its own comment records
- * the collision it was written for: Adam, 2026-09-07, EN57-203 *"is allowed to traverse a
- * blocked/shaded switch (60) to get from TunnelLeftPark to BottomMainC, even though it should not be
- * possible."*  Coverage is recorded per EDGE; a train lying across one pair of a switch's arms fouls
- * the other pair, and the other pair is an Edge that was never in the covered set.
+ * It has to be this fixture: the relation is derived by `GraphReducer` from SHARED TILES, so it needs a turnout, and
+ * `single-switch` is the only railway in the library that has one.
  *
- * The autonomy review disabled that branch and ran the two dedicated covered-track classes.  **Both
- * stayed fully green.**  `testATrainCoversTheTrackBehindIt` exercises only the DIRECT hit -
- * `coveredTrack.get(e) != null` - and `testTwoRoutesShareOneSwitch` exercises lock edges through a
- * route HOLD (`Edge.isOccupied`), which is a different mechanism entirely: a route hold is a
- * reservation somebody took out, and a standing train holds nothing.  So the branch that fixed the
- * switch-60 collision was covered by nothing that turns red when it is removed.
+ * The controls are the point: a refusal proves nothing on its own, since the railway refuses paths for a dozen
+ * reasons.  So on the same built railway the branch road is NOT itself covered, the covered edge really is the main
+ * road, the two are lock partners in both directions, and the identical path is CLEARED the moment the tail is taken
+ * away.
  *
- * **WHY IT HAS TO BE THIS FIXTURE.**  The relation is derived by `GraphReducer` from SHARED TILES, so
- * expressing it needs a turnout: two logical routes over one piece of metal.  `single-switch` is the
- * only railway in the library that has one, and it exists for exactly this - `test/README.md` recorded
- * the absence before a defect walked through the gap.
- *
- * **THE CONTROLS ARE THE POINT, not politeness.**  A refusal proves nothing on its own: the railway
- * refuses paths for a dozen reasons, and a class that only ever asserts "refused" passes on any of
- * them.  So this asserts, on the same built railway, that the branch road is NOT itself covered (the
- * direct rule cannot be what refuses it), that the covered edge really is the main road, that the two
- * are lock partners in both directions, and that the identical path over the identical railway is
- * CLEARED the moment the tail is taken away.  `assert-the-variable-not-the-control`.
- *
- * MUTATION, and it is the review's own: in `Layout.isPathClear`, change
- * `if (lyingAcross == null)` above the `for (Edge sharing : e.getLockEdges())` loop to
- * `if (lyingAcross == null && Boolean.parseBoolean("false"))`.
- * `testTheOtherRoadThroughTheSwitchIsRefused` then fails and every other test in this class stays
- * green - which is what says the failure is about that branch and not about the fixture.
+ * MUTATION: in `Layout.isPathClear`, change `if (lyingAcross == null)` above the `for (Edge sharing :
+ * e.getLockEdges())` loop to `if (lyingAcross == null && Boolean.parseBoolean("false"))`.
+ * `testTheOtherRoadThroughTheSwitchIsRefused` then fails and every other test in this class stays green.
  *
  * @author Adam
  */
@@ -70,31 +55,21 @@ public class testACoveredSwitchClosesTheOtherRoad
     private static final int MOVING_ADDRESS = 73;
 
     /**
-     * Long enough to lie across the blades.
-     *
-     * The run in from the switch to the main platform is measured at three units below, so nine puts
-     * six units of train behind the switch - which is the shape Adam described: *"a train of length 4
-     * is standing at bottommainb, which has a length of 1 leading up to its switch"*.
+     * Long enough to lie across the blades: the run in to the main platform is three units, so nine puts six behind the
+     * switch.
      */
     private static final int TAIL = 9;
 
     /**
-     * The squares between the sensors, which is where a length can live.
-     *
-     * A sensor's own square is an edge ENDPOINT and never an intermediate step, so measuring the
-     * platforms would measure nothing.  Only the track between them counts, and the fixture ships with
-     * no lengths at all on purpose - topology in the files, lengths in code.
+     * The squares between the sensors, where a length can live: a sensor's own square is an edge ENDPOINT, never an
+     * intermediate step.  The fixture ships with no lengths on purpose (topology in the files, lengths in code).
      */
     private static final int[][] BETWEEN = { {2, 3}, {4, 3}, {6, 3}, {5, 2} };
 
     /**
-     * The main road through the switch, BOTH WAYS ROUND.
-     *
-     * A tail fouls a rail whichever way traffic runs on it, and the two copies of this road are two
-     * Edges.  Which of them the tail walk names is an ordering detail - the approach lies west of the
-     * platform, so both candidates offer the same side and the walk takes whichever comes first - and
-     * a test that pinned one of them would go red on a change that means nothing.  What is not a
-     * detail, and is asserted below, is that both of them lock the branch road.
+     * The main road through the switch, BOTH WAYS ROUND: a tail fouls a rail whichever way traffic runs, and the two
+     * copies are two Edges.  Which of them the tail walk names is an ordering detail; that both lock the branch road is
+     * asserted below.
      */
     private static final String[] MAIN_ROAD =
     {
@@ -145,14 +120,8 @@ public class testACoveredSwitchClosesTheOtherRoad
     }
 
     /**
-     * THE FIXTURE: the two roads through the switch are lock partners, in both directions.
-     *
-     * Asserted first because everything below is a statement about that relation, and a fixture where
-     * it has quietly gone would let the subject pass or fail for a reason nobody could see.  Symmetry
-     * is asserted rather than assumed: the rule under test tells shared metal from an FR-001 occupancy
-     * restriction by exactly that, and a one-directional pair would be skipped.
-     *
-     * @throws Exception on a failure to build
+     * THE FIXTURE: the two roads through the switch are lock partners, in both directions.  Symmetry is asserted
+     * because the rule under test tells shared metal from an FR-001 occupancy restriction by it.
      */
     @Test
     public void testTheTwoRoadsThroughTheSwitchShareMetal() throws Exception
@@ -182,14 +151,8 @@ public class testACoveredSwitchClosesTheOtherRoad
     }
 
     /**
-     * THE STATE: the tail covers the main road and does NOT cover the branch road.
-     *
-     * This is the half that makes the refusal below attributable.  If the branch road were itself in
-     * the covered set, the direct rule - `coveredTrack.get(e) != null` - would refuse it and the
-     * shared-metal branch could be deleted with this class still green, which is exactly the gap
-     * that a review reported.
-     *
-     * @throws Exception on a failure to build
+     * THE STATE: the tail covers the main road and does NOT cover the branch road, which makes the refusal below
+     * attributable: otherwise the direct rule would refuse it.
      */
     @Test
     public void testTheTailCoversTheMainRoadAndNotTheBranch() throws Exception
@@ -218,13 +181,8 @@ public class testACoveredSwitchClosesTheOtherRoad
     }
 
     /**
-     * THE SUBJECT: the other road through the switch is refused.
-     *
-     * Nothing in the path is covered.  `Approach (eastbound) -> BranchPlatform` shares metal with the
-     * road the tail is lying across, and running a second train over it would put it through blades a
-     * train is already standing on - which is the collision Adam reported at switch 60.
-     *
-     * @throws Exception on a failure to build
+     * THE SUBJECT: the other road through the switch is refused.  It shares metal with the road the tail lies across,
+     * the collision Adam reported at switch 60.
      */
     @Test
     public void testTheOtherRoadThroughTheSwitchIsRefused() throws Exception
@@ -245,22 +203,16 @@ public class testACoveredSwitchClosesTheOtherRoad
     }
 
     /**
-     * THE CONTROL: the same path over the same railway is cleared when nothing is lying across it.
-     *
-     * A refusal is only evidence if the acceptance exists.  Without this, a rule that refused every
-     * path on this railway - or a fixture whose branch platform had simply become unreachable - would
-     * pass the test above and prove nothing.
-     *
-     * @throws Exception on a failure to build
+     * THE CONTROL: the same path over the same railway is cleared when nothing is lying across it; a rule that refused
+     * every path would otherwise pass the test above.
      */
     @Test
     public void testTheSameRoadIsClearWithNothingLyingAcrossIt() throws Exception
     {
         Layout built = staged();
 
-        // THE TAIL TAKEN AWAY, and nothing else touched: the trains stand where they stood, the
-        // lengths are what they were, the switch is the same switch.  The only difference between this
-        // and the test above is whether anything protrudes.
+        // The tail taken away and nothing else touched; the only difference from the test above is whether anything
+        // protrudes.
         Locomotive standing = scenario.getModel().getLocByName(STANDING);
 
         assertNotNull(standing, "the standing train is not on this railway");
@@ -282,15 +234,8 @@ public class testACoveredSwitchClosesTheOtherRoad
     // ---------------------------------------------------------------- the staging
 
     /**
-     * Builds the railway with a train standing over the blades and another waiting at the west end.
-     *
-     * PLACED IN CODE, never read off the fixture.  `single-switch` ships with nothing standing
-     * anywhere and no locomotive named, deliberately - so the two trains here are made by this class,
-     * put where this class wants them, and the arrival side that decides which way the tail lies is
-     * said out loud rather than inferred.
-     *
-     * @return the built layout
-     * @throws Exception on a failure to build
+     * Builds the railway with a train standing over the blades and another waiting at the west end, placed in code:
+     * `single-switch` ships with nothing standing.
      */
     private static Layout staged() throws Exception
     {
@@ -311,20 +256,14 @@ public class testACoveredSwitchClosesTheOtherRoad
 
         assertNotNull(platform, "the fixture has no MainPlatform - it has " + pointNames(built));
 
-        // IT CAME IN FROM THE WEST, which is the only way in: the approach is west of the platform and
-        // the buffer stop is east of it.  Recorded rather than guessed, because a tail walk with no
-        // arrival side stops at the first hop and blocks nothing.
+        // It came in from the west, the only way in.  Recorded, because a tail walk with no arrival side stops at the
+        // first hop and blocks nothing.
         platform.setArrivedFrom("W");
 
         return built;
     }
 
-    /**
-     * The path from the west end onto the branch platform, through the switch.
-     *
-     * @param built the railway
-     * @return the two edges, in order
-     */
+    /** The path from the west end onto the branch platform, through the switch. */
     private static List<Edge> ontoTheBranch(Layout built)
     {
         List<Edge> path = new ArrayList<>();
@@ -335,11 +274,7 @@ public class testACoveredSwitchClosesTheOtherRoad
         return path;
     }
 
-    /**
-     * @param built the railway
-     * @param name the edge's name
-     * @return that edge, with a message naming what is there instead
-     */
+    /** That edge, with a message naming what is there instead. */
     private static Edge edge(Layout built, String name)
     {
         for (Edge edge : built.getEdges())
@@ -351,11 +286,7 @@ public class testACoveredSwitchClosesTheOtherRoad
             + edgeNames(built));
     }
 
-    /**
-     * @param built the railway
-     * @param name the edge's name
-     * @return the names of the edges it holds when it is claimed
-     */
+    /** The names of the edges it holds when it is claimed. */
     private static Set<String> lockNames(Layout built, String name)
     {
         Set<String> out = new LinkedHashSet<>();
@@ -365,11 +296,7 @@ public class testACoveredSwitchClosesTheOtherRoad
         return out;
     }
 
-    /**
-     * @param names the candidates
-     * @param found what was actually there
-     * @return whether any candidate is in it
-     */
+    /** Whether any candidate is in what was actually there. */
     private static boolean anyOf(String[] names, Set<String> found)
     {
         for (String name : names)
@@ -380,10 +307,7 @@ public class testACoveredSwitchClosesTheOtherRoad
         return false;
     }
 
-    /**
-     * @param covered the covered set
-     * @return its edge names
-     */
+    /** The covered set's edge names. */
     private static Set<String> coveredNames(Map<Edge, Locomotive> covered)
     {
         Set<String> out = new LinkedHashSet<>();
@@ -393,10 +317,7 @@ public class testACoveredSwitchClosesTheOtherRoad
         return out;
     }
 
-    /**
-     * @param built the railway
-     * @return every edge name
-     */
+    /** Every edge name. */
     private static Set<String> edgeNames(Layout built)
     {
         Set<String> out = new LinkedHashSet<>();
@@ -406,10 +327,7 @@ public class testACoveredSwitchClosesTheOtherRoad
         return out;
     }
 
-    /**
-     * @param built the railway
-     * @return every Point name
-     */
+    /** Every Point name. */
     private static Set<String> pointNames(Layout built)
     {
         Set<String> out = new LinkedHashSet<>();
