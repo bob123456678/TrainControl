@@ -64,7 +64,7 @@ public class testAutonomySimulationSanity
     private static final long POLL_MS = 500;
 
     // Minimum activity a genuine one-minute run must produce.
-    // FIVE, not twenty (2026-08-29).
+    // FIVE, not twenty.
     //
     // This is a time-boxed simulation, so the count measures how loaded the machine is as much as
     // whether the railway did anything: it passes alone and came back 18 inside a full battery. The
@@ -417,7 +417,7 @@ public class testAutonomySimulationSanity
     /**
      * A turn the railway makes at the destination is recorded there.
      *
-     * Adam, 2026-09-07: **"it should be recorded at the destination.  Otherwise, it’s just the same as
+     * Adam: **"it should be recorded at the destination.  Otherwise, it�s just the same as
      * always."**
      *
      * A reversal at the arrival is the one direction change nothing was following. Its echo lands
