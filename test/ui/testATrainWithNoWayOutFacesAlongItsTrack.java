@@ -664,6 +664,137 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
     }
 
     /**
+     * And the track diagram's Place there is saved: read back from disk, the setup stands the train on TunnelLeftPark,
+     * where no copy gives a facing (OB-373).  Unsaved, the train is gone at the next configuration load.
+     *
+     * MUTATION: save only where a copy gives a facing (put `facing != null &&` back in `placeFacing`), and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testTheDiagramsPlaceThereIsSaved() throws Exception
+    {
+        final org.json.JSONObject asFound = session.snapshotSetup();
+
+        try
+        {
+            closeItOff();
+
+            // ON DISK WITHOUT IT, so that only the click's own save can put it there: the paste's claim saves it there
+            session.save();
+
+            assertNotEquals(placedOnDisk(), OUR_TRAIN, "precondition: the setup on disk already stands the train on"
+                + " TunnelLeftPark");
+
+            placeByTheDiagram();
+
+            assertEquals(session.getLocomotiveNameAt(PLATFORM), OUR_TRAIN, "precondition: the track diagram's Place did"
+                + " not put the train on TunnelLeftPark in the setup");
+
+            assertEquals(placedOnDisk(), OUR_TRAIN, "the track diagram's Place on TunnelLeftPark, where no copy gives a"
+                + " facing, was not saved: the setup read back from disk does not stand the train there, so it is gone at"
+                + " the next configuration load (OB-373)");
+        }
+        finally
+        {
+            liftIt();
+
+            putBack(asFound, null);
+
+            session.save();
+        }
+    }
+
+    /**
+     * And a save that fails there is logged with debug mode off, as the paste and the locomotive dialog log theirs
+     * (OB-373).  A setup file made read-only is the failure.  Read from the station's logger, which every log line
+     * passes: this class's window is not the station's view.
+     *
+     * MUTATION: log the failure in `placeFacing` only in debug mode again, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testAFailedSaveOfTheDiagramsPlaceIsLogged() throws Exception
+    {
+        final org.json.JSONObject asFound = session.snapshotSetup();
+
+        final boolean wasDebug = model.isDebug();
+
+        final java.io.File setup = new java.io.File(sandbox.getFolder(), "config" + java.io.File.separator + "autonomy"
+            + java.io.File.separator + "setup.json");
+
+        final List<String> logged = java.util.Collections.synchronizedList(new java.util.ArrayList<>());
+
+        final java.util.logging.Handler tap = new java.util.logging.Handler()
+        {
+            @Override
+            public void publish(java.util.logging.LogRecord record)
+            {
+                if (record != null && record.getMessage() != null) logged.add(record.getMessage());
+            }
+
+            @Override
+            public void flush() { }
+
+            @Override
+            public void close() { }
+        };
+
+        final java.util.logging.Logger log = java.util.logging.Logger.getLogger(MarklinControlStation.class.getName());
+
+        try
+        {
+            closeItOff();
+
+            assertTrue(setup.isFile(), "precondition: no setup file at " + setup);
+
+            model.debug(false);
+
+            // A FILE THAT CANNOT BE WRITTEN
+            assertTrue(setup.setReadOnly(), "precondition: the setup file would not be made read-only");
+
+            log.addHandler(tap);
+
+            placeByTheDiagram();
+
+            settle();
+
+            String said;
+
+            synchronized (logged) { said = String.join("\n", logged); }
+
+            assertTrue(said.contains(setup.getName()), "the track diagram's Place on TunnelLeftPark could not save the"
+                + " setup, and with debug mode off the log does not say so, while the paste and the locomotive dialog"
+                + " log a failed save (OB-373); the log reads: " + said);
+        }
+        finally
+        {
+            log.removeHandler(tap);
+
+            setup.setWritable(true);
+
+            model.debug(wasDebug);
+
+            liftIt();
+
+            putBack(asFound, null);
+        }
+    }
+
+    /** The train the setup on disk stands on TunnelLeftPark, read from the file as a configuration load reads it. */
+    private static String placedOnDisk() throws Exception
+    {
+        AutonomySession read = new AutonomySession(sandbox.getFolder());
+
+        read.getStore().load();
+
+        assertNotNull(read.getStore().getActiveConfiguration(), "precondition: the setup on disk has no configuration");
+
+        return read.getLocomotiveNameAt(PLATFORM);
+    }
+
+    /**
      * Closes TunnelLeftPark off, then puts this class's train there by the editor's Place and builds the railway from the
      * setup, as closing the editor does.
      *

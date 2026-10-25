@@ -1282,7 +1282,7 @@ public class testTheTailIsPickedOnTheDiagram
     {
         String[][] doors = {
             {PLACEMENT_DOORS[1], "session.setFacing(station, facing)",
-                "if (facing != null && session != null && setupStands)"},
+                "if (session != null && setupStands)"},
             {PLACEMENT_DOORS[2], "session.setFacing(tile,", "if (!setupStands) return;"}};
 
         // At each door: the facing before the question, and the door's own save guarded.

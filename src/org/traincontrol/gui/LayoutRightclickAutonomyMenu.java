@@ -1150,8 +1150,9 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         // each set of them (MT-380).
         AutonomyReport.show(ui, savedEarly[0]);
 
-        // Not a setup the window has let go in the wait, which the reset that replaced it already wrote.
-        if (facing != null && session != null && setupStands)
+        // Not a setup the window has let go in the wait, which the reset that replaced it already wrote.  With no facing
+        // too: the placement above is written either way (OB-373).
+        if (session != null && setupStands)
         {
             try
             {
@@ -1162,8 +1163,8 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
             }
             catch (java.io.IOException e)
             {
-                // The placement stands either way; only the memory of it is at risk
-                if (ui.getModel().isDebug()) ui.getModel().log(String.valueOf(e.getMessage()));
+                // The placement stands either way; only the memory of it is at risk, so it is logged, as the other doors do
+                ui.getModel().log(e);
             }
         }
 
@@ -1261,7 +1262,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
             {
                 // The removal stands either way; only the memory of it is at risk, which is the same
                 // answer placeFacing gives beside this.
-                if (ui.getModel().isDebug()) ui.getModel().log(String.valueOf(e.getMessage()));
+                ui.getModel().log(e);
             }
         }
 
