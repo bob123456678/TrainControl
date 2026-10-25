@@ -21,7 +21,7 @@ import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.util.I18n;
 
 /**
- * The autonomy editor says what its items do, and shows where its tools can be used (Adam, 2026-09-24: OB-293, FR-102).
+ * The autonomy editor says what its items do, and shows where its tools can be used (OB-293, FR-102).
  *
  * @author Adam
  */
@@ -65,15 +65,10 @@ public class testTheEditorSaysWhatItsToolsDo
     /**
      * The exit and entry guard items on a station's menu say what the two guards do (OB-293).
      *
-     * Adam, 2026-09-24: *"add brief tooltips on what entry guards and exit guards are to their items in the autonomy
-     * right click menu"*.
+     * Each its OWN guard's text: the two items read alike, and a tooltip on the wrong one says the exit guard does
+     * what the entry guard does.
      *
-     * Each its OWN guard's text: the two items sit next to each other and read alike, and a tooltip on the
-     * wrong one tells Adam the exit guard does what the entry guard does.
-     *
-     * MUTATION: leave either tooltip out, or give the two items each other's, and this fails.
-     *
-     * @throws Exception from the event thread
+     * MUTATION: leave either tooltip out, or give the two items each other's.
      */
     @Test
     public void testTheGuardItemsSayWhatTheGuardsDo() throws Exception
@@ -118,12 +113,7 @@ public class testTheEditorSaysWhatItsToolsDo
     /**
      * With Why Not Moving armed and nothing drawn yet, the squares with trains are outlined (FR-102).
      *
-     * Adam, 2026-09-24: *"when the button is pressed an nothing is drawn yet, highlight stations w/ trains on the editor
-     * diagram so it's clear what the user can click on"*.
-     *
-     * MUTATION: outline nothing while the tool waits, or every station, and this fails.
-     *
-     * @throws Exception from the event thread
+     * MUTATION: outline nothing while the tool waits, or every station.
      */
     @Test
     public void testWhyNotMovingOutlinesTheTrains() throws Exception
@@ -152,16 +142,11 @@ public class testTheEditorSaysWhatItsToolsDo
     }
 
     /**
-     * Where a railway is running, the outline follows the trains on it, not the setup's placements - and once a square
-     * is clicked the outlines go (FR-102).
+     * Where a railway is running, the outline follows the trains on it, not the setup's placements, and once a square
+     * is clicked the outlines go (FR-102).  The claim above builds the panel with no railway, so only the setup arm
+     * was asked.
      *
-     * The javadoc of `whyWaitsOn`: *"The train as the running railway has it where there is one - a run moves trains the
-     * setup has not been told about - and as the setup places it otherwise."*  The claim above builds the panel with no
-     * railway, so only the second arm was asked.
-     *
-     * MUTATION: read the setup's placements while a railway runs, or keep the outlines after the click, and this fails.
-     *
-     * @throws Exception from the event thread
+     * MUTATION: read the setup's placements while a railway runs, or keep the outlines after the click.
      */
     @Test
     public void testWhyNotMovingFollowsTheRunningRailway() throws Exception
@@ -284,17 +269,14 @@ public class testTheEditorSaysWhatItsToolsDo
 
     /**
      * On the frozen railway, a station's exit guard chosen as its entry guard is refused, with the sentence saying the
-     * signal is already the exit guard and one signal cannot guard both the way in and the way out (MT-504; Adam,
-     * 2026-09-25: automated tests supersede the MTs they answer).
+     * signal is already the exit guard and one signal cannot guard both the way in and the way out (MT-504).
      *
-     * Both guards are given as the steps give them: the station's own menu item, the window it opens, Click It on the
-     * Diagram, and a click on the signal.  The exit guard first, because the frozen railway has none and step 1 starts
-     * from a station that has one.  `core.testASignalGuardsItsStationAndTheNoticeNamesIt.testAStationsEntryGuardIsNeverItsExitGuard` holds the
+     * Both guards are given as the steps give them: menu item, window, Click It on the Diagram, a click on the signal;
+     * the exit guard first, because the frozen railway has none.
+     * `core.testASignalGuardsItsStationAndTheNoticeNamesIt.testAStationsEntryGuardIsNeverItsExitGuard` holds the
      * store's own refusal below this.
      *
-     * MUTATION: take the editor's refusal out, or have it say the other guard's sentence, and this fails.
-     *
-     * @throws Exception from the sandbox and the event thread
+     * MUTATION: take the editor's refusal out, or have it say the other guard's sentence.
      */
     @Test
     public void testHisExitGuardIsRefusedAsTheEntryGuard() throws Exception
@@ -316,8 +298,8 @@ public class testTheEditorSaysWhatItsToolsDo
 
                 his.open(support.LayoutSandbox.wiredPages(model));
 
-                // STEP 1'S STATION: one of his with an exit guard - or, where none has, one given an exit guard through
-                // Exit Guard Signal..., as a person gives one.
+                // STEP 1'S STATION: one with an exit guard, or given one through Exit Guard Signal..., as a person
+                // does.
                 TileKey[] pair = aStationWithAnExitGuard(his);
 
                 final boolean hisOwn = pair != null;
@@ -371,16 +353,10 @@ public class testTheEditorSaysWhatItsToolsDo
     /**
      * A signal refused as a guard is refused in a popup, not only on the gray line (MT-505).
      *
-     * Adam, 2026-09-29, on MT-505: *"There may have been a gray message, but it wouldn't have been clear since the popup
-     * was in the foreground, so any rejection errors should trigger a popup."*  The guard window comes back the moment the
-     * click is answered and sits in front of the line that said why nothing was added; his Signal 86 "doesn't get added to
-     * the list in the popup after clicking on it on the diagram", and nothing he could see said why.
+     * The guard window comes back the moment the click is answered and sits in front of the line that said why.  Both
+     * refusals a click can meet: a signal already on the list, and the station's other guard.
      *
-     * Both refusals a click can meet: a signal already on the list, and the station's other guard.
-     *
-     * MUTATION: say either refusal on the gray line alone, and this fails.
-     *
-     * @throws Exception from the event thread
+     * MUTATION: say either refusal on the gray line alone.
      */
     @Test
     public void testARefusedGuardClickIsAPopup() throws Exception
@@ -430,15 +406,9 @@ public class testTheEditorSaysWhatItsToolsDo
      * A click on a square that is not a signal, while a guard is being chosen, is refused in a popup, and the guard
      * window comes back (MT-505, MT-588).
      *
-     * Adam, 2026-09-29, on MT-505: *"if a non-signal is clicked during selection mode, the dialog goes away. it should
-     * send the user back to the existing popup so they can click on another square."*  And on MT-588: *"the dialog
-     * closes and we have to reopen everything again."*  The choice stayed armed with no window, so the way on was the
-     * right-click menu again; now the popup says why and the window is back, its list as it was, with Click It on the
-     * Diagram to try another square.
+     * The choice used to stay armed with no window; now the popup says why and the window is back, its list as it was.
      *
-     * MUTATION: say it on the gray line alone, or leave the window closed after it, and this fails.
-     *
-     * @throws Exception from the event thread
+     * MUTATION: say it on the gray line alone, or leave the window closed after it.
      */
     @Test
     public void testANonSignalClickedAsAGuardIsAPopup() throws Exception
@@ -492,15 +462,10 @@ public class testTheEditorSaysWhatItsToolsDo
     }
 
     /**
-     * Signals refused when given by address are refused in the one popup that reports the addresses (MT-505).
+     * Signals refused when given by address are refused in the one popup that reports the addresses (MT-505): a popup
+     * per address would be a row of them to dismiss.
      *
-     * By Address already raised a popup for an address that is no number or no signal; a signal it found and could not
-     * pair was said on the gray line alone, behind the guard window.  Now every refusal is in that one popup, however many
-     * addresses were typed - a popup per address would be a row of them to dismiss.
-     *
-     * MUTATION: leave the refusals out of that popup, and this fails.
-     *
-     * @throws Exception from the event thread
+     * MUTATION: leave the refusals out of that popup.
      */
     @Test
     public void testARefusedGuardAddressIsAPopup() throws Exception
@@ -641,9 +606,7 @@ public class testTheEditorSaysWhatItsToolsDo
         javax.swing.SwingUtilities.invokeAndWait(() -> { });
     }
 
-    /**
-     * The guard window titled so, back again - with every popup raised on the way read and dismissed into `popups`.
-     */
+    /** The guard window titled so, back again, with every popup raised on the way read and dismissed into `popups`. */
     private static javax.swing.JDialog awaitWindowTitledDismissing(String title, javax.swing.JDialog notThisOne,
         java.util.List<String> popups) throws Exception
     {
@@ -839,9 +802,8 @@ public class testTheEditorSaysWhatItsToolsDo
     }
 
     /**
-     * One guard given as a person gives it: the station's menu item, its window, Click It on the Diagram, a click on the
-     * signal - and Done on the window that comes back.  Returns what the editor's hint line said once the signal was
-     * clicked; every popup raised on the way is read and dismissed into `popups` (MT-505).
+     * One guard given as a person gives it: menu item, window, Click It on the Diagram, a click, Done.  Returns the
+     * hint line after the click; popups raised on the way go into `popups` (MT-505).
      */
     private static String pickTheGuard(final AutonomyEditorPanel panel, AutonomySession his, final TileKey station,
         final TileKey signal, boolean entry, java.util.List<String> popups) throws Exception
@@ -1016,22 +978,14 @@ public class testTheEditorSaysWhatItsToolsDo
     }
 
     /**
-     * Every tooltip on the autonomy right-click menus is short, in every language, and one too wide for a line is wrapped
-     * (FR-112).
+     * Every tooltip on the autonomy right-click menus is short, in every language, and one too wide for a line is
+     * wrapped (FR-112).
      *
-     * Adam, 2026-10-05: *"look for other tooltips in the autonomy editor right click menus ... that are currently overly
-     * wide or long, and make them be more concise so they don't cover up other things."*  The longest was a Bulk Tools item
-     * repeating its whole confirmation - over three hundred characters - and a dozen station and direction items ran past a
-     * hundred and fifty.
+     * Asked of the built menus over the frozen railway, every square of every page, from both doors (the editor's own
+     * menu and the track diagram's), with the menus a standing train adds.  A hundred characters in English and a
+     * hundred and thirty in the others, which run longer for the same sentence.
      *
-     * Asked of the built menus over the frozen railway, every square of every page, from both doors - the editor's own menu
-     * and the track diagram's, which is this panel's menus served with no page - with the facing and arrived-from menus a
-     * standing train adds.  A hundred characters in English and a hundred and thirty in the others, which run longer for the
-     * same sentence.
-     *
-     * MUTATION: put a long sentence back in any of these tooltips, or a bulk tool's whole confirmation, and this fails.
-     *
-     * @throws Exception from the event thread
+     * MUTATION: put a long sentence back in any of these tooltips, or a bulk tool's whole confirmation.
      */
     @Test
     public void testEveryTileMenuTooltipIsShort() throws Exception
@@ -1145,9 +1099,8 @@ public class testTheEditorSaysWhatItsToolsDo
     }
 
     /**
-     * Whether text fits on one tooltip line, by the editor's own rule (`AutonomyEditorPanel.fitsOnOneLine`), so the claim
-     * and the wrapping cannot disagree: a copy of it at 320 pixels went red when OB-358 made the rule measure in the
-     * screen's pixels.
+     * Whether text fits on one tooltip line, by the editor's own rule (`AutonomyEditorPanel.fitsOnOneLine`), so the
+     * claim and the wrapping cannot disagree.
      */
     private static boolean fitsOnALine(String text)
     {
@@ -1167,18 +1120,13 @@ public class testTheEditorSaysWhatItsToolsDo
     /**
      * The pointer's rule and the click agree about every kind of square (FR-112).
      *
-     * The hand over a square says a click there changes which way trains may run, and `clickChangesDirections` is what the
-     * diagram asks for it - the questions `tileClicked` and `cycle` ask before they change anything, written out a second
-     * time.  Two copies of one question part company when a condition is added to one of them, so every kind of square is
-     * clicked here, on a fresh setup each time, and what the click did to the setup is set beside what the rule said.  A
-     * page left out of autonomy and a blank square are among them.  And with the Test tool armed, where a click tests a
-     * path, the rule says no everywhere.
+     * `clickChangesDirections` is the diagram's second copy of the questions `tileClicked` and `cycle` ask, and two
+     * copies part company when a condition is added to one.  Every kind of square is clicked on a fresh setup (a page
+     * left out of autonomy and a blank square among them), and what the click did is set beside what the rule said.
+     * With the Test tool armed the rule says no everywhere.  Both answers have to occur, or the agreement is between
+     * two constants.
      *
-     * Both answers have to occur, or the agreement is between two constants.
-     *
-     * MUTATION: drop the link, the ignored or the armed question from the rule, and this fails on that square.
-     *
-     * @throws Exception from the event thread
+     * MUTATION: drop the link, the ignored or the armed question from the rule.
      */
     @Test
     public void testTheClickAndItsPointerAgree() throws Exception
@@ -1275,14 +1223,7 @@ public class testTheEditorSaysWhatItsToolsDo
         }
     }
 
-    /**
-     * The setup as it saves - every file it writes, in order.  What a click changes is written there, where the running
-     * configuration built from it says nothing about track no station is on.
-     *
-     * @param setup the setup
-     * @param folder where it saves
-     * @return the files' text
-     */
+    /** The setup as it saves, every file it writes in order: what a click changes is written there. */
     private static String saved(AutonomySession setup, File folder) throws IOException
     {
         setup.getStore().save();
@@ -1307,11 +1248,8 @@ public class testTheEditorSaysWhatItsToolsDo
     }
 
     /**
-     * A setup with one square of every kind on a row - but the two scissors, which a diagram autonomy can use may not carry
-     * at all - a station among them, and a second page left out of autonomy.
-     *
-     * @param folder where the setup is kept
-     * @return the setup, built
+     * A setup with one square of every kind on a row (but the two scissors), a station among them, and a second page
+     * left out of autonomy.
      */
     private static AutonomySession everyKindOfSquare(File folder) throws IOException
     {
@@ -1349,19 +1287,15 @@ public class testTheEditorSaysWhatItsToolsDo
     /**
      * The guard notices follow the routes the built railway sets each guard by.
      *
-     * They walked the reduction, which knows a square and not which way a train faces on it, so a train could turn back at
-     * any plain sensor and stop at any station square.  On the frozen railway: Adam's own nine exit guards get exactly two
-     * notices - Signals 86 and 87, which routes between the tunnel sidings and the station throats cross, for BottomMainB and
-     * BottomMainA - and his six exit signals none; Signal 39 as BottomMainA's exit guard, crossed only by routes
-     * elsewhere, is noticed, where the walk turned back at BottomMainAPre and called it on the way out; and a guard no route
-     * commands is told so, not that routes turn it green.  (Signal 107 as TopR1ParkLong's entry guard was asserted here as
-     * needing no notice; no arriving train meets it, and how far the notices should follow the routes the
-     * runtime runs is Adam's to decide - so it is not asserted either way.)
+     * The reduction knows a square and not which way a train faces on it, so walking it turned back at any plain
+     * sensor.  On the frozen railway: his nine exit guards get exactly two notices (Signals 86 and 87, which routes
+     * between the tunnel sidings and the station throats cross) and his six exit signals none; Signal 39 as
+     * BottomMainA's exit guard is noticed; a guard no route commands is told so, not that routes turn it green.  How
+     * far the notices should follow the routes the runtime runs (Signal 107) is Adam's to decide, so it is not
+     * asserted.
      *
-     * MUTATION: walk the built edges as the reduction was walked - every edge from a square whatever its copy - and this
+     * MUTATION: walk the built edges as the reduction was walked, every edge from a square whatever its copy, and this
      * fails on Signal 39; call every guard off its station's ways crossed, and it fails on the last.
-     *
-     * @throws Exception from the session
      */
     @Test
     public void testTheGuardNoticesFollowTheBuiltRailway() throws Exception
