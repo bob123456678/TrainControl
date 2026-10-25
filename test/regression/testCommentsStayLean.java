@@ -74,7 +74,7 @@ public class testCommentsStayLean
     };
 
     /** Comment lines carrying a history marker, as they stand.  Lower it whenever some go; never raise it. */
-    private static final int HISTORY_ALLOWED = 120;
+    private static final int HISTORY_ALLOWED = 106;
 
     /** WHICH files carry them, so that a swap between files fails and names both.  Files at zero are not listed. */
     private static final String[] HISTORY_BY_FILE = {
@@ -84,8 +84,6 @@ public class testCommentsStayLean
         "src/org/traincontrol/automation/TimetablePath.java (2)",
         "src/org/traincontrol/automationui/AutonomyBuilder.java (2)",
         "src/org/traincontrol/automationui/GraphReducer.java (1)",
-        "src/org/traincontrol/base/CommandRow.java (1)",
-        "src/org/traincontrol/base/ConditionOutline.java (3)",
         "src/org/traincontrol/base/LayoutDiagram.java (1)",
         "src/org/traincontrol/base/LayoutDiagramComponent.java (5)",
         "src/org/traincontrol/base/Locomotive.java (4)",
@@ -107,20 +105,17 @@ public class testCommentsStayLean
         "src/org/traincontrol/model/View.java (4)",
         "src/org/traincontrol/model/ViewListener.java (1)",
         "src/org/traincontrol/util/ImageUtil.java (2)",
-        "src/org/traincontrol/util/JarUpdater.java (7)",
-        "src/org/traincontrol/util/SelfUpdate.java (3)",
         "src/org/traincontrol/util/Util.java (4)",
     };
 
     /** Runs of more than 15 `//` lines plus non-javadoc block comments over 15 lines, as they stand.  Never raise it. */
-    private static final int LONG_BLOCKS_ALLOWED = 26;
+    private static final int LONG_BLOCKS_ALLOWED = 25;
 
     /** WHICH files carry them.  Files at zero are not listed. */
     private static final String[] LONG_BLOCKS_BY_FILE = {
         "src/org/traincontrol/automation/Point.java (2)",
         "src/org/traincontrol/automationui/AutonomyBuilder.java (1)",
         "src/org/traincontrol/automationui/GraphReducer.java (1)",
-        "src/org/traincontrol/base/ConditionOutline.java (1)",
         "src/org/traincontrol/gui/autonomy/AutoLocomotiveStatus.java (2)",
         "src/org/traincontrol/gui/autonomy/ManualReversalPrompt.java (3)",
         "src/org/traincontrol/marklin/MarklinFeedback.java (1)",
