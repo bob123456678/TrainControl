@@ -20,11 +20,11 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 import support.SourceOf;
 
 /**
- * The Autonomy menu has a Documentation item, opening the guide the old tab's link opened (Adam, 2026-09-24).
+ * The Autonomy menu has a Documentation item, opening the guide the old tab's link opened.
  *
- * *"Add a 'documentation' link to the autonomy JMenu that points to the same URL as the current jlabel."*  The link sat
- * on the Load Autonomy Configuration tab, which goes (OB-254); the guide it opened, `TrainControlUI.README_URL`, is
- * about the autonomy the menu drives.
+ * Adam: *"Add a 'documentation' link to the autonomy JMenu that points to the same URL as the current jlabel."*  The
+ * link sat on the Load Autonomy Configuration tab, which goes (OB-254); the guide it opened,
+ * `TrainControlUI.README_URL`, is about the autonomy the menu drives.
  *
  * MUTATION: leave the item out, or point it elsewhere, and the first claim fails; let the editor guard gray it with
  * the rest, and the second does.
@@ -77,11 +77,7 @@ public class testTheAutonomyMenuLinksItsDocumentation
         }
     }
 
-    /**
-     * Opened, the Autonomy menu offers Documentation, and it can be chosen.
-     *
-     * @throws Exception from the event thread or reflection
-     */
+    /** Opened, the Autonomy menu offers Documentation, and it can be chosen. */
     @Test
     public void testTheAutonomyMenuOffersDocumentation() throws Exception
     {
@@ -99,19 +95,15 @@ public class testTheAutonomyMenuLinksItsDocumentation
         assertTrue(code.contains("Util.openUrl(TrainControlUI.README_URL)"), "the Documentation item does not open"
             + " TrainControlUI.README_URL, the guide the old tab's link opened");
 
-        // ON A THREAD OF ITS OWN (Adam, 2026-09-24, on MT-546: "can it get its own thread?").  Opening a browser is a
-        // call into Windows, and the event thread has nothing to wait for it about.
+        // On a thread of its own (Adam on MT-546: "can it get its own thread?"): opening a browser is a call into
+        // Windows.
         assertTrue(code.contains("new Thread(() -> Util.openUrl(TrainControlUI.README_URL)"), "the Documentation item"
             + " opens the guide on the event thread - Adam, 2026-09-24: \"can it get its own thread?\"");
     }
 
     /**
-     * With an editor open, everything else on the menu is grayed and Documentation is not.
-     *
-     * The rest is grayed because each of those items saves the setup or rebuilds the window under an editor that has
-     * not saved (MT-111).  Reading the guide does neither.
-     *
-     * @throws Exception from the event thread or reflection
+     * With an editor open, everything else on the menu is grayed and Documentation is not: each of the others saves the
+     * setup or rebuilds the window under an editor that has not saved (MT-111).
      */
     @Test
     public void testDocumentationStaysUsableWhileAnEditorIsOpen() throws Exception
@@ -175,9 +167,7 @@ public class testTheAutonomyMenuLinksItsDocumentation
         }
     }
 
-    /**
-     * The Autonomy menu, built as opening it builds it: from its own listener, when it is selected.
-     */
+    /** The Autonomy menu, built as opening it builds it: from its own listener, when it is selected. */
     private static JMenu opened() throws Exception
     {
         Field field = TrainControlUI.class.getDeclaredField("autonomyMenu");
@@ -196,9 +186,7 @@ public class testTheAutonomyMenuLinksItsDocumentation
         return menu;
     }
 
-    /**
-     * The menu's Documentation item, or null; every item's text is added to `items` for the failure messages.
-     */
+    /** The menu's Documentation item, or null; every item's text is added to `items` for the failure messages. */
     private static JMenuItem documentation(JMenu menu, List<String> items)
     {
         JMenuItem found = null;
