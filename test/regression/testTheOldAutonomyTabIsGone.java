@@ -158,8 +158,6 @@ public class testTheOldAutonomyTabIsGone
 
     /**
      * A Central Station layout's window has no Load Autonomy Configuration tab.
-     *
-     * @throws Exception from reflection
      */
     @Test
     public void testACentralStationLayoutHasNoOldAutonomyTab() throws Exception
@@ -181,8 +179,6 @@ public class testTheOldAutonomyTabIsGone
      * The tab strip is not announced under the deleted tab's name (Adam: "can you clear the accessible name?"): the
      * form gave the strip the old tab's title, and a screen reader would have called the whole strip "Load Autonomy
      * Configuration".
-     *
-     * @throws Exception from reflection
      */
     @Test
     public void testTheTabStripIsNotNamedAfterTheOldTab() throws Exception
@@ -195,8 +191,6 @@ public class testTheOldAutonomyTabIsGone
 
     /**
      * On a Central Station layout the Autonomy menu can be opened.
-     *
-     * @throws Exception from reflection
      */
     @Test
     public void testTheAutonomyMenuOpensOnACentralStationLayout() throws Exception
@@ -213,8 +207,6 @@ public class testTheOldAutonomyTabIsGone
     /**
      * Opened there, Documentation can be chosen, and nothing can but it and the offer of a layout.  The offer is a
      * submenu since MT-548's note; its own claim is `testWithNothingToDownloadANewLayoutIsOffered`.
-     *
-     * @throws Exception from the event thread or reflection
      */
     @Test
     public void testOnlyTheDownloadAndTheGuideCanBeChosenThere() throws Exception
@@ -267,8 +259,6 @@ public class testTheOldAutonomyTabIsGone
      *
      * MUTATION: offer the download alone again, or send Create New Layout anywhere but the Layouts menu's own, and this
      * fails.
-     *
-     * @throws Exception from the event thread or reflection
      */
     @Test
     public void testWithNothingToDownloadANewLayoutIsOffered() throws Exception
@@ -368,8 +358,6 @@ public class testTheOldAutonomyTabIsGone
      * This class's window started on a sandbox folder and was then switched as the Central Station switch switches it.
      *
      * MUTATION: forget the folder with the switch, or open the chooser inside it, and this fails.
-     *
-     * @throws Exception from the event thread or reflection
      */
     @Test
     public void testOpenLayoutStartsAtTheLastLayoutFolder() throws Exception
@@ -583,8 +571,6 @@ public class testTheOldAutonomyTabIsGone
     /**
      * Nothing reads autonomy.json at start or loads the old graph from it.  Read from the source, because on the
      * unfixed code the load opens dialogs a test cannot answer.
-     *
-     * @throws Exception if the source cannot be read
      */
     @Test
     public void testNothingLoadsTheOldGraphAtStart() throws Exception
@@ -601,8 +587,6 @@ public class testTheOldAutonomyTabIsGone
 
     /**
      * The save writes its other backups, and no autonomy.json among them - on a Central Station layout too.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testNoLayoutWritesAutonomyJson() throws Exception
