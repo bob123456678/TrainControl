@@ -14,31 +14,20 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.marklin.MarklinLocomotive;
 
 /**
- * A train is refused for standing across the points only where it stops (Adam, MT-333, 2026-09-14).
+ * A train is refused for standing across the points only where it stops (MT-333).  Adam: "75 407 DB (len 2) can no
+ * longer go from tunnel to bottommaina because of the 1+1 length split around the switch between buttommainapre and
+ * bottommaina.  this SHOULD be allowed per the standing rule that this switch blocking should only affect berthes."
  *
- * *"75 407 DB (len 2) can no longer go from tunnel to bottommaina because of the 1+1 length split around the
- * switch between buttommainapre and bottommaina.  this SHOULD be allowed per the standing rule that this switch
- * blocking should only affect berthes."*
+ * It was refused one square earlier, because a square the train only PASSES was judged as though it stood there; the
+ * standing rule ("make a rule that parking berths cant block any other edges, but not make that check for active
+ * stations") was built at the destination only.  Still refusing: the destination (the room past its switch, or its
+ * measured route in at a station autonomy may choose (FR-087), and the berth rule at one it may not) and a square the
+ * train turns at.  And the protrusion: "if we made 75 407 DB have len 3 and it is parked at bottommaina, other trains
+ * should be blocked from going tunnel->bottommainb and c" - a driven train's tail follows the road it came in on
+ * (MT-335).
  *
- * **What refused it.**  Not BottomMainA: its approach measures 1 + 1 and a length-2 train fits it, which is the
- * relaxation of 2026-09-12.  It was refused ONE SQUARE EARLIER - "does not fit at BottomMainAPre on the way to
- * BottomMainA, where the track measures 1" - because the run from Tunnel to BottomMainAPre crosses a switch with
- * one measured unit on it, and since 2026-09-10 (`5948a88a`, the ruling of 2026-09-09) a square the train only
- * PASSES was judged as though the train stood there.  It never does: it stops at the destination, and at a square
- * it turns round at.  The standing rule of 2026-09-12 - *"make a rule that parking berths cant block any other
- * edges, but not make that check for active stations"* - was built at the destination only, and the pass-through
- * check went on refusing overhangs nobody stops in.  It showed on his railway when those tiles were measured.
- *
- * **What still refuses.**  The destination (the room past its switch, or its measured route in at a station
- * autonomy may choose (FR-087), and the berth rule at one it may not) and a square the train turns at (2026-09-11).
- *
- * **And the protrusion he asked to have re-filed**: *"if we made 75 407 DB have len 3 and it is parked at
- * bottommaina, other trains should be blocked from going tunnel->bottommainb and c."*  A driven train's tail
- * follows the road it came in on (MT-335), so three units behind a two-unit approach reach back over the run from
- * Tunnel, which the roads to B and C share.
- *
- * Each claim on its own sandbox copy of the frozen `live-snapshot`, with Adam's measurements of 2026-09-14 set on it:
- * `1 - Main` 7,9 = 1, 10,10 = 2, 13,12 = 1, 19,12 = 1, and nothing else.  Two trains of its own.
+ * Each claim runs on its own sandbox copy of the frozen `live-snapshot`, with Adam's measurements set on it: `1 - Main`
+ * 7,9 = 1, 10,10 = 2, 13,12 = 1, 19,12 = 1, and nothing else.  Two trains of its own.
  *
  * @author Adam
  */
@@ -53,12 +42,9 @@ public class testAPassingTrainMayStandAcrossThePoints
     private static final String OTHER = "overhang probe other";
 
     /**
-     * A TRACK DIAGRAM OF ITS OWN FOR EVERY SCENARIO (Adam, 2026-09-14: "Make sure tests for the different
-     * scenarios use independent track diagrams- otherwise all bets will be off").
-     *
-     * Each claim below opens its own sandbox copy of the snapshot, sets its own lengths on it, makes its own two
-     * trains and takes them away again, so no claim can pass or fail on a length, a placement or a remembered
-     * route another one left behind.
+     * A TRACK DIAGRAM OF ITS OWN FOR EVERY SCENARIO (Adam: "Make sure tests for the different scenarios use independent
+     * track diagrams- otherwise all bets will be off"): each claim opens its own sandbox copy, sets its own lengths,
+     * makes its own two trains and takes them away again.
      */
     @BeforeMethod
     public void openAFreshDiagram() throws Exception
@@ -73,7 +59,7 @@ public class testAPassingTrainMayStandAcrossThePoints
         assertNotNull(standing, "could not create the standing train");
         assertNotNull(other, "could not create the other train");
 
-        // ADAM'S MEASUREMENTS AS THEY STAND ON 2026-09-14, and nothing else.
+        // ADAM'S MEASUREMENTS, and nothing else.
         for (TileKey tile : new java.util.ArrayList<>(scenario.getSession().tilesWithALength()))
         {
             scenario.getSession().setTileLength(tile, 0);
@@ -106,9 +92,7 @@ public class testAPassingTrainMayStandAcrossThePoints
         scenario = null;
     }
 
-    /**
-     * 75 407 DB's journey: two units, Tunnel to BottomMainA, past one measured unit after a switch.
-     */
+    /** 75 407 DB's journey: two units, Tunnel to BottomMainA, past one measured unit after a switch. */
     @Test
     public void testATwoUnitTrainIsOfferedTunnelToBottomMainA() throws Exception
     {
@@ -141,14 +125,11 @@ public class testAPassingTrainMayStandAcrossThePoints
     }
 
     /**
-     * Three units are taken at BottomMainA because the measured route in holds them, and four are not (FR-087).
-     *
-     * Adam, on MT-431, 2026-09-15: *"didn't we say that BottomMainA should be allowed at length 3, since it is not a
-     * parking spot, the station allows the length, and the length would be tracked?"*  And, asked how far that reaches:
-     * bounded by the route - at a station autonomy may choose, the train is accepted if the measured track of the route
-     * it drives in on holds it back from the destination, because its tail lies on that route and blocks it.  Tunnel to
-     * BottomMainA measures one unit and then two: three units fit it, four do not.  Until this, the bound was the approach
-     * alone, and three units were refused its two.
+     * Three units are taken at BottomMainA because the measured route in holds them, and four are not (FR-087; Adam,
+     * MT-431: "didn't we say that BottomMainA should be allowed at length 3, since it is not a parking spot, the
+     * station allows the length, and the length would be tracked?").  At a station autonomy may choose, the train is
+     * accepted if the measured track of the route it drives in on holds it back from the destination: Tunnel to
+     * BottomMainA measures one unit and then two.
      */
     @Test
     public void testTheRouteInHoldsAThreeUnitTrainAndNotAFourUnitOne() throws Exception
@@ -185,16 +166,14 @@ public class testAPassingTrainMayStandAcrossThePoints
 
         assertTrue(why.contains("BottomMainA"), "the four-unit refusal does not name BottomMainA: " + why);
 
-        // AND THE NUMBER THAT REFUSED IT: three units were admitted over this route a moment ago, so a refusal
-        // quoting the room past the switch tells the operator the square holds less than it just held.
+        // AND THE NUMBER THAT REFUSED IT: three units were admitted over this route, so a refusal quoting the room past
+        // the switch would say the square holds less than it just held.
         assertTrue(why.contains(org.traincontrol.util.I18n.f("autolayout.errorTrainTooLongForBerth", standing.getName(),
             "BottomMainA", 3, 4).replaceAll(".*which measures ", "which measures ").replaceAll(" - .*", "")),
             "the four-unit refusal does not say the route in measures three - it quotes another bound: " + why);
     }
 
-    /**
-     * The protrusion: driven to BottomMainA at two units and made three, it closes Tunnel to B and C.
-     */
+    /** The protrusion: driven to BottomMainA at two units and made three, it closes Tunnel to B and C. */
     @Test
     public void testThreeUnitsAtBottomMainAClosesTunnelToBAndC() throws Exception
     {
@@ -249,12 +228,9 @@ public class testAPassingTrainMayStandAcrossThePoints
     }
 
     /**
-     * And after a rebuild the three units still close B and C: the road comes back with the train.
-     *
-     * Every setup gesture and every close of the autonomy editor regenerates the running layout from the setup and
-     * puts the trains back where they stood (`TrainControlUI.putTheTrainsBack`).  That carried the side and not the
-     * road, so the tail stopped at BottomMainAPre and B and C were offered again over a tail still lying on the
-     * Tunnel run.  Adam, 2026-09-14: *"Then state will always be fully consistent."*
+     * And after a rebuild the three units still close B and C: the road comes back with the train
+     * (`TrainControlUI.putTheTrainsBack` once carried the side and not the road).  Adam: "Then state will always be
+     * fully consistent."
      */
     @Test
     public void testTheRoadIsKeptAcrossARebuild() throws Exception
@@ -270,9 +246,7 @@ public class testAPassingTrainMayStandAcrossThePoints
         assertBAndCAreClosed(rebuilt, "after a rebuild");
     }
 
-    /**
-     * And written to the setup, so a restart - a build from the file alone - still closes B and C.
-     */
+    /** And written to the setup, so a restart (a build from the file alone) still closes B and C. */
     @Test
     public void testTheRoadIsWrittenToTheSetup() throws Exception
     {
@@ -290,20 +264,16 @@ public class testAPassingTrainMayStandAcrossThePoints
     }
 
     /**
-     * Turned where it stands, the train still covers the road it came in on.
-     *
-     * A facing change stands the same train on the other lane's copy of its square and carries its side and road
-     * across (`AutonomySession.moveOntoFacingCopy`), so the road names the lane it drove in on while the walk
-     * runs down the other.  The walk that follows a road "either way round" matched the platform's own edge from the
-     * far end and turned back on itself, so the tail stopped at BottomMainAPre and B and C were offered again.
+     * Turned where it stands, the train still covers the road it came in on: a facing change stands it on the other
+     * lane's copy and carries its side and road across (`AutonomySession.moveOntoFacingCopy`), and the walk that
+     * follows a road "either way round" once matched the platform's own edge from the far end and turned back on
+     * itself.
      */
     @Test
     public void testTheRoadIsFollowedAfterTheTrainIsTurned() throws Exception
     {
-        // BOTH LANES OF BOTTOMMAINA ONES A TRAIN MAY STAND ON, as at `2958fcf3`.  The turn stands the train on
-        // the other lane's copy, and with arrivals from the east barred - Adam's edit of the same day - that copy is no
-        // station, and a train is never stood where autonomy could not start it.  This claim is about the road after a
-        // turn, which needs a turn that can happen.
+        // BOTH LANES OF BOTTOMMAINA ONES A TRAIN MAY STAND ON: the turn stands the train on the other lane's copy, and
+        // with arrivals from the east barred that copy is no station, so a turn that can happen is needed.
         TileKey mainASquare = scenario.tile("1 - Main", 20, 12);
 
         assertEquals(scenario.getSession().getStore().getPointName(mainASquare), "BottomMainA",
@@ -359,11 +329,9 @@ public class testAPassingTrainMayStandAcrossThePoints
     }
 
     /**
-     * A train that leaves takes its side and road out of the setup, whichever copy of the square they were read from.
-     *
-     * The build writes a square's side and road onto every copy of it, and a train leaving clears them only on the copy
-     * it stood on.  The capture merges a square's copies, so the others put the departed train's tail back into the
-     * setup - where a restart applies it to whatever stands there next.
+     * A train that leaves takes its side and road out of the setup, whichever copy they were read from: the build
+     * writes them onto every copy, a leaving train clears only the copy it stood on, and the capture merge put the tail
+     * back.
      */
     @Test
     public void testALeavingTrainTakesItsTailOutOfTheSetup() throws Exception
@@ -493,18 +461,8 @@ public class testAPassingTrainMayStandAcrossThePoints
     }
 
     /**
-     * The plain copy of a square that a journey from here arrives on.
-     *
-     * By ROUTE, not by name.  Until the refreeze of 2026-09-23 only one plain copy of BottomMainA was a destination, so
-     * "the plain one" and "the one Tunnel reaches" were the same Point; since Adam's marks of that day both are, and the
-     * shorter name - the westbound copy - is one no route from Tunnel reaches.  Every claim here is about Adam's journey,
-     * which arrives eastbound.
-     *
-     * @param built the railway
-     * @param from where the journey starts
-     * @param square the square it ends at
-     * @return the first plain destination copy of that square a route reaches
-     * @throws Exception from the search
+     * The plain copy of a square that a journey from here arrives on, by ROUTE and not by name: both plain copies of
+     * BottomMainA are destinations now, and the shorter-named westbound one is not reached from Tunnel.
      */
     private static Point arrivalFrom(Layout built, Point from, String square) throws Exception
     {
