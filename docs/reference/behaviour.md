@@ -580,6 +580,11 @@ half that survives a restart and the next build would emit the train on a square
 twice. `regression.testTheRefusalsAreAskedAtTheDoors.testEveryPlacementDoorUsesTheRailwaysAnswer` names
 every door and says which one is allowed to discard the answer, and why.
 
+**A station no track arrives at records which way a train placed on it faces** (RSA2-C7), as other stations do, so
+only the routes that way are offered.  Such a square with more than one way out is one copy per way out; with one, or
+none, it is still one Point.
+`core.testATrainIsPlacedOnceAndKeepsItsFacing.testASquareNothingArrivesAtFacesItsPlacedTrain`.
+
 ### How `arrivedFrom` is set
 
 - **Autonomy writes it on arrival**, which is the only moment anything knows it for certain — and
@@ -911,6 +916,13 @@ terminus 24 and 48, and the must-turn pair, both halves and the gap, no longer t
 `testTheTurningIconsAreTheLengthsAdamAskedFor`, `testAStationOnACurveIsWhollyInsideItsSquare`,
 `testTheArrowsAreDrawnOverAStationsIcon`;
 the caption, `ui.testDiagramLooksRight.testAPillOnEndIsFullSize` and `testAPillOnEndClearsTheStationsBesideIt`.
+
+**A train standing still is drawn with the run's locomotive icon** on its station, facing the way it stands, whether
+it is parked with no path or holds one (FR-027, OB-317; Adam: *"same icon as when a run is started"*).  **On a curve
+the icon is never clipped to its tile** (MT-642; Adam: *"there should be no clip"*): it runs along the rail at a
+straight's size, on the train's own road of a double curve, its front the way the train goes and its roof never
+pointing down, and reaches onto the next tiles.
+`core.testAutonomyDiagramMonitor.testTheIconRunsAlongEveryCurveAndDoubleCurveOnItsOwnRoad`.
 
 ## 5. Length: will the train fit?
 
@@ -2505,6 +2517,8 @@ Three things follow, and they are the behaviour rather than the implementation:
   on their next edit."* Clicking it does nothing and its tooltip says so.
 - **An arrow may not point at the page it is drawn on.** Adam: *"make sure links can only go to other
   pages, not themselves."* The page being edited is not offered in the list.
+- **An unpaired link is not marked on the diagram** (Adam: *"Marking links is not needed since we get error
+  messages"*): the setup check's errors say where it is.
 
 **A page whose file will not read keeps its place in the list.** It comes back blank with a text tile
 at 1,1 saying it could not be loaded - the reason the page cannot simply be
@@ -2674,6 +2688,15 @@ greyed, as it writes nothing of the setup (MT-633, RSA23-C2).  Each door that ch
 a change while autonomy is busy - Return Home's planning too, before any train moves (RSA12-C1).
 `regression.testNoSetupEditDuringARun.testTheAutonomyMenuIsGreyedWhileAutonomyRuns`.
 
+**While autonomy runs the Layouts menu grays what changes the diagram or the folder**, saying why; opening the folder,
+the pop-outs, the picture and the CS3 web app stay live (Adam: *"grey the relevant options, but we need to keep open
+CS3 web app available"*).  `regression.testNoSetupEditDuringARun.testTheLayoutMenuIsGreyedWhileAutonomyRuns`.
+
+**Closing TrainControl while it drives trains, in any tier, warns and changes no train** (RSA-C7; Adam: *"For
+simplicity, don't change train state here."*).  Keeping TrainControl open is the default, the close presses no Graceful
+Stop, and the warning says what closing leaves: the trains keep moving with nothing to stop them, and where they are is
+not saved.  `regression.testNoSetupEditDuringARun.testClosingWhileTrainsRunWarnsAndLeavesTheTrainsAlone`.
+
 **While autonomy is busy the Auto tab greys what waits for the trains** - its settings, Execute Timetable and the
 capture toggle, with Activate Routes and its list (UXR-B3) - each tooltip saying *"Please wait for all active
 locomotives to stop."*, whoever greyed it (RSA27-C3), and gives them back with their own tooltips once the trains have
@@ -2719,7 +2742,12 @@ between honouring the name typed and not asking for one: *"(a)"*), created where
 chosen only while the import writes into it: the configuration running stays the one in use, and is the one the next
 start resumes, whether or not the reload after the import goes ahead - the imported one is loaded only where nothing
 was running.  The import's message names the configuration its trains went into and, where another is in use, where
-to choose it.
+to choose it.  It leaves Startup > Load Autonomy as the operator set it (TDD-C11): that setting resumes the active
+configuration at start and is not the import's to untick.  `regression.testALegacyImportLeavesLoadAutonomyAlone`.
+
+**Once a configuration exists, New Configuration is the one door to another** (Adam: *"One door: do it"*): a copy of the
+one chosen, which asks whether where the trains stand and the timetable come too.  Add a Configuration is offered only
+for the very first.  `regression.testNoSetupEditDuringARun.testManageOffersOneDoorToANewConfiguration`.
 
 - **Into the configuration in use** (RLA2-B1, RLD3-C1, RLU4-B1): a bundle under that name is
   refused, and so is a configuration of the older, bare shape - the setup folder's own file, or an export from before
