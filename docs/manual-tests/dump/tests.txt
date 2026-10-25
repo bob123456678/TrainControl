@@ -31769,3 +31769,189 @@ body:
 tail:
 | ---
 |
+
+[test MT-806]
+ordinal: 805
+anchor: mt-806
+date: 2026-10-24
+title: FR-136: the refusals while an editor is open, a route or autonomy runs, the setup is broken or the power is off work as before
+disposition: needs test
+from: FR-136
+written: 2026-10-24
+reopened: no
+body:
+| <a id="mt-806"></a>
+| ### MT-806 - 2026-10-24 - FR-136: the refusals while an editor is open, a route or autonomy runs, the setup is broken or the power is off work as before
+|
+| **Disposition:** needs test
+| **From:** FR-136
+|
+| **Written:** 2026-10-24
+|
+| **Steps**
+|
+| 1. Before you start, File > Backup TrainControl Data.  Have a layout with an autonomy setup loaded, at least one train placed, and power on.  Open the autonomy editor: Autonomy > Edit Autonomy on Page, pick a page, choose `Autonomy Setup` in the sidebar.  Leave it open.  In the main window, on the Auto tab, press `Start Autonomous Operation`.  Then open the `Timetable` page of that tab and press `Execute Timetable`.  Then press `Return Home`.  Then, back on the first page of that tab, double-click one of the paths in a train's list of available paths.
+| 2. Close the autonomy editor with `Cancel`.  On the Track Diagram tab press `Edit`, pick a page, and leave that editor open.  In the main window press `Start Autonomous Operation` and double-click a path on a train's card on the Auto tab again.  Close the track editor with `Cancel` and answer Yes to "Are you sure you want to close the editor without saving changes?"
+| 3. Pick a route that takes a while to run (for instance one with a delay of ten seconds or more) and run it from the Routes tab.  While it is running press `Start Autonomous Operation`, `Execute Timetable`, `Return Home`, and double-click a path on the Auto tab.
+| 4. While that route is still running, open Locomotives > Browse Database, right-click a locomotive the route drives and choose `Edit Name/Address/Decoder`, then right-click it again and choose `Delete from Database`.  Then open Layouts > Open Layout... and Layouts > Create New Layout.  Close any window that opens and let the route finish.
+| 5. Press `Power OFF`.  Press `Start Autonomous Operation`, `Execute Timetable` and `Return Home`, and double-click a path on the Auto tab.  Then press `ON`.
+| 6. Make the setup unusable: in the autonomy editor right-click one end of a link between two pages and choose `Unpair This Link`, then press `Save Changes`.  (If your layout has no links, skip steps 6 and 7.)  In the main window press `Start Autonomous Operation`, `Execute Timetable` and `Return Home`, and double-click a path on the Auto tab if one is offered.
+| 7. Put the link back: Autonomy > Edit Autonomy on Page, right-click the same end, choose `Pair with a Link...`, pick the other end, and press `Save Changes`.
+| 8. Press `Start Autonomous Operation` and let a train set off.  While autonomy runs open Locomotives > Add Locomotive.  Then right-click a locomotive in Locomotives > Browse Database and choose `Edit Name/Address/Decoder`, then `Delete from Database`.  Then open Layouts > Open Layout..., Layouts > Create New Layout and Layouts > Manage Pages > Rename Current Page (type any new name when it asks).  Press `Graceful Stop` and wait until every train has stopped.
+| 9. With nothing running, no editor open and the power on, press `Start Autonomous Operation` once more, then `Graceful Stop`.  Open Locomotives > Add Locomotive and close it again.
+|
+| **Expected**
+|
+| - Step 1: every press and the double-click is refused with a window saying "Close the editor first - autonomy cannot be changed from here while it is open."  No train moves, and `Start Autonomous Operation`, `Execute Timetable` and `Return Home` are still available afterwards.
+| - Step 2: with the track editor open the same sentence appears for `Start Autonomous Operation` and for the double-click, and no train moves.  Closing asks the question, and afterwards nothing of yours is kept.
+| - Step 3: each of the four is refused with "The route <name> is running.  Wait for it to finish, then try again." and no train moves.  (If you ran two routes at once, the sentence reads "These routes are running: <names>.  Wait for them to finish, then try again.")
+| - Step 4: editing and deleting a locomotive the route drives each say "<locomotive> is being driven by the route <route>, which is running now.  Wait for it to finish, or stop it, and try again." and change nothing.  Open Layout... and Create New Layout each say "Not while autonomy, a timetable, Return Home or a route is running.  Stop it first." and open no folder window.
+| - Step 5: all four are refused with "To start autonomy, please turn the track power on, or cycle the power."  After `ON` the same presses are accepted again.
+| - Step 6: `Start Autonomous Operation` is refused with either "Autonomy cannot start while the setup has <N> error(s). Open the autonomy editor to see them." or "This setup cannot be used yet: <N> things have to be dealt with first.  The count along the top of the track diagram opens the editor at the first of them, and the "Things to look at" list there says what each is and where."  `Execute Timetable`, `Return Home` and the double-click are refused with "This setup cannot be used yet: ..." (the second sentence above, or the "one thing" form).  No train moves.
+| - Step 7: the setup is whole again and the banner about the setup is gone.
+| - Step 8: Add Locomotive, Edit Name/Address/Decoder, Delete from Database, Open Layout..., Create New Layout and Rename Current Page each say "Cannot edit locomotives while autonomy is running." and change nothing.  Nothing is renamed, no folder window opens, and the locomotive list is unchanged.
+| - Step 9: autonomy starts and stops as usual and Add Locomotive opens its window: no refusal is left over from the earlier steps.
+|
+| *What this is:* FR-136 Phase 5 moved the code that refuses these actions out of the main window class into `RunGates` without changing what it does.  Any difference from before is a defect of the move.
+|
+tail:
+| ---
+|
+
+[test MT-807]
+ordinal: 806
+anchor: mt-807
+date: 2026-10-24
+title: FR-136: Return Home, its button state, tooltips, spinner and right-click menu work as before
+disposition: needs test
+from: FR-136
+written: 2026-10-24
+reopened: no
+body:
+| <a id="mt-807"></a>
+| ### MT-807 - 2026-10-24 - FR-136: Return Home, its button state, tooltips, spinner and right-click menu work as before
+|
+| **Disposition:** needs test
+| **From:** FR-136
+|
+| **Written:** 2026-10-24
+|
+| **Steps**
+|
+| 1. Before you start, File > Backup TrainControl Data.  Have an autonomy setup loaded, two or more trains placed on stations with homes set, power on, and every train standing on its home.  On the Auto tab hover the `Return Home` button.
+| 2. Send one train away from its home by hand: double-click a path in its list on the Auto tab, and while it is still moving hover `Return Home`.  When it has arrived, hover `Return Home` again.
+| 3. Press the pause button on that train's card (or untick `<train> Is Active` on its station's right-click menu on the track diagram), and hover `Return Home`.  Then un-pause the train and hover `Return Home` again.
+| 4. Press `Return Home`.  While the plan is being worked out, look at the button.  When the trains start to move, look at `Start Autonomous Operation`, `Execute Timetable`, `Capture Locomotive Commands` and `Graceful Stop`.  Wait until every train has arrived.
+| 5. Once every train is home, hover `Return Home`.  Right-click `Return Home` and look at the two items and their tooltips.
+| 6. Send the same train away again by hand and wait for it to arrive.  Right-click `Return Home` and choose `Place All Trains at Their Homes (N)`.  Read the question, answer No, then repeat and answer Yes.  Look at the log and at where that train now shows on the track diagram.
+| 7. Right-click `Return Home` and choose `Run Trains to Their Homes` while the train is away from its home.  (Put the train back to where it was in step 6 first, if step 6 moved it.)
+| 8. Start a train by hand again and, while it moves, right-click `Return Home` and hover both items.  Then open the autonomy editor (Autonomy > Edit Autonomy on Page), right-click `Return Home` in the main window and hover both items.  Close the editor with `Cancel`.
+|
+| **Expected**
+|
+| - Step 1: the button is greyed and its tooltip says "Every active locomotive is already on its home station."
+| - Step 2: while the train moves the button is greyed and the tooltip says "Trains are still moving.  Wait for them to arrive, or use Graceful Stop if autonomy is running."  Once it has arrived away from home the button is available and its tooltip says "Send every locomotive back to the station it started on."
+| - Step 3: with the train paused the button is greyed and the tooltip says "These locomotives are away from their home stations but paused: <train>.  Set them going: tick Is Active, press the pause button on their card on the Auto tab, or use Bulk Tools > Activate All Trains."  After un-pausing, the button is available again.
+| - Step 4: a turning mark appears on the button while the plan is worked out and goes away once the trains start (or if no plan is possible).  During the run `Start Autonomous Operation`, `Execute Timetable`, `Return Home` and `Capture Locomotive Commands` are greyed and `Graceful Stop` is available.  Afterwards `Start Autonomous Operation`, `Execute Timetable` and `Capture Locomotive Commands` are available again, `Graceful Stop` is greyed, and the train is on its home.  If a train could not get home the window says "The return home was stopped: a train's path stayed blocked.  The log says which one.  Move it out of the way by hand and try again."  That window does not appear after a normal run, nor after a Graceful Stop you asked for.
+| - Step 5: the tooltip is again "Every active locomotive is already on its home station."  The menu has `Run Trains to Their Homes`, greyed, with that same sentence as its tooltip, and `Place All Trains at Their Homes (N)` with N the number of trains that have a home; its tooltip says "Puts the N homed trains on their homes, facing as homed; the rest come off. Nothing moves."
+| - Step 6: the question reads "Put each of the N train(s) that have a home on it, facing the way it was homed, and take the M train(s) without one off the layout?" followed by "Nothing is sent to the railway, so no train moves.  You must then move the real trains to these places by hand."  No answers the question and changes nothing.  Yes logs "N train(s) put on their homes; M taken off the layout." and the train shows on its home on the diagram, though the real train has not moved.  Move the real train to its home by hand, or restore with your backup.
+| - Step 7: with a train away from home the item is available and does what the button does, with the same turning mark and run as in step 4.
+| - Step 8: while a train moves, `Run Trains to Their Homes` is greyed with "Trains are still moving..." and `Place All Trains at Their Homes (N)` is greyed with "Not while autonomy, a timetable, Return Home or a route is running.  Stop it first."  With the editor open the place item's tooltip says "Close the editor first - autonomy cannot be changed from here while it is open."  After the editor is closed both items are back as in step 5 or step 7.
+|
+| *What this is:* FR-136 Phase 5 moved the Return Home button's code out of the main window class into `ReturnHomeController` without changing what it does.  Any difference from before is a defect of the move.
+|
+tail:
+| ---
+|
+
+[test MT-808]
+ordinal: 807
+anchor: mt-808
+date: 2026-10-24
+title: FR-136: the setup and the running railway stay in step (trains, turns, settings, timetable, Is Active and pause) as before
+disposition: needs test
+from: FR-136
+written: 2026-10-24
+reopened: no
+body:
+| <a id="mt-808"></a>
+| ### MT-808 - 2026-10-24 - FR-136: the setup and the running railway stay in step (trains, turns, settings, timetable, Is Active and pause) as before
+|
+| **Disposition:** needs test
+| **From:** FR-136
+|
+| **Written:** 2026-10-24
+|
+| **Steps**
+|
+| 1. Before you start, File > Backup TrainControl Data.  Have an autonomy setup loaded with two or more trains placed, power on, and nothing running.  Note where each train stands (its card on the Auto tab, and its name on the track diagram).
+| 2. Send two trains away from where they stand, by hand: double-click a path in each train's list on the Auto tab.  For one of them choose a station where the train turns round on arrival, if you have one.  Wait until both have arrived.  Note where each stands now and which way it faces (the arrow beside its name on the diagram).
+| 3. Open Autonomy > Edit Autonomy on Page, pick a page, choose `Autonomy Setup` in the sidebar, and press `Save Changes`.  Look at the same places as in step 2.
+| 4. Open Layouts > Manage Pages > Rename Current Page, give the page a new name, and look again.  Rename it back to its old name.
+| 5. Open Autonomy > Configuration (<name>) > Manage Configurations... > Stop Using Autonomy.  Then press `Load this configuration` on the banner above the track diagram (or choose the configuration in Autonomy > Configuration (none loaded)).  Look again.
+| 6. On the Autonomy Settings page of the Auto tab change `Default Locomotive Speed (%)` by a few points.  On the `Timetable` page right-click an entry and choose `Change Delay`, and enter a different number of seconds.  (If the timetable is empty, tick `Capture Locomotive Commands`, send a train by hand, then untick it.)  Open the autonomy editor again and press `Save Changes`.  Look at the setting and the timetable.
+| 7. On the track diagram right-click the station a train stands on, untick `<train> Is Active`, then open the autonomy editor and press `Save Changes`.  Look at the tick on the station's right-click menu.
+| 8. Right-click a blank square on the track diagram and choose Bulk Tools > Activate All Trains (N).
+| 9. On the Auto tab press the pause button on a train's card, open the autonomy editor and press `Save Changes`.  Look at the card.  Then un-pause the train.
+|
+| **Expected**
+|
+| - Step 1: you have a record of where each train stands.
+| - Step 2: each train arrives and shows at its new station, facing the way it arrived or turned.
+| - Step 3: both trains show at the stations from step 2, not back at the ones from step 1, and still face the same way, including the train that turned round.
+| - Step 4: after the rename both trains are still at the stations from step 2, with the same facing, and the page has its new name.
+| - Step 5: after Stop Using Autonomy the stations and trains leave the diagram; after loading, both trains are back at the stations from step 2, not at their starting stations.
+| - Step 6: `Default Locomotive Speed (%)` still shows your new value and the timetable entry still shows your new delay after the editor has closed, not the values from before.
+| - Step 7: the station's menu shows `<train> Is Active` unticked and the train is still paused: it does not become active again by itself.
+| - Step 8: all paused trains become active; afterwards `<train> Is Active` is ticked again on the station menus and Activate All Trains is greyed.
+| - Step 9: the train's card still shows it as paused after the editor has closed.  After un-pausing, the card shows it going again.
+|
+| *What this is:* FR-136 Phase 5 moved the code that keeps the setup and the running railway in step out of the main window class into `RunningLayoutSync` without changing what it does.  Any difference from before is a defect of the move.
+|
+tail:
+| ---
+|
+
+[test MT-809]
+ordinal: 808
+anchor: mt-809
+date: 2026-10-24
+title: US English: gray, canceled and neighbors in the program's English text
+disposition: needs test
+from: FR-136
+written: 2026-10-24
+reopened: no
+body:
+| <a id="mt-809"></a>
+| ### MT-809 - 2026-10-24 - US English: gray, canceled and neighbors in the program's English text
+|
+| **Disposition:** needs test
+| **From:** FR-136
+|
+| **Written:** 2026-10-24
+|
+| **Steps**
+|
+| 1. Before you start, File > Backup TrainControl Data.  Open Preferences > Autonomy and look at the second item of the list that opens (the one for station labels).  Hover it.
+| 2. Tick that item, look at the station names on the track diagram, then untick it again.
+| 3. On the Track Diagram tab press `Edit`, pick a page, and look at the group `Visible Elements`.  Hover the `Grid` box.  Close the editor with `Cancel` and answer Yes to "Are you sure you want to close the editor without saving changes?"
+| 4. Choose a page that has links to other pages.  Open Layouts > Manage Pages > Combine Linked Pages...  Read the question and the name it offers, then press OK to accept it.
+| 5. Open the page list and look at the names of the pages that were there before.
+| 6. Select the new combined page and delete it: Layouts > Manage Pages > Delete Current Page, then Yes.
+| 7. Set up a route that would switch an accessory while a train is standing at the platform that accessory protects (or while a train is running over it).  Run it from the Routes tab.  When the question comes up, press `Cancel`.  Open the Log tab.
+|
+| **Expected**
+|
+| - Step 1: the item reads "Gray Station Labels" (not "Grey"), and its tooltip says "Draw station labels in light gray instead of blue."
+| - Step 2: ticking draws the station names in light gray; unticking brings back blue.
+| - Step 3: the box reads `Grid`, and its tooltip says "Draw the gray grid behind the diagram, with the column and row numbers around it.  Control+K."
+| - Step 4: the question reads "What should the combined page be called?" and the offered name is "<page> and neighbors", for example "Main and neighbors".  If the page has no links you get "This page has no links to other pages, so a combined page would only show this one." instead; choose another page.
+| - Step 5: every page that was there before has the same name as before; only the new page carries the new name.
+| - Step 6: the combined page is gone and the other pages are untouched.
+| - Step 7: the question reads "The route "<route>" would switch "<accessory>", which is protecting a platform where a train is standing.  Run it anyway?" (or "...which is on track a train is running over right now.").  After Cancel the Log says "Route <route> was canceled: you declined its conflicting accessory command, so nothing further in the route was run."  The word is "canceled" with one l, and the route runs nothing.
+|
+| *What this is:* The program's English text now uses US spelling: "gray" for "grey", "canceled" for "cancelled", and "neighbors" for a combined page's name.  Only wording changed, nothing else.  Any other "grey", "cancelled" or "neighbours" you come across in the English text is a miss.
+|
+tail:
+| ---
+|
