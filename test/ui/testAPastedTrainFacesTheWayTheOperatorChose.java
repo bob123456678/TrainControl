@@ -27,19 +27,15 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * A train pasted onto a may-reverse square faces the way the operator said, on the railway itself.
  *
- * Adam, MT-394, 2026-09-13: **"Pasting 75 407 DB on BottomMainB makes it face east regardless of the
- * user's choice.  Check how this passed our internal tests."**
+ * Adam, MT-394: "Pasting 75 407 DB on BottomMainB makes it face east regardless of the user's choice.  Check how this
+ * passed our internal tests."  The claim written for the paste read the SOURCE for the lines that write the answer into
+ * the setup; nothing asked where the train ended up.  The railway encodes a train's direction by which copy of a square
+ * it stands on, and the paste had already chosen that copy before asking (`getAutonomyPointForTile`: "with none
+ * [occupied], any copy will do"), which on an empty BottomMainB is the east one.
  *
- * **How it passed.**  The paste asked the question and wrote the answer into the setup, and the claim
- * written for it read the SOURCE for the lines that do that - they were there.  Nothing asked where the
- * train ended up.  The railway encodes a train's direction by which copy of a square it stands on, and
- * the paste had already chosen that copy before asking anything: `getAutonomyPointForTile`, "with none
- * [occupied], any copy will do".  On an empty BottomMainB that is the east one.
- *
- * **So this drives a real paste**, through the window's own key door, with the two questions answered by
- * the test instead of by a dialog - a modal dialog in a test hung this suite once - and asks the running
- * layout which copy the train is standing on.  Asked both ways: whichever copy a broken paste lands on,
- * one of the two claims is about the other heading and fails.
+ * So this drives a real paste through the window's own key door, with the two questions answered by the test (a modal
+ * dialog hung this suite once), and asks the running layout which copy the train stands on.  Asked both ways, so
+ * whichever copy a broken paste lands on, one claim is about the other heading and fails.
  *
  * @author Adam
  */
@@ -129,8 +125,6 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
 
     /**
      * Chosen west, it stands facing west.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testChosenWestItFacesWest() throws Exception
@@ -144,8 +138,6 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
 
     /**
      * And chosen east, it stands facing east - the control, and the other half of "regardless".
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testChosenEastItFacesEast() throws Exception
@@ -157,16 +149,12 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
 
     /**
      * A train pasted onto a square that is no station says it can only be placed at a station, and asks nothing first
-     * (OB-365): the facing and tail questions were put about a square the placement then refused.
-     *
-     * Real dialogs, answered by {@link support.Answering}, which keeps what each one said: the only thing asked is the
-     * notice.  The train stays on the clipboard for the next square, and no square holds it.  The square is the
-     * may-reverse one the other claims use, made a plain square for the length of the claim.
+     * (OB-365).  Real dialogs, answered by {@link support.Answering}, which keeps what each one said: the only thing
+     * asked is the notice.  The train stays on the clipboard for the next square.  The square is the may-reverse one
+     * the other claims use, made a plain square for the length of the claim.
      *
      * MUTATION: take the station check out of the paste door in TrainControlUI and the questions are asked again, so
      * this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testPastingOnASquareThatIsNoStationSaysSoAndAsksNothing() throws Exception
@@ -235,8 +223,6 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
 
     /**
      * Builds the railway again from the setup, as the other claims here found it.
-     *
-     * @throws Exception from the event thread
      */
     private static void rebuild() throws Exception
     {
@@ -248,11 +234,8 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
     }
 
     /**
-     * Presses Control+V over a square with the test train on the clipboard and no remembered heading.
-     *
-     * @param target the square
-     * @return what the paste door answered
-     * @throws Exception from the window
+     * Presses Control+V over a square with the test train on the clipboard and no remembered heading, and returns what
+     * the paste door answered.
      */
     private static Object pasteOnto(TileKey target) throws Exception
     {
@@ -290,15 +273,11 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
     }
 
     /**
-     * Both questions name the square the way the diagram does, not by the copy the paste happened to pick.
-     *
-     * A split square's Points are named with a heading - "BottomMainB (eastbound)" - and both questions asked here
-     * are ABOUT direction, so the name put an answer in the question, and an arbitrary one: the Point is picked before
-     * either answer, and on an empty square any copy will do.
+     * Both questions name the square the way the diagram does, not by the copy the paste happened to pick: a split
+     * square's Points are named with a heading ("BottomMainB (eastbound)") and both questions are ABOUT direction, so
+     * the name put an arbitrary answer in the question (on an empty square any copy will do).
      *
      * MUTATION: name the square by its Point again in either question and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testBothQuestionsNameTheSquare() throws Exception
@@ -337,14 +316,13 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
 
     /**
      * A train pasted onto a station at rest shows the locomotive a run draws there, facing the way it was put, and
-     * taken off by the cut it shows none (Adam, 2026-10-01: "when a train is standing somewhere, can we show its locomotive icon on top of the
-     * station in the track diagram viewer, while maintaining editability? same icon as when a run is started").
+     * taken off by the cut it shows none (Adam: "when a train is standing somewhere, can we show its locomotive icon on
+     * top of the station in the track diagram viewer, while maintaining editability? same icon as when a run is
+     * started").
      *
      * Through the window's own key doors.  Each writes the setup, and the rebuild that follows tells the diagram.
      *
      * MUTATION: leave the parked trains out of the monitor's picture, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testAPastedTrainShowsItsLocomotiveOnTheStation() throws Exception
@@ -403,10 +381,6 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
     /**
      * What the diagram shows on the square, once it shows a train there or not as asked - or what it shows after five
      * seconds of not.
-     *
-     * @param aTrain whether to wait for a train's mark or for none
-     * @return the square's overlay
-     * @throws Exception from the event thread
      */
     private static org.traincontrol.automationui.TileOverlay theMarkOn(boolean aTrain) throws Exception
     {
@@ -427,11 +401,8 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
     }
 
     /**
-     * Pastes the train onto the square with both questions answered, and says which way it now faces.
-     *
-     * @param chosen the heading the facing question is answered with
-     * @return the heading of the copy the train is standing on, or null when it is on none of them
-     * @throws Exception from the window
+     * Pastes the train onto the square with both questions answered, and says which way it now faces (null when it is
+     * on none of the copies).
      */
     private static Side pasteFacing(Side chosen) throws Exception
     {
