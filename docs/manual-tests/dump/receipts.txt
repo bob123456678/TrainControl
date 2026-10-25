@@ -4026,3 +4026,11 @@ kind: bug
 what: One method answers which copy of a square holds the train and its facing, with OB-314's adjustment (copyHoldingATrain, facingOfTheTrainOn), used by trainOnTheRailway, facingOnTheRailway and flipFacing (`8d2bb7f8`). The flip read the plain copy's facing during a turning journey (testAFlipOnItsWayTurnsTheWayItWillStand red, then green), but no user can reach it today: flipFacing's only caller, followTheTurn, declines while a run holds the setup. A latent defect, fixed and pinned; no MT.
 state: fixed validated
 became: -
+
+[receipt OB-373]
+seq: 503
+filed: 2026-10-24
+kind: bug
+what: The track diagram's Place saves whenever it wrote the placement and the setup still stands, with or without a facing, and logs a failed save in every mode, as the paste and the locomotive dialog do; right-click Remove logs the same way (`56151775`). Claims in ui.testATrainWithNoWayOutFacesAlongItsTrack, red first.
+state: -
+became: MT-819

@@ -914,7 +914,7 @@ text:
 
 [issue OB-373]
 ordinal: 43
-inbox: yes
+inbox: no
 kind: bug
 title: A train placed by right-click Place where no copy gives a facing may not be saved
 filed: 2026-10-24

@@ -32299,3 +32299,40 @@ body:
 tail:
 | ---
 |
+
+[test MT-819]
+ordinal: 818
+anchor: mt-819
+date: 2026-10-24
+title: A train placed by the Track Diagram's Place on a station no train can leave is kept (OB-373)
+disposition: needs test
+from: OB-373
+written: 2026-10-24
+reopened: no
+body:
+| <a id="mt-819"></a>
+| ### MT-819 - 2026-10-24 - A train placed by the Track Diagram's Place on a station no train can leave is kept (OB-373)
+|
+| **Disposition:** needs test
+| **From:** OB-373
+|
+| **Written:** 2026-10-24
+|
+| **Steps**
+|
+| 1. Before you start, File > Backup TrainControl Data.  Open your railway's layout with autonomy loaded and nothing running.
+| 2. Find or make a station no train can leave: in the autonomy editor, set the arrows of the track beyond a parking station so no train may run out of it, then save and close the editor.  (A station with nothing beyond it in the direction trains would leave also works.)
+| 3. On the track diagram, right-click that station and choose `Place <locomotive>` for a locomotive that is not on it.  If asked about the tail, answer.
+| 4. Close TrainControl and start it again, and look at that station.
+| 5. Put the arrows from step 2 back as they were and save.
+|
+| **Expected**
+|
+| - Step 3: the train is placed on the station.
+| - Step 4: the train is still standing on that station after the restart.
+|
+| *What this is:* OB-373.  The track diagram's Place saved a placement only when the station could give the train a facing, so on a station no train can leave it was lost at the next load unless the tail question had been asked.  A failed save at this door is now also always logged.
+|
+tail:
+| ---
+|
