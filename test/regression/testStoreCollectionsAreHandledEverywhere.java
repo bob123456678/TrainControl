@@ -26,7 +26,7 @@ import support.SourceOf;
  *   - Nothing the store holds is unclassified: a collection nobody classified is how the eleventh took five commits.
  *   - Every kept collection is IN the registry.  The compiler cannot check this: a collection that is never registered
  *     builds perfectly and does nothing.
- *   - Every site that used to list them walks the registry, which guards against a collection being re-inlined at one
+ *   - Every site that lists them walks the registry, which guards against a collection being re-inlined at one
  * site.
  *   - `reconcile` and `applyTo` still name every collection, because those two are written by hand on purpose: each
  * asks a
@@ -181,7 +181,7 @@ public class testStoreCollectionsAreHandledEverywhere
             + "its page. That is every bookkeeping site at once");
     }
 
-    /** And every site that used to list the collections walks the registry instead. */
+    /** And every site that lists the collections walks the registry. */
     @Test
     public void testEverySiteWalksTheRegistry() throws Exception
     {
