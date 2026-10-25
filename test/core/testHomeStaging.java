@@ -4061,8 +4061,7 @@ public class testHomeStaging
             + "and setting off again is two ordinary moves.  IMPOSSIBLE is a claim about the track, and "
             + "it sends the operator to look at track that is fine: " + impossible);
 
-        // AND IT NOW FINDS THE ARRANGEMENT.  The control here used to assert the opposite, and the reason was
-        // `mustBackIn` rather than the track.  With that rule gone ("Return home is manual") the planner does what the
+        // AND IT FINDS THE ARRANGEMENT.  With no `mustBackIn` rule ("Return home is manual") the planner does what the
         // paragraph above says the track allows: stop at HS B, set off again, reach HS C.
         assertFalse(loc(LOC_A).isReversible(),
             "the fixture rests on this train not being reversible - if it were, the old rule never "
@@ -5774,7 +5773,7 @@ public class testHomeStaging
      *
      * The other half of Adam's ruling: with both fences gone (`isAutoRunning`, then `isFullAutonomyRunning`), the
      * question **"may a train be sent to a station held back by an occupied square"** has one answer wherever it is
-     * asked: no.  Asserted over the three flag combinations that used to differ, by reflection as
+     * asked: no.  Asserted over the three flag combinations, by reflection as
      * `testAStagingRunIsNotCapturedIntoItsOwnTimetable` reaches them: stopped, running under a timetable, and running
      * as full autonomy.  A fence of either kind coming back moves exactly one of these three.
      */
