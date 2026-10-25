@@ -1010,3 +1010,23 @@ text:
 |
 | MT-815 (Adam, 2026-10-25): "This test works, but shouldn't a name that's already taken be refused?"  The single rename refuses a taken name (AutonomyEditorPanel, isPointNameTaken), but Name Everything's walk asks only whyNotAPointName, so a taken name is accepted.  The MT's step 4 assumed the refusal.  For 3.0.3, with a claim shown red first.
 |
+
+[issue OB-377]
+ordinal: 48
+inbox: yes
+kind: bug
+title: In Danish, the autonomy editor's "Why not Moving?" button is cut off
+filed: 2026-10-25
+filed_at: 2026-10-25 00:39
+raised_from: OB-375
+build: commit 6e9a0684
+text:
+| ### OB-377 - 2026-10-25 - In Danish, the autonomy editor's "Why not Moving?" button is cut off
+|
+| **Kind:** bug  
+| **Raised from:** OB-375  
+| **Filed:** 2026-10-25 00:39  
+| **Build:** commit 6e9a0684
+|
+| Seen in OB-375's screenshots (2026-10-25): the button shows "Hvorfor koerer det ik..." in Danish; its width is fixed at the column's 150 px and the phrase needs 157.  Already so before OB-368 and OB-375.  For the next release: a shorter Danish phrase, or the button's text on two lines (see the plan's shorter-messages step).
+|
