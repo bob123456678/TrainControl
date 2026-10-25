@@ -32,16 +32,14 @@ import support.Components;
 import support.Mouse;
 
 /**
- * A click on a turnout or signal on the main window's track diagram, and the two questions it can ask first:
- * "the power is off, so this only updates the window" and "this signal protects a platform a train is standing at"
- * (FR-136 Phase 6).
+ * A click on a turnout or signal on the main window's track diagram, and the two questions it can ask first: "the
+ * power is off, so this only updates the window" and "this signal protects a platform a train is standing at"
+ * (FR-136).
  *
- * Each claim clicks the real square with real mouse events, answers the real question, and reads what reached the
- * railway - every command handed to the control station (`setSentMessageObserver`) - and the accessory's state.
- *
- * ON THE SINGLE-SWITCH RAILWAY, in a sandbox, with one signal added to the sandbox's copy of the page beside the
- * branch's buffer stop.  Echo Sent Commands is on, so the power state follows the commands as it would on a Central
- * Station.
+ * Each claim clicks the real square with real mouse events, answers the real question, and reads every command handed
+ * to the control station (`setSentMessageObserver`) and the accessory's state.  On the single-switch railway, in a
+ * sandbox, with one signal added to the sandbox's copy of the page beside the branch's buffer stop; Echo Sent Commands
+ * is on, so the power state follows the commands as on a Central Station.
  */
 public class testADiagramClickAsksFirst
 {
@@ -117,9 +115,7 @@ public class testADiagramClickAsksFirst
         }
     }
 
-    /**
-     * Power on, autonomy stopped, no train at the platform, nothing left open.
-     */
+    /** Power on, autonomy stopped, no train at the platform, nothing left open. */
     @AfterMethod(alwaysRun = true)
     public void putTheRailwayBack() throws Exception
     {
@@ -408,8 +404,8 @@ public class testADiagramClickAsksFirst
     }
 
     /**
-     * Autonomy running, a train standing at the main platform, the added signal protecting that platform, and the signal
-     * red - so a click on it would set it green.
+     * Autonomy running, a train standing at the main platform, the added signal protecting that platform, and the
+     * signal red, so a click on it would set it green.
      */
     private static Accessory protectingTheOccupiedPlatform() throws Exception
     {
@@ -486,8 +482,8 @@ public class testADiagramClickAsksFirst
     }
 
     /**
-     * Lets a click's work on the event thread finish.  A refused click - Cancel, or a right-click - returns there,
-     * before anything is handed to the switching worker, so once the event thread is idle nothing more can come of it.
+     * Lets a click's work on the event thread finish: a refused click returns there before anything reaches the
+     * switching worker.
      */
     private static void settleTheSwitching()
     {
