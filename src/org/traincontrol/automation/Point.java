@@ -890,7 +890,7 @@ public class Point
      *
      * **And since 2026-09-10 no caller fences it.**  Adam: *"enforce the occupancy ruling in all modes
      * and then rely on isPathClear."*  `isPathClear` says so where the fence used to be - "NO FENCE
-     * ... the restriction is enforced in every tier" - and `HomeStaging.canRest` asks it of the
+     * ... the restriction is enforced in every tier" - and `HomeStaging.firstClearRoute` asks it of the
      * planned state.  The paragraph that stood here described the arrangement of the day before, when
      * the runtime fenced it behind `isAutoRunning` and only the planner applied it always; reading it
      * now would suggest a hand-driven send is exempt, and none is.

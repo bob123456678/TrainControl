@@ -768,14 +768,14 @@ public class testHomeStaging
      * could not notice a move the railway then refuses, and the run would retry until it gave up and stop
      * with the fleet half-staged.
      *
-     * The planner applies the restriction (`HomeStaging.canRest` reads `Point.heldBackBy` against the
+     * The planner applies the restriction (`HomeStaging.firstClearRoute` reads `Point.heldBackBy` against the
      * planned state) and so does the railway (Adam, 2026-09-10: *"enforce the occupancy ruling in all
      * modes and then rely on isPathClear"*), so the oracle that grades whether they agree asks it too.
      * It is asked with the LIVE occupancy, which is what the replay has: the plan is applied to the model
      * move by move, so who is standing where at the moment a move runs is exactly what
      * `Point.heldBackBy`'s two-argument form reads.
      *
-     * MUTATION: dropping the `heldBackBy` line from `HomeStaging.canRest` fails
+     * MUTATION: dropping the `heldBackBy` line from `HomeStaging.firstClearRoute`'s search fails
      * `testAHomeHeldBackByAnOccupiedPointStillGetsAnExecutablePlan` here, which is the plan OB-073 was
      * reported against.
      */
@@ -2703,7 +2703,7 @@ public class testHomeStaging
      * occupancy... A route blocked merely by another train is not impossible - moving that train is
      * exactly what the planner is for."
      *
-     * The OB-073 fix put the state-AWARE `canRest(l, home, this.start)` into that scan. It reads the
+     * The OB-073 fix put a state-AWARE rest test (FR-001 against `this.start`) into that scan. It reads the
      * starting occupancy, so a locomotive standing on a watched square proved the goal unreachable -
      * including when that locomotive is itself being staged somewhere else, and the plan's own first
      * move vacates the square. IMPOSSIBLE is shown to the operator as a proof, with the blocked
@@ -5115,7 +5115,7 @@ public class testHomeStaging
      * It used to assert `!= READY`, on the reasoning that a station held back by an occupied square
      * cannot be reached. That is not true and was never true: staging can move whatever is standing
      * there. What OB-073 was actually about is that a plan must be EXECUTABLE, and the check that
-     * delivers it is the state-aware `canRest` inside `firstClearRoute` - which is asked of the
+     * delivers it is the FR-001 test inside `firstClearRoute` - which is asked of the
      * evolving state, so the search vacates squares as it takes moves.
      *
      * `!= READY` could not tell a proof from a refusal, and it stayed green through two wrong fixes

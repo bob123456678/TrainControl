@@ -1082,17 +1082,12 @@ public final class HomeStaging
         // abandons the run, when the track was clear and the train was parked somewhere no automatic path may begin, as
         // a hand-placed train is.
         if (!from.isDestination()) return null;
-        // FR-001 IS ASKED HERE, AT THE ARRIVAL TEST, ON THE PLANNED STATE.  The runtime enforces it in every tier
-        // (Adam: *"if it's cleaner to go with consistency across the board, then let's enforce the occupancy ruling in
-        // all modes and then rely on isPathClear."*), and THE PLANNER MOVES WITH THE RUNTIME, IN BOTH DIRECTIONS: a
-        // plan that offers a leg the railway then refuses is OB-073, where the run retries until it gives up and stops
-        // with the fleet half-staged.  `auditAgainstRuntime` proves the two agree, comparing this search against
-        // `getPossiblePaths`, where `isPathClear` applies the rule.
-        //
-        // Asked of the PLANNED state, never of the live railway: by the time this move happens the trains are where the
-        // plan put them (see `plannedOccupancy`).  NOT in the reachability pre-scan, which reads the
-        // STARTING occupancy and so would prove goals unreachable that the plan's own first move frees.
-        if (!canRest(loc, to, state) || state.containsKey(to)) return null;
+        // FR-001 at the arrival is asked by the search below, of every square it arrives at, `to` included, on the
+        // PLANNED state.  The runtime enforces it in every tier (Adam: *"if it's cleaner to go with consistency across
+        // the board, then let's enforce the occupancy ruling in all modes and then rely on isPathClear."*), and a plan
+        // that offers a leg the railway then refuses is OB-073: the run retries until it gives up and stops with the
+        // fleet half-staged.  `auditAgainstRuntime` proves the two agree.
+        if (!canRest(loc, to) || state.containsKey(to)) return null;
 
         // Where the plan has put everybody, for the FR-001 question at every square on the way (OB-295).
         final Point.Occupancy planned = plannedOccupancy(state);
@@ -1168,7 +1163,7 @@ public final class HomeStaging
                 // AND NOT THROUGH A SQUARE HELD BACK BY AN OCCUPIED ONE (OB-295).  `isPathClear` asks FR-001 of every
                 // square a route arrives at (*"trains shouldn't be sent to THIS square while trains are STANDING ON ...
                 // the other specified station(s)"*), so a plan through one is OB-073's plan, refused on the move.
-                // Asked of the planned state, as `canRest` asks it of the destination.
+                // Asked of the planned state; the destination's own FR-001 test, since a route reaches `to` only here.
                 if (Point.heldBackBy(next, loc, planned) != null) continue;
 
                 // AND THE TRACK A STANDING TRAIN IS LYING ACROSS (OB-184).  `canEnter` asks about the POINT this edge
@@ -2117,41 +2112,6 @@ public final class HomeStaging
     }
 
     /**
-     * canRest, plus the one rest rule that depends on where everything ELSE is (FR-001).
-     *
-     * A station may be marked unavailable while some other named square has a train standing on it, and `isPathClear`
-     * enforces that on a path's DESTINATION, which is every move this planner makes.  The stateless `canRest` cannot
-     * see it, and a plan that offers such an arrival is OB-073: execution refuses the leg, the run retries until it
-     * gives up, and stops with the fleet half-staged.
-     *
-     * Asked of the PLANNED state rather than the live railway: by the time this move happens the trains are where the
-     * plan put them.  The locomotive being routed is exempt, as it is at runtime (Adam: *"the condition should not
-     * apply to trains leaving, only departing"*).  WHICH squares are consulted and WHO is exempt is the rule, and it
-     * lives in `Point.heldBackBy`; all this contributes is where to look for occupancy.
-     *
-     * **THE AUDIT'S GUARANTEE RUNS ONE WAY**.  `auditAgainstRuntime` proves the planner offers nothing the
-     * runtime refuses (OB-073).  The reverse is deliberately false: `plannedOccupancy` also consults the points
-     * reporting the same SENSOR, which the runtime does not, so where a station and its approach guard share a feedback
-     * address this refuses arrivals the railway would allow.  It fails safe: a refused plan, never a wrong movement.
-     *
-     * **AND NOTHING PINS IT**.  Neutering the sensor half of `sameTrackAs` leaves every test green: on a
-     * four-point ring the arrival is already refused by `canEnter`'s own sensor rule.  Isolating this rule needs a
-     * fixture where the watched square is **not on any route** to the destination and only the FR-001 relation joins
-     * the two.  Until somebody writes it, this is a deliberate divergence that would not be noticed going.
-     *
-     * @param loc the locomotive being planned
-     * @param at where it would come to rest
-     * @param state who is standing where, in the plan
-     * @return whether it may rest there
-     */
-    private boolean canRest(Locomotive loc, Point at, Map<Point, Locomotive> state)
-    {
-        if (!canRest(loc, at)) return false;
-
-        return Point.heldBackBy(at, loc, plannedOccupancy(state)) == null;
-    }
-
-    /**
      * The staging planner's answer to "who is standing on the same piece of track as this square": the second of
      * `Point.Occupancy`'s two named variants, the one that reads the PLAN.
      *
@@ -2166,7 +2126,9 @@ public final class HomeStaging
      *    point can be three Points on one feedback."*  On such a layout this refuses arrivals the runtime would allow.
      *    It fails SAFE (a refused plan, never a wrong movement) but is the "planner is the stricter half" shape, whose
      *    symptom is NO_PLAN_FOUND.  Left in force deliberately: dropping it changes which stations staging offers on a
-     *    real railway, and that is Adam's decision rather than a refactor's.
+     *    real railway, and that is Adam's decision rather than a refactor's.  Nothing pins this third half: on a
+     *    four-point ring `canEnter`'s own sensor rule refuses the arrival first, so a test needs a fixture where only
+     *    the FR-001 relation joins the watched square to the destination.
      *
      * @param state who is standing where, in the plan
      * @return the occupancy source for `Point.heldBackBy`
