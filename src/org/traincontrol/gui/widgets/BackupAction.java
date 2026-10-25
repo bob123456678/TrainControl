@@ -101,33 +101,30 @@ public final class BackupAction
 
         this.ui.backupDataMenuItem().setEnabled(false);
 
-        // Given back whatever happens.  It is switched off so a second backup cannot start while
-        // one is running, and everything between here and the end of the try can throw - a full
-        // disk, a locked file, a tree deep enough to overflow the stack.  Left off, the only way to
-        // back up again is to restart the application, and the user is not told why.
+        // Given back whatever happens.  It is switched off so a second backup cannot start while one is running, and
+        // everything between here and the end of the try can throw; left off, the only way to back up again is to
+        // restart the application, and the user is not told why.
         try
         {
-            // Written LIVE first, so the archive holds the state as it is now rather than as it was when something last happened to save it.
-            // WITHOUT the session capture: writing live must not imply it, or this menu item would commit whatever was open in the
-            // autonomy editor to setup.json and every configuration file from a thread that is not the event thread, and the editor's Cancel
-            // could not undo it (discardEdits re-reads the file just written).  Taking a copy must not change anything.
+            // Written LIVE first, so the archive holds the state as it is now.  WITHOUT the session capture: that would
+            // commit whatever was open in the autonomy editor from a thread that is not the event thread, and the
+            // editor's Cancel could not undo it (discardEdits re-reads the file just written).
             this.ui.saveState(false, false);
             this.ui.getModel().saveState(false);
 
-            // One archive, holding all of it (FR-015; Adam: "the backup menu option should export a zip file with the locdb and uistate files,
-            // track diagram files, and autonomy files - effectively, all state."): the autonomy setup is keyed by PAGE ID and those ids are
-            // defined by config/gleisbild.cs2, so setup.json alone means nothing and a gleisbild.cs2 from a different day silently reattaches
-            // every station to the wrong page.  These files are only a backup together.
+            // One archive, holding all of it (FR-015): the autonomy setup is keyed by PAGE ID and those ids are defined
+            // by config/gleisbild.cs2, so setup.json alone means nothing and a gleisbild.cs2 from a different day
+            // silently reattaches every station to the wrong page.  These files are only a backup together.
             java.util.Map<String, File> state = new java.util.LinkedHashMap<>();
 
             state.put(TrainControlUI.DATA_FILE_NAME, new File(Util.dataPath(TrainControlUI.DATA_FILE_NAME)));
             state.put(org.traincontrol.marklin.MarklinControlStation.DATA_FILE_NAME,
                 new File(Util.dataPath(org.traincontrol.marklin.MarklinControlStation.DATA_FILE_NAME)));
 
-            // TrainControl's OWN routes, exported as JSON (FR-021; Adam: "OB 90 should run an export of our route db."): the `fahrstrassen.cs2`
-            // in the config folder is the CENTRAL STATION's copy, and routes are edited in this application, whose route database is what runs.
-            // Written through the door the Export Routes menu item uses, so Import Routes will read it back.  A failure here is named and the
-            // rest of the archive still written: losing the whole backup because one part could not be serialized is the wrong trade.
+            // TrainControl's OWN routes, exported as JSON (FR-021): the `fahrstrassen.cs2` in the config folder is the
+            // CENTRAL STATION's copy, and this application's route database is what runs.  Written through the door the
+            // Export Routes menu item uses, so Import Routes reads it back.  A failure here is named and the rest of
+            // the archive still written.
             try
             {
                 routesExport = java.io.File.createTempFile("tc-routes", ".json");
@@ -149,23 +146,21 @@ public final class BackupAction
                 }
             }
 
-            // The LEGACY autonomy file: for an operator coming from the hand-authored graph this is what their setup is imported from
-            // (nothing writes it any more, OB-254), and it was in neither half of the backup (this archive, or the copy into the backup folder,
-            // which only a timestamped save makes).  Skipped silently when it is not there, like every other source.
+            // The LEGACY autonomy file, which an operator coming from the hand-authored graph imports their setup from
+            // (OB-254): in neither half of the backup otherwise.  Skipped silently when it is not there, like every
+            // other source.
             state.put(TrainControlUI.AUTONOMY_FILE_NAME,
                 new File(TrainControlUI.AUTONOMY_FILE_NAME));
 
             String localLayout = this.ui.localLayoutPath();
 
-            // The layout lives on the CENTRAL STATION, so there is nothing local to put in the archive (FR-020; Adam: "for cs2 files, we have a
-            // top menu option to download a layout from the station. so a backup run in this mode could ask the user if they want to include
-            // this data."): asked rather than assumed, because it is a network fetch of every page, pointless if the Central Station is off.
-            // Declining leaves the archive as it was, and the dialog at the end says what is not in it either way.  There is no autonomy setup to
-            // pair these with (`AutonomyCompanionStore` refuses a layout that is not local), so an archive holding only them is complete.
-            // Not offered without a station answering (OB-098; Adam: "backup up files from cs should not be offered in this case"): asking is a
-            // promise to fetch.  Through the one predicate, like the other two offers: `getNetworkCommState` alone reports whether the last SYNC
-            // succeeded, and a sync reads through CS2File, which reads a local layout folder happily, so a simulated session calls itself
-            // connected (Adam: "switch to central station layout is NOT greyed out in debug/simulate mode.").
+            // The layout lives on the CENTRAL STATION, so there is nothing local to archive (FR-020): asked rather than
+            // assumed, because it is a network fetch of every page.  Declining leaves the archive as it was, and the
+            // dialog at the end says what is not in it either way.  No autonomy setup pairs with these
+            // (`AutonomyCompanionStore` refuses a layout that is not local).  Not offered without a station answering
+            // (OB-098): asking is a promise to fetch.  Through the one predicate, like the other two offers:
+            // `getNetworkCommState` alone reports whether the last SYNC succeeded, and a sync reads a local layout
+            // folder happily, so a simulated session calls itself connected.
             if ((localLayout == null || localLayout.isEmpty())
                 && this.ui.isCentralStationConnected()
                 && askOnEventThread(I18n.t("ui.askBackupIncludeCentralStationLayout")))
@@ -196,9 +191,9 @@ public final class BackupAction
 
             if (localLayout != null && !localLayout.isEmpty())
             {
-                // The whole folder, under the LAYOUT's own name (MT-159; Adam: "we are missing the folder name of the active layout - the zip contains
-                // 'config' instead of 'cs2_sample_layout'"): restoring means putting these files back beside a `gleisbild.cs2` of the same vintage,
-                // and a bare `config` leaves two backups of two layouts indistinguishable once they are off this machine.
+                // The whole folder, under the LAYOUT's own name (MT-159): a bare `config` leaves two backups of two
+                // layouts indistinguishable, and restoring needs these files beside a `gleisbild.cs2` of the same
+                // vintage.
                 File layoutFolder = new File(localLayout).getAbsoluteFile();
 
                 String named = layoutFolder.getName();
@@ -207,9 +202,9 @@ public final class BackupAction
                     new File(layoutFolder, "config"));
             }
 
-            // The cropped locomotive icons (reviewer): `LocDB.data` records each locomotive's `localImageURL`, which for a cropped icon names a
-            // file in `tc_loc_icons`, a folder this archive never held and git does not track, so a restored backup pointed every crop-carrying
-            // locomotive at a file it did not contain.  Only if it exists: an installation where nobody has cropped anything gains no empty folder.
+            // The cropped locomotive icons: `LocDB.data` records each locomotive's `localImageURL`, which for a crop
+            // names a file in `tc_loc_icons`, so a restore without the folder pointed at files it lacked.  Only if it
+            // exists.
             File icons = new File(Util.LOC_ICON_FOLDER).getAbsoluteFile();
 
             if (icons.isDirectory()) state.put(Util.LOC_ICON_FOLDER, icons);
@@ -228,9 +223,8 @@ public final class BackupAction
         }
         finally
         {
-            // The scratch download goes, whether or not the archive was written. A stale copy of
-            // the diagram left in a temporary folder is exactly the sort of second copy this
-            // application keeps being bitten by.
+            // The scratch download goes, whether or not the archive was written: a stale copy of the diagram in a
+            // temporary folder is a second copy.
             if (centralStationCopy != null) Util.deleteTree(centralStationCopy, 0);
 
             if (routesExport != null) routesExport.delete();
@@ -282,14 +276,12 @@ public final class BackupAction
             // Read from the reporting lambda below, which needs it effectively final
             final File[] made = {done.archive};
 
-            // Derived from an actual backup path rather than from BACKUP_FOLDER: getBackupPath falls
-            // back to the working directory when the folder cannot be created, and naming the folder
-            // unconditionally pointed the user at a directory the backups are not in - in exactly the
-            // failure mode the fallback exists for.
+            // Derived from an actual backup path rather than BACKUP_FOLDER: getBackupPath falls back to the working
+            // directory when the folder cannot be created.
             String backupFolder = new File(Util.getBackupPath("x")).getAbsoluteFile().getParent();
 
-            // The full path goes to the LOG, not into the dialog (FR-019; Adam: "you no longer need to print the path - just the filename in the
-            // popup, leaving the full path in the log."): a backup path on this machine is long enough to stretch the dialog across the screen.
+            // The full path goes to the LOG, not into the dialog (FR-019): a backup path is long enough to stretch the
+            // dialog across the screen.
             final String fullPath = made[0] != null && made[0].isFile()
                 ? made[0].getAbsolutePath() : backupFolder;
 
