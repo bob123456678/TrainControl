@@ -64,9 +64,8 @@ public final class BuiltReach
     }
 
     /**
-     * @param built the configuration as the builder emitted it, or null
-     * @param squareOf the builder's own name-to-square map (`AutonomyBuilder.tilesByName`)
-     * @return the reach of that build, or null where there is no build to read
+     * The reach of the build the builder emitted, or null where there is no build to read; `squareOf` is
+     * `AutonomyBuilder.tilesByName`.
      */
     public static BuiltReach of(JSONObject built, Map<String, TileKey> squareOf)
     {
@@ -76,14 +75,9 @@ public final class BuiltReach
     }
 
     /**
-     * The squares, other than its own, where a train starting on this copy can be sent to a station copy.
-     *
-     * With `closures`, a copy out of service is neither a way through nor somewhere to stop, as `isPathClear` refuses
-     * it; the start is exempt, since a train standing on a square switched off is driven off it by hand.
-     *
-     * @param copy the Point a train stands on
-     * @param closures whether squares out of service stop the walk
-     * @return the squares reached
+     * The squares, other than its own, where a train starting on this copy can be sent to a station copy.  With
+     * `closures`, a copy out of service is neither a way through nor somewhere to stop, as `isPathClear` refuses it;
+     * the start is exempt, since a train on a square switched off is driven off it by hand.
      */
     public Set<TileKey> stationsReachedFrom(String copy, boolean closures)
     {
@@ -117,9 +111,7 @@ public final class BuiltReach
 
     /**
      * Each square to the squares reached from the copies a train stops at there (`startsOf`), out-of-service squares
-     * obeyed.  A barred copy that reaches plenty therefore does not hide a station copy that reaches nothing.
-     *
-     * @return square to the squares reached
+     * obeyed, so a barred copy that reaches plenty does not hide a station copy that reaches nothing.
      */
     public Map<TileKey, Set<TileKey>> bySquare()
     {
@@ -140,9 +132,6 @@ public final class BuiltReach
     /**
      * The copies a train at this square starts from: its station copies, as a train sent there stands on one of them;
      * where it has none (track, or a station barred every way in), every copy.
-     *
-     * @param square the square
-     * @return the copies, empty for a square the build has none of
      */
     public List<String> startsOf(TileKey square)
     {
