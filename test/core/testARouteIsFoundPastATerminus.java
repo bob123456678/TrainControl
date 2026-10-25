@@ -14,23 +14,15 @@ import org.traincontrol.marklin.MarklinFeedback;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * A station reached by a longer route is offered when the shorter one passes a terminus (OB-229).
+ * A station reached by a longer route is offered when the shorter one passes a terminus (OB-229).  Found through Return
+ * Home's agreement check on Adam's MT-335 run: "planner allows 75 407 DB -> BottomSecondary, but the layout would
+ * refuse it".  `Layout.bfs` marks a square visited once it is taken off the queue and excludes only whole paths, so
+ * where the SHORTEST way to a square runs through a terminus (which `isPathClear` refuses mid-route) the longer way is
+ * never extended.  Adam chose: the search does not extend a route through a terminus that is not its end.
  *
- * Found through Return Home's agreement check on Adam's MT-335 run of 2026-09-15: *"planner allows 75 407 DB ->
- * BottomSecondary, but the layout would refuse it"*, and RampDown twice.  The planner was right - the route it found,
- * the loop from Tunnel over the top level down RampDown, passes `isPathClear` - and the railway's own route search
- * never produced it.  `Layout.bfs` marks a square visited once it is taken off the queue and excludes only whole paths,
- * so where the SHORTEST way to a square runs through a terminus - which `isPathClear` refuses in the middle of a route,
- * every time - that square is spent on a path that can never be used, and the longer way through it is never extended.
- * The right-click menu, autonomy and Why Not Moving? all ask that search.
- *
- * Adam chose, asked how to fix it: the search does not extend a route through a terminus that is not its end.
- *
- * **The shape, on sensors of its own.**  From S two ways reach Q and then E: S -> X -> T -> Y -> Q, through T, a
- * terminus; and S -> A -> B -> C -> D -> F -> Q, through none.  The longer way is TWO squares longer on purpose:
- * `Layout.getNeighbors` shuffles, and a way only one square longer reaches D at the same depth as the shorter way
- * reaches Q, so on some runs D is taken off the queue first and Q is queued twice - the first version of this claim
- * was red on one assertion and green on the other for exactly that reason.  Nothing is measured.
+ * The shape, on sensors of its own: from S two ways reach Q and then E, S -> X -> T -> Y -> Q through the terminus T,
+ * and S -> A -> B -> C -> D -> F -> Q through none.  The longer way is TWO squares longer on purpose:
+ * `Layout.getNeighbors` shuffles, and one square longer would sometimes queue Q twice.  Nothing is measured.
  *
  * @author Adam
  */
@@ -56,11 +48,7 @@ public class testARouteIsFoundPastATerminus
         if (sandbox != null) sandbox.close();
     }
 
-    /**
-     * E is offered to a train at S, by the longer route, and the autonomy answer has no reason against it.
-     *
-     * @throws Exception from the railway
-     */
+    /** E is offered to a train at S, by the longer route, and the autonomy answer has no reason against it. */
     @Test
     public void testTheLongerRouteIsOffered() throws Exception
     {
@@ -83,11 +71,7 @@ public class testARouteIsFoundPastATerminus
         assertNull(why, "Why Not Moving? says RT9_E cannot be reached - '" + why + "' - by a clear route (OB-229)");
     }
 
-    /**
-     * THE CONTROL: without the longer way, E is still refused - the terminus is not let through.
-     *
-     * @throws Exception from the railway
-     */
+    /** THE CONTROL: without the longer way, E is still refused - the terminus is not let through. */
     @Test
     public void testThroughTheTerminusAloneItIsStillRefused() throws Exception
     {
@@ -99,8 +83,8 @@ public class testARouteIsFoundPastATerminus
 
         String why = layout.explainDestinations(loc).get("RU9_E");
 
-        // AND IT SAYS WHY.  The track does connect, through the terminus, so "No track route leads there" would
-        // send the operator looking for rails that are there.  The reason is the route check's own sentence.
+        // AND IT SAYS WHY: the track does connect, through the terminus, so "No track route leads there" would send the
+        // operator looking for rails that are there.
         assertEquals(why, org.traincontrol.util.I18n.t("autolayout.errorIntermediateTerminusStation"),
             "Why Not Moving? says '" + why + "' of RU9_E, whose only route runs through the terminus RU9_T - the track"
             + " connects, so the reason is the terminus in the way, not missing track (PTR-B1)");
@@ -118,17 +102,10 @@ public class testARouteIsFoundPastATerminus
     }
 
     /**
-     * No tier sends a train round a loop to another copy of the square it is standing on (Adam, 2026-09-15).
-     *
-     * Reading the routes the terminus fix opens on his railway, Adam: *"These paths all make sense to me, except for the
-     * circular ones like RampDown (northbound, reverse) -> RampDown (southbound, reverse).  These are the same point so
-     * we should never do a round trip just to change direction."*  The right-click menu and autonomy already never
-     * offer one - a copy of the square a train stands on reads as occupied by that train - but Return Home's planner
-     * skipped only the exact copy, so it could plan the loop, and its agreement check would call that a disagreement.
-     *
-     * A square split into two copies, P_a and P_b, one block; a loop from P_a out and back into P_b through no terminus.
-     *
-     * @throws Exception from the railway
+     * No tier sends a train round a loop to another copy of the square it is standing on (Adam: "These paths all make
+     * sense to me, except for the circular ones like RampDown (northbound, reverse) -> RampDown (southbound, reverse).
+     * These are the same point so we should never do a round trip just to change direction.").  The menu and autonomy
+     * never offer one, but Return Home's planner skipped only the exact copy.  P is split into P_a and P_b, one block.
      */
     @Test
     public void testNoRoundTripBackToTheTrainsOwnSquare() throws Exception
@@ -172,17 +149,9 @@ public class testARouteIsFoundPastATerminus
     }
 
     /**
-     * No route passes another copy of the square the train is standing on (Adam, 2026-09-15).
-     *
-     * Reading what the terminus fix opened, Adam ruled out a round trip to another copy of a train's own square;
-     * `testNoRoundTripBackToTheTrainsOwnSquare` above is that square as a DESTINATION.  Asked about routes that pass
-     * one on the way - 22 of them on his railway, 14 offered by the right-click menu - he ruled: **"We need to refuse
-     * both.  A copy makes a cycle."**
-     *
-     * P is one square drawn as two Points, Pa and Pb; a loop leaves Pa, comes back into Pb, and goes on to E.  The
-     * only way to E passes the train's own square, so E is not somewhere it may be sent.
-     *
-     * @throws Exception from the railway
+     * No route passes another copy of the square the train is standing on (Adam: "We need to refuse both.  A copy makes
+     * a cycle."); `testNoRoundTripBackToTheTrainsOwnSquare` above is that square as a DESTINATION.  A loop leaves Pa,
+     * returns into Pb and goes on to E, so E is not somewhere it may be sent.
      */
     @Test
     public void testNoRoutePassesAnotherCopyOfTheTrainsOwnSquare() throws Exception
@@ -226,12 +195,8 @@ public class testARouteIsFoundPastATerminus
     }
 
     /**
-     * Nor another copy of the square it is being sent to (Adam, 2026-09-15: *"a copy makes a cycle"*).
-     *
-     * The other half of the same ruling: S reaches Qa only by passing Qb, which is the same platform, so the train
-     * would drive through its destination to reach it.  Qb itself is still somewhere to go, which is the control.
-     *
-     * @throws Exception from the railway
+     * Nor another copy of the square it is being sent to (Adam: "a copy makes a cycle"): S reaches Qa only by passing
+     * Qb, the same platform.  Qb itself is still somewhere to go, which is the control.
      */
     @Test
     public void testNoRoutePassesAnotherCopyOfItsDestination() throws Exception
@@ -270,14 +235,8 @@ public class testARouteIsFoundPastATerminus
     }
 
     /**
-     * And Why Not Moving? says a lap is the only way, rather than blaming the track or a terminus.
-     *
-     * Since the copy rule the search finds nothing for such a square, and "No track route leads there" sends the
-     * operator looking for rails that are there - the same defect as for a terminus in the way.  Worse, the
-     * question the fallback puts to the TRACK may walk a lap, so a route round one would have been reported as a
-     * terminus in the way when no terminus is involved.
-     *
-     * @throws Exception from the railway
+     * And Why Not Moving? says a lap is the only way, rather than blaming the track or a terminus: "No track route
+     * leads there" sends the operator looking for rails that are there, and the track question may walk a lap.
      */
     @Test
     public void testWhyNotMovingSaysTheOnlyWayThereIsALap() throws Exception
