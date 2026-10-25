@@ -30,19 +30,15 @@ import support.SourceOf;
  * Autonomy needs a layout stored on this computer: the old JSON tab and its file are gone (OB-254), and a Central
  * Station layout's Autonomy menu offers the way in.
  *
- * The Load Autonomy Configuration tab - a JSON text area, Validate, Load, Export, a blank graph, the hidden auto-save
- * box - was shown wherever a layout could not hold a diagram setup, which in practice is a Central Station layout never
- * downloaded.  It was a second autonomy system with a file of its own, autonomy.json beside the application, read on
- * every start and written on every exit.  Adam, 2026-09-24: *"Remove it, require a local copy for autonomy."*
- *
- * Then, the same day, of that layout's Autonomy menu - grayed whole there since OB-202, which left the download offer
- * (OB-093) and Documentation where nobody could press them: *"Yes, open the autonomy menu with everything but those 2
- * greyed."*
+ * The Load Autonomy Configuration tab (a JSON text area, Validate, Load, Export, a blank graph, the hidden auto-save
+ * box) was a second autonomy system with a file of its own, autonomy.json, read on every start and written on every
+ * exit, shown wherever a layout could not hold a diagram setup.  Adam: "Remove it, require a local copy for autonomy."
+ * And of that layout's Autonomy menu, grayed whole there since OB-202: "Yes, open the autonomy menu with everything
+ * but those 2 greyed" (the download offer, OB-093, and Documentation).
  *
  * On a layout with no local copy, reached as a window that STARTED on one has it: the Autonomy slot still holding the
  * placeholder the form puts there, and the switch's own reset.  A window cannot start on a Central Station layout in
- * simulation - with no station to read pages from it makes the demo layout and switches to that - so it is started on
- * a sandbox and put back into that state.
+ * simulation (it makes the demo layout), so it is started on a sandbox and put back into that state.
  *
  * MUTATION: put the tab back for a layout with no local copy, or write autonomy.json on exit again, or gray the menu
  * there again, or leave it unbuilt for a layout with no session, and the matching claim fails.
@@ -182,11 +178,9 @@ public class testTheOldAutonomyTabIsGone
     }
 
     /**
-     * The tab strip is not announced under the deleted tab's name (Adam, 2026-09-24: *"can you clear the accessible
-     * name?"*).
-     *
-     * The form gave the strip the old tab's title as its accessible name, and it outlived the tab: a screen reader
-     * would have called the whole strip "Load Autonomy Configuration".
+     * The tab strip is not announced under the deleted tab's name (Adam: "can you clear the accessible name?"): the
+     * form gave the strip the old tab's title, and a screen reader would have called the whole strip "Load Autonomy
+     * Configuration".
      *
      * @throws Exception from reflection
      */
@@ -217,10 +211,8 @@ public class testTheOldAutonomyTabIsGone
     }
 
     /**
-     * Opened there, Documentation can be chosen, and nothing can but it and the offer of a layout.
-     *
-     * The offer is a submenu since MT-548's note - the download and Create New Layout - and its own claim is
-     * `testWithNothingToDownloadANewLayoutIsOffered`; here it is the one other thing that may be live.
+     * Opened there, Documentation can be chosen, and nothing can but it and the offer of a layout.  The offer is a
+     * submenu since MT-548's note; its own claim is `testWithNothingToDownloadANewLayoutIsOffered`.
      *
      * @throws Exception from the event thread or reflection
      */
@@ -267,12 +259,11 @@ public class testTheOldAutonomyTabIsGone
 
     /**
      * Where there is no Central Station layout to download, the Autonomy menu offers a new layout - the Layouts menu's
-     * own Create New Layout (MT-548's note).
+     * own Create New Layout (MT-548).
      *
-     * Adam, 2026-09-29, on MT-548: *"works, but what is the cs3 has no layout?  give the user the choice to either
-     * download or create a new one, which redirects to the corresponding option under layouts."*  The offer was the
-     * download alone, and where there was nothing to download the menu said only that autonomy needs a layout.  Both are
-     * offered now, under the Layouts menu's own names, each grayed exactly when its Layouts item would do nothing.
+     * Adam: "works, but what is the cs3 has no layout?  give the user the choice to either download or create a new
+     * one, which redirects to the corresponding option under layouts."  Both are offered under the Layouts menu's own
+     * names, each grayed exactly when its Layouts item would do nothing.
      *
      * MUTATION: offer the download alone again, or send Create New Layout anywhere but the Layouts menu's own, and this
      * fails.
@@ -371,11 +362,9 @@ public class testTheOldAutonomyTabIsGone
      * Open Layout starts at this computer's last layout folder, even with the Central Station's layout switched to
      * (OB-308).
      *
-     * Adam, 2026-09-29: *"layouts -> open layout should default to the last used local layout folder.  this seems like a
-     * regression"*.  The chooser started at the layout folder preference, which switching to the Central Station's layout
-     * empties - and a chooser started at nothing opens in Documents.  The last folder is remembered on its own now, and
-     * the chooser opens beside it with it selected: opening it again is one click, and another folder is a step away.
-     *
+     * Adam: "layouts -> open layout should default to the last used local layout folder.  this seems like a
+     * regression".  The chooser started at the layout folder preference, which switching to the Central Station's
+     * layout empties; the last folder is remembered on its own now and the chooser opens beside it with it selected.
      * This class's window started on a sandbox folder and was then switched as the Central Station switch switches it.
      *
      * MUTATION: forget the folder with the switch, or open the chooser inside it, and this fails.
@@ -429,13 +418,10 @@ public class testTheOldAutonomyTabIsGone
 
         assertEquals(canonical(at[1]), canonical(last), "Open Layout... does not have the last layout folder selected");
 
-        // AND A FOLDER CHOSEN SINCE IS THE ONE REMEMBERED.  Every door that names a layout folder - Open Layout, Create
-        // New Layout, the download, the demo layout - writes it through the one method that remembers it, so that
-        // method is asked here and the doors are counted.
-        //
-        // Counted however the write reaches the preferences - `prefs.put`, `getPrefs().put`, the key qualified by its
-        // class - so a door moved out of the window is still seen (FR-136).  Less the control station's fallback to
-        // the Central Station's layout when a folder cannot be read, which names no folder.
+        // AND A FOLDER CHOSEN SINCE IS THE ONE REMEMBERED.  Every door that names a layout folder writes it through the
+        // one method that remembers it, so that method is asked here and the doors are counted, however the write
+        // reaches the preferences (`prefs.put`, `getPrefs().put`, the key qualified by its class), less the control
+        // station's fallback to the Central Station's layout, which names no folder (FR-136).
         java.util.regex.Pattern write =
             java.util.regex.Pattern.compile("\\.put\\(\\s*(?:\\w+\\.)*LAYOUT_OVERRIDE_PATH_PREF\\b");
 
@@ -595,10 +581,8 @@ public class testTheOldAutonomyTabIsGone
     }
 
     /**
-     * Nothing reads autonomy.json at start or loads the old graph from it.
-     *
-     * Read from the source, because on the unfixed code the load opens dialogs a test cannot answer - and a removal is
-     * what is claimed.
+     * Nothing reads autonomy.json at start or loads the old graph from it.  Read from the source, because on the
+     * unfixed code the load opens dialogs a test cannot answer.
      *
      * @throws Exception if the source cannot be read
      */
