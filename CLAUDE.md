@@ -22,6 +22,8 @@ Agents pay to read every comment line, and most of this code's cost was comment 
   red), and why a non-obvious wait or fixture was chosen.  Never edit assertion messages to shorten them.
 - `regression.testCommentsStayLean` counts history, long blocks and review ids in comments; its numbers may only go
   down.
+- A comment-only change still runs the tests that read that file's source (grep `test/` for its file name): a few
+  find code by a comment's words, and identical bytecode does not prove they still can.
 
 Good:
 

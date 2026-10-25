@@ -31955,3 +31955,43 @@ body:
 tail:
 | ---
 |
+
+[test MT-810]
+ordinal: 809
+anchor: mt-810
+date: 2026-10-24
+title: DD-B9: the editor warns that TopR1ParkLong and TopR1ParkShort cannot be reached, because the only way in is a copy where arrivals are barred
+disposition: needs test
+from: DD-B9
+written: 2026-10-24
+reopened: no
+body:
+| <a id="mt-810"></a>
+| ### MT-810 - 2026-10-24 - DD-B9: the editor warns that TopR1ParkLong and TopR1ParkShort cannot be reached, because the only way in is a copy where arrivals are barred
+|
+| **Disposition:** needs test
+| **From:** DD-B9
+|
+| **Written:** 2026-10-24
+|
+| **Steps**
+|
+| 1. Before you start, File > Backup TrainControl Data.  Open your railway's layout, then Autonomy > Edit Autonomy on Page, pick page `1 - Main`, and read the list of things to look at.
+| 2. Find TopR1ParkLong and TopR1ParkShort in that list.
+| 3. Put a train on TopMainR1Inter as it arrives there (southbound), then right-click the train on the track diagram and look at the stations it is offered.
+| 4. Right-click TopMainR1Inter, open `Trains May Arrive...` and tick `From the east`.  Read the list again.
+| 5. Untick `From the east` again, then close the editor with `Cancel` and answer Yes to "Are you sure you want to close the editor without saving changes?"
+|
+| **Expected**
+|
+| - Step 1: the list opens as usual.
+| - Step 2: each has the warning "No train can reach <name> from any other station.  Check the directions on the track leading to it, and whether it refuses arrivals from the side trains would come in by."  If your current layout no longer bars arrivals from the east at TopMainR1Inter, neither warning appears; say so in your notes.
+| - Step 3: neither TopR1ParkLong nor TopR1ParkShort is offered.
+| - Step 4: both warnings are gone.
+| - Step 5: the editor closes and nothing of the change is kept.
+|
+| *What this is:* DD-B9.  The editor's warnings about stations no train can reach now come from the built railway, the same Points and Edges autonomy drives on, instead of a second walk over the drawing that applied the turn rules, the barred arrivals and the closed squares by hand.  On the 2026-09-23 snapshot of your railway this found two parking berths the old check missed: the only way in is TopMainR1Inter's west-facing copy, where a train may not stop because arrivals from the east are barred.  `regression.testTheCheckerAgreesWithTheBuild` and `core.testTheEditorWarnsOfARailwayThatCannotWork` pin it.
+|
+tail:
+| ---
+|
