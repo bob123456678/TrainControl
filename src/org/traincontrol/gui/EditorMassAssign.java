@@ -28,20 +28,15 @@ final class EditorMassAssign
 
     /**
      * Goes through every piece of track on this page that still has no length, and then its switches (Mass Assign
-     * Lengths).
-     *
-     * **Name Everything's walk, for lengths.**  Each piece is outlined whole (it is one run somebody measures with one
-     * tape, between two sensors or switches) and scrolled to.  The prompt asks for the WHOLE length of the piece and the
-     * session shares it over the piece's squares.  Then every switch on the page that has no length is outlined and one
-     * turnout length is asked for, given to each; likewise the squares two roads share.
-     *
-     * OK, Skip and Cancel as in Name Everything; Escape stops, like Cancel.  0 is an answer - a stretch with no
-     * length, kept apart from one nobody has measured (OB-274).  `setupChanged` once at the end, for the running layout;
-     * the session itself rebuilds on every write.
+     * Lengths).  Each piece is outlined whole (one run somebody measures with one tape) and scrolled to; the prompt
+     * asks for its WHOLE length and the session shares it over the piece's squares.  Then every switch with no length
+     * is outlined and one turnout length is asked for, given to each; likewise the squares two roads share.  OK, Skip
+     * and Cancel as in Name Everything; Escape stops.  0 is an answer, kept apart from one nobody has measured
+     * (OB-274).  `setupChanged` once at the end, for the running layout.
      */
     void massAssignLengths()
     {
-        // A NEW ROUND OPENS AFRESH; within it, each prompt opens where the last was left (Adam, on MT-454).
+        // A NEW ROUND OPENS AFRESH; within it, each prompt opens where the last was left (MT-454).
         editor.walkPromptAt = null;
 
         java.util.List<AutonomySession.Stretch> pieces = editor.session.stretchesNeedingALengthOn(editor.page);
@@ -73,9 +68,7 @@ final class EditorMassAssign
 
             Integer whole = askForWholeLength(question, AutonomyEditorPanel.LENGTHS_TITLE);
 
-            // 0 IS AN ANSWER (OB-274: *"allow a length of 0 as a length that is set deliberately ... this will allow
-            // everything to get assigned without what appears to be a skip."*).  Skip, and a blank box, leave the piece as
-            // it was.
+            // 0 IS AN ANSWER (OB-274).  Skip, and a blank box, leave the piece as it was.
             if (whole == null) stopped = true;
             else if (whole >= 0 && editor.session.assignStretchLength(piece, whole)) wroteAny = true;
         }
@@ -99,9 +92,8 @@ final class EditorMassAssign
             }
         }
 
-        // AND THE SQUARES TWO ROADS SHARE (*"For crossings: if its length is set, count that length once in each
-        // direction"*).  Their own step, because a crossing is not a turnout and need not measure like one; one length for
-        // all of them, as for switches.
+        // AND THE SQUARES TWO ROADS SHARE: their own step, because a crossing is not a turnout and need not measure
+        // like one; one length for all of them, as for switches.
         if (!stopped)
         {
             crossings = editor.session.sharedSquaresNeedingALengthOn(editor.page);
@@ -126,13 +118,8 @@ final class EditorMassAssign
 
     /**
      * Goes through every station on this page that will still take a train of any length, asking for its maximum (Mass
-     * Assign Station Max Train Lengths).
-     *
-     * **Mass Assign Lengths' walk, for stations**: the same prompt, so the number box has the focus, Enter submits, and
-     * each prompt opens where the last was left; OK, Skip and Cancel, with Escape stopping.  Each station is outlined and
-     * scrolled to before it is asked about.  0 is refused with a sentence saying why - it means "any length", which is
-     * what the station has now - and asked again.  The number lands where the right-click menu's Maximum Train Length
-     * puts it.
+     * Assign Station Max Train Lengths): Mass Assign Lengths' prompt and keys, each station outlined and scrolled to.
+     * 0 is refused with a sentence saying why (it means "any length", what the station has now) and asked again.
      */
     void massAssignMaxTrainLengths()
     {
@@ -185,25 +172,14 @@ final class EditorMassAssign
 
     /**
      * Goes through every locomotive autonomy would run that has no train length, asking for each one's (Mass Assign
-     * Train Lengths, FR-094, named so on MT-567) - and where none is missing one, through every train with the length it
-     * has, which Skip keeps (MT-533: the item is never grayed).
-     *
-     * **Mass Assign Station Max Train Lengths' walk, for trains**: the same prompt, and the list asked again before each
-     * train rather than trusted from the start.
-     *
-     * **Which trains: the list the Atomic Routes refusal names**, asked through `TrainControlUI.trainsWithoutALength`,
-     * so the refusal cannot name a train this walk does not offer.
-     *
-     * **A length is 1 to `TrainControlUI.ROUTE_TRAIN_LENGTH_MAX`**, the range the locomotive menu's own dropdown offers:
-     * two places that set one number must not disagree about what a legal value is.  0 is refused with a sentence saying
-     * why.  Skip leaves the train as it was.
-     *
-     * **Written through `applyTrainLength`**, the one door every other train-length gesture uses, so the findings and the
-     * gray follow the number as they do from the locomotive menu.  A train length belongs to the locomotive, not to this
-     * setup, so the editor's Cancel does not take it back, and each prompt says so before the answer is given.
-     *
-     * A train standing on this page is outlined and scrolled to while it is asked about; one elsewhere, or standing
-     * nowhere, is named and nothing is outlined.
+     * Train Lengths, FR-094) - and where none is missing one, through every train with the length it has, which Skip
+     * keeps (MT-533: the item is never grayed).  The trains are the list the Atomic Routes refusal names
+     * (`TrainControlUI.trainsWithoutALength`), asked again before each train.  A length is 1 to
+     * `TrainControlUI.ROUTE_TRAIN_LENGTH_MAX`, the range the locomotive menu's dropdown offers; 0 is refused with a
+     * sentence saying why.  Written through `applyTrainLength`, the one door every train-length gesture uses; a train
+     * length belongs to the locomotive, not this setup, so the editor's Cancel does not take it back, and each prompt
+     * says so.  A train standing on this page is outlined and scrolled to; one elsewhere is named and nothing is
+     * outlined.
      */
     void massAssignTrainLengths()
     {
@@ -258,8 +234,8 @@ final class EditorMassAssign
                     : I18n.f("autosetup.ui.promptMassAssignTrainLength", i + 1, trains.size(), train,
                         nameForPrompt(standing));
 
-            // THE LENGTH IT HAS, in the box (MT-566: *"prefill the textbox with the current length, if any"*), selected so a
-            // number typed replaces it.  Only when going through every train: a train missing one has none.
+            // THE LENGTH IT HAS, in the box (MT-566), selected so a number typed replaces it.  Only when going through
+            // every train: a train missing one has none.
             Integer had = known != null ? known.get(train) : null;
 
             String prefill = had != null && had > 0 ? String.valueOf(had) : "";
@@ -409,9 +385,9 @@ final class EditorMassAssign
         final Object[] answers = { I18n.t("ui.ok"), I18n.t("autosetup.ui.btnSkipOne"), I18n.t("ui.cancel") };
 
         final JOptionPane pane = new JOptionPane(panel, JOptionPane.PLAIN_MESSAGE,
-            // NO INITIAL VALUE, so the field has the keyboard focus (MT-454: *"make sure the entry field is focused"*): with OK as the
-            // initial value, JOptionPane gave the focus to that button, so what was typed went nowhere and Enter on the empty field
-            // counted as Skip.  Enter in the field still answers OK, through the field's own listener.
+            // NO INITIAL VALUE, so the field has the keyboard focus (MT-454): with OK as the initial value, JOptionPane
+            // gave the focus to that button, so typing went nowhere.  Enter in the field still answers OK, through its
+            // own listener.
             JOptionPane.YES_NO_CANCEL_OPTION, null, answers, null);
 
         final javax.swing.JDialog dialog = pane.createDialog(editor.owner(), I18n.t(titleKey));
@@ -424,9 +400,9 @@ final class EditorMassAssign
             dialog.dispose();
         });
 
-        // AND ASKED FOR BY NAME WHENEVER THE PROMPT HAS THE KEYBOARD (MT-474: *"make sure the text field is focused by default"*):
-        // the field takes the focus as the first focusable thing, but that is the focus policy's choice rather than this prompt's,
-        // so the prompt says which component it means, when the window opens and when it gains the keyboard back.
+        // AND ASKED FOR BY NAME WHENEVER THE PROMPT HAS THE KEYBOARD (MT-474): the focus policy's choice of first
+        // focusable component is not the prompt's, so it names the component when the window opens and when it regains
+        // the keyboard.
         dialog.addWindowListener(new java.awt.event.WindowAdapter()
         {
             @Override
