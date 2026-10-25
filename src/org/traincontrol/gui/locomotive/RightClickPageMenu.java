@@ -97,19 +97,13 @@ public class RightClickPageMenu extends PopupListener
 
             addSeparator();
 
-            // No number on this one, though there is one on Delete below.
-            //
-            // The two sat side by side reading "Add Page 11" and "Delete Page 4", and two different
-            // numbers next to each other invite the reader to work out how they relate - which is
-            // nothing: one is where a new page would land and the other is the page being looked at.
-            // Delete keeps its number because it names something that already exists and getting the
-            // wrong one matters.
+            // No number on this one, though Delete below has one: "Add Page 11" beside "Delete Page 4" invites working
+            // out how they relate, which is not at all.  Delete keeps its number because it names something that
+            // exists.
             menuItem = new JMenuItem(
                 I18n.t("page.ui.menuAddPage")
             );
-            // Grayed at the ceiling, with the reason on it - the same shape Delete uses below, and for
-            // the reason written there: an item that appears and disappears reads as an interface that
-            // cannot make up its mind; one that is grayed with an explanation says what to do.
+            // Grayed at the ceiling, with the reason on it, as Delete does below.
             if (ui.canAddLocMappingPage())
             {
                 menuItem.addActionListener(event -> ui.addLocMappingPage());
@@ -124,9 +118,8 @@ public class RightClickPageMenu extends PopupListener
 
             add(menuItem);
 
-            // Offered and refused rather than hidden, with the reason on it.  An item that appears
-            // and disappears depending on what is on the page reads as an interface that cannot make
-            // up its mind; one that is grayed with an explanation says what to do about it.
+            // Offered and refused rather than hidden, with the reason on it: an item that comes and goes reads as an
+            // interface that cannot make up its mind.
             menuItem = new JMenuItem(
                 I18n.f("page.ui.menuDeletePage", ui.getLocMappingNumber())
             );
