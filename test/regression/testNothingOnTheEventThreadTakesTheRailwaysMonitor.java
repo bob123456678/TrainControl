@@ -553,7 +553,7 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
     }
 
     /**
-     * The same source with its comments taken out, since the javadoc of the methods that used to break this rule names
+     * The same source with its comments taken out, since the javadoc of the methods this rule is about names
      * the very methods scanned for here.
      */
     private static String withoutComments(String code)
