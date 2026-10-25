@@ -10,14 +10,9 @@ import java.awt.RenderingHints;
 import javax.swing.Icon;
 
 /**
- * The small marks that live inside a table row: delete, add, and the two move arrows.
- *
- * Drawn rather than loaded, for two reasons. There is no icon art in this application to match - the
- * only images it ships are track tiles and the window icon - and a glyph font would have been the
- * other option, but the trash can and the arrows live in parts of Unicode that Segoe UI on Java 8
- * renders unevenly or not at all. Twenty lines of Java2D always look the same.
- *
- * Sized from the row height by the caller, so they stay in proportion if the table's font changes.
+ * The small marks that live inside a table row: delete, add, and the two move arrows.  Drawn rather than loaded: the
+ * application ships no icon art to match, and a glyph font renders the trash can and arrows unevenly on Segoe UI on
+ * Java 8.  Sized from the row height by the caller, so they stay in proportion if the table's font changes.
  */
 public final class RowIcons
 {
@@ -80,15 +75,7 @@ public final class RowIcons
         };
     }
 
-    /**
-     * Two overlapping sheets, for the mark that copies a row.
-     *
-     * Drawn rather than loaded, like the rest of these: an icon file is one more thing to ship, to
-     * scale to the row height, and to keep in step with the look of the others.
-     *
-     * @param size how many pixels square
-     * @return the icon
-     */
+    /** Two overlapping sheets, for the mark that copies a row. */
     public static Icon copy(final int size)
     {
         return copy(size, QUIET);
@@ -112,10 +99,9 @@ public final class RowIcons
                 int h = front.height;
                 int gap = front.x - 1;
 
-                // The sheet behind, only where it shows - the one in front hides its lower right corner, so
-                // the two read as two sheets rather than as a little grid.  Not by filling the front one white
-                // over it: on a selected row, drawn in the selection's ink, that was a solid white sheet among
-                // the outlines beside it (OB-258)
+                // The sheet behind, only where it shows (the front one hides its lower right corner), so the two read
+                // as two sheets.  Not by filling the front one white: on a selected row that was a solid white sheet
+                // (OB-258).
                 g.setColor(colour);
                 g.drawLine(1, 1, 1 + w, 1);
                 g.drawLine(1, 1, 1, 1 + h);
@@ -154,14 +140,9 @@ public final class RowIcons
     }
 
     /**
-     * The same, in a color of the caller's choosing.
+     * The same, in a color of the caller's choosing, for a SELECTED row: a mid-green plus is very nearly invisible
+     * against the look-and-feel's selection blue, and that is the row whose mark is most likely to be reached for.
      *
-     * For a row that is SELECTED.  These marks are drawn in their own colors - green for add, red
-     * for delete, gray for copy - and a selected row is painted in the look-and-feel's selection
-     * blue, against which a mid-green plus is very nearly invisible.  It is the row somebody has just
-     * clicked, so it is the one mark they are most likely to be reaching for.
-     *
-     * @param size how many pixels square
      * @param colour what to draw it in
      * @return the icon
      */
@@ -196,14 +177,8 @@ public final class RowIcons
     }
 
     /**
-     * The same, in a given color.
+     * The same, in a given color: a mark in a fixed gray disappears into a selected row's selection colors.
      *
-     * A selected row is painted in the table's selection colors, and a mark drawn in a fixed gray
-     * disappears into it - which is exactly when somebody is most likely to be reaching for it, since
-     * selecting a row is how you decide which one to move.
-     *
-     * @param size how many pixels square
-     * @param up true for up
      * @param colour what to draw it in
      * @return the icon
      */
@@ -315,12 +290,8 @@ public final class RowIcons
     }
 
     /**
-     * The faint vertical lines that show how deep a row sits.
-     *
-     * Indentation on its own is a distance, and a distance is hard to count - two levels and three
-     * look much the same at a glance, and there is nothing to say which rows share a level. A line
-     * per level turns it into something countable, which is what every outliner and every code editor
-     * draws for the same reason.
+     * The faint vertical lines that show how deep a row sits: indentation alone is a distance and hard to count, a line
+     * per level is countable.
      *
      * @param depth how many levels in
      * @param step how many pixels one level is worth
