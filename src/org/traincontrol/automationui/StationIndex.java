@@ -14,33 +14,18 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts.Side;
 
 /**
- * The translation between the squares a user sees and the Points a railway runs.
- *
- * One square of the track diagram becomes several Points - one per side a train can arrive by - and
- * nothing in the running model remembers that they are the same platform.  Every part of the interface
- * that shows a station therefore has to translate: a caption has a square and needs the Points standing
- * on it, a path has a Point and needs the name to print, a menu has a square and needs to know which
- * copies a train could leave from.
- *
- * That translation used to be done wherever it was needed, by building a fresh AutonomyBuilder and
- * recomputing the whole naming - twice per call in places, once per Point on every feedback event.  It
- * was slow, and worse, the copies disagreed: the same question asked in two places built the builder
- * with different settings, so one of them split the squares and the other did not, and the two answers
- * were both confidently wrong in different ways.
- *
- * So the naming is derived ONCE, from one configured builder, and every map here comes out of that same
- * derivation.  They cannot disagree, because there is nothing left for them to disagree about.
- *
- * Immutable, and cheap to hold.  The session rebuilds it when the setup changes, which is the only
- * moment any of it can become untrue.
+ * The translation between the squares a user sees and the Points a railway runs.  One square becomes several Points,
+ * one per arrival side, and nothing in the running model remembers they are the same platform, so every part of the
+ * interface that shows a station has to translate.  Derived once from one configured builder: translating wherever
+ * needed with a fresh builder was slow, and the copies disagreed (one split the squares and another did not).
+ * Immutable; the session rebuilds it when the setup changes.
  *
  * @author Adam
  */
 public final class StationIndex
 {
     /**
-     * What to use before anything has been derived.  Answers "I have never heard of it" to everything,
-     * rather than being a null every caller has to test for.
+     * What to use before anything has been derived: "I have never heard of it" to everything, not a null to test for.
      */
     public static final StationIndex EMPTY = new StationIndex(null);
 
@@ -52,10 +37,11 @@ public final class StationIndex
     private final Map<TileKey, List<Side>> arrivalsBySquare;
 
     /**
-     * @param builder a builder configured exactly as the one that generated the running configuration,
-     *        or null for the empty index.  The configuration matters: whether a square splits at all
-     *        depends on the reversible and mandatory-turn sets, so a builder without them names a
-     *        railway that is not the one running.
+     * @param builder a builder configured exactly as the one that generated the running configuration, or null for the
+     * empty
+     *        index: whether a square splits depends on the reversible and mandatory-turn sets, so one without them
+     * names a
+     *        railway that is not the one running
      */
     StationIndex(AutonomyBuilder builder)
     {
@@ -78,8 +64,7 @@ public final class StationIndex
 
         Map<TileKey, List<String>> grouped = new LinkedHashMap<>();
 
-        // In emission order, which is the order the copies were named in - so "the first copy" means
-        // the same thing to everything that asks, rather than depending on which map it asked.
+        // In emission order, so "the first copy" means the same thing to everything that asks.
         for (Map.Entry<String, TileKey> entry : squareByPoint.entrySet())
         {
             List<String> here = grouped.get(entry.getValue());
@@ -100,9 +85,8 @@ public final class StationIndex
 
         pointsBySquare = Collections.unmodifiableMap(grouped);
 
-        // The sides a train can arrive at each square by, from the same derivation as everything else.
-        // Worked out per call it was a whole builder pass - the very thing this class exists to stop -
-        // and it is asked once per station per repaint.
+        // The sides a train can arrive at each square by, from the same derivation as everything else: worked out per
+        // call it was a whole builder pass, asked once per station per repaint.
         Map<TileKey, List<Side>> arrivals = new LinkedHashMap<>();
 
         for (TileKey square : grouped.keySet())
@@ -121,10 +105,8 @@ public final class StationIndex
     }
 
     /**
-     * The sides a train can arrive at a square by.
-     *
-     * The same answer the split itself uses, so nothing can offer a restriction on a side the build has
-     * no copy for - which would be a setting that silently did nothing.
+     * The sides a train can arrive at a square by: the same answer the split itself uses, so nothing can offer a
+     * restriction on a side the build has no copy for.
      *
      * @param square
      * @return the arrival sides, empty when the square never splits
@@ -168,11 +150,9 @@ public final class StationIndex
     }
 
     /**
-     * What to call a running Point on screen.
-     *
-     * The base name, so a station reads as one place however many copies of it the railway is made of.
-     * Falls back to the Point's own name rather than to nothing: a Point this index has never heard of
-     * is a configuration built before the last change, and its name is still better than a blank.
+     * What to call a running Point on screen: the base name, so a station reads as one place however many copies it
+     * has.  Falls back to the Point's own name rather than a blank for a Point this index has never heard of (a
+     * configuration built before the last change).
      *
      * @param point
      * @return a name fit to show, never null
@@ -183,17 +163,13 @@ public final class StationIndex
     }
 
     /**
-     * Whether a name ends the way the builder names one direction of a square, and so cannot be told from
-     * one in anything that reads it back.
-     *
-     * The builder's form: a lowercase `(northbound)`, `(southbound)`, `(eastbound)` or `(westbound)` at the very
-     * end - and, inside the bracket, a comma and ANYTHING after it, of which `, reverse` is the builder's own.
-     * "Depot (eastbound, old)" is refused too: `withoutArrivalSuffix` reads the heading up to the comma, so that
-     * name reads as "Depot" in every message just the same.  Loosen this and the two stop agreeing.  That is
-     * the only form `withoutArrivalSuffix` - and `Layout.placeNameOf`, which mirrors it - strips, so it is the
-     * only form that makes two squares read alike.  Adam, 2026-09-14: *"refuse and close, but make sure the
-     * words are uncommon."*  So "Eastbound Platform", "Main Line (Northbound)" and "Yard (old)" are all names
-     * a person may still give; "Main (eastbound)" is not.
+     * Whether a name ends the way the builder names one direction of a square, and so cannot be told from one in
+     * anything that reads it back.  The form: a lowercase `(northbound)`, `(southbound)`, `(eastbound)` or
+     * `(westbound)` at the very end, and inside the bracket a comma and anything after it (`, reverse` is the builder's
+     * own).  "Depot (eastbound, old)" is refused too: `withoutArrivalSuffix` reads the heading up to the comma.  Loosen
+     * this and the two stop agreeing.  Adam: *"refuse and close, but make sure the words are uncommon."*  So "Eastbound
+     * Platform", "Main Line (Northbound)" and "Yard (old)" are still names a person may give; "Main (eastbound)" is
+     * not.
      *
      * @param name a name somebody typed
      * @return true when it ends in the builder's heading
@@ -208,17 +184,10 @@ public final class StationIndex
     }
 
     /**
-     * A copy's name with the arrival side taken off, for when the index cannot answer.
-     *
-     * The index maps every emitted Point back to the name of its square, and that is the answer
-     * whenever it has one. It does not always: a Point whose configuration was built by a different
-     * run of the builder - a setup reloaded, a layout edited underneath a running graph - is not in
-     * the map, and the fallback was to show the internal name. "BottomMainA (northbound)" is not a
-     * place on anybody's railway. It is how the model spells one platform's several arrival sides,
-     * and a user who did not create an eastbound one and a westbound one should not meet them.
-     *
-     * Only the suffixes the builder itself emits are removed, and only from the end. A station somebody
-     * has genuinely called "Yard (upper)" keeps its name, because "upper" is not a heading.
+     * A copy's name with the arrival side taken off, for when the index cannot answer: a Point built by a different run
+     * of the builder (a setup reloaded, a layout edited underneath a running graph) is not in the map, and "BottomMainA
+     * (northbound)" is not a place on anybody's railway.  Only the suffixes the builder emits are removed, and only
+     * from the end: a station called "Yard (upper)" keeps its name.
      *
      * @param name an emitted Point name
      * @return the square's name, as far as it can be recovered
@@ -231,16 +200,10 @@ public final class StationIndex
     }
 
     /**
-     * What a Point is called, as a place rather than as a copy.
-     *
-     * **`describe`'s twin, and now its implementation**. These were two answers to one
-     * question: `describe` falls back to `withoutArrivalSuffix` when the index has never heard of a
-     * Point - a configuration built by a different run of the builder, a setup reloaded, a layout
-     * edited underneath a running graph - and this one fell back to the internal name. So the same
-     * platform read as "BottomMainA" through one and "BottomMainA (northbound)" through the other,
-     * and which the operator saw depended on which caller they had reached.
-     *
-     * A blank base counts as no answer, which is the other half `describe` had and this did not.
+     * What a Point is called, as a place rather than as a copy: `describe`'s twin and now its implementation.  Both
+     * fall back to `withoutArrivalSuffix` when the index has never heard of a Point, so one platform no longer reads
+     * "BottomMainA" through one caller and "BottomMainA (northbound)" through another.  A blank base counts as no
+     * answer.
      *
      * @param pointName an emitted Point name
      * @return the base name behind a copy, the name with its arrival side removed when the index
@@ -311,10 +274,8 @@ public final class StationIndex
     }
 
     /**
-     * Whether two Points are the same piece of track.
-     *
-     * By square rather than by name, which is the whole reason this class exists: the copies are named
-     * apart on purpose, so string comparison says "different place" about one platform.
+     * Whether two Points are the same piece of track, by square rather than by name: the copies are named apart on
+     * purpose, so string comparison says "different place" about one platform.
      *
      * @param a a running Point name
      * @param b another
@@ -324,10 +285,8 @@ public final class StationIndex
     {
         if (a == null || b == null) return false;
 
-        // Identical names are the same place even when this index has never heard of either.  A
-        // configuration built before the last diagram change still has Points, and they are still
-        // somewhere; without this, a path from P back to P is offered as a journey to where the train
-        // is already standing, which is the thing the caller is trying to drop.
+        // Identical names are the same place even when this index has never heard of either: without this a path from P
+        // back to P is offered as a journey to where the train is already standing.
         if (a.equals(b)) return true;
 
         TileKey first = squareOf(a);
@@ -356,11 +315,10 @@ public final class StationIndex
             if (point != null) out.add(point);
         }
 
-        // OR BY THE SQUARE EACH POINT WAS BUILT FOR, where the railway knows none of the setup's names for it (Adam,
-        // 2026-10-05: *"Yes, do it."*).  A station renamed while the setup cannot build leaves the railway as it
-        // was, with the names it was built with: asked by the new name it had no Point there, and the caption of the
-        // train standing at it went blank until the setup built.  Names first, so a page renamed - its squares new, its
-        // names the same - is still found by them.
+        // Or by the square each Point was built for, where the railway knows none of the setup's names for it: a
+        // station renamed while the setup cannot build leaves the railway with its old names, and the caption of the
+        // train standing there went blank.  Names first, so a page renamed (its squares new, its names the same) is
+        // still found by them.
         if (out.isEmpty() && square != null)
         {
             String built = square.toString();
@@ -375,11 +333,9 @@ public final class StationIndex
     }
 
     /**
-     * The Points of a square that are actually holding a locomotive.
-     *
-     * More than one is entirely possible and was the bug that prompted this: two trains can be sent to
-     * one platform from opposite ends, each arriving on the copy that faces its own way, and a caption
-     * that asked for "the" occupant showed whichever it happened to find first.
+     * The Points of a square that are actually holding a locomotive.  More than one is entirely possible: two trains
+     * can be sent to one platform from opposite ends, each on the copy that faces its own way, and a caption asking for
+     * "the" occupant showed whichever it found first.
      *
      * @param layout
      * @param square
@@ -398,21 +354,10 @@ public final class StationIndex
     }
 
     /**
-     * The same list with each locomotive appearing once.
-     *
-     * A square is several Points, and a locomotive can legitimately be on more than one of them at
-     * once: locking a path RESERVES every point along it for that train, deliberately without taking
-     * it off anywhere else, because that is how a junction is held against a second train. Where a
-     * path runs through two copies of one square, the train is on both.
-     *
-     * That is right for the model and wrong for a caption. It put one train on the platform twice -
-     * "[BR &lt; |BR &gt;]" - each entry carrying the arrow of its own copy, so the same locomotive appeared
-     * to be facing both ways at once. Two trains on one platform is a real thing this has to show; one
-     * train shown as two is never anything but a mistake.
-     *
-     * The first copy is the one kept. For a train standing still there is only one; for a train part
-     * way along a locked path the rest are the ones it is about to be on, and any of them says the
-     * same thing about whether that platform is spoken for.
+     * The same list with each locomotive appearing once.  Locking a path reserves every point along it for that train,
+     * deliberately without taking it off anywhere else, so where a path runs through two copies of one square the train
+     * is on both: right for the model, wrong for a caption, which showed one train facing both ways at once.  Two
+     * trains on one platform is real; one train shown as two is always a mistake.  The first copy is kept.
      *
      * @param points occupied Points, in emission order
      * @return the same, with duplicates of one locomotive removed
@@ -429,8 +374,7 @@ public final class StationIndex
         {
             if (point == null || point.getCurrentLocomotive() == null) continue;
 
-            // By identity, because that is how a locomotive is compared everywhere else here - two
-            // locomotives can share a name in this application, and they are not the same train
+            // By identity, as everywhere else here: two locomotives can share a name in this application.
             if (seen.add(point.getCurrentLocomotive())) out.add(point);
         }
 
@@ -438,16 +382,11 @@ public final class StationIndex
     }
 
     /**
-     * The one Point that speaks for a square when only one answer is wanted.
-     *
-     * An occupied copy in preference to an empty one, because a question asked of a platform - what is
-     * standing here, where can it go - is nearly always about the train.  With none occupied the first
-     * is used, which is a choice and not an equivalence: the copies differ in whether a train may stop
-     * on them once arrivals are restricted.  For "what is standing here" that does not matter; anything
-     * asking what may be DONE here has to look at the copy it means.
-     *
-     * With more than one train standing on a square this answers for the first of them.  Callers that
-     * can show more than one - the caption does - should ask occupantsAt instead.
+     * The one Point that speaks for a square when only one answer is wanted: an occupied copy in preference to an empty
+     * one, since a question asked of a platform is nearly always about the train.  With none occupied the first is
+     * used, a choice and not an equivalence (copies differ in whether a train may stop on them once arrivals are
+     * restricted), so anything asking what may be done here has to look at the copy it means.  With several trains it
+     * answers for the first; callers that can show more, as the caption does, should ask occupantsAt.
      *
      * @param layout
      * @param square
@@ -461,13 +400,9 @@ public final class StationIndex
 
         List<Point> all = pointsAt(layout, square);
 
-        // A copy trains may stop at, in preference to one they may not.
-        //
-        // The copies stopped being interchangeable when arrivals could be barred, and the order they
-        // come in is the order the sides happen to sort in - so with one side barred, whether the
-        // answer was the open copy or the shut one depended on WHICH side had been barred.  Callers
-        // that ask what may be done at a platform got the shut copy half the time, and answered
-        // "nothing" about a station that works perfectly from the other end.
+        // A copy trains may stop at, in preference to one they may not: once arrivals can be barred the copies are not
+        // interchangeable, and with one side barred the answer depended on which side it was, so callers asking what
+        // may be done at a platform got the shut copy half the time.
         for (Point point : all)
         {
             if (point.isDestination()) return point;
@@ -477,12 +412,9 @@ public final class StationIndex
     }
 
     /**
-     * Drops the paths that do not actually take a train anywhere.
-     *
-     * Two ways that happens, and both are artifacts of one square being several Points.  A path that
-     * ends on a copy of the square it started from is a train being offered a journey to where it is
-     * already standing.  And a station reachable facing either way is offered once per copy, which
-     * since the copies stopped being named apart on screen reads as the same destination listed twice.
+     * Drops the paths that do not actually take a train anywhere, both artifacts of one square being several Points: a
+     * path that ends on a copy of the square it started from, and a station reachable facing either way, offered once
+     * per copy.
      *
      * @param paths as the layout offers them
      * @return the ones worth showing, in the order given
@@ -505,9 +437,8 @@ public final class StationIndex
 
             if (sameSquare(from, to)) continue;
 
-            // Keyed by the SQUARE where one exists, and by the name where it does not - a Point this
-            // index has never heard of is still a destination, and keying every one of them under
-            // "null" would show the first and silently drop the rest.
+            // Keyed by the square where one exists and by the name where it does not: a Point this index has never
+            // heard of is still a destination, and keying them all under "null" would drop all but the first.
             TileKey square = squareOf(to);
 
             if (!seen.add(square == null ? "?" + to : square.toString())) continue;
