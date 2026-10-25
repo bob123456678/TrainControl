@@ -16,21 +16,15 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.model.View;
 
 /**
- * A sensor that changes state says so, however it changed.
+ * A sensor that changes state says so, however it changed.  A module changes state two ways and only one announced it:
+ * `parseMessage` (a sensor arriving over the wire) called `feedbackChanged`; `setState` is every OTHER way (clicking an
+ * s88 tile, the simulation's own announce and clear, the restore at start-up) and did not.  The route editor's capture
+ * listens for `feedbackChanged`, so a sensor the operator had just clicked was invisible to it, and a route being
+ * recorded is about what the railway did, not which code path said so.
  *
- * The fix for this once shipped with no test at all. A module changes state two ways and
- * only one of them announced it - `parseMessage`, a sensor arriving over the wire, called
- * `feedbackChanged`; `setState` is every OTHER way and did not. Its callers are clicking an s88 tile on
- * the track diagram, the simulation's own announce and clear, and the restore at start-up.
- *
- * **What that cost.** The route editor's capture listens for `feedbackChanged`, so a sensor the
- * operator had just clicked - or one the simulation had just fired - was invisible to it. The capture
- * cannot tell a clicked sensor from a wired one and should not: a route being recorded is about what
- * the railway did, not about which code path said so.
- *
- * **A recording View rather than a real one**, installed over the model's own. The alternative is to
- * assert on a log line, which is a different claim - the announcement used to live inside the
- * `isDebug` block, and a capture that depends on a logging setting is the defect wearing a disguise.
+ * A recording View is installed over the model's own, because asserting on a log line is a different claim: the
+ * announcement used to live inside the `isDebug` block, and a capture that depends on a logging setting is the defect
+ * wearing a disguise.
  *
  * MUTATION: take `this.network.feedbackChanged(this.getName(), val)` out of
  * `MarklinFeedback.setState` and the first test fails; move it back inside the `isDebug` block and the
@@ -75,9 +69,8 @@ public class testAFeedbackChangeIsAnnounced
                 return returns.isPrimitive() ? 0 : null;
             });
 
-        // OVER THE MODEL'S OWN VIEW, which is final and private - the field the model forwards to.
-        // A test-only door on the model would be a door the application also has; reflection keeps
-        // this entirely inside the test.
+        // OVER THE MODEL'S OWN VIEW, which is final and private; reflection keeps this inside the test, where a
+        // test-only door would be one the application also has.
         Field view = MarklinControlStation.class.getDeclaredField("view");
 
         view.setAccessible(true);
@@ -99,9 +92,7 @@ public class testAFeedbackChangeIsAnnounced
         if (sandbox != null) sandbox.close();
     }
 
-    /**
-     * Setting a sensor by hand announces it.
-     */
+    /** Setting a sensor by hand announces it. */
     @Test
     public void testASensorSetByHandIsAnnounced() throws Exception
     {
@@ -123,11 +114,8 @@ public class testAFeedbackChangeIsAnnounced
     }
 
     /**
-     * And it announces with debug off, which is where the announcement used to live.
-     *
-     * The line that does this replaced a comment INSIDE the `isDebug` block saying that a model method
-     * could be called there in future. Announcing only in debug mode would make the route capture
-     * depend on a logging setting - the same defect, reachable by a preference.
+     * And it announces with debug off, where the announcement used to live: announcing only in debug would make the
+     * route capture depend on a logging setting.
      */
     @Test
     public void testItIsAnnouncedWithDebugOff() throws Exception
