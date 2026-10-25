@@ -18,20 +18,17 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 /**
  * The compile step: turns a reduced diagram into the autonomy JSON the existing model already reads.
  *
- * Nothing new is taught to the autonomy model.  The output goes through the same parseAuto that a
- * hand-written file went through, so validation, path finding, locking and running are all untouched -
- * what changes is only where the file comes from.
- *
- * Output is deterministic: the same diagram and the same authored data produce byte-identical JSON, so
- * two builds can be diffed against each other and against a hand-written configuration.
+ * Nothing new is taught to the autonomy model: the output goes through the same parseAuto a hand-written file did, so
+ * validation, path finding, locking and running are untouched.  Output is deterministic (the same diagram and authored
+ * data give byte-identical JSON), so builds can be diffed against each other and against a hand-written configuration.
  *
  * @author Adam
  */
 public class AutonomyBuilder
 {
     /**
-     * The settings that belong to a configuration rather than to the track: pace, speeds, and the rest of
-     * what used to sit at the top of a hand-written autonomy file.
+     * The settings that belong to a configuration rather than to the track: pace, speeds, and the rest of the top of a
+     * hand-written file.
      */
     public static class Globals
     {
@@ -59,10 +56,9 @@ public class AutonomyBuilder
 
     /**
      * One emitted Point: a tile, which arrival side it stands for, and whether it is the copy that reverses.  The
-     * reduction gives one Point per sensor, but the running model records which Point a locomotive stands on and never
-     * which way it faces, so nothing there refuses the edge back the way it came.  Splitting by arrival side writes the
-     * facing down, as a hand-written configuration did with one-way edges and a second Point on the same s88
-     * (TunnelPre/TunnelReverse).
+     * running model records which Point a locomotive stands on but never which way it faces, so nothing there refuses
+     * the edge back the way it came; splitting by arrival side writes the facing down, as a hand-written configuration
+     * did with one-way edges and a second Point on the same s88 (TunnelPre/TunnelReverse).
      */
     private static class Node
     {
@@ -75,8 +71,7 @@ public class AutonomyBuilder
         private final boolean reverse;
 
         /**
-         * Whether this is a copy of a square nothing arrives at, standing for a train facing one way out: no bar on
-         * arrivals reaches it, and no home is held to its facing.
+         * A copy of a square nothing arrives at, for a train facing one way out: no arrival bar or home facing applies.
          */
         private final boolean nothingArrives;
 
@@ -105,10 +100,7 @@ public class AutonomyBuilder
 
         /**
          * Whether a train standing on this copy may leave by the given side: the reversing copy leaves the way it came,
-         * the plain copy carries on along the track it is on.
-         *
-         * @param exitSide the side an edge leaves by
-         * @param onward the sides the track it is standing on offers, not every side the square has
+         * the plain copy carries on along the track it is on (`onward`: the sides that track offers, not every side).
          */
         boolean leavesBy(TilePorts.Side exitSide, Set<TilePorts.Side> onward)
         {
@@ -121,72 +113,49 @@ public class AutonomyBuilder
             return arrival != exitSide && onward.contains(exitSide);
         }
 
-        /**
-         * Whether a train arriving by the given side lands on this copy; both copies of a side are reachable from one
-         * place.
-         */
+        /** Whether a train arriving by the given side lands on this copy; both copies of a side are reachable. */
         boolean arrivesBy(TilePorts.Side entrySide)
         {
             return arrival == null || arrival == entrySide;
         }
     }
 
-    /**
-     * The authored key that marks a tile as somewhere a train may turn round.  Stored beside the operational point data
-     * but never emitted: it tells this class how to shape the graph, and parseAuto has never heard of it.
-     */
+    /** The authored key marking a tile where a train may turn round; never emitted, as it only shapes the graph. */
     public static final String CAN_REVERSE = "canReverse";
 
-    /**
-     * The authored key that marks a square where a train has no choice but to turn round.  Unlike CAN_REVERSE, only the
-     * turning copies are emitted, so every arrival turns; on a dead end the two are the same.
-     */
+    /** The authored key marking a square where a train must turn round; only the turning copies are emitted. */
     public static final String MUST_REVERSE = "mustReverse";
 
-    /**
-     * The authored key that marks a station as a berth trains are only ever sent to on purpose (a route the user picks
-     * still reaches it).  The build does not carry the authored value through: it emits `autoDestination` false.
-     */
+    /** The authored key marking a berth trains are only sent to on purpose; emitted as `autoDestination` false. */
     public static final String AUTO_DESTINATION = "autoDestination";
 
-    /**
-     * The authored key holding a placed locomotive: parseAuto's own name, sent out unchanged, and named here because it
-     * must land on a single copy.
-     */
+    /** A placed locomotive's key: parseAuto's own name, named here because it must land on a single copy. */
     public static final String LOCOMOTIVE = "loc";
 
     /**
      * The authored key saying which way a placed locomotive points: the name of the side its front faces.  A split
      * square is several Points and a locomotive stands on exactly one, the one whose arrival side is behind it; the
-     * model has no facing field, so this is never emitted and only decides which copy gets the locomotive.  Absent
-     * where only one train can reach a square one way.
+     * model has no facing field, so this is never emitted and only decides which copy gets the locomotive.
      */
     public static final String FACING = "facing";
 
     /**
-     * The per-square key naming the way a home's locomotive was facing when the home was set (OB-282) - one of
-     * `FACING`'s sides.  Setup only: the build turns it into which copy carries the home.
+     * The way a home's locomotive faced when it was set (OB-282); setup only, it decides which copy carries the home.
      */
     public static final String HOME_FACING = "homeFacing";
 
-    /**
-     * On a running Point, that its home was set facing the way this copy faces, and Return Home is to bring the
-     * locomotive back to a copy of the square facing that way rather than to any copy of the square (OB-282).
-     */
+    /** On a running Point: its home was set facing the way this copy faces, so Return Home matches facing (OB-282). */
     public static final String HOME_FACING_FIXED = "homeFacingFixed";
 
     /** On a running Point of a split square, the way a train standing on this copy points (OB-282). */
     public static final String COPY_FACING = "copyFacing";
 
-    /**
-     * The old key for a berth (true for one), still read so that a setup authored under it keeps its berths.
-     */
+    /** The old key for a berth (true for one), still read so that a setup authored under it keeps its berths. */
     public static final String PARKING = "parking";
 
     /**
      * The two flags this class derives, which never travel in from the authored data: an old configuration's could put
-     * a terminus on a plain copy of a split tile, or a terminus and a reversing flag on one Point, which Point refuses
-     * and which fails the whole configuration.
+     * a terminus on a plain copy, or a terminus and a reversing flag on one Point, which fails the whole configuration.
      */
     private static final List<String> DERIVED = Arrays.asList("terminus", "reversing");
 
@@ -222,12 +191,8 @@ public class AutonomyBuilder
     }
 
     /**
-     * Emits graph coordinates for each Point, taken from where its tile sits on the diagram.  Off by default: the
-     * diagram is the layout now and a second set of positions would only drift; worth having for inspection against the
-     * diagram.  Pages are stacked vertically in the order given.
-     *
-     * @param pagesInOrder the participating page names, or null to stop emitting coordinates
-     * @return this
+     * Emits graph coordinates for each Point from where its tile sits on the diagram, pages stacked vertically in the
+     * order given (null stops).  Off by default: the diagram is the layout now and a second set would only drift.
      */
     public AutonomyBuilder withCoordinatesFromTiles(List<String> pagesInOrder)
     {
@@ -236,13 +201,9 @@ public class AutonomyBuilder
     }
 
     /**
-     * Merges per-point operational data into the generated Points: where the locomotives start, which Points are
-     * termini or reversing, homes, exclusions, speed multipliers.  Keyed by TileKey.toString(), so the data survives a
-     * rename.  What the reduction decides (name, station, s88) cannot be overridden from here, or a configuration could
-     * quietly change the track.
-     *
-     * @param extras tile key string to the point's extra properties, or null for none
-     * @return this
+     * Merges per-point operational data (where locomotives start, termini, reversing, homes, exclusions, speed
+     * multipliers) into the generated Points, keyed by TileKey.toString() so it survives a rename.  What the reduction
+     * decides (name, station, s88) cannot be overridden from here.  Null for none.
      */
     public AutonomyBuilder withPointExtras(Map<String, JSONObject> extras)
     {
@@ -251,11 +212,8 @@ public class AutonomyBuilder
     }
 
     /**
-     * The tiles where a train may turn round, which gain a turning copy of every arrival.  Every tile is split by
-     * arrival side whether or not it is marked; the marking adds the copy that leaves the way it came.
-     *
-     * @param tiles the marked tiles, or null for none
-     * @return this
+     * The tiles (null for none) where a train may turn round, which gain a turning copy of every arrival.  Every tile
+     * is split by arrival side whether or not it is marked.
      */
     public AutonomyBuilder withReversibleTiles(Set<TileKey> tiles)
     {
@@ -264,12 +222,7 @@ public class AutonomyBuilder
         return this;
     }
 
-    /**
-     * The squares where every arriving train must turn round.
-     *
-     * @param tiles the marked tiles, or null for none
-     * @return this
-     */
+    /** The squares (null for none) where every arriving train must turn round. */
     public AutonomyBuilder withMandatoryTurns(Set<TileKey> tiles)
     {
         this.mandatory = tiles == null ? Collections.<TileKey>emptySet() : tiles;
@@ -279,10 +232,7 @@ public class AutonomyBuilder
 
     /**
      * Which accessories protect each station, emitted on every copy of the square: the copies are one platform and the
-     * signals guard the platform rather than a side of it.
-     *
-     * @param signals station square to accessory names
-     * @return this
+     * signals guard the platform, not a side of it.
      */
     public AutonomyBuilder withProtectingSignals(Map<TileKey, List<String>> signals)
     {
@@ -295,11 +245,8 @@ public class AutonomyBuilder
     private Map<TileKey, List<String>> protectingSignals = Collections.emptyMap();
 
     /**
-     * The signals thrown red when a train arrives at each station as the end of its journey (FR-096), emitted on every
-     * copy of the square for the same reason as the protecting signals.
-     *
-     * @param signals station square to accessory names
-     * @return this
+     * The signals thrown red when a train arrives at a station as the end of its journey (FR-096), emitted on every
+     * copy for the same reason as the protecting signals.
      */
     public AutonomyBuilder withEntrySignals(Map<TileKey, List<String>> signals)
     {
@@ -311,14 +258,10 @@ public class AutonomyBuilder
     private Map<TileKey, List<String>> entrySignals = Collections.emptyMap();
 
     /**
-     * Stations that are unavailable to autonomy while another square is occupied (FR-001), expressed as lock edges so
-     * the running model needs no new concept: "add a lock edge ending with the requested S88 to be excluded.  that will
-     * allow you to mostly reuse the existing model."  Every edge into the station gains every edge that ends at the
-     * watched square.  A lock edge asks whether that track is held by a route, not whether a train stands beyond it
-     * (Edge.isLockHeld explains why), so the station is held back while something runs over the watched approach.
-     *
-     * @param blocking station square to the squares that hold it back
-     * @return this
+     * Stations unavailable to autonomy while another square is occupied (FR-001), expressed as lock edges so the model
+     * needs no new concept: every edge into the station gains every edge ending at the watched square.  A lock edge
+     * asks whether that track is held by a route, not whether a train stands beyond it (Edge.isLockHeld), so the
+     * station is held back while something runs over the watched approach.
      */
     public AutonomyBuilder withBlockingPoints(Map<TileKey, List<TileKey>> blocking)
     {
@@ -334,9 +277,6 @@ public class AutonomyBuilder
      * What Mass Assign Lengths would ask a length for, square by square: the key of the piece, switch or shared square
      * each lies in, where that still wants a length (OB-297).  Marked on each edge's places, so the own-tail note
      * counts exactly what the operator is asked to measure.
-     *
-     * @param asked each square still wanting a length, to its key
-     * @return this
      */
     public AutonomyBuilder withPiecesToMeasure(Map<TileKey, String> asked)
     {
@@ -349,11 +289,8 @@ public class AutonomyBuilder
     private Map<TileKey, String> piecesToMeasure = null;
 
     /**
-     * Which sides each station refuses to let trains arrive by.  The copy for a barred side stops being a station;
-     * trains still run over it (pass-through is the direction arrows' question) but cannot be sent to it.
-     *
-     * @param barred square to the sides it bars, or null for no restrictions
-     * @return this
+     * Which sides each station refuses arrivals by (null for none).  The copy for a barred side stops being a station;
+     * trains still run over it but cannot be sent to it.
      */
     public AutonomyBuilder withBarredArrivals(Map<TileKey, Set<TilePorts.Side>> barred)
     {
@@ -371,8 +308,8 @@ public class AutonomyBuilder
      */
     private boolean arrivalAllowed(Node node)
     {
-        // Nor a copy of a square nothing arrives at: its side is one nothing arrives by, and a bar on it (set while
-        // trains did, and hidden by the editor since) shut the copy as no station.
+        // Nor a copy of a square nothing arrives at: a bar on its side (set while trains did, hidden by the editor
+        // since) shut the copy as no station.
         if (node.getArrival() == null || node.nothingArrives) return true;
 
         Set<TilePorts.Side> barred = barredArrivals.get(node.getTile());
@@ -380,12 +317,7 @@ public class AutonomyBuilder
         return barred == null || !barred.contains(node.getArrival());
     }
 
-    /**
-     * The stations that are parking berths: ordinary stations that autonomy is told not to choose as a destination.
-     *
-     * @param tiles the marked tiles, or null for none
-     * @return this
-     */
+    /** The stations (null for none) that are parking berths: ordinary stations autonomy is told not to choose. */
     public AutonomyBuilder withParkingTiles(Set<TileKey> tiles)
     {
         this.manualOnly = tiles == null ? Collections.<TileKey>emptySet() : tiles;
@@ -394,10 +326,8 @@ public class AutonomyBuilder
 
     /**
      * The sides a train can arrive at a square by, for anything offering the user a choice about them: the same answer
-     * the split uses, so the editor cannot offer a restriction on a side the build has no copy for.
-     *
-     * @param tile
-     * @return the arrival sides, empty when the square is not split
+     * the split uses, so the editor cannot offer a restriction on a side the build has no copy for.  Empty when the
+     * square is not split.
      */
     public List<TilePorts.Side> arrivalSidesOf(TileKey tile)
     {
@@ -405,10 +335,9 @@ public class AutonomyBuilder
     }
 
     /**
-     * The sides trains arrive at this tile by, in a fixed order.  Every tile with an arrival is split, not only the
-     * marked ones: a single Point per sensor forgets which way the train points, so nothing stops a journey taking the
-     * edge straight back.  Even one arrival side is worth splitting on: the Point emitted knows which side it was
-     * reached by and refuses to leave by it.
+     * The sides trains arrive at this tile by, in a fixed order.  Every tile with an arrival is split, even with one
+     * side: a single Point per sensor forgets which way the train points, so nothing stops a journey taking the edge
+     * straight back.
      */
     private List<TilePorts.Side> splitSides(TileKey tile)
     {
@@ -418,9 +347,9 @@ public class AutonomyBuilder
         {
             if (!edge.getEnd().equals(tile)) continue;
 
-            // An edge that arrives by no side of the grid has no copy to land on, so the tile is left whole, which
-            // costs this tile the rule and keeps the route.  Only where a portal's far end was redrawn as a sensor, a
-            // setup `validatePortals` refuses.
+            // An edge that arrives by no side of the grid has no copy to land on, so the tile is left whole (costing it
+            // the rule, keeping the route): only where a portal's far end was redrawn as a sensor, which
+            // `validatePortals` refuses.
             if (edge.getEntrySide() == null) return Collections.emptyList();
 
             sides.add(edge.getEntrySide());
@@ -439,9 +368,6 @@ public class AutonomyBuilder
      * double curve or an overpass: grouping all its copies would refuse a second train a track that is free.  The road
      * is named by its lowest side, so both copies of one arc land on the same name.
      *
-     * @param tile the square
-     * @param node the copy being emitted
-     * @param nodes every copy of that square
      * @return the block name, or null where there is nothing to group
      */
     private String blockFor(TileKey tile, Node node, List<Node> nodes)
@@ -472,7 +398,7 @@ public class AutonomyBuilder
     }
 
     /**
-     * The sides a train that arrived at this square by the given side can carry on out of.  Asked of the tile graph,
+     * The sides a train that arrived at this square by the given side can carry on out of, asked of the tile graph,
      * which alone knows which of a square's tracks a side belongs to.  A null arrival is unconstrained, as in leavesBy.
      */
     private Set<TilePorts.Side> onwardFrom(TileKey tile, TilePorts.Side arrival)
@@ -558,10 +484,10 @@ public class AutonomyBuilder
         if (sides.isEmpty())
         {
             // Nothing arrives, but a train standing here still faces a way: emitted whole, the square would record no
-            // facing, a train placed by hand would be offered every way out, and sent the way it does not face it would
-            // drive off over unlocked track (the runtime never commands a direction; the copy is the facing).  So one
-            // copy per way out, given the side such a train would have come in by, so `leavesBy` lets it out ahead only
-            // and `facingOf` names that way.  One way out, or none, is one Point: there is no facing to choose.
+            // facing and a train placed by hand and sent the way it does not face would drive off over unlocked track
+            // (the runtime never commands a direction; the copy is the facing).  So one copy per way out, given the
+            // side such a train would have come in by, so `leavesBy` lets it out ahead only and `facingOf` names that
+            // way.  One way out, or none, is one Point.
             List<TilePorts.Side> behind = sidesBehindTheWaysOut(tile);
 
             if (behind.size() > 1)
@@ -582,9 +508,8 @@ public class AutonomyBuilder
 
             for (TilePorts.Side side : sides)
             {
-                // Whether a train that came in by this side has anywhere to go but back.  Judged against the track it
-                // is standing on, not every side the square has: on a double curve the other curve's departures are not
-                // somewhere it can go.
+                // Whether a train that came in by this side has anywhere to go but back, judged against the track it is
+                // standing on (on a double curve the other curve's departures are not somewhere it can go).
                 Set<TilePorts.Side> onward = onwardFrom(tile, side);
 
                 boolean onwards = false;
@@ -594,13 +519,11 @@ public class AutonomyBuilder
                     if (departure != side && onward.contains(departure)) onwards = true;
                 }
 
-                // The plain copy is what lets a train pass straight through.  Where turning is compulsory it is not
-                // emitted, so the path finder has nothing else to choose, which is the whole difference between "may
-                // turn round here" and "must".
-                //
-                // Nor where it would have no way out: a dead end would give a Point that can be reached and never left,
-                // which full autonomy could pick as a destination.  And only where there is a turning copy to carry the
-                // arrival: an unmarked dead end keeps its plain copy with no way out, so the sensor stays in the graph;
+                // The plain copy lets a train pass straight through.  Where turning is compulsory it is not emitted, so
+                // the path finder has nothing else to choose: the whole difference between "may turn round here" and
+                // "must".  Nor where it would have no way out (a dead end would give a Point that can be reached and
+                // never left, which full autonomy could pick as a destination), and only where there is a turning copy
+                // to carry the arrival: an unmarked dead end keeps its plain copy so the sensor stays in the graph, and
                 // the trapped-arrival check puts that in front of the user.
                 if (!must && (onwards || !canTurn)) out.add(new Node(tile, side, false));
 
@@ -616,16 +539,12 @@ public class AutonomyBuilder
     /**
      * Which copy of a split square a home belongs on.  A home is a property of the square, but the model hangs it on a
      * Point and rebuildHomeStations refuses two Points claiming one locomotive, so it goes on one copy, chosen by what
-     * a train can do there rather than by enum order.  Preferred: a plain copy trains may arrive at; any copy trains
-     * may arrive at (on a must-turn square, a turning copy); copy zero, so a home is never silently dropped.
+     * a train can do there: a plain copy trains may arrive at; any copy trains may arrive at (on a must-turn square, a
+     * turning copy); copy zero, so a home is never silently dropped.
      *
      * A turning copy is a terminus and Return Home is manual, so a locomotive that cannot reverse is driven in nose
-     * first.  That only decides the home when every copy turns, since HomeStaging asks whether the locomotive can stand
-     * on any copy; then AutonomyChecks.checkHomesThatNeedReversing says so on the findings list instead of leaving an
-     * IMPOSSIBLE from Return Home.
-     *
-     * @param nodes the copies this square was emitted as
-     * @return the index of the copy to carry the home
+     * first.  That only decides the home when every copy turns; then AutonomyChecks.checkHomesThatNeedReversing says so
+     * on the findings list instead of leaving an IMPOSSIBLE from Return Home.
      */
     private int homeCopy(List<Node> nodes, JSONObject extras)
     {
@@ -678,8 +597,8 @@ public class AutonomyBuilder
      * wrong thing it can do is send the train back the way it came on its first move, which is why the editor offers
      * the choice.
      *
-     * @return the index into nodes, or -1 where the setup records a facing no copy faces - the train then stands on no
-     *         Point (the setup check reports it as an error until it is turned, moved, or the track is put back)
+     * @return the index into nodes, or -1 where the setup records a facing no copy faces (the train then stands on no
+     *         Point and the setup check reports an error until it is turned, moved, or the track is put back)
      */
     private int placementCopy(List<Node> nodes, JSONObject extras)
     {
@@ -691,13 +610,13 @@ public class AutonomyBuilder
         if (facing == null) return startableCopy(nodes);
 
         // Matched on the facing each copy stands for, not its arrival side: those differ on a turning copy, so a facing
-        // learned from a train that had just turned round would match no copy, fall through to the first, and put the
-        // locomotive on the copy pointing the opposite way.  Among the copies facing that way, one trains may arrive at
-        // first, as `homeCopy` asks: a copy that is not is built as no station.
+        // learned from a train that had just turned round would match no copy and put the locomotive on the copy
+        // pointing the opposite way.  Among the copies facing that way, one trains may arrive at first, as `homeCopy`
+        // asks.
         for (int copy = 0; copy < nodes.size(); copy++)
         {
-            // the plain copy in preference to the turning one: a train standing at a place it MAY turn
-            // round has not turned round yet
+            // The plain copy in preference to the turning one: a train standing where it MAY turn round has not turned
+            // yet
             if (facingOf(nodes.get(copy)) == facing && !nodes.get(copy).reverse && arrivalAllowed(nodes.get(copy)))
             {
                 return copy;
@@ -712,8 +631,7 @@ public class AutonomyBuilder
         // And where none of those faces that way, a copy that faces it anyway: the copy is the direction, so a train
         // stood on a copy facing the other way is dispatched along a route locked one way while its decoder drives it
         // the other, and the next capture writes the wrong facing over the operator's.  A barred arrival bars stopping
-        // there, not standing there.  Stood on a copy autonomy cannot start from, it is refused with a sentence that
-        // says why.
+        // there, not standing there.  A copy autonomy cannot start from is refused with a sentence that says why.
         for (int copy = 0; copy < nodes.size(); copy++)
         {
             if (facingOf(nodes.get(copy)) == facing && !nodes.get(copy).reverse) return copy;
@@ -729,18 +647,15 @@ public class AutonomyBuilder
         if (nodes.size() == 1 && facingOf(nodes.get(0)) == null) return 0;
 
         // And where no copy faces it, none: standing the train on a copy facing the other way would let the next
-        // capture write that facing over the train's, silently.  Kept on no Point it stays as the setup records it, and
-        // the error stops anything being sent until it is put right.
+        // capture write that facing over the train's.  On no Point it stays as the setup records it, and the error
+        // stops anything being sent until it is put right.
         return -1;
     }
 
     /**
      * Where a train goes when nothing says which way it faces, or no copy faces the way something says: a copy trains
      * may arrive at, the plain one first (`homeCopy` falls back to it too).  Not copy zero: copies are emitted N, E, S,
-     * W, so it could be a copy that is no station (BottomMainA, BottomMainPost).
-     *
-     * @param nodes the copies this square was emitted as
-     * @return the index of the copy to stand the train on
+     * W, so it could be a copy that is no station.
      */
     private int startableCopy(List<Node> nodes)
     {
@@ -759,9 +674,9 @@ public class AutonomyBuilder
 
     /**
      * Which way a train standing on this copy is pointing: the far side of the route it arrived on, not the opposite of
-     * the side it came in by, which differs on everything but straight track (an N-E curve entered by N leaves by E).
-     * A switch whose arrival side belongs to more than one route is ambiguous and the copy does not record which; the
-     * first matching route is taken, right for the common case.
+     * the side it came in by (an N-E curve entered by N leaves by E).  A switch whose arrival side belongs to more than
+     * one route is ambiguous and the copy does not record which; the first matching route is taken, right for the
+     * common case.
      */
     private TilePorts.Side facingOf(Node node)
     {
@@ -787,9 +702,7 @@ public class AutonomyBuilder
         return node.arrival.opposite();
     }
 
-    /**
-     * A side by name, or null if it is not one - an authored facing can outlive the track it described.
-     */
+    /** A side by name, or null if it is not one - an authored facing can outlive the track it described. */
     private static TilePorts.Side side(String name)
     {
         if (name == null) return null;
@@ -803,9 +716,9 @@ public class AutonomyBuilder
     }
 
     /**
-     * What a copy is called.  A tile that became a single Point keeps its plain name, so a railway is not paying for
-     * the splitting machinery in every list, log line and menu.  Named for the direction of travel rather than the side
-     * arrived by, which is what a running log reader wants: "Main 4 (eastbound, reverse)", not "Main 4 (in W, rev)".
+     * What a copy is called.  A tile that became a single Point keeps its plain name, so a railway does not pay for the
+     * splitting machinery in every list, log line and menu.  Named for the direction of travel rather than the side
+     * arrived by: "Main 4 (eastbound, reverse)", not "Main 4 (in W, rev)".
      */
     private String nodeName(String base, Node node, Set<String> taken)
     {
@@ -813,11 +726,11 @@ public class AutonomyBuilder
 
         String name = base + " (" + heading(node.arrival) + (node.reverse ? ", reverse)" : ")");
 
-        // Made unique against everything else, which uniqueNames cannot do on its own: it settles the base names, and
-        // these suffixes come afterwards.  Name one point "Main (eastbound)" by hand and let a neighboring "Main"
-        // split, and two Points would share a name, which Layout.createPoint refuses, invalidating the whole
-        // configuration.  Against the names the caller worked out once: working them out per copy cost a fifth of a
-        // click in the autonomy editor.  The square's own name is not counted against it.
+        // Made unique against everything else, which uniqueNames cannot do on its own: it settles the base names and
+        // these suffixes come afterwards.  A hand-named "Main (eastbound)" beside a splitting "Main" would give two
+        // Points one name, which Layout.createPoint refuses, invalidating the whole configuration.  Against names the
+        // caller worked out once: per copy it cost a fifth of a click in the autonomy editor.  The square's own name is
+        // not counted against it.
         if (!takenBesides(taken, base, name)) return name;
 
         for (int suffix = 2; suffix < 1000; suffix++)
@@ -843,12 +756,10 @@ public class AutonomyBuilder
     }
 
     /**
-     * Which way a train that arrived by this side is pointing, for the name only: the straight-through answer, the
-     * opposite of the side arrived by.  facingOf is better on a curve or a diverging leg, so there the copy is called
-     * "(eastbound)" while facingsAt reports its train faces south: left that way deliberately.  A Point's name is what
-     * every configuration refers to (placements, homes, exclusions, timetables), so changing the word renames Points on
-     * real layouts and parseAuto refuses a configuration naming one that no longer exists; correcting it needs a
-     * migration (MT-138).
+     * Which way a train that arrived by this side is pointing, for the name only: the straight-through answer.
+     * facingOf is better on a curve or a diverging leg, so there the copy is called "(eastbound)" while facingsAt
+     * reports its train faces south: left that way deliberately, since a Point's name is what every configuration
+     * refers to and changing the word needs a migration (MT-138).
      *
      * Nothing routes on this text: StationIndex.withoutArrivalSuffix strips all four words.
      */
@@ -902,9 +813,8 @@ public class AutonomyBuilder
             JSONObject extras = pointExtras == null
                 ? null : pointExtras.get(point.getTile().toString());
 
-            // A locomotive is a physical object and stands on exactly one of the copies.  Everything
-            // else authored on a square - homes, lengths, exclusions - is a property of the SQUARE and
-            // belongs on all of them.
+            // A locomotive is a physical object and stands on exactly one copy.  Everything else authored on a square
+            // (homes, lengths, exclusions) is a property of the SQUARE and belongs on all of them.
             int placed = placementCopy(nodes, extras);
 
             // The other per-square singleton.  See homeCopy.
@@ -918,10 +828,10 @@ public class AutonomyBuilder
 
                 json.put("name", nodeName(names.get(point.getTile()), node, taken));
 
-                // A station, unless a train arriving this way is not allowed to stop: the copy still carries traffic
-                // but nothing is sent to it.  Decided once, because two flags come from it; read again below, a barred
-                // side's turn-round copy would be a terminus that is not a destination, a pair Point.setTerminus
-                // refuses and parseAuto answers by invalidating the layout.
+                // A station, unless a train arriving this way may not stop: the copy still carries traffic but nothing
+                // is sent to it.  Decided once, because two flags come from it; read again below, a barred side's
+                // turn-round copy would be a terminus that is not a destination, which Point.setTerminus refuses and
+                // parseAuto answers by invalidating the layout.
                 boolean stops = point.isStation() && arrivalAllowed(node);
 
                 json.put("station", stops);
@@ -932,17 +842,17 @@ public class AutonomyBuilder
                 json.put("square", point.getTile().toString());
 
                 // Which copies are the same piece of track, only where a square is emitted as more than one Point.  The
-                // tile, not the s88: different places share a sensor on a real layout (a station, its approach guard
-                // and a reversing point), so only the tile says which Points are one square.
+                // tile, not the s88: different places share a sensor on a real layout, so only the tile says which
+                // Points are one square.
                                 String block = blockFor(point.getTile(), node, nodes);
 
                 if (block != null) json.put("block", block);
 
                 // The points this station is held back by, by name (FR-001), on every copy because the copies are one
-                // platform.  The same setting is also emitted as lock edges further down, and the two answer different
+                // platform.  The same setting is also emitted as lock edges below, and the two answer different
                 // questions: a lock edge asks whether that approach is held by a route, this whether a train is
                 // standing on the square.  One name per watched square, its first copy: the rule asks about the whole
-                // block, so any copy's name reaches the same track.
+                // block.
                 List<TileKey> held = blockingPoints.get(point.getTile());
 
                 if (held != null && !held.isEmpty())
@@ -951,9 +861,9 @@ public class AutonomyBuilder
 
                     for (TileKey square : held)
                     {
-                        // Not a square off the graph: a station on an excluded page, or a sensor whose track was
-                        // deleted, has no Point and `nodeName` would write null, which the railway's reader throws on.
-                        // Left out, as the lock-edge half below does, so the restriction quietly stops applying.
+                        // Not a square off the graph (a station on an excluded page, or a sensor whose track was
+                        // deleted): it has no Point and `nodeName` would write null, which the railway's reader throws
+                        // on.  Left out, as the lock-edge half below does.
                         if (!reducer.getPoints().containsKey(square) || names.get(square) == null) continue;
 
                         List<Node> copies = nodesFor(square);
@@ -969,9 +879,9 @@ public class AutonomyBuilder
                 // The signals thrown to red while this platform is claimed, on every copy because the copies are one
                 // platform, including a copy whose arrival side is barred (so not conditioned on `stops`): a bar stops
                 // autonomy routing a train in, not a person driving or placing one, and refreshOneSignal asks only the
-                // Points whose protecting signals hold the accessory, so a copy left out would show green over an
-                // occupied platform.  Safe on a non-station: setProtectingSignals stores what it is given, unlike the
-                // terminus flag below.  One is written as a bare string, several as an array, as parseAuto reads.
+                // Points whose protecting signals hold the accessory.  Safe on a non-station: setProtectingSignals
+                // stores what it is given, unlike the terminus flag below.  One is written as a bare string, several as
+                // an array, as parseAuto reads.
                 List<String> protecting = protectingSignals.get(point.getTile());
 
                 if (protecting != null && !protecting.isEmpty())
@@ -1026,31 +936,27 @@ public class AutonomyBuilder
                         if (HOME.equals(key) && copy != homeOn) continue;
 
                         // On a split tile, turning round is what the copy means, so the authored flag is carried onto
-                        // neither: it would make the plain copy reverse too.  CAN_REVERSE never goes out at all; it is
-                        // the instruction to split.
+                        // neither: it would make the plain copy reverse too.  CAN_REVERSE never goes out; it is the
+                        // instruction to split.
                         if (CAN_REVERSE.equals(key) || PARKING.equals(key)
                                 || FACING.equals(key) || AUTO_DESTINATION.equals(key) || HOME_FACING.equals(key)) continue;
 
                         if (DERIVED.contains(key)) continue;
 
-                        // Active is carried on every square, not only a station: the three-way usage menu offers Out of
-                        // service on every square and writes `active` alone, so marking a plain sensor out of service
-                        // draws a cross, and `Layout.isPathClear` refuses a path through an inactive point only if the
-                        // flag reaches the graph.
+                        // Active is carried on every square, not only a station: the usage menu writes `active` alone
+                        // for Out of service on any square, and `Layout.isPathClear` refuses a path through an inactive
+                        // point only if the flag reaches the graph.
 
                         json.put(key, extras.get(key));
                     }
                 }
 
-                // A station turns round at a terminus; anything else at a reversing point: a terminus is a destination
-                // that reverses on arrival, a reversing point is one autonomy never chooses to stop at.
-                //
-                // Either the copy that exists to turn trains round, or, where the square was marked and nothing arrives
-                // at it by a side of the grid, the single Point it became; otherwise it would emit no flag and trains
-                // would run into the buffers.  Must, not may, in that case: the flag means every arriving train
-                // reverses, and on a may-turn square it would silently promote the user's choice and make a through
-                // station unroutable.  Where may cannot be expressed nothing is emitted, and the checks report that the
-                // marking means nothing here.
+                // A station turns round at a terminus, anything else at a reversing point: a terminus is a destination
+                // that reverses on arrival, a reversing point one autonomy never chooses to stop at.  Either the copy
+                // that exists to turn trains round, or, where the square was marked and nothing arrives at it by a side
+                // of the grid, the single Point it became (must, not may: the flag means every arriving train reverses,
+                // and on a may-turn square it would make a through station unroutable; where may cannot be expressed
+                // nothing is emitted, and the checks report that the marking means nothing here).
                 if (node.reverse
                     || (mandatory.contains(point.getTile()) && splitSides(point.getTile()).isEmpty()))
                 {
@@ -1059,9 +965,8 @@ public class AutonomyBuilder
                     json.put(stops ? "terminus" : "reversing", true);
                 }
 
-                // A berth is an ordinary station that autonomy is told not to choose, not a reversing station, which
-                // would drag along the train reversing on arrival and no path routed through; a terminus and a shut arm
-                // say those, each on its own.
+                // A berth is an ordinary station that autonomy is told not to choose, not a reversing one (which would
+                // drag along reversing on arrival and no path routed through): a terminus and a shut arm say those.
                 if (manualOnly.contains(point.getTile()))
                 {
                     json.put(AUTO_DESTINATION, false);
@@ -1144,16 +1049,15 @@ public class AutonomyBuilder
             json.put("length", edge.getLength());
 
             // And the side it comes in by, which only this end knows (OB-182): the model works out where a neighboring
-            // Point lies and calls that the arrival side, but a reduced run crosses tiles and turns corners.  The
-            // arrival side written, the walk that blocks the track behind a standing train and the question asked when
-            // placing one by hand need this one.  It is the side the square is split on, so a different value would
-            // describe a copy that does not exist.
+            // Point lies and calls that the arrival side, but a reduced run crosses tiles and turns corners.  Needed by
+            // the walk that blocks the track behind a standing train and the question asked when placing one by hand;
+            // it is the side the square is split on.
             if (edge.getEntrySide() != null) json.put("entrySide", edge.getEntrySide().name());
 
             // And the places it runs over, in order, each with what it measures (OB-207): the runtime must say where
             // along an edge a train lies, or a one-unit train in the first tile of a twelve-tile run would refuse every
-            // path sharing any of the other eleven.  `GraphReducer.placesAlong` is built from the same location ids as
-            // the lock relation below, so the two cannot drift, and the lengths sum to the `length` above.
+            // path sharing any other.  `GraphReducer.placesAlong` uses the same location ids as the lock relation
+            // below, so the two cannot drift; the lengths sum to the `length` above.
             JSONArray places = new JSONArray();
 
             for (GraphReducer.Place place : reducer.placesAlong(edge))
@@ -1163,8 +1067,7 @@ public class AutonomyBuilder
                 at.put("at", place.getId());
                 at.put("length", place.getLength());
 
-                // And whether its 0 was answered on purpose, so the runtime does not call it missing.  Written only
-                // where true.
+                // And whether its 0 was answered on purpose, so the runtime does not call it missing (only where true).
                 if (place.isAnswered()) at.put("answered", true);
 
                 // And what Mass Assign asks a length for there (OB-297).
@@ -1182,9 +1085,9 @@ public class AutonomyBuilder
 
             // And how much of it is after the last switch (Adam's ruling): "Between the switch and the station, the
             // length must be >= length of the train", and "for the switches, for simplicity, let's use any direction,
-            // that way we are guaranteed to be safe".  Only the reducer walks tiles; runtime `Edge` knows a length and
-            // not what it is made of.  Written only where the edge crosses a switch: an edge that crosses none does not
-            // bound where a train may stop, so absent is not zero.
+            // that way we are guaranteed to be safe".  Only the reducer walks tiles; runtime `Edge` knows a length, not
+            // what it is made of.  Written only where the edge crosses a switch: an edge crossing none does not bound
+            // where a train may stop, so absent is not zero.
             if (edge.crossesASwitch()) json.put("roomAtTheEnd", edge.getRoomAtTheEnd());
 
             JSONArray commands = new JSONArray();
@@ -1243,11 +1146,11 @@ public class AutonomyBuilder
                 }
             }
 
-            // FR-001, on top of the locks the reduction derived: an edge arriving at a station somebody has held back
-            // gains every edge that ends at the watched square, for every emitted copy like the derived locks (a
-            // restriction naming one copy would be satisfied by routing over its twin).  Squares that no longer exist
-            // are not found, so a restriction watching deleted track quietly stops applying; reconcile drops it from
-            // the setup on the next pass and says so.
+            // FR-001, on top of the locks the reduction derived: an edge arriving at a held-back station gains every
+            // edge that ends at the watched square, for every emitted copy like the derived locks (a restriction naming
+            // one copy would be satisfied by routing over its twin).  Squares that no longer exist are not found, so a
+            // restriction watching deleted track quietly stops applying; reconcile drops it on the next pass and says
+            // so.
             List<TileKey> watched = blockingPoints.get(edge.getEnd());
 
             if (watched != null)
@@ -1287,11 +1190,9 @@ public class AutonomyBuilder
     }
 
     /**
-     * Every name this builder would emit, mapped back to the square it belongs to.  uniqueNames() stops being the whole
-     * answer once a tile is several Points; anything working backwards from a running configuration (the diagram
-     * monitor, the capture of where locomotives ended up) needs this, or it silently loses every split copy.
-     *
-     * @return emitted Point name to tile
+     * Every name this builder would emit, mapped back to its square.  uniqueNames() is not the whole answer once a tile
+     * is several Points; anything working backwards from a running configuration (the diagram monitor, the capture of
+     * where locomotives ended up) needs this or loses every split copy.
      */
     public Map<String, TileKey> tilesByName()
     {
@@ -1315,9 +1216,7 @@ public class AutonomyBuilder
     /**
      * Every emitted name mapped to the name the square has.  The track diagram registers a station label under the
      * caption written on it (the base name) and the running configuration may know that place as several Points, so
-     * anything pairing a Point with a label has to go through this.
-     *
-     * @return emitted Point name to base name.  An unsplit Point maps to itself.
+     * anything pairing a Point with a label goes through this.  An unsplit Point maps to itself.
      */
     public Map<String, String> baseNames()
     {
@@ -1340,11 +1239,9 @@ public class AutonomyBuilder
 
     /**
      * The ways a locomotive may be homed facing on a square: the facings of the copies trains may arrive at (OB-282).
-     *
      * *"we shouldn't allow an impossible facing to be saved"* - a copy trains may not arrive at is not one a train can
      * be brought home to, so its facing is not offered and `homeCopy` would not honor it.
      *
-     * @param tile the square
      * @return the facings, empty on a square that is not split
      */
     public java.util.Set<TilePorts.Side> homeFacingsAt(TileKey tile)
@@ -1362,12 +1259,9 @@ public class AutonomyBuilder
     }
 
     /**
-     * Every emitted name mapped to the way a train standing on it is pointing: how a facing gets learned rather than
-     * asked for.  Once autonomy has run, the Point a locomotive ended on says which way round it is, and capturing that
-     * back means the user never answers the question again for that train.
-     *
-     * @return emitted Point name to the side of the square its front faces.  Only split copies appear,
-     *         because an unsplit Point records no facing.
+     * Every emitted name mapped to the way a train standing on it is pointing, so a facing is learned rather than asked
+     * for: once autonomy has run, the Point a locomotive ended on says which way round it is.  Only split copies
+     * appear.
      */
     public Map<String, TilePorts.Side> facingByName()
     {
@@ -1392,9 +1286,7 @@ public class AutonomyBuilder
 
     /**
      * Every emitted name of a split copy mapped to the side its trains come in by (OB-201): what a trapped arrival is
-     * named by, and what closing arrivals from that side would close.
-     *
-     * @return emitted Point name to its arrival side; only split copies appear
+     * named by, and what closing arrivals from that side would close.  Only split copies appear.
      */
     public Map<String, TilePorts.Side> arrivalByName()
     {
@@ -1418,11 +1310,8 @@ public class AutonomyBuilder
     }
 
     /**
-     * Which way a train on a square of one copy that records no facing points: toward its only way out - or
-     * null where it has none, or more than one.
-     *
-     * @param tile the square
-     * @return the side its front faces, or null
+     * Which way a train on a square of one copy that records no facing points: toward its only way out, or null where
+     * it has none or more than one.
      */
     public TilePorts.Side onlyWayOutFacing(TileKey tile)
     {
@@ -1431,11 +1320,7 @@ public class AutonomyBuilder
         return behind.size() == 1 ? facingOf(new Node(tile, behind.get(0), false)) : null;
     }
 
-    /**
-     * Every emitted name of a turning copy: a train that came in and turned round there.
-     *
-     * @return the names
-     */
+    /** Every emitted name of a turning copy: a train that came in and turned round there. */
     public Set<String> turningNames()
     {
         Set<String> out = new java.util.LinkedHashSet<>();
@@ -1456,10 +1341,8 @@ public class AutonomyBuilder
     }
 
     /**
-     * The reduction this naming was made from: the squares' edges, before any is split into copies - which way a train
-     * may leave or reach a square at all, read by the session's one-way refusal.
-     *
-     * @return the reducer
+     * The reduction this naming was made from: the squares' edges before any is split into copies, which the session's
+     * one-way refusal reads for which way a train may leave or reach a square at all.
      */
     GraphReducer reduction()
     {
@@ -1467,10 +1350,8 @@ public class AutonomyBuilder
     }
 
     /**
-     * Every emitted edge name - "start -> end" over Point names - mapped to the reduced edge it came
-     * from.  Several names can share one reduced edge once a tile is split.
-     *
-     * @return edge name to the route it describes
+     * Every emitted edge name - "start -> end" over Point names - mapped to the reduced edge it came from; several
+     * names can share one reduced edge once a tile is split.
      */
     public Map<String, ReducedEdge> edgesByName()
     {
@@ -1566,12 +1447,7 @@ public class AutonomyBuilder
         return out;
     }
 
-    /**
-     * The names of squares on pages out of autonomy, which take their turn in `uniqueNames` without being emitted.
-     *
-     * @param names each such named square, and its own name
-     * @return this
-     */
+    /** The names of squares on pages out of autonomy, which take their turn in `uniqueNames` without being emitted. */
     public AutonomyBuilder withNamesOutOfPlay(Map<TileKey, String> names)
     {
         this.namesOutOfPlay = names == null ? Collections.<TileKey, String>emptyMap() : names;
