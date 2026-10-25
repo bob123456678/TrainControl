@@ -891,9 +891,10 @@ public class testRouteEditorValidation
     }
 
     /**
-     * FR-144: "1 or 2 or 3 and 4" typed flat becomes "(1 or 2 or 3) and 4" by selecting the first three conditions and
-     * pressing indent once; 4 then moves up past the whole group to "4 and (1 or 2 or 3)" and back, every line keeping
-     * its level; and outdenting the selection undoes the indent.
+     * FR-144: "1 or 2 or 3 and 4" typed flat becomes "(1 or 2 or 3) and 4" by clicking the first condition,
+     * Shift-clicking the third and pressing the indent mark once; 4's up arrow then moves it past the whole group to
+     * "4 and (1 or 2 or 3)" and its down arrow back, every line keeping its level; and outdenting the selection undoes
+     * the indent.  Every step is a mouse press on the condition table.
      *
      * MUTATION: drop `ConditionTable.changeSelection`'s override, and the press collapses the selection to one line,
      * so only sensor 1 moves in.
@@ -914,7 +915,13 @@ public class testRouteEditorValidation
             assertFalse(org.traincontrol.base.ConditionOutline.problems(frame.conditionRowsForTest()).isEmpty(),
                 "precondition: 'or' and 'and' side by side at one level should be flagged");
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> frame.indentConditionsForTest(0, 4, 1));
+            final javax.swing.JTable table = support.Components.find(frame, javax.swing.JTable.class,
+                t -> "ConditionTable".equals(t.getClass().getSimpleName()));
+
+            assertNotNull(table, "the route editor has no condition table");
+
+            selectLines(table, 0, 4);
+            clickCell(table, 0, INDENT_MARK, 0);
 
             assertEquals(levels(frame), " 1:1 1OR 1:2 1OR 1:3 0AND 0:4",
                 "the three selected conditions and the words between them go one level in, the 'and' stays");
@@ -922,16 +929,17 @@ public class testRouteEditorValidation
             assertTrue(org.traincontrol.base.ConditionOutline.problems(frame.conditionRowsForTest()).isEmpty(),
                 "(1 or 2 or 3) and 4 is flagged: " + levels(frame));
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> frame.moveConditionForTest(6, -1));
+            clickCell(table, 6, UP_ARROW, 0);
 
             assertEquals(levels(frame), " 0:4 0AND 1:1 1OR 1:2 1OR 1:3",
                 "4 moved up past the whole group, with the 'and' between them and every level kept");
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> frame.moveConditionForTest(0, 1));
+            clickCell(table, 0, DOWN_ARROW, 0);
 
             assertEquals(levels(frame), " 1:1 1OR 1:2 1OR 1:3 0AND 0:4", "and moved back down past it");
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> frame.indentConditionsForTest(0, 4, -1));
+            selectLines(table, 0, 4);
+            clickCell(table, 0, OUTDENT_MARK, 0);
 
             assertEquals(levels(frame), " 0:1 0OR 0:2 0OR 0:3 0AND 0:4", "outdenting the selection undoes it");
         }
@@ -998,6 +1006,165 @@ public class testRouteEditorValidation
 
             close(frame);
         }
+    }
+
+    /**
+     * OB-367: a command's setting dropdown, opened by a click on its cell, offers the words in the user's language and
+     * still holds the stored words.
+     *
+     * MUTATION: in `chooseSetting`, drop the `setRenderer` call, and the dropdown offers "straight" and "turn".
+     */
+    @Test
+    public void testTheSettingDropdownSpeaksTheUsersLanguage() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final java.util.Locale was = org.traincontrol.util.I18n.getLocale();
+
+        try
+        {
+            final java.util.List<String> offered = new java.util.ArrayList<>();
+            final java.util.List<Object> held = new java.util.ArrayList<>();
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                org.traincontrol.util.I18n.setLocale(java.util.Locale.GERMAN);
+
+                if (frame.commandRowCountForTest() == 0) frame.addCommandRowForTest();
+
+                frame.setCommandKindForTest(0, CommandRow.Kind.ACCESSORY);
+                frame.setCommandTargetForTest(0, "12");
+                frame.setCommandSettingForTest(0, "turn");
+
+                frame.pack();
+                frame.setVisible(true);
+            });
+
+            final javax.swing.JTable table = support.Components.find(frame, javax.swing.JTable.class,
+                t -> "CommandTable".equals(t.getClass().getSimpleName()));
+
+            assertNotNull(table, "the route editor has no command table");
+
+            clickCell(table, 0, 6, 0);
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                if (!(table.getEditorComponent() instanceof javax.swing.JComboBox)) return;
+
+                javax.swing.JComboBox<?> box = (javax.swing.JComboBox<?>) table.getEditorComponent();
+                javax.swing.JList<Object> list = new javax.swing.JList<>();
+
+                @SuppressWarnings("unchecked")
+                javax.swing.ListCellRenderer<Object> renderer = (javax.swing.ListCellRenderer<Object>) box.getRenderer();
+
+                for (int i = 0; i < box.getItemCount(); i++)
+                {
+                    held.add(box.getItemAt(i));
+
+                    offered.add(((javax.swing.JLabel) renderer.getListCellRendererComponent(list, box.getItemAt(i), i,
+                        false, false)).getText());
+                }
+
+                table.getCellEditor().cancelCellEditing();
+            });
+
+            assertEquals(held, java.util.Arrays.asList("straight", "turn"), "a click on the setting cell opened no"
+                + " dropdown of the stored words");
+            assertEquals(offered, java.util.Arrays.asList("gerade", "abzweigend"), "the dropdown in German");
+        }
+        finally
+        {
+            org.traincontrol.util.I18n.setLocale(was);
+
+            close(frame);
+        }
+    }
+
+    /**
+     * OB-367: a direction condition reads in the user's language in "Reads as".
+     *
+     * MUTATION: in `shortly`, give the direction its stored word instead of `settingLabel`'s, and Reads as says
+     * "backward".
+     */
+    @Test
+    public void testADirectionReadsInTheUsersLanguage() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final java.util.Locale was = org.traincontrol.util.I18n.getLocale();
+
+        try
+        {
+            final String[] readsAs = new String[1];
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                org.traincontrol.util.I18n.setLocale(java.util.Locale.GERMAN);
+
+                java.util.List<org.traincontrol.base.ConditionOutline.Row> rows = new java.util.ArrayList<>();
+
+                rows.add(org.traincontrol.base.ConditionOutline.Row.condition(0,
+                    org.traincontrol.base.RouteCommand.RouteCommandFeedback(5, true)));
+                rows.add(org.traincontrol.base.ConditionOutline.Row.joining(0,
+                    org.traincontrol.base.ConditionOutline.Joiner.AND));
+                rows.add(org.traincontrol.base.ConditionOutline.Row.condition(0,
+                    org.traincontrol.base.RouteCommand.RouteCommandLocomotiveDirection("Example train",
+                        org.traincontrol.base.Locomotive.locDirection.DIR_BACKWARD)));
+
+                frame.setConditionRowsForTest(rows);
+
+                readsAs[0] = frame.readsAsForTest();
+            });
+
+            assertTrue(readsAs[0].contains("Example train r\u00fcckw\u00e4rts"), "Reads as, in German: " + readsAs[0]);
+        }
+        finally
+        {
+            org.traincontrol.util.I18n.setLocale(was);
+
+            close(frame);
+        }
+    }
+
+    /** The condition table's columns a press acts on, and one no condition on a sensor can edit (the protocol). */
+    private static final int UP_ARROW = 0;
+    private static final int DOWN_ARROW = 1;
+    private static final int INDENT_MARK = 2;
+    private static final int OUTDENT_MARK = 3;
+    private static final int NOTHING_TO_EDIT = 7;
+
+    /** Clicks the first line and Shift-clicks the last, where a press neither edits nor moves anything. */
+    private static void selectLines(javax.swing.JTable table, int first, int last) throws Exception
+    {
+        clickCell(table, first, NOTHING_TO_EDIT, 0);
+        clickCell(table, last, NOTHING_TO_EDIT, java.awt.event.InputEvent.SHIFT_DOWN_MASK);
+    }
+
+    /**
+     * A left press, release and click in the middle of one cell, as the mouse sends them, so the table's own selection
+     * handler and the marks' listener both see it.
+     */
+    private static void clickCell(final javax.swing.JTable table, final int line, final int column, final int modifiers)
+        throws Exception
+    {
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            java.awt.Rectangle cell = table.getCellRect(line, column, true);
+
+            int x = cell.x + cell.width / 2;
+            int y = cell.y + cell.height / 2;
+            long now = System.currentTimeMillis();
+
+            table.dispatchEvent(new java.awt.event.MouseEvent(table, java.awt.event.MouseEvent.MOUSE_PRESSED, now,
+                modifiers | java.awt.event.InputEvent.BUTTON1_DOWN_MASK, x, y, 1, false,
+                java.awt.event.MouseEvent.BUTTON1));
+            table.dispatchEvent(new java.awt.event.MouseEvent(table, java.awt.event.MouseEvent.MOUSE_RELEASED, now + 1,
+                modifiers, x, y, 1, false, java.awt.event.MouseEvent.BUTTON1));
+            table.dispatchEvent(new java.awt.event.MouseEvent(table, java.awt.event.MouseEvent.MOUSE_CLICKED, now + 1,
+                modifiers, x, y, 1, false, java.awt.event.MouseEvent.BUTTON1));
+        });
     }
 
     /** Each line as depth and sensor, or depth and word: " 1:1 1OR 0:4". */
