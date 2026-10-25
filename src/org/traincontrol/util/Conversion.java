@@ -87,6 +87,18 @@ public class Conversion
     {    
         return "0x" + Integer.toHexString(b);
     }
+
+    /**
+     * Reads a locomotive address as typed: "0x" means hex for an MFX decoder and decimal, so not a number, for any other.
+     * @param text what was typed
+     * @param mfx whether the decoder is MFX
+     * @return the address as typed, sign included
+     * @throws NumberFormatException when it is not a number
+     */
+    public static int parseTypedAddress(String text, boolean mfx)
+    {
+        return mfx && text.contains("0x") ? Integer.parseInt(text.replace("0x", ""), 16) : Integer.parseInt(text);
+    }
     
     /**
      * Generates a hash of the current working directory

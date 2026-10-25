@@ -13,6 +13,7 @@ import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.Locomotive.decoderType;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.model.ViewListener;
+import org.traincontrol.util.Conversion;
 import org.traincontrol.util.I18n;
 
 public class AddLocomotive extends javax.swing.JFrame
@@ -322,17 +323,7 @@ public class AddLocomotive extends javax.swing.JFrame
                 
                 try
                 {
-                    if (this.LocTypeMFX.isSelected() && this.LocAddressInput.getText().contains("0x"))
-                    {
-                        locAddress = Integer.parseInt(
-                            this.LocAddressInput.getText().replace("0x", ""),
-                            16
-                        );
-                    }
-                    else
-                    {
-                        locAddress = Integer.parseInt(this.LocAddressInput.getText());
-                    }
+                    locAddress = Conversion.parseTypedAddress(this.LocAddressInput.getText(), this.LocTypeMFX.isSelected());
                 }
                 catch (NumberFormatException e)
                 {
@@ -429,14 +420,7 @@ public class AddLocomotive extends javax.swing.JFrame
 
             try
             {
-                if (this.LocTypeMFX.isSelected() && this.LocAddressInput.getText().contains("0x"))
-                {
-                    locAddress = Integer.parseInt(this.LocAddressInput.getText().replace("0x", ""), 16);
-                }
-                else
-                {
-                    locAddress = Integer.parseInt(this.LocAddressInput.getText());
-                }
+                locAddress = Conversion.parseTypedAddress(this.LocAddressInput.getText(), this.LocTypeMFX.isSelected());
             }
             catch (NumberFormatException e)
             {

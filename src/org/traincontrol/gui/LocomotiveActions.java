@@ -34,6 +34,7 @@ import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.LocomotiveNotes;
 import org.traincontrol.base.Route;
 import org.traincontrol.gui.locomotive.LocomotiveAddressChange;
+import org.traincontrol.util.Conversion;
 import org.traincontrol.util.I18n;
 
 /**
@@ -172,14 +173,7 @@ final class LocomotiveActions
 
                 if (result == JOptionPane.OK_OPTION && newAddress != null && !"".equals(newAddress.trim()))
                 {
-                    if (newDecoderType == decoderType.MFX && newAddress.contains("0x"))
-                    {
-                        proposedAddress = Integer.valueOf(newAddress.replace("0x", ""), 16);
-                    }
-                    else
-                    {
-                        proposedAddress = Integer.valueOf(newAddress);
-                    }
+                    proposedAddress = Conversion.parseTypedAddress(newAddress, newDecoderType == decoderType.MFX);
 
                     if (proposedAddress != l.getAddress() || newDecoderType != l.getDecoderType())
                     {
