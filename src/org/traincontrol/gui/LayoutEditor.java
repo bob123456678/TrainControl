@@ -2527,13 +2527,8 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
-     * A line drawn ON a component rather than around it: it paints, and it reserves no space.  The hover outline has to
-     * be visible without changing anything's size: an ordinary LineBorder takes its width in insets, so one put on a
-     * square resting with no border at all would make that square a pixel bigger in each direction and push the diagram
-     * along in front of the pointer (FR-006).  A border is allowed to paint outside what it reserves, and nothing else
-     * on the square draws in that outermost pixel.  Only needed where the resting border is null: with the grid on,
-     * both borders are one-pixel lines and the sizes already match.
-     *
+     * A line drawn ON a component, reserving no space, so the hover outline on a borderless square moves nothing
+     * (FR-006); a border may paint outside what it reserves.
      * @param color the outline colour
      * @param width how thick to draw it
      * @return a border that paints a line and reports no insets
@@ -2575,12 +2570,9 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
-     * Puts the grid switch into the window's own Toggle Visibility group (FR-006: "make the gray grid an option you can
-     * toggle in the visible elements.  on by default, but persisted if turned off.").  By REPLACING the Text Labels box
-     * with a small column holding both, the trick the autonomy sidebar uses: a GroupLayout cannot have a component
-     * added after the fact but can swap one for another, so this lands where it belongs without touching the generated
-     * form.  Text Labels rather than Addresses, because Addresses is the one autonomy mode swaps for a column of its
-     * own; two replacements of one component would fight.
+     * Puts the grid switch into Toggle Visibility (FR-006: "make the gray grid an option you can toggle in the visible
+     * elements.  on by default, but persisted if turned off.") by replacing Text Labels with a column of both; not
+     * Addresses, which autonomy mode replaces.
      */
     private void mountGridToggle()
     {
@@ -2624,18 +2616,14 @@ public class LayoutEditor extends PositionAwareJFrame
     private javax.swing.JCheckBox showGridCheckbox;
 
     /**
-     * The gap between Text Labels and Grid, which goes with Text Labels (OB-289): the autonomy editor hides Text
-     * Labels, which its caption choice replaces (FR-061), and the gap left standing would put itself at the top of the
-     * column, twice the space under Visible Elements that every other heading has under it (Adam: *"slightly too much
+     * The gap under Text Labels, hidden with it in the autonomy editor (OB-289; Adam: *"slightly too much
      * spacing/padding below "visible elements" in autonomy editor.  make it be consistent with other labels"*).
      */
     private java.awt.Component gapUnderTextLabels;
 
     /**
-     * Whether the editor draws its grey grid: on by default and remembered when turned off (FR-006).  Static because
-     * the border is: the label that asks has no editor to ask, and the answer is a property of the application rather
-     * than of one window.
-     *
+     * Whether the editor draws its grey grid, on by default and remembered (FR-006); static, as the label asking has no
+     * editor.
      * @return true when the grid should be drawn
      */
     public static boolean showGrid()
@@ -2646,7 +2634,6 @@ public class LayoutEditor extends PositionAwareJFrame
 
     /**
      * Remembers the choice and redraws every square to it.
-     *
      * @param show whether to draw the grid
      */
     public void setShowGrid(boolean show)
@@ -2656,35 +2643,24 @@ public class LayoutEditor extends PositionAwareJFrame
             TrainControlUI.getPrefs().putBoolean(TrainControlUI.EDITOR_GRID_PREF, show);
         }
 
-        // AND THE CHECKBOX SAYS SO, whoever asked (OB-179): there are two doors onto this, the box in the tools column
-        // and Control+K, and a key that turns the grid off and leaves the box ticked is a window disagreeing with
-        // itself about a setting the user can see.  Here, as this is the one method that knows the answer changed;
-        // setting the box to what it already is costs nothing.
+        // And the box says so, whoever asked (OB-179): Control+K is the other door.
         if (showGridCheckbox != null) showGridCheckbox.setSelected(show);
 
-        // The borders as they stand are the old answer, so all are put back; both panels, as the palette keeps its own
-        // thicker line either way and asking it costs nothing.
+        // Every border is the old answer, so all are put back, the palette's too.
         clearBordersFromChildren(this.newComponents);
 
         if (this.grid != null) clearBordersFromChildren(this.grid.getContainer());
 
-        // AND THE AXIS NUMBERS, which follow the grid (OB-172): this method rewrites the CELL borders and nothing else,
-        // so the ruler round the outside would keep what it was given when the diagram was last built.  A full redraw
-        // rather than reaching into the grid to swap one border: the ruler is built from the diagram's offsets and
-        // dimensions, which live in `drawGrid`, and duplicating that is how the two come to disagree.
+        // And the axis numbers, which follow the grid (OB-172): a full redraw, as the ruler is built in `drawGrid`.
         drawGrid();
 
-        // AND THE OUTLINES DRAWN BACK, as after every redraw: Control+K and the Grid box would take the picked squares,
-        // the grip, a box being drawn and the pointer's blue off until the pointer entered another square
+        // And the outlines drawn back, as after every redraw
         drawTheOutlinesBack();
     }
 
     /**
-     * After a redraw, the track editor's outlines drawn back rather than only taken down: the picked squares, the
-     * selection's grip, a box being drawn, a landing and the pointer's blue all still act, and would otherwise look
-     * gone after an undo, a redo, Control+K or the Grid box until the pointer next moved.  `refreshSelectionBorders`
-     * begins with the same border pass.  The autonomy editor draws its own hover and has no selection here, so it gets
-     * the border pass alone.
+     * After a redraw, the track editor's outlines drawn back (selection, grip, box, landing, the pointer's blue), or
+     * they look gone until the pointer moves; the autonomy editor gets the border pass alone.
      */
     private void drawTheOutlinesBack()
     {
@@ -2695,10 +2671,8 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
-     * The pointer gone off the squares (into the margin, or straight off a square onto the tools column, the Grid box
-     * or another window, which crosses no margin): over no square, so its blue comes off, and the rest (the picked
-     * squares, the grip, a box being drawn) is drawn back.  Posted, so it lands after any outline the last square's
-     * hover has posted, which would otherwise draw the blue back.
+     * The pointer gone off the squares: its blue comes off, the rest is drawn back.  Posted, after any outline the last
+     * square's hover posted.
      */
     private void pointerOffTheSquares()
     {
@@ -2708,11 +2682,8 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
-     * The pointer has left a square of the track editor.  Onto another square, whose own hover moves the outline:
-     * nothing here.  Off the squares altogether, which the margin does not always see since a pointer can go straight
-     * onto the tools column: it is over no square.  The autonomy editor's hover is its own, and the palette's squares
-     * are not the grid's.
-     *
+     * The pointer left a square of the track editor: onto another, whose hover answers, or off the squares altogether,
+     * which the margin does not always see.
      * @param e the exit, in the square's coordinates
      * @param label the square left
      */
@@ -2722,23 +2693,19 @@ public class LayoutEditor extends PositionAwareJFrame
 
         JPanel squares = this.grid.getContainer();
 
-        // FROM WHAT WAS LEFT: the square, or an address label lying on it that passed its exit on
+        // From the square, or an address label on it that passed its exit on
         java.awt.Component from = e.getComponent() != null ? e.getComponent() : label;
 
         java.awt.Point to = javax.swing.SwingUtilities.convertPoint(from, e.getPoint(), squares);
 
-        // ONTO A SQUARE - another, this one with a menu or a dialog opened over it, or something drawn over one - AND
-        // IN VIEW: the half of a square the view has scrolled out of sight is no square to be over
+        // Onto a square (or something over one) and in view
         if (squares.contains(to) && squares.getVisibleRect().contains(to) && aSquareAt(squares, to)) return;
 
         pointerOffTheSquares();
     }
 
     /**
-     * Whether a square of the grid - not its padding - lies under a point of the grid's panel, whatever is drawn over
-     * it: an accessory's address label lies on the top left of its square, and the padding along the last column and
-     * row is no square.
-     *
+     * Whether a square of the grid, not its padding, lies under a point of its panel, whatever is drawn over it.
      * @param squares the grid's panel
      * @param at a point of it
      * @return whether a square is there
@@ -2758,11 +2725,8 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
-     * Hears the pointer arrive anywhere in this window, so that a pointer gone off the squares without a square's exit
-     * saying so is still found off them: out from under a menu, or a dialog, that took the square's exit while the
-     * pointer was over the square and closed with it over the tools column.  The toolkit keeps what it is given for the
-     * life of the program, so this holds the window weakly and goes once the window has, besides being taken off in
-     * `dispose`.
+     * Hears the pointer arrive anywhere in this window, so it is found off the squares even where a menu or dialog took
+     * the square's exit.  Holds the window weakly, as the toolkit keeps it for life; removed in `dispose` too.
      */
     private static final class PointerWatch implements java.awt.event.AWTEventListener
     {
@@ -2792,11 +2756,8 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
-     * The right-click menu for a square, made to ask where the pointer is once it goes: it takes the square's exit
-     * while the pointer is still over the square, and while it is open the watch leaves the outline alone, so,
-     * dismissed with the pointer over the tools column or over a part of the window nothing listens on, nothing else
-     * would ask again and the Grid box would draw the blue back.
-     *
+     * The right-click menu for a square, asking where the pointer is once it goes: it took the square's exit, so
+     * nothing else would ask.
      * @param label the square
      * @param lc what is drawn on it, or null
      * @return the menu, not yet shown
@@ -2828,10 +2789,7 @@ public class LayoutEditor extends PositionAwareJFrame
         return menu;
     }
 
-    /**
-     * Where the pointer is, asked once what covered the squares has gone: over a square in view, the outline stays;
-     * anywhere else, the pointer is off the squares.
-     */
+    /** Where the pointer is, once what covered the squares has gone: over one in view, the outline stays. */
     private void askWhereThePointerIs()
     {
         if (!this.pointerOnGrid || isAutonomyMode() || this.grid == null) return;
@@ -2847,28 +2805,21 @@ public class LayoutEditor extends PositionAwareJFrame
         pointerOffTheSquares();
     }
 
-    /**
-     * Where the pointer is over the squares' panel, in its coordinates, or null when it is not over this window: the
-     * screen's own pointer, a field so that a claim can say where without moving the real one.
-     */
+    /** Where the pointer is over the squares' panel, or null: a field, so a claim can say where without moving it. */
     private java.util.function.Function<JPanel, java.awt.Point> pointerOver = squares -> squares.getMousePosition(true);
 
-    /** This window's watch on where the pointer arrives. */
     private final PointerWatch pointerWatch = new PointerWatch(this);
 
     /**
-     * The pointer has arrived on something in this window.  Off the squares, unless it is a square or something drawn
-     * over one, which the square's own hover answers, or a menu or a tooltip, which leave the square they cover as it
-     * was: a menu is about that square.
-     *
+     * The pointer arrived on something in this window: off the squares, unless on a square, something over one, or a
+     * menu or tooltip, which are about that square.
      * @param on what the pointer arrived on
      */
     void pointerArrived(java.awt.Component on)
     {
         if (!this.pointerOnGrid || isAutonomyMode() || this.grid == null || on == null) return;
 
-        // THIS WINDOW, or anything in it.  The window's own entry counts: AWT hands it on only where nothing that
-        // listens lies under the pointer, and every square listens, so it is the pointer back over a quiet part.
+        // This window or anything in it; the window's own entry is the pointer over a quiet part.
         if (on != this && javax.swing.SwingUtilities.getWindowAncestor(on) != this) return;
 
         if (this.popup != null && this.popup.isVisible()) return;
@@ -2877,7 +2828,6 @@ public class LayoutEditor extends PositionAwareJFrame
             || javax.swing.SwingUtilities.getAncestorOfClass(javax.swing.JPopupMenu.class, on) != null
             || javax.swing.SwingUtilities.getAncestorOfClass(javax.swing.JToolTip.class, on) != null) return;
 
-        // A SQUARE, or something drawn over one
         if (on.getParent() == this.grid.getContainer() && !(on instanceof LayoutLabel && ((LayoutLabel) on).isSpacer()))
         {
             return;
@@ -2887,13 +2837,8 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
-     * Picks a station label up, so the drag has something in it (FR-035: "snapshot the label so users can see it is
-     * being moved (make it follow the cursor while held down).").  On the LAYERED PANE's drag layer rather than in the
-     * diagram: the diagram is a grid whose components are laid out by their constraints, and a floating copy has no
-     * cell to be in; the drag layer exists for something on top of everything that belongs to no layout.  The grab
-     * offset is where the pointer took hold of the pill, so the label hangs off the cursor at the same spot it was
-     * picked up; started from the square rather than the label itself there is no such spot and the caller centres it.
-     *
+     * Picks a station label up for the drag (FR-035: "snapshot the label so users can see it is being moved (make it
+     * follow the cursor while held down)."), on the layered pane's drag layer, hanging at the grab offset.
      * @param shot a picture of the caption
      * @param grabX where in that picture the pointer took hold
      * @param grabY likewise
@@ -2913,7 +2858,6 @@ public class LayoutEditor extends PositionAwareJFrame
 
     /**
      * Moves the picked-up label to the pointer (FR-035).
-     *
      * @param at where the pointer is, in this window's coordinates
      */
     public void moveCaptionGhost(java.awt.Point at)
@@ -2924,15 +2868,12 @@ public class LayoutEditor extends PositionAwareJFrame
 
         this.captionGhost.setLocation(at.x - this.captionGrab.x, at.y - this.captionGrab.y);
 
-        // Both rectangles, because the layer has to forget where it was as well as learn where it is.
+        // Both rectangles: where it was and where it is.
         getLayeredPane().repaint(was);
         getLayeredPane().repaint(this.captionGhost.getBounds());
     }
 
-    /**
-     * Puts the picked-up label down (FR-035); safe to call when nothing was picked up, as it runs from the release
-     * handler and a release arrives whether or not a drag ever started.
-     */
+    /** Puts the picked-up label down (FR-035); safe with nothing picked up, as every release calls it. */
     public void hideCaptionGhost()
     {
         if (this.captionGhost == null) return;
@@ -2953,11 +2894,7 @@ public class LayoutEditor extends PositionAwareJFrame
     private java.awt.Point captionGrab = new java.awt.Point();
 
     /**
-     * Marks the square a dragged station label would land on (FR-035): the drag feedback that says WHERE IT WILL GO, as
-     * distinct from the ghost above, which says what is being carried; both ship.  Green for a square that will take
-     * it, red for one that will refuse, so the answer arrives before the mouse comes up rather than as a message
-     * afterwards.
-     *
+     * Marks where a dragged station label would land (FR-035): green where it will take, red where it will refuse.
      * @param label the square under the pointer, or null for none
      * @param allowed whether dropping there would work
      */
@@ -2972,44 +2909,35 @@ public class LayoutEditor extends PositionAwareJFrame
         highlightLabel(label, allowed ? new Color(0, 150, 0) : NEW_COMPONENT_BORDER_ACTIVE_COLOR);
     }
 
-    /**
-     * Takes the drag mark off whichever square is wearing it (FR-035).
-     */
+    /** Takes the drag mark off whichever square wears it (FR-035). */
     public void clearCaptionDropTarget()
     {
         if (this.captionDropTarget == null) return;
 
         LayoutLabel was = this.captionDropTarget;
 
-        // Cleared BEFORE the border is put back, so a repaint that arrives in the middle of this does
-        // not find a target that is half restored.
+        // Cleared before the border is put back, so a repaint between finds no half-restored target.
         this.captionDropTarget = null;
 
         was.setBorder(restingBorder(false, isAutonomyMode()));
 
-        // Set directly rather than through applyBorder, so the record has to be dropped (OB-157).
+        // Set directly, so the record is dropped (OB-157).
         forgetBorderState(was);
     }
 
-    /** The square currently wearing the drag mark, so it can be given its own border back. */
+    /** The square wearing the drag mark, so it can be given its own border back. */
     private LayoutLabel captionDropTarget;
 
     /**
-     * The border each tile is currently wearing, as a key rather than as an object (OB-157): borders are built fresh
-     * every time and do not compare equal, so "is it already right?" cannot be asked of the component, and a short
-     * string describing what was applied can be.  WEAK, so that a rebuilt grid takes its records with it: the keys are
-     * labels that no longer exist once drawGrid has run, and holding them would keep a whole discarded grid alive.
+     * The border each tile wears, as a key (OB-157), since borders do not compare equal.  Weak, so a rebuilt grid takes
+     * its records with it.
      */
     private final java.util.Map<JLabel, String> borderState = new java.util.WeakHashMap<>();
 
     /**
-     * Sets a tile's border, unless it is already wearing that one (OB-157): setBorder repaints whether or not anything
-     * changed, and refreshSelectionBorders runs on every mouse-motion event of a selection drag, so a few hundred tiles
-     * would be repainted per mouse move to change the outline on one or two.  The key has to describe everything the
-     * border depends on: a resting border is a different border in the palette, in autonomy mode, and with the grey
-     * grid off, and any of those can change while the same tiles stay on screen; a key that left one out would skip a
-     * needed repaint and leave a stale outline behind, which is worse than the flicker.
-     *
+     * Sets a tile's border unless it already wears that one (OB-157): setBorder always repaints, and this runs per
+     * mouse move.  The key must name everything the border depends on (palette, autonomy mode, grid), or a stale
+     * outline stays.
      * @param label the tile
      * @param border what it should wear
      * @param key what that border IS, for comparing against next time
@@ -3026,10 +2954,8 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
-     * Forgets what a tile was wearing, for the paths that set a border without going through applyBorder (OB-157): the
-     * caption drag mark being put back, and the drag grip, which must both say so, or the next refresh trusts a key
-     * that no longer describes the tile and skips a repaint it needs.
-     *
+     * Forgets a tile's border key, for the paths setting a border without applyBorder (OB-157), or the next refresh
+     * skips a repaint.
      * @param label the tile whose border something else has just changed
      */
     private void forgetBorderState(JLabel label)
@@ -3041,22 +2967,14 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         if (label != null)
         {
-            // Never the grid's padding (OB-161): the grid is one row taller and one column wider than the diagram, and
-            // that row and column are blank labels holding the GridBagLayout together (OB-055).  getValueAt returns
-            // them for any coordinate one past the edge, so a group dragged onto the last row would have its landing
-            // outline painted onto the padding, and clearBordersFromChildren skips spacers (the grid's own furniture,
-            // not squares), so nothing would take it off again.  Asked of what the label IS, which is how the clearing
-            // side asks it.
+            // Never the grid's padding row and column (OB-161, OB-055): nothing would clear an outline there.
             if (label instanceof LayoutLabel && ((LayoutLabel) label).isSpacer()) return;
 
             boolean palette = this.getX((LayoutLabel) label) == -1;
 
             int width = palette ? NEW_COMPONENT_BORDER_WIDTH : COMPONENT_BORDER_WIDTH;
 
-            // Sized the same as what this square was resting in, so hovering moves nothing.  Asked of the ROOM the
-            // resting border takes, not of whether there is one (OB-056): once the autonomy editor has a grid that
-            // paints without reserving, null is not the same question.  A palette tile rests in a line and keeps one;
-            // anything resting in nothing, or in an overlay, gets an overlay.
+            // Sized as the resting border's room, so hovering moves nothing (OB-056).
             Border resting = restingBorder(palette, isAutonomyMode());
 
             boolean reservesRoom = resting != null
@@ -3073,9 +2991,7 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         if (panel != null)
         {
-            // ASKED ONCE FOR THE PASS: the grid setting is a preference, and on Windows each read is a registry round
-            // trip that nothing caches, so asking per square made thousands of them on every square the pointer
-            // entered.  The resting border is the same for every tile of one panel, and so is its key.
+            // Asked once per pass: each preference read is a registry round trip on Windows.
             final boolean palette = newComponents.equals(panel);
             final boolean autonomy = isAutonomyMode();
             final boolean grid = showGrid();
@@ -3088,11 +3004,8 @@ public class LayoutEditor extends PositionAwareJFrame
                 {
                     JLabel label = (JLabel) component;
 
-                    // Every TILE, asked of what it is rather than of whether it currently has a border: a label already
-                    // put back to nothing must not be skipped on the way to a highlight and back, or the first hover
-                    // would leave a line behind for good, and with the grid off the resting border is nothing.  Spacers
-                    // excluded: they are the grid's own padding, not squares (OB-055), and the constructor never gives
-                    // them a border.
+                    // Every tile but spacers (OB-055), by what it is, not whether it has a border, or a hover leaves a
+                    // line.
                     if (label instanceof LayoutLabel && !((LayoutLabel) label).isSpacer())
                     {
                         applyBorder(label, resting, restingKey);
@@ -3106,9 +3019,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 this.highlightLabel(this.grid.getValueAt(lastX, lastY), COMPONENT_BORDER_COPIED_COLOR);
             }
 
-            // And the PICKED squares.  Every hover clears the borders and redraws the blue one, so a selection would
-            // vanish the instant the pointer moved on while Delete still preferred it: a user who could see no green
-            // and pressed Delete to remove the tile under the cursor would delete a whole invisible row instead.
+            // And the picked squares, or a hover would hide a selection Delete still acts on.
             if (panel == this.grid.getContainer())
             {
                 for (org.traincontrol.base.TileSelection.At at : this.selection.all())
@@ -3120,54 +3031,36 @@ public class LayoutEditor extends PositionAwareJFrame
             }
         }
     }
-    /**
-     * Whether shiftUp would do anything: true when there is a hovered square this can work from
-     * (`LayoutEditorReshape.canShiftUp`).
-     */
+    /** Whether shiftUp would do anything (`LayoutEditorReshape.canShiftUp`). */
     public boolean canShiftUp()
     {
         return this.reshapeOps.canShiftUp();
     }
 
-    /**
-     * Whether the page has room to grow by this many rows and columns, the result still within MAX_SIZE
-     * (`LayoutEditorReshape.roomToGrow`).
-     */
+    /** Whether the page can grow by this much within MAX_SIZE (`LayoutEditorReshape.roomToGrow`). */
     public boolean roomToGrow(int rows, int columns)
     {
         return this.reshapeOps.roomToGrow(rows, columns);
     }
 
-    /**
-     * Whether shiftLeft would do anything: true when there is a hovered square this can work from
-     * (`LayoutEditorReshape.canShiftLeft`).
-     */
+    /** Whether shiftLeft would do anything (`LayoutEditorReshape.canShiftLeft`). */
     public boolean canShiftLeft()
     {
         return this.reshapeOps.canShiftLeft();
     }
 
-    /**
-     * Whether shiftDown would do anything: true when there is a hovered square this can work from
-     * (`LayoutEditorReshape.canShiftDown`).
-     */
+    /** Whether shiftDown would do anything (`LayoutEditorReshape.canShiftDown`). */
     public boolean canShiftDown()
     {
         return this.reshapeOps.canShiftDown();
     }
 
-    /**
-     * Whether shiftRight would do anything: true when there is a hovered square this can work from
-     * (`LayoutEditorReshape.canShiftRight`).
-     */
+    /** Whether shiftRight would do anything (`LayoutEditorReshape.canShiftRight`). */
     public boolean canShiftRight()
     {
         return this.reshapeOps.canShiftRight();
     }
-    /**
-     * Inserts a row or a column at the hovered square and pushes everything past it along
-     * (`LayoutEditorReshape.shiftUp`).
-     */
+    /** Inserts a row at the hovered square, pushing the rest along (`LayoutEditorReshape.shiftUp`). */
     public void shiftUp()
     {
         this.reshapeOps.shiftUp();
@@ -3191,26 +3084,18 @@ public class LayoutEditor extends PositionAwareJFrame
         this.reshapeOps.shiftRight();
     }
 
-    /**
-     * Writes the current width and height into the Diagram Size heading's tooltip: on the heading rather than on the
-     * buttons, as the buttons say what they do and this says what they would be doing it to.  Re-read after every grow
-     * and shrink, since a number written once at startup is wrong from the first press.
-     */
+    /** Writes the page's size into the Diagram Size heading's tooltip, re-read after every grow and shrink. */
     void showDiagramSize()
     {
         if (this.diagramSize == null) return;
 
-        // The heading's own text as well, which the form points at the visibility key (two headings reading "Diagram
-        // Size" and nothing saying Toggle Visibility).  Set here rather than in the form, which is generated.
+        // The heading's text too, which the generated form points at the visibility key.
         this.diagramSize.setText(I18n.t("layout.ui.sectionDiagramSize"));
 
         this.diagramSize.setToolTipText(I18n.f("layout.ui.tooltipDiagramSize",
             layout.getSx() + " x " + layout.getSy()));
 
-        // AND THE TWO BUTTONS: `layout.ui.tooltipGrowDiagram` and `layout.ui.tooltipShrinkDiagram` exist in all eight
-        // bundles, but the form sets `plusButton` to the empty string and `minusButton` to nothing at all, and the form
-        // is generated, so the tooltips go here beside the heading.  "+" and "-" say almost nothing on their own, and
-        // the shrink refuses if either the last column or the last row holds track, which is what its tooltip says.
+        // And the two buttons' tooltips, which the generated form leaves empty.
         if (this.plusButton != null)
         {
             this.plusButton.setToolTipText(I18n.t("layout.ui.tooltipGrowDiagram"));
@@ -3247,11 +3132,8 @@ public class LayoutEditor extends PositionAwareJFrame
     }
     
     /**
-     * Turns the diagram's text labels on, leaving them on if they already are (OB-174): `toggleText` flips, the wrong
-     * verb for a caller that needs them ON, and a flip would turn the text OFF for somebody who already had it on.  The
-     * autonomy editor calls this for a ticked Text Labels box (FR-133); the captions do not depend on it, the grid asks
-     * the caption dropdown for those.  It does not touch the flag when nothing needs to change, so it costs no grid
-     * rebuild in the ordinary case.
+     * Turns the diagram's text labels on, idempotently (OB-174), unlike `toggleText`; for a ticked Text Labels box in
+     * the autonomy editor (FR-133).  Costs no rebuild when nothing changes.
      */
     public void showTextLabels()
     {
@@ -3260,12 +3142,7 @@ public class LayoutEditor extends PositionAwareJFrame
         toggleText();
     }
 
-    /**
-     * Hides the writing on the diagram, idempotently: the other half of the pair (FR-061).  The station captions stay,
-     * since the caption dropdown draws them whatever this switch says (OB-272).  The autonomy editor calls it for an
-     * unticked Text Labels box (FR-133); a twin of `showTextLabels` rather than a call to `toggleText`, for the reason
-     * given there.
-     */
+    /** Hides the diagram's writing, idempotently (FR-061, FR-133); the captions stay (OB-272). */
     public void hideTextLabels()
     {
         if (this.layout.getEditHideText()) return;
@@ -3285,10 +3162,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
             refreshGrid();
 
-            // AND THE AUTONOMY PANEL'S TEXT LABELS BOX, which is the visible state of this switch in autonomy mode
-            // (FR-133): the checkbox above is hidden there, so without this the diagram's writing would change under a
-            // box still saying the other thing.  (Control+L does not reach here in autonomy mode: it steps the caption
-            // dropdown instead.) After the rebuild.
+            // And the autonomy panel's Text Labels box, this switch's visible state there (FR-133), after the rebuild.
             if (autonomyPanel != null && autonomyPanel.isVisible())
             {
                 autonomyPanel.textLabelsChanged(!this.layout.getEditHideText());
@@ -3311,9 +3185,7 @@ public class LayoutEditor extends PositionAwareJFrame
             lock.lock();
             try
             {
-                // If the method is already running, set the rerun flag and return, but ONLY ONCE IT HAS BEGUN: a
-                // pending redraw that has not started reads the state as it then is, so a second request before it is
-                // part of it, and queueing another would draw the same diagram twice.
+                // Rerun only once it has begun: a request before then is part of the pending redraw.
                 if (isRunning)
                 {
                     if (redrawStarted) needsRerun = true;
@@ -3340,7 +3212,7 @@ public class LayoutEditor extends PositionAwareJFrame
                     {
                         drawGrid();
 
-                        // THE TRACK EDITOR'S OUTLINES DRAWN BACK, not only taken down - see drawTheOutlinesBack
+                        // The track editor's outlines drawn back (`drawTheOutlinesBack`)
                         drawTheOutlinesBack();
                     }
                     finally
@@ -3370,11 +3242,7 @@ public class LayoutEditor extends PositionAwareJFrame
     }
     
 
-    /**
-     * Tells the setup that every square on this page has gone: one call for the page rather than one per square, for
-     * the reason forgetBuiltOver gives at length (per square this rebuilds the graph twice and writes the whole setup
-     * to disk, and a page is hundreds of squares).
-     */
+    /** Tells the setup every square of this page has gone, in one call (`forgetBuiltOver` says why). */
     private void forgetWholePage()
     {
         org.traincontrol.automationui.AutonomySession autonomy = parent.getAutonomySession();
@@ -3415,10 +3283,8 @@ public class LayoutEditor extends PositionAwareJFrame
         }
     }
 
-    // There is no `toggleCoordinates` or `showingCoordinates` (OB-179; Adam: "coordinates should always be on with the
-    // grid, off without, and the menu option gone.").  The numbers are a property of the grid (see
-    // `LayoutGrid.coordinatesVisible`, where that rule is written down), so turning them on and off is `setShowGrid`,
-    // which redraws because the numbers live in a border whose insets change the size of the panel.
+    // No coordinates toggle (OB-179; Adam: "coordinates should always be on with the grid, off without, and the menu
+    // option gone."): `LayoutGrid.coordinatesVisible` holds the rule, `setShowGrid` the switch.
 
     public void clear()
     {
@@ -3439,16 +3305,8 @@ public class LayoutEditor extends PositionAwareJFrame
             {
                 this.snapshotLayout();
                 
-                // WHAT AUTONOMY KNEW ABOUT THIS PAGE GOES WITH IT: emptying the whole page must tell the setup, as
-                // deleting one square does, or every station, name, length, facing, signal pairing, portal and
-                // placement would stay keyed to squares that now hold nothing; a reconciling save would eventually
-                // prune them, but the non-reconciling writes on the way out (the window captures the running layout and
-                // saves without reconciling when it closes) commit that state to disk first.
-                //
-                // EMPTIED FIRST, THEN FORGOTTEN: forgetWholePage rebuilds the tile graph, which is traced from the
-                // SQUARES, so forgetting first would rebuild from the diagram the next line is about to throw away and
-                // nothing would rebuild afterwards: Clear Page would leave autonomy holding every tile it had just
-                // deleted.
+                // The setup forgets the page too, or its entries outlive the squares and the exit's unreconciled save
+                // writes them.  Emptied first, then forgotten: forgetWholePage rebuilds from the squares.
                 layout.clear();
 
                 forgetWholePage();
@@ -3478,10 +3336,7 @@ public class LayoutEditor extends PositionAwareJFrame
         
         try
         {       
-            // The outgoing grid lets go of the panel before the new one takes it: a grid hides itself until its tiles
-            // have decoded and arms two timers to reveal it, both outliving a rebuild and holding this panel, so left
-            // armed the old grid's grace timer would drop a spinner into the new one and the extra component push the
-            // tiles along (a half-drawn row).
+            // The old grid lets go first, or its armed reveal timers drop a spinner into the new one.
             if (grid != null) grid.discard();
 
             grid = new LayoutGrid(this.layout, size,
@@ -3489,18 +3344,11 @@ public class LayoutEditor extends PositionAwareJFrame
                 this,
                 true, parent);
 
-            // A NEW PANEL, so it is told whether a drag picks: picking goes on through a redraw (an edit, Undo, the
-            // grid's key, a switch of mode) and the crosshair goes with the old panel
+            // A new panel, so it is told whether a drag picks
             this.showWhetherADragPicks();
 
-            // One row of slack at the bottom of the scrollable area, and the gaps the layout will add.  The panel is
-            // laid out to exactly the height of the grid, so the last row would sit flush against the edge of the
-            // viewport, and anything that takes a few pixels (a horizontal scrollbar appearing, a border, a slightly
-            // taller row of tiles in autonomy mode) would push it out of sight; a row rather than a fixed number of
-            // pixels, because the tile size is a setting.  `FlowLayout` lays the diagram out as a row of `maxWidth + 2
-            // * DIAGRAM_GAP`, and a CENTRE layout given a row wider than its container places it at a NEGATIVE x,
-            // outside the panel where no scrolling can reach it (only on a narrow window); the horizontal slack is the
-            // same thing as the row of slack, in the other direction.
+            // A row of slack below and a column beside, plus the layout's gaps: else a scrollbar pushes the last row
+            // out of sight, and a too-wide CENTER row sits at a negative x no scroll reaches.
             this.ExtLayoutPanel.setPreferredSize(new Dimension(
                 grid.maxWidth + 2 * DIAGRAM_GAP + DIAGRAM_SLACK_COLUMNS * size,
                 grid.maxHeight + size + 2 * DIAGRAM_GAP));
@@ -3510,8 +3358,7 @@ public class LayoutEditor extends PositionAwareJFrame
             grid.getContainer().repaint();
             this.ExtLayoutPanel.repaint();
 
-            // a rebuilt grid is all new labels, which know nothing about what the autonomy editor was
-            // showing on their squares
+            // New labels know nothing of the autonomy annotations
             refreshAutonomyAnnotations();
         }
         catch (Exception e)
@@ -3572,42 +3419,23 @@ public class LayoutEditor extends PositionAwareJFrame
     }
     
     /**
-     * Sizes the window to the diagram it is showing, within what the screen can hold: the default when the user has
-     * expressed no preference (OB-003).  There is one remembered window for the editor, so the fit runs on every
-     * arrival, and CAPPED to the screen: a diagram wider than the screen must not produce a window with its right-hand
-     * edge and scrollbar off the side.  The minimum is set here rather than beside the preferred size because pack()
-     * honours it, and a floor taller than the screen would defeat the cap, hence the clamp on both.
-     *
-     * THE RULE FOR THE FLOOR, in both directions: at its smallest width and its smallest height the window shows every
-     * control, at each diagram size and in each language (OB-342).  The HEIGHT is `EXTRA_MINIMUM_HEIGHT` over the
-     * size's base.  The WIDTH is the diagram's 550 and the sidebar, growing with the size; the tools column and the
-     * sidebar need about 380 pixels together (376 in German), so nothing of the window's own asks for more.  A control
-     * whose words are data, like the status line under the findings (521 pixels in English, 655 in German), has no
-     * minimum width and is cut with an ellipsis where the window is narrow (see `AutonomyEditorPanel.banner`).
-     *
-     * AT EVERY DISPLAY SCALE: the interface is scaled by the display (`TrainControlUI`'s `flatlaf.uiScale`, dpi / 96),
-     * and most of the column is not scaled, so scaling the pixels does not do.  The window's own layout knows what it
-     * needs at any scale and in any language, so the floor is never below its minimum height plus the window's own
-     * chrome (the title bar and the borders, which the layout does not hold), and the fixed numbers stand where that is
-     * less.  Still clamped to the screen: where the screen is shorter than the floor, the controls below that are out
-     * of reach, as for any window.
+     * Sizes the window to its diagram, capped to the screen, when the user has no preference (OB-003).  Never below
+     * what shows every control at any size, scale and language (OB-342): `EXTRA_MINIMUM_HEIGHT` over the base, the
+     * diagram's 550 plus the sidebar, and the layout's own minimum plus chrome; data-worded controls have no minimum
+     * width.
      */
     private void sizeForDiagram()
     {
-        // The sidebar takes width from the diagram unless it is asked for as well
         int sideways = sidebar == null ? 0 : sidebar.getPreferredSize().width;
 
         java.awt.Rectangle usable = usableScreen();
 
         this.setMinimumSize(new Dimension(
-            // In proportion to the square, Small to Large - the Medium size between them (FR-122)
+            // In proportion, Small to Large (FR-122)
             Math.min(550 + sideways + Math.max(0, (this.size - 30) * 200 / 30), usable.width),
             Math.min(630 + EXTRA_MINIMUM_HEIGHT + Math.max(0, (this.size - 30) * 320 / 30), usable.height)));
 
-        // Never SMALLER than the window already is (MT-096): there is one remembered entry and the fit runs on every
-        // arrival, so it has to be able to leave a window alone as well as grow it, or switching from a big page to a
-        // small one would shrink the window under somebody who had made it bigger on purpose.  A size you chose is a
-        // floor rather than a suggestion.
+        // Never smaller than the window is (MT-096): a size the user chose is a floor.
         int wide = Math.max(getWidth(), grid.maxWidth + 210 + sideways);
         int high = Math.max(getHeight(), grid.maxHeight + 160);
 
@@ -3617,10 +3445,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
         pack();
 
-        // NEVER BELOW WHAT THE WINDOW'S OWN LAYOUT ASKS FOR (OB-342): the layout's minimum is what the column of tools
-        // needs at this display scale, with the sidebar, in this language; the chrome is what the layout does not hold,
-        // known now that pack() has given the window its peer.  The layout's minimum is a few pixels more than the
-        // controls need: the margin.
+        // Never below the layout's own minimum plus chrome (OB-342).
         int asked = getContentPane().getMinimumSize().height + getHeight() - getContentPane().getHeight();
 
         if (asked > getMinimumSize().height)
@@ -3628,8 +3453,7 @@ public class LayoutEditor extends PositionAwareJFrame
             setMinimumSize(new Dimension(getMinimumSize().width, Math.min(asked, usable.height)));
         }
 
-        // Back on screen if the fit pushed it off the bottom or the right, which it can when the window was already
-        // sitting near an edge: the size changed under a position chosen for the old one.
+        // Back on screen if the fit pushed it off an edge.
         int x = Math.max(usable.x, Math.min(getX(), usable.x + usable.width - getWidth()));
         int y = Math.max(usable.y, Math.min(getY(), usable.y + usable.height - getHeight()));
 
@@ -3637,10 +3461,8 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
-     * The window's title for the page it shows, in one mode or the other (MT-669), with a configuration beside it
-     * (FR-127): the one LOADED for the track editor, and for the autonomy editor the one it EDITS, the setup's chosen
-     * one, which is not loaded when its errors stop it loading or autonomy has been stopped.
-     *
+     * The window's title for its page and mode (MT-669), with the configuration the track editor has loaded or the
+     * autonomy editor edits (FR-127).
      * @param autonomy whether the window is the autonomy editor
      * @return the title
      */
@@ -3658,10 +3480,7 @@ public class LayoutEditor extends PositionAwareJFrame
             this.layout.getName(), configuration);
     }
 
-    /**
-     * Sets the title again, for a configuration loaded, switched, renamed or unloaded while the window is open (FR-127).
-     * Event thread only.
-     */
+    /** Sets the title again after a configuration change (FR-127); event thread only. */
     void refreshTitle()
     {
         setTitle(titleFor(isAutonomyMode()));
@@ -3676,36 +3495,27 @@ public class LayoutEditor extends PositionAwareJFrame
             layout.setEdit();
             this.setAlwaysOnTop(parent.isAlwaysOnTop());
 
-            // Before the grid and before pack(), so the window is sized with the sidebar in it.  Here rather than in
-            // the constructor because it asks which mode this window is in, decided by setAutonomyMode, which runs
-            // between the constructor and this as render() queues its work rather than doing it.
+            // Before the grid and pack(), so the size includes the sidebar; here, as setAutonomyMode has run by now.
             mountSidebar();
 
             drawGrid();
 
-            // The mode's own title, which setAutonomyMode has decided by now (MT-669)
+            // The mode's own title (MT-669)
             setTitle(titleFor(isAutonomyMode()));
 
-            // The index FIRST, because everything below asks what has been remembered.  ONE entry for the whole window,
-            // not one per page (MT-095): there is one editor window, and it should be where you left it whatever page
-            // it is showing.
+            // The index first: one remembered entry for the window, whatever the page (MT-095).
             this.setWindowIndex(EDITOR_WINDOW_KEY);
 
             if (!this.isLoaded())
             {
                 sizeForDiagram();
 
-                // Applied over the top, and only if the user actually set one.  A remembered size is a
-                // decision; the diagram fit is what to do in the absence of one.
+                // Over the top, only if the user set one.
                 loadWindowBounds();
             }
             else
             {
-                // A window whose size was remembered keeps the floor the form gave it, the one place the taller minimum
-                // would otherwise not reach (the form is generated).  Plus the sidebar, once and not on top of a floor
-                // that has it already: a window that has been through `sizeForDiagram` has the sidebar in its floor,
-                // and adding it again would make the floor 150 pixels wider (OB-342).  So the floor is the diagram's
-                // own 550 and the sidebar, or what it is already if that is wider.
+                // A remembered size keeps the form's floor plus the sidebar, once (OB-342).
                 int sideways = sidebar == null ? 0 : sidebar.getPreferredSize().width;
 
                 this.setMinimumSize(new Dimension(Math.max(getMinimumSize().width, 550 + sideways),
@@ -3716,13 +3526,9 @@ public class LayoutEditor extends PositionAwareJFrame
             
             setVisible(true);
 
-            // AND IN FRONT OF THE WINDOW THAT OPENED IT (OB-173; Adam: "when clicking edit, the autonomy editor appears
-            // below other windows, so I might not even notice it's there... we managed this carefully in 2.7.x"):
-            // `setVisible(true)` shows a window and does not decide where in the stack it lands.  The two calls
-            // `TrainControlUI.showOpenEditor()` already makes to bring this window forward when the button is pressed a
-            // second time, so the two doors behave alike.  No always-on-top trick: `comeToTheForeground` needs one
-            // because start-up asks for the foreground from a process that does not have it; this runs from a click on
-            // a window that does.
+            // And in front of the window that opened it (OB-173; Adam: "when clicking edit, the autonomy editor appears
+            // below other windows, so I might not even notice it's there... we managed this carefully in 2.7.x"), as
+            // `showOpenEditor` does.
             toFront();
 
             requestFocus();
@@ -3739,11 +3545,8 @@ public class LayoutEditor extends PositionAwareJFrame
           }
           catch (RuntimeException | Error failed)
           {
-            // The Edit button was disabled before this window was asked for, and openLayoutEditor wraps the
-            // CONSTRUCTION in a catch that hands it back, or autonomy setup is unreachable until the application is
-            // restarted.  This body runs on a later event, outside that catch, so the same remedy is needed here.  AND
-            // FOR AN ERROR TOO, given back and then thrown on, as the constructor's catch and openLayoutEditor's do:
-            // past a catch of exceptions only, the hidden frame stays counted and the gate shut for the session.
+            // Edit is handed back on any failure here, error or exception, as this runs outside openLayoutEditor's
+            // catch.
             parent.autonomyEditorClosed();
 
             if (failed instanceof RuntimeException && parent.getModel() != null)
@@ -3759,25 +3562,20 @@ public class LayoutEditor extends PositionAwareJFrame
     }
     
     /**
-     * Closes this page and opens another, at a given square.  Nothing is thrown away: an edit made here has already
-     * gone into the shared session, and the window that opens is looking at the same session.  The question exists
-     * because the window DISAPPEARS: work that has not been saved is easy to forget once the window it was done in has
-     * gone, and a page change is the moment to be reminded.  So it asks rather than discarding, unlike confirmExit:
-     * answering yes here loses nothing.
-     *
+     * Closes this page and opens another at a square, asking about unsaved work first (the window disappears); nothing
+     * is lost, as edits are in the shared session.
      * @param tile the square to open on
      */
     public void jumpToSquare(org.traincontrol.automationui.TileGraph.TileKey tile)
     {
         if (tile == null) return;
 
-        // The same question the sidebar asks, and the same three answers (OB-046): a "yes" that neither saved nor
-        // discarded would leave the user asked about their unsaved work with nothing done either way.
+        // The sidebar's question and three answers (OB-046).
         if (!settleUnsavedWork()) return;
 
         layout.setEdit(false);
 
-        // COUNTED BEFORE THE WINDOW GOES, and the click with it: the user closed nothing
+        // Carried before the window goes: the user closed nothing
         final boolean clicked = squareClicked;
 
         parent.autonomyEditorClosedFromTheEditor(
@@ -3787,12 +3585,8 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
-     * Whether this window may be left, asking about unsaved work first.  Closing only: switching page or mode asks its
-     * own question (see leaveFor), which can offer to SAVE because the window is coming straight back, where closing
-     * can only offer to throw the work away.  What counts as unsaved is the same test in both, and is the first line of
-     * each.  In autonomy mode the diagram was never touched, so the undo stack is empty and the question that matters
-     * is whether the setup has unsaved edits; answering yes discards them here, before the caller does anything, as
-     * they live in the shared session and leaving them would mean the question was asked and its answer ignored.
+     * Whether this window may be left, asking about unsaved work: closing can only offer to discard (`leaveFor` can
+     * save).  In autonomy mode it asks about the setup, discarding it here on yes, as it lives in the shared session.
      *
      * @return true when the window may go
      */
@@ -3845,19 +3639,13 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
-     * The same save / discard / cancel question, asked by the main window before it exits: the rule is "one
-     * save/discard/cancel question, asked wherever a page is left", and the biggest door out of this window is closing
-     * the application (OB-070).  In autonomy mode a silent discard would be worse, since the exit capture saves the
-     * setup, so work the user was about to Cancel could be COMMITTED on the way out.  Public so the window can ask; it
-     * delegates rather than restating the rule, as a second copy of that dialog would be a second thing to keep in
-     * step.
-     *
+     * The save / discard / cancel question, asked by the main window before exiting (OB-070): the exit capture would
+     * commit work the user meant to Cancel.
      * @return true when it is all right to proceed - saved, discarded, or nothing to settle
      */
     public boolean maySettleBeforeExit()
     {
-        // BACK AND IN FRONT FIRST (MT-703): its question about unsaved work is its own, and a minimised window hides
-        // what it owns, so the exit would wait on a question nobody could see
+        // Restored and in front first (MT-703), or the exit waits on a hidden question
         if ((getExtendedState() & java.awt.Frame.ICONIFIED) != 0)
         {
             setExtendedState(getExtendedState() & ~java.awt.Frame.ICONIFIED);
@@ -3867,25 +3655,14 @@ public class LayoutEditor extends PositionAwareJFrame
 
         if (!settleUnsavedWork()) return false;
 
-        // THE RUNNING LAYOUT HAS FOLLOWED A DISCARD BY NOW: Discard in autonomy mode restores the setup as the editor
-        // opened it, and `discardAutonomyWork`, inside settleUnsavedWork, rebuilds the railway from it before it
-        // returns, so the save on the way out folds a railway that no longer carries the discarded edit, and if the
-        // exit is then refused, the setup and the railway agree, as after a Cancel.
+        // A Discard has already rebuilt the railway from the restored setup.
         return true;
     }
 
     /**
-     * Completes a track-mode Discard, once the exit is certain.  A track-diagram edit has two halves in two places: the
-     * diagram is discarded by `layoutEditingComplete` re-reading the pages from disk; the autonomy setup those same
-     * gestures wrote (dragging a captioned tile writes it per gesture) is put back by `undoAutonomyEdits`, the CALLER'S
-     * job, as the sidebar switch and the editor's own X do, or answering Discard would leave the caption on the square
-     * it had been dragged to.  It runs on `settledByDiscarding`, not on "settleUnsavedWork returned true", which a
-     * clean editor returns too (that would rewind the setup to the editor-open snapshot and discard whatever autonomy
-     * had done meanwhile), and it is called from the exit path beside the dispose, once everything that can say no has
-     * said yes, not from `maySettleBeforeExit` (the FIRST thing the exit does, before the dialog about running trains,
-     * which can still refuse): otherwise the rewind would happen, the application carry on, `autonomyAsOpened` be
-     * consumed and the editor's own Cancel be left with nothing to put back.  Safe after a Save: saving nulls
-     * `autonomyAsOpened`, and `settledByDiscarding` is false there anyway.
+     * Completes a track-mode Discard once the exit is certain: `undoAutonomyEdits` puts back the setup the gestures
+     * wrote.  On `settledByDiscarding`, as a clean editor settles too, and only after everything that can refuse the
+     * exit has said yes, or Cancel would have nothing left to put back.
      */
     public void completeExitDiscard()
     {
@@ -3893,22 +3670,16 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
-     * Save, discard, or stay: asked once, wherever a page is being left with work on it.  Three answers, not two:
-     * closing offers two because closing is final, but LEAVING a page is not (the user is coming straight back to the
-     * same editor somewhere else), and a two-button "throw it away or stay here" makes them close the window, save, and
-     * reopen it, which is what the sidebar exists to stop.  Save is the default because it is the answer that cannot
-     * lose anything, and this appears on a gesture as small as clicking a tab.  Shared with the link jump (OB-046),
-     * whose own YES/NO neither saved nor discarded, so the edits survived into the next window through the shared setup
-     * (Adam: "settings should be saved or discarded before leaving.").
-     *
+     * Save, discard or stay, wherever a page is left with work on it: leaving is not final, so Save is offered, and
+     * is the default (OB-046; Adam: "settings should be saved or discarded before leaving.").
      * @return whether the caller may go ahead; false means the user chose to stay, or the save or the discard failed
-     * and said so
+     *         and said so
      */
     private boolean settleUnsavedWork()
     {
         boolean unsaved = isAutonomyMode() ? hasUnsavedAutonomyWork() : canUndo();
 
-        // Cleared at the top, so a run that asks nothing cannot leave a Discard from last time behind.
+        // Cleared first, so no Discard from last time stands.
         this.settledByDiscarding = false;
 
         if (unsaved)
