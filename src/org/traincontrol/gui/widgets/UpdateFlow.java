@@ -75,10 +75,10 @@ public final class UpdateFlow
     }
 
     /**
-     * Downloads the new version with its progress on the menu item; then Download says where it is, and Download & Update installs it
-     * (FR-125).  Download is what this item always did, saved beside the running jar now where there is one, and in the working
-     * directory where there is not.  One Download & Update at a time: a second, while one is downloading, backing up or closing, is
-     * refused rather than stacked; whatever ends it short of the exit ends it here, and once it reaches `closeForTheUpdate`, that ends it.
+     * Downloads the new version with its progress on the menu item; then Download says where it is, and Download &
+     * Update installs it (FR-125).  Saved beside the running jar where there is one, else in the working directory.
+     * One Download & Update at a time: a second, while one is under way, is refused rather than stacked; whatever ends
+     * it short of the exit ends it here, and once it reaches `closeForTheUpdate`, that ends it.
      *
      * @param jar the running jar, or null
      * @param install whether to update as well
@@ -207,7 +207,6 @@ public final class UpdateFlow
     /**
      * Download & Update, once the file is here (FR-125): checks it is a whole jar, takes the data backup, then closes
      * TrainControl for the updater.  On the download's worker thread, until the exit, which is the event thread's.
-     *
      * Each failure stops here, says why in words of its own, and leaves everything as it was: the old jar is not
      * touched until TrainControl has closed.
      *
@@ -233,8 +232,8 @@ public final class UpdateFlow
         javax.swing.SwingUtilities.invokeLater(() ->
             this.ui.downloadUpdateMenuItem().setText(I18n.t("ui.update.backingUp")));
 
-        // The application's own data backup, and the update goes no further without it (Adam).  Incomplete counts as failed: the backup is
-        // what makes an update safe to try, and a part of one is a part of that.  An Error out of it is a failed backup too, and said as one.
+        // The application's own data backup, and the update goes no further without it.  Incomplete counts as failed: a
+        // part of a backup is not what makes an update safe to try.  An Error out of it is a failed backup too.
         BackupAction.BackupOutcome backup;
 
         String why;
