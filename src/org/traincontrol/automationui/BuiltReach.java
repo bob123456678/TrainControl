@@ -116,11 +116,8 @@ public final class BuiltReach
     }
 
     /**
-     * Each square to the squares reached from the copies a train stops at there, out-of-service squares obeyed.
-     *
-     * The copies a train stops at are the square's station copies, as a train sent there stands on one of them; where
-     * it has none (track, or a station barred every way in) every copy is a place to start.  A barred copy that reaches
-     * plenty therefore does not hide a station copy that reaches nothing.
+     * Each square to the squares reached from the copies a train stops at there (`startsOf`), out-of-service squares
+     * obeyed.  A barred copy that reaches plenty therefore does not hide a station copy that reaches nothing.
      *
      * @return square to the squares reached
      */
@@ -128,25 +125,37 @@ public final class BuiltReach
     {
         Map<TileKey, Set<TileKey>> out = new LinkedHashMap<>();
 
-        for (Map.Entry<TileKey, List<String>> square : copiesOf.entrySet())
+        for (TileKey square : copiesOf.keySet())
         {
-            List<String> starts = new ArrayList<>();
-
-            for (String copy : square.getValue())
-            {
-                if (stations.contains(copy)) starts.add(copy);
-            }
-
-            if (starts.isEmpty()) starts = square.getValue();
-
             Set<TileKey> reached = new LinkedHashSet<>();
 
-            for (String copy : starts) reached.addAll(stationsReachedFrom(copy, true));
+            for (String copy : startsOf(square)) reached.addAll(stationsReachedFrom(copy, true));
 
-            out.put(square.getKey(), reached);
+            out.put(square, reached);
         }
 
         return out;
+    }
+
+    /**
+     * The copies a train at this square starts from: its station copies, as a train sent there stands on one of them;
+     * where it has none (track, or a station barred every way in), every copy.
+     *
+     * @param square the square
+     * @return the copies, empty for a square the build has none of
+     */
+    public List<String> startsOf(TileKey square)
+    {
+        List<String> copies = copiesOf.getOrDefault(square, Collections.<String>emptyList());
+
+        List<String> starts = new ArrayList<>();
+
+        for (String copy : copies)
+        {
+            if (stations.contains(copy)) starts.add(copy);
+        }
+
+        return starts.isEmpty() ? copies : starts;
     }
 
     /** @return whether an edge leaves this copy */

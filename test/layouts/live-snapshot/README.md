@@ -178,3 +178,4 @@ not fix it. Name the square.
 - `ui.testOpenLayoutLeavesTheOldTrainsBehind`
 - `ui.testTheAutonomyEditorsQuestionsChangeTheSetup`
 - `ui.testStartingAutonomyFromTheWindow`
+- `core.testTestAPathStartsWhereTheFindingsDo`

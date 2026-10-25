@@ -3874,6 +3874,42 @@ public class AutonomySession
         return reach == null ? null : reach.bySquare();
     }
 
+    /**
+     * For the editor's path test: each split square to the arrival sides of the copies the findings start a train from
+     * there (`BuiltReach.startsOf`), so the test draws no run the findings say is not there.
+     * @return square to sides; a square left out, or every square where the setup does not build, faces every way
+     */
+    public Map<TileKey, Set<Side>> startingArrivals()
+    {
+        Map<TileKey, Set<Side>> out = new LinkedHashMap<>();
+
+        org.json.JSONObject built = reducer == null ? null : builtForInspection();
+
+        if (built == null) return out;
+
+        AutonomyBuilder named = builder(null);
+
+        BuiltReach reach = BuiltReach.of(built, named.tilesByName());
+
+        if (reach == null) return out;
+
+        Map<String, Side> arrivals = named.arrivalByName();
+
+        for (TileKey square : reducer.getPoints().keySet())
+        {
+            // One copy, or one per way out that together face every way
+            if (named.arrivalSidesOf(square).isEmpty()) continue;
+
+            Set<Side> sides = new LinkedHashSet<>();
+
+            for (String copy : reach.startsOf(square)) sides.add(arrivals.get(copy));
+
+            if (!sides.isEmpty() && !sides.contains(null)) out.put(square, sides);
+        }
+
+        return out;
+    }
+
     /** Whether another copy of the square is in `good` (copies with a way out, or in). */
     private boolean hasAHealthySibling(String copy, TileKey tile, java.util.Set<String> good,
         java.util.Set<String> stations, java.util.Map<String, TileKey> byName)

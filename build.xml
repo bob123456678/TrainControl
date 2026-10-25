@@ -613,6 +613,7 @@
         <test-one-class class="testALocomotiveIconIsCachedForTheSizeItWasAskedAt"/>
         <test-one-class class="testATypedAddressIsReadTheSameAtEveryDoor"/>
         <test-one-class class="testTheDailyStatisticsHaveOneEntryPerCalendarDay"/>
+        <test-one-class class="testTestAPathStartsWhereTheFindingsDo"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>

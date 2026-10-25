@@ -5079,15 +5079,19 @@ public class AutonomyEditorPanel extends JPanel
         java.util.Map<TileKey, java.util.Set<org.traincontrol.automationui.TilePorts.Side>> barred =
             session.barredArrivals();
 
+        // Each leg starts on the copies a train stands on there, as the findings start it.
+        java.util.Map<TileKey, java.util.Set<org.traincontrol.automationui.TilePorts.Side>> starts =
+            session.getReducer() == null ? null : session.startingArrivals();
+
         java.util.List<org.traincontrol.automationui.GraphReducer.ReducedEdge> there =
             session.getReducer() == null ? null
                 : session.getReducer().findPath(testFrom, tile, mayTurn, mustTurn, barred,
-                    session.shutTiles());
+                    session.shutTiles(), starts.get(testFrom));
 
         java.util.List<org.traincontrol.automationui.GraphReducer.ReducedEdge> back =
             session.getReducer() == null ? null
                 : session.getReducer().findPath(tile, testFrom, mayTurn, mustTurn, barred,
-                    session.shutTiles());
+                    session.shutTiles(), starts.get(tile));
 
         traces.clear();
 

@@ -521,6 +521,19 @@ public class GraphReducer
     public List<ReducedEdge> findPath(TileKey from, TileKey to, Set<TileKey> mayTurn,
         Set<TileKey> mustTurn, java.util.Map<TileKey, Set<Side>> barred, Set<TileKey> closed)
     {
+        return findPath(from, to, mayTurn, mustTurn, barred, closed, null);
+    }
+
+    /**
+     * The same, starting a train only as it can stand at `from`.
+     *
+     * @param startArrivals the sides a train standing at `from` arrived by, which is which copies it can be on
+     *        (`AutonomySession.startingArrivals`); null to start facing every way
+     */
+    public List<ReducedEdge> findPath(TileKey from, TileKey to, Set<TileKey> mayTurn,
+        Set<TileKey> mustTurn, java.util.Map<TileKey, Set<Side>> barred, Set<TileKey> closed,
+        Set<Side> startArrivals)
+    {
         if (!points.containsKey(from) || !points.containsKey(to)) return null;
 
         if (from.equals(to)) return new ArrayList<ReducedEdge>();
@@ -530,21 +543,25 @@ public class GraphReducer
         // pointing - and searching over Points alone produced runs that reversed at squares where no
         // train can, which is what the test told the user the railway would do.
         //
-        // The starting Point has no arrival side: the train is already standing there, and the test
-        // question is whether the TRACK allows the journey at all.
+        // With no starting sides the starting Point has no arrival side: the question is then whether the TRACK allows
+        // the journey at all.
         Map<String, ReducedEdge> arrivedBy = new LinkedHashMap<>();
         Map<String, String> cameFrom = new LinkedHashMap<>();
         Map<String, TileKey> tileOf = new LinkedHashMap<>();
         Map<String, Side> sideOf = new LinkedHashMap<>();
 
-        String start = searchKey(from, null);
-
-        arrivedBy.put(start, null);
-        tileOf.put(start, from);
-        sideOf.put(start, null);
-
         java.util.ArrayDeque<String> frontier = new java.util.ArrayDeque<>();
-        frontier.add(start);
+
+        for (Side arrival : startArrivals == null ? Collections.<Side>singleton(null) : startArrivals)
+        {
+            String start = searchKey(from, arrival);
+
+            arrivedBy.put(start, null);
+            tileOf.put(start, from);
+            sideOf.put(start, arrival);
+
+            frontier.add(start);
+        }
 
         while (!frontier.isEmpty())
         {
