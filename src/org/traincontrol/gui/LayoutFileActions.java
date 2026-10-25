@@ -247,17 +247,21 @@ final class LayoutFileActions
      * recursively produces every page, in an order nobody chose.  The result is excluded from autonomy as it is
      * written, not optionally: left included, every square would mint a second Point for a sensor and a parallel set of
      * edges.
+     *
+     * @param editor the layout editor that asked, or null for the Layouts menu, as in `duplicateOrRenameCurrentLayout`
      */
-    void combineLinkedPages()
+    void combineLinkedPages(final LayoutEditor editor)
     {
-        // The same rule as deleting and renaming: this writes a new page and rebuilds the session.
-        if (this.ui.refuseWhileARunHoldsTheSetup(this.ui)) return;
+        final java.awt.Component over = editor == null ? this.ui : editor;
 
-        if (this.ui.refuseWhileEditorOpen()) return;
+        // The same rule as deleting and renaming: this writes a new page and rebuilds the session.
+        if (this.ui.refuseWhileARunHoldsTheSetup(over)) return;
+
+        if (editor == null && this.ui.refuseWhileEditorOpen()) return;
 
         if (!this.ui.isLocalLayout())
         {
-            JOptionPane.showMessageDialog(this.ui,
+            JOptionPane.showMessageDialog(over,
                 I18n.t("layout.ui.errorCannotManipulateRemoteLayouts"));
             return;
         }
@@ -268,11 +272,11 @@ final class LayoutFileActions
 
         if (pages.size() < 2)
         {
-            JOptionPane.showMessageDialog(this.ui, I18n.t("layout.ui.infoNothingLinkedFromHere"));
+            JOptionPane.showMessageDialog(over, I18n.t("layout.ui.infoNothingLinkedFromHere"));
             return;
         }
 
-        String name = JOptionPane.showInputDialog(this.ui,
+        String name = JOptionPane.showInputDialog(over,
             I18n.t("layout.ui.promptCombinedPageName"),
             I18n.f("layout.ui.combinedPageName", from));
 
@@ -287,7 +291,7 @@ final class LayoutFileActions
 
         if (usesThatFile != null)
         {
-            JOptionPane.showMessageDialog(this.ui,
+            JOptionPane.showMessageDialog(over,
                 I18n.f("layout.ui.errorPageAlreadyExistsDeleteOrRenameFirst", usesThatFile));
 
             return;
@@ -295,7 +299,7 @@ final class LayoutFileActions
 
         if (this.ui.getModel().getLayoutList().contains(combined))
         {
-            JOptionPane.showMessageDialog(this.ui,
+            JOptionPane.showMessageDialog(over,
                 I18n.f("layout.ui.errorPageAlreadyExistsDeleteOrRenameFirst", combined));
             return;
         }
@@ -317,17 +321,29 @@ final class LayoutFileActions
 
         if (wouldBeHigh > LayoutEditor.MAX_SIZE || wouldBeWide > LayoutEditor.MAX_SIZE)
         {
-            JOptionPane.showMessageDialog(this.ui,
+            JOptionPane.showMessageDialog(over,
                 I18n.f("layout.ui.errorMaxSizeExceeded", LayoutEditor.MAX_SIZE));
             return;
         }
 
+        final Runnable work = () -> combineOnAWorker(from, combined, pages, editor);
+
+        if (editor == null) work.run();
+        else editor.stepOutFor(work);
+    }
+
+    /** Combine Linked Pages once nothing can refuse it; `editor` is told which page to show however this ends. */
+    private void combineOnAWorker(final String from, final String combined, final List<String> pages,
+        final LayoutEditor editor)
+    {
         // On a worker, because it parses every page twice.  And a refresh under way from here: a run started before
         // `layoutEditingComplete` would run the railway from before and be forgotten by the reset.
         this.ui.refreshesUnderWay.incrementAndGet();
 
         new Thread(() ->
         {
+            boolean arriving = false;
+
             try
             {
                 // Asked before the new page is written (FR-018), as the delete path does: a Cancel at the index write
@@ -374,18 +390,24 @@ final class LayoutFileActions
                 {
                     this.ui.layoutList().setSelectedItem(combined);
                     this.ui.repaintLayout();
+
+                    if (editor != null) editor.arriveOn(String.valueOf(this.ui.layoutList().getSelectedItem()));
                 }));
+
+                arriving = true;
             }
             catch (Exception ex)
             {
                 this.ui.getModel().log(ex);
 
                 javax.swing.SwingUtilities.invokeLater(() ->
-                    JOptionPane.showMessageDialog(this.ui,
+                    JOptionPane.showMessageDialog(editor == null ? this.ui : editor,
                         I18n.f("layout.ui.errorSavingLayoutWithMessage", ex.getMessage())));
             }
             finally
             {
+                if (editor != null && !arriving) editor.arriveOn(null);
+
                 // Posted after the hand-over above, so `layoutEditingComplete` has counted its own before this one goes
                 javax.swing.SwingUtilities.invokeLater(() -> this.ui.refreshesUnderWay.updateAndGet(n -> Math.max(0, n - 1)));
             }

@@ -4107,17 +4107,26 @@ public class LayoutEditor extends PositionAwareJFrame
     }
     
     /**
-     * Manage Pages: the Layouts menu's Add Blank Page, Rename Current Page and Delete Current Page, run by the main
-     * window's own handlers on the page being edited (FR-109).  Built once; it stays across page and mode switches.
+     * Manage Pages: the main window's page actions, run by its own handlers on the page being edited (FR-109).  Built
+     * once; it stays across page and mode switches.
      */
     private void mountPageMenu()
     {
         if (getJMenuBar() != null) return;
 
-        javax.swing.JMenu menu = new javax.swing.JMenu(I18n.t("ui.main.toolbar.modifyLayout"));
+        javax.swing.JMenu menu = pageMenu = new javax.swing.JMenu(I18n.t("ui.main.toolbar.modifyLayout"));
 
         menu.add(pageMenuItem("ui.main.toolbar.addBlackPage", () -> parent.addBlankPageFromTheEditor(this)));
         menu.add(pageMenuItem("ui.main.toolbar.renameCurrentPage", () -> parent.renamePageFromTheEditor(this)));
+        menu.add(pageMenuItem("ui.main.toolbar.duplicateCurrentPage", () -> parent.duplicatePageFromTheEditor(this)));
+
+        javax.swing.JMenuItem combine = pageMenuItem("layout.ui.menuCombineLinkedPages",
+            () -> parent.combinePagesFromTheEditor(this));
+
+        combine.setToolTipText(I18n.t("layout.ui.tooltipCombineLinkedPages"));
+
+        menu.add(combine);
+        menu.addSeparator();
         menu.add(pageMenuItem("ui.main.toolbar.deleteCurrentPage", () -> parent.deletePageFromTheEditor(this)));
 
         javax.swing.JMenuBar bar = new javax.swing.JMenuBar();
@@ -4129,6 +4138,15 @@ public class LayoutEditor extends PositionAwareJFrame
         menu.setFocusable(false);
 
         setJMenuBar(bar);
+    }
+
+    /** The Manage Pages menu, once mounted. */
+    private javax.swing.JMenu pageMenu;
+
+    /** Opens Manage Pages with its items showing, for the main window's Manage Pages... (FR-146). */
+    public void openPageMenu()
+    {
+        if (pageMenu != null && pageMenu.isShowing()) pageMenu.doClick(0);
     }
 
     private javax.swing.JMenuItem pageMenuItem(String key, Runnable action)

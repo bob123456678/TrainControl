@@ -2488,6 +2488,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         greyForTheRun(chooseLocalDataFolderMenuItem, running, false, why);
         greyForTheRun(recentLayoutsMenu, running, false, why);
         greyForTheRun(modifyLocalLayoutMenu, running, false, why);
+        greyForTheRun(managePagesItem, running, false, why);
         greyForTheRun(editPageMenu, running, false, why);
         greyForTheRun(initializeLocalLayoutMenuItem, running, true, why);
 
@@ -2613,6 +2614,45 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         heading.setFont(heading.getFont().deriveFont(java.awt.Font.BOLD));
 
         return heading;
+    }
+
+    /**
+     * Layouts > Manage Pages...: opens the layout editor as Edit does, or brings the open one forward, with its Manage
+     * Pages menu open (FR-146).  It stands in for the Manage Pages menu, hidden on Adam's word: to bring that back,
+     * drop its `setVisible(false)` here and this item.
+     */
+    private void mountManagePages()
+    {
+        if (layoutMenu == null || modifyLocalLayoutMenu == null || managePagesItem != null) return;
+
+        managePagesItem = new javax.swing.JMenuItem(I18n.t("ui.main.toolbar.managePages"));
+
+        managePagesItem.setToolTipText(I18n.t("ui.main.toolbar.tooltip.modifyLayout"));
+
+        managePagesItem.addActionListener(e -> openManagePages());
+
+        int at = indexOnLayoutMenu(modifyLocalLayoutMenu);
+
+        if (at >= 0) layoutMenu.add(managePagesItem, at);
+        else layoutMenu.add(managePagesItem);
+
+        modifyLocalLayoutMenu.setVisible(false);
+    }
+
+    /** Layouts > Manage Pages..., in place of the hidden menu of that name. */
+    private javax.swing.JMenuItem managePagesItem;
+
+    /** Edit's way in, then the editor's page menu, posted twice to follow the editor's posted build and show. */
+    private void openManagePages()
+    {
+        openLayoutEditor(null, null, null);
+
+        javax.swing.SwingUtilities.invokeLater(() -> javax.swing.SwingUtilities.invokeLater(() ->
+        {
+            LayoutEditor shown = anEditorWindow();
+
+            if (shown != null) shown.openPageMenu();
+        }));
     }
 
     /** Items are looked up, not counted, as everything above the headings moves. */
@@ -3072,6 +3112,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // always has a null `session`, so below it the guard, the data-source label and the headings would never exist
         // for it.
         mountLayoutHeadings();
+        mountManagePages();
         mountRecentLayouts();
         mountRestoreFromBackup();
         mountFindRoute();
@@ -3792,6 +3833,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         // Manage Pages goes with it: it is the same permission, asked about the same folder.
         if (this.modifyLocalLayoutMenu != null) this.modifyLocalLayoutMenu.setEnabled(live);
+
+        // Lit with an editor open too, as it brings that editor forward
+        if (this.managePagesItem != null) this.managePagesItem.setEnabled(layoutCanBeEdited());
 
         // The settings panel's button goes with it: both open the same editor and ask the same guard, so it must not
         // stay lit while an editor is open (OB-057).  Set here rather than at the four places that enable the layout
@@ -19914,6 +19958,36 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         deleteLayoutMenuItemActionPerformed(pressedIn(editor));
     }
 
+    /** Duplicate Current Page from the layout editor, on the main window's selected page (FR-146). */
+    public void duplicatePageFromTheEditor(LayoutEditor editor)
+    {
+        pressFromTheEditor(editor, this::duplicateLayoutMenuItemActionPerformed);
+    }
+
+    /** Combine Linked Pages from the layout editor, from the main window's selected page. */
+    public void combinePagesFromTheEditor(LayoutEditor editor)
+    {
+        pressFromTheEditor(editor, this::combineMenuPressed);
+    }
+
+    /** Presses a handler for the editor, which is `pageActionFrom` while it runs, for the calls that take no event. */
+    private void pressFromTheEditor(LayoutEditor editor, java.util.function.Consumer<java.awt.event.ActionEvent> handler)
+    {
+        pageActionFrom = editor;
+
+        try
+        {
+            handler.accept(pressedIn(editor));
+        }
+        finally
+        {
+            pageActionFrom = null;
+        }
+    }
+
+    /** The layout editor a page action is pressed from while its handler runs (`pressFromTheEditor`), or null. */
+    private LayoutEditor pageActionFrom;
+
     private void duplicateLayoutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_duplicateLayoutMenuItemActionPerformed
         
         String newName = this.LayoutList.getSelectedItem().toString() + " copy";
@@ -19926,7 +20000,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             newName += " " + I18n.t("layout.ui.copy");
         }
 
-        showLayoutTab();
+        if (editorBehind(evt) == null) showLayoutTab();
 
         duplicateOrRenameCurrentLayout(newName, false, true, false);
     }//GEN-LAST:event_duplicateLayoutMenuItemActionPerformed
@@ -19936,12 +20010,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private void combineLinkedPages()
     {
-        this.layoutFileActions.combineLinkedPages();
+        this.layoutFileActions.combineLinkedPages(pageActionFrom);
     }
 
     private void duplicateOrRenameCurrentLayout(String newLayoutName, boolean rename, boolean duplicate, boolean blank)
     {
-        this.layoutFileActions.duplicateOrRenameCurrentLayout(newLayoutName, rename, duplicate, blank, null);
+        this.layoutFileActions.duplicateOrRenameCurrentLayout(newLayoutName, rename, duplicate, blank, pageActionFrom);
     }
     
     private void deleteLayoutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteLayoutMenuItemActionPerformed
