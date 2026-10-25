@@ -274,7 +274,7 @@ public class testRecentLayouts
 
             List<String> paths = new ArrayList<>();
 
-            for (int i = 0; i < recentMenu().getItemCount(); i++) paths.add(recentMenu().getItem(i).getToolTipText());
+            for (int i = 0; i < recentMenu().getItemCount(); i++) paths.add(pathOf(recentMenu().getItem(i)));
 
             return paths;
         });
@@ -287,7 +287,7 @@ public class testRecentLayouts
         {
             for (int i = 0; i < recentMenu().getItemCount(); i++)
             {
-                if (folder.equals(recentMenu().getItem(i).getToolTipText())) return recentMenu().getItem(i);
+                if (folder.equals(pathOf(recentMenu().getItem(i)))) return recentMenu().getItem(i);
             }
 
             return null;
@@ -316,7 +316,7 @@ public class testRecentLayouts
         {
             for (int i = 0; i < recentMenu().getItemCount(); i++)
             {
-                if (folder.equals(recentMenu().getItem(i).getToolTipText())) return recentMenu().getItem(i);
+                if (folder.equals(pathOf(recentMenu().getItem(i)))) return recentMenu().getItem(i);
             }
 
             return null;
@@ -344,6 +344,13 @@ public class testRecentLayouts
         }
 
         assertEquals(said, new ArrayList<String>(), "opening a recent layout asked something");
+    }
+
+    /** The folder an item opens, which its tooltip says in full (wrapped as HTML when long). */
+    private static String pathOf(JMenuItem item)
+    {
+        return item.getToolTipText().replaceAll("<[^>]*>", "").replace("&lt;", "<").replace("&gt;", ">")
+            .replace("&amp;", "&").trim();
     }
 
     private static boolean loading()

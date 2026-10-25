@@ -23090,7 +23090,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             javax.swing.JMenuItem item = new javax.swing.JMenuItem(named.get(name) > 1 || name.isEmpty() ? path : name);
 
-            item.setToolTipText(path);
+            item.setToolTipText(AutonomyEditorPanel.wrappedIfLong(path));
 
             item.addActionListener(e -> openRecentLayout(path));
 
