@@ -14,14 +14,8 @@ import support.SourceOf;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * Faults an independent review found below the interface, in the layers the earlier reviews had
- * taken as settled.
- *
- * They have nothing in common except where they end up: every one of them takes a railway that is
- * running perfectly well and stops it, or quietly destroys something, without anybody doing anything
- * wrong. That is the class of bug worth a test apiece, because none of them announces itself - the
- * train just stops, or the power just goes off, or the customizations are gone, and the reason is
- * three layers away from anything the operator touched.
+ * Faults found below the interface, each of which takes a railway that is running well and stops it, or quietly
+ * destroys something, with nobody doing anything wrong.
  */
 public class testControlStationFaults
 {
@@ -52,16 +46,8 @@ public class testControlStationFaults
     /**
      * A system frame too short to carry a sub command is not read as a stop.
      *
-     * The bug, stated as a layout would meet it: some other participant on the CAN bus - another
-     * controller, a booster, anything the station gateways onto the network - sends a system frame
-     * with four payload bytes. TrainControl read the fifth byte anyway, found the zero that was never
-     * written there, and zero is STOP. The application then believed the power had been cut: power
-     * state off, every locomotive told so (which corrupts the running-time accounting), the indicator
-     * dark, and everything waiting on the power state released. On a layout still visibly running.
-     *
-     * The guard meant to prevent this tested `data.length`, which is eight for every message that has
-     * ever been parsed, because the parsing constructor always allocates eight bytes and fills only as
-     * many as the frame declared. The field that says how many were filled is `length`.
+     * The guard tested `data.length`, which is always eight (the parsing constructor allocates eight bytes), not the
+     * `length` that says how many were filled; a four-byte frame's unwritten fifth byte, zero, read as STOP.
      */
     @Test
     public void testAShortSystemFrameIsNotAStop()
@@ -73,11 +59,7 @@ public class testControlStationFaults
     }
 
     /**
-     * And a real stop is still a stop, so the guard above did not simply switch the feature off.
-     *
-     * Worth its own test rather than a line in the one above: a fix to a false positive that reaches
-     * far enough to suppress the true positives is the more dangerous bug of the two. A stop from
-     * another controller is how a person at the layout hits an emergency stop.
+     * And a real stop is still a stop: the fix for the false positive must not suppress true ones.
      */
     @Test
     public void testARealStopIsStillReadAsAStop()
@@ -98,23 +80,14 @@ public class testControlStationFaults
     /**
      * The keepalive resumes after a ping goes unanswered.
      *
-     * The bug: a ping already in flight silenced the next one, and only a RESPONSE cleared the
-     * in-flight mark. UDP does not promise a response. So one dropped packet - a station reboot, a
-     * moment of wireless - stopped the keepalive for the rest of the session. The status line read
-     * "lost connection" for ever, including long after the network came back; and because the
-     * five-second latency check fires off the same reading, a running layout with a latency limit had
-     * its power cut every five seconds, five seconds after each time the operator turned it back on.
-     *
-     * Staged rather than mocked, because the fault IS the sequence: send a ping with nothing
-     * answering, wait past the retry, then let the echo answer and see whether a second ping ever
-     * went out. Under the old code nothing is transmitted, so nothing comes back, and the outage
-     * reading never returns to zero.
+     * A ping in flight silenced the next one and only a RESPONSE cleared the mark, so one dropped packet stopped the
+     * keepalive for the session.  Staged rather than mocked, because the fault is the sequence: a ping with nothing
+     * answering, a wait past the retry, then the echo.
      */
     @Test
     public void testTheKeepaliveResumesAfterAnUnansweredPing() throws Exception
     {
-        // Nothing answering.  This is a lost response, not a missing station: the ping is transmitted
-        // and no reply arrives.
+        // A lost response, not a missing station: the ping is transmitted and no reply arrives.
         MarklinControlStation.DEBUG_SIMULATE_PACKETS = false;
         MarklinControlStation.DEBUG_LOG_NETWORK = true;
 
@@ -130,23 +103,17 @@ public class testControlStationFaults
             "with no answer, the time since the last ping must keep growing - that reading is what "
             + "the lost-connection warning is made of");
 
-        // A retry, with still nothing answering, and then the same reading again.  This is the half
-        // of the fix the assertions above cannot see: the outage clock and the in-flight clock are
-        // separate, and reading the retry instead would reset this to nearly zero - a station that
-        // has been unreachable for hours looking like one that has been unreachable for a moment,
-        // which is exactly the distinction the warning exists to draw.
+        // A retry, still unanswered, then the same reading again: the outage clock and the in-flight clock are
+        // separate, and reading the retry instead would make an hours-long outage look like a moment.
         model.sendPing(false);
 
         assertTrue(model.getTimeSinceLastPing() >= retryMs,
             "the retry reset the outage clock, so the connection reads as healthy for five seconds "
             + "out of every five while the station says nothing at all");
 
-        // Past the retry window again.  The retry above reset the in-flight clock, which is what it
-        // is supposed to do - so asking for another one immediately would be refused as a ping
-        // already in flight, and the recovery below would have nothing to answer.
+        // Past the retry window again: the retry reset the in-flight clock, so asking at once would be refused.
         Thread.sleep(retryMs + 100);
 
-        // Now the station answers again, as it would when the network came back
         MarklinControlStation.DEBUG_SIMULATE_PACKETS = true;
 
         model.sendPing(false);
@@ -166,23 +133,15 @@ public class testControlStationFaults
     }
 
     /**
-     * Clearing a point's priority leaves it with no priority, rather than with null.
+     * Clearing a point's priority leaves it with no priority, rather than null.
      *
-     * The priority dialog sends null when the box is emptied, which is the obvious way to say "no
-     * priority" - and null was stored. Two things then unbox it: getPriority(), which returns int,
-     * and toJSON's `!= 0`. The first threw inside the comparator that chooses where a train goes
-     * next, on a code path outside the try that guards path execution, so the locomotive's dispatch
-     * thread died and that train silently stopped being sent anywhere for the rest of the session.
-     * The second threw on every attempt to save the layout.
-     *
-     * Zero already means no priority, so that is what null becomes - the same fix setMaxTrainLength
-     * carries, for the same reason.
+     * The dialog sends null for an emptied box; getPriority() (int) and toJSON's `!= 0` unboxed it, killing the
+     * locomotive's dispatch thread and breaking every save.  Zero already means none.
      */
     @Test
     public void testClearingAPriorityDoesNotPoisonThePoint() throws Exception
     {
-        // Not a destination, which is the only kind of point that needs an s88.  Priority is asked of
-        // every point the search considers, destination or not.
+        // Not a destination (only those need an s88): priority is asked of every point the search considers.
         Point p = new Point("cleared priority", false, null);
 
         p.setPriority(5);
@@ -191,7 +150,6 @@ public class testControlStationFaults
         assertEquals(p.getPriority(), 0,
             "an emptied priority box means no priority, and no priority is zero");
 
-        // The two unboxing sites, exercised rather than reasoned about
         assertNotNull(p.toJSON(), "a point with a cleared priority must still be saveable");
 
         Point other = new Point("other", false, null);
@@ -204,16 +162,8 @@ public class testControlStationFaults
     /**
      * A database file that exists and will not read is told apart from one that is not there.
      *
-     * That distinction is the whole fix, so it is the thing to test. A load failure was silent: the
-     * application carried on with an EMPTY locomotive database and the save on the way out wrote that
-     * emptiness over the real file - a complete, successful write, so the atomic-write staging that
-     * protects against dying mid-save does not help at all. One transiently locked file at startup
-     * plus a normal exit destroyed every locomotive customization the user had ever made, and the
-     * backups are manual.
-     *
-     * Getting the discrimination wrong in the other direction would be its own bug: treating a first
-     * launch as a failed load would make the application keep a copy of a file that was never there
-     * and warn about data nobody has.
+     * A silent load failure left an EMPTY database that the exit save wrote over the real file.  Treating a first
+     * launch as a failed load would be as wrong: it would keep a copy of a file that never existed.
      */
     @Test
     public void testAnUnreadableDatabaseIsToldApartFromAbsentOne() throws Exception
@@ -227,7 +177,6 @@ public class testControlStationFaults
             "a database that is not there is a first launch, and there is nothing to lose - "
             + "treating it as a failure would warn about data nobody has");
 
-        // Present, and not a serialized component list
         java.io.File corrupt = java.io.File.createTempFile("tc-corrupt", ".data");
 
         try (java.io.FileOutputStream out = new java.io.FileOutputStream(corrupt))
@@ -244,9 +193,7 @@ public class testControlStationFaults
 
         corrupt.delete();
 
-        // Put the shared model back.  The flag is process-global state on an instance every test in
-        // this class shares, and leaving it set would have the next save keep a needless copy of a
-        // database that loaded perfectly well.
+        // Put the shared model back: the flag is process-global and a leftover would keep a needless copy.
         model.restoreState(missing.getAbsolutePath());
 
         assertFalse(model.isDatabaseLoadFailed(), "the flag should not outlive this test");
@@ -255,18 +202,11 @@ public class testControlStationFaults
     /**
      * A database file that reads, and holds something other than a locomotive list, is unreadable too.
      *
-     * `restoreState` took the list when the file held one and logged success either way, so a file that deserialized
-     * to anything else - written by another program, or swapped in by hand - left the mark that guards the exit save
-     * clear.  The application then ran with an empty database, said it had loaded one, and the save on the way out
-     * wrote that emptiness over the file with no copy kept: the loss `isDatabaseLoadFailed` exists to prevent, by a
-     * third road past it.
-     *
-     * Written to a temporary file this test owns; the live database is neither read nor written.
+     * `restoreState` logged success for any deserialized object, leaving the exit-save guard clear, so the save wrote
+     * an empty database over the file with no copy kept.  Written to a temporary file this test owns.
      *
      * MUTATION: drop `this.databaseLoadFailed = true;` from `restoreState`'s branch for an object that is not a List,
      * and this fails.
-     *
-     * @throws Exception from the files
      */
     @Test
     public void testADatabaseFileHoldingSomethingElseIsUnreadable() throws Exception
@@ -306,16 +246,8 @@ public class testControlStationFaults
     /**
      * A timetable that has to run one entry at a time still does after being saved and loaded.
      *
-     * The flag exists because a staging plan's moves contend: dispatched in parallel, the second
-     * takes an edge the planner never considered and retries for ever on a route it cannot abandon.
-     * That was observed before the flag existed. It was written into the plan and not into the file,
-     * so saving a return-home plan and reloading it brought back exactly the failure the flag was
-     * added to prevent - and brought it back silently, because everything about the timetable looks
-     * right until it runs.
-     *
-     * A fold no longer writes a plan: while one has the timetable, the owner's is written, with no flag.
-     * What this keeps working is a file a fold wrote before that, with a plan as its
-     * timetable and the flag set - stated here by hand, as the file states it.
+     * The flag was written into the plan and not the file, so a reloaded return-home plan lost it and its moves
+     * contended again.  A fold no longer writes a plan; this keeps working for a file an older fold wrote.
      */
     @Test
     public void testAStagingPlanIsStillSequentialAfterASaveAndLoad() throws Exception
@@ -336,9 +268,6 @@ public class testControlStationFaults
 
     /**
      * And an ordinary timetable is not turned into a sequential one by the same round trip.
-     *
-     * Overlapping execution is the normal behavior and much the faster one; a flag that defaulted
-     * the wrong way would make every layout's timetable crawl for no visible reason.
      */
     @Test
     public void testAnOrdinaryTimetableStaysParallel() throws Exception
@@ -355,13 +284,8 @@ public class testControlStationFaults
     /**
      * An MFX locomotive whose file gives no address gets a real address, not its UID.
      *
-     * The Central Station leaves the address out for some records, and the importer falls back to the
-     * UID - which is the address plus the decoder type's base. The DCC branch has always subtracted
-     * its base back off; the MFX branch never did. So such a locomotive was created pointing past the
-     * highest MFX address there is: every command sent to a decoder that cannot exist, every state
-     * update from the real one unmatched, and the bad address written into the database, where it
-     * stays. Nothing catches it later, because only setAddress validates and a fresh import does not
-     * go through setAddress.
+     * The importer falls back to the UID (address plus the decoder type's base); the DCC branch subtracts the base
+     * back and the MFX branch never did, so the stored address pointed past the highest MFX address.
      */
     @Test
     public void testAnMfxLocomotiveWithNoAddressGetsARealOne() throws Exception
@@ -394,10 +318,7 @@ public class testControlStationFaults
     /**
      * Two identical commands far enough apart are two commands, not one and an echo.
      *
-     * The CS3 sends its responses twice and the second is dropped, which is right - but the drop had
-     * no time bound at all, so an accessory told to go to the same place twice with no other traffic
-     * in between had the second command swallowed whole: no confirmation, no log, nothing to wake
-     * whatever was waiting on the actuation. Repeating a route is an ordinary thing to do.
+     * The echo drop had no time bound, so repeating an accessory command with no traffic between was swallowed.
      */
     @Test
     public void testAnIdenticalCommandLaterIsNotADuplicate() throws Exception
@@ -422,21 +343,13 @@ public class testControlStationFaults
             + "leaves whatever waits on the actuation waiting");
     }
 
-    /**
-     * One accessory command, built fresh each time so the two are equal without being the same object.
-     */
+    /** One accessory command, built fresh each time so two are equal without being the same object. */
     private static CS2Message accessoryPacket()
     {
         return new CS2Message(CS2Message.CMD_ACC_SWITCH, new byte[]{0x00, 0x00, 0x30, 0x40, 0x01, 0x01});
     }
 
-    /**
-     * The smallest layout fromJSON will accept: two points and the edge between them.
-     *
-     * Built rather than borrowed because an EMPTY layout is not a valid one - fromJSON invalidates it
-     * before it ever reaches the timetable - and the first version of these tests used one, which made
-     * them fail for a reason that had nothing to do with what they were asking.
-     */
+    /** The smallest layout fromJSON accepts: two points and the edge between them (an EMPTY layout is invalid). */
     private static String minimalLayout()
     {
         return "{"
@@ -450,19 +363,12 @@ public class testControlStationFaults
             + "\"minDelay\":1,\"maxDelay\":2,\"defaultLocSpeed\":35}";
     }
 
-    /**
-     * A raw thirteen byte CAN frame carrying a system command with the given payload length.
-     *
-     * Built by hand rather than through the outgoing constructor, because the whole point is a frame
-     * whose declared length and actual buffer disagree - which is every frame that arrives off the
-     * network, and none that this application builds.
-     */
+    /** A raw thirteen byte CAN system frame whose declared payload length and buffer disagree, as off the network. */
     private static byte[] systemFrame(int payloadLength)
     {
         byte[] raw = new byte[CS2Message.MESSAGE_LENGTH];
 
-        // Priority 0, command CMD_SYSTEM (0x00), response bit clear.  The system branch of
-        // receiveMessage deliberately ignores the response bit, so it makes no difference here.
+        // Priority 0, command CMD_SYSTEM (0x00), response bit clear (the system branch ignores it).
         raw[0] = 0;
         raw[1] = 0;
 
@@ -471,7 +377,6 @@ public class testControlStationFaults
 
         raw[4] = (byte) payloadLength;
 
-        // Four bytes of UID, which is all a short system frame carries
         raw[5] = 0;
         raw[6] = 0;
         raw[7] = 0;
@@ -482,18 +387,11 @@ public class testControlStationFaults
     /**
      * A locomotive database that will not read is not saved over while its copy cannot be kept.
      *
-     * The save cleared its "unreadable" mark first and then tried the copy.  When the copy failed, the failure was logged
-     * and the save went on to replace the unreadable file - the copy the mark was there to guarantee was never made, and
-     * the file was gone.  The mark is now cleared only once the copy is known to exist, and until then the file is left
-     * as it is; the next save tries again (fixed for 2.8.2 on master and brought here).
-     *
-     * The copy alone is made to fail by a folder, with something in it, standing at every name the copy could be given
-     * in the next minute.  It writes the database file, so it runs only where the run has its own copy of the data
-     * (one.sh, battery.sh), and puts that copy's bytes back.
+     * The save cleared its "unreadable" mark before making the copy, so a failed copy let the save replace the file.
+     * The copy alone is made to fail by a folder at every name it could be given in the next minute; it writes the
+     * database file, so it runs only where the run has its own copy (one.sh, battery.sh).
      *
      * MUTATION: clear the mark before the copy, or save on after a failed copy, and this fails.
-     *
-     * @throws Exception from the files
      */
     @Test
     public void testAnUnreadableDatabaseIsNotSavedOverWhileItsCopyCannotBeKept() throws Exception
@@ -513,21 +411,18 @@ public class testControlStationFaults
         {
             java.nio.file.Files.write(live.toPath(), unreadable);
 
-            // As at startup: the file is there, and will not read
             model.restoreState(live.getPath());
 
             assertTrue(model.isDatabaseLoadFailed(), "precondition: the truncated file read as a first launch");
 
             blockTheCopy(MarklinControlStation.DATA_FILE_NAME, blockers);
 
-            // As on exit, with the copy impossible
             model.saveState(false);
 
             assertEquals(java.nio.file.Files.readAllBytes(live.toPath()), unreadable, "the unreadable locomotive database"
                 + " could not be copied aside, and the save replaced it anyway - no copy kept anywhere, and every"
                 + " locomotive's functions, icons, notes and statistics gone (BPV-C7, RLD-B1)");
 
-            // Once the copy can be made, the next save makes it, and then saves
             unblock(blockers);
 
             model.saveState(false);
@@ -559,14 +454,10 @@ public class testControlStationFaults
     /**
      * A UI state file that will not read is not saved over while its copy cannot be kept.
      *
-     * The window's save had the same order as the database's: the mark cleared, the copy tried, a failed copy logged,
-     * and the file replaced - every key mapping and page name gone, with no copy anywhere.  The copy is
-     * made to fail as above.  The window is one allocated without its constructor, holding only what its save reads,
-     * over a model that answers nothing.
+     * The same order fault as the database's.  The window is one allocated without its constructor, holding only what
+     * its save reads, over a model that answers nothing.
      *
      * MUTATION: clear the mark before the copy, or save on after a failed copy, and this fails.
-     *
-     * @throws Exception from the files or the reflection
      */
     @Test
     public void testAnUnreadableUiStateIsNotSavedOverWhileItsCopyCannotBeKept() throws Exception
@@ -583,7 +474,6 @@ public class testControlStationFaults
 
         org.traincontrol.gui.TrainControlUI ui = windowless();
 
-        // What the window's save reads, and nothing more
         set(ui, "model", java.lang.reflect.Proxy.newProxyInstance(org.traincontrol.model.ViewListener.class.getClassLoader(),
             new Class<?>[]{ org.traincontrol.model.ViewListener.class }, (proxy, method, args) ->
             {
@@ -620,19 +510,16 @@ public class testControlStationFaults
         {
             java.nio.file.Files.write(live.toPath(), unreadable);
 
-            // As at startup: the file is there, and will not read
             ui.restoreState();
 
             blockTheCopy("UIState.data", blockers);
 
-            // As on exit, with the copy impossible
             ui.saveState(false);
 
             assertEquals(java.nio.file.Files.readAllBytes(live.toPath()), unreadable, "the unreadable UI state file could"
                 + " not be copied aside, and the save replaced it anyway - no copy kept anywhere, and every key mapping"
                 + " and page name gone (BPV-C7, RLD-B1)");
 
-            // Once the copy can be made, the next save makes it, and then saves
             unblock(blockers);
 
             ui.saveState(false);
@@ -657,14 +544,9 @@ public class testControlStationFaults
     /**
      * A first sync that fails is asked about until it works (OB-338).
      *
-     * Adam: "there is no warning popup in the UI, and no way to reattempt a connection, if the cs3 ip is reachable but
-     * the initial DB sync fails."  The start-up synced once; a failure left the application running with communication
-     * off for good, because the one place it was switched on was the line after that sync.  Now the user is asked after
-     * each failure, with that failure's reason, and the sync is made again for as long as the answer is to try again.
-     *
-     * Staged with a sync that fails twice and then works, so the claim is the sequence: two questions, each carrying
-     * its own attempt's reason, three syncs, no exit, and a result that is a connection - which is what the
-     * constructor turns communication on for.
+     * The user is asked after each failure, with its reason, and the sync is repeated while the answer is to try
+     * again.  Staged with a sync that fails twice and then works: two questions each carrying its own reason, three
+     * syncs, no exit, and a connection result.
      *
      * MUTATION: sync only once, or ask with the first failure's reason both times, and this fails.
      */
@@ -710,10 +592,7 @@ public class testControlStationFaults
     }
 
     /**
-     * Choosing Exit exits, once, and syncs no more (OB-338).
-     *
-     * Two shapes of it: Exit on the first failure, and Exit after one Resync has failed as well.  The sync never works
-     * here, so a helper that went on syncing after the answer, or asked again after the exit, would show as a count.
+     * Choosing Exit exits, once, and syncs no more (OB-338): on the first failure, and after one Resync has failed too.
      *
      * MUTATION: sync again after Exit, or never call the exit, and this fails.
      */
@@ -774,10 +653,7 @@ public class testControlStationFaults
     }
 
     /**
-     * A first sync that works asks nothing (OB-338).
-     *
-     * The common start.  Zero is a success - a station with nothing new to add syncs to zero - so it is tried as well
-     * as a positive count.
+     * A first sync that works asks nothing (OB-338); zero is a success, so it is tried as well as a positive count.
      *
      * MUTATION: ask when the result is zero, or ask before the first sync, and this fails.
      */
@@ -816,10 +692,7 @@ public class testControlStationFaults
     /**
      * Nothing is asked without a station to reach, a window to ask in, or in a simulation (OB-338).
      *
-     * A simulation has no Central Station, so its sync fails by design and every test builds one; a model with no
-     * window has nobody to ask.  Either would otherwise put a dialog in front of a suite - or loop for ever in one -
-     * so each is its own case, with the other two things present so that only one differs.  The control is the full
-     * case, which must ask, and must pass the reason and the answer through unchanged.
+     * Each is its own case with the other two present, so only one differs; the control is the full case, which asks.
      *
      * MUTATION: ask in a simulation, or without a window, or without an address, and this fails.
      */
@@ -840,7 +713,6 @@ public class testControlStationFaults
         assertNull(simulated, "a simulation has no station, so a sync that fails there is the expected result");
         assertNull(noWindow, "with no window there is nobody to ask");
 
-        // And run through the loop, which is what the constructor does with them: one sync, no question, no exit
         for (java.util.function.Predicate<String> asker : java.util.Arrays.asList(noStation, blankStation, simulated, noWindow))
         {
             final int[] syncs = {0};
@@ -862,7 +734,6 @@ public class testControlStationFaults
 
         assertTrue(viewAsked.isEmpty(), "the window must not have been asked in any of those cases");
 
-        // The control: a station, a window, a real start
         java.util.function.Predicate<String> asker = MarklinControlStation.resyncAsker("192.168.1.5", false, view);
 
         assertNotNull(asker, "with a station, a window and a real start, there is somebody to ask");
@@ -878,8 +749,7 @@ public class testControlStationFaults
     /**
      * A failed sync keeps its reason where the start-up can read it (OB-338).
      *
-     * The sync logged the exception and returned minus one, so the caller knew it had failed and not why.  Pointed at
-     * a port nothing listens on, which is a station that is there and will not talk.
+     * Pointed at a port nothing listens on: a station that is there and will not talk.
      *
      * MUTATION: leave the field unset in the catch, and this fails.
      */
@@ -913,18 +783,14 @@ public class testControlStationFaults
     }
 
     /**
-     * The traincontrol.failFirstSyncs switch fails the first N syncs, in debug mode only (OB-338; Adam, 2026-10-13).
+     * The traincontrol.failFirstSyncs switch fails the first N syncs, in debug mode only (OB-338).
      *
-     * A real Central Station 3 cannot be made to fail its first sync on purpose, so the "connected to the CS3 but the sync
-     * failed" question had no manual test.  With debug on and the switch at 2, the first two syncs fail through the same
-     * failure path a real one takes, with a reason that names the switch, and the third goes on to the station.  With debug
-     * off the switch is ignored, though it is armed, so the mode alone keeps it from firing.  The switch is read as debug
-     * mode is entered (debug(true)), which is where the constructor enters it, so the claim arms it the same way and builds
-     * no second station.  The station is asked against a port nothing listens on, as testAFailedSyncKeepsItsReason does.
+     * A real CS3 cannot be made to fail its first sync on purpose.  The switch is read as debug mode is entered
+     * (debug(true)), so the claim arms it the same way and builds no second station; the sync is asked against a port
+     * nothing listens on.  With debug off the switch is ignored though armed.
      *
-     * MUTATION: fail in every mode, fail other than N times, or leave the switch's name out of the reason, and this fails.
-     *
-     * @throws Exception reading the file parser field reflectively
+     * MUTATION: fail in every mode, fail other than N times, or leave the switch's name out of the reason, and this
+     * fails.
      */
     @Test
     public void testTheFailFirstSyncsSwitchFailsTheFirstNSyncsInDebugModeOnly() throws Exception
@@ -958,7 +824,6 @@ public class testControlStationFaults
             assertFalse(String.valueOf(model.getLastSyncError()).contains(switchName),
                 "the third sync must go on to the station, not fail for the switch again: " + model.getLastSyncError());
 
-            // Armed again, with debug mode off: the switch is ignored entirely
             System.setProperty(switchName, "2");
             model.debug(true);
             model.debug(false);
@@ -986,10 +851,8 @@ public class testControlStationFaults
     /**
      * A simulation never forgets the saved Central Station address (OB-339).
      *
-     * A start that did not connect forgets the address, so that the next start asks for one.  A simulation never connects,
-     * so every simulation forgot the address of somebody who had only been trying the program out.  Asked of the rule
-     * `init` applies, over the three starts that matter and the one that cannot happen, so that a rule widened or
-     * narrowed in either direction shows.
+     * A simulation never connects, so forgetting the address on no connection wiped it for someone trying the program
+     * out.  Asked of the rule `init` applies, over the starts that matter and the one that cannot happen.
      *
      * MUTATION: forget whenever communication is off, simulation or not, and this fails.
      */
@@ -1008,16 +871,11 @@ public class testControlStationFaults
     /**
      * The first sync of a start goes through the question, and the start says whether it is a simulation (OB-338).
      *
-     * The claims above are of the helpers.  What makes them the start-up's is the constructor calling them and `init`
-     * telling it whether there is a station: put the constructor back to a bare sync, or have `init` pass false, and every
-     * one of them stays green while a failed first sync goes back to leaving the application offline in silence - or a
-     * simulation puts a dialog in front of a suite.  The constructor cannot be run here, since it binds the network and
-     * the exit ends the process, so its text is read, with the comments out of it.
+     * The constructor binds the network and the exit ends the process, so its text is read, with the comments out:
+     * a bare sync there, or `init` passing false, would leave every other claim green.
      *
-     * MUTATION: put the restore path back to `if (syncWithCS2() >= 0)`, or pass anything but `simulate` from `init`, and
-     * this fails.
-     *
-     * @throws Exception reading the source
+     * MUTATION: put the restore path back to `if (syncWithCS2() >= 0)`, or pass anything but `simulate` from `init`,
+     * and this fails.
      */
     @Test
     public void testTheFirstSyncOfAStartGoesThroughTheQuestion() throws Exception
@@ -1066,19 +924,12 @@ public class testControlStationFaults
     /**
      * Exit forgets the saved address, then ends the application, once each (OB-338).
      *
-     * The owner's rule is that Exit forgets the saved Central Station address, as a start that does not connect always
-     * has.  The claims above run the loop with an exit of their own and read only that the constructor names the
-     * method, so nothing ran the method itself: an Exit that left the address in place, or forgot it and did not exit,
-     * kept every one of them green.  This runs the two halves through the arguments the method now takes, on a
-     * throwaway node under a test-only path and with an exit that only counts, so the operator's own preferences are
-     * not read and the JVM does not end.  The address must already be gone when the exit runs, since after
-     * `System.exit` nothing does, and the exit must still run when the preferences refuse the removal (a node that
-     * has been removed does), or the dialog's Exit would leave the application open.  Other settings in the node stay.
+     * Runs the two halves through the arguments the method takes, on a throwaway node under a test-only path with an
+     * exit that only counts.  The address must be gone before the exit runs, and the exit must run even when the
+     * preferences refuse the removal.  Other settings in the node stay.
      *
      * MUTATION: drop the `remove`, drop the `exit.run()`, run it before the `remove`, or take the `try` off the
      * `remove`, and this fails.
-     *
-     * @throws Exception from the preferences
      */
     @Test
     public void testExitForgetsTheSavedAddressAndEnds() throws Exception
@@ -1154,16 +1005,11 @@ public class testControlStationFaults
     /**
      * The Exit the dialog reaches is the one that forgets the real address and ends with code 1 (OB-338).
      *
-     * The claim above runs the halves on a node of its own.  What makes them Exit's is the constructor naming the
-     * no-argument method and that method passing the operator's preferences and `System.exit(1)` - the exit code the
-     * address prompt gives for leaving the start-up.  Pass another node or another code and the claim above stays
-     * green, so the text is read, with the comments out of it, as `testTheFirstSyncOfAStartGoesThroughTheQuestion`
-     * reads the constructor's.
+     * The text is read, with the comments out, as `testTheFirstSyncOfAStartGoesThroughTheQuestion` reads the
+     * constructor's: another node or code would leave the claim above green.
      *
      * MUTATION: wire the constructor to anything but `exitUnconnected`, or pass another node, another code or another
      * exit in the no-argument method, and this fails.
-     *
-     * @throws Exception reading the source
      */
     @Test
     public void testExitUnconnectedForgetsTheRealAddressAndEndsWithCodeOne() throws Exception
@@ -1181,14 +1027,10 @@ public class testControlStationFaults
     /**
      * The popup answers by its buttons: Resync resyncs, and Exit or the close box leave (OB-338).
      *
-     * The loop's claims put a recording view in the window's place, so nothing above has ever pressed a button.  This
-     * calls the real `offerResync` the way the start-up does, from a thread that is not the event thread, finds the
-     * dialog by its title, and answers it three ways: the Resync button, the Exit button, and the close box.  It also
-     * reads what the dialog says about the failure, and that it stands over the window and on top of it.
+     * Calls the real `offerResync` from a non-event thread, finds the dialog by its title and answers it three ways;
+     * also reads what it says about the failure, and that it stands over the window and on top of it.
      *
      * MUTATION: map any of the three answers the other way in `offerResync`, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testTheResyncPopupAnswersByItsButtons() throws Exception
@@ -1233,13 +1075,7 @@ public class testControlStationFaults
         }
     }
 
-    /**
-     * Asks through the window's `offerResync` from a worker thread and answers the popup it puts up.
-     *
-     * @param ui the window
-     * @param button the key of the button to press, or null to close the dialog by its close box
-     * @return what `offerResync` returned
-     */
+    /** Asks through the window's `offerResync` from a worker thread and answers the popup; a null button closes it. */
     private static boolean askAndAnswer(org.traincontrol.gui.TrainControlUI ui, String button) throws Exception
     {
         final String reason = "SocketTimeoutException: connect timed out";
@@ -1311,9 +1147,7 @@ public class testControlStationFaults
         return answer[0];
     }
 
-    /**
-     * The button in a window with exactly this label, or null.
-     */
+    /** The button in a window with exactly this label, or null. */
     private static javax.swing.AbstractButton buttonLabelled(java.awt.Container container, String label)
     {
         for (java.awt.Component child : container.getComponents())
@@ -1334,9 +1168,7 @@ public class testControlStationFaults
         return null;
     }
 
-    /**
-     * Every label's text in a window, in the order they are found.
-     */
+    /** Every label's text in a window, in the order they are found. */
     private static java.util.List<String> labelsOf(java.awt.Container container)
     {
         java.util.List<String> texts = new java.util.ArrayList<>();
@@ -1351,9 +1183,7 @@ public class testControlStationFaults
         return texts;
     }
 
-    /**
-     * Source as code: the comments taken out and every run of white space made one space.
-     */
+    /** Source as code: the comments taken out and every run of white space made one space. */
     private static String codeOf(String text)
     {
         return SourceOf.withoutComments(text).replaceAll("\\s+", " ");
@@ -1372,9 +1202,7 @@ public class testControlStationFaults
         return window.getLong(null) / 1000000L;
     }
 
-    /**
-     * A view that records what it is asked to resync about and answers as told; every other call does nothing.
-     */
+    /** A view that records what it is asked to resync about and answers as told; every other call does nothing. */
     private static org.traincontrol.model.View recordingView(java.util.List<String> asked, boolean[] answer)
     {
         return (org.traincontrol.model.View) java.lang.reflect.Proxy.newProxyInstance(
@@ -1399,9 +1227,7 @@ public class testControlStationFaults
             });
     }
 
-    /**
-     * The run's own copy of a data file, or a skip where the run has none: these tests write the file.
-     */
+    /** The run's own copy of a data file, or a skip where the run has none: these tests write the file. */
     private static java.io.File runsOwnFile(String name)
     {
         if (System.getProperty(org.traincontrol.util.Util.DATA_DIR_PROPERTY) == null)
@@ -1413,17 +1239,13 @@ public class testControlStationFaults
         return new java.io.File(org.traincontrol.util.Util.dataPath(name));
     }
 
-    /**
-     * A file that stops part way through its first object, as an interrupted copy or sync leaves one.
-     */
+    /** A file that stops part way through its first object, as an interrupted copy or sync leaves one. */
     private static byte[] truncatedObjectStream()
     {
         return new byte[]{ (byte) 0xAC, (byte) 0xED, 0x00, 0x05, 0x73, 0x72 };
     }
 
-    /**
-     * The names of the files in a folder, or none if it does not exist.
-     */
+    /** The names of the files in a folder, or none if it does not exist. */
     private static java.util.Set<String> names(java.io.File folder)
     {
         java.util.Set<String> out = new java.util.HashSet<>();
@@ -1435,9 +1257,7 @@ public class testControlStationFaults
         return out;
     }
 
-    /**
-     * How many files in the folder, other than those listed before, hold exactly these bytes.
-     */
+    /** How many files in the folder, other than those listed before, hold exactly these bytes. */
     private static int keptCopies(java.io.File folder, java.util.Set<String> before, byte[] content) throws Exception
     {
         int kept = 0;
@@ -1455,8 +1275,8 @@ public class testControlStationFaults
     }
 
     /**
-     * Makes the copy of an unreadable file - and only the copy - fail for the next minute: a folder, with a file in it,
-     * at every name the copy could be given, which a copy that replaces what is there cannot remove.  Undone by unblock.
+     * Makes only the copy of an unreadable file fail for the next minute: a folder, with a file in it, at every name
+     * the copy could be given.  Undone by unblock.
      */
     private static void blockTheCopy(String fileName, java.util.List<java.io.File> made) throws Exception
     {
@@ -1467,7 +1287,6 @@ public class testControlStationFaults
 
         for (long t = first; t <= now + 60000; t += 1000)
         {
-            // Named exactly as the saves name the copy
             java.io.File folder = new java.io.File(org.traincontrol.util.Util.getBackupPath(
                 org.traincontrol.util.Util.unreadableCopyName(t, fileName)));
 
@@ -1482,9 +1301,7 @@ public class testControlStationFaults
         }
     }
 
-    /**
-     * Removes what blockTheCopy made, innermost first.
-     */
+    /** Removes what blockTheCopy made, innermost first. */
     private static void unblock(java.util.List<java.io.File> made) throws Exception
     {
         for (int i = made.size() - 1; i >= 0; i--)
@@ -1495,18 +1312,14 @@ public class testControlStationFaults
         made.clear();
     }
 
-    /**
-     * The run's copy of a data file back as it was, or gone where there was none.
-     */
+    /** The run's copy of a data file back as it was, or gone where there was none. */
     private static void putBack(java.io.File live, byte[] was) throws Exception
     {
         if (was == null) java.nio.file.Files.deleteIfExists(live.toPath());
         else java.nio.file.Files.write(live.toPath(), was);
     }
 
-    /**
-     * Every file the test left in the backup folder removed, and the folder too where it was not there before.
-     */
+    /** Every file the test left in the backup folder removed, and the folder too where it was not there before. */
     private static void forgetNew(java.io.File backups, java.util.Set<String> before, boolean hadBackups) throws Exception
     {
         for (String name : names(backups))
@@ -1517,9 +1330,7 @@ public class testControlStationFaults
         if (!hadBackups) java.nio.file.Files.deleteIfExists(backups.toPath());
     }
 
-    /**
-     * A main window with no constructor run, for a test of a method that reads only the fields it is given.
-     */
+    /** A main window with no constructor run, for a test of a method that reads only the fields it is given. */
     private static org.traincontrol.gui.TrainControlUI windowless() throws Exception
     {
         // Reached reflectively so that the compiler does not warn about the internal class
