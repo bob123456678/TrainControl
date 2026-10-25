@@ -17208,6 +17208,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             field.setText(field.getText().substring(0, maxLength));
         }
     }
+
+    /** A text field that takes the keyboard 50 ms after it is shown, once its dialog has settled. */
+    public static JTextField textFieldTakingFocus()
+    {
+        return new JTextField()
+        {
+            @Override
+            public void addNotify()
+            {
+                super.addNotify();
+                javax.swing.Timer focusTimer = new javax.swing.Timer(50, e -> requestFocusInWindow());
+                focusTimer.setRepeats(false);
+                focusTimer.start();
+            }
+        };
+    }
          
     public void editRoute(String routeName)
     {
@@ -19835,22 +19851,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Opens a window and prompts the user for layout name
+     * @param over the window that asked
      * @param defaultVal
      * @return 
      */
-    private String promptUserForLayout(String defaultVal)
+    private String promptUserForLayout(Component over, String defaultVal)
     {
-        JTextField textField = new JTextField()
-        {
-            @Override
-            public void addNotify()
-            {
-                super.addNotify();
-                javax.swing.Timer focusTimer = new javax.swing.Timer(50, e -> requestFocusInWindow());
-                focusTimer.setRepeats(false);
-                focusTimer.start();
-            }
-        };
+        JTextField textField = textFieldTakingFocus();
         
         textField.addKeyListener(new KeyAdapter()
         {
@@ -19867,7 +19874,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
         // Display the input dialog
         int result = JOptionPane.showOptionDialog(
-            this,
+            over,
             textField,
             I18n.t("layout.ui.enterLayoutName"),
             JOptionPane.OK_CANCEL_OPTION,
@@ -19887,15 +19894,52 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     private void renameLayoutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_renameLayoutMenuItemActionPerformed
 
-        showLayoutTab();
+        final LayoutEditor from = editorBehind(evt);
 
-        String name = promptUserForLayout(this.LayoutList.getSelectedItem().toString());
+        if (from == null) showLayoutTab();
+
+        String name = promptUserForLayout(from == null ? this : from, this.LayoutList.getSelectedItem().toString());
 
         if (name != null)
         {
-            duplicateOrRenameCurrentLayout(name, true, false, false);
+            this.layoutFileActions.duplicateOrRenameCurrentLayout(name, true, false, false, from);
         }
     }//GEN-LAST:event_renameLayoutMenuItemActionPerformed
+
+    /**
+     * The layout editor a page action was started from (the event's source), or null for the Layouts menu.  That editor
+     * is not refused as an open one: it steps aside once nothing can refuse the action, and the dialogs hang off it.
+     */
+    private static LayoutEditor editorBehind(java.awt.event.ActionEvent evt)
+    {
+        Object source = evt == null ? null : evt.getSource();
+
+        return source instanceof LayoutEditor && ((LayoutEditor) source).isDisplayable() ? (LayoutEditor) source : null;
+    }
+
+    /** A menu item's event with the layout editor as its source, as `editorBehind` reads it. */
+    private static java.awt.event.ActionEvent pressedIn(LayoutEditor editor)
+    {
+        return new java.awt.event.ActionEvent(editor, java.awt.event.ActionEvent.ACTION_PERFORMED, null);
+    }
+
+    /** Add Blank Page from the layout editor: the Layouts menu's handler, with the editor as the source (FR-109). */
+    public void addBlankPageFromTheEditor(LayoutEditor editor)
+    {
+        addBlankPageMenuItemActionPerformed(pressedIn(editor));
+    }
+
+    /** Rename Current Page from the layout editor, on the main window's selected page, which the editor has set. */
+    public void renamePageFromTheEditor(LayoutEditor editor)
+    {
+        renameLayoutMenuItemActionPerformed(pressedIn(editor));
+    }
+
+    /** Delete Current Page from the layout editor, on the main window's selected page, which the editor has set. */
+    public void deletePageFromTheEditor(LayoutEditor editor)
+    {
+        deleteLayoutMenuItemActionPerformed(pressedIn(editor));
+    }
 
     private void duplicateLayoutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_duplicateLayoutMenuItemActionPerformed
         
@@ -19924,44 +19968,50 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     private void duplicateOrRenameCurrentLayout(String newLayoutName, boolean rename, boolean duplicate, boolean blank)
     {
-        this.layoutFileActions.duplicateOrRenameCurrentLayout(newLayoutName, rename, duplicate, blank);
+        this.layoutFileActions.duplicateOrRenameCurrentLayout(newLayoutName, rename, duplicate, blank, null);
     }
     
     private void deleteLayoutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteLayoutMenuItemActionPerformed
 
+        final LayoutEditor from = editorBehind(evt);
+
+        final Component over = from == null ? this : from;
+
         // Refused while a run holds the setup: deleting a page rebuilds the autonomy session under moving trains
         // (MT-141: "Never allow any modifications to a running layout.").
-        if (refuseWhileARunHoldsTheSetup(this)) return;
+        if (refuseWhileARunHoldsTheSetup(over)) return;
 
-        if (refuseWhileEditorOpen()) return;
+        if (from == null && refuseWhileEditorOpen()) return;
 
         if (!this.isLocalLayout())
         {
             JOptionPane.showMessageDialog(
-                this,
+                over,
                 I18n.t("layout.ui.errorCannotManipulateRemoteLayouts")
             );
             return;
         }
         
-        showLayoutTab();
+        if (from == null) showLayoutTab();
         
         javax.swing.SwingUtilities.invokeLater(() -> 
         {
             if (this.model.getLayoutList().size() <= 1)
             {
                 JOptionPane.showMessageDialog(
-                    this,
+                    over,
                     I18n.t("layout.ui.errorCannotDeleteOnlyRemainingPage")
                 );
                 return;
             }
 
+            final String going = this.LayoutList.getSelectedItem().toString();
+
             int dialogResult = JOptionPane.showOptionDialog(
-                this,
+                over,
                 I18n.f(
                     "layout.ui.confirmDeleteLayoutPageAreYouSure",
-                    this.LayoutList.getSelectedItem().toString()
+                    going
                 ),
                 I18n.t("layout.ui.dialogConfirmDeletion"),
                 JOptionPane.YES_NO_OPTION,
@@ -19974,89 +20024,110 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             if (dialogResult == JOptionPane.YES_OPTION)
             {
-                try
-                {
-                    List<String> layoutList = this.model.getLayoutList();
-
-                    String going = this.LayoutList.getSelectedItem().toString();
-
-                    // Any other missing page is asked about BEFORE the file goes: everything below is irreversible
-                    // (FR-018).
-                    // The page being deleted counts as a deliberate removal, so it is not asked about.
-                    java.util.Collection<String> keepAbsent = settleAbsentPages(layoutList, null,
-                        java.util.Arrays.asList(going));
-
-                    if (keepAbsent == null) return;
-
-                    // The page FIRST, then the setup: deleteLayoutFile can fail (a file held open by a sync client,
-                    // say), and done the other way round a failure leaves the setup forgotten for a page that still
-                    // exists.
-                    this.model.getLayout(going).deleteLayoutFile();
-
-                    // Only a session already built and a setup already there, as in the rename above:
-                    // saveWithoutReconciling ends in store.save(), which creates the folder and the file.
-                    org.traincontrol.automationui.AutonomySession session = this.autonomySession;
-
-                    try
-                    {
-                        if (session == null)
-                        {
-                            org.traincontrol.automationui.AutonomyCompanionStore.deletePageOnDisk(
-                                new java.io.File(this.getLocalLayoutPath()), going);
-                        }
-                        else
-                        {
-                            // Before forgetting the page, as in the rename: the capture that runs afterwards works its
-                            // keys out from a session whose pages still include this one and would write the deleted
-                            // page's settings back.
-                            captureRunningLayout();
-
-                            // The session's own page list must lose it too: the fold behind the reset below would write
-                            // the page back.
-                            int forgotten = session.deletePage(going);
-
-                            if (forgotten > 0)
-                            {
-                                this.model.logf("layout.infoPageSetupForgotten", forgotten, going);
-                            }
-
-                            if (session.exists()) session.saveWithoutReconciling();
-                        }
-                    }
-                    catch (java.io.IOException e)
-                    {
-                        // The page is going either way; only the record of it is at risk
-                        this.model.log(e);
-                    }
-
-                    layoutList.remove(going);
-
-                    // No rename map: the deleted page's id is retired and every surviving page keeps its own.
-                    writeIndexAndKeepLinksAimed(layoutList, null, keepAbsent);
-
-                    this.layoutEditingComplete();
-                }
-                catch (Exception ex)
-                {
-                    JOptionPane.showMessageDialog(
-                        this,
-                        I18n.f("layout.ui.errorSavingLayoutWithMessage", ex.getMessage())
-                    );
-                    this.model.log(ex);
-                }
+                if (from == null) deleteConfirmedPage(going, null);
+                else from.stepOutFor(() -> deleteConfirmedPage(going, from));
             }
         });
     }//GEN-LAST:event_deleteLayoutMenuItemActionPerformed
 
+    /**
+     * Delete Current Page's work once the page is confirmed.  `from` is the layout editor that asked, or null: it is
+     * told which page to show however this ends.
+     */
+    private void deleteConfirmedPage(String going, LayoutEditor from)
+    {
+        final Component over = from == null ? this : from;
+
+        boolean arriving = false;
+
+        try
+        {
+            List<String> layoutList = this.model.getLayoutList();
+
+            // Any other missing page is asked about BEFORE the file goes: everything below is irreversible
+            // (FR-018).
+            // The page being deleted counts as a deliberate removal, so it is not asked about.
+            java.util.Collection<String> keepAbsent = settleAbsentPages(layoutList, null,
+                java.util.Arrays.asList(going));
+
+            if (keepAbsent == null) return;
+
+            // The page FIRST, then the setup: deleteLayoutFile can fail (a file held open by a sync client,
+            // say), and done the other way round a failure leaves the setup forgotten for a page that still
+            // exists.
+            this.model.getLayout(going).deleteLayoutFile();
+
+            // Only a session already built and a setup already there, as in the rename above:
+            // saveWithoutReconciling ends in store.save(), which creates the folder and the file.
+            org.traincontrol.automationui.AutonomySession session = this.autonomySession;
+
+            try
+            {
+                if (session == null)
+                {
+                    org.traincontrol.automationui.AutonomyCompanionStore.deletePageOnDisk(
+                        new java.io.File(this.getLocalLayoutPath()), going);
+                }
+                else
+                {
+                    // Before forgetting the page, as in the rename: the capture that runs afterwards works its
+                    // keys out from a session whose pages still include this one and would write the deleted
+                    // page's settings back.
+                    captureRunningLayout();
+
+                    // The session's own page list must lose it too: the fold behind the reset below would write
+                    // the page back.
+                    int forgotten = session.deletePage(going);
+
+                    if (forgotten > 0)
+                    {
+                        this.model.logf("layout.infoPageSetupForgotten", forgotten, going);
+                    }
+
+                    if (session.exists()) session.saveWithoutReconciling();
+                }
+            }
+            catch (java.io.IOException e)
+            {
+                // The page is going either way; only the record of it is at risk
+                this.model.log(e);
+            }
+
+            layoutList.remove(going);
+
+            // No rename map: the deleted page's id is retired and every surviving page keeps its own.
+            writeIndexAndKeepLinksAimed(layoutList, null, keepAbsent);
+
+            this.layoutEditingComplete(from == null ? null
+                : () -> from.arriveOn(String.valueOf(this.LayoutList.getSelectedItem())));
+
+            arriving = true;
+        }
+        catch (Exception ex)
+        {
+            JOptionPane.showMessageDialog(
+                over,
+                I18n.f("layout.ui.errorSavingLayoutWithMessage", ex.getMessage())
+            );
+            this.model.log(ex);
+        }
+        finally
+        {
+            if (from != null && !arriving) from.arriveOn(null);
+        }
+    }
+
     private void addBlankPageMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addBlankPageMenuItemActionPerformed
 
-        showLayoutTab();
+        final LayoutEditor from = editorBehind(evt);
 
-        String name = promptUserForLayout("");
+        if (from == null) showLayoutTab();
+
+        String name = promptUserForLayout(from == null ? this : from, "");
 
         if (name != null)
         {
-            duplicateOrRenameCurrentLayout(name, false, true, true);
+            this.layoutFileActions.duplicateOrRenameCurrentLayout(name, false, true, true, from);
         }
     }//GEN-LAST:event_addBlankPageMenuItemActionPerformed
 

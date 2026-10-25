@@ -413,23 +413,29 @@ final class LayoutFileActions
      * @param rename - true if renaming
      * @param duplicate - true if duplicating
      * @param blank - true to clear
+     * @param from the layout editor that asked (FR-109), or null for the Layouts menu: the one editor not refused as
+     *        open; the questions hang off it, it steps aside once nothing can refuse, and it is told which page to
+     *        show however this ends
      */
-    void duplicateOrRenameCurrentLayout(String newLayoutName, boolean rename, boolean duplicate, boolean blank)
+    void duplicateOrRenameCurrentLayout(String newLayoutName, boolean rename, boolean duplicate, boolean blank,
+        final LayoutEditor from)
     {
+        final java.awt.Component over = from == null ? this.ui : from;
+
         // Not while an editor holds the diagram: both of these finish by calling layoutEditingComplete, which re-enables the Edit button and
         // rebuilds the autonomy session from pages it has just replaced, so under an open editor it fails (a second
         // editor opens on the same diagram, and closing either unsets the other's edit flag).  Refused at the entry rather than guarded at
         // the end, because by the end the page has already been written.
-        if (this.ui.refuseWhileEditorOpen()) return;
+        if (from == null && this.ui.refuseWhileEditorOpen()) return;
 
         // And not while trains are running (MT-141): an editor being closed does not mean the railway is standing still, and renaming a page
         // still rebuilds the session underneath whatever is moving.
-        if (this.ui.refuseWhileARunHoldsTheSetup(this.ui)) return;
+        if (this.ui.refuseWhileARunHoldsTheSetup(over)) return;
 
         if (!this.ui.isLocalLayout())
         {
             JOptionPane.showMessageDialog(
-                this.ui,
+                over,
                 I18n.t("layout.ui.errorCannotManipulateRemoteLayouts")
             );
             return;
@@ -438,7 +444,7 @@ final class LayoutFileActions
         if (this.ui.getModel().getLayoutList().contains(newLayoutName))
         {
             JOptionPane.showMessageDialog(
-                this.ui,
+                over,
                 I18n.f(
                     "layout.ui.errorPageAlreadyExistsDeleteOrRenameFirst",
                     newLayoutName
@@ -454,13 +460,15 @@ final class LayoutFileActions
 
         if (usesThatFile != null)
         {
-            JOptionPane.showMessageDialog(this.ui, I18n.f("layout.ui.errorPageAlreadyExistsDeleteOrRenameFirst", usesThatFile));
+            JOptionPane.showMessageDialog(over, I18n.f("layout.ui.errorPageAlreadyExistsDeleteOrRenameFirst", usesThatFile));
 
             return;
         }
 
-        javax.swing.SwingUtilities.invokeLater(() ->
+        final Runnable work = () ->
         {
+            boolean arriving = false;
+
             try
             {
                 // The sequence itself lives in LayoutPageEdit, and this hands it the session it has ALREADY BUILT rather than letting it reach
@@ -493,19 +501,31 @@ final class LayoutFileActions
 
                 this.ui.layoutEditingComplete(() ->
                 {
+                    // Posted, so it lands after the two below
+                    if (from != null) from.arriveOn(newLayoutName);
+
                     this.ui.layoutList().setSelectedItem(newLayoutName);
                     this.ui.repaintLayout();
                 });
+
+                arriving = true;
             }
             catch (Exception ex)
             {
                 JOptionPane.showMessageDialog(
-                    this.ui,
+                    over,
                     I18n.f("layout.ui.errorSavingLayoutWithMessage", ex.getMessage())
                 );
                 this.ui.getModel().log(ex);
             }
-        });    
+            finally
+            {
+                if (from != null && !arriving) from.arriveOn(null);
+            }
+        };
+
+        if (from == null) javax.swing.SwingUtilities.invokeLater(work);
+        else from.stepOutFor(work);
     }
 
     /**

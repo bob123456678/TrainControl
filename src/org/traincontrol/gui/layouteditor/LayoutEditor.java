@@ -2425,17 +2425,7 @@ public class LayoutEditor extends PositionAwareJFrame
         {     
             try
             {
-                JTextField textField = new JTextField()
-                {
-                    @Override
-                    public void addNotify()
-                    {
-                        super.addNotify();
-                        javax.swing.Timer focusTimer = new javax.swing.Timer(50, e -> requestFocusInWindow());
-                        focusTimer.setRepeats(false);
-                        focusTimer.start();
-                    }
-                };
+                JTextField textField = TrainControlUI.textFieldTakingFocus();
                 
                 textField.addKeyListener(new KeyAdapter()
                 {
@@ -3516,7 +3506,10 @@ public class LayoutEditor extends PositionAwareJFrame
             layout.setEdit();
             this.setAlwaysOnTop(parent.isAlwaysOnTop());
 
-            // Before the grid and pack(), so the size includes the sidebar; here, as setAutonomyMode has run by now.
+            // Before the grid and pack(), so the size includes the bar and the sidebar; here, as setAutonomyMode has
+            // run by now.
+            mountPageMenu();
+
             mountSidebar();
 
             drawGrid();
@@ -3808,6 +3801,46 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
+     * Steps aside for one of the main window's page actions as a switch does (`leaveFor`), and runs `work` where the
+     * switch would arrive; `work` must end in `arriveOn` however it ends.  Called once nothing can refuse the action,
+     * so unsaved work is asked about only for an action that will go ahead (FR-109).  Nothing runs where the user
+     * chooses to stay.
+     *
+     * @param work the action, from where it writes
+     */
+    public void stepOutFor(Runnable work)
+    {
+        if (switching || changingPage) return;
+
+        arrivalInAutonomy = isAutonomyMode();
+
+        pageAction = work;
+
+        leaveFor(layout.getName(), arrivalInAutonomy);
+
+        // Stayed: the latch was not raised, and nothing will run it
+        if (!changingPage) pageAction = null;
+    }
+
+    /**
+     * Shows a page once a page action has ended, in the mode it started in.
+     *
+     * @param page the page, or null for the one it stepped out of
+     */
+    public void arriveOn(String page)
+    {
+        final String to = page != null ? page : layout.getName();
+
+        javax.swing.SwingUtilities.invokeLater(() -> arriveAt(to, arrivalInAutonomy));
+    }
+
+    /** Whether the page action `stepOutFor` began arrives in the setup editor. */
+    private boolean arrivalInAutonomy;
+
+    /** The page action `stepOutFor` left for `arriveAt` to run in place of arriving, or null. */
+    private Runnable pageAction;
+
+    /**
      * Re-points this window at another page or mode without closing it, with openLayoutEditor's checks: an impossible
      * mode falls back to the track.
      * @param page the page to show
@@ -3815,6 +3848,18 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     private void arriveAt(String page, boolean wanted)
     {
+        // A page action's turn: the latch stays up until its `arriveOn` comes back here
+        if (pageAction != null)
+        {
+            Runnable action = pageAction;
+
+            pageAction = null;
+
+            action.run();
+
+            return;
+        }
+
         // Cleared first, so a failure here cannot leave every switch refused.
         changingPage = false;
 
@@ -4062,6 +4107,53 @@ public class LayoutEditor extends PositionAwareJFrame
     }
     
     /**
+     * Manage Pages: the Layouts menu's Add Blank Page, Rename Current Page and Delete Current Page, run by the main
+     * window's own handlers on the page being edited (FR-109).  Built once; it stays across page and mode switches.
+     */
+    private void mountPageMenu()
+    {
+        if (getJMenuBar() != null) return;
+
+        javax.swing.JMenu menu = new javax.swing.JMenu(I18n.t("ui.main.toolbar.modifyLayout"));
+
+        menu.add(pageMenuItem("ui.main.toolbar.addBlackPage", () -> parent.addBlankPageFromTheEditor(this)));
+        menu.add(pageMenuItem("ui.main.toolbar.renameCurrentPage", () -> parent.renamePageFromTheEditor(this)));
+        menu.add(pageMenuItem("ui.main.toolbar.deleteCurrentPage", () -> parent.deletePageFromTheEditor(this)));
+
+        javax.swing.JMenuBar bar = new javax.swing.JMenuBar();
+
+        bar.add(menu);
+
+        // Nothing here takes the keyboard from the window's shortcuts (OB-019)
+        bar.setFocusable(false);
+        menu.setFocusable(false);
+
+        setJMenuBar(bar);
+    }
+
+    private javax.swing.JMenuItem pageMenuItem(String key, Runnable action)
+    {
+        javax.swing.JMenuItem item = new javax.swing.JMenuItem(I18n.t(key));
+
+        item.setFocusable(false);
+
+        item.addActionListener(e ->
+        {
+            if (switching || changingPage || parent == null || parent.getModel() == null) return;
+
+            // A run refuses before the name is asked for, in one dialog
+            if (parent.refuseWhileARunHoldsTheSetup(this)) return;
+
+            // The handlers act on the main window's page, which may be another
+            parent.selectLayoutPage(layout.getName());
+
+            action.run();
+        });
+
+        return item;
+    }
+
+    /**
      * The strip down the side: which page, and which editor.  Hidden when it would offer one choice.
      */
     private void mountSidebar()
@@ -4072,7 +4164,15 @@ public class LayoutEditor extends PositionAwareJFrame
         boolean offersPages = pages.size() > 1;
         boolean offersModes = parent.editableAutonomySession() != null || isAutonomyMode();
 
-        if (!offersPages && !offersModes) return;
+        if (!offersPages && !offersModes)
+        {
+            // A page action can leave one page: the strip goes
+            sidebar = null;
+
+            if (getContentPane() != formPane) setContentPane(formPane);
+
+            return;
+        }
 
         sidebar = new javax.swing.JPanel();
         sidebar.setLayout(new javax.swing.BoxLayout(sidebar, javax.swing.BoxLayout.Y_AXIS));
