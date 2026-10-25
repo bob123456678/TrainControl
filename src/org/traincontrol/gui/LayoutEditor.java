@@ -1522,6 +1522,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 // Preferred too: the column takes its child's preferred width.  "Locs" fits 150 (Adam: "use Locs if
                 // shorter text is needed in the dropdown").
                 captionChoice.setPreferredSize(new java.awt.Dimension(150, 24));
+                captionChoice.setMinimumSize(new java.awt.Dimension(150, captionChoice.getMinimumSize().height));
                 captionChoice.setMaximumSize(new java.awt.Dimension(150, 24));
 
                 visibility.add(captionChoice);
@@ -1540,7 +1541,12 @@ public class LayoutEditor extends PositionAwareJFrame
                 choice.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
 
                 // The Station Labels box's width in every language (OB-368): a long phrase clips, the popup shows it.
+                // Minimum width too: GroupLayout never lays the column narrower than a child's minimum, which a combo
+                // takes from its widest phrase, and Save and Cancel would stretch past the boxes (OB-375).  The
+                // height is left as it was, so the window keeps its height.
                 choice.setPreferredSize(captionChoice.getPreferredSize());
+                choice.setMinimumSize(new java.awt.Dimension(captionChoice.getPreferredSize().width,
+                    choice.getMinimumSize().height));
                 choice.setMaximumSize(captionChoice.getMaximumSize());
 
                 visibility.add(choice);

@@ -1518,6 +1518,150 @@ public class testDiagramLooksRight
         }
     }
 
+    /**
+     * The editor's right column is as wide as its dropdowns, in English and in Danish: the Station Labels and Track
+     * Directions boxes, Save, Cancel and the tool buttons above share one left and one right edge (OB-375; Adam: "the
+     * overall width should be the width of the dropdown").  Danish has the longest direction phrase.
+     *
+     * MUTATION: dropping `choice.setMinimumSize` in LayoutEditor widens Save and Cancel past the boxes in Danish.
+     *
+     * @throws Exception from the editor
+     */
+    @Test
+    public void testTheRightColumnIsAsWideAsItsDropdowns() throws Exception
+    {
+        final org.traincontrol.automationui.AutonomySession session = ui.getAutonomySession();
+
+        assertNotNull(session, "precondition: no autonomy setup in the fixture layout");
+
+        String pageName = null;
+
+        for (org.traincontrol.automationui.TileGraph.TileKey station : session.getLabelledStationTiles())
+        {
+            if (pageName == null) pageName = station.getPage();
+        }
+
+        assertNotNull(pageName, "precondition: no station in the fixture layout");
+
+        final LayoutDiagram page = model.getLayout(pageName);
+
+        final java.util.Locale was = java.util.Locale.getDefault();
+
+        try
+        {
+            for (String language : new String[] {"en", "da"})
+            {
+                java.util.Map<String, java.awt.Rectangle> column = rightColumn(page, new java.util.Locale(language));
+
+                java.awt.Rectangle labels = column.get("Station Labels");
+
+                assertTrue(column.size() >= 6, "precondition: the column holds the two boxes, Save, Cancel and the tool"
+                    + " buttons, found " + column.keySet() + " in " + language);
+
+                for (java.util.Map.Entry<String, java.awt.Rectangle> control : column.entrySet())
+                {
+                    java.awt.Rectangle r = control.getValue();
+
+                    assertEquals(r.x, labels.x, control.getKey() + " starts at " + r.x + ", not at the Station Labels"
+                        + " box's left edge " + labels.x + ", in " + language + ": " + column);
+
+                    assertEquals(r.x + r.width, labels.x + labels.width, control.getKey() + " ends at "
+                        + (r.x + r.width) + ", not at the Station Labels box's right edge " + (labels.x + labels.width)
+                        + ", in " + language + ", so the column is wider than its dropdowns: " + column);
+                }
+            }
+        }
+        finally
+        {
+            java.util.Locale.setDefault(was);
+            org.traincontrol.util.I18n.setLocale(was);
+        }
+    }
+
+    /**
+     * Opens the autonomy editor in a language, packed, and returns the bounds in the content pane of the right
+     * column's dropdowns and buttons: the two boxes, the window's visible push buttons, and the panel's tool buttons.
+     */
+    private java.util.Map<String, java.awt.Rectangle> rightColumn(LayoutDiagram page, java.util.Locale locale)
+        throws Exception
+    {
+        java.util.Locale.setDefault(locale);
+        org.traincontrol.util.I18n.setLocale(locale);
+
+        final org.traincontrol.automationui.AutonomySession session = ui.getAutonomySession();
+
+        final org.traincontrol.gui.LayoutEditor[] editor = new org.traincontrol.gui.LayoutEditor[1];
+
+        final java.util.Map<String, java.awt.Rectangle> column = new java.util.LinkedHashMap<>();
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            editor[0] = new org.traincontrol.gui.LayoutEditor(page, 30, ui, 0);
+            editor[0].render();
+            editor[0].setAutonomyMode(session);
+        });
+
+        try
+        {
+            settleTheEditor();
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                editor[0].pack();
+                editor[0].validate();
+
+                java.awt.Container pane = editor[0].getContentPane();
+                org.traincontrol.gui.AutonomyEditorPanel panel = editor[0].getAutonomyPanel();
+
+                column.put("Station Labels", inPane(panel.getCaptionChoice(), pane));
+                column.put("Track Directions", inPane(panel.getShowDirections(), pane));
+
+                // Save and Cancel: the visible push buttons of the form that holds the boxes' column
+                java.awt.Container form = panel.getCaptionChoice().getParent().getParent();
+
+                for (java.awt.Component c : form.getComponents())
+                {
+                    if (c instanceof javax.swing.JButton && c.isVisible())
+                    {
+                        column.put(((javax.swing.JButton) c).getText(), inPane(c, pane));
+                    }
+                }
+
+                collectToolButtons(panel, pane, column);
+            });
+
+            return column;
+        }
+        finally
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() -> editor[0].dispose());
+        }
+    }
+
+    private static java.awt.Rectangle inPane(java.awt.Component c, java.awt.Container pane)
+    {
+        return javax.swing.SwingUtilities.convertRectangle(c.getParent(), c.getBounds(), pane);
+    }
+
+    /** The panel's visible push and toggle buttons (not its check boxes or radio buttons). */
+    private static void collectToolButtons(java.awt.Container in, java.awt.Container pane,
+        java.util.Map<String, java.awt.Rectangle> out)
+    {
+        for (java.awt.Component c : in.getComponents())
+        {
+            if (!c.isVisible()) continue;
+
+            if (c instanceof javax.swing.JButton || c.getClass() == javax.swing.JToggleButton.class)
+            {
+                out.put(((javax.swing.AbstractButton) c).getText(), inPane(c, pane));
+            }
+            else if (c instanceof java.awt.Container && !(c instanceof javax.swing.JComboBox))
+            {
+                collectToolButtons((java.awt.Container) c, pane, out);
+            }
+        }
+    }
+
     /** Lets an editor's posted builds and its tiles finish. */
     private void settleTheEditor() throws Exception
     {
