@@ -403,6 +403,10 @@ Tab icons provided by Freepik.
 ## Changelog
 
 * v3.0.4
+    - Track Diagram
+        - `Save Current Track Diagram as a Picture...` now offers Small, Medium and Large, the same sizes as the pop-out window, without spelling out pixel counts.
+    - Autonomy Bug Fixes
+        - In the autonomy editor, `Test a Path` now starts a train the way it stands at the station, so it no longer draws a route the setup check says a train there cannot take.
 * v3.0.3 [10/25/2026]
     - Locomotive Control
         - The window for choosing a locomotive's icon now has a `Clear Local Locomotive Icon` button, so the icon can be cleared where it is set.

@@ -953,7 +953,7 @@ text:
 
 [issue OB-374]
 ordinal: 45
-inbox: yes
+inbox: no
 kind: bug
 title: sizes in screenshot export
 filed: 2026-10-25

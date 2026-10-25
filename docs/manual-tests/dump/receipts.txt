@@ -4074,3 +4074,11 @@ kind: feature request
 what: Shipped in 3.0.3 (master 1aa89b05): the Automation API examples in the Readme's v3.0.3 and AutomationAPI.md
 state: fixed validated
 became: -
+
+[receipt OB-374]
+seq: 509
+filed: 2026-10-25
+kind: bug
+what: Layout > Screenshot offers Small, Medium and Large by the pop-out window's names, without pixel counts (e02a9f5d)
+state: needs test
+became: MT-827

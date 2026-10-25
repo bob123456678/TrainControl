@@ -32604,3 +32604,75 @@ body:
 tail:
 | ---
 |
+
+[test MT-827]
+ordinal: 826
+anchor: mt-827
+date: 2026-10-25
+title: Layout > Save Current Track Diagram as a Picture offers Small, Medium and Large, without pixel counts
+disposition: needs test
+from: OB-374
+written: 2026-10-25
+reopened: no
+body:
+| <a id="mt-827"></a>
+| ### MT-827 - 2026-10-25 - Layout > Save Current Track Diagram as a Picture offers Small, Medium and Large, without pixel counts
+|
+| **Disposition:** needs test
+| **From:** OB-374
+|
+| **Written:** 2026-10-25
+|
+| **Steps**
+|
+| 1. Open a layout and choose `Layout` > `Save Current Track Diagram as a Picture...`.
+| 2. Look at the size question.
+| 3. Save the picture three times, as Small, Medium and Large, under different names, and compare the three pictures.
+| 4. Switch the language to Dansk and open the same question again.
+|
+| **Expected**
+|
+| - Step 2: the question offers Small, Medium and Large, in that order, with no pixel counts.  Large is picked to start with.
+| - Step 3: the pictures grow from Small to Medium to Large; Medium is about three quarters of Large's width.
+| - Step 4: the names are Lille, Mellem and Stor, the same as in the pop-out window's size list.
+|
+| *What this is:* OB-374.  Adam: "layout -> screenshot doesn't offer the medium size.  Also, we don't need to be verbose on the pixels".  The question now uses the pop-out window's three sizes and names.
+|
+tail:
+| ---
+|
+
+[test MT-828]
+ordinal: 827
+anchor: mt-828
+date: 2026-10-25
+title: The autonomy editor's Test a Path draws no route the setup check says a station cannot take
+disposition: needs test
+from: RSA76-C5
+written: 2026-10-25
+reopened: no
+body:
+| <a id="mt-828"></a>
+| ### MT-828 - 2026-10-25 - The autonomy editor's Test a Path draws no route the setup check says a station cannot take
+|
+| **Disposition:** needs test
+| **From:** RSA76-C5
+|
+| **Written:** 2026-10-25
+|
+| **Steps**
+|
+| 1. Open your railway's autonomy editor and look at the setup check's notices for a parking station it reports as unreachable (on the frozen snapshot, TopR1ParkLong and TopR1ParkShort).
+| 2. Press `Test a Path`, click a station on the line before it (TopMainR1Inter), then click the parking station.
+| 3. Press `Test a Path` again and test two stations the setup check does not flag.
+|
+| **Expected**
+|
+| - Step 2: the strip says there is no way through, and nothing is drawn, as the setup check's notice says.  In 3.0.3 a route was drawn here.
+| - Step 3: the route is drawn as before.
+|
+| *What this is:* from the 3.0.3 validator (RSA76-C5).  Test a Path now starts a train the way it stands at the station, from the same copies the setup check starts from, so the two no longer disagree.
+|
+tail:
+| ---
+|
