@@ -595,6 +595,26 @@ text:
 | 3.1.0 feature: history in the menu of the last 5 layouts, for easy switching
 |
 
+[issue FR-146]
+ordinal: 50
+inbox: yes
+kind: feature request
+title: Manage Pages in the layout editor takes over the main window's page menu
+filed: 2026-10-25
+filed_at: 2026-10-25 14:12
+raised_from: MT-831
+build: af5bdfeb
+text:
+| ### FR-146 - 2026-10-25 - Manage Pages in the layout editor takes over the main window's page menu
+|
+| **Kind:** feature request  
+| **Raised from:** MT-831  
+| **Filed:** 2026-10-25 14:12  
+| **Build:** af5bdfeb
+|
+| Adam on MT-831: "Fold in the duplicate and combine options from the main UI's menu, then disable the main UI's menu (keep it hidden for now in case we want to revert) and replace it with Manage Pages... option that opens the layout editor on top of the main window and pops open its JMenu."
+|
+
 [issue OB-324]
 ordinal: 19
 inbox: yes
@@ -1029,4 +1049,24 @@ text:
 | **Build:** commit 6e9a0684
 |
 | Seen in OB-375's screenshots (2026-10-25): the button shows "Hvorfor koerer det ik..." in Danish; its width is fixed at the column's 150 px and the phrase needs 157.  Already so before OB-368 and OB-375.  For the next release: a shorter Danish phrase, or the button's text on two lines (see the plan's shorter-messages step).
+|
+
+[issue OB-378]
+ordinal: 49
+inbox: yes
+kind: bug
+title: Recent Layouts leaves out the layout that was open when TrainControl started
+filed: 2026-10-25
+filed_at: 2026-10-25 14:12
+raised_from: MT-830
+build: af5bdfeb
+text:
+| ### OB-378 - 2026-10-25 - Recent Layouts leaves out the layout that was open when TrainControl started
+|
+| **Kind:** bug  
+| **Raised from:** MT-830  
+| **Filed:** 2026-10-25 14:12  
+| **Build:** af5bdfeb
+|
+| Adam on MT-830: "When I had cs2_sample_layout open and switched to another (call it B), cs2_sample_layout wasn't in the menu.  But when I switched back to cs2_sample_layout manually, B was listed there."  Cause: a folder is recorded only when a layout is opened, so the one loaded at start-up is not in the list until it is opened again.
 |

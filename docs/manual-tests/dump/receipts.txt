@@ -4106,3 +4106,19 @@ kind: feature request
 what: Manage Pages menu in the layout editor, window kept open (63818b2e)
 state: needs test
 became: MT-831
+
+[receipt OB-378]
+seq: 513
+filed: 2026-10-25
+kind: bug
+what: Record the outgoing local layout when another is opened
+state: pending
+became: -
+
+[receipt FR-146]
+seq: 514
+filed: 2026-10-25
+kind: feature request
+what: Duplicate and Combine in the editor's Manage Pages; main menu hidden behind Manage Pages...
+state: pending
+became: -
