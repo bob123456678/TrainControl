@@ -35,8 +35,6 @@ import javax.swing.text.JTextComponent;
  *         SwingUtilities.invokeLater(item::doClick);
  *         assertTrue(answering.awaitAsked(1, 10000));
  *     }
- *
- * Gathered from the private answerers of about ten test classes (FR-136 Phase 6).
  */
 public final class Answering implements AutoCloseable
 {
@@ -101,10 +99,8 @@ public final class Answering implements AutoCloseable
     }
 
     /**
-     * Starts answering.
-     *
-     * @param rule given each question's message, the answer to give; null presses the first button
-     * @return the answerer, to be closed
+     * Starts answering; `rule` is given each question's message and returns the answer to give (null presses the first
+     * button).
      */
     public static Answering start(final Function<String, Answer> rule)
     {
@@ -157,10 +153,8 @@ public final class Answering implements AutoCloseable
     }
 
     /**
-     * Picks this file in every file chooser from now on, and approves it.  Without it, a chooser is canceled.
-     *
-     * @param file the file or folder to pick; null to cancel again
-     * @return this answerer
+     * Picks this file in every file chooser from now on, and approves it; null cancels again. Without it, a chooser is
+     * canceled.
      */
     public Answering choosing(File file)
     {
