@@ -8,69 +8,36 @@ import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 
 /**
- * A stand-in picture for a locomotive that has none (FR-054).
+ * A stand-in picture for a locomotive that has none (FR-054): "light gray and a simple electric locomotive consisting
+ * of: a main rectangle, trapezoid that 1/3 it's height, 2 small closed pantographs, and 4 1/5 height circular wheels
+ * in sets of two on each side, spaced evenly apart."
  *
- * Adam: "for locomotives without an icon, add a placeholder rather than nothing.  the placeholder
- * should be light gray and a simple electric locomotive consisting of: a main rectangle, trapezoid
- * that 1/3 it's height, 2 small closed pantographs, and 4 1/5 height circular wheels in sets of two on
- * each side, spaced evenly apart."
- *
- * And, having looked at the first one: "add some padding so the wheels don't get clipped.  make the
- * end of the trapezoid match the end of the rectangles on the x axis, and increase the angle of the
- * slope to be 45 degrees.  make the pantograph visible (zoom out) and remove the visible top edge of
- * the rectangle.  increase the height of the trapezoid by 15%."
- *
- * **Two of those settle each other.** With the trapezoid's base flush to the body and its sides at 45
- * degrees, the top width is no longer a number to choose: it is the base less twice the height, because
- * that is what a 45-degree slope means. So raising the roof by 15% also narrows its top, and there is
- * one dimension here rather than two that have to be kept in agreement.
- *
- * **Drawn rather than shipped as a file.** Every place that shows a locomotive asks for a different
- * width - 142 in the selector, and whatever the icon panel is sized to - and a bitmap scaled to all of
- * them looks worse at each. The shapes are computed from the size asked for, so the outline stays one
- * pixel at every one.
+ * With the trapezoid's base flush to the body and its sides at 45 degrees, the top width is the base less twice the
+ * height, so there is one dimension to keep in agreement.  Drawn rather than shipped as a file: every place that shows
+ * a locomotive asks for a different width, and the shapes are computed from the size asked for, so the outline stays
+ * one pixel at every one.
  *
  * @author Adam
  */
 public class LocomotivePlaceholder
 {
     /**
-     * The light gray Adam asked for, and a slightly darker one for the outlines.
-     *
-     * Two grays rather than one: a single flat fill loses the wheels into the body and the trapezoid
-     * into the roof, which is a silhouette rather than the locomotive he described. The outline is
-     * close enough to stay "light gray" as a whole - it is the difference between a shape and a
-     * smudge, not a second color.
-     *
-     * **Opaque, and lighter instead.** They were 40% transparent for a few hours, and a translucent
-     * locomotive is see-through wherever its own parts overlap: the body let the tops of the wheels
-     * behind it show, which reads as a fault rather than as a faint picture. Fading the finished
-     * drawing as a whole would have fixed that and kept the alpha, and Adam declined it - "try the
-     * other way" - so this is lighter paint and no transparency at all.
-     *
-     * As light as it can be and still be a locomotive: the outline has to separate the wheels from the
-     * body, or the shape becomes a smudge.
-     *
-     * **And then a tenth lighter, faded as a whole** (FR-104; Adam, 2026-09-29: *"increase the opacity of the default
-     * locomotive icon by 10%, so it's slightly lighter."*) - see `FADE`.  As a whole is the way the translucency above
-     * was not done: the finished drawing is faded once, so where its own parts overlap nothing shows through them.
+     * Light gray with a slightly darker outline: a single flat fill loses the wheels into the body and the trapezoid
+     * into the roof.  Opaque, not translucent, which shows the wheels through the body ("try the other way" to fading
+     * the whole drawing); then a tenth lighter, faded as a whole (FR-104: "increase the opacity of the default
+     * locomotive icon by 10%, so it's slightly lighter."), see `FADE`.
      */
     private static final Color BODY = new Color(238, 238, 238);
 
     private static final Color OUTLINE = new Color(203, 203, 203);
 
     /**
-     * How tall the picture is against its width.
-     *
-     * The Central Station's own locomotive pictures are long and low, and this sits beside them in the
-     * same lists - a placeholder in a different shape would make the list jump wherever one appears.
+     * How tall the picture is against its width: long and low like the Central Station's pictures, so lists do not
+     * jump.
      */
     private static final float ASPECT = 0.4f;
 
-    /**
-     * How much of solid the finished picture is (FR-104): a tenth of what is behind it shows through, which is the
-     * "slightly lighter" Adam asked for.
-     */
+    /** How much of solid the finished picture is (FR-104): a tenth of what is behind it shows through. */
     private static final float FADE = 0.9f;
 
     /**
@@ -104,24 +71,12 @@ public class LocomotivePlaceholder
         {
             g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-            // A THIRTY-SECOND OF THE HEIGHT, not a twenty-fourth (Adam, 2026-09-01: "make the edges of
-            // the placeholder locomotive icon slightly thinner").  This is a placeholder standing where
-            // a photograph goes, so its lines should be quieter than the picture that replaces it - a
-            // heavy outline reads as a drawing somebody meant, rather than as an empty frame.
-            //
-            // Still scaled by the height rather than fixed, so the shape holds together at the small
-            // sizes the locomotive panel draws it at, and still floored at one pixel: below that the
-            // line disappears in places and the body looks torn.
+            // A thirty-second of the height ("make the edges of the placeholder locomotive icon slightly thinner"):
+            // quieter than the picture that replaces it.  Scaled by the height, floored at one pixel.
             g.setStroke(new BasicStroke(Math.max(1f, h / 32f)));
 
-            // PADDING ALL ROUND, so nothing is cut off at the edges.
-            //
-            // The wheels sat on the bottom row and the pantographs on the top one, and both lost their
-            // outermost pixel to the edge of the picture - which is what "the wheels get clipped" and
-            // "make the pantograph visible" are between them. Everything below is drawn inside this.
-            // A little more than the first draft, on Adam seeing it: "reduce the overall size slightly
-            // to accommodate the pantographs".  The locomotive gives up a row at each end and the
-            // pantographs get somewhere to stand.
+            // Padding all round, so nothing is cut off at the edges: the wheels and pantographs lost their outermost
+            // pixel ("reduce the overall size slightly to accommodate the pantographs").
             int pad = Math.max(2, Math.round(h / 10f));
 
             // Bottom up: the wheels are measured against the whole picture and everything else against
@@ -136,8 +91,7 @@ public class LocomotivePlaceholder
 
             int forBoth = wheelMiddle - pad - pantograph;
 
-            // A third of the body, and then 15% more of it, which is what he asked for. Rounded up to
-            // at least 2 so the slope has somewhere to go on a small icon.
+            // A third of the body, and 15% more, at least 2 so the slope has somewhere to go.
             int roof = Math.max(2, Math.round(forBoth / 4f * 1.15f));
 
             int bodyHeight = Math.max(3, forBoth - roof);
@@ -155,23 +109,14 @@ public class LocomotivePlaceholder
             // rather than beside it like buttons.
             wheels(g, bodyLeft, bodyWidth, wheelTop, wheel);
 
-            // THE TRAPEZOID: base flush with the body, sides at 45 degrees.
-            //
-            // At 45 degrees the horizontal step in equals the vertical rise, so the top is the base
-            // less twice the height and there is nothing else to choose. On a very wide, very short
-            // icon that would leave nothing at the top, so it is floored at a fifth of the base - the
-            // shape stops being 45 degrees before it stops being a trapezoid.
+            // The trapezoid: base flush with the body, sides at 45 degrees, so the top is the base less twice the
+            // height; floored at a fifth of the base on very wide, short icons.
             int roofTopWidth = Math.max(Math.round(bodyWidth * 0.2f), bodyWidth - 2 * roof);
 
             int roofTopLeft = bodyLeft + (bodyWidth - roofTopWidth) / 2;
 
-            // ONE SILHOUETTE, not a roof drawn on top of a body.
-            //
-            // Adam: "where the trapezoid meets the square has a rough edge."  It did, and filling two
-            // antialiased shapes that share an edge is why: each lays down its own soft border along
-            // the join, and the two together read as a seam through the middle of one object.  Drawn
-            // as a single closed outline there is no join to soften, and the body's top edge is gone
-            // for the same reason rather than by leaving a line out.
+            // One silhouette, not a roof drawn on top of a body: two antialiased shapes sharing an edge read as a seam
+            // ("where the trapezoid meets the square has a rough edge").
             Polygon body = new Polygon();
 
             body.addPoint(bodyLeft, bodyBottom);
@@ -242,14 +187,7 @@ public class LocomotivePlaceholder
         }
     }
 
-    /**
-     * One folded pantograph, drawn as a diamond.
-     *
-     * Adam: "the pantographs need to be diamond - right now the top is flat."  They were a collector
-     * bar with two arms under it, which is a pantograph seen from the side but reads as a flat-topped
-     * hat at this size. A closed pantograph folds into a lozenge - the two arms meeting above and the
-     * two below - and that is a shape somebody recognizes in twelve pixels.
-     */
+    /** One folded pantograph, drawn as a diamond: "the pantographs need to be diamond - right now the top is flat." */
     private static void pantograph(Graphics2D g, int centre, int roofTop, int width, int height)
     {
         int half = Math.max(2, width / 2);
