@@ -74,7 +74,7 @@ public class testCommentsStayLean
     };
 
     /** Comment lines carrying a history marker, as they stand.  Lower it whenever some go; never raise it. */
-    private static final int HISTORY_ALLOWED = 317;
+    private static final int HISTORY_ALLOWED = 307;
 
     /** WHICH files carry them, so that a swap between files fails and names both.  Files at zero are not listed. */
     private static final String[] HISTORY_BY_FILE = {
@@ -89,7 +89,6 @@ public class testCommentsStayLean
         "src/org/traincontrol/automationui/DiagramMonitor.java (7)",
         "src/org/traincontrol/automationui/GraphReducer.java (1)",
         "src/org/traincontrol/automationui/LayoutPageEdit.java (2)",
-        "src/org/traincontrol/automationui/SessionImport.java (2)",
         "src/org/traincontrol/automationui/StationIndex.java (3)",
         "src/org/traincontrol/automationui/TileGraph.java (1)",
         "src/org/traincontrol/automationui/TileOverlay.java (9)",
@@ -114,14 +113,11 @@ public class testCommentsStayLean
         "src/org/traincontrol/gui/CurrentKeyRow.java (9)",
         "src/org/traincontrol/gui/DiagramMonitorDriver.java (4)",
         "src/org/traincontrol/gui/DiagramTileRegistry.java (1)",
-        "src/org/traincontrol/gui/EditorTileMenus.java (3)",
         "src/org/traincontrol/gui/FacingPrompt.java (4)",
         "src/org/traincontrol/gui/GraphLocAssign.java (9)",
         "src/org/traincontrol/gui/HomeLocomotiveMenu.java (2)",
         "src/org/traincontrol/gui/LayoutEditorAddressPopup.java (3)",
-        "src/org/traincontrol/gui/LayoutEditorReshape.java (1)",
         "src/org/traincontrol/gui/LayoutEditorRightclickMenu.java (3)",
-        "src/org/traincontrol/gui/LayoutEditorSelection.java (4)",
         "src/org/traincontrol/gui/LayoutLabel.java (1)",
         "src/org/traincontrol/gui/LoadingSpinner.java (7)",
         "src/org/traincontrol/gui/LocIconActions.java (1)",
@@ -154,7 +150,7 @@ public class testCommentsStayLean
     };
 
     /** Runs of more than 15 `//` lines plus non-javadoc block comments over 15 lines, as they stand.  Never raise it. */
-    private static final int LONG_BLOCKS_ALLOWED = 54;
+    private static final int LONG_BLOCKS_ALLOWED = 49;
 
     /** WHICH files carry them.  Files at zero are not listed. */
     private static final String[] LONG_BLOCKS_BY_FILE = {
@@ -170,7 +166,6 @@ public class testCommentsStayLean
         "src/org/traincontrol/gui/DiagramExport.java (1)",
         "src/org/traincontrol/gui/DiagramTileRegistry.java (1)",
         "src/org/traincontrol/gui/LayoutEditorRightclickMenu.java (1)",
-        "src/org/traincontrol/gui/LayoutEditorSelection.java (5)",
         "src/org/traincontrol/gui/LayoutGrid.java (2)",
         "src/org/traincontrol/gui/LayoutLabel.java (2)",
         "src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java (1)",
