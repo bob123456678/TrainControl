@@ -16,21 +16,10 @@ import org.traincontrol.util.I18n;
 import org.traincontrol.util.Util;
 
 /**
- * Setting autonomy up, from the menu bar beside Layouts.
- *
- * This was a tab, and a tab was the wrong shape for it.  Everything here is something a user does
- * ONCE - choose a configuration, rename one, leave a page out - and then never looks at again, while
- * the tab it occupied sat in the strip beside the ones they use constantly.  Worse, it was a page of
- * controls describing the diagram on a DIFFERENT page, so acting on it meant looking away from the
- * thing being set up.
- *
- * Next to Layouts on purpose: a setup belongs to a layout, cannot exist without one, and the two are
- * chosen the same way.  With no layout the menu is disabled and says why rather than opening onto a
- * list of things none of which can be done.
- *
- * Rebuilt each time it opens.  A menu is cheap to build and the alternative - keeping items in step
- * with configurations being added, renamed and deleted from inside the menu itself - is a second copy
- * of the truth that can disagree with the first.
+ * Setting autonomy up, from the menu bar beside Layouts: what a user does once (choose a configuration, rename one,
+ * leave a page out), kept out of the tab strip.  Next to Layouts because a setup belongs to a layout; with no layout
+ * the menu is disabled and says why.  Rebuilt each time it opens, so no second copy of the truth can disagree with the
+ * first.
  *
  * @author Adam
  */
@@ -71,32 +60,23 @@ public class AutonomyMenu extends JMenu
     }
 
     /**
-     * Switches the menu on or off according to whether there is a layout to set autonomy up for.
-     *
-     * Disabled rather than hidden, with the reason on the tooltip: a menu that vanishes teaches
-     * nothing, and "why is there no autonomy menu" is a harder question than "what do I do first".
+     * Switches the menu on or off according to whether there is a layout to set autonomy up for.  Disabled rather than
+     * hidden, with the reason on the tooltip.
      */
     public final void refreshEnabled()
     {
-        // THE QUESTION LIVES ON THE WINDOW NOW (OB-202), because this menu is no longer the only
-        // thing that asks it: `autonomyTopMenu` holds this slot until start-up builds this menu, and it
-        // has to be grayed for the same reasons and say the same sentence.  Two copies of one condition
-        // is two answers waiting to disagree.
-        //
-        // What the parts are, and why each is there, is at `TrainControlUI.autonomyMenuIsUsable` - a
-        // layout, and not while the connecting notice holds the bar (OB-187).  Not a LOCAL
-        // one: on a Central Station layout the menu opens onto the download and the guide (2026-09-24).
+        // The question lives on the window (OB-202): `autonomyTopMenu` holds this slot until start-up builds this menu,
+        // and it has to be grayed for the same reasons.  The parts are at `TrainControlUI.autonomyMenuIsUsable`: a
+        // layout, and not while the connecting notice holds the bar (OB-187).  Not a local one: on a Central Station
+        // layout the menu opens onto the download and the guide.
         setEnabled(ui.autonomyMenuIsUsable());
 
         setToolTipText(AutonomyEditorPanel.wrapped(ui.whyAutonomyIsUnavailable()));
     }
 
     /**
-     * The pages submenu as it was last built, so that something else can send the user straight to it.
-     *
-     * The diagram says when the page being looked at is left out of autonomy, and that statement is only
-     * half an answer without a way to change it - the setting lives three levels into a menu somebody
-     * would have to know to open.
+     * The pages submenu as it was last built, so that something else can send the user straight to it: the diagram says
+     * when its page is left out of autonomy, which is half an answer without a way to change it.
      */
     private JMenu lastPagesMenu;
 
@@ -104,10 +84,8 @@ public class AutonomyMenu extends JMenu
     private JMenuItem settingsItem;
 
     /**
-     * Opens this menu with the pages submenu already showing.
-     *
-     * Driven through the MenuSelectionManager rather than by clicking: a click would toggle the menu
-     * shut again if it happened to be open, and there is no path from a click to a SUBmenu at all.
+     * Opens this menu with the pages submenu already showing.  Driven through the MenuSelectionManager, not a click,
+     * which would toggle an open menu shut and cannot reach a submenu.
      */
     public void showPages()
     {
@@ -115,20 +93,14 @@ public class AutonomyMenu extends JMenu
 
         final javax.swing.JMenuBar bar = (javax.swing.JMenuBar) getParent();
 
-        // Open this menu first, and only then walk into the submenu.
-        //
-        // Not one setSelectedPath with the whole path in it, which is what this did and why nothing
-        // appeared: selecting the menu fires menuSelected, which rebuilds every item - so the submenu
-        // named in the path was removed from the menu a moment after being pointed at, and the
-        // selection came apart.  Opening in two steps lets the rebuild happen in between, and the
-        // second step then points at the submenu that rebuild actually produced.
+        // Open this menu first, and only then walk into the submenu: selecting the menu fires menuSelected, which
+        // rebuilds every item, so a submenu named in a single path was removed a moment after being pointed at.
         javax.swing.MenuSelectionManager.defaultManager().setSelectedPath(
             new javax.swing.MenuElement[] { bar, this, getPopupMenu() });
 
         javax.swing.SwingUtilities.invokeLater(() ->
         {
-            // Unavailable - no configuration chosen - so this menu is as far as it can honestly take
-            // them, and its items say why.
+            // Unavailable (no configuration chosen): this menu is as far as it goes, and its items say why.
             if (lastPagesMenu == null || !lastPagesMenu.isEnabled()) return;
 
             javax.swing.MenuSelectionManager.defaultManager().setSelectedPath(
@@ -145,10 +117,8 @@ public class AutonomyMenu extends JMenu
     }
 
     /**
-     * Grays every item while an editor has the diagram, and offers the way back to it.
-     *
-     * The same shape as TrainControlUI.guardLayoutMenu, deliberately: the two menus are guarded for the
-     * same reason and should not look like two different rules.
+     * Grays every item while an editor has the diagram, and offers the way back to it.  The same shape as
+     * TrainControlUI.guardLayoutMenu: the two menus are guarded for the same reason.
      */
     private void guardWhileEditing()
     {
@@ -159,35 +129,25 @@ public class AutonomyMenu extends JMenu
             getMenuComponent(i).setEnabled(false);
         }
 
-        // Clickable, and it brings the editor forward (OB-033).
-        //
-        // It was disabled once, which states the problem and offers nothing - and the window it is
-        // talking about may well be behind this one, which is exactly why somebody reached for this
-        // menu. First in the list, because it is the only thing here that can be done.
-        //
-        // This used to read autosetup.ui.menuEditorOpen, the full refusal sentence ("Close the
-        // editor first - autonomy cannot be changed from here while it is open.") - a sentence written
-        // for a dialog body, not a label, and one that told the user to close the editor on an item
-        // whose own action brings that editor forward. menuOpenFullEditor is the label already used
-        // for the same action elsewhere (LayoutRightclickAutonomyMenu.addSetupMenu).
+        // Clickable, and it brings the editor forward (OB-033): disabled, it stated the problem and offered nothing,
+        // and the window may be behind this one.  First in the list, as the only thing that can be done.  It reads
+        // menuOpenFullEditor, the label already used for the same action (LayoutRightclickAutonomyMenu.addSetupMenu),
+        // not the refusal sentence.
         JMenuItem busy = new JMenuItem(I18n.t("autosetup.ui.menuOpenFullEditor"));
 
         busy.addActionListener(e -> ui.showOpenEditor());
 
         insert(busy, 0);
 
-        // Under the item it belongs to.  addSeparator APPENDS, so the rule meant to divide this one
-        // entry from the grayed rest was drawn after the LAST item instead - a line across the bottom
-        // of the popup with nothing below it.
+        // Under the item it belongs to: addSeparator appends, which drew the rule after the last item.
         insertSeparator(1);
     }
 
     /**
-     * Builds the menu, and ends it with Documentation whatever else it holds (Adam, 2026-09-24).
-     *
-     * *"Add a 'documentation' link to the autonomy JMenu that points to the same URL as the current jlabel."*  The link
-     * was on the old Load Autonomy Configuration tab, which went (OB-254); the guide it opened is about the autonomy
-     * this menu drives.  Left enabled while an editor grays the rest: reading the guide changes nothing.
+     * Builds the menu, and ends it with Documentation whatever else it holds (Adam: *"Add a 'documentation' link to the
+     * autonomy JMenu that points to the same URL as the current jlabel."*).  The link was on the old Load Autonomy
+     * Configuration tab, which went (OB-254).  Left enabled while an editor grays the rest: reading the guide changes
+     * nothing.
      */
     private void rebuild()
     {
@@ -197,8 +157,8 @@ public class AutonomyMenu extends JMenu
 
         JMenuItem documentation = new JMenuItem(I18n.t("ui.main.documentation"));
 
-        // ON A THREAD OF ITS OWN (Adam, 2026-09-24, on MT-546: "can it get its own thread?").  Opening a browser is a
-        // call into Windows, and the event thread has nothing to wait for it about.
+        // On a thread of its own (Adam, on MT-546: "can it get its own thread?"): opening a browser is a call into
+        // Windows.
         documentation.addActionListener(e -> new Thread(() -> Util.openUrl(TrainControlUI.README_URL),
             "open the automation guide").start());
 
@@ -212,19 +172,17 @@ public class AutonomyMenu extends JMenu
     }
 
     /**
-     * Grays what changes the setup while autonomy runs, with the reason on each (Adam, MT-613 and MT-626: *"why not grey
-     * out the whole menu while running?"*).  Each door still refuses on its own; this says so before the click, as the
-     * editor's item has since OB-045.  Autonomy Settings and Documentation stay live: the guide changes nothing, and the
-     * settings are shown grayed while autonomy is busy, each saying why (Adam, 2026-10-02), their own handlers refusing a
-     * change besides.  The debug export is
-     * grayed with the rest (Adam, MT-633: "export raw graph as json should also be disabled while running") - grayed only: it
-     * writes nothing of the setup, and has no refusal of its own.
+     * Grays what changes the setup while autonomy runs, with the reason on each (Adam, MT-613 and MT-626: *"why not
+     * grey out the whole menu while running?"*).  Each door still refuses on its own; this says so before the click.
+     * Autonomy Settings and Documentation stay live (the settings are shown grayed while autonomy is busy, each saying
+     * why).  The debug export is grayed too (Adam, MT-633: "export raw graph as json should also be disabled while
+     * running"), grayed only: it writes nothing of the setup.
      *
      * @param documentation the guide's item
      */
     private void guardWhileRunning(JMenuItem documentation)
     {
-        // A ROUTE TOO (`TrainControlUI.aRunHoldsTheSetup`); the sentence every item's door refuses with
+        // A route too (`TrainControlUI.aRunHoldsTheSetup`); the sentence every item's door refuses with
         if (!ui.aRunHoldsTheSetup()) return;
 
         String why = AutonomyEditorPanel.wrapped(I18n.t(RunGates.NO_EDITS_WHILE_RUNNING));
@@ -250,9 +208,8 @@ public class AutonomyMenu extends JMenu
 
         settingsItem = null;
 
-        // Dropped, not kept.  It is only reassigned on the branch that builds the submenu, so after a
-        // rebuild that takes another branch it pointed at a JMenu no longer in this popup - and
-        // showPages then asked Swing to open a detached component.
+        // Dropped, not kept: it is only reassigned on the branch that builds the submenu, so after another branch it
+        // pointed at a JMenu no longer in this popup and showPages asked Swing to open a detached component.
         lastPagesMenu = null;
 
         final AutonomyViewerPanel actions = actions();
@@ -260,37 +217,18 @@ public class AutonomyMenu extends JMenu
 
         if (actions == null || session == null)
         {
-            // A dead sentence, unless a download would answer it (OB-093).
+            // A dead sentence, unless a download would answer it (OB-093; Adam: "the 'autonomy needs a layout stored on
+            // this computer' notice should be clickable and allow the user to download one."): grayed, it leaves the
+            // reader knowing what is wrong and not what to do.  Only when a download is the answer: this branch is also
+            // taken for reasons it would not touch (no viewer panel yet, a session that failed to open), and an offer
+            // that cannot help teaches the reader the notice lies.  The handler's own question, both halves:
+            // downloadCSLayoutMenuItemActionPerformed also requires a non-empty page list, so asking only whether the
+            // layout is remote showed a live item that did nothing (the OB-057 shape).
             //
-            // Adam: "the 'autonomy needs a layout stored on this computer' notice should be clickable
-            // and allow the user to download one."
-            //
-            // It is a true statement and it was a grayed one, which leaves the reader knowing what is
-            // wrong and not what to do - and the thing to do lives in a different menu, under a name
-            // that says nothing about autonomy. Where somebody reads the sentence is where the offer
-            // belongs.
-            //
-            // ONLY when a download is actually the answer. This branch is also taken for reasons a
-            // download would not touch - no viewer panel yet, a session that failed to open - and an
-            // offer that cannot help is worse than the grayed line it replaced, because pressing it
-            // teaches the reader that the notice lies.
-            // The handler's OWN question, both halves of it.
-            //
-            // This asked only whether the layout is remote. downloadCSLayoutMenuItemActionPerformed
-            // additionally requires a non-empty page list, so a remote layout with nothing downloaded
-            // yet - no station answering, or a fresh start - showed a live item whose press did
-            // nothing whatever: no dialog, no log line, no clue.
-            //
-            // Which is the OB-057 shape this same day's work named twice already: the affordance
-            // asking a narrower question than the guard. Twice was apparently not enough for me to
-            // check the third one I wrote, a few hours later, in a commit whose message is about that
-            // very rule.
-            //
-            // A CHOICE NOW, download or create (Adam, 2026-09-29, on MT-548: *"what is the cs3 has no layout?  give the
-            // user the choice to either download or create a new one, which redirects to the corresponding option under
-            // layouts."*).  On the Central Station's layout, both of the Layouts menu's own ways to a layout on this
-            // computer, under their own names and doing what they do there - the download grayed, saying why, where it
-            // would do nothing; Create New Layout grayed exactly when its Layouts item is.
+            // A choice, download or create (Adam, on MT-548: *"what is the cs3 has no layout?  give the user the choice
+            // to either download or create a new one, which redirects to the corresponding option under layouts."*):
+            // both of the Layouts menu's ways to a layout on this computer, under their own names, the download grayed
+            // with its reason where it would do nothing, and Create New Layout grayed exactly when its Layouts item is.
             if (ui.isRemoteLayout())
             {
                 javax.swing.JMenu offer = new javax.swing.JMenu(I18n.t("autosetup.ui.menuNoSetupPossible"));
@@ -322,12 +260,9 @@ public class AutonomyMenu extends JMenu
                 return;
             }
 
-            // A SETUP THAT IS THERE AND WOULD NOT READ SAYS SO, with the reason on the grayed line.
-            //
-            // This line said that autonomy needs a layout stored on this computer whatever had left the session null - and
-            // on a layout stored on this computer, whose setup.json had a typing slip in it or came from a newer
-            // TrainControl, that sent the reader looking for a folder they already had.  The window keeps why the setup
-            // would not read; the line only offers to say it.
+            // A setup that is there and would not read says so, with the reason on the grayed line: "needs a layout
+            // stored on this computer" sent the reader looking for a folder they had when setup.json had a typing slip
+            // or came from a newer TrainControl.  The window keeps why; the line only offers to say it.
             String unreadable = ui.whyTheSetupCannotBeRead();
 
             JMenuItem none = new JMenuItem(I18n.t(unreadable != null
@@ -348,14 +283,8 @@ public class AutonomyMenu extends JMenu
 
         String running = ui.getActiveDiagramConfiguration();
 
-        // Nothing set up yet: no submenus of things that would all be empty - but two ways to get
-        // started, not one.
-        //
-        // FR-007: "it should be possible to initially load autonomy from an import, not just forcing
-        // the creation of a new one."  Import used to live only in the branch below, so the first
-        // thing this menu asked of somebody who already HAD a setup - from another machine, from a
-        // colleague running the same layout, or from a backup of their own - was to build a new one
-        // from scratch and then find the import afterwards.
+        // Nothing set up yet: no submenus of empty things, but two ways to get started (FR-007): "it should be possible
+        // to initially load autonomy from an import, not just forcing the creation of a new one."
         if (names.isEmpty())
         {
             add(addConfigurationItem(actions));
@@ -373,9 +302,8 @@ public class AutonomyMenu extends JMenu
         }
         else
         {
-            // The configurations get a submenu of their own rather than sitting loose on the menu,
-            // where a name like "Adam 1" reads as an action next to the items around it.  The heading
-            // carries the running one, which is the fact this menu is most often opened to check.
+            // The configurations get a submenu of their own, where a name like "Adam 1" would read as an action; the
+            // heading carries the running one, which is what this menu is most often opened to check.
             JMenu choose = new JMenu(I18n.f("autosetup.ui.menuConfigurations",
                 running == null ? I18n.t("autosetup.ui.menuNoneRunning") : running));
 
@@ -402,22 +330,14 @@ public class AutonomyMenu extends JMenu
                 choose.add(choice);
             }
 
-            // Import and Export, under a divider, with the configurations they act on (OB-051).
-            //
-            // They lived in the management submenu one level further down, where Adam could not find
-            // them: "the option is just buried and I didn't see it." Correct and unreachable is the
-            // same outcome as disabled.
-            //
-            // Here because this is the menu somebody opens to think about configurations - it is
-            // headed with the one that is running - and bringing one in from a file or writing one out
-            // is the same kind of thought as choosing between them.
+            // Import and Export, under a divider, with the configurations they act on (OB-051): they were buried a
+            // level down, where Adam could not find them ("the option is just buried and I didn't see it.").
             choose.addSeparator();
 
-            // Import is grayed only with the rest of the menu while autonomy runs (`guardWhileRunning`), and refuses then
-            // too, saying so; into the configuration that is running it refuses a file that would replace it,
-            // and takes an old file's gaps without its trains; otherwise it brings one in -
-            // and the moment it is most needed is when the current setup will not load, which is repaired by importing
-            // one that will.
+            // Import is grayed only with the rest of the menu while autonomy runs (`guardWhileRunning`), and refuses
+            // then too, saying so; into the running configuration it refuses a file that would replace it and takes an
+            // old file's gaps without its trains.  It is most needed when the current setup will not load, which
+            // importing one that will repairs.
             choose.add(item(I18n.t("autosetup.ui.btnImportConfiguration"), new Runnable()
             {
                 @Override
@@ -429,8 +349,8 @@ public class AutonomyMenu extends JMenu
                 }
             }));
 
-            // Export keeps the graying it had: it writes out the configuration that is RUNNING, so
-            // with none running there is nothing for it to write.
+            // Export keeps its graying: it writes out the configuration that is running, so with none there is nothing
+            // to write.
             JMenuItem exportItem = item(I18n.t("autosetup.ui.btnExportConfiguration"), new Runnable()
             {
                 @Override
@@ -455,26 +375,18 @@ public class AutonomyMenu extends JMenu
             // Manage acts on the configuration that is RUNNING, so it means nothing until one is.
             boolean loaded = running != null;
 
-            // DIRECTLY UNDER the configuration it manages (Adam, 2026-08-28).
-            //
-            // This was the last item on the menu, two groups below the thing it acts on, with the
-            // editing tools in between - so picking a configuration and managing the set of them were
-            // as far apart as this menu can put two items. They are one subject.
+            // Directly under the configuration it manages: choosing one and managing the set of them are one subject.
             add(manageMenu(actions, session, loaded));
 
-            // Editing and page exclusions ask only that a configuration be CHOSEN.  Both are how a
-            // setup that will not load gets FIXED - it refuses on blocking errors, and the editor is
-            // the only place those can be dealt with - so gating them on a running setup locked the
-            // door on the room the user was being sent to: "4 things must be dealt with", and no way
-            // to deal with them.
+            // Editing and page exclusions ask only that a configuration be chosen: they are how a setup that will not
+            // load gets fixed (it refuses on blocking errors and the editor is where those are dealt with), so gating
+            // them on a running setup locked the door on the room the user was being sent to.
             boolean chosen = session.getStore().getActiveConfiguration() != null;
 
-            // The settings for the whole setup - pace, how many trains at once, what a train may do on
-            // arrival.  They live on a tab inside a tab, which is somewhere nobody finds by looking,
-            // and this menu is where every other decision about the setup is made.
-            //
-            // Loaded, not merely chosen: that tab is built when a configuration loads and is not there
-            // before, so offering it earlier would be an item that goes nowhere.
+            // The settings for the whole setup (pace, how many trains at once, what a train may do on arrival) live on
+            // a tab inside a tab that nobody finds, and this menu is where every other decision about the setup is
+            // made.  Loaded, not merely chosen: that tab is built when a configuration loads, so offering it earlier
+            // would go nowhere.
             JMenuItem settings = settingsItem = item(I18n.t("autosetup.ui.menuGlobalSettings"), new Runnable()
             {
                 @Override
@@ -492,34 +404,19 @@ public class AutonomyMenu extends JMenu
 
             add(settings);
 
-            // Fenced off by itself, because it is the only item here that changes the RAILWAY.
-            // Everything above picks a setup or keeps the file that holds it - choosing, importing,
-            // exporting, renaming, deleting, and the settings that go with it; below the line this one
-            // opens the editor and starts naming stations and setting which way trains may run, and
-            // the pages submenu decides which pages it sees.
-            //
-            // The split used to be described as choosing above and housekeeping below, which stopped
-            // being true when the manage submenu moved up to sit under the configuration it manages.
+            // Fenced off by itself, as the only item here that changes the railway: everything above picks a setup or
+            // keeps the file that holds it; below the line the editor starts naming stations and setting which way
+            // trains may run, and the pages submenu decides which pages it sees.
             addSeparator();
 
             JMenu edit = editMenu(session);
 
-            // And not while trains are running (OB-045).
-            //
-            // Opening it was already refused on the click, which states the problem after the user has
-            // committed to it. A grayed item says the same thing before, and says it where the eye
-            // already is - which is the difference between a rule and an obstacle.
-            //
+            // And not while trains are running (OB-045): a grayed item says before the click what a refusal says after.
             // While autonomy runs `guardWhileRunning` grays the rest of the menu with it, bar Autonomy Settings and
             // Documentation (Adam, MT-613 and MT-626; the debug export too, MT-633); this item asks the editor's own
-            // refusals as well, at rest.
-            //
-            // This used to re-derive three of openLayoutEditor's four refusals by hand
-            // ("chosen && !trainsMoving"), which covers isLocalLayout/session==null (via chosen) and
-            // isAutonomyBusy but not the fourth - "an editor is already open" - so this item could stay
-            // live and fail during the same layoutEditingComplete window. The sibling
-            // surface, LayoutRightclickAutonomyMenu.addSetupMenu, already asks the guard's own answer
-            // for exactly this reason; ask it here too instead of keeping a second copy of its rule.
+            // refusals as well, at rest.  It asks `whyAutonomyEditorCannotOpen`, as
+            // LayoutRightclickAutonomyMenu.addSetupMenu does, rather than re-deriving three of openLayoutEditor's four
+            // refusals by hand, which left it live while "an editor is already open".
             String editRefusal = ui.whyAutonomyEditorCannotOpen();
             boolean pagesAvailable = edit.getItemCount() > 0;
 
@@ -530,11 +427,8 @@ public class AutonomyMenu extends JMenu
                 : I18n.t("autosetup.ui.tooltipEditAutonomy")));
             add(edit);
 
-            // Directly under the editor, because it answers the question the editor list raises.
-            //
-            // A page left out does not appear in the list above, so somebody looking for a page that is
-            // missing from it needs this item next - and it sat two groups further down, past the
-            // configuration management, where the answer reads as unrelated to the question.
+            // Directly under the editor, because it answers the question the editor list raises: a page left out does
+            // not appear in the list above.
             JMenu pages = pagesMenu(session);
             lastPagesMenu = pages;
             pages.setEnabled(chosen);
@@ -543,12 +437,9 @@ public class AutonomyMenu extends JMenu
             add(pages);
         }
 
-        // Exporting the derived graph, for a debug session and only when there is a graph to export.
-        //
-        // It used to appear whenever debug was on, including on a layout with no setup at all and on one
-        // whose setup will not build - so the one item here that promises a file offered it in the two
-        // states where pressing it produces either nothing or a graph the user has been told is invalid.
-        // Debug or not, a menu item that cannot do what it says is worse than an absent one.
+        // Exporting the derived graph, for a debug session and only when there is a graph to export: shown with no
+        // setup, or one that will not build, it promised a file in the two states where pressing it produces nothing or
+        // an invalid graph.
         boolean inspectable = ui.getModel() != null && ui.getModel().isDebug()
             && !session.getStore().getConfigurationNames().isEmpty()
             && session.getStore().getActiveConfiguration() != null
@@ -569,24 +460,16 @@ public class AutonomyMenu extends JMenu
             }));
         }
     
-        // Everything grayed while an editor has the diagram, rather than nothing shown at all.
-        //
-        // Every item here saves the setup or rebuilds the main window, and an open editor makes both
-        // unsafe: saving commits edits that editor has not saved - so its Cancel then has nothing to
-        // take back - and the rebuild redraws the main diagram with the editor's edit flag still set on
-        // the shared page, after which every tile there tries to talk to a window that is not its
-        // parent. So none of them may be USED. That was done by building none of them.
-        //
-        // MT-111, Adam: "Layout greys out all options while Autonomy hides them. Grey them out in
-        // Autonomy instead." He is right, and the Layout menu was already the better of the two: a
-        // grayed item says "this exists and not now", and an empty menu says "this feature is gone" -
-        // which is a worse thing to be told by the surface you have just opened to use it.
+        // Everything grayed while an editor has the diagram, rather than nothing shown (MT-111, Adam: "Layout greys out
+        // all options while Autonomy hides them. Grey them out in Autonomy instead."): a grayed item says "this exists
+        // and not now", an empty menu "this feature is gone".  Every item here saves the setup or rebuilds the main
+        // window, and an open editor makes both unsafe: saving commits edits that editor has not saved, and the rebuild
+        // redraws the main diagram with the editor's edit flag still set on the shared page.
     }
 
     /**
-     * Adding a configuration - offered for the very first setup alone (Adam, 2026-10-01: "One door: do it").  Once one
-     * exists, Manage's New Configuration copies it, so a station's rules, the settings and the speeds are never entered
-     * twice.
+     * Adding a configuration, offered for the very first setup alone (Adam: "One door: do it").  Once one exists,
+     * Manage's New Configuration copies it, so a station's rules, the settings and the speeds are never entered twice.
      */
     private JMenuItem addConfigurationItem(final AutonomyViewerPanel actions)
     {
@@ -607,13 +490,8 @@ public class AutonomyMenu extends JMenu
     }
 
     /**
-     * Opening the setup editor, one item per page.
-     *
-     * A submenu rather than a dialog asking which page: the question is a list of pages to pick from,
-     * which is what a submenu already is, and it answers in one click instead of three.
-     *
-     * Pages autonomy has been told to ignore are left out.  There is nothing on one to configure -
-     * every square is grayed and refuses - so offering it would open an editor that can do nothing.
+     * Opening the setup editor, one item per page: a submenu, since the question is a list to pick from.  Pages
+     * autonomy has been told to ignore are left out: every square on one is grayed and refuses.
      */
     private JMenu editMenu(final AutonomySession session)
     {
@@ -639,18 +517,16 @@ public class AutonomyMenu extends JMenu
     }
 
     /**
-     * The things done to a configuration rather than with one.
-     *
-     * All of them act on whichever configuration is chosen above, which is why they are one level down:
-     * on the top level they read as things that might act on the layout as a whole.
+     * The things done to a configuration rather than with one.  All act on whichever configuration is chosen above,
+     * which is why they are one level down: on the top level they read as acting on the layout as a whole.
      */
     private JMenu manageMenu(final AutonomyViewerPanel actions, final AutonomySession session,
         boolean loaded)
     {
         JMenu manage = new JMenu(I18n.t("autosetup.ui.btnManage"));
 
-        // ONE DOOR TO A NEW CONFIGURATION (Adam, 2026-10-01: "One door: do it"): a copy of the one chosen, asking whether
-        // where the trains stand and the timetable come too.  Add a Configuration is offered only before there is one.
+        // One door to a new configuration (Adam: "One door: do it"): a copy of the one chosen, asking whether where the
+        // trains stand and the timetable come too.  Add a Configuration is offered only before there is one.
         JMenuItem copy = item(I18n.t("autosetup.ui.menuNewConfiguration"), new Runnable()
         {
             @Override
@@ -690,16 +566,11 @@ public class AutonomyMenu extends JMenu
 
         manage.add(deleteOne);
 
-        // Import and Export are NOT here any more (OB-051).
-        //
-        // They were correct and unfindable. Adam: "the option is just buried and I didn't see it" -
-        // which is the same outcome as being disabled, arrived at by a different route. They sit in
-        // the Configuration submenu now, under a divider, beside the list of configurations they are
-        // about.
+        // Import and Export are not here (OB-051): they were correct and unfindable, and sit in the Configuration
+        // submenu under a divider, beside the configurations they are about.
 
-        // Everything above acts on the configuration that is RUNNING, so it means nothing until one is.  Grayed one at
-        // a time rather than the whole submenu, so that deleting the lot, below, stays reachable when nothing is
-        // loaded, which is exactly when somebody wants it.
+        // Everything above acts on the configuration that is running, so it means nothing until one is.  Grayed one at
+        // a time rather than the whole submenu, so deleting the lot, below, stays reachable when nothing is loaded.
         for (int i = 0; i < manage.getItemCount(); i++)
         {
             if (manage.getItem(i) == null) continue;
@@ -709,8 +580,8 @@ public class AutonomyMenu extends JMenu
             if (!loaded) manage.getItem(i).setToolTipText(AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.tooltipNeedsLoaded")));
         }
 
-        // BUT DELETE ASKS WHICH (OB-319), so it needs only that there is one to delete: a configuration whose setup cannot
-        // be used is never loaded, and graying Delete until one was left it out of reach.
+        // But Delete asks which (OB-319), so it needs only that there is one to delete: a setup that cannot be used is
+        // never loaded, and graying Delete until one was left it out of reach.
         boolean anyToDelete = !session.getStore().getConfigurationNames().isEmpty();
 
         deleteOne.setEnabled(anyToDelete);
@@ -719,9 +590,8 @@ public class AutonomyMenu extends JMenu
 
         manage.addSeparator();
 
-        // The way back out of having set autonomy up at all.  Configurations could only be deleted one
-        // at a time and the last one was refused, so a layout somebody had experimented on kept a setup
-        // they could not be rid of without deleting a folder by hand.
+        // The way back out of having set autonomy up at all: configurations could only be deleted one at a time and the
+        // last was refused, so an experiment left a setup that could not be removed without deleting a folder by hand.
         JMenuItem forget = item(I18n.t("autosetup.ui.menuDeleteSetup"), new Runnable()
         {
             @Override
@@ -735,8 +605,8 @@ public class AutonomyMenu extends JMenu
 
         manage.add(forget);
 
-        // Stopping without deleting, which is the smaller of the two things somebody wants here and the
-        // one there was no way to do at all: every other path replaces one configuration with another.
+        // Stopping without deleting, the smaller of the two things wanted here: every other path replaces one
+        // configuration with another.
         JMenuItem unload = item(I18n.t("autosetup.ui.menuUnloadAutonomy"), new Runnable()
         {
             @Override
@@ -791,13 +661,8 @@ public class AutonomyMenu extends JMenu
     }
 
     /**
-     * Which pages autonomy uses, one checkbox each.
-     *
-     * A submenu of checkboxes rather than the dialog this used to be: the question is a list of pages
-     * with a tick against each, which is exactly what a menu of checkboxes IS - and a dialog for it
-     * meant opening a window to answer something that fits in the menu already open.
-     *
-     * The menu does not close between ticks, so several pages can be changed in one visit.
+     * Which pages autonomy uses, one checkbox each: a list with a tick against each is what a menu of checkboxes is,
+     * and the menu does not close between ticks, so several pages can be changed in one visit.
      */
     private JMenu pagesMenu(final AutonomySession session)
     {
@@ -813,21 +678,15 @@ public class AutonomyMenu extends JMenu
 
             box.addActionListener(e ->
             {
-                // Refused while trains are running.  The running layout is built from the
-                // configuration as it was when it was loaded, and nothing here rebuilds it - so
-                // ticking a page off mid-run turned the strip red, took the station captions away and
-                // made right-clicks on that page's stations do nothing, while the layout carried on
-                // routing trains to those very stations.  The interface said the page was out of
-                // autonomy and the railway disagreed.
+                // Refused while trains are running: the running layout is built from the configuration as loaded and
+                // nothing here rebuilds it, so ticking a page off mid-run turned the strip red and took the captions
+                // away while the layout kept routing trains to those stations.
                 if (ui.refuseWhileARunHoldsTheSetup(ui, () -> box.setSelected(!box.isSelected()))) return;
 
-                // Applying this rebuilds the layout, and every configuration load stops everything -
-                // including a train somebody is driving by hand.
-                //
-                // isAutonomyBusy above covers a hand DISPATCH now, since it counts one as running.
-                // What is left to catch here is a train being driven on the throttle alone, which
-                // nothing counts and which this still sees.  Stopping a moving train is not something
-                // to do as a side effect of a checkbox without saying so first.
+                // Applying this rebuilds the layout, and every configuration load stops everything, including a train
+                // somebody is driving by hand.  isAutonomyBusy above covers a hand dispatch; what is left is a train
+                // driven on the throttle alone, which nothing counts and this still sees.  Stopping a moving train is
+                // not a side effect of a checkbox to do without saying so.
                 if (ui.getActiveDiagramConfiguration() != null)
                 {
                     java.util.List<String> moving = ui.locomotivesMoving();
@@ -849,12 +708,9 @@ public class AutonomyMenu extends JMenu
 
                 try
                 {
-                    // The reconciliation the save returns is SHOWN, not dropped.
-                    //
-                    // A save reconciles the setup against the diagram and reports what it had to let go - a
-                    // setting on a page that is no longer there, a pairing whose partner has gone. Thrown away,
-                    // those changes happen silently and the operator finds out later from a railway that behaves
-                    // differently, with nothing connecting it to the edit that caused it.
+                    // The reconciliation the save returns is shown, not dropped: it reports what the save had to let go
+                    // (a setting on a page that is gone, a pairing whose partner has gone), and silently the operator
+                    // finds out later from a railway that behaves differently.
                     AutonomyReport.show(ui, session.save());
                 }
                 catch (java.io.IOException io)
@@ -864,8 +720,8 @@ public class AutonomyMenu extends JMenu
 
                 ui.autonomyMenuActed();
 
-                // And the layout itself, so that what is drawn and what is driven are built from the
-                // same list of pages.  Does nothing when none is loaded.
+                // And the layout itself, so what is drawn and what is driven are built from the same list of pages.
+                // Does nothing when none is loaded.
                 ui.reloadActiveDiagramConfiguration();
             });
 
