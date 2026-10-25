@@ -102,7 +102,7 @@ public class testEveryCitationResolves
      * A ratchet, not a target: it may fall, and when it does this test says so and asks for the number
      * to come down with it.
      */
-    private static final int DEAD_CITATIONS = 20;
+    private static final int DEAD_CITATIONS = 16;
 
     /**
      * Every id cited from the code is defined in `docs/`, or is one of the known dead ones.
