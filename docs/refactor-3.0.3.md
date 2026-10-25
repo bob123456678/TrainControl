@@ -499,6 +499,19 @@ behavior.md split, and tooling."): the behaviour.md split below, the JaCoCo reru
 tooling the study suggested (`newtest.py` for a new test class's bookkeeping, `redgreen.sh` for a claim's red and
 green in one run, `env.sh` for a worker's environment).
 
+**Next release: the gui package split** (Adam, 2026-10-24: "add the package split to the next release plan, with the
+first step being reviewing the split for my approval").  `org.traincontrol.gui` holds 79 classes, 27 of them
+package-private, with about 450 package-private members used across its files (TrainControlUI 143,
+AutonomyEditorPanel 99, LayoutEditor 47): a member used across a new package line has to become public.
+1. **For Adam's approval first:** a read-only script proposes groups (leaf widgets and dialogs; locomotive dialogs and
+   icons; updates and backup; the autonomy editor; the layout editor) and counts, per group, the members that would
+   have to become public.  Nothing moves before Adam picks the groups and the threshold.
+2. The approved groups move by script (`git mv`, the package and import lines in `src/` and `test/`, the `.form`
+   files with their classes, the `Class.forName("org.traincontrol.gui...")` strings in tests and the paths in docs),
+   proved by `javac` and by `javap` differing only in package names.  TrainControlUI and AutonomyEditorPanel stay in
+   `gui`: Adam's two preference nodes are keyed by their package.
+3. At the start of the release, before other branches are open, so the move does not collide with them.
+
 **Next release: duplicated code to review** (from the 3.0.3 scan; rerun `dupscan.py` first, as the numbers move):
 - A ratchet test (Adam, 2026-10-24: "add the ratchet to the plan"): a `regression` class, in the shape of
   `testCommentsStayLean`, that counts copy groups of 60 tokens or more in `src/` and fails when a new one appears or a
