@@ -13,37 +13,19 @@ import javax.swing.SwingUtilities;
 import org.traincontrol.gui.TrainControlUI;
 
 /**
- * Says that something slow is happening, and gets out of the way when it stops.
- *
- * Loading a layout from disk and initializing a new one both do their work on a background thread, so
- * the file chooser closed and then nothing happened - for as long as it took to fetch and parse every
- * page - and the first sign of life was the finished diagram appearing. Being asked to pick a folder
- * and then shown nothing at all reads as the command having been ignored, which is the one thing it
- * was not doing.
- *
- * Modal on purpose. The work replaces the locomotive, route and layout databases wholesale, so a user
- * clicking around in the meantime is clicking at things that are about to be swapped underneath them.
- *
- * The split this enforces matters as much as the spinner: the slow half runs on the worker, the half
- * that touches Swing runs in whenDone on the event thread. The path this was first used on ran BOTH on
- * a raw thread, building the track diagram off the EDT.
+ * Says that something slow is happening, and gets out of the way when it stops.  Loading or initializing a layout does
+ * its work on a background thread, so a closed file chooser followed by nothing reads as the command having been
+ * ignored.  Modal on purpose: the work replaces the locomotive, route and layout databases wholesale.  The slow half
+ * runs on the worker and the half that touches Swing runs in whenDone on the event thread.
  */
 public final class BusyDialog extends JDialog
 {
-    // THE APPLICATION'S LOOK AND FEEL, BEFORE THIS CLASS CAN BE INSTANTIATED (Adam, 2026-09-11).
-    //
-    // **A static block rather than the first line of the constructor, and the difference was measured.**
-    // `JDialog`'s own constructor runs before any constructor body here, and it creates the ROOT PANE -
-    // whose UI comes from whatever look and feel is installed at that instant. So installing inside the
-    // constructor is too late for the window's own chrome. Built cold, which is what a test does, this
-    // window came out with a `MetalRootPaneUI` and an operating-system title bar while the same window in
-    // the running program gets `FlatRootPaneUI`, FlatLaf's own title bar and the menu bar drawn inside it:
-    // 166x77 against 166x49 for the identical window, measured 2026-09-11.
-    //
-    // Class initialization always finishes before the first instance is created, so this is early enough.
-    //
-    // Headless-guarded because a static initializer that throws leaves the class unusable for the rest of
-    // the process, which is a worse failure than a window in the wrong font.
+    // The application's look and feel, before this class can be instantiated.  A static block rather than the first
+    // line of the constructor: `JDialog`'s own constructor creates the root pane before any constructor body here, and
+    // its UI comes from the look and feel installed at that instant.  Built cold, as a test does, the window got a
+    // `MetalRootPaneUI` and an operating-system title bar (166x77) where the running program gets FlatLaf's own
+    // (166x49).  Headless-guarded because a static initializer that throws leaves the class unusable for the rest of
+    // the process.
     static
     {
         if (!java.awt.GraphicsEnvironment.isHeadless()) TrainControlUI.installLookAndFeel();
@@ -54,7 +36,7 @@ public final class BusyDialog extends JDialog
         super(parent, Dialog.ModalityType.APPLICATION_MODAL);
 
 
-        // OB-124, found by sweeping the others after the crop window.
+        // The window icon (OB-124).
         TrainControlUI.applyWindowIcon(this);
 
         setUndecorated(true);
@@ -80,21 +62,13 @@ public final class BusyDialog extends JDialog
     }
 
     /**
-     * Puts the spinner up now, and hands back the thing that takes it down (OB-140).
+     * Puts the spinner up now, and hands back the thing that takes it down (OB-140).  `run` owns the work as well as
+     * the dialog, which is no use to a caller already on a background thread doing the slow thing itself: `run` would
+     * hand the work to a second thread and return before the value arrived.  That is `TrainControlUI.syncWithCS2`'s
+     * shape, and sixteen doors go through it.
      *
-     * `run` below owns the work as well as the dialog, which is right when the caller has nothing to
-     * do but wait. It is no use to a caller that is ALREADY on a background thread doing the slow
-     * thing itself and needs the answer back - `run` would hand the work to a second thread and return
-     * immediately, and the value would arrive after the caller had gone.
-     *
-     * That is exactly `TrainControlUI.syncWithCS2`'s shape: on the event thread it wraps itself in a
-     * `run`, and off it, it just did the sync silently. Sixteen doors go through that method and any
-     * of them that syncs from a worker - which is most of the well-behaved ones - showed nothing at
-     * all while the Central Station database was fetched.
-     *
-     * Safe to close from any thread, and safe to close before the dialog has managed to appear: both
-     * halves land on the event thread in the order they were posted, and the flag covers the case
-     * where the work finishes so fast that the close is queued behind a show that has not run yet.
+     * Safe to close from any thread, and before the dialog has appeared: both halves land on the event thread in the
+     * order posted, and the flag covers a close queued behind a show that has not run yet.
      *
      * @param parent the window to center on
      * @param message what is happening, in words
@@ -104,8 +78,8 @@ public final class BusyDialog extends JDialog
     {
         Closer closer = new Closer(parent, message);
 
-        // Posted rather than run: showing a modal dialog blocks the thread it is shown on inside a
-        // nested event loop, and the caller has work to get on with.
+        // Posted rather than run: showing a modal dialog blocks its thread in a nested event loop, and the caller has
+        // work to do.
         SwingUtilities.invokeLater(closer::open);
 
         return closer;
@@ -135,9 +109,8 @@ public final class BusyDialog extends JDialog
         {
             synchronized (this)
             {
-                // Closed before it ever opened, which happens when the work finishes in less time
-                // than it takes this to reach the front of the queue.  Nothing to show, and showing
-                // it now would leave an undecorated modal dialog with nothing left to dismiss it.
+                // Closed before it ever opened, when the work finishes before this reaches the front of the queue:
+                // showing it now would leave an undecorated modal dialog with nothing to dismiss it.
                 if (closed) return;
 
                 dialog = new BusyDialog(parent, message);
@@ -178,13 +151,10 @@ public final class BusyDialog extends JDialog
      */
     public static void run(Window parent, String message, Runnable work, Runnable whenDone)
     {
-        // Called from the event thread, always.
-        //
-        // The dispose below is posted with invokeLater and the show below that blocks until it runs.
-        // Off the EDT those two race: the dispose can run before the dialog is ever shown, and what is
-        // then displayed is an undecorated, application-modal window with nothing left alive to close
-        // it and no close button - the whole program hangs, unrecoverably.  Bounced rather than
-        // refused, so a caller on the wrong thread still works.
+        // Called from the event thread, always: the dispose below is posted with invokeLater and the show blocks until
+        // it runs, so off the EDT the two race, and the dispose can run first, leaving an undecorated application-modal
+        // window nothing can close and hanging the program.  Bounced rather than refused, so a caller on the wrong
+        // thread still works.
         if (!SwingUtilities.isEventDispatchThread())
         {
             SwingUtilities.invokeLater(() -> run(parent, message, work, whenDone));
