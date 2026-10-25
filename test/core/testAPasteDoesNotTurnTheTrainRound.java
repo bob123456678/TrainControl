@@ -31,39 +31,22 @@ import support.SourceOf;
 /**
  * A train put down on a square is standing where the drive would leave it, not turned round.
  *
- * Adam, 2026-09-12: **"When 2-8-4 is pasted, it should always face east.  Does it?"** - about pasting
- * it onto BottomMainB while it stands on TopMainR2.  Measured before this file was written: **east 23
- * times out of 40 and west the other 17**, on the frozen copy of his own railway, from an unchanged
- * setup, in one JVM.  Which way a pasted train ends up pointing was a coin toss.
+ * Adam: "When 2-8-4 is pasted, it should always face east.  Does it?"  Which way a pasted train pointed was a coin
+ * toss on the frozen copy of his railway, because `facingByPath` walks `Layout.getNeighbors`, which SHUFFLES (right
+ * for autonomy choosing a journey, wrong for where one square is relative to another), and two copies of BottomMainB
+ * sit the same nine edges away: `BottomMainB (eastbound)` facing E and `BottomMainB (eastbound, reverse)` facing W.
  *
- * **Why it tosses a coin.**  `facingByPath` walks the running graph from the copy the train stands on
- * to a copy of the target, and answers with that copy's side - Adam's own rule of 2026-09-06,
- * *"calculating the simple bfs path from the current station to the paste target using the current
- * direction"*.  The walk asks `Layout.getNeighbors`, which SHUFFLES: *"Randomize order to allow for
- * variation in paths"*, which is right for autonomy choosing a journey and wrong for a question about
- * where one square is relative to another.  Two copies of BottomMainB sit the same nine edges away -
- * `BottomMainB (eastbound)` facing E, and `BottomMainB (eastbound, reverse)` facing W - and the
- * shuffle decided which of the two the walk touched first.
+ * The second is not an arrival at all.  A may-turn square is built as a plain copy (where a train that drove in
+ * stands) and a turning copy (after deciding to turn round), reached by the same edge and facing opposite ways.
+ * Answering with the turning copy records a decision the operator did not make by dragging a train onto a square.  A
+ * turning copy is emitted with `terminus: true` (or `reversing: true`), so `isTerminus()` cannot tell it from a real
+ * terminus (OB-205, MT-368); `isSamePlaceAs` is the discriminator used here.
  *
- * **And the second of those is not an arrival at all.**  A square trains may turn round at is built as
- * two Points per arrival side: the plain copy, where a train that drove in is standing, and the
- * turning copy, where it is after it has decided to turn round.  Both are reached by the same edge,
- * so they are always the same distance away, and they face opposite ways.  Answering with the turning
- * copy records "it arrived and then reversed" - which is a decision the operator did not make by
- * dragging a train onto a square.
+ * A terminus must still reverse on paste: "for terminuses, they must reverse on paste".  A compulsory turn has no
+ * plain copy, so the turning copy stays the answer.  Asserted below, not assumed.
  *
- * **This is the fourth site of one confusion**, which is why it is worth naming rather than patching:
- * a may-turn square's turning copy is emitted with `terminus: true` (or `reversing: true` where it
- * cannot stop), so it is indistinguishable from a real terminus by asking `isTerminus()`. OB-205
- * found it three times over and MT-368 was the same mistake at the arrival door.  `isSamePlaceAs`
- * is the discriminator each of those ended up using, and it is the one used here.
- *
- * **What a terminus must still do.**  Adam, 2026-09-06: *"for terminuses, they must reverse on
- * paste"*.  A compulsory turn has no plain copy to prefer, so the turning copy is the only answer and
- * stays the answer - which is that reversal.  Asserted below, not assumed.
- *
- * Read against a `LayoutSandbox` copy of the frozen snapshot (OB-111): his live folder is only ever
- * read, and a pinned direction needs a railway that is not being edited under it.
+ * Read against a `LayoutSandbox` copy of the frozen snapshot (OB-111): a pinned direction needs a railway that is not
+ * being edited under it.
  *
  * @author Adam
  */
@@ -77,18 +60,13 @@ public class testAPasteDoesNotTurnTheTrainRound
     private static final String ONTO = "BottomMainB";
 
     /**
-     * A train the walk cannot start from, which is the only way into the no-path arm on this railway.
-     *
-     * Every split square here can be driven to from FROM, measured in
-     * `testNoSquareAnswersTwiceDifferently`, so choosing a stranded DESTINATION is not available.
+     * A train the walk cannot start from, the only way into the no-path arm (every split square can be driven to from
+     * FROM, measured in `testNoSquareAnswersTwiceDifferently`).
      */
     private static final String ABSENT = "no such locomotive anywhere";
 
     /**
-     * Enough repeats that a coin toss cannot pass by luck.
-     *
-     * At an even split the chance of forty calls agreeing is 2^-39, which is smaller than the chance
-     * of the harness itself being wrong.
+     * Enough repeats that a coin toss cannot pass by luck: forty agreeing calls at an even split is 2^-39.
      */
     private static final int PASTES = 40;
 
@@ -101,14 +79,10 @@ public class testAPasteDoesNotTurnTheTrainRound
     private static TileKey from;
 
     /**
-     * Opens the frozen railway and stands the train where Adam described it.
+     * Opens the frozen railway and stands the train where Adam described it.  The snapshot has this locomotive already
+     * ON BottomMainB, the square being pasted onto, so the fixture moves it.
      *
-     * The snapshot has this locomotive already ON BottomMainB, which is the square being pasted onto -
-     * so it is moved rather than left where it is, and the move is part of the fixture rather than
-     * something the test relies on the file for.
-     *
-     * @throws Exception when the railway cannot be read, which is a broken harness rather than a
-     *         failing guard
+     * @throws Exception when the railway cannot be read, a broken harness rather than a failing guard
      */
     @BeforeClass
     public static void setUpClass() throws Exception
@@ -151,9 +125,6 @@ public class testAPasteDoesNotTurnTheTrainRound
         assertNotNull(built, "the configuration did not build");
     }
 
-    /**
-     * Puts the layout preference back.
-     */
     @AfterClass(alwaysRun = true)
     public static void tearDownClass()
     {
@@ -161,42 +132,23 @@ public class testAPasteDoesNotTurnTheTrainRound
     }
 
     /**
-     * The trap this file is about is present on this railway.
-     *
-     * Without it the two claims below would pass on a square that has nothing to get wrong, which is
-     * `assert-the-variable-not-the-control`: the fixture has to be able to fail.
-     *
-     * Three things have to hold, and all three are measurements rather than assumptions - the
-     * distances come from a breadth-first walk done here, so a builder change that stops emitting the
-     * turning copy, or moves it, fails this rather than silently retiring the other claims.
+     * The trap this file is about is present on this railway: otherwise the claims below would pass on a square with
+     * nothing to get wrong.  The distances come from a breadth-first walk done here, so a builder change that stops
+     * emitting the turning copy, or moves it, fails this rather than silently retiring the other claims.
      */
     @Test
     public void testTheSquareCanGetThisWrong()
     {
-        // AND WHAT THIS FIXTURE CANNOT TELL YOU.
-        //
-        // The rule is "among the copies at the NEAREST distance, prefer one that is not a turning
-        // copy".  A validator showed that deleting the preference leaves every claim in this class
-        // green, and the reason is emission order: `AutonomyBuilder` emits a square's plain copy
-        // before the turning copy of the same arrival side, so the first copy at the nearest distance
-        // is already the plain one and the tie-break never decides anything HERE.
-        //
-        // It is not dead code - it is what keeps the answer right if that order ever changes, which
-        // is the sort of thing the builder is free to do - but no test on this railway can fail
-        // without it, and saying so is better than leaving a reader to assume the claims below cover
-        // it.  Asserted, so that a change in emission order shows up as this line rather than as a
-        // silent loss of coverage.
+        // WHAT THIS FIXTURE CANNOT TELL YOU: the rule is "among the copies at the NEAREST distance, prefer one that is
+        // not a turning copy", but `AutonomyBuilder` emits a square's plain copy before the turning copy of the same
+        // arrival side, so the tie-break never decides anything HERE.  It keeps the answer right if that order changes;
+        // this line makes a change in emission order show up instead of silently losing coverage.
         java.util.List<String> order = new java.util.ArrayList<>(session.facingsFor(onto).keySet());
 
-        // Per ARRIVAL SIDE, which is the pair the tie-break ever has to choose between: the plain
-        // copy and the turning copy of one side sit the same distance away, because the builder hangs
-        // both off the same edge.  Copies of the OTHER side are a different distance and the
-        // nearest-first rule has already excluded them, so their order says nothing.
-        //
-        // The twin is found by name because the builder makes the name: `base + " (" + heading +
-        // (reverse ? ", reverse)" : ")")`.  Measured here, the order is [westbound,
-        // westbound-reverse, eastbound, eastbound-reverse] - a turning copy DOES precede a plain one
-        // across the square, and never precedes its own twin.
+        // Per ARRIVAL SIDE, the pair the tie-break chooses between: the plain and turning copies of one side sit the
+        // same distance away.  The twin is found by name, `base + " (" + heading + (reverse ? ", reverse)" : ")")`.
+        // Measured order: [westbound, westbound-reverse, eastbound, eastbound-reverse], so a turning copy DOES precede
+        // a plain one across the square, never its own twin.
         for (String name : order)
         {
             if (!name.endsWith(", reverse)")) continue;
@@ -249,13 +201,8 @@ public class testAPasteDoesNotTurnTheTrainRound
     }
 
     /**
-     * Pasting the same train onto the same square twice gives the same railway twice.
-     *
-     * Adam, 2026-09-07: **"in all your simulations, state should never drift."**  A placement that
-     * answers differently on the second try is drift with nothing to blame it on - nothing has moved
-     * between the calls below, so anything that differs differs by itself.
-     *
-     * MEASURED RED: east 23, west 17 in forty calls.
+     * Pasting the same train onto the same square twice gives the same railway twice.  Adam: "in all your simulations,
+     * state should never drift."  Nothing moves between the calls, so any difference is drift with nothing to blame.
      */
     @Test
     public void testTheSamePasteGivesTheSameDirection()
@@ -277,16 +224,11 @@ public class testAPasteDoesNotTurnTheTrainRound
     }
 
     /**
-     * And the direction it gives is the one the drive leaves it in, not the reverse of it.
+     * The direction it gives is the one the drive leaves it in, not the reverse of it.
      *
-     * Adam: **"When 2-8-4 is pasted, it should always face east."**  East is the side of
-     * `BottomMainB (eastbound)`, the copy a train that drove down the line is standing on. West is the
-     * side of `BottomMainB (eastbound, reverse)` - the same arrival, after turning round - which is
-     * the same nine edges away and is what the shuffle was reaching half the time.
-     *
-     * Asserted by asking the square rather than by writing E in here: the answer is the facing of the
-     * nearest copy that is not a turning copy, so it stays right if he re-lays that end of the
-     * railway.
+     * East is the side of `BottomMainB (eastbound)`, where a train that drove down the line stands; west is that of
+     * `BottomMainB (eastbound, reverse)`, the same arrival after turning round.  Asked of the square rather than
+     * written as E, so it stays right if he re-lays that end of the railway.
      */
     @Test
     public void testItFacesTheWayTheDriveLeavesIt()
@@ -305,14 +247,9 @@ public class testAPasteDoesNotTurnTheTrainRound
     }
 
     /**
-     * A terminus still turns a train round on paste, which is the other half of the rule.
-     *
-     * Adam, 2026-09-06: **"for terminuses, they must reverse on paste"**.  Preferring the plain copy
-     * must not reach for one that is not there: a compulsory turn is emitted as turning copies ONLY,
-     * so the nearest of those is the answer and the train takes the heading the end of the line has.
-     *
-     * Over every named square on the railway rather than one chosen by hand, because "the plain copy
-     * exists" is the assumption that would break this and it is not visible at any single station.
+     * A terminus still turns a train round on paste: "for terminuses, they must reverse on paste".  Preferring the
+     * plain copy must not reach for one that is not there, since a compulsory turn is emitted as turning copies ONLY.
+     * Over every named square, because "the plain copy exists" is not visible at any single station.
      */
     @Test
     public void testASquareThatOnlyTurnsStillTurns()
@@ -340,9 +277,7 @@ public class testAPasteDoesNotTurnTheTrainRound
 
             Side answer = session.facingByPath(built, LOCO, square);
 
-            // Reachable or not, the answer has to be one of that square's own sides: the walk finds
-            // one, and the no-path arm picks a legal one.  What it must never be is nothing, which is
-            // a square a paste records no direction for at all.
+            // Reachable or not, the answer is one of that square's own sides; what it must never be is nothing.
             assertTrue(copies.values().contains(answer),
                 session.getStore().getPointName(square) + " turns every train that arrives, and a"
                 + " paste onto it answered " + answer + ", which is not one of its own sides: "
@@ -359,20 +294,13 @@ public class testAPasteDoesNotTurnTheTrainRound
     }
 
     /**
-     * And no square anywhere on the railway answers twice differently, by either route to an answer.
+     * No square anywhere on the railway answers twice differently, by either route to an answer.
      *
-     * The claim above covers the square Adam reported, which the train can be DRIVEN to.  The other
-     * arm - no path, where the answer is not derived from a walk at all - held the second die, and
-     * BottomMainB cannot reach it because BottomMainB is reachable.
-     *
-     * **Measured: every square on this railway with more than one copy can be driven to from
-     * TopMainR2Inter**, so no square strands the walk and the arm cannot be reached by choosing a
-     * different destination.  What reaches it is a train that is not standing on the railway at all -
-     * `walkTo` has nowhere to start - which is how `testAPastedTrainKeepsItsDirection` reaches the
-     * same arm, and is a real case: a locomotive brought into autonomy for the first time.
-     *
-     * Both are asserted to have run, because a claim that only ever reaches one arm is a claim about
-     * half the code that reads as a claim about all of it.
+     * The claim above covers the square Adam reported, which the train can be DRIVEN to.  The no-path arm is reached by
+     * a train that is not standing on the railway at all (`walkTo` has nowhere to start), as in
+     * `testAPastedTrainKeepsItsDirection`, a real case: a locomotive brought into autonomy for the first time.  Every
+     * square here with more than one copy can be driven to from TopMainR2Inter, measured.  Both arms are asserted to
+     * have run.
      */
     @Test
     public void testNoSquareAnswersTwiceDifferently()
@@ -442,16 +370,10 @@ public class testAPasteDoesNotTurnTheTrainRound
     /**
      * Put down on the square it is already standing on, a train keeps the copy it is on.
      *
-     * A corner case the rewrite of `walkTo` changed, so it is pinned rather than left to be noticed.
-     * The old walk only tested the copies it ARRIVED at, never the one it set off from, so a train
-     * asked about its own square was walked all the way round the railway and answered with whichever
-     * copy the loop came back to - which on a square with two facings is the other one. It now
-     * measures from distance zero, so the copy it is standing on is the nearest and wins.
-     *
-     * That matters because the square a train is on is a square the menus offer it: `sameSquare`
-     * exists precisely because "a train standing at BottomMainB was being offered a path to
-     * BottomMainB". Turning a train round for accepting that offer would be the worst version of this
-     * defect - it is the one gesture that self-evidently changes nothing.
+     * The old walk only tested the copies it ARRIVED at, never the one it set off from, so a train asked about its own
+     * square was walked all the way round and answered with the other copy.  `sameSquare` exists because the menus
+     * offer a train the square it is on; turning it round for accepting that offer would be the worst version of the
+     * defect.
      */
     @Test
     public void testPastingOntoItsOwnSquareDoesNotTurnIt()
@@ -470,15 +392,11 @@ public class testAPasteDoesNotTurnTheTrainRound
     /**
      * A train that IS on the railway but cannot be driven there keeps the heading it has.
      *
-     * **Deleting that arm passed every claim.**  The no-path claims above use a train that is
-     * not on the railway at all, so `facingOf` answers null and the code falls straight through to the
-     * first departable copy - which means the line implementing Adam's actual ruling, *"Option 1 is
-     * fine as long as the direction isnt flipped"*, was never executed by a test.
-     *
-     * This uses a train that is placed and pointing somewhere, on a square the target cannot be
-     * reached from. Its recorded heading is one BottomMainB can hold, so the rule says keep it - and
-     * without the rule the answer is whichever departable copy comes first in build order, which is
-     * how the flip Adam reported got in.
+     * The no-path claims above use a train that is not on the railway at all, so `facingOf` answers null and the code
+     * falls through to the first departable copy; the line implementing Adam's ruling, "Option 1 is fine as long as
+     * the direction isnt flipped", was never executed by a test.  This uses a placed train on a square the target
+     * cannot be reached from, with a heading BottomMainB can hold: without the rule the answer is whichever departable
+     * copy is first in build order.
      */
     @Test
     public void testAStrandedTrainKeepsTheHeadingItHas()
@@ -491,10 +409,8 @@ public class testAPasteDoesNotTurnTheTrainRound
 
         TileKey target = null;
 
-        // OVER TARGETS AS WELL AS TRAINS.  Every placed train can be driven to BottomMainB, measured,
-        // so fixing the target found nothing - and "nothing to test" is not the same as "nothing to
-        // test here".  What the arm needs is any square a placed train cannot reach whose facings
-        // include the one that train has.
+        // OVER TARGETS AS WELL AS TRAINS: every placed train can be driven to BottomMainB, so the arm needs any square
+        // a placed train cannot reach whose facings include its heading.
         for (org.traincontrol.base.Locomotive other : built.getLocomotivesToRun())
         {
             if (other == null) continue;
@@ -552,11 +468,9 @@ public class testAPasteDoesNotTurnTheTrainRound
                 + " above should go.");
         }
 
-        // AND THE CASE BUILT FOR IT, so the rule is asked whether or not the railway has one (FR-136).  `walkTo`
-        // finds the train on the layout it is handed, and `facingOf` falls back to the setup when the layout does
-        // not hold it - so a train placed in the setup after `built` was made has a heading and no walk.
-        // The copies a train could depart from, in the order the build made them: the first is what the arm
-        // answers without the rule, so the heading kept has to be one that is not the first.
+        // AND THE CASE BUILT FOR IT, so the rule is asked whether or not the railway has one (FR-136): a train placed
+        // in the setup after `built` was made has a heading and no walk.  The departable copies are in build order; the
+        // first is what the arm answers without the rule, so the heading kept must not be the first.
         List<Side> departable = new java.util.ArrayList<>();
 
         for (Map.Entry<String, Side> copy : session.facingsFor(onto).entrySet())
@@ -655,22 +569,10 @@ public class testAPasteDoesNotTurnTheTrainRound
     /**
      * A may-reverse square asks which way the train should face; an ordinary one does not.
      *
-     * Adam, 2026-09-13: **"If pasting at a 'may reverse' square, ask what direction the train should
-     * face."**
-     *
-     * **The question exists because the walk cannot answer there.**  Everywhere else `facingByPath`
-     * drives the train to the landing square and the copy it arrives on says which way it points. A
-     * may-reverse square is what turning round is FOR, so both headings are reachable and the walk's
-     * answer is whichever copy it landed on - the same reason the arrival-side question is asked at
-     * those squares and nowhere else.
-     *
-     * What is claimed here is the DECISION, not the dialog: which squares put a question, and what it
-     * offers. Driving `JOptionPane` from a test is what hung this suite for twenty minutes on
-     * 2026-09-13, and the shape of the paste that calls this is pinned as source below.
-     *
-     * The deduplication matters and is easy to lose: `facingsFor` answers per COPY, so a square with
-     * three copies facing east hands east back three times - three identical buttons in a dialog
-     * nobody can answer.
+     * Adam: "If pasting at a 'may reverse' square, ask what direction the train should face."  The walk cannot answer
+     * there, since turning round is what the square is FOR and both headings are reachable.  Claimed here is the
+     * DECISION, not the dialog (driving `JOptionPane` from a test hung this suite once).  `facingsFor` answers per
+     * COPY, so a square with three copies facing east hands east back three times; the offering must collapse them.
      */
     @Test
     public void testOnlyAMayReverseSquareAsksWhichWayItFaces() throws Exception
@@ -690,13 +592,9 @@ public class testAPasteDoesNotTurnTheTrainRound
             }
         }
 
-        // WHAT IT DOES WITH REPEATS, which is the input it actually gets.
-        //
-        // `facingsFor` answers per COPY - a square with three copies facing east hands east back three
-        // times - so the offering has to collapse them or the dialog carries three identical buttons.
-        // Asserting that over the railway's own squares would be asserting a property of the loop:
-        // `choicesFor` walks the four compass points and takes each at most once, so it cannot repeat
-        // whatever it is given. This gives it something to collapse.
+        // WHAT IT DOES WITH REPEATS, the input it actually gets: `choicesFor` walks the four compass points and takes
+        // each at most once, so asserting over the railway's own squares would assert a property of the loop.  This
+        // gives it something to collapse.
         assertEquals(org.traincontrol.gui.autonomy.FacingPrompt.choicesFor(
             java.util.Arrays.asList(Side.E, Side.E, Side.N, Side.E)),
             java.util.Arrays.asList(Side.N, Side.E),
@@ -747,14 +645,9 @@ public class testAPasteDoesNotTurnTheTrainRound
     }
 
     /**
-     * The facing question's buttons say where the train points, not where it came from (OB-215).
-     *
-     * Adam, 2026-09-13: *'options for "which way should the train face" are "from the north (up)" ...
-     * for "which way does it face", it should be "to the north (up)"'*.  The facing prompt borrowed the
-     * arrival-side labels, which answer the opposite question about the opposite end of the train.
-     *
-     * Asked of every heading and against the arrival label for the same compass point, in the running
-     * language, so a later edit that points one prompt back at the other's words is caught.
+     * The facing question's buttons say where the train points, not where it came from (OB-215).  The prompt borrowed
+     * the arrival-side labels, which answer the opposite question about the other end of the train.  Asked of every
+     * heading against the arrival label for the same compass point, in the running language.
      */
     @Test
     public void testTheFacingButtonsNameAHeadingNotAnArrival()
@@ -778,22 +671,13 @@ public class testAPasteDoesNotTurnTheTrainRound
     /**
      * A cut train's remembered heading is preferred only while it is off the railway.
      *
-     * **What this can and cannot say.**  Nothing under `test/` named `cutFacing` at all,
-     * so neither MT-368's clipboard clause nor its narrowing had a claim. The branch itself
-     * sits in `locomotiveGestureOnDiagram`, a private key handler that needs a shown window, a hovered
-     * tile and a loaded clipboard, and the paste it performs can raise a modal facing prompt - the
-     * shape of test that hung this suite for twenty minutes on 2026-09-13 and left a preference
-     * wrong when its teardown never ran. That is not a good trade for a C.
-     *
-     * So this pins two things and claims nothing else:
-     *
-     *   - the QUESTION the branch asks of the landing, which is reachable and is the half that can be
-     *     wrong on a railway: `facingsFor` says which headings a square can hold, and a remembered
-     *     heading it cannot hold must not be forced on it.
-     *   - the SHAPE of the branch: that all three conditions are still in it. A source guard reports
-     *     clean about everything it was not told (`guard-knows-only-what-it-lists`), and the whole of
-     *     the reason it is here is that the conditions were added in two rounds and one of them - "and
-     *     only while the train is actually off the railway" - is the one a later edit would drop.
+     * The branch sits in `locomotiveGestureOnDiagram`, a private key handler needing a shown window, a hovered tile and
+     * a loaded clipboard, whose paste can raise a modal facing prompt (the shape of test that hung this suite).  So
+     * this pins two things and claims nothing else:
+     *   - the QUESTION the branch asks of the landing: `facingsFor` says which headings a square can hold, and a
+     *     remembered heading it cannot hold must not be forced on it;
+     *   - the SHAPE of the branch: all three conditions are still in it, notably "and only while the train is actually
+     *     off the railway", which a later edit would drop.
      *
      * @throws Exception from reading the source
      */
@@ -872,10 +756,6 @@ public class testAPasteDoesNotTurnTheTrainRound
 
     /**
      * Whether this train could drive to a named copy, by its own walk rather than the one under test.
-     *
-     * @param train the locomotive
-     * @param copy the Point's name
-     * @return whether a directed path exists
      */
     private static boolean canBeDrivenFrom(String train, String copy)
     {
@@ -927,8 +807,6 @@ public class testAPasteDoesNotTurnTheTrainRound
 
     /**
      * The facing of the nearest copy of the target that a train could simply be standing on.
-     *
-     * @return that side
      */
     private static Side standingCopyFacing()
     {
@@ -961,13 +839,8 @@ public class testAPasteDoesNotTurnTheTrainRound
     }
 
     /**
-     * How far every Point is from where the train stands, in edges.
-     *
-     * Its own walk rather than the one under test - a claim that asks the code its own question
-     * agrees with whatever the code does.  Breadth-first, so the distances are the true shortest ones
-     * whatever order `getNeighbors` hands the edges back in.
-     *
-     * @return the distance to each reachable Point, by name
+     * How far every Point is from where the train stands, in edges: its own breadth-first walk, since a claim that asks
+     * the code its own question agrees with whatever the code does.
      */
     private static Map<String, Integer> distances()
     {
