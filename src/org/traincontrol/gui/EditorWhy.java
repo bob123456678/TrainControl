@@ -1,8 +1,5 @@
 package org.traincontrol.gui;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import org.traincontrol.automationui.AutonomyChecks;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.util.I18n;

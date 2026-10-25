@@ -1,9 +1,6 @@
 package org.traincontrol.gui;
 
-import java.awt.BorderLayout;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;

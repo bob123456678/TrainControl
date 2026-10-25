@@ -1,8 +1,6 @@
 package org.traincontrol.gui;
 
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.automationui.TileGraph.Direction;
 import org.traincontrol.automationui.TileGraph.RouteId;
