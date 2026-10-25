@@ -29,10 +29,7 @@ public final class DetailsArea
     {
     }
 
-    /**
-     * @param text the message
-     * @return the text wrapped at {@link #WIDTH}; a word longer than a line, such as a path, breaks where it must
-     */
+    /** The text wrapped at {@link #WIDTH}; a word longer than a line, such as a path, breaks where it must. */
     public static JTextArea wrapped(String text)
     {
         JTextArea area = textArea(text);
@@ -43,11 +40,7 @@ public final class DetailsArea
         return area;
     }
 
-    /**
-     * @param sentence what happened, or the question
-     * @param lines the list, one item a line; it scrolls past {@link #ROWS} lines
-     * @return the sentence over the list
-     */
+    /** The sentence over the list, one item a line; it scrolls past {@link #ROWS} lines. */
     public static JComponent message(String sentence, List<String> lines)
     {
         JTextArea list = textArea(String.join("\n", lines));
