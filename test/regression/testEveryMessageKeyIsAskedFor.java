@@ -65,7 +65,7 @@ public class testEveryMessageKeyIsAskedFor
     private static final int EXPECTED = 0;
 
     /**
-     * The five places the code builds a message key by concatenation rather than spelling it out.
+     * The places the code builds a message key by concatenation rather than spelling it out.
      *
      * A key beginning with one of these is shielded. Nothing else shields a key: see the class comment
      * for the 119 that a looser rule hid. Add to this list when a new builder is written, and
@@ -104,6 +104,9 @@ public class testEveryMessageKeyIsAskedFor
         "autosetup.ui.importSharedSquaresFew",
         "autosetup.ui.leftBehindOne",
         "autosetup.ui.leftBehindFew",
+
+        // RouteEditorFrame.settingLabel -> route.ui.setting.<word>, the setting words a route stores (OB-367)
+        "route.ui.setting.",
     };
 
     /**
