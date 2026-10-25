@@ -150,6 +150,10 @@ public class testTheRefusalsAreAskedAtTheDoors
             + "moving, the stop controls go, and runLocomotives keeps driving"},
         {"private void chooseLocalDataFolderMenuItemActionPerformed(", SETUP + "|" + EDITOR,
             "swapping the layout folder replaces the diagram, for the same reason"},
+        {"private void openRecentLayout(", SETUP + "|" + EDITOR,
+            "a recent layout swaps the layout folder, as Open Layout does (FR-145)"},
+        {"private void mountRestoreFromBackup(", SETUP + "|" + EDITOR,
+            "Restore from Backup replaces the layout folder and the data, then closes TrainControl (FR-124)"},
         {"    void initializeLocalLayoutMenuItemActionPerformed(", SETUP,
             "Create New Layout switches the layout folder, syncs with the Central Station and resets autonomy (RSA13-B2)"},
 
