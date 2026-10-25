@@ -420,11 +420,12 @@ Tab icons provided by Freepik.
         - Opening another layout, creating a new one or loading the Central Station's layout no longer keeps the previous railway's trains standing in memory; your locomotives stay in the database, and choosing the same layout again keeps its trains.
         - Pasting a train on the Track Diagram onto a square that is not a station now says a train can only be placed at a station, instead of asking which way it faces.
         - Notices in the autonomy editor no longer push the diagram down: they float over its bottom edge, at most three lines with a scrollbar, and an X hides each one until the next.
-        - In some languages, long phrases in the autonomy editor's `Track Directions` dropdown no longer make the window wider; the open list still shows them in full.
+        - In some languages, long phrases in the autonomy editor's `Track Directions` dropdown no longer make the window wider, and the column's buttons stay as wide as its dropdowns; the open list still shows them in full.
         - While autonomy or a route is running, the Layouts menu's page and layout items (such as `Create New Layout`, `Rename Current Page` and `Open Layout...`) now say "Edits are not allowed while autonomy or routes are running." instead of a message about locomotives.
         - While autonomy or a route is running, the autonomy setup's refusals now give one of two messages: "Edits are not allowed while autonomy or routes are running." for anything that changes the setup, the diagram, the timetable or the settings (including Import), and "Wait for the active locomotives to stop." for Export, and for loading or unloading a configuration while a route is running.  An item grayed out for this reason now says the same sentence when you point at it.
         - A train placed with the Track Diagram's right-click `Place` on a station no train can leave is now saved, so it is still there the next time TrainControl starts.
         - In the autonomy editor, the `Name Everything...` prompt now wraps a long question over several lines, like the other Bulk Tools prompts.
+        - In the autonomy editor, `Name Everything...` and `Rename...` now refuse a name another station or sensor already has, as naming a new station does.
         - The setup check's warning that no train can reach a station now also finds stations whose only way in is from a side where arrivals are refused.
     - Automation API Bug Fixes
         - The full autonomy example in the API guide now gives each train a preferred speed and starts the trains it chose, so it runs as written.

@@ -973,7 +973,7 @@ text:
 
 [issue OB-375]
 ordinal: 46
-inbox: yes
+inbox: no
 kind: bug
 title: The autonomy editor's right column leaves a gap beside the dropdowns, and its buttons got wider (OB-368's fix)
 filed: 2026-10-25
@@ -993,7 +993,7 @@ text:
 
 [issue OB-376]
 ordinal: 47
-inbox: yes
+inbox: no
 kind: bug
 title: Name Everything accepts a name another station or sensor already has
 filed: 2026-10-25

@@ -4034,3 +4034,19 @@ kind: bug
 what: The track diagram's Place saves whenever it wrote the placement and the setup still stands, with or without a facing, and logs a failed save in every mode, as the paste and the locomotive dialog do; right-click Remove logs the same way (`56151775`). Claims in ui.testATrainWithNoWayOutFacesAlongItsTrack, red first.
 state: -
 became: MT-819
+
+[receipt OB-375]
+seq: 504
+filed: 2026-10-25
+kind: bug
+what: The autonomy editor's dropdowns get a 150 px minimum width too, so in Danish the column is 150 like the dropdowns and Save and Cancel no longer stretch past them; the window's width is unchanged from 3.0.2 in every language (measured 1128 px; the diagram takes the room) (`b395edc5`). Claim ui.testDiagramLooksRight.testTheRightColumnIsAsWideAsItsDropdowns, red first in Danish.
+state: -
+became: MT-823
+
+[receipt OB-376]
+seq: 505
+filed: 2026-10-25
+kind: bug
+what: Name Everything (asks again) and Rename... (refuses and closes, as it did for an unusable name) ask one shared check, AutonomyEditorPanel.whyNotNamed, as the new-station prompt does, so a taken name is refused, names given earlier in the walk included (`a9b3028d`, `dbd51236`). Claims in ui.testTheLengthPromptHasTheKeyboard, red first.
+state: -
+became: MT-824

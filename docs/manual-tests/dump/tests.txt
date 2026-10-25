@@ -32449,3 +32449,83 @@ body:
 tail:
 | ---
 |
+
+[test MT-823]
+ordinal: 822
+anchor: mt-823
+date: 2026-10-25
+title: OB-375: the autonomy editor's right column is as wide as its dropdowns in every language
+disposition: needs test
+from: OB-375
+written: 2026-10-25
+reopened: no
+body:
+| <a id="mt-823"></a>
+| ### MT-823 - 2026-10-25 - OB-375: the autonomy editor's right column is as wide as its dropdowns in every language
+|
+| **Disposition:** needs test
+| **From:** OB-375
+|
+| **Written:** 2026-10-25
+|
+| **Steps**
+|
+| 1. Set TrainControl's language to Dansk and open the autonomy editor.
+| 2. Look at the column on the right: the Stationsetiketter and Kørselsretninger dropdowns, then Gem ændringer and Annuller at the bottom.
+| 3. Open the Kørselsretninger list.
+| 4. Repeat steps 1 to 3 in German, and once in English.
+|
+| **Expected**
+|
+| - Step 2: the two dropdowns and the two buttons are the same width and their right edges line up, with the same gap to the window's right edge; nothing in the column is wider than the dropdowns.  The window is as wide as in English (the diagram takes any room the column leaves).
+| - Step 3: the list opens wider than the box, so every phrase reads in full.
+| - Step 4: the same in every language.
+|
+| *What this is:* OB-375, from MT-805.  OB-368 fixed the Track Directions dropdown at the Station Labels dropdown's width, but in Danish the column stayed 172 pixels wide, so the buttons ran 22 pixels past the dropdowns.  The column is now 150 pixels in every language.  The window's width is unchanged from 3.0.2 in every language; if TrainControl remembers window sizes, the editor opens at the size you last left it.
+|
+tail:
+| ---
+|
+
+[test MT-824]
+ordinal: 823
+anchor: mt-824
+date: 2026-10-25
+title: OB-376: Name Everything and Rename... refuse a name another station or sensor already has
+disposition: needs test
+from: OB-376
+written: 2026-10-25
+reopened: no
+body:
+| <a id="mt-824"></a>
+| ### MT-824 - 2026-10-25 - OB-376: Name Everything and Rename... refuse a name another station or sensor already has
+|
+| **Disposition:** needs test
+| **From:** OB-376
+|
+| **Written:** 2026-10-25
+|
+| **Steps**
+|
+| 1. Before you start, File > Backup TrainControl Data.  Open the autonomy editor on a page where at least two stations or sensors have no name (clear two if needed, and note which), and note a name another station already has.
+| 2. Open `Bulk Tools` > `Name Everything...`.
+| 3. At the first prompt, type the taken name and press Enter.
+| 4. Close the message, then type a name nobody has and press Enter.
+| 5. At the next prompt, type the name you gave in step 4 and press Enter.
+| 6. Press `Cancel` to stop the walk.
+| 7. Right-click a named station, choose `Rename...`, type the name of another station and press OK.
+| 8. Close the editor with `Cancel` and answer Yes to discard the changes.
+|
+| **Expected**
+|
+| - Step 3: a message says another square already has that name, and the same prompt comes back.
+| - Step 4: the name is accepted and the walk moves on to the next square.
+| - Step 5: refused the same way, because a name given earlier in the walk counts as taken.
+| - Step 7: a message says another square already has that name; after OK the station keeps its old name.
+| - Step 8: the editor closes and nothing is kept.
+|
+| *What this is:* OB-376, from MT-815.  Name Everything and Rename... accepted a name another station or sensor already had; only the new-station prompt refused it.  All three naming prompts now ask the same question.
+|
+tail:
+| ---
+|
