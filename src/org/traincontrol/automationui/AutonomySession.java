@@ -1936,7 +1936,7 @@ public class AutonomySession
         Map<TileKey, String> out = new LinkedHashMap<>();
 
         // Excluded pages are filtered here, not in the shared walk: it belongs to this question
-        for (TileKey tile : tilesWhere((key, point) -> namedLocomotiveOn(point) != null))
+        for (TileKey tile : tilesWithALocomotive())
         {
             if (store.getExcludedPages().contains(tile.getPage())) continue;
 
@@ -8252,32 +8252,7 @@ public class AutonomySession
     /** @return every square the active configuration places a locomotive on (MT-257), in no particular order */
     public java.util.List<TileKey> tilesWithALocomotive()
     {
-        java.util.List<TileKey> out = new java.util.ArrayList<>();
-
-        String active = store.getActiveConfiguration();
-
-        org.json.JSONObject configuration = active == null ? null : store.getConfiguration(active);
-
-        if (configuration == null || !configuration.has("points")) return out;
-
-        org.json.JSONObject points = configuration.getJSONObject("points");
-
-        for (String key : points.keySet())
-        {
-            org.json.JSONObject point = points.optJSONObject(key);
-
-            if (point == null) continue;
-
-            org.json.JSONObject loc = point.optJSONObject("loc");
-
-            if (loc == null || loc.optString("name", "").trim().isEmpty()) continue;
-
-            TileKey tile = AutonomyCompanionStore.parseTileKey(key);
-
-            if (tile != null) out.add(tile);
-        }
-
-        return out;
+        return tilesWhere((key, point) -> namedLocomotiveOn(point) != null);
     }
 
     /**
