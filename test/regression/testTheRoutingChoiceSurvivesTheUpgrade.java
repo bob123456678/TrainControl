@@ -6,26 +6,15 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 /**
- * A routing rule chosen before 3.0.0 has to reach the configuration, or wait until it can.
+ * A routing rule chosen before 3.0.0 has to reach the configuration, or wait until it can.  The rule used to be a
+ * java Preference pushed into a static on Layout and is now a per-configuration setting, so an upgrading user's
+ * choice has to be carried across; if there is no configuration to carry it into, the old key must survive so that
+ * it can be carried tomorrow, or RANDOM takes its place silently, for ever.
  *
- * Until 3.0.0 the routing rule was a java Preference, read at startup and pushed into a static on
- * Layout.  It is now a per-configuration setting, so an upgrading user's choice has to be carried
- * across - and if it cannot be carried today, because there is no configuration to carry it into, the
- * old key must survive so that it can be carried tomorrow.  Deleting it early means the user's choice
- * is gone and RANDOM takes its place, silently, for ever.
- *
- * The earlier fix got the SUCCESS path right: the key goes only once persistPathPreference answers true.  What
- * it left was the branch above, which asked whether the migration was needed by looking at the LIVE
- * layout - and the live layout carries what this same method wrote into it in memory on the previous
- * call.  So the first call stored nothing and kept the key, and the second call read its own writing,
- * concluded the configuration had answered, and deleted it.
- *
- * The second call is not exotic: the migration runs from loadAutoLayoutSettings, which has fourteen
- * callers, every autonomy settings checkbox among them.
- *
- * ON PREFERENCES: this reads and writes the real preference node, because that IS the thing under
- * test - a stand-in node would not be the store the migration deletes from.  Whatever was there is put
- * back in a finally, and the key involved is defunct: nothing but this migration ever reads it.
+ * The success path deletes the key only once persistPathPreference answers true.  The branch above it asked whether
+ * the migration was needed by looking at the LIVE layout, which carries what this same method wrote into it on the
+ * previous call, so the second call concluded the configuration had answered and deleted the key.  The second call
+ * is not exotic: the migration runs from loadAutoLayoutSettings, which has fourteen callers.
  */
 public class testTheRoutingChoiceSurvivesTheUpgrade
 {
@@ -36,18 +25,13 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
     private static java.util.prefs.Preferences ourPrefs;
 
     /**
-     * Gives this class its own preference node, so nothing it writes can reach the operator.
+     * Gives this class its own preference node, so nothing it writes can reach the operator.  Writing to
+     * TrainControlUI's node and restoring afterwards looks safe and is not: TrainControl started DURING a battery run
+     * read the key, migrated it, and stored it into the operator's live configuration over the rule he had chosen.
      *
-     * These tests have to put a pre-3.0.0 preference somewhere the migration will find it, and the
-     * migration reads TrainControlUI's own node.  Writing there and restoring afterwards looks safe and
-     * is not: TrainControl started DURING a battery run read the key this class had just written,
-     * migrated it exactly as designed, and stored it into the operator's live configuration over the
-     * rule he had chosen.  A finally cannot close a window that another process is looking through.
-     *
-     * So the field is swapped rather than the value.  `prefs` is private static final, which on JDK 8
-     * can be reassigned by clearing the final bit on its Field; from JDK 12 that is refused, and this
-     * asserts rather than falling back - a guard that silently stops guarding is worse than none, and
-     * what it is guarding is a railway that took years to set up.
+     * So the field is swapped rather than the value.  `prefs` is private static final, which JDK 8 lets us reassign by
+     * clearing the final bit; from JDK 12 that is refused, and this asserts rather than falling back, because a guard
+     * that silently stops guarding is worse than none.
      */
     @BeforeClass
     public void useOurOwnPreferences() throws Exception
@@ -91,22 +75,14 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
     private static final String LEGACY = "AutonomyPathPreference";
 
     /**
-     * A refused routing change puts the dropdown back, without asking twice.
+     * A refused routing change puts the dropdown back, without asking twice.  Choosing a rule while trains are running
+     * is refused, and the dropdown used to keep showing the rule the user picked; its two siblings, timetableCapture
+     * and toggleSpecifiedRoutes, restore themselves after the same refusal.
      *
-     * Choosing a rule while trains are running is refused, and the dropdown used to keep showing the
-     * rule the user picked - so the one control that reports which rule is in force reported the one
-     * that is not.  Its two siblings, timetableCapture and toggleSpecifiedRoutes, have always restored
-     * themselves after the same refusal; the dropdown had a TODO instead.
-     *
-     * TWO THINGS ARE ASSERTED, and the second is the one the TODO called "safely":
-     *
-     *   the control ends up on the rule the layout is actually using;
-     *   and putting it there does not re-enter the listener that asked for it.
-     *
-     * The second is measured by a DEADLINE rather than a value.  setSelectedIndex on a JComboBox fires
-     * an ActionEvent, so an unguarded restore re-enters the listener, finds the railway still busy,
-     * and opens a modal dialog - which on the event thread never returns.  Guarded, this takes a
-     * millisecond.  A checkbox needs none of this, which is why the siblings could restore in one line.
+     * Asserted: the control ends up on the rule the layout is actually using, and putting it there does not re-enter
+     * the listener that asked for it.  The second is measured by a DEADLINE rather than a value: `setSelectedIndex` on
+     * a JComboBox fires an ActionEvent, so an unguarded restore finds the railway still busy and opens a modal dialog
+     * that never returns on the event thread.
      */
     @Test
     public void testARefusedRoutingChangePutsTheDropdownBack() throws Exception
@@ -141,8 +117,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
                 }
             });
 
-            // The rule the railway is actually following.  getAutoLayout builds one if there is none,
-            // which is what makes hasAutoLayout true for the helper.
+            // The rule the railway is actually following; getAutoLayout builds one if there is none.
             model.getAutoLayout().setPathPreference(
                 org.traincontrol.automation.Layout.PathPreference.LONGEST_LENGTH);
 
@@ -166,8 +141,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
                     "restoreRoutingLogicSelection");
             restore.setAccessible(true);
 
-            // What a user's refused choice leaves behind: a control showing something else.  Set with
-            // the guard held, so that arranging the fixture does not itself go through the listener.
+            // What a user's refused choice leaves behind: a control showing something else, set with the guard held.
             java.lang.reflect.Field guard =
                 org.traincontrol.gui.TrainControlUI.class.getDeclaredField("restoringRoutingLogic");
             guard.setAccessible(true);
@@ -251,14 +225,10 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
     }
 
     /**
-     * With nowhere to store it, the choice stays on disk however many times the migration runs.
-     *
-     * The defect, in one gesture the user cannot see: open the autonomy settings and tick anything.
-     * Each tick calls loadAutoLayoutSettings, which calls the migration.
-     *
-     * The session is left null, which is the state of every user whose autonomy comes from the JSON
-     * file rather than from a diagram configuration - setGlobal cannot succeed for them at all - and
-     * of every diagram user in the moment after a diagram edit has reset the session.
+     * With nowhere to store it, the choice stays on disk however many times the migration runs.  Each tick of an
+     * autonomy settings checkbox calls loadAutoLayoutSettings, which calls the migration.  The session is left null,
+     * the state of every user whose autonomy comes from the JSON file, and of every diagram user just after a diagram
+     * edit has reset the session.
      */
     @Test
     public void testTheOldChoiceIsKeptUntilSomethingCanStoreIt() throws Exception
@@ -268,7 +238,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
             throw new org.testng.SkipException("the migration lives on a window");
         }
 
-        // The window's node, whichever one it is - which is the throwaway this class installed.
+        // The window's node, which is the throwaway this class installed.
         java.util.prefs.Preferences prefs = org.traincontrol.gui.TrainControlUI.getPrefs();
 
         String was = prefs.get(LEGACY, null);
@@ -301,7 +271,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
                 }
             });
 
-            // No session, so there is nowhere to put the answer - which is the whole point.
+        // No session, so there is nowhere to put the answer.
             java.lang.reflect.Field sessionField =
                 org.traincontrol.gui.TrainControlUI.class.getDeclaredField("autonomySession");
             sessionField.setAccessible(true);
@@ -326,8 +296,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
                 "the choice did not reach the running layout, so this session routes at random even "
                 + "though the user's answer is sitting on disk");
 
-            // The tick of a checkbox.  Nothing about the world has changed, so nothing about the
-            // answer should either.
+        // The tick of a checkbox: nothing about the world has changed, so nothing about the answer should.
             migrate.invoke(ui[0], live);
 
             assertEquals(prefs.get(LEGACY, null), "SHORTEST_LENGTH",
@@ -352,14 +321,11 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
     }
 
     /**
-     * A configuration that exists and has NOT answered gets the old choice written into it.
+     * A configuration that exists and has NOT answered gets the old choice written into it: a session with an active
+     * configuration carrying no pathPreference, the migration working end to end.
      *
-     * The state neither other test builds, and the one that matters: a session with an active
-     * configuration carrying no pathPreference.  This is the migration actually working, end to end.
-     *
-     * MUTATION THIS CATCHES: AutonomySession.getGlobal returning "" instead of null for an absent key.
-     * The guard then fires on the FIRST call, the legacy key is deleted, and nothing is ever stored -
-     * The data loss restored, with both of the other tests still green.
+     * MUTATION THIS CATCHES: AutonomySession.getGlobal returning "" instead of null for an absent key.  The guard
+     * then fires on the FIRST call, the legacy key is deleted, and nothing is ever stored.
      */
     @Test
     public void testAConfigurationWithNoAnswerIsGivenTheOldOne() throws Exception
@@ -369,7 +335,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
             throw new org.testng.SkipException("the migration lives on a window");
         }
 
-        // The window's node, whichever one it is - which is the throwaway this class installed.
+        // The window's node, which is the throwaway this class installed.
         java.util.prefs.Preferences prefs = org.traincontrol.gui.TrainControlUI.getPrefs();
 
         String was = prefs.get(LEGACY, null);
@@ -460,12 +426,9 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
     }
 
     /**
-     * A rule already in the loaded layout is not overruled by the pre-upgrade one.
-     *
-     * The legacy population: autonomy from autonomy.json, so there is no active configuration and
-     * getGlobal can never answer.  Layout.fromJSON DOES read pathPreference, so their rule is in the
-     * running layout - and a check asking only the store, pushed the pre-upgrade key over it on every
-     * settings refresh, for ever.
+     * A rule already in the loaded layout is not overruled by the pre-upgrade one.  For autonomy from autonomy.json
+     * there is no active configuration, so getGlobal can never answer, but Layout.fromJSON DOES read pathPreference;
+     * a check asking only the store pushed the pre-upgrade key over it on every settings refresh.
      */
     @Test
     public void testARuleAlreadyInTheLayoutIsNotOverruled() throws Exception
@@ -475,7 +438,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
             throw new org.testng.SkipException("the migration lives on a window");
         }
 
-        // The window's node, whichever one it is - which is the throwaway this class installed.
+        // The window's node, which is the throwaway this class installed.
         java.util.prefs.Preferences prefs = org.traincontrol.gui.TrainControlUI.getPrefs();
 
         String was = prefs.get(LEGACY, null);
@@ -507,7 +470,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
                 }
             });
 
-            // No session at all, which is the legacy user exactly: nothing to ask, nothing to store in.
+            // No session at all, which is the legacy user exactly.
             java.lang.reflect.Field sessionField =
                 org.traincontrol.gui.TrainControlUI.class.getDeclaredField("autonomySession");
             sessionField.setAccessible(true);
@@ -553,13 +516,9 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
     }
 
     /**
-     * Once the configuration holds an answer, the old key goes and does not come back.
-     *
-     * The other direction, and the reason the guard above cannot simply be "never delete it".  A key
-     * kept for ever would overrule a choice the user makes from the dropdown after upgrading: they pick
-     * RANDOM, and the next start finds the pre-upgrade key and puts the old rule back.
-     *
-     * Both directions in one class because satisfying either one alone is trivial and wrong.
+     * Once the configuration holds an answer, the old key goes and does not come back: a key kept for ever would
+     * overrule a choice made from the dropdown after upgrading.  Both directions in one class because satisfying
+     * either alone is trivial and wrong.
      */
     @Test
     public void testTheOldChoiceGoesOnceTheConfigurationHasOne() throws Exception
@@ -569,7 +528,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
             throw new org.testng.SkipException("the migration lives on a window");
         }
 
-        // The window's node, whichever one it is - which is the throwaway this class installed.
+        // The window's node, which is the throwaway this class installed.
         java.util.prefs.Preferences prefs = org.traincontrol.gui.TrainControlUI.getPrefs();
 
         String was = prefs.get(LEGACY, null);
@@ -619,8 +578,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
             session.open(java.util.Arrays.asList(page));
             session.initialize("Default");
 
-            // The user's answer, already in the configuration - whether it got there by an earlier
-            // migration or by the dropdown does not matter, and must not.
+            // The user's answer, already in the configuration, whether by an earlier migration or by the dropdown.
             assertTrue(session.setGlobal("pathPreference", "LONGEST_LENGTH"),
                 "the fixture could not store a global, so this test would pass for the wrong reason");
 
@@ -662,26 +620,11 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
     }
 
     /**
-     * The Auto tab on a layout whose autonomy is an `autonomy.json` stays SHUT (Adam, MT-244).
-     *
-     * **This claim was inverted on 2026-09-13, and the inversion is the point.**
-     *
-     * It was written on Adam's *"make a test case for this.  in my testing, it loaded
-     * OK"*, and asserted the opposite: that the tab is reachable, because an upgrading user's autonomy
-     * was loaded and live and this tab held the only way to reach it.
-     *
-     * **The half that made that argument has stopped being true.**  Nothing at start-up parses or
-     * activates `autonomy.json` any more - the only `parseAuto` caller in `src` is the diagram path (the
-     * JSON tab's Validate button, the other, went with that tab - OB-254).  So the tab is not standing
-     * between that user and
-     * a running railway; it is standing in front of an empty one, offering a route into a model the
-     * rest of the application has moved off.
-     *
-     * Put to Adam with both readings, and ruled: *"The tab should stay shut until they import."*
-     *
-     * The SOP's paragraph for exactly this: "When a root fix lands, expect tests of the old bug to
-     * fail at their preconditions - that is confirmation, not regression", and inverting into a guard
-     * on the new invariant beats deleting, because the scenario is still the one that matters.
+     * The Auto tab on a layout whose autonomy is an `autonomy.json` stays SHUT (MT-244; Adam: "The tab should stay
+     * shut until they import.").  This claim was inverted: nothing at start-up parses or activates `autonomy.json`
+     * any more (the only `parseAuto` caller in `src` is the diagram path, OB-254), so the tab would stand in front of
+     * an empty model.  Inverting into a guard on the new invariant beats deleting, because the scenario is still the
+     * one that matters.
      */
     @Test
     public void testTheAutoTabStaysShutWithALegacyAutonomyJson() throws Exception
@@ -699,13 +642,11 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
 
         try
         {
-            // Inside the try, so nothing can leave the preference behind.
             sandbox = support.LayoutSandbox.open();
 
-            // THE LEGACY STATE, which the fixture is not: it ships a diagram configuration called
-            // Main, and asking for a session makes that one active - which is exactly the state this
-            // finding says is safe.  What an upgrading user has is a layout with NO diagram
-            // configuration at all and an autonomy.json beside it.
+            // THE LEGACY STATE, which the fixture is not: it ships a diagram configuration called Main, which asking
+            // for a session makes active.  An upgrading user has NO diagram configuration and an autonomy.json beside
+            // it.
             java.io.File diagramSetups = new java.io.File(sandbox.getFolder(), "config/autonomy");
 
             if (diagramSetups.isDirectory())
@@ -726,8 +667,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
 
             ui[0].setViewListener(model, new java.util.concurrent.CountDownLatch(1));
 
-            // The legacy path: a graph parsed straight from an autonomy.json, with no diagram
-            // configuration behind it.
+            // The legacy path: a graph parsed straight from an autonomy.json, with no diagram configuration behind it.
             String legacy = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
                 "test/operator_layout/config/autonomy_legacy/autonomy.json")),
                 java.nio.charset.StandardCharsets.UTF_8);
@@ -757,16 +697,12 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
 
             assertTrue(pane.getTabCount() > 2, "the window has no Auto tab to ask about");
 
-            // Before a session exists nothing has decided anything, and the tab's state here is
-            // whatever start-up left.  The claim is about the state AFTER one is built, below.
+            // Before a session exists the tab's state is whatever start-up left; the claim is about the state AFTER
+            // one.
             boolean beforeASession = pane.isEnabledAt(2);
 
-            // AND WITH A SESSION IN EXISTENCE, which is the half the finding turns on.
-            //
-            // `loaded` is `session == null || activeDiagramConfiguration != null`, so the tab is only
-            // at risk once something has built a session - opening the editor, or anything else that
-            // asks for one.  Asking for it here is what makes this test discriminate rather than pass
-            // because nothing had been built yet.
+            // AND WITH A SESSION IN EXISTENCE: `loaded` is `session == null || activeDiagramConfiguration != null`, so
+            // the tab is only at risk once something has built a session; asking for it makes this test discriminate.
             assertNotNull(ui[0].getAutonomySession(),
                 "asking for a session on a local layout did not produce one, so the state this "
                 + "finding is about cannot be reached from here and the assertion below proves "
