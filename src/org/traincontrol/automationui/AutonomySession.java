@@ -9350,20 +9350,14 @@ public class AutonomySession
             {
                 if (!arriving.getEnd().equals(square)) continue;
 
-                // NOT A SIDE NO TRAIN STOPS FROM (MT-552), as in the half-measured notice
+                // Not a side no train stops from (MT-552)
                 if (getBarredArrivals(square).contains(arriving.getEntrySide())) continue;
 
                 int room = arriving.getRoomAtTheEnd();
 
-                // A PARKING BERTH'S ROOM ENDS WHERE THE BERTH RULE STOPS: at a crossing as well as a switch.  The room
-                // walk runs on past a crossing (`boundsTheRoom`), so quoting it would give room the berth rule does not
-                // give.  A platform autonomy may choose is not judged by the berth rule and keeps the room walk's
-                // number.
-                //
-                // AND WITH NOTHING SPENT BEFORE THE STOP, every train is refused there (once anything on the approach
-                // is measured, and only where the stop is one the berth rule refuses on: another road runs over it), so
-                // the room walk's figure is not quoted either.  Squares nobody has answered are the half-measured
-                // notice's to name; answered 0 on purpose, the berth's own warning's.
+                // A parking berth's room ends where the berth rule stops, at a crossing too; a choosable platform keeps
+                // the room walk's figure.  With nothing spent before the stop, every train is refused there, so no
+                // figure is quoted.
                 boolean theBerthRulesFigure = false;
 
                 if (!isAutoDestination(square))
@@ -9383,8 +9377,7 @@ public class AutonomySession
                         room = before[0];
                         theBerthRulesFigure = true;
 
-                        // NOTHING BEFORE THE STOP, ANSWERED SO: the berth takes no train that comes in this
-                        // way - a warning of its own, not this notice's "that may be right".
+                        // Nothing before the stop, answered so: a warning of its own.
                         if (room == 0)
                         {
                             if (givenNoRoom != null) givenNoRoom.add(square);
@@ -9396,29 +9389,24 @@ public class AutonomySession
 
                 if (room == Integer.MIN_VALUE)
                 {
-                    // No switch on this edge, so the guard keeps walking back - unless the train turns
-                    // round where this edge starts, which is where it stops instead.
+                    // No switch: the guard keeps walking back, unless the train turns where this edge starts.
                     if (!isTurnAround(arriving.getStart())) continue;
 
                     room = arriving.getLength();
                 }
 
-                // UNMEASURED IS UNKNOWN, NOT SHORT, the doctrine the guard follows: `-1` is the reduction's word for
-                // "bounded, and nothing in it is measured".  Not the berth rule's 0, which is what it refuses on.
+                // Unmeasured is unknown, not short: -1 is "bounded, nothing measured".
                 if ((room <= 0 && !theBerthRulesFigure) || room >= max) continue;
 
                 if (worst < 0 || room < worst) worst = room;
             }
 
-            // AND AT A PLATFORM, THE SHORTEST WAY IN: a train longer than that, setting off from the station or
-            // turn nearest behind, is refused where the notice says it stands across the switch.
+            // At a platform, the shortest way in: a longer train is refused there.
             Integer refusedAbove = isAutoDestination(square) ? refusing.get(square) : null;
 
             if (worst >= 0)
             {
-                // NEVER UNDER {3}, since both are taken over the same ways in, and given where it EQUALS {3}: the
-                // shortest way in holds nothing behind its switch, and there a train longer than {3} is refused instead
-                // of standing across it.
+                // Never under {3}, as both are taken over the same ways in; given where it equals {3}.
                 out.put(square, refusedAbove != null && refusedAbove > 0 && refusedAbove < max
                     ? new int[] {max, worst, refusedAbove} : new int[] {max, worst});
             }
@@ -9428,13 +9416,9 @@ public class AutonomySession
     }
 
     /**
-     * The figure a train is refused above at each platform, read off the railway the setup builds: the least, over the
-     * notice's own ways in, of what `Layout.whyTooLongForThisRoute` refuses above on each (the larger of the room past
-     * the switch and the measured route in, `Layout.measuredRouteIn`, FR-087).  Off the built railway, not the squares:
-     * a square's copies are its directions, and nobody is started at a copy trains may not arrive at.  Only the
-     * notice's own ways in (`roomTheNoticeQuotes`, so never less than `{3}`), walked back as the railway runs it
-     * (`routesIn`).
-     *
+     * The figure a train is refused above at each platform: the least, over the notice's own ways in
+     * (`roomTheNoticeQuotes`), of what `Layout.whyTooLongForThisRoute` refuses above (FR-087).  Off the built railway,
+     * as a square's copies are its directions.
      * @return the squares, each mapped to the smallest such figure, empty when the setup does not build
      */
     private java.util.Map<TileKey, Integer> refusingFigures(org.json.JSONObject built, java.util.Map<String, TileKey> named)
@@ -9445,7 +9429,7 @@ public class AutonomySession
 
         java.util.Map<String, TileKey> byName = named != null ? named : builder(null).tilesByName();
 
-        // Where a train stops, where the route in stops - a train started there, or turned there - and where nothing runs.
+        // Where a train stops, where the route in stops (started or turned there), and where nothing runs.
         java.util.Set<String> stops = new java.util.HashSet<>();
         java.util.Set<String> setsOff = new java.util.HashSet<>();
         java.util.Set<String> turns = new java.util.HashSet<>();
@@ -9459,8 +9443,7 @@ public class AutonomySession
 
             String name = point.getString("name");
 
-            // SWITCHED OFF, NOTHING PASSES OR ARRIVES: `isPathClear` refuses a route through a point that is not
-            // active, or into one, but not out of one (Adam: *"Just not inactive start points.  Inactive really means
+            // Switched off, nothing passes or arrives (Adam: *"Just not inactive start points.  Inactive really means
             // nothing can pass."*).
             if (!point.optBoolean("active", true)) off.add(name);
 
@@ -9470,14 +9453,12 @@ public class AutonomySession
                 setsOff.add(name);
             }
 
-            // THE ROUTE IN STOPS AT A TURN: `measuredRouteIn` counts nothing behind a copy the train turned at (a
-            // barred turning copy, which is no station).
+            // The route in stops at a turn (`measuredRouteIn`).
             if (point.optBoolean("reversing", false)) setsOff.add(name);
 
             if (point.optBoolean("reversing", false) || point.optBoolean("terminus", false)) turns.add(name);
         }
 
-        // The legs the railway can run, and the notice's own ways into each platform.
         java.util.List<org.json.JSONObject> legs = new java.util.ArrayList<>();
         java.util.Map<TileKey, java.util.List<org.json.JSONObject>> waysIn = new java.util.LinkedHashMap<>();
 
@@ -9487,7 +9468,7 @@ public class AutonomySession
         {
             org.json.JSONObject edge = edges.getJSONObject(i);
 
-            // Into a switched-off point, no leg runs; out of one, only the first - nothing comes into it to go on.
+            // Into a switched-off point no leg runs; out of one, only the first.
             if (off.contains(edge.getString("end"))) continue;
 
             legs.add(edge);
@@ -9510,7 +9491,7 @@ public class AutonomySession
             {
                 Integer walked = routeIn.get(edge);
 
-                // No train comes in this way.  A leg with no length never gets here: it quotes no room.
+                // No train comes in this way.
                 if (walked == null) continue;
 
                 out.merge(platform.getKey(), Math.max(roomTheNoticeQuotes(edge, turns), walked), Math::min);
@@ -9521,10 +9502,8 @@ public class AutonomySession
     }
 
     /**
-     * The room `{3}` is taken over for a leg into a platform, or none where that notice does not read the leg: past a
-     * switch, what is measured there (-1 where nothing is); straight from a copy trains turn at, the leg's length;
-     * otherwise 0, as the room walk keeps walking back and this leg alone bounds nothing.
-     *
+     * The room `{3}` is taken over for a leg into a platform: past a switch, what is measured there (-1 where nothing);
+     * from a copy trains turn at, the leg's length; else 0, as the room walk keeps walking back.
      * @return the room, 0 or less where it gives none
      */
     private static int roomTheNoticeQuotes(org.json.JSONObject leg, java.util.Set<String> turns)
@@ -9534,10 +9513,7 @@ public class AutonomySession
         return turns.contains(leg.getString("start")) ? leg.optInt("length", 0) : 0;
     }
 
-    /**
-     * Whether a built leg was answered 0 on purpose at every place: measured track of no length, as `Edge.isMeasured`
-     * reads it on the railway.
-     */
+    /** Whether a built leg was answered 0 at every place (`Edge.isMeasured`). */
     private static boolean answeredThroughout(org.json.JSONObject leg)
     {
         org.json.JSONArray places = leg.optJSONArray("places");
@@ -9554,15 +9530,8 @@ public class AutonomySession
 
     /**
      * The least the route in counts for a train coming along each built leg towards this platform
-     * (`Layout.measuredRouteIn` over every way the railway can run it).  Worked out for every leg together and lowered
-     * until nothing changes, so a loop of sensors is walked whole: one leg at a time and remembered, a leg first
-     * reached inside a loop would be stored as having no way in.  From a copy a train is started at or turns at, the
-     * leg alone: the route in stops there.  A leg nobody measured ends the route in, so nothing behind it counts: 0;
-     * one answered 0 throughout is measured track of no length (`answeredThroughout`) and is passed like any other.
-     * Otherwise the leg and the least way into where it starts.  Only from where a train can be got to without passing
-     * the platform, and never from or through another copy of its own square: a route from a platform round to itself
-     * is no journey.
-     *
+     * (`Layout.measuredRouteIn`), lowered until nothing changes so a loop of sensors is walked whole.  The route in
+     * stops at a start or turn copy and at an unmeasured leg; never from or through the platform's own square.
      * @param setsOff where the route in stops: a station copy, or a copy trains turn at
      * @return each leg a train can come along, to the units
      */
@@ -9586,7 +9555,6 @@ public class AutonomySession
             onward.computeIfAbsent(leg.getString("start"), k -> new java.util.ArrayList<>()).add(leg.getString("end"));
         }
 
-        // Where a train can be got to: onward from a station, never through the platform.
         java.util.Set<String> reached = new java.util.HashSet<>();
         java.util.Deque<String> todo = new java.util.ArrayDeque<>();
 
@@ -9659,15 +9627,9 @@ public class AutonomySession
     }
 
     /**
-     * Stations every train must turn round at, reached from more than one side (MT-361).  Adam: *"terminuses (stations
-     * that must reverse) are currently allowed to have ingress from two sides.  Make this be an autonomy ERROR that the
-     * user has to fix."*  Three conditions, each keeping the rule off a railway that is correct: **must turn, not may**
-     * (a may-turn square with two ways in is the ordinary station a train can run through or reverse in); **a station**
-     * (a must-turn square that is not one is a plain reversing point, a mid-layout turn-round); **unbarred sides**
-     * (shutting one side is one of the three remedies the message names, so a barred side must not go on being
-     * counted).  Counted as SIDES, not arriving edges, as two edges can reach one square by the same side (an arrival
-     * through a portal arrives by a real side).
-     *
+     * Must-turn stations reached by more than one unbarred side (MT-361).  Adam: *"terminuses (stations that must
+     * reverse) are currently allowed to have ingress from two sides.  Make this be an autonomy ERROR that the user has
+     * to fix."*  Counted as sides, not edges (a portal arrives by a real side).
      * @return the squares, mapped to how many unbarred sides reach them, empty when none do
      */
     public java.util.Map<TileKey, Integer> terminiWithTwoWaysIn()
@@ -9706,13 +9668,8 @@ public class AutonomySession
     }
 
     /**
-     * The sensor addresses that sensor squares on two or more places share, each to its squares in reading order
-     * (FR-139).  A place is a square, counted once: the squares are read off the diagram's pages and not the copies
-     * they build into.  A page left out of autonomy has no places, and an address of zero or less is no address, as
-     * `repeatedSensorPages` and the reduction both read it.  Nor has a page `repeatedSensorPages` reports: it repeats
-     * another page's sensors, an ERROR already (OB-150), and the same thing is not said twice (Adam: "suppress the
-     * warning where OB-150 applies"); this one is about squares that share an address on a page of their own.
-     *
+     * Sensor addresses two or more squares share, each to its squares in reading order (FR-139), on included pages and
+     * not on pages `repeatedSensorPages` already reports (Adam: "suppress the warning where OB-150 applies").
      * @return each shared address, to its squares
      */
     private Map<Integer, List<TileKey>> sensorAddressesSharedByPlaces()
@@ -9762,21 +9719,18 @@ public class AutonomySession
     }
 
     /**
-     * Included pages that repeat an s88 another included page already uses (OB-150): the same walk
-     * `excludeRepeatedSensorPages` does, so two spellings of "repeats a sensor" cannot disagree about which page was at
-     * fault.  Earliest page wins, as there: the first page to use a sensor keeps it and a later one repeating it is
-     * named, so the error names the page the automatic answer would have shut.
-     *
+     * Included pages that repeat an s88 an earlier included page uses (OB-150), by `excludeRepeatedSensorPages`'s walk,
+     * so the error names the page it would shut.
      * @return the offending page names, in the order the layout lists them
      */
     private Map<TileKey, String> repeatedSensorPages()
     {
-        // KEYED BY THE SQUARE, so the finding can take the user to it (MT-223).
+        // Keyed by square, so the finding can go to it (MT-223).
         Map<TileKey, String> repeats = new LinkedHashMap<>();
 
         if (pages == null) return repeats;
 
-        // WHICH sensor, and where it was first seen (MT-223; Adam: "the error about a duplicate s88 does not specify which one
+        // Which sensor, and where first seen (MT-223; Adam: "the error about a duplicate s88 does not specify which one
         // is the duplicate").
         Map<Integer, String> seen = new LinkedHashMap<>();
 
@@ -9798,26 +9752,19 @@ public class AutonomySession
 
                 if (seen.containsKey(sensor))
                 {
-                    // One per repeated sensor: three repeats on one page are three things to fix, and one line would
-                    // hide that fixing two changes nothing about the message.  The square on the REPEATING page is the
-                    // one to do something about; the page that had the address first is innocent and is named in the
-                    // message.
+                    // One per repeated sensor, on the repeating page's square; the first page is named in the message.
                     repeats.put(new TileKey(page.getName(), component.getX(), component.getY()),
                         I18n.f("autosetup.ui.duplicateSensorSubject",
                             sensor, page.getName(), seen.get(sensor)));
 
-                    // AND THE PAGE STOPS COUNTING, as `excludeRepeatedSensorPages` does (MT-223): a repeating page is
-                    // shut there and contributes nothing further, so a third page sharing one of its other sensors is
-                    // not blamed against it (an ERROR that would refuse the whole setup).  FLAGGED, NOT BROKEN OUT OF:
-                    // stopping the scan would cost the rest of the page (Adam's page 3 is a zoomed view of page 1 and
-                    // clashes on many sensors, each reported).
+                    // And the page stops counting (MT-223), so a third page is not blamed against it; flagged, not
+                    // broken out of, so the rest of the page is still reported.
                     repeated = true;
                 }
 
                 here.put(sensor, page.getName());
             }
 
-            // Only a page that is staying in contributes what it holds.
             if (!repeated) seen.putAll(here);
         }
 
